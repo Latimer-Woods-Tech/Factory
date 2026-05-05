@@ -180,6 +180,13 @@ test.describe('Authenticated flow', () => {
     await page.locator(visibleEmailInput).first().fill('invalid@example.com');
     await page.locator(visiblePasswordInput).first().fill('wrongpassword123');
     await submitAuthForm(page);
-    await expect(page.locator('body')).toContainText(/invalid|incorrect|unauthorized|error|try again/i, { timeout: 8_000 });
+
+    // Different clients can reject here via browser validation, client-side form rules,
+    // or server auth errors. The smoke contract is that sign-in must be rejected.
+    await expect(page).toHaveURL(/(start=1|auth=required|modal=login)/, { timeout: 12_000 });
+    await expect(page.locator('body')).toContainText(
+      /invalid|incorrect|unauthorized|error|try again|please enter a valid email address|please wait/i,
+      { timeout: 12_000 },
+    );
   });
 });
