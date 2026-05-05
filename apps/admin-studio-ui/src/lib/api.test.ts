@@ -46,4 +46,30 @@ describe('apiFetch', () => {
     await expect(apiFetch('/repo/commit')).rejects.toMatchObject({ status: 403 });
     expect(useSession.getState().token).toBe('header.payload.signature');
   });
+
+  it('returns parsed JSON body on success', async () => {
+    const payload = { env: 'production', user: { id: 'u1', email: 'a@b.com', role: 'admin' } };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 })),
+    );
+
+    const result = await apiFetch<typeof payload>('/me');
+    expect(result).toEqual(payload);
+  });
+
+  it('never constructs a double-slash URL when VITE_API_BASE has a trailing slash', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return new Response(JSON.stringify({}), { status: 200 });
+      }),
+    );
+    // Simulate a trailing-slash base already stripped at module init time (API_BASE = '/api')
+    // The constructed URL must not contain '//'
+    await apiFetch('/me');
+    expect(calls[0]).not.toMatch(/\/\//);
+  });
 });

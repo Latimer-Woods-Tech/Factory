@@ -26,16 +26,24 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    let controller = new AbortController();
+
     async function load() {
+      if (cancelled) return;
+      controller = new AbortController();
       try {
-        const r = await apiFetch<Resp>(`/apps/health?env=${encodeURIComponent(env)}`);
+        const r = await apiFetch<Resp>(`/apps/health?env=${encodeURIComponent(env)}`, {
+          signal: controller.signal,
+        });
         if (!cancelled) {
           setData(r.results);
           setLoadedAt(Date.now());
           setErr(null);
         }
       } catch (e) {
-        if (!cancelled) setErr((e as Error).message);
+        if (!cancelled && (e as Error).name !== 'AbortError') {
+          setErr((e as Error).message);
+        }
       }
     }
     load();
@@ -43,6 +51,7 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
     return () => {
       cancelled = true;
       clearInterval(t);
+      controller.abort();
     };
   }, [env, intervalMs]);
 

@@ -33,32 +33,41 @@ async function gh(method, path, data) {
   return res.status === 204 ? null : res.json();
 }
 
+// ─── Author trust classification ──────────────────────────────────────────
+// Only CODEOWNERs and verified bot accounts (name ending in [bot]) may
+// self-approve issues for supervisor pickup. Unknown external authors are
+// quarantined so a CODEOWNER can triage before automation acts on them.
+const TRUSTED_HUMAN_LOGINS = new Set(['adrper79-dot']);
+
+function classifyAuthor(login = '') {
+  if (TRUSTED_HUMAN_LOGINS.has(login)) return 'codeowner';
+  if (login.endsWith('[bot]')) return 'bot';
+  return 'external';
+}
+
 // ─── Deterministic classification ──────────────────────────────────────────
 function deterministicLabels() {
   const out = [];
   // Type
-  if (/^(fix|bug)|(error|crash|broken|regression|not working|failing)/.test(text)) {
+  if (/^(?:fix|bug)/.test(text) || /(?:error|crash|broken|regression|not working|failing)/.test(text)) {
     out.push('bug');
-  } else if (/^(feat|feature|add|implement|support|create|build)/.test(text)) {
+  } else if (/^(?:feat|feature|add|implement|support|create|build)/.test(text)) {
     out.push('enhancement');
-  } else if (/^(doc|readme|changelog|naming|convention)|documentation/.test(text)) {
+  } else if (/^(?:doc|readme|changelog|naming|convention)/.test(text) || /documentation/.test(text)) {
     out.push('documentation');
-  } else if (/^(dep|bump|renovate|dependabot|upgrade)/.test(text)) {
+  } else if (/^(?:dep|bump|renovate|dependabot|upgrade)/.test(text)) {
     out.push('dependencies');
-  } else if (/^(chore|ci|test|refactor|perf|build|hardening|infra)/.test(text)) {
+  } else if (/^(?:chore|ci|test|refactor|perf|build|hardening|infra)/.test(text)) {
     out.push('hardening');
   }
   // Priority
-  if (/p0|critical|hotfix|production down|outage/.test(text)) out.push('priority:P0');
-  else if (/p1|high.priority|blocking/.test(text)) out.push('priority:P1');
-  else if (/p3|nice.to.have|low.priority|someday/.test(text)) out.push('priority:P3');
+  if (/p0|critical|hotfix|production down|outage/.test(text)) out.push('priority:P0');
+  else if (/p1|high.priority|blocking/.test(text)) out.push('priority:P1');
+  else if (/p3|nice.to.have|low.priority|someday/.test(text)) out.push('priority:P3');
   else out.push('priority:P2');
   // Domain
-  if (/(llm|anthropic|openai|claude|gpt|gemini|ai.model|inference)/.test(text)) out.push('llm');
-  if (/(sentry|error.*track|exception.*track)/.test(text)) out.push('source:sentry');
-  // Always stamp
-  out.push('source:human');
-  out.push('supervisor:approved-source');
+  if (/(llm|anthropic|openai|claude|gpt|gemini|ai.model|inference)/.test(text)) out.push('llm');
+  if (/(sentry|error.*track|exception.*track)/.test(text)) out.push('source:sentry');
   return out;
 }
 
@@ -104,7 +113,20 @@ if (alreadyLabeled.includes('supervisor:approved-source')) {
   process.exit(0);
 }
 
+const authorClass = classifyAuthor(currentIssue.user?.login ?? '');
+console.log(`[triage] author=${currentIssue.user?.login} class=${authorClass}`);
+
 const proposed = deterministicLabels();
+
+// Trust-gated labels: only CODEOWNERs/bots get supervisor pickup.
+// External contributors get quarantine so a CODEOWNER can triage first.
+if (authorClass === 'codeowner') {
+  proposed.push('source:human', 'supervisor:approved-source');
+} else if (authorClass === 'bot') {
+  proposed.push('supervisor:approved-source');
+} else {
+  proposed.push('quarantine');
+}
 const typeLabels = ['bug', 'enhancement', 'documentation', 'dependencies', 'hardening', 'question'];
 const hasType = proposed.some(l => typeLabels.includes(l));
 
