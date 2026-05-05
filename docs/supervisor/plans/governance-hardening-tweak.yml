@@ -22,7 +22,7 @@ slots:
     source: issue_title
   - name: target_path
     type: string
-    validator: "^(\\.github/(workflows/[a-z0-9][a-z0-9_-]{0,60}\\.ya?ml|labels\\.ya?ml|CODEOWNERS)|README\\.md|docs/[A-Za-z0-9/_-]{1,120}\\.md)$"
+    validator: "^(\\.github/(workflows/[a-z0-9][a-z0-9_-]{0,60}\\.ya?ml|labels\\.ya?ml|CODEOWNERS)|(README|docs/[A-Za-z0-9/_-]{1,120})\\.md)$"
     source: issue_body
   - name: file_content
     type: string
@@ -30,12 +30,12 @@ slots:
     source: issue_body
   - name: commit_message
     type: string
-    validator: "^(chore|feat|docs)[(:]"
+    validator: "^(chore|feat|docs)(\\([a-z0-9-]+\\))?:"
     source: issue_title
   - name: branch_name
     type: string
     validator: "^supervisor/governance/[a-z0-9][a-z0-9-]{0,60}$"
-    source: issue_title
+    source: issue_body
 steps:
   - id: s1
     tool: github.readFile
@@ -75,7 +75,7 @@ steps:
     depends_on: s2
     params:
       pr: "$s2.number"
-      body: "Supervisor drafted this governance PR from the linked issue. Only `.github/` or `docs/` files are touched; no runtime code paths changed. Pre-existing file content (if any) was captured in step s1."
+      body: "Supervisor drafted this governance PR from the linked issue. Only `.github/`, `docs/`, or root-level `README.md` files are touched; no runtime code paths changed. Pre-existing file content (if any) was captured in step s1."
     intent: "Leave a reviewer-facing note on the PR explaining provenance and scope."
 acceptance_gate:
   description: "A PR was opened on the expected branch with exactly one changed file whose path equals the requested target_path."
