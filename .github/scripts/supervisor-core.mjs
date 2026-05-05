@@ -361,7 +361,7 @@ async function extractSlots(slotNames, issue, factoryContext = '', slotValidator
 /**
  * Returns an existing open supervisor PR for this issue, or null.
  * Prevents duplicate PRs when the Supervisor loop runs concurrently or
- * retries before the `agent:claimed:sauna` label propagates via GitHub API.
+ * retries before the `agent:claimed:supervisor` label propagates via GitHub API.
  */
 async function findExistingPR(repo, issueNumber) {
   try {
@@ -382,7 +382,7 @@ async function executeGreen(repo, issue, template, slots) {
   // Dedup guard: if a supervisor PR already exists for this issue, return it
   // without creating a branch or committing files. This prevents the race
   // condition where multiple concurrent loop runs each open a PR before the
-  // `agent:claimed:sauna` label is visible via the GitHub API.
+  // `agent:claimed:supervisor` label is visible via the GitHub API.
   const existing = await findExistingPR(repo, issue.number);
   if (existing) {
     console.log(`[DEDUP] PR #${existing.number} already open for ${repo}#${issue.number} — skipping`);
@@ -762,13 +762,14 @@ async function main() {
   }
 
   // Filter already-processed or explicitly opted out of template matching.
-  // The `agent:claimed:sauna` label is the primary dedup signal. However,
+  // The `agent:claimed:supervisor` label is the primary dedup signal. However,
   // GitHub label API propagation can be delayed by several seconds when
   // the supervisor runs concurrently. `executeGreen` performs a secondary
   // PR-level dedup check (findExistingPR) to guard against that window.
   candidates = candidates.filter((i) => {
     const lbls = i.labels.map((l) => l.name);
-    return !lbls.includes('agent:claimed:sauna') &&
+    return !lbls.includes('agent:claimed:supervisor') &&
+           !lbls.includes('agent:claimed:copilot') &&
            !lbls.includes('status:done') &&
            !lbls.includes('supervisor:no-template');
   });
@@ -827,7 +828,7 @@ async function main() {
           issue.number,
           planComment(ctx, template, 'red', '\n\n@adrper79-dot — Red-tier: human review required before any execution.'),
         );
-        await addLabels(repo, issue.number, ['agent:claimed:sauna', 'status:in_progress']);
+        await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
         outcomes.push(
           `🔴 ${repo}#${issue.number}: ${template.id} — awaiting review. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
@@ -836,7 +837,7 @@ async function main() {
 
       if (tier === 'yellow') {
         await postComment(repo, issue.number, planComment(ctx, template, 'yellow'));
-        await addLabels(repo, issue.number, ['agent:claimed:sauna', 'status:in_progress']);
+        await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
         outcomes.push(
           `🟡 ${repo}#${issue.number}: ${template.id} — waiting ✅. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
@@ -857,7 +858,7 @@ async function main() {
       }
 
       await postComment(repo, issue.number, planComment(ctx, template, 'green', execNote));
-      await addLabels(repo, issue.number, ['agent:claimed:sauna', 'status:in_progress']);
+      await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
 
       const url = prInfo?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;
       outcomes.push(`🟢 ${repo}#${issue.number}: ${template.id}${prInfo ? ` → PR #${prInfo.prNumber}` : ''} ${url}`);
