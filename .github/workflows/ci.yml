@@ -77,3 +77,6 @@ jobs:
         run: |
           bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint .github/workflows/publish.yml
+
+      - name: Enforce dependency version policy (FRH-08)
+        run: node scripts/lint-dependency-versions.mjs
