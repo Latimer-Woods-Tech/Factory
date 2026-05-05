@@ -3,9 +3,9 @@ version: 1
 tier: yellow
 triggers:
   labels_any_of: [area:security, bug]
-  title_pattern: "(?i)(SEC-\\d|codeql|code.scan|security.alert|fix.*codeql|codeql.*fix)"
+  title_pattern: "(SEC-\\d|codeql|code.scan|security.alert|fix.*codeql|codeql.*fix)"
   body_patterns:
-    - "(?i)(codeql|code scanning alert|security alert)"
+    - "(codeql|code scanning alert|security alert)"
 preconditions:
   - capability_exists: github.readFile
   - capability_exists: github.openPR
