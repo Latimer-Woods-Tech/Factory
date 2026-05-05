@@ -97,6 +97,14 @@ export async function queryAuditEntries(
   if (query.env) conds.push(sql`env = ${query.env}`);
   if (query.userId) conds.push(sql`user_id = ${query.userId}`);
   if (query.action) conds.push(sql`action ILIKE ${'%' + query.action + '%'}`);
+  if (query.actor) {
+    // Match by exact userId or case-insensitive email substring.
+    conds.push(
+      sql`(user_id = ${query.actor} OR user_email ILIKE ${'%' + query.actor + '%'})`,
+    );
+  }
+  if (query.requestId) conds.push(sql`request_id = ${query.requestId}`);
+  if (query.sessionId) conds.push(sql`session_id = ${query.sessionId}`);
   if (query.from) conds.push(sql`occurred_at >= ${query.from}`);
   if (query.to) conds.push(sql`occurred_at < ${query.to}`);
   if (query.cursor) conds.push(sql`occurred_at < ${query.cursor}`);
