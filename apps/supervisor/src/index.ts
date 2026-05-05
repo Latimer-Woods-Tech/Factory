@@ -1,46 +1,14 @@
-import type { ExportedHandler, Request as CfRequest, Response as CfResponse } from '@cloudflare/workers-types';
+## 🚨 Review Limit Reached — Manual Intervention Required
 
-export { SupervisorDO } from './supervisor.do';
-export { LockDO } from './lock.do';
+PR **[#297: feat(admin+supervisor): hardened automation — LLM consensus, hallucination guards, supervisor template pipeline, docs quality gate](https://github.com/Latimer-Woods-Tech/factory/pull/297)** has been rejected by the 2-party LLM reviewer **3 times** without a successful fix.
 
-export interface Env {
-  SUPERVISOR: DurableObjectNamespace;
-  LOCK: DurableObjectNamespace;
-  MEMORY: D1Database;
-  LLM_LEDGER: D1Database;
-  AI_GATEWAY_BASE_URL: string;
-  ANTHROPIC_API_KEY: string;
-  GROQ_API_KEY: string;
-  GROK_API_KEY?: string;
-  VERTEX_ACCESS_TOKEN: string;
-  VERTEX_PROJECT: string;
-  VERTEX_LOCATION: string;
-  PER_RUN_CAP_CENTS?: string;
-  JWT_SECRET: string;
-}
+### Unresolved concerns
+- **Bot** · `?`: - **Architecture** · `apps/supervisor/src/index.ts:23`: Using Node.js Buffer in Worker source code — must use Uint8Array, TextEncoder, TextDecoder instead
+- **Bot** · `?`: - **Architecture** · `apps/supervisor/src/planner/load.ts:34`: Using Node.js Buffer in Worker source code — must use Uint8Array, TextEncoder, TextDecoder instead
 
-/**
- * Factory Supervisor — entrypoint.
- *
- * Routes every request to the singleton SupervisorDO. The DO is the single
- * source of truth for run state; this worker is a thin HTTP/cron/queue
- * fan-in that forwards to the DO.
- *
- * Phase 1 (SUP-3.4): scaffold only — DO stubs, tool registry stub, memory
- * stub, planner stubs. Phase 2 (SUP-3.5): scheduled Sauna runs wired through.
- */
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const id = env.SUPERVISOR.idFromName('singleton');
-    const stub = env.SUPERVISOR.get(id);
-    return stub.fetch(request);
-  },
+### Action required
+1. Open the PR: https://github.com/Latimer-Woods-Tech/factory/pull/297
+2. Read the review comments from `factory-cross-repo[bot]`
+3. Either approve the PR (if the bot is wrong) or close it and fix the underlying issue
 
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    const id = env.SUPERVISOR.idFromName('singleton');
-    const stub = env.SUPERVISOR.get(id);
-    ctx.waitUntil(
-      stub.fetch(new Request('https://supervisor/scheduled', { method: 'POST' })).then(() => undefined),
-    );
-  },
-} satisfies ExportedHandler<Env>;
+_Filed automatically by factory-cross-repo after 3 failed review cycles._
