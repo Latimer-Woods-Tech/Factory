@@ -647,11 +647,80 @@ If a concern cannot be resolved without human input, output an empty fixes array
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+// ─── Stale claim cleanup ──────────────────────────────────────────────────────
+// If an issue has been claimed by any agent for more than STALE_CLAIM_DAYS days
+// with no update (no linked PR progress, no label change), strip the claim label
+// so the supervisor can re-pick it up. Prevents issues from rotting indefinitely
+// when an agent claimed them but never delivered.
+
+const STALE_CLAIM_DAYS = 7;
+const CLAIM_LABEL_PREFIX = 'agent:claimed:';
+
+async function releaseStaleClaimedIssues(outcomes) {
+  const cutoffMs = STALE_CLAIM_DAYS * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  for (const repo of MONITORED_REPOS) {
+    if (DENYLIST.has(repo)) continue;
+    let issues;
+    try {
+      issues = await gh('GET', `/repos/${ORG}/${repo}/issues?state=open&per_page=100`);
+    } catch (e) {
+      console.warn(`[StaleClaim] ${repo}: could not fetch issues: ${e.message}`);
+      continue;
+    }
+
+    for (const issue of issues) {
+      const labels = issue.labels.map(l => l.name);
+      const claimLabels = labels.filter(l => l.startsWith(CLAIM_LABEL_PREFIX));
+      if (claimLabels.length === 0) continue;
+
+      const updatedAt = new Date(issue.updated_at).getTime();
+      if (now - updatedAt < cutoffMs) continue;
+
+      // Verify no linked open PR before releasing the claim
+      // A simple heuristic: search for PRs referencing this issue number
+      let hasLinkedPR = false;
+      try {
+        const searchRes = await gh('GET', `/search/issues?q=repo:${ORG}/${repo}+is:pr+is:open+%23${issue.number}&per_page=5`);
+        hasLinkedPR = (searchRes.total_count ?? 0) > 0;
+      } catch {
+        // Search API rate-limited or unavailable — skip release to avoid false positives
+        continue;
+      }
+
+      if (hasLinkedPR) {
+        console.log(`[StaleClaim] ${repo}#${issue.number}: stale but has linked PR — skipping`);
+        continue;
+      }
+
+      console.log(`[StaleClaim] ${repo}#${issue.number}: releasing stale claim (${claimLabels.join(', ')}) after ${STALE_CLAIM_DAYS}d`);
+      for (const label of claimLabels) {
+        try {
+          await gh('DELETE', `/repos/${ORG}/${repo}/issues/${issue.number}/labels/${encodeURIComponent(label)}`);
+        } catch (e) {
+          console.warn(`[StaleClaim] could not remove ${label}: ${e.message.slice(0, 80)}`);
+        }
+      }
+      await postComment(
+        repo,
+        issue.number,
+        `🔄 Supervisor: releasing stale agent claim (${claimLabels.join(', ')}) — no activity for ${STALE_CLAIM_DAYS}+ days and no linked open PR. Issue is back in the queue.`,
+      );
+      outcomes.push(`♻️ ${repo}#${issue.number}: stale claim released (${claimLabels.join(', ')})`);
+    }
+  }
+}
+
+
 async function main() {
   const outcomes = [];
 
   // ── PR feedback loop first: clear stuck PRs before claiming new issues ──────
   await runPrFeedbackLoop(outcomes);
+
+  // Release stale agent claims so stuck issues can re-enter the queue
+  await releaseStaleClaimedIssues(outcomes);
 
   // Load pre-generated templates from templates.generated.json (built from docs/supervisor/plans/*.yml)
   const templates = await loadTemplates();
