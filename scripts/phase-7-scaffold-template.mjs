@@ -104,7 +104,7 @@ const STANDARD_PACKAGES = [
 /**
  * Step 1: Call scaffold.mjs to generate app structure
  */
-function scaffoldApp(appName, hyperdriveid, rateLimiterId) {
+function scaffoldApp(appName, hyperdriveId, rateLimiterId) {
   console.log(`\n1️⃣  Scaffolding ${appName} from Factory Core...\n`);
 
   const scaffoldPath = path.join(__dirname, '../packages/deploy/scripts/scaffold.mjs');
@@ -115,7 +115,7 @@ function scaffoldApp(appName, hyperdriveid, rateLimiterId) {
   }
 
   try {
-    const result = spawnSync('node', [scaffoldPath, appName, '--hyperdrive-id', hyperdriveid, '--rate-limiter-id', rateLimiterId, '--github'], {
+    const result = spawnSync('node', [scaffoldPath, appName, '--hyperdrive-id', hyperdriveId, '--rate-limiter-id', rateLimiterId, '--github'], {
       stdio: 'inherit'
     });
     if (result.status !== 0) throw new Error(`exit code ${result.status}`);

@@ -115,9 +115,10 @@ class Phase6Setup {
         try {
           const result = spawnSync('gh', ['secret', 'set', key, '--repo', `Latimer-Woods-Tech/${app}`, '--body', value], {
             env: { ...process.env, GITHUB_TOKEN: this.githubToken },
-            stdio: 'pipe'
+            stdio: 'pipe',
+            encoding: 'utf-8'
           });
-          if (result.status !== 0) throw new Error(result.stderr?.toString() ?? `exit code ${result.status}`);
+          if (result.status !== 0) throw new Error(result.stderr ?? `exit code ${result.status}`);
           console.log(`    ✅ ${key}`);
         } catch (e) {
           console.error(`    ❌ ${key}: ${e.message}`);
