@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
-const { execSync } = require('child_process');
+const { execSync, spawnSync } = require('child_process');
 
 const APPS = [
   'wordis-bond',
@@ -113,10 +113,12 @@ class Phase6Setup {
       
       for (const [key, value] of Object.entries(secrets)) {
         try {
-          execSync(`gh secret set ${key} --repo Latimer-Woods-Tech/${app} --body "${value}"`, {
+          const result = spawnSync('gh', ['secret', 'set', key, '--repo', `Latimer-Woods-Tech/${app}`, '--body', value], {
             env: { ...process.env, GITHUB_TOKEN: this.githubToken },
-            stdio: 'pipe'
+            stdio: 'pipe',
+            encoding: 'utf-8'
           });
+          if (result.status !== 0) throw new Error(result.stderr ?? `exit code ${result.status}`);
           console.log(`    ✅ ${key}`);
         } catch (e) {
           console.error(`    ❌ ${key}: ${e.message}`);
@@ -138,11 +140,13 @@ class Phase6Setup {
       
       for (const [key, value] of Object.entries(secrets)) {
         try {
-          execSync(`wrangler secret put ${key} --name ${app}`, {
+          const result = spawnSync('wrangler', ['secret', 'put', key, '--name', app], {
             input: value,
             env: { ...process.env, CF_API_TOKEN: this.cfToken },
-            stdio: 'pipe'
+            stdio: ['pipe', 'pipe', 'pipe'],
+            encoding: 'utf-8'
           });
+          if (result.status !== 0) throw new Error(result.stderr ?? `exit code ${result.status}`);
           console.log(`    ✅ ${key}`);
         } catch (e) {
           console.error(`    ❌ ${key}: ${e.message}`);

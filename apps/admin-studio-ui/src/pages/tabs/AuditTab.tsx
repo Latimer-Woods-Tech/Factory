@@ -12,16 +12,30 @@ import type { AuditEntry, AuditPage, Environment } from '@latimer-woods-tech/stu
 interface Filters {
   env: Environment | '';
   action: string;
+  actor: string;
+  requestId: string;
+  sessionId: string;
   from: string;
   to: string;
 }
 
-const EMPTY_FILTERS: Filters = { env: '', action: '', from: '', to: '' };
+const EMPTY_FILTERS: Filters = {
+  env: '',
+  action: '',
+  actor: '',
+  requestId: '',
+  sessionId: '',
+  from: '',
+  to: '',
+};
 
 function buildQuery(f: Filters, cursor: string | null): string {
   const p = new URLSearchParams();
   if (f.env) p.set('env', f.env);
   if (f.action.trim()) p.set('action', f.action.trim());
+  if (f.actor.trim()) p.set('actor', f.actor.trim());
+  if (f.requestId.trim()) p.set('requestId', f.requestId.trim());
+  if (f.sessionId.trim()) p.set('sessionId', f.sessionId.trim());
   if (f.from) p.set('from', f.from);
   if (f.to) p.set('to', f.to);
   if (cursor) p.set('cursor', cursor);
@@ -73,6 +87,12 @@ export function AuditTab() {
     setTimeout(() => load(false), 0);
   }
 
+  /** Deep-link to Timeline tab filtered by this requestId. */
+  function requestIdLink(requestId: string): string {
+    const p = new URLSearchParams({ requestId });
+    return `/timeline?${p.toString()}`;
+  }
+
   return (
     <div className="space-y-4">
       <header>
@@ -84,8 +104,9 @@ export function AuditTab() {
 
       <form
         onSubmit={applyFilters}
-        className="grid grid-cols-1 gap-3 rounded border border-slate-800 bg-slate-900 p-4 md:grid-cols-5"
+        className="grid grid-cols-1 gap-3 rounded border border-slate-800 bg-slate-900 p-4 md:grid-cols-4"
       >
+        {/* Row 1 */}
         <label className="text-xs text-slate-400">
           env
           <select
@@ -109,6 +130,35 @@ export function AuditTab() {
           />
         </label>
         <label className="text-xs text-slate-400">
+          actor (email or userId)
+          <input
+            value={filters.actor}
+            onChange={(e) => setFilters({ ...filters, actor: e.target.value })}
+            placeholder="e.g. alice@example.com"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+          />
+        </label>
+
+        {/* Row 2 */}
+        <label className="text-xs text-slate-400">
+          request ID
+          <input
+            value={filters.requestId}
+            onChange={(e) => setFilters({ ...filters, requestId: e.target.value })}
+            placeholder="exact X-Request-Id"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white font-mono"
+          />
+        </label>
+        <label className="text-xs text-slate-400">
+          session ID
+          <input
+            value={filters.sessionId}
+            onChange={(e) => setFilters({ ...filters, sessionId: e.target.value })}
+            placeholder="exact session ID"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white font-mono"
+          />
+        </label>
+        <label className="text-xs text-slate-400">
           from
           <input
             type="datetime-local"
@@ -126,7 +176,8 @@ export function AuditTab() {
             className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
           />
         </label>
-        <div className="md:col-span-5 flex gap-2">
+
+        <div className="md:col-span-4 flex gap-2">
           <button
             type="submit"
             className="rounded bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white"
@@ -158,8 +209,9 @@ export function AuditTab() {
             <tr>
               <th className="px-3 py-2">Time</th>
               <th className="px-3 py-2">Env</th>
-              <th className="px-3 py-2">User</th>
+              <th className="px-3 py-2">Actor</th>
               <th className="px-3 py-2">Action</th>
+              <th className="px-3 py-2">Request&nbsp;ID</th>
               <th className="px-3 py-2">Reversibility</th>
               <th className="px-3 py-2">Result</th>
             </tr>
@@ -171,8 +223,24 @@ export function AuditTab() {
                   {new Date(r.occurredAt).toLocaleString()}
                 </td>
                 <td className="px-3 py-1.5 text-slate-300">{r.env}</td>
-                <td className="px-3 py-1.5 text-slate-300">{r.userEmail}</td>
+                <td className="px-3 py-1.5 text-slate-300 text-xs">
+                  <div>{r.userEmail}</div>
+                  <div className="text-slate-500">{r.userRole}</div>
+                </td>
                 <td className="px-3 py-1.5 font-mono text-xs text-white">{r.action}</td>
+                <td className="px-3 py-1.5 font-mono text-xs">
+                  {r.requestId ? (
+                    <a
+                      href={requestIdLink(r.requestId)}
+                      title="View correlated events in Timeline"
+                      className="text-sky-400 hover:text-sky-300 hover:underline"
+                    >
+                      {r.requestId.slice(0, 8)}…
+                    </a>
+                  ) : (
+                    <span className="text-slate-600">—</span>
+                  )}
+                </td>
                 <td className="px-3 py-1.5 text-slate-400">{r.reversibility}</td>
                 <td className="px-3 py-1.5">
                   <span
@@ -191,14 +259,14 @@ export function AuditTab() {
             ))}
             {rows.length === 0 && !loading && (
               <tr>
-                <td colSpan={6} className="px-3 py-6 text-center text-slate-500">
+                <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
                   No entries match these filters.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={6} className="px-3 py-3 text-center text-slate-500">
+                <td colSpan={7} className="px-3 py-3 text-center text-slate-500">
                   Loading…
                 </td>
               </tr>
