@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../types.js';
 import { requireConfirmation } from '../middleware/require-confirmation.js';
 import { requireEnv } from '@latimer-woods-tech/studio-core';
-import { GitHubApiError, dispatchWorkflow } from '../lib/github-api.js';
+import { GitHubApiError, dispatchWorkflow, fetchDispatchedRunUrl } from '../lib/github-api.js';
 
 const deploy = new Hono<AppEnv>();
 
@@ -107,11 +107,16 @@ deploy.post(
     }
 
     try {
+      const dispatchedAt = new Date();
       await dispatchWorkflow(c.env.GITHUB_TOKEN, {
         workflowFile: plan.workflow,
         ref: plan.ref,
         inputs: plan.inputs,
       });
+
+      // Poll once for the real run URL. GitHub queues runs asynchronously so
+      // this may return null if the run hasn't appeared within ~3 s.
+      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, plan.workflow, dispatchedAt);
 
       c.set('auditAction', 'deploy.dispatch');
       c.set('auditResource', body.app);
@@ -119,6 +124,7 @@ deploy.post(
         env: plan.targetEnv,
         workflow: plan.workflow,
         ref: plan.ref,
+        runUrl,
         idempotencyKey: body.idempotencyKey ?? null,
       });
 
@@ -129,7 +135,7 @@ deploy.post(
           status: 'dispatched',
           workflow: plan.workflow,
           ref: plan.ref,
-          dispatchId: crypto.randomUUID(),
+          runUrl,
           idempotencyKey: body.idempotencyKey ?? null,
         },
         202,

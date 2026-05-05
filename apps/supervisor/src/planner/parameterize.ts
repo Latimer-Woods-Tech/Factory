@@ -10,7 +10,7 @@ export interface ParameterizedPlan {
   tier: 'green' | 'yellow' | 'red';
   steps: Array<{
     tool: string;
-    slots: Record<string, string>;
+    slots: Record<string, unknown>;
     side_effects: 'none' | 'read-external' | 'write-app' | 'write-external';
   }>;
   audit: {
@@ -42,14 +42,14 @@ export function parameterize(
 }
 
 function literalFill(
-  slots: Record<string, string>,
+  slots: Record<string, unknown>,
   ctx: { description: string; source: string },
-): Record<string, string> {
-  const out: Record<string, string> = {};
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(slots)) {
-    out[k] = v
-      .replace(/\{\{description\}\}/g, ctx.description)
-      .replace(/\{\{source\}\}/g, ctx.source);
+    out[k] = typeof v === 'string'
+      ? v.replace(/\{\{description\}\}/g, ctx.description).replace(/\{\{source\}\}/g, ctx.source)
+      : v;
   }
   return out;
 }
