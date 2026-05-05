@@ -12,11 +12,11 @@ preconditions:
 slots:
   - name: package_name
     type: string
-    validator: "(?s)^.{0,120}$"
+    validator: "^[\\s\\S]{0,120}$"
     source: issue_title
   - name: target_repo
     type: string
-    validator: "(?s)^.{0,120}$"
+    validator: "^[\\s\\S]{0,120}$"
     source: issue_title
 steps:
   - id: s1
