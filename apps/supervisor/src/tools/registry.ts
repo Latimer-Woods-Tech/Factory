@@ -1,6 +1,6 @@
 /**
  * Tool registry — each tool declares a name, scope, side_effects, and a
- * pure `invoke` function. Tools come from `apps/*/capabilities.yml` at
+ * pure `invoke` function. Tools come from each app's capabilities.yml at
  * runtime (SUP-3.2 forward-declarations). Phase 1 ships an empty registry
  * + the shape so SUP-3.5 can drop real tools in.
  */

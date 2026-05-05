@@ -3,7 +3,8 @@
  */
 import { useSession } from '../stores/session.js';
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
+// Strip any trailing slash from the base so `${API_BASE}/path` never produces `//path`.
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/$/, '');
 
 export interface ApiError extends Error {
   status: number;
