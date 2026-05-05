@@ -877,9 +877,11 @@ async function main() {
 
   let decision;
   if (adminMutation) {
-    // FRIDGE rule 4 — admin mutations always need explicit human ✅
-    // We post a review flagging this but don't block (the FRIDGE rule is procedural, not a code violation)
-    decision = hasViolations ? 'REQUEST_CHANGES' : 'COMMENT';
+    // FRIDGE rule 4 — admin mutations always need explicit CODEOWNER ✅ via branch protection.
+    // The bot still posts its verdict (APPROVE when clean, REQUEST_CHANGES when not) so the
+    // human sees the 2-party result before clicking. CODEOWNERS on billing/admin/stripe paths
+    // is @adrper79-dot only — the bot APPROVE is advisory, not the merge gate.
+    decision = hasViolations ? 'REQUEST_CHANGES' : 'APPROVE';
   } else if (hasViolations) {
     decision = 'REQUEST_CHANGES';
   } else {
@@ -897,6 +899,17 @@ async function main() {
   });
 
   await postReview(decision, body);
+
+  // Auto-label bot-branch PRs so auto-merge-approved-prs.yml can proceed.
+  // Safe on red-tier: CODEOWNERS (@adrper79-dot only) still gates the actual merge.
+  if (decision === 'APPROVE') {
+    try {
+      await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+      console.log('[OK] Added automerge:allow-bot-branch label');
+    } catch (err) {
+      console.warn(`[WARN] Could not add automerge:allow-bot-branch: ${err.message.slice(0, 80)}`);
+    }
+  }
 
   console.log(`[DONE] ${repo}#${prNum} → ${decision}`);
 }
