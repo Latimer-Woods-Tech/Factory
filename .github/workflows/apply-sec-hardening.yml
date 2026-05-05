@@ -1,0 +1,128 @@
+name: Apply Security Hardening
+# SEC-1 — Applies org-level security perimeter controls to the factory repo.
+# Run once manually after approval; policy-drift-guard.yml verifies on schedule.
+#
+# Addresses:
+#   SEC-1.2 — branch protection on factory main (require PRs, dismiss stale,
+#              require CODEOWNERS review, enforce linear history, block force pushes)
+#   SEC-1.3 — enable secret scanning + AI inference + validity checks + non-provider patterns
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      # SEC-1.2 — Branch protection for factory main
+      - name: Apply factory main branch protection (SEC-1.2)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          REPO="Latimer-Woods-Tech/factory"
+          echo "Applying branch protection to ${REPO} main…"
+
+          body=$(mktemp)
+          # enforce_admins=false keeps the factory-cross-repo App operational for emergency
+          # ops. Red-tier paths are protected separately via CODEOWNERS + supervisor denylist.
+          code=$(curl -sS -o "$body" -w "%{http_code}" \
+            -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "required_status_checks": {
+                "strict": true,
+                "contexts": []
+              },
+              "enforce_admins": false,
+              "required_pull_request_reviews": {
+                "dismiss_stale_reviews": true,
+                "require_code_owner_reviews": true,
+                "required_approving_review_count": 1,
+                "require_last_push_approval": false
+              },
+              "restrictions": null,
+              "allow_force_pushes": false,
+              "allow_deletions": false,
+              "required_linear_history": true,
+              "block_creations": false
+            }' \
+            "https://api.github.com/repos/${REPO}/branches/main/protection")
+
+          if [ "$code" = "200" ]; then
+            echo "✅ Branch protection applied to ${REPO} main."
+          elif [ "$code" = "403" ]; then
+            echo "::error::403 Forbidden — the token lacks admin:write on ${REPO}. Grant the factory-cross-repo App the 'administration: write' permission and re-run."
+            exit 1
+          else
+            echo "::error::Failed to apply branch protection (HTTP $code)."
+            cat "$body"
+            exit 1
+          fi
+
+      # SEC-1.3 — Secret scanning advanced features
+      - name: Enable secret scanning features (SEC-1.3)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          REPO="Latimer-Woods-Tech/factory"
+          echo "Enabling secret scanning features on ${REPO}…"
+
+          body=$(mktemp)
+          code=$(curl -sS -o "$body" -w "%{http_code}" \
+            -X PATCH \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "security_and_analysis": {
+                "secret_scanning":                        {"status": "enabled"},
+                "secret_scanning_push_protection":        {"status": "enabled"},
+                "secret_scanning_ai_inference":           {"status": "enabled"},
+                "secret_scanning_non_provider_patterns":  {"status": "enabled"},
+                "secret_scanning_validity_checks":        {"status": "enabled"}
+              }
+            }' \
+            "https://api.github.com/repos/${REPO}")
+
+          if [ "$code" = "200" ]; then
+            echo "✅ Secret scanning features enabled on ${REPO}."
+          elif [ "$code" = "403" ]; then
+            echo "::error::403 Forbidden — the token lacks admin:write or the repo requires GitHub Advanced Security (GHAS). Check https://github.com/Latimer-Woods-Tech/factory/settings/security_analysis and re-run once the permission or plan issue is resolved. (SEC-1.3)"
+            exit 1
+          elif [ "$code" = "422" ]; then
+            echo "::error::422 — one or more secret scanning features are not available on this plan. Check https://github.com/Latimer-Woods-Tech/factory/settings/security_analysis and enable the available features manually. (SEC-1.3)"
+            cat "$body"
+            exit 1
+          else
+            echo "::error::Unexpected response (HTTP $code)."
+            cat "$body"
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Security Hardening Applied" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Control | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SEC-1.2 Branch protection (factory main) | ✅ Applied |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SEC-1.3 Secret scanning features | ✅ Applied |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Next steps:**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- SEC-1.1 (Org 2FA): Enable at https://github.com/organizations/Latimer-Woods-Tech/settings/auth — must be done by an org owner via the UI." >> "$GITHUB_STEP_SUMMARY"
+          echo "- Verify all controls via the Policy Drift Guard workflow." >> "$GITHUB_STEP_SUMMARY"
