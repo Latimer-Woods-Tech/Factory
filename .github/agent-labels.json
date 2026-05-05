@@ -69,6 +69,11 @@
       "name": "risk:high",
       "color": "b60205",
       "description": "High-risk change: workflows, packages, wrangler config, or migrations"
+    },
+    {
+      "name": "supervisor:no-template",
+      "color": "b60205",
+      "description": "No template matched — Red tier, requires CODEOWNER to author template or handle manually"
     }
   ]
 }

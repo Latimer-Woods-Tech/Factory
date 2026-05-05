@@ -795,7 +795,26 @@ async function main() {
       const template = matchTemplate(ctx, templates);
       if (!template) {
         console.log(`[SKIP] ${repo}#${issue.number} "${issue.title}" — no template match`);
-        outcomes.push(`❓ ${repo}#${issue.number}: no template matched`);
+        await addLabels(repo, issue.number, ['supervisor:no-template']);
+        await postComment(
+          repo,
+          issue.number,
+          [
+            '🔴 **No supervisor template matched this issue.**',
+            '',
+            'This issue has been classified as **Red** and tagged `supervisor:no-template`.',
+            'The supervisor will not process it further.',
+            '',
+            'A CODEOWNER must either:',
+            '1. Author a matching template in `docs/supervisor/plans/` and re-run the supervisor, OR',
+            '2. Handle this issue manually.',
+            '',
+            'See [FRIDGE.md rule 9](/docs/supervisor/FRIDGE.md) — _"No matching template → Red + `supervisor:no-template`. Do not improvise."_',
+            '',
+            `_Run ID: ${RUN_ID}_`,
+          ].join('\n'),
+        );
+        outcomes.push(`🔴 ${repo}#${issue.number}: no template matched → labeled supervisor:no-template`);
         continue;
       }
 
