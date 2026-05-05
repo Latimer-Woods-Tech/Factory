@@ -11,6 +11,8 @@
 //   Red tier + no violations    → APPROVE with explicit red-tier notice
 //   /admin mutations (any tier) → REQUEST_CHANGES (FRIDGE rule 4)
 
+import { readFileSync } from 'node:fs';
+
 const ORG = 'Latimer-Woods-Tech';
 const REVIEW_BOT_LOGIN = 'factory-cross-repo[bot]';
 const MAX_DIFF_CHARS = 28_000;
@@ -225,58 +227,46 @@ function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
   return { violations, warnings };
 }
 
-// ─── Canonical constraint context (injected as cached system block) ───────────
+// ─── Canonical constraint context (loaded live from repo docs) ───────────────
+// Reads CLAUDE.md, FRIDGE.md, and the per-repo CLAUDE.md (if this is a
+// cross-repo review) at runtime so the reviewer always sees current constraints
+// rather than a stale hardcoded snapshot. Falls back to empty string per file
+// if the file is missing — the REVIEW_SCHEMA instructions still guide the LLM.
 
-const CONSTRAINT_BLOCK = `\
-## Factory Hard Constraints (CLAUDE.md)
-- Runtime: Cloudflare Workers only — no Node.js, no Docker, no VMs
-- Router: Hono only — never Express, Fastify, Next.js
-- Database: Neon Postgres via Hyperdrive binding (env.DB / c.env.DB)
-- Auth: JWT via Web Crypto API — never the \`jsonwebtoken\` package
-- LLM chain: Anthropic → Grok → Groq — never direct OpenAI in Workers
-- No \`process.env\` — use Hono or Worker bindings (c.env.VAR / env.VAR)
-- No Node.js built-ins: no \`fs\`, \`path\`, \`crypto\`, no \`node:\` imports
-- No CommonJS \`require()\` — ESM \`import\` / \`export\` only
-- No \`Buffer\` — use \`Uint8Array\`, \`TextEncoder\`, \`TextDecoder\`
-- No raw \`fetch\` without explicit error handling on every call
-- No secrets in source code or in wrangler.jsonc \`vars\` block
-- TypeScript strict mode — zero \`any\` in public APIs
-- Build: tsup ESM only — no CJS output
-- Test: Vitest + @cloudflare/vitest-pool-workers
+function loadDoc(filePath, maxChars = 8000) {
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    return content.length > maxChars ? content.slice(0, maxChars) + '\n\n[... truncated]' : content;
+  } catch {
+    return null;
+  }
+}
 
-## CRITICAL: Constraint Scope — Actions Runner vs Workers Runtime
-The constraints above apply ONLY to Cloudflare Workers source files (TypeScript/JavaScript
-that runs inside a V8 isolate). They do NOT apply to:
-- \`.github/workflows/\` — these are GitHub Actions YAML; they run on Ubuntu runners with
-  full Linux access (apt-get, psql, curl, bash, Node.js, Python, etc. are all valid).
-- \`.github/scripts/\` — Node.js scripts that run inside GitHub Actions jobs.
-- \`scripts/\` — local/CI helper scripts (also Node.js or bash).
+function buildConstraintBlock(repoName) {
+  const sections = [];
 
-If you see \`apt-get install\`, \`psql\`, \`curl\`, \`node scripts/\`, \`npm ci\`, \`wrangler deploy\`,
-or shell commands in a \`.github/workflows/\` file, do NOT flag them as Workers violations.
-They are CI runner commands and are correct and expected in that context.
+  const claudeMd = loadDoc('CLAUDE.md');
+  if (claudeMd) sections.push(`## CLAUDE.md — Factory Standing Orders\n\n${claudeMd}`);
 
-Only flag Workers constraint violations in files under \`apps/\`, \`packages/\`, or \`src/\`.
+  const fridge = loadDoc('docs/supervisor/FRIDGE.md', 4000);
+  if (fridge) sections.push(`## FRIDGE.md — Non-Negotiable Operating Rules\n\n${fridge}`);
 
-## FRIDGE Rules (non-negotiable operating rules)
-1. wordis-bond is off-limits to all automation — CODEOWNERS + denylist.
-2. No credentials in docs, memory, plans, issue bodies, PRs, or comments. Rotate if leaked; do not just delete from git.
-3. Red-tier paths are gated by the 2-party LLM review (Grok → Claude). You are the final gate. Apply the RED-TIER HARDCODED RULES above without exception.
-4. Every /admin mutation requires out-of-band CODEOWNER ✅ — plan-approval and PR-review do not substitute.
-5. Per-run LLM budget: $5 USD hard cap. On BUDGET_EXCEEDED: pause, label supervisor:budget-paused, file a human issue.
-6. Single-writer per app via LockDO. Claim lock before acting, renew every 10 min, release on close.
-7. Issues must carry supervisor:approved-source before supervisor pickup.
-8. Irreversible actions (deleting CF resources, rulesets, live email/SMS outside test mode) — flag as architectural_concern if the diff introduces them without a recovery path.
-9. No-template issues: classify Red, label supervisor:no-template. Do not invent plans from scratch.
-10. If the plan is wrong, file an issue against ARCHITECTURE.md. Tag a CODEOWNER. Do not improvise.
+  // Per-repo standing orders for cross-repo reviews (e.g. _external_reviews/coh/CLAUDE.md)
+  if (repoName && repoName !== 'factory') {
+    const perRepo = loadDoc(`_external_reviews/${repoName}/CLAUDE.md`, 4000);
+    if (perRepo) sections.push(`## ${repoName}/CLAUDE.md — Repo-Specific Standing Orders\n\n${perRepo}`);
+  }
 
-## Trust Tiers (CODEOWNERS)
-- 🟢 Green: docs/**, *.md, session/** — low risk, auto-approvable
-- 🟡 Yellow: apps/*/src/**, client/**, tests/** — review required, can approve if clean
-- 🔴 Red: .github/workflows/**, packages/**, migrations/**, wrangler configs, capabilities.yml, service-registry.yml, supervisor plans — LLM-gated, hardcoded rules apply
+  if (sections.length === 0) {
+    // Hard fallback — should never happen in a normal checkout
+    console.warn('[WARN] No canonical docs found on disk — falling back to minimal constraint set');
+    return '## Factory Hard Constraints\nSee CLAUDE.md and docs/supervisor/FRIDGE.md for full constraints.';
+  }
 
-## Package Dependency Order (violations = circular import risk)
-errors → monitoring → logger → realtime → auth → neon → stripe → llm → telephony → analytics → deploy → testing → email → copy → content → social → seo → crm → compliance → admin → video → schedule → validation`;
+  return sections.join('\n\n---\n\n');
+}
+
+const CONSTRAINT_BLOCK = buildConstraintBlock(REPO?.split('/')[1]);
 
 const REVIEW_SCHEMA = `\
 ## Your task
