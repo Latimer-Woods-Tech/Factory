@@ -32,6 +32,14 @@
         "pages": ["introduction", "quickstart"]
       },
       {
+        "group": "Architecture",
+        "pages": [
+          "architecture/FACTORY_V1",
+          "supervisor/ARCHITECTURE",
+          "supervisor/FRIDGE"
+        ]
+      },
+      {
         "group": "Foundations",
         "pages": [
           "packages/errors",
@@ -88,6 +96,16 @@
           "runbooks/database",
           "runbooks/slo",
           "runbooks/transfer"
+        ]
+      },
+      {
+        "group": "Governance",
+        "pages": [
+          "policies/humandesign-language-guidance",
+          "FACTORY_PACKAGE_MATRIX",
+          "APP_SCOPE_REGISTRY",
+          "DOCUMENTATION_HIERARCHY",
+          "operations/CANONICAL_LIBRARY_PROMOTION_PLAN"
         ]
       }
     ]
