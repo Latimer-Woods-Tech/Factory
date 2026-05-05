@@ -763,13 +763,17 @@ async function main() {
     return;
   }
 
-  // Don't re-review if we already have a review on this exact commit
+  // Don't re-review if we already have an active (non-dismissed) review on this exact commit.
+  // Dismissed reviews don't count — dismiss_stale_reviews_on_push invalidates old approvals
+  // when new commits land, so the bot must re-approve on the new SHA.
   const existingReviews = await gh('GET', `/repos/${ORG}/${repo}/pulls/${prNum}/reviews`);
   const alreadyReviewed = existingReviews.some(
-    r => r.user?.login === REVIEW_BOT_LOGIN && r.commit_id === PR_SHA,
+    r => r.user?.login === REVIEW_BOT_LOGIN &&
+         r.commit_id === PR_SHA &&
+         r.state !== 'DISMISSED',
   );
   if (alreadyReviewed) {
-    console.log('[SKIP] Already reviewed this commit');
+    console.log('[SKIP] Already reviewed this commit (active review exists)');
     return;
   }
 
