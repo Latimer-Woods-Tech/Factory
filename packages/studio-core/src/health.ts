@@ -69,6 +69,15 @@ export interface AuditQuery {
   userId?: string;
   /** Substring match against `action`. Case-insensitive. */
   action?: string;
+  /**
+   * Filter by actor: exact match on user_id OR case-insensitive substring
+   * match on user_email. Useful for operators tracking a specific account.
+   */
+  actor?: string;
+  /** Exact match on the `request_id` column (X-Request-Id header). */
+  requestId?: string;
+  /** Exact match on the `session_id` column. */
+  sessionId?: string;
   /** Lower bound (inclusive), ISO 8601. */
   from?: string;
   /** Upper bound (exclusive), ISO 8601. */
