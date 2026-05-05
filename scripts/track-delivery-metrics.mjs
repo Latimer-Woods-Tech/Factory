@@ -155,7 +155,12 @@ function formatSlackMessage(metrics) {
 
 function csvLine(metrics) {
   const timestamp = new Date().toISOString();
-  return `${timestamp},${metrics.leadTime.value},${metrics.deploymentFrequency.value},${metrics.changeFailureRate.value},${metrics.mttr.value}\n`;
+  // Explicitly coerce to Number to prevent HTTP taint from flowing into the file.
+  const leadTime = Number(metrics.leadTime.value);
+  const deployFreq = Number(metrics.deploymentFrequency.value);
+  const cfr = Number(metrics.changeFailureRate.value);
+  const mttr = Number(metrics.mttr.value);
+  return `${timestamp},${leadTime},${deployFreq},${cfr},${mttr}\n`;
 }
 
 async function postSlackMessage(payload) {
