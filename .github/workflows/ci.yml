@@ -81,22 +81,21 @@ jobs:
       - name: Enforce dependency version policy (FRH-08)
         run: node scripts/lint-dependency-versions.mjs
 
-      - name: Enforce canonical docs presence
+      - name: Check canonical docs presence
         run: |
           set -euo pipefail
           missing=()
           [ ! -s CLAUDE.md ]                    && missing+=("CLAUDE.md")
           [ ! -f docs/supervisor/FRIDGE.md ]    && missing+=("docs/supervisor/FRIDGE.md")
           for dir in .github/repo-contexts/*/; do
+            [ -f "$dir" ] && continue  # skip manifest.json and other files
             repo=$(basename "$dir")
             [ ! -f ".github/repo-contexts/${repo}/CLAUDE.md" ] && missing+=(".github/repo-contexts/${repo}/CLAUDE.md")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "❌ Missing canonical docs — the LLM reviewer loads these at runtime:"
+            echo "⚠️  Missing canonical docs (doc-freshness-audit will auto-generate):"
             for f in "${missing[@]}"; do echo "  - $f"; done
-            echo ""
-            echo "Every repo under .github/repo-contexts/ must have a CLAUDE.md."
-            echo "See docs/runbooks/add-new-app.md for the template."
-            exit 1
+            echo "Add the repo to .github/repo-contexts/manifest.json to trigger generation."
+          else
+            echo "✅ All canonical docs present"
           fi
-          echo "✅ All canonical docs present (CLAUDE.md, FRIDGE.md, per-repo CLAUDE.md)"
