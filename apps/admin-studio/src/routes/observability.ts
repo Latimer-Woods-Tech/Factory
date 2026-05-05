@@ -10,6 +10,8 @@
  */
 import { Hono } from 'hono';
 import type { AppEnv } from '../types.js';
+import { FACTORY_APPS, healthUrlFor } from '../lib/app-registry.js';
+import type { Environment } from '@latimer-woods-tech/studio-core';
 
 const observability = new Hono<AppEnv>();
 
@@ -41,10 +43,12 @@ observability.get('/sentry/issues', async (c) => {
   const limit = clamp(Number.parseInt(url.searchParams.get('limit') ?? '20', 10), 1, 100);
   const env = url.searchParams.get('env') ?? c.var.envContext.env;
 
+  const sentryCt = new AbortController();
+  const sentryTimer = setTimeout(() => sentryCt.abort(), 8_000);
   try {
     const res = await fetch(
       `https://sentry.io/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/?limit=${limit}&environment=${encodeURIComponent(env)}&statsPeriod=24h&query=is:unresolved`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` }, signal: sentryCt.signal },
     );
     if (!res.ok) {
       return c.json({ configured: true, error: `sentry-${res.status}`, issues: [] }, 502);
@@ -53,6 +57,8 @@ observability.get('/sentry/issues', async (c) => {
     return c.json({ configured: true, env, issues });
   } catch (err) {
     return c.json({ configured: true, error: (err as Error).message, issues: [] }, 502);
+  } finally {
+    clearTimeout(sentryTimer);
   }
 });
 
@@ -77,6 +83,8 @@ observability.get('/posthog/tiles', async (c) => {
 
   // Minimal viable tile: total events in last 24h via the Insights API.
   // Richer tiles (DAU, retention, conversion) land in Phase C.
+  const phCt = new AbortController();
+  const phTimer = setTimeout(() => phCt.abort(), 8_000);
   try {
     const res = await fetch(
       `${host}/api/projects/${encodeURIComponent(projectId)}/query/`,
@@ -92,19 +100,24 @@ observability.get('/posthog/tiles', async (c) => {
             query: `SELECT count() AS total FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR`,
           },
         }),
+        signal: phCt.signal,
       },
     );
     if (!res.ok) {
       return c.json({ configured: true, error: `posthog-${res.status}`, tiles: [] }, 502);
     }
-    const json: { results?: Array<[number]> } = await res.json();
-    const total = json.results?.[0]?.[0] ?? 0;
+    const json: { results?: unknown } = await res.json();
+    const rows = Array.isArray(json.results) ? json.results : [];
+    const firstRow = Array.isArray(rows[0]) ? (rows[0] as unknown[]) : [];
+    const total = typeof firstRow[0] === 'number' ? firstRow[0] : 0;
     const tiles: PostHogTile[] = [
       { id: 'events_24h', label: 'Events (24h)', value: total },
     ];
     return c.json({ configured: true, tiles });
   } catch (err) {
     return c.json({ configured: true, error: (err as Error).message, tiles: [] }, 502);
+  } finally {
+    clearTimeout(phTimer);
   }
 });
 
@@ -112,5 +125,68 @@ function clamp(n: number, min: number, max: number): number {
   if (!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, n));
 }
+
+// ── Telemetry contract coverage (ADM-7) ─────────────────────────────────────
+
+const TELEMETRY_ENDPOINTS = ['/api/admin/health', '/api/admin/metrics', '/api/admin/events'] as const;
+
+interface EndpointResult {
+  path: string;
+  status: 'ok' | 'missing' | 'error' | 'skipped';
+  httpStatus?: number;
+  latencyMs?: number;
+}
+
+interface AppCoverageRow {
+  id: string;
+  label: string;
+  endpoints: EndpointResult[];
+}
+
+/** Probe a single telemetry path with a 5-second timeout. */
+async function probeEndpoint(baseUrl: string, path: string): Promise<EndpointResult> {
+  const ct = new AbortController();
+  const timer = setTimeout(() => ct.abort(), 5_000);
+  const start = Date.now();
+  try {
+    const res = await fetch(`${baseUrl}${path}`, { signal: ct.signal });
+    const latencyMs = Date.now() - start;
+    if (res.status === 404) return { path, status: 'missing', httpStatus: 404, latencyMs };
+    if (res.ok || res.status === 401 || res.status === 403) {
+      // 401/403 means the endpoint exists but requires auth — counts as present
+      return { path, status: 'ok', httpStatus: res.status, latencyMs };
+    }
+    return { path, status: 'error', httpStatus: res.status, latencyMs };
+  } catch {
+    return { path, status: 'error', latencyMs: Date.now() - start };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+observability.get('/telemetry-coverage', async (c) => {
+  const env = (c.req.query('env') ?? c.var.envContext.env) as Environment;
+  if (env === 'local') {
+    return c.json({ env, apps: [] as AppCoverageRow[], note: 'Coverage checks not available for local environment.' });
+  }
+
+  const rows = await Promise.all(
+    FACTORY_APPS.map(async (app): Promise<AppCoverageRow> => {
+      const health = healthUrlFor(app, env);
+      if (!health) {
+        return {
+          id: app.id,
+          label: app.label,
+          endpoints: TELEMETRY_ENDPOINTS.map((p) => ({ path: p, status: 'skipped' as const })),
+        };
+      }
+      const base = health.replace(/\/health$/, '');
+      const endpoints = await Promise.all(TELEMETRY_ENDPOINTS.map((p) => probeEndpoint(base, p)));
+      return { id: app.id, label: app.label, endpoints };
+    }),
+  );
+
+  return c.json({ env, apps: rows });
+});
 
 export default observability;
