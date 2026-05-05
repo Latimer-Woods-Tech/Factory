@@ -17,7 +17,7 @@ slots:
     default: unknown
   - name: component
     type: string
-    validator: "(?s)^.{0,200}$"
+    validator: "^[\\s\\S]{0,200}$"
     source: issue_title
 steps:
   - id: s1
