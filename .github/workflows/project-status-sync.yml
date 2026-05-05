@@ -39,6 +39,7 @@ jobs:
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
           STATUS_FIELD_ID=$(gh api graphql -f query='query{ node(id:"'"$PROJECT_ID"'"){ ... on ProjectV2 { fields(first:20){ nodes{ ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -q '.data.node.fields.nodes[] | select(.name=="Status") | .id')
           OPTION_ID=$(gh api graphql -f query='query{ node(id:"'"$PROJECT_ID"'"){ ... on ProjectV2 { fields(first:20){ nodes{ ... on ProjectV2SingleSelectField { name options { id name } } } } } } }' -q '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="'"$TARGET_STATUS"'") | .id')
+          if [ -z "$OPTION_ID" ]; then echo "Status option '$TARGET_STATUS' not found on board — skipping"; exit 0; fi
           ITEM_ID=$(gh api graphql -f query='query{ node(id:"'"$PR_NODE_ID"'"){ ... on PullRequest { projectItems(first:10){ nodes{ id project { id } } } } } }' -q '.data.node.projectItems.nodes[] | select(.project.id=="'"$PROJECT_ID"'") | .id')
           if [ -z "$ITEM_ID" ]; then
             ITEM_ID=$(gh api graphql -f query='mutation{ addProjectV2ItemById(input:{projectId:"'"$PROJECT_ID"'", contentId:"'"$PR_NODE_ID"'"}){ item { id } } }' -q '.data.addProjectV2ItemById.item.id')
