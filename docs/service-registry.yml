@@ -223,6 +223,7 @@ workers:
 
   - id: videoking
     name: nichestream-api                                  # Cloudflare Worker serving VideoKing API
+    legacy_names: [videoking]                              # historical worker name used in docs; CF name is nichestream-api
     repo: Latimer-Woods-Tech/videoking
     url: https://api.itsjusus.com
     custom_domain: api.itsjusus.com
