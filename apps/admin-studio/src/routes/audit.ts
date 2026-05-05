@@ -6,7 +6,7 @@
  *   - admin/owner:   any user
  *
  * Filters:
- *   - env, userId, action (substring), from, to (ISO 8601)
+ *   - env, userId, action (substring), actor, requestId, sessionId, from, to (ISO 8601)
  *   - limit (1..200, default 50), cursor (ISO timestamp)
  *
  * @see packages/studio-core/src/health.ts for AuditQuery / AuditPage shape
@@ -32,6 +32,9 @@ audit.get('/', async (c) => {
   const query: AuditQuery = {
     env: env ?? ctx.env,
     action: params.get('action') ?? undefined,
+    actor: params.get('actor') ?? undefined,
+    requestId: params.get('requestId') ?? undefined,
+    sessionId: params.get('sessionId') ?? undefined,
     from: params.get('from') ?? undefined,
     to: params.get('to') ?? undefined,
     cursor: params.get('cursor') ?? undefined,
