@@ -109,7 +109,14 @@ apps.get('/health', async (c) => {
     return checkOne(app, env, target);
   }).filter((p): p is Promise<AppHealth> => p !== null);
 
-  const results = await Promise.all(checks);
+  const settled = await Promise.allSettled(checks);
+  const results = settled
+    .map((outcome) => {
+      if (outcome.status === 'fulfilled') return outcome.value;
+      console.warn(`[apps/health] check rejected: ${outcome.reason?.message ?? outcome.reason}`);
+      return null;
+    })
+    .filter((v): v is AppHealth => v !== null);
   results.sort((a, b) => {
     const s = severity(a.status) - severity(b.status);
     if (s !== 0) return s;

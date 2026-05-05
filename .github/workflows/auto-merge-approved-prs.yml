@@ -11,6 +11,10 @@ on:
       - reopened
       - ready_for_review
 
+concurrency:
+  group: auto-merge-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: read
@@ -20,9 +24,26 @@ jobs:
     if: |
       !github.event.pull_request.draft &&
       !contains(join(github.event.pull_request.labels.*.name, ','), 'no-automerge') &&
-      !contains(join(github.event.pull_request.labels.*.name, ','), 'needs-human')
+      !contains(join(github.event.pull_request.labels.*.name, ','), 'needs-human') &&
+      (
+        (
+          !startsWith(github.event.pull_request.head.ref, 'supervisor/') &&
+          !startsWith(github.event.pull_request.head.ref, 'copilot/')
+        ) ||
+        contains(join(github.event.pull_request.labels.*.name, ','), 'automerge:allow-bot-branch')
+      )
     runs-on: ubuntu-latest
     steps:
+      - name: Log auto-merge decision context
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          echo "PR number: $PR_NUMBER"
+          echo "PR branch: $PR_BRANCH"
+          echo "PR labels: $PR_LABELS"
+
       - name: Create GitHub App token
         uses: actions/create-github-app-token@v2
         id: app-token
