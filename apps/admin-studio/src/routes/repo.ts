@@ -40,16 +40,12 @@ const MAX_MESSAGE_BYTES = 4_096; // 4 KiB
 const MAX_PR_TITLE_BYTES = 256;
 const MAX_PR_BODY_BYTES = 16_384; // 16 KiB
 
-async function readJson<T>(c: Context<AppEnv>): Promise<T | { __error: string }> {
+async function readJson<T>(c: Context<AppEnv>): Promise<T> {
   try {
     return (await c.req.json()) as T;
-  } catch {
-    return { __error: 'invalid JSON body' };
+  } catch (err) {
+    throw Object.assign(new Error(`Invalid JSON body: ${err instanceof Error ? err.message : 'parse error'}`), { status: 400 });
   }
-}
-
-function isParseError<T>(v: T | { __error: string }): v is { __error: string } {
-  return typeof v === 'object' && v !== null && '__error' in v;
 }
 
 repo.get('/branches', async (c) => {
@@ -89,8 +85,10 @@ repo.get('/file', async (c) => {
 
 repo.post('/branches', async (c) => {
   if (!c.env.GITHUB_TOKEN) return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
-  const body = await readJson<RepoCreateBranchRequest>(c);
-  if (isParseError(body)) return c.json({ error: body.__error }, 400);
+  let body: RepoCreateBranchRequest;
+  try { body = await readJson<RepoCreateBranchRequest>(c); } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
   if (!body.name || !/^[A-Za-z0-9._/-]{1,128}$/.test(body.name)) {
     return c.json({ error: 'invalid branch name' }, 400);
   }
@@ -107,8 +105,10 @@ repo.post('/branches', async (c) => {
 
 repo.post('/commit', async (c) => {
   if (!c.env.GITHUB_TOKEN) return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
-  const body = await readJson<RepoCommitRequest>(c);
-  if (isParseError(body)) return c.json({ error: body.__error }, 400);
+  let body: RepoCommitRequest;
+  try { body = await readJson<RepoCommitRequest>(c); } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
   if (!body.path || body.path.includes('..')) return c.json({ error: 'invalid path' }, 400);
   if (!body.branch) return c.json({ error: 'branch required' }, 400);
   if (PROTECTED_BRANCHES.has(body.branch)) {
@@ -157,8 +157,10 @@ repo.post('/commit', async (c) => {
 
 repo.post('/pull-requests', async (c) => {
   if (!c.env.GITHUB_TOKEN) return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
-  const body = await readJson<RepoOpenPRRequest>(c);
-  if (isParseError(body)) return c.json({ error: body.__error }, 400);
+  let body: RepoOpenPRRequest;
+  try { body = await readJson<RepoOpenPRRequest>(c); } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
   if (!body.head || !body.title) return c.json({ error: 'head + title required' }, 400);
   if (PROTECTED_BRANCHES.has(body.head)) {
     return c.json({ error: 'head must not be a protected branch' }, 400);

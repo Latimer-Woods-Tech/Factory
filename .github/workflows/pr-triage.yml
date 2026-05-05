@@ -97,7 +97,34 @@ jobs:
           const hasApps = paths.some(p => p.startsWith('apps/'));
           const hasTests = paths.some(p => p.startsWith('tests/'));
 
+          const hasAuth = paths.some(p =>
+            /^packages\/auth\//.test(p) ||
+            /\/auth\//.test(p) ||
+            /auth\.(ts|js|mjs)$/.test(p) ||
+            /jwt\.(ts|js|mjs)$/.test(p)
+          );
+          const hasMigrations = paths.some(p =>
+            /^migrations\//.test(p) ||
+            /\/migrations\//.test(p) ||
+            /\.sql$/.test(p)
+          );
+          // risk:high mirrors the Red-tier paths from pr-review.mjs
+          const isHighRisk = paths.some(p =>
+            /^\.github\/workflows\//.test(p) ||
+            /^\.github\/scripts\//.test(p) ||
+            /^packages\//.test(p) ||
+            /^migrations\//.test(p) ||
+            /\/migrations\//.test(p) ||
+            /wrangler\.(jsonc?|toml)$/.test(p) ||
+            /^scripts\//.test(p) ||
+            /handlers\/(billing|admin|stripe)/.test(p) ||
+            /docs\/service-registry\.yml$/.test(p)
+          );
+
           if (hasCI) labels.add('area:ci');
+          if (hasAuth) labels.add('area:auth');
+          if (hasMigrations) labels.add('area:migrations');
+          if (isHighRisk) labels.add('risk:high');
           if (hasDocs) labels.add('documentation');
           if (!hasCI && !hasDocs && hasPackages) labels.add('engineering');
           if (hasTests && !hasCI) labels.add('hardening');
