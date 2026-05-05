@@ -3,9 +3,9 @@ version: 1
 tier: yellow
 triggers:
   labels_any_of: [engineering, hardening, enhancement]
-  title_pattern: "(?i)(feat\\(ci\\)|feat\\(triage\\)|feat\\(review\\)|feat\\(reliability\\)|feat\\(process\\)|chore\\(ci\\)|chore\\(process\\)|chore\\(governance\\))"
+  title_pattern: "(feat\\(ci\\)|feat\\(triage\\)|feat\\(review\\)|feat\\(reliability\\)|feat\\(process\\)|chore\\(ci\\)|chore\\(process\\)|chore\\(governance\\))"
   body_patterns:
-    - "(?i)(github actions|workflow|.github/workflows|ci check|path.based|required.check)"
+    - "(github actions|workflow|\\.github/workflows|ci check|path\\.based|required\\.check)"
 preconditions:
   - capability_exists: github.readFile
   - capability_exists: github.openPR
