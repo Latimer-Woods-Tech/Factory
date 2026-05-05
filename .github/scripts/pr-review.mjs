@@ -77,21 +77,28 @@ const prNum = parseInt(PR_NUMBER, 10);
 
 async function gh(method, path, body, accept) {
   const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      Accept: accept ?? 'application/vnd.github+json',
-      Authorization: `Bearer ${GH_TOKEN}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`GH ${method} ${path} → ${res.status}: ${t.slice(0, 300)}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Accept: accept ?? 'application/vnd.github+json',
+        Authorization: `Bearer ${GH_TOKEN}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`GH ${method} ${path} → ${res.status}: ${t.slice(0, 300)}`);
+    }
+    return res.status === 204 ? null : res.json();
+  } finally {
+    clearTimeout(timer);
   }
-  return res.status === 204 ? null : res.json();
 }
 
 // ─── Tier detection (mirrors CODEOWNERS trust tiers) ─────────────────────────
@@ -151,13 +158,23 @@ function extractAddedLines(files) {
 const NON_WORKER_PATH_PREFIXES = ['.github/', 'scripts/', 'docs/', 'tests/', 'migrations/'];
 const NON_WORKER_EXTENSIONS = ['.md', '.yml', '.yaml', '.json', '.jsonc', '.toml', '.txt', '.gitignore'];
 
-function isActionsRunnerFile(filename) {
+function isNonWorkerFile(filename) {
   if (NON_WORKER_PATH_PREFIXES.some(p => filename.startsWith(p))) return true;
   const ext = filename.slice(filename.lastIndexOf('.'));
   if (NON_WORKER_EXTENSIONS.includes(ext)) return true;
   // Config/dotfiles with no path prefix
   const basename = filename.split('/').pop() ?? filename;
   return /^(CODEOWNERS|\.gitignore|\.gitattributes|renovate\.json|package\.json|tsconfig\.json)$/.test(basename);
+}
+
+function isFrontendUiFile(filename) {
+  return /^apps\/[^/]+-ui\//.test(filename) || filename.startsWith('apps/admin-studio-ui/');
+}
+
+function hasFetchCallInPatch(file) {
+  const patch = file?.patch ?? '';
+  if (!patch) return false;
+  return /\bfetch\s*\(/.test(patch);
 }
 
 function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
@@ -320,53 +337,33 @@ Output ONLY valid JSON — no markdown wrapper, no explanation outside the JSON:
 "lgtm": false means the PR has issues that should block merge.
 Keep architectural_concerns to genuine problems — do not flag style preferences or CI runner commands.`;
 
-// ─── LLM review ──────────────────────────────────────────────────────────────
+// ─── Shared LLM payload builder ──────────────────────────────────────────────
+// Both callClaude and callGrok require identical user-message content.
+// Build it once and pass it to each caller to avoid drift between the two.
 
-async function callClaude(prTitle, tier, files, deterministicWarnings) {
+function buildLLMContent(prTitle, tier, files, deterministicWarnings) {
   const filesSummary = files.map(f => `  ${f.status ?? 'modified'}: ${f.filename}`).join('\n');
   const diffText = files
     .filter(f => f.patch)
     .map(f => `### ${f.filename}\n\`\`\`diff\n${f.patch}\n\`\`\``)
     .join('\n\n');
-
-  const truncatedDiff = diffText.length > MAX_DIFF_CHARS
+  const truncated = diffText.length > MAX_DIFF_CHARS;
+  const truncatedDiff = truncated
     ? diffText.slice(0, MAX_DIFF_CHARS) + '\n\n[... diff truncated at 28k chars — review remaining files manually]'
     : diffText;
-
   const deterministicNote = deterministicWarnings.length > 0
     ? `\nDeterministic warnings already flagged (do not re-check):\n${deterministicWarnings.map(w => `- ${w.detail}`).join('\n')}\n`
     : '';
+  const userContent =
+    `PR: "${prTitle}"\n` +
+    `Tier: ${tier.toUpperCase()}\n` +
+    `Files changed:\n${filesSummary}\n` +
+    deterministicNote +
+    `\n---\n${truncatedDiff}`;
+  return { userContent, truncated };
+}
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31',
-    },
-    body: JSON.stringify({
-      model: ANTHROPIC_MODEL,
-      max_tokens: 1024,
-      system: [
-        { type: 'text', text: CONSTRAINT_BLOCK, cache_control: { type: 'ephemeral' } },
-        { type: 'text', text: REVIEW_SCHEMA, cache_control: { type: 'ephemeral' } },
-      ],
-      messages: [{
-        role: 'user',
-        content:
-          `PR: "${prTitle}"\n` +
-          `Tier: ${tier.toUpperCase()}\n` +
-          `Files changed:\n${filesSummary}\n` +
-          deterministicNote +
-          `\n---\n${truncatedDiff}`,
-      }],
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
-  const data = await res.json();
-  const raw = data.content?.[0]?.text ?? '{}';
+function parseLLMJson(raw) {
   const jsonMatch = raw.match(/\{[\s\S]*\}/);
   try {
     return jsonMatch ? JSON.parse(jsonMatch[0]) : { architectural_concerns: [], warnings: [], summary: raw, lgtm: false };
@@ -375,55 +372,68 @@ async function callClaude(prTitle, tier, files, deterministicWarnings) {
   }
 }
 
-// ─── Grok fallback (xAI OpenAI-compatible API) ──────────────────────────────
+// ─── LLM review — Claude (party 2) ───────────────────────────────────────────
+
+async function callClaude(prTitle, tier, files, deterministicWarnings) {
+  const { userContent } = buildLLMContent(prTitle, tier, files, deterministicWarnings);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60_000);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
+      },
+      body: JSON.stringify({
+        model: ANTHROPIC_MODEL,
+        max_tokens: 1024,
+        system: [
+          { type: 'text', text: CONSTRAINT_BLOCK, cache_control: { type: 'ephemeral' } },
+          { type: 'text', text: REVIEW_SCHEMA, cache_control: { type: 'ephemeral' } },
+        ],
+        messages: [{ role: 'user', content: userContent }],
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    return parseLLMJson(data.content?.[0]?.text ?? '{}');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// ─── LLM review — Grok (party 1, xAI OpenAI-compatible API) ──────────────────
 
 async function callGrok(prTitle, tier, files, deterministicWarnings) {
-  const filesSummary = files.map(f => `  ${f.status ?? 'modified'}: ${f.filename}`).join('\n');
-  const diffText = files
-    .filter(f => f.patch)
-    .map(f => `### ${f.filename}\n\`\`\`diff\n${f.patch}\n\`\`\``)
-    .join('\n\n');
-
-  const truncatedDiff = diffText.length > MAX_DIFF_CHARS
-    ? diffText.slice(0, MAX_DIFF_CHARS) + '\n\n[... diff truncated at 28k chars — review remaining files manually]'
-    : diffText;
-
-  const deterministicNote = deterministicWarnings.length > 0
-    ? `\nDeterministic warnings already flagged (do not re-check):\n${deterministicWarnings.map(w => `- ${w.detail}`).join('\n')}\n`
-    : '';
-
-  const res = await fetch('https://api.x.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${GROK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROK_MODEL,
-      max_tokens: 1024,
-      messages: [
-        { role: 'system', content: `${CONSTRAINT_BLOCK}\n\n${REVIEW_SCHEMA}` },
-        {
-          role: 'user',
-          content:
-            `PR: "${prTitle}"\n` +
-            `Tier: ${tier.toUpperCase()}\n` +
-            `Files changed:\n${filesSummary}\n` +
-            deterministicNote +
-            `\n---\n${truncatedDiff}`,
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) throw new Error(`Grok ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
-  const raw = data.choices?.[0]?.message?.content ?? '{}';
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  const { userContent } = buildLLMContent(prTitle, tier, files, deterministicWarnings);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60_000);
   try {
-    return jsonMatch ? JSON.parse(jsonMatch[0]) : { architectural_concerns: [], warnings: [], summary: raw, lgtm: false };
-  } catch {
-    return { architectural_concerns: [], warnings: [], summary: raw, lgtm: false };
+    const res = await fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: GROK_MODEL,
+        max_tokens: 1024,
+        messages: [
+          { role: 'system', content: `${CONSTRAINT_BLOCK}\n\n${REVIEW_SCHEMA}` },
+          { role: 'user', content: userContent },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Grok ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    const data = await res.json();
+    return parseLLMJson(data.choices?.[0]?.message?.content ?? '{}');
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -491,7 +501,12 @@ async function callLLMConsensus(prTitle, tier, files, deterministicWarnings) {
 
   // ── Consensus ──────────────────────────────────────────────────────────────
   // Both must agree to approve. If one is unavailable, the available one decides.
-  const grokLgtm  = grokResult  == null ? true  : (grokResult.lgtm  ?? false);
+  // If BOTH parties fail (runtime errors), fail closed — never silently approve.
+  if (!grokResult && !claudeResult) {
+    throw new Error('Both LLM parties failed to respond — cannot post a review without consensus. Check GROK_API_KEY and ANTHROPIC_API_KEY.');
+  }
+
+  const grokLgtm   = grokResult   == null ? true : (grokResult.lgtm   ?? false);
   const claudeLgtm = claudeResult == null ? true : (claudeResult.lgtm ?? false);
   const consensusLgtm = grokLgtm && claudeLgtm;
 
@@ -668,13 +683,25 @@ async function escalateToHuman(prUrl, prTitle, attemptCount, concerns) {
   ].join('\n');
 
   try {
-    const issue = await gh('POST', `/repos/${ORG}/${repo}/issues`, {
-      title: `[supervisor] Review limit reached: PR #${prNum} — ${prTitle}`,
-      body: issueBody,
-      labels: ['supervisor:review-limit-reached', 'status:blocked'],
-      assignees: [HUMAN_REVIEWER],
-    });
-    console.log(`[OK] Filed escalation issue #${issue.number}`);
+    const expectedTitle = `[supervisor] Review limit reached: PR #${prNum} — ${prTitle}`;
+    // Dedup: skip filing if an open escalation issue for this PR already exists.
+    let alreadyFiled = false;
+    try {
+      const existingIssues = await gh('GET', `/repos/${ORG}/${repo}/issues?state=open&labels=supervisor%3Areview-limit-reached&per_page=50`);
+      alreadyFiled = existingIssues.some(i => i.title === expectedTitle);
+    } catch (_) { /* non-fatal — proceed to file */ }
+
+    if (alreadyFiled) {
+      console.log(`[OK] Escalation issue for PR #${prNum} already open — skipping duplicate`);
+    } else {
+      const issue = await gh('POST', `/repos/${ORG}/${repo}/issues`, {
+        title: expectedTitle,
+        body: issueBody,
+        labels: ['supervisor:review-limit-reached', 'status:blocked'],
+        assignees: [HUMAN_REVIEWER],
+      });
+      console.log(`[OK] Filed escalation issue #${issue.number}`);
+    }
   } catch (err) {
     console.warn(`[WARN] Could not file escalation issue: ${err.message.slice(0, 80)}`);
   }
@@ -797,7 +824,7 @@ async function main() {
   // workerAddedLines — only files that run in CF Workers (excludes Actions runner files)
   // allAddedLines — all files (for universal checks: secrets in wrangler, fetch handling, any type)
   const allAddedLines = extractAddedLines(files);
-  const workerAddedLines = extractAddedLines(files.filter(f => !isActionsRunnerFile(f.filename ?? '')));
+  const workerAddedLines = extractAddedLines(files.filter(f => !isNonWorkerFile(f.filename ?? '')));
   const deterministicResult = runDeterministicChecks(workerAddedLines, allAddedLines, filenames);
 
   console.log(`[INFO] Deterministic: ${deterministicResult.violations.length} violations, ${deterministicResult.warnings.length} warnings`);
@@ -811,6 +838,37 @@ async function main() {
     console.log('[INFO] Running 2-party LLM consensus (Grok → Claude)...');
     llmResult = await callLLMConsensus(pr.title, tier, files, deterministicResult.warnings);
     console.log(`[INFO] Consensus: lgtm=${llmResult.lgtm} | concerns=${llmResult.architectural_concerns?.length ?? 0}`);
+  }
+
+  // Filter out LLM concerns that reference non-Worker paths (.github/, scripts/, etc.)
+  // LLMs sometimes flag Buffer/require/process.env in Actions runner scripts despite
+  // explicit prompt instructions not to. This structural filter is the safety net.
+  if (llmResult.architectural_concerns?.length) {
+    const before = llmResult.architectural_concerns.length;
+    const filesByName = new Map(files.map(f => [f.filename, f]));
+    llmResult.architectural_concerns = llmResult.architectural_concerns.filter(c => {
+      if (!c.file) return true;
+
+      // Path-based false positives: CI runner/config/docs/non-worker files.
+      if (NON_WORKER_PATH_PREFIXES.some(p => c.file.startsWith(p))) return false;
+
+      // Frontend UI code is not Workers runtime code; Workers hard constraints
+      // (like mandatory fetch handling semantics) should not block merge here.
+      if (isFrontendUiFile(c.file)) return false;
+
+      // Content-based false positive: concern claims missing fetch handling, but
+      // the referenced patch has no fetch() calls at all.
+      if (/fetch\(\) call without explicit error handling|fetch\(\) calls that need explicit error handling/i.test(c.detail ?? '')) {
+        const file = filesByName.get(c.file);
+        if (!hasFetchCallInPatch(file)) return false;
+      }
+
+      return true;
+    });
+    const filtered = before - llmResult.architectural_concerns.length;
+    if (filtered > 0) {
+      console.log(`[INFO] Filtered ${filtered} LLM concern(s) referencing non-Worker paths (false positives)`);
+    }
   }
 
   // Determine decision

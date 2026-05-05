@@ -15,7 +15,7 @@ slots:
     source: issue_body | issue_title
   - name: file_to_delete
     type: string
-    validator: "^[a-zA-Z0-9/_.-]+\.(?:js|ts)$"
+    validator: '^[a-zA-Z0-9/_.-]+\.(?:js|ts)$'
     source: issue_body
   - name: repo
     type: string
