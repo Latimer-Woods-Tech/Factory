@@ -33,6 +33,18 @@ async function gh(method, path, data) {
   return res.status === 204 ? null : res.json();
 }
 
+// ─── Author trust classification ──────────────────────────────────────────
+// Only CODEOWNERs and verified bot accounts (name ending in [bot]) may
+// self-approve issues for supervisor pickup. Unknown external authors are
+// quarantined so a CODEOWNER can triage before automation acts on them.
+const TRUSTED_HUMAN_LOGINS = new Set(['adrper79-dot']);
+
+function classifyAuthor(login = '') {
+  if (TRUSTED_HUMAN_LOGINS.has(login)) return 'codeowner';
+  if (login.endsWith('[bot]')) return 'bot';
+  return 'external';
+}
+
 // ─── Deterministic classification ──────────────────────────────────────────
 function deterministicLabels() {
   const out = [];
@@ -56,9 +68,6 @@ function deterministicLabels() {
   // Domain
   if (/(llm|anthropic|openai|claude|gpt|gemini|ai.model|inference)/.test(text)) out.push('llm');
   if (/(sentry|error.*track|exception.*track)/.test(text)) out.push('source:sentry');
-  // Always stamp
-  out.push('source:human');
-  out.push('supervisor:approved-source');
   return out;
 }
 
@@ -104,7 +113,20 @@ if (alreadyLabeled.includes('supervisor:approved-source')) {
   process.exit(0);
 }
 
+const authorClass = classifyAuthor(currentIssue.user?.login ?? '');
+console.log(`[triage] author=${currentIssue.user?.login} class=${authorClass}`);
+
 const proposed = deterministicLabels();
+
+// Trust-gated labels: only CODEOWNERs/bots get supervisor pickup.
+// External contributors get quarantine so a CODEOWNER can triage first.
+if (authorClass === 'codeowner') {
+  proposed.push('source:human', 'supervisor:approved-source');
+} else if (authorClass === 'bot') {
+  proposed.push('supervisor:approved-source');
+} else {
+  proposed.push('quarantine');
+}
 const typeLabels = ['bug', 'enhancement', 'documentation', 'dependencies', 'hardening', 'question'];
 const hasType = proposed.some(l => typeLabels.includes(l));
 
