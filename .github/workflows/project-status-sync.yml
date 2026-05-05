@@ -77,7 +77,7 @@ jobs:
           for N in $ISSUE_NUMS; do
             ISSUE_NODE=$(gh api "/repos/$REPO/issues/$N" --jq .node_id 2>/dev/null || echo "")
             if [ -z "$ISSUE_NODE" ]; then echo "#$N not found, skipping"; continue; fi
-            ITEM_ID=$(gh api graphql -f query='query($projectId: ID!) { node(id: $projectId) { ... on ProjectV2 { items(first: 100) { nodes { id content { ... on Issue { id } } } } } } }' -f projectId="$PROJECT_ID" --jq ".data.node.items.nodes[] | select(.content.id==\"$ISSUE_NODE\") | .id" 2>/dev/null || echo "")
+            ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id" 2>/dev/null || echo "")
             if [ -z "$ITEM_ID" ]; then echo "#$N not on board, skipping"; continue; fi
             gh api graphql -f query='mutation($p: ID!, $i: ID!, $f: ID!, $v: String!) { updateProjectV2ItemFieldValue(input: { projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $v } }) { projectV2Item { id } } }' -f p="$PROJECT_ID" -f i="$ITEM_ID" -f f="$FIELD_ID" -f v="$IN_PROGRESS_OPT"
             echo "✓ #$N → In Progress"
