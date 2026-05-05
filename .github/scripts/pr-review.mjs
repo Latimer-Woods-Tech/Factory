@@ -261,35 +261,19 @@ Only flag Workers constraint violations in files under \`apps/\`, \`packages/\`,
 ## FRIDGE Rules (non-negotiable operating rules)
 1. wordis-bond is off-limits to all automation — CODEOWNERS + denylist.
 2. No credentials in docs, memory, plans, issue bodies, PRs, or comments. Rotate if leaked; do not just delete from git.
-3. Red-tier paths never auto-merge: .github/workflows/**, packages/**, migrations/**, Stripe code, production wrangler config, production Neon user tables.
+3. Red-tier paths are gated by the 2-party LLM review (Grok → Claude). You are the final gate. Apply the RED-TIER HARDCODED RULES above without exception.
 4. Every /admin mutation requires out-of-band CODEOWNER ✅ — plan-approval and PR-review do not substitute.
 5. Per-run LLM budget: $5 USD hard cap. On BUDGET_EXCEEDED: pause, label supervisor:budget-paused, file a human issue.
 6. Single-writer per app via LockDO. Claim lock before acting, renew every 10 min, release on close.
 7. Issues must carry supervisor:approved-source before supervisor pickup.
-8. Irreversible actions require explicit human approval — includes deleting CF resources, rulesets, Stripe mutations, live email/SMS outside test mode.
+8. Irreversible actions (deleting CF resources, rulesets, live email/SMS outside test mode) — flag as architectural_concern if the diff introduces them without a recovery path.
 9. No-template issues: classify Red, label supervisor:no-template. Do not invent plans from scratch.
 10. If the plan is wrong, file an issue against ARCHITECTURE.md. Tag a CODEOWNER. Do not improvise.
 
 ## Trust Tiers (CODEOWNERS)
 - 🟢 Green: docs/**, *.md, session/** — low risk, auto-approvable
 - 🟡 Yellow: apps/*/src/**, client/**, tests/** — review required, can approve if clean
-- 🔴 Red: .github/workflows/**, packages/**, migrations/**, wrangler configs, capabilities.yml, service-registry.yml, supervisor plans — highest risk
-
-1. wordis-bond is off-limits to all automation — CODEOWNERS + denylist.
-2. No credentials in docs, memory, plans, issue bodies, PRs, or comments. Rotate if leaked; do not just delete from git.
-3. Red-tier paths never auto-merge: .github/workflows/**, packages/**, migrations/**, Stripe code, production wrangler config, production Neon user tables.
-4. Every /admin mutation requires out-of-band CODEOWNER ✅ — plan-approval and PR-review do not substitute.
-5. Per-run LLM budget: $5 USD hard cap. On BUDGET_EXCEEDED: pause, label supervisor:budget-paused, file a human issue.
-6. Single-writer per app via LockDO. Claim lock before acting, renew every 10 min, release on close.
-7. Issues must carry supervisor:approved-source before supervisor pickup.
-8. Irreversible actions require explicit human approval — includes deleting CF resources, rulesets, Stripe mutations, live email/SMS outside test mode.
-9. No-template issues: classify Red, label supervisor:no-template. Do not invent plans from scratch.
-10. If the plan is wrong, file an issue against ARCHITECTURE.md. Tag a CODEOWNER. Do not improvise.
-
-## Trust Tiers (CODEOWNERS)
-- 🟢 Green: docs/**, *.md, session/** — low risk, auto-approvable
-- 🟡 Yellow: apps/*/src/**, client/**, tests/** — review required, can approve if clean
-- 🔴 Red: .github/workflows/**, packages/**, migrations/**, wrangler configs, capabilities.yml, service-registry.yml, supervisor plans — highest risk
+- 🔴 Red: .github/workflows/**, packages/**, migrations/**, wrangler configs, capabilities.yml, service-registry.yml, supervisor plans — LLM-gated, hardcoded rules apply
 
 ## Package Dependency Order (violations = circular import risk)
 errors → monitoring → logger → realtime → auth → neon → stripe → llm → telephony → analytics → deploy → testing → email → copy → content → social → seo → crm → compliance → admin → video → schedule → validation`;
@@ -308,7 +292,8 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - The design of the PR review pipeline itself (trust tiers, bot review, 2-party consensus, CODEOWNERS structure).
   These are intentional governance choices made by the repository owners.
 - CODEOWNERS file changes — the bot co-ownership assignments are deliberate and correct.
-  The bot is ONLY listed as co-owner on green/yellow paths (docs, apps/*/src); red paths still require human CODEOWNER approval.
+  The bot is listed as co-owner on ALL tiers (green, yellow, red); this is intentional and correct.
+  EXCEPTION: Flag as CRITICAL if a CODEOWNERS change removes @adrper79-dot from any path — that removes the human safety anchor.
 - Architectural patterns or system design decisions that are documented in CLAUDE.md, FRIDGE.md, or CODEOWNERS.
 - Style preferences, naming conventions, or subjective code organization.
 - GitHub Actions workflow changes (syntax, steps, shell commands) — these are not Workers code.
@@ -349,6 +334,32 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - Synchronous CPU loop > ~5ms estimated wall time (Workers have a 10ms CPU subrequest limit in the free tier, 30ms paid — flag obvious offenders like sorting large arrays, heavy regex on large strings)
 - Streaming response (`TransformStream`, SSE) that never closes on error path (leaks the connection)
 - KV or R2 used for data that requires strong consistency (flag if the comment or logic implies read-your-writes guarantee)
+
+### RED-TIER HARDCODED RULES — these override lgtm:true. Apply when the PR touches these paths.
+
+#### GitHub Actions security (.github/workflows/**, .github/scripts/**)
+These run with GITHUB_TOKEN repo access and can exfiltrate all secrets or rewrite code.
+You are the ONLY gate — flag any of these as architectural_concern and set lgtm:false:
+- CRITICAL: User-controlled data interpolated directly into a `run:` shell step — e.g., `run: echo "${{ github.event.pull_request.title }}"` or any `${{ github.event.* }}` / `${{ github.head_ref }}` / `${{ inputs.* }}` used directly in shell. Script injection. Fix is always `env: { VAR: "${{ ... }}" }` then reference `$VAR` in shell.
+- CRITICAL: `pull_request_target` trigger combined with `actions/checkout` of the PR head SHA or branch — allows arbitrary code from a fork to execute with elevated token. Flag any workflow with `on: pull_request_target` that also checks out the PR head.
+- CRITICAL: Third-party `uses:` action pinned to a mutable ref (tag like `@v3`, branch like `@main`) rather than a full commit SHA — tag can be moved to point to malicious code. Only exempt actions in the `actions/*`, `github/*`, or `Latimer-Woods-Tech/*` namespaces from this rule.
+- CRITICAL: `.github/CODEOWNERS` change that removes `@adrper79-dot` from ANY path — eliminates the human safety anchor from the trust model.
+- Warning: Secrets passed via `with:` to third-party actions — prefer passing via `env:` to limit surface.
+- Warning: Job declares `permissions: write-all` or `contents: write` when triggered by an external event (pull_request, issues, etc.) — scope to least privilege.
+
+#### Database migrations (migrations/**, workers/src/db/migrations/**)
+Migrations are irreversible on production. You are the ONLY gate:
+- CRITICAL: `DROP TABLE` or `DROP COLUMN` with no corresponding rollback/down migration in the same PR — data loss with no recovery path.
+- CRITICAL: Adding a NOT NULL column without a DEFAULT value to a table that has existing rows — will crash the migration on any populated database.
+- CRITICAL: RLS policy removed or disabled without an equivalent replacement in the same PR — exposes multi-tenant data immediately on deploy.
+- Warning: `CREATE INDEX` without `CONCURRENTLY` on a table that is likely to have significant data (production tables) — takes an exclusive lock.
+
+#### Billing and Stripe handlers (handlers/billing*, handlers/stripe*, apps/*/src/billing**)
+Money errors are not recoverable. You are the ONLY gate:
+- CRITICAL: Stripe PaymentIntent, charge, or Subscription creation missing an `idempotencyKey` — duplicate webhook delivery = duplicate charge to the customer.
+- CRITICAL: Stripe webhook handler that does not call `stripe.webhooks.constructEvent(body, sig, secret)` before processing — forged webhook events can trigger charges or subscription changes.
+- CRITICAL: Non-atomic read-then-write on billing state (e.g., read subscription status, then conditionally create a charge without a transaction or lock) — race condition = double charge.
+- CRITICAL: `sk_test_` key used in a production code path, or `sk_live_` key referenced outside of a clearly production-gated path — mode mismatch causes real charges in test or missed charges in prod.
 
 Output ONLY valid JSON — no markdown wrapper, no explanation outside the JSON:
 {
@@ -476,8 +487,10 @@ async function callGrok(prTitle, tier, files, deterministicWarnings) {
 //   4. If either rejects → REQUEST_CHANGES with both analyses in the body
 //
 // This reduces hallucinations: a single LLM cannot approve its own blind spot.
-// Red-tier (/admin mutations, workflow files, etc.) still require human sign-off
-// via CODEOWNERS — the 2-party system handles green/yellow auto-merge only.
+// Red-tier paths (workflows, packages, migrations, billing) are now fully gated
+// by this 2-party system — Claude has hardcoded blocking rules for the genuine
+// catastrophic failure classes (Actions injection, irreversible migrations,
+// billing idempotency). Both parties must agree to APPROVE.
 
 async function callLLMConsensus(prTitle, tier, files, deterministicWarnings) {
   if (!GROK_API_KEY && !ANTHROPIC_API_KEY) {
@@ -596,7 +609,7 @@ function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTit
   }
 
   if (tier === 'red') {
-    lines.push('> 🔴 **Red-tier PR.** This PR touches high-risk paths (workflows, packages, migrations, wrangler, capabilities). Review carefully before merging.');
+    lines.push('> 🔴 **Red-tier PR.** High-risk paths (workflows, packages, migrations, wrangler, capabilities). The 2-party LLM review is the final gate — hardcoded rules enforce Actions injection safety, migration reversibility, and billing idempotency.');
     lines.push('');
   }
 
