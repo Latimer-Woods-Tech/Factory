@@ -11,6 +11,18 @@
 
 ---
 
+## 🔴 Fridge Rules — Non-Negotiable Checks ([full text](/docs/supervisor/FRIDGE.md))
+
+> Skip any rule that does not apply to this PR. If unsure, don't skip.
+
+- [ ] **Rule 1 — wordis-bond is off-limits.** This PR does not open, touch, or read any wordis-bond resource.
+- [ ] **Rule 2 — No credentials.** No API keys, tokens, secrets, or key fragments appear in any doc, plan, PR body, or comment. If you found one: rotate it, do not just delete it from git.
+- [ ] **Rule 3 — Red-tier paths.** If this PR touches `.github/workflows/**`, `packages/**`, `migrations/**`, Stripe handlers, or production Wrangler config — a human CODEOWNER has reviewed and approved. It will **not** auto-merge.
+- [ ] **Rule 4 — `/admin` mutations.** If this PR introduces any `/admin` mutation, an out-of-band CODEOWNER ✅ has been obtained (plan-approval and PR-review do not substitute).
+- [ ] **Rule 8 — Irreversible actions.** If this PR deletes Cloudflare resources, changes rulesets, mutates Stripe products/prices/webhooks, or sends live email/SMS — explicit human approval was obtained before the PR was opened.
+
+---
+
 ## ✅ Definition of Done — Did We Build It Right?
 
 ### Code Quality

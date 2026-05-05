@@ -56,7 +56,7 @@ export function AuditTab() {
     setErr(null);
     try {
       const page = await apiFetch<AuditPage<AuditEntry>>(
-        `/audit/${buildQuery(filters, reset ? null : cursor)}`,
+        `/audit${buildQuery(filters, reset ? null : cursor)}`,
       );
       setRows((prev) => (reset ? page.rows : [...prev, ...page.rows]));
       setNextCursor(page.nextCursor);
