@@ -69,19 +69,27 @@ async function pushover(title, message) {
 // To add or modify a template: edit the YAML, run the generator, commit both.
 
 async function loadTemplates() {
-  const file = await gh('GET', `/repos/${ORG}/factory/contents/apps/supervisor/src/planner/templates.generated.json`);
-  const data = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
-  return data.map((t) => ({
-    id:             t.id,
-    tier:           t.tier,
-    titlePattern:   t.triggers?.title_pattern  ?? '',
-    bodyPatterns:   t.triggers?.body_patterns  ?? [],
-    labels:         t.triggers?.labels_any_of ?? [],
-    slotNames:      t.slot_names      ?? [],
-    slotValidators: t.slot_validators ?? {},
-    stepIntents:    t.step_intents    ?? [],
-    prFiles:        t.pr_files        ?? [],
-  }));
+  try {
+    const file = await gh('GET', `/repos/${ORG}/factory/contents/apps/supervisor/src/planner/templates.generated.json`);
+    const data = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+    return data.map((t) => ({
+      id:             t.id,
+      tier:           t.tier,
+      titlePattern:   t.triggers?.title_pattern  ?? '',
+      bodyPatterns:   t.triggers?.body_patterns  ?? [],
+      labels:         t.triggers?.labels_any_of ?? [],
+      slotNames:      t.slot_names      ?? [],
+      slotValidators: t.slot_validators ?? {},
+      stepIntents:    t.step_intents    ?? [],
+      prFiles:        t.pr_files        ?? [],
+    }));
+  } catch (e) {
+    if (e.message.includes(' 404: ')) {
+      console.warn('[WARN] templates.generated.json not found; supervisor will run in observation mode only.');
+      return [];
+    }
+    throw e;
+  }
 }
 
 // ─── Deterministic template matching ─────────────────────────────────────────
