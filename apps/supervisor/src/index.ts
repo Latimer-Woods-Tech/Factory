@@ -1,5 +1,3 @@
-import type { ExportedHandler, Request as CfRequest, Response as CfResponse } from '@cloudflare/workers-types';
-
 export { SupervisorDO } from './supervisor.do';
 export { LockDO } from './lock.do';
 
@@ -36,7 +34,7 @@ export default {
     return stub.fetch(request);
   },
 
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     const id = env.SUPERVISOR.idFromName('singleton');
     const stub = env.SUPERVISOR.get(id);
     ctx.waitUntil(

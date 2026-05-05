@@ -389,3 +389,40 @@ Before the supervisor commits any LLM fix, three guards run:
 2. **`enforceSlotSchema()`** — strips hallucinated slot keys not in the template schema; nulls values matching a structured prompt-injection pattern.
 3. **`fixAddressesConcerns()`** — verifies at least one concern keyword appears in added or removed lines of the diff.
 
+---
+
+## Docs Quality Gate
+
+`scripts/validate-docs-quality.mjs` enforces internal-link integrity across all Markdown files in `docs/`, `apps/*/README.md`, and root `*.md`.
+
+### Running locally
+
+```bash
+node scripts/validate-docs-quality.mjs                  # default (max 50 errors)
+node scripts/validate-docs-quality.mjs --max-errors 0   # full list
+node scripts/validate-docs-quality.mjs --json           # + writes docs-quality-report.json
+```
+
+Exit code `0` = clean. Exit code `1` = broken links found.
+
+### What it checks
+
+| Check | Notes |
+|---|---|
+| Relative `.md` / `.mdx` link targets exist on disk | Skips `http://`, `https://`, `mailto:`, and same-page `#anchor` links |
+| `#anchor` fragments resolve to a heading or `id=` attribute | Heading slugs follow GFM algorithm |
+
+### Design constraints
+
+- Never follows symlinks / junction points (prevents infinite traversal loops)
+- Bounded scan: `docs/**`, `apps/*/README.md`, root `*.md` — skips `node_modules`, `dist`, `.wrangler`
+- Completes under 10 s on this repo
+- `--max-errors N` (default 50) keeps CI output actionable
+
+### Adding to a CI job
+
+```yaml
+- name: Docs quality gate
+  run: node scripts/validate-docs-quality.mjs --max-errors 50
+```
+
