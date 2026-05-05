@@ -15,6 +15,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../types.js';
 import { isEnvironment, type AuditQuery } from '@latimer-woods-tech/studio-core';
 import { queryAuditEntries } from '../lib/audit-store.js';
+import { isTableMissing } from '../lib/schema-readiness.js';
 
 const audit = new Hono<AppEnv>();
 
@@ -54,6 +55,15 @@ audit.get('/', async (c) => {
     const page = await queryAuditEntries(c.env.DB, query);
     return c.json(page);
   } catch (err) {
+    if (isTableMissing(err, 'studio_audit_log')) {
+      return c.json(
+        {
+          error: 'schema not ready',
+          detail: 'studio_audit_log table does not exist — run database migrations',
+        },
+        503,
+      );
+    }
     return c.json(
       {
         error: 'Audit query failed',
