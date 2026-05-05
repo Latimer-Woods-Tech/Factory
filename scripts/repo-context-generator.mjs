@@ -3,9 +3,11 @@
 // Scans .github/repo-contexts/manifest.json and generates a CLAUDE.md for any
 // repo that doesn't have one yet, then opens a PR for LLM review + auto-merge.
 //
-// Sources fetched per repo (via GitHub API):
-//   README.md, package.json, wrangler.jsonc / wrangler.toml, CLAUDE.md (if exists in the repo itself)
-// Output: .github/repo-contexts/{repo}/CLAUDE.md opened as a PR
+// Discovery strategy:
+//   1. Gemini with Google Search grounding — crawls public docs, GitHub pages,
+//      Mintlify sites, npm registry. No manual file enumeration needed.
+//   2. GitHub API supplement — fetches CLAUDE.md / README.md from private repos
+//      when the search index doesn't have them yet.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -17,14 +19,13 @@ const {
   GEMINI_MODEL = 'gemini-2.0-flash',
 } = process.env;
 
-if (!GH_TOKEN)        throw new Error('GH_TOKEN required');
-if (!GEMINI_API_KEY)  throw new Error('GEMINI_API_KEY required');
+if (!GH_TOKEN)       throw new Error('GH_TOKEN required');
+if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY required');
 
-// ─── GitHub API ───────────────────────────────────────────────────────────────
+// ─── GitHub API supplement (private repo files) ───────────────────────────────
 
-async function ghFetch(path) {
-  const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
-  const res = await fetch(url, {
+async function fetchPrivateFile(repo, filePath) {
+  const res = await fetch(`https://api.github.com/repos/${ORG}/${repo}/contents/${filePath}`, {
     headers: {
       Accept: 'application/vnd.github+json',
       Authorization: `Bearer ${GH_TOKEN}`,
@@ -32,42 +33,39 @@ async function ghFetch(path) {
     },
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GH ${path} → ${res.status}: ${await res.text()}`);
-  return res.json();
-}
-
-async function fetchFileContent(repo, filePath) {
-  const data = await ghFetch(`/repos/${ORG}/${repo}/contents/${filePath}`);
-  if (!data || !data.content) return null;
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.content) return null;
   return Buffer.from(data.content, 'base64').toString('utf8');
 }
 
-// ─── Claude generation ────────────────────────────────────────────────────────
+// ─── Gemini with Google Search grounding ─────────────────────────────────────
 
 const EXAMPLE_TEMPLATE = readFileSync('.github/repo-contexts/coh/CLAUDE.md', 'utf8');
 
-async function generateClaudeMd(repoName, sources) {
-  const sourceText = Object.entries(sources)
-    .filter(([, content]) => content)
-    .map(([file, content]) => `### ${file}\n\`\`\`\n${content.slice(0, 3000)}\n\`\`\``)
-    .join('\n\n');
+async function generateWithGrounding(repoName, privateContext) {
+  const supplement = privateContext
+    ? `\nAdditional context from the private repo (not publicly indexed):\n${privateContext}\n`
+    : '';
 
-  const prompt = `You are generating a CLAUDE.md standing-orders file for a software repo.
+  const prompt = `Research the GitHub repository ${ORG}/${repoName} and generate a CLAUDE.md standing-orders file for it.
 
-This file will be read by an automated LLM code reviewer before reviewing PRs in this repo.
+Search for:
+- The GitHub repo page at github.com/${ORG}/${repoName}
+- Any published documentation site (Mintlify, GitBook, or custom domain)
+- The repo README, package.json, wrangler config, and any CLAUDE.md in the repo itself
+- The live production URL / deployed app if discoverable
+${supplement}
+The CLAUDE.md will be read by an automated LLM code reviewer before reviewing every PR in this repo.
 It must capture: mission, stack, hard constraints, surfaces/URLs, commit format.
-Keep it concise — under 60 lines. No fluff.
+Keep it concise — under 80 lines. No fluff.
 
-Use this existing CLAUDE.md as a format example (do not copy its content):
+Use this existing CLAUDE.md as a format template (do not copy its content, only its structure):
 <example>
 ${EXAMPLE_TEMPLATE}
 </example>
 
-Now generate a CLAUDE.md for the repo "${repoName}" based on these source files:
-
-${sourceText}
-
-Output ONLY the raw markdown — no explanation, no code fences wrapping the whole thing.`;
+Output ONLY the raw markdown — no explanation, no code fences wrapping the whole output.`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
   const res = await fetch(url, {
@@ -75,30 +73,41 @@ Output ONLY the raw markdown — no explanation, no code fences wrapping the who
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
       generationConfig: { maxOutputTokens: 2048, temperature: 0.2 },
     }),
   });
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const groundingChunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+  if (groundingChunks.length > 0) {
+    console.log(`  Grounded on ${groundingChunks.length} source(s): ${groundingChunks.map(c => c.web?.uri ?? '?').slice(0, 3).join(', ')}`);
+  } else {
+    console.log('  No grounding sources found — output based on training data only');
+  }
+  return text;
 }
 
-// ─── Git helpers ──────────────────────────────────────────────────────────────
+// ─── Git / PR helpers ─────────────────────────────────────────────────────────
 
 function git(cmd) {
   return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
 }
 
-function openPR(repoName, branchName) {
+function openPR(repoName, branchName, groundedSources) {
+  const sourceNote = groundedSources?.length
+    ? `Sources discovered by Gemini Search: ${groundedSources.slice(0, 5).join(', ')}`
+    : 'Sources: training data + GitHub API supplement (repo may be private/unindexed)';
+
   const body = [
     `## Auto-generated repo context`,
     ``,
-    `Generated by \`scripts/repo-context-generator.mjs\` — no \`.github/repo-contexts/${repoName}/CLAUDE.md\` was found.`,
-    `Sources used: README.md, package.json, wrangler config, in-repo CLAUDE.md (when present).`,
+    `Generated by \`scripts/repo-context-generator.mjs\` — \`.github/repo-contexts/${repoName}/CLAUDE.md\` did not exist.`,
+    `${sourceNote}`,
     ``,
     `**Review focus:** Does this accurately describe the repo's stack, constraints, and surfaces?`,
-    `If anything is wrong or missing, update the file directly — it will be read by the LLM`,
-    `reviewer on every future PR in this repo.`,
+    `Edit the file directly if anything is wrong — it will be read by the LLM reviewer on every future PR.`,
     ``,
     `🤖 Generated with [Claude Code](https://claude.com/claude-code)`,
   ].join('\n');
@@ -122,36 +131,24 @@ for (const repoName of manifest.repos) {
     continue;
   }
 
-  console.log(`[GEN] ${repoName} — fetching sources...`);
+  console.log(`[GEN] ${repoName} — discovering via Google Search grounding...`);
 
-  // Fetch source files from the external repo
-  const sources = {};
-  for (const file of ['README.md', 'package.json', 'wrangler.jsonc', 'wrangler.toml', 'CLAUDE.md']) {
-    try {
-      const content = await fetchFileContent(repoName, file);
-      if (content) {
-        sources[file] = content;
-        console.log(`  ✓ ${file} (${content.length} chars)`);
-      }
-    } catch (err) {
-      console.warn(`  ✗ ${file}: ${err.message.slice(0, 60)}`);
-    }
+  // Supplement grounding with any private files the crawler can't reach
+  const privateFiles = [];
+  for (const f of ['CLAUDE.md', 'README.md']) {
+    const content = await fetchPrivateFile(repoName, f);
+    if (content) privateFiles.push(`#### ${f}\n${content.slice(0, 2000)}`);
   }
+  const privateContext = privateFiles.length > 0 ? privateFiles.join('\n\n') : null;
+  if (privateContext) console.log(`  Supplementing with ${privateFiles.length} private file(s) via GitHub API`);
 
-  if (Object.keys(sources).length === 0) {
-    console.warn(`[WARN] ${repoName} — no source files found, skipping generation`);
-    continue;
-  }
-
-  console.log(`[GEN] ${repoName} — calling Claude...`);
-  const content = await generateClaudeMd(repoName, sources);
+  const content = await generateWithGrounding(repoName, privateContext);
 
   if (!content.trim()) {
-    console.warn(`[WARN] ${repoName} — Claude returned empty content, skipping`);
+    console.warn(`[WARN] ${repoName} — Gemini returned empty content, skipping`);
     continue;
   }
 
-  // Write file and open PR
   mkdirSync(`.github/repo-contexts/${repoName}`, { recursive: true });
   writeFileSync(contextPath, content.trim() + '\n', 'utf8');
 
