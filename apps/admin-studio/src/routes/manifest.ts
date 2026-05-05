@@ -144,6 +144,27 @@ const ENTRIES: ReadonlyArray<ManifestEntry> = [
     summary: 'Aggregated Sentry + PostHog health snapshot',
     tags: ['ops'],
   },
+  {
+    method: 'GET',
+    path: '/observability/sentry/issues',
+    auth: 'admin',
+    summary: 'Recent Sentry issues with triage-grade signal (count, users, culprit)',
+    tags: ['ops', 'observability'],
+  },
+  {
+    method: 'GET',
+    path: '/observability/posthog/tiles',
+    auth: 'admin',
+    summary: 'PostHog metric tiles (events 24h, etc.)',
+    tags: ['ops', 'observability'],
+  },
+  {
+    method: 'GET',
+    path: '/observability/telemetry-coverage',
+    auth: 'admin',
+    summary: 'Telemetry contract conformance matrix — which apps expose /api/admin/{health,metrics,events}',
+    tags: ['ops', 'observability'],
+  },
   // ── Authenticated: repo ───────────────────────────────────────────────
   {
     method: 'GET',

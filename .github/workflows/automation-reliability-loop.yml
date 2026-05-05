@@ -1,0 +1,116 @@
+name: Automation Reliability Loop
+
+on:
+  schedule:
+    - cron: '15 1 * * *'
+    - cron: '15 14 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Which report to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - daily
+          - weekly
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  daily-failure-digest:
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'all' || inputs.mode == 'daily') || github.event_name == 'schedule' && github.event.schedule == '15 1 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build daily failure digest
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const now = Date.now();
+            const cutoff = now - (24 * 60 * 60 * 1000);
+
+            const response = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            const runs = response.data.workflow_runs
+              .filter((run) => new Date(run.created_at).getTime() >= cutoff)
+              .filter((run) => ['failure', 'cancelled', 'action_required', 'timed_out'].includes(run.conclusion));
+
+            const byWorkflow = {};
+            for (const run of runs) {
+              byWorkflow[run.name] = byWorkflow[run.name] || { count: 0, branches: new Set(), conclusions: {} };
+              byWorkflow[run.name].count += 1;
+              byWorkflow[run.name].branches.add(run.head_branch || 'unknown');
+              byWorkflow[run.name].conclusions[run.conclusion] = (byWorkflow[run.name].conclusions[run.conclusion] || 0) + 1;
+            }
+
+            let body = '## Daily Automation Failure Digest\n\n';
+            body += `Window: last 24h ending ${new Date(now).toISOString()}\n\n`;
+
+            if (runs.length === 0) {
+              body += 'No non-success workflow conclusions detected in the last 24h.\n';
+            } else {
+              body += '| Workflow | Count | Conclusions | Branches |\n';
+              body += '|---|---:|---|---|\n';
+              for (const [name, data] of Object.entries(byWorkflow).sort((a, b) => b[1].count - a[1].count)) {
+                const conclusions = Object.entries(data.conclusions)
+                  .map(([k, v]) => `${k}:${v}`)
+                  .join(', ');
+                const branches = Array.from(data.branches).slice(0, 3).join(', ');
+                body += `| ${name} | ${data.count} | ${conclusions} | ${branches} |\n`;
+              }
+            }
+
+            core.summary.addRaw(body).write();
+
+  weekly-reliability-scorecard:
+    if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'all' || inputs.mode == 'weekly') || github.event_name == 'schedule' && github.event.schedule == '15 14 * * 1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build weekly reliability scorecard
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const now = Date.now();
+            const cutoff = now - (7 * 24 * 60 * 60 * 1000);
+
+            const response = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            const runs = response.data.workflow_runs
+              .filter((run) => new Date(run.created_at).getTime() >= cutoff)
+              .filter((run) => run.status === 'completed');
+
+            const total = runs.length;
+            const success = runs.filter((r) => r.conclusion === 'success').length;
+            const actionRequired = runs.filter((r) => r.conclusion === 'action_required').length;
+            const failure = runs.filter((r) => r.conclusion === 'failure').length;
+            const cancelled = runs.filter((r) => r.conclusion === 'cancelled').length;
+            const timedOut = runs.filter((r) => r.conclusion === 'timed_out').length;
+
+            const reliability = total === 0 ? 100 : ((success / total) * 100).toFixed(1);
+
+            let body = '## Weekly Automation Reliability Scorecard\n\n';
+            body += `Window: last 7 days ending ${new Date(now).toISOString()}\n\n`;
+            body += `- Total completed runs: ${total}\n`;
+            body += `- Success: ${success}\n`;
+            body += `- Failure: ${failure}\n`;
+            body += `- Action required: ${actionRequired}\n`;
+            body += `- Cancelled: ${cancelled}\n`;
+            body += `- Timed out: ${timedOut}\n`;
+            body += `- Reliability score: ${reliability}%\n`;
+
+            core.summary.addRaw(body).write();
