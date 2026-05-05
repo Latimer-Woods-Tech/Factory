@@ -683,13 +683,25 @@ async function escalateToHuman(prUrl, prTitle, attemptCount, concerns) {
   ].join('\n');
 
   try {
-    const issue = await gh('POST', `/repos/${ORG}/${repo}/issues`, {
-      title: `[supervisor] Review limit reached: PR #${prNum} — ${prTitle}`,
-      body: issueBody,
-      labels: ['supervisor:review-limit-reached', 'status:blocked'],
-      assignees: [HUMAN_REVIEWER],
-    });
-    console.log(`[OK] Filed escalation issue #${issue.number}`);
+    const expectedTitle = `[supervisor] Review limit reached: PR #${prNum} — ${prTitle}`;
+    // Dedup: skip filing if an open escalation issue for this PR already exists.
+    let alreadyFiled = false;
+    try {
+      const existingIssues = await gh('GET', `/repos/${ORG}/${repo}/issues?state=open&labels=supervisor%3Areview-limit-reached&per_page=50`);
+      alreadyFiled = existingIssues.some(i => i.title === expectedTitle);
+    } catch (_) { /* non-fatal — proceed to file */ }
+
+    if (alreadyFiled) {
+      console.log(`[OK] Escalation issue for PR #${prNum} already open — skipping duplicate`);
+    } else {
+      const issue = await gh('POST', `/repos/${ORG}/${repo}/issues`, {
+        title: expectedTitle,
+        body: issueBody,
+        labels: ['supervisor:review-limit-reached', 'status:blocked'],
+        assignees: [HUMAN_REVIEWER],
+      });
+      console.log(`[OK] Filed escalation issue #${issue.number}`);
+    }
   } catch (err) {
     console.warn(`[WARN] Could not file escalation issue: ${err.message.slice(0, 80)}`);
   }
