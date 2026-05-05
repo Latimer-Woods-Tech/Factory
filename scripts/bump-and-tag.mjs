@@ -18,7 +18,7 @@
  * W360-025 — cross-repo release train.
  */
 
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,8 +36,16 @@ const PACKAGE_ORDER = [
   'video', 'schedule', 'validation',
 ];
 
-function run(cmd, cwd = repoRoot) {
-  return execSync(cmd, { cwd, stdio: 'pipe', encoding: 'utf-8' }).trim();
+/**
+ * Run a command with explicit argument array (no shell interpolation).
+ * Throws on non-zero exit.
+ */
+function run(cmd, args, cwd = repoRoot) {
+  const result = spawnSync(cmd, args, { cwd, stdio: 'pipe', encoding: 'utf-8' });
+  if (result.status !== 0) {
+    throw new Error((result.stderr ?? '').trim() || `${cmd} exited with code ${result.status}`);
+  }
+  return (result.stdout ?? '').trim();
 }
 
 function die(msg) {
@@ -57,7 +65,7 @@ const pkgDir = join(repoRoot, 'packages', pkgShortName);
 
 // ── Pre-flight: working tree must be clean ──────────────────────────────────
 
-const status = run('git status --porcelain');
+const status = run('git', ['status', '--porcelain']);
 if (status.length > 0) {
   die(`Working tree is dirty. Commit or stash changes first:\n${status}`);
 }
@@ -67,7 +75,7 @@ if (status.length > 0) {
 console.log(`\nBumping @latimer-woods-tech/${pkgShortName} (${bumpType})…`);
 
 // --no-git-tag-version because we create the tag with a custom prefix
-const rawOut = run(`npm version ${bumpType} --no-git-tag-version`, pkgDir);
+const rawOut = run('npm', ['version', bumpType, '--no-git-tag-version'], pkgDir);
 const newVersion = rawOut.startsWith('v') ? rawOut.slice(1) : rawOut;
 const tag = `${pkgShortName}/v${newVersion}`;
 
@@ -75,16 +83,16 @@ console.log(`  New version : ${newVersion}`);
 console.log(`  Tag         : ${tag}`);
 
 // Commit the package.json change
-run(`git add packages/${pkgShortName}/package.json`);
-run(`git commit -m "chore(${pkgShortName}): bump to v${newVersion}"`);
+run('git', ['add', `packages/${pkgShortName}/package.json`]);
+run('git', ['commit', '-m', `chore(${pkgShortName}): bump to v${newVersion}`]);
 
 // ── Create and push the tag ─────────────────────────────────────────────────
 
-run(`git tag -a "${tag}" -m "Release ${tag}"`);
+run('git', ['tag', '-a', tag, '-m', `Release ${tag}`]);
 console.log(`\nTag created: ${tag}`);
 
-run(`git push origin main`);
-run(`git push origin "${tag}"`);
+run('git', ['push', 'origin', 'main']);
+run('git', ['push', 'origin', tag]);
 
 console.log(`\nTag pushed. GitHub Actions publish.yml will now build and publish @latimer-woods-tech/${pkgShortName}@${newVersion}.`);
 
