@@ -8,6 +8,7 @@ YAML templates that drive autonomous execution. See `../TEMPLATE_SPEC.md` for sc
 |---|---|---|
 | `docs-naming-convention` | green | Docs-only PRs matching `^docs[(:]` pattern |
 | `deps-bump-minor-patch` | green | Dependabot/Renovate minor+patch bumps; auto-merge on green CI |
+| `governance-hardening-tweak` | green | Small governance/hardening additions — workflow tweaks, label additions, README edits, CODEOWNERS updates, branch-policy docs |
 | `db-migration-gap-fix` | yellow | "column X does not exist" class — diagnoses drift, files runbook comment (never writes prod DB) |
 | `sentry-triage-new-issue` | yellow | New Sentry error class investigation; diagnoses + proposes fix PR if <5 lines |
 | `wrangler-config-drift-fix` | yellow | Stale wrangler.jsonc bindings — validates against Cloudflare then opens fix PR |

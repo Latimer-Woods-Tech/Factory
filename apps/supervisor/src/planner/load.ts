@@ -31,6 +31,31 @@ const SEED: Template[] = [
       { tool: 'http.get', slots: { url: '{{description}}' }, side_effects: 'read-external' },
     ],
   },
+  {
+    id: 'governance-hardening-tweak',
+    tier: 'green',
+    description:
+      'Small governance/hardening additions: workflow tweaks, label additions, README edits, CODEOWNERS updates, branch-policy docs',
+    trigger_keywords: [
+      'governance',
+      'hardening',
+      'triage',
+      'label',
+      'codeowners',
+      'branch-protection',
+      'playbook',
+      'reliability',
+      'flaky',
+      'drift',
+      'reviewer',
+      'labeler',
+    ],
+    steps: [
+      { tool: 'github.readFile', side_effects: 'read-external' },
+      { tool: 'github.openPR', side_effects: 'write-app' },
+      { tool: 'github.comment', side_effects: 'write-app' },
+    ],
+  },
 ];
 
 export async function loadTemplates(): Promise<Template[]> {
