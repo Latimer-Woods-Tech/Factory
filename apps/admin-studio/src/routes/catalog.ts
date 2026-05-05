@@ -21,6 +21,7 @@ import {
 import type { AppEnv } from '../types.js';
 import { FACTORY_APPS, manifestUrlFor } from '../lib/app-registry.js';
 import { listCatalog, summariseCatalog, upsertManifest } from '../lib/catalog-store.js';
+import { isTableMissing } from '../lib/schema-readiness.js';
 
 const catalog = new Hono<AppEnv>();
 
@@ -33,6 +34,12 @@ catalog.get('/', async (c) => {
     const known = FACTORY_APPS.map((a) => ({ id: a.id, label: a.label }));
     return c.json({ summary, apps: known });
   } catch (err) {
+    if (isTableMissing(err, 'function_catalog')) {
+      return c.json(
+        { error: 'schema not ready', detail: 'function_catalog table does not exist — run database migrations' },
+        503,
+      );
+    }
     return c.json({ error: 'catalog read failed', detail: (err as Error).message }, 500);
   }
 });
@@ -45,6 +52,12 @@ catalog.get('/:app', async (c) => {
     const rows = await listCatalog(c.env.DB, app, envParam);
     return c.json({ app, env: envParam, rows });
   } catch (err) {
+    if (isTableMissing(err, 'function_catalog')) {
+      return c.json(
+        { error: 'schema not ready', detail: 'function_catalog table does not exist — run database migrations' },
+        503,
+      );
+    }
     return c.json({ error: 'catalog read failed', detail: (err as Error).message }, 500);
   }
 });
@@ -75,17 +88,27 @@ catalog.post('/:app/refresh', async (c) => {
     );
   }
 
-  const result = await upsertManifest(c.env.DB, manifest);
-  return c.json({
-    app: appId,
-    env: envParam,
-    url,
-    entries: manifest.entries.length,
-    upserted: result.upserted,
-    failed: result.failed,
-    buildSha: manifest.buildSha ?? null,
-    generatedAt: manifest.generatedAt,
-  });
+  try {
+    const result = await upsertManifest(c.env.DB, manifest);
+    return c.json({
+      app: appId,
+      env: envParam,
+      url,
+      entries: manifest.entries.length,
+      upserted: result.upserted,
+      failed: result.failed,
+      buildSha: manifest.buildSha ?? null,
+      generatedAt: manifest.generatedAt,
+    });
+  } catch (err) {
+    if (isTableMissing(err, 'function_catalog')) {
+      return c.json(
+        { error: 'schema not ready', detail: 'function_catalog table does not exist — run database migrations' },
+        503,
+      );
+    }
+    throw err;
+  }
 });
 
 interface FetchError {
