@@ -1,39 +1,41 @@
 /**
- * Template loader. Phase 1: loads from a statically-imported array seeded
- * with the 6 starter templates shipped via SUP-3.3
- * (`docs/supervisor/plans/*.yml`).
+ * Template loader.
  *
- * Phase 2 (SUP-3.5): loads from a KV binding populated by a build step that
- * parses YAML at deploy time, so templates can be edited without a redeploy.
+ * Templates are the single source of truth in `docs/supervisor/plans/*.yml`.
+ * The build step (`npm run generate:templates`) parses those files with js-yaml
+ * and emits `templates.generated.ts` — a committed TypeScript file that the
+ * Worker imports at bundle time (no KV, no runtime file I/O).
+ *
+ * To add or modify a template:
+ *   1. Edit or create a YAML file in docs/supervisor/plans/
+ *   2. Run: node scripts/generate-supervisor-templates.mjs
+ *   3. Commit both the YAML and the updated templates.generated.ts
+ *
+ * Phase 2 (SUP-3.5): if hot-reload without redeploy is needed, swap the
+ * import for a KV fetch.
  */
+
+export interface TemplateTriggers {
+  labels_any_of?: string[];
+  title_pattern?: string;
+  body_patterns?: string[];
+}
 
 export interface Template {
   id: string;
   tier: 'green' | 'yellow' | 'red';
   description: string;
   trigger_keywords?: string[];
+  triggers?: TemplateTriggers;
   steps?: Array<{
     tool: string;
-    slots?: Record<string, string>;
+    slots?: Record<string, unknown>;
     side_effects?: 'none' | 'read-external' | 'write-app' | 'write-external';
   }>;
 }
 
-// Phase 1 stub — the real 6 templates live in `docs/supervisor/plans/*.yml`
-// and will be loaded via import-at-build-time once SUP-3.5 wires the loader.
-const SEED: Template[] = [
-  {
-    id: 'health-check',
-    tier: 'green',
-    description: 'Ping public health endpoints and report status',
-    trigger_keywords: ['health', 'ping', 'status', 'check'],
-    steps: [
-      { tool: 'http.get', slots: { url: '{{description}}' }, side_effects: 'read-external' },
-    ],
-  },
-];
+import { GENERATED_TEMPLATES } from './templates.generated';
 
 export async function loadTemplates(): Promise<Template[]> {
-  // Phase 1: return seed. Phase 2: fetch from KV / D1.
-  return Promise.resolve(SEED);
+  return Promise.resolve(GENERATED_TEMPLATES);
 }
