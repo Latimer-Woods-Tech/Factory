@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: '**/package-lock.json'
       
       - name: Run SLO collection script
         env:
@@ -59,15 +59,8 @@ jobs:
       
       - name: Notify on failure
         if: failure()
-        uses: actions/github-script@v9
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: 'ops-team',  // Post to ops channel
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ **VideoKing SLO collection failed**\nCheck the workflow run for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            });
+        run: |
+          echo "::warning::VideoKing SLO collection failed. See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       
       - name: Summary
         if: always()
