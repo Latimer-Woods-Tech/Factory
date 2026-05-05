@@ -54,9 +54,14 @@ audit.get('/', async (c) => {
     const page = await queryAuditEntries(c.env.DB, query);
     return c.json(page);
   } catch (err) {
+    console.error('[audit] query failed:', {
+      requestId: c.var.requestId,
+      error: (err as Error).message,
+    });
     return c.json(
       {
         error: 'Audit query failed',
+        requestId: c.var.requestId,
         detail: c.env.STUDIO_ENV !== 'production' ? (err as Error).message : undefined,
       },
       500,
