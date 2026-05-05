@@ -40,12 +40,17 @@ async function gh(method, apiPath, body) {
 // Parses only the fields needed: id, repo, required_secrets, optional_secrets.
 // No external YAML library — avoids npm install in the workflow.
 
+/** Escapes a string for safe use inside a RegExp constructor. */
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Extracts a YAML list value from a block of text.
  * Matches:  <key>:\n    - item1\n    - item2\n
  */
 function extractListItems(block, key) {
-  const re = new RegExp(`\\b${key}:\\s*\\n((?:[ \\t]+-[ \\t]+\\S+[ \\t]*\\n?)+)`);
+  const re = new RegExp(`\\b${escapeRegExp(key)}:\\s*\\n((?:[ \\t]+-[ \\t]+\\S+[ \\t]*\\n?)+)`);
   const match = re.exec(block);
   if (!match) return [];
   return match[1]
@@ -56,7 +61,7 @@ function extractListItems(block, key) {
 
 /** Extracts a scalar value from a block: `<key>: <value>` */
 function extractScalar(block, key) {
-  const match = block.match(new RegExp(`\\b${key}:\\s+(.+)`));
+  const match = block.match(new RegExp(`\\b${escapeRegExp(key)}:\\s+(.+)`));
   return match?.[1]?.trim() ?? null;
 }
 
@@ -270,6 +275,9 @@ async function main() {
     const files = await gh('GET', `/repos/${owner}/${repoName}/pulls/${prNum}/files?per_page=100`);
     changedFiles = (files ?? []).map(f => f.filename);
     console.log(`[INFO] PR #${prNum}: ${changedFiles.length} changed file(s)`);
+    if (changedFiles.length === 100) {
+      console.warn('[WARN] PR has 100+ changed files — additional files beyond the first 100 are not checked');
+    }
   } catch (err) {
     console.warn(`[WARN] Could not fetch PR files: ${err.message} — skipping preflight`);
     return;
