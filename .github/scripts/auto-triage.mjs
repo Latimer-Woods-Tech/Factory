@@ -49,25 +49,25 @@ function classifyAuthor(login = '') {
 function deterministicLabels() {
   const out = [];
   // Type
-  if (/^(fix|bug)|(error|crash|broken|regression|not working|failing)/.test(text)) {
+  if (/^(?:fix|bug)/.test(text) || /(?:error|crash|broken|regression|not working|failing)/.test(text)) {
     out.push('bug');
-  } else if (/^(feat|feature|add|implement|support|create|build)/.test(text)) {
+  } else if (/^(?:feat|feature|add|implement|support|create|build)/.test(text)) {
     out.push('enhancement');
-  } else if (/^(doc|readme|changelog|naming|convention)|documentation/.test(text)) {
+  } else if (/^(?:doc|readme|changelog|naming|convention)/.test(text) || /documentation/.test(text)) {
     out.push('documentation');
-  } else if (/^(dep|bump|renovate|dependabot|upgrade)/.test(text)) {
+  } else if (/^(?:dep|bump|renovate|dependabot|upgrade)/.test(text)) {
     out.push('dependencies');
-  } else if (/^(chore|ci|test|refactor|perf|build|hardening|infra)/.test(text)) {
+  } else if (/^(?:chore|ci|test|refactor|perf|build|hardening|infra)/.test(text)) {
     out.push('hardening');
   }
   // Priority
-  if (/p0|critical|hotfix|production down|outage/.test(text)) out.push('priority:P0');
-  else if (/p1|high.priority|blocking/.test(text)) out.push('priority:P1');
-  else if (/p3|nice.to.have|low.priority|someday/.test(text)) out.push('priority:P3');
+  if (/p0|critical|hotfix|production down|outage/.test(text)) out.push('priority:P0');
+  else if (/p1|high.priority|blocking/.test(text)) out.push('priority:P1');
+  else if (/p3|nice.to.have|low.priority|someday/.test(text)) out.push('priority:P3');
   else out.push('priority:P2');
   // Domain
-  if (/(llm|anthropic|openai|claude|gpt|gemini|ai.model|inference)/.test(text)) out.push('llm');
-  if (/(sentry|error.*track|exception.*track)/.test(text)) out.push('source:sentry');
+  if (/(llm|anthropic|openai|claude|gpt|gemini|ai.model|inference)/.test(text)) out.push('llm');
+  if (/(sentry|error.*track|exception.*track)/.test(text)) out.push('source:sentry');
   return out;
 }
 
