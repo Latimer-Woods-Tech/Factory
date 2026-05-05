@@ -6,6 +6,7 @@ const ORG = 'Latimer-Woods-Tech';
 const MONITORED_REPOS = ['factory', 'HumanDesign', 'videoking', 'xico-city'];
 const DENYLIST = new Set(['wordis-bond']);
 const RUN_ID = `sup-${Date.now()}`;
+const MAX_GENERATED_LINES = parseInt(process.env.MAX_GENERATED_LINES ?? '800', 10);
 const { GH_TOKEN, ANTHROPIC_API_KEY, PUSHOVER_TOKEN, PUSHOVER_USER, TRIGGER_ISSUE } = process.env;
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 
@@ -59,80 +60,82 @@ async function pushover(title, message) {
   }
 }
 
-// ─── Template YAML parser ─────────────────────────────────────────────────────
+// ─── Template loader ──────────────────────────────────────────────────────────
+// Reads the pre-generated templates.generated.json from the factory repo via
+// the GitHub API. The file is emitted by scripts/generate-supervisor-templates.mjs
+// (run as a prebuild step) from docs/supervisor/plans/*.yml using js-yaml.
+//
+// No YAML parsing here, no regex fragility — JSON.parse is the only dep.
+// To add or modify a template: edit the YAML, run the generator, commit both.
 
-function parseTemplate(raw) {
-  const line = (key) => (raw.match(new RegExp(`^${key}:\\s*(.+)$`, 'm')) || [])[1]?.trim() ?? '';
-
-  const id = line('id');
-  const titlePattern = line('title_pattern').replace(/^["']|["']$/g, '');
-
-  // Tier: check for red-tier paths first, then use declared tier
-  let tier = line('tier') || 'yellow';
-  if (/\.github\/workflows|packages\/|migrations\/|wrangler\./i.test(raw)) tier = 'red';
-
-  // labels_any_of — inline [a, b] or block list
-  let labels = [];
-  const inlineMatch = raw.match(/labels_any_of:\s*\[([^\]]+)\]/m);
-  if (inlineMatch) {
-    labels = inlineMatch[1].split(',').map((s) => s.trim().replace(/['"]/g, ''));
-  } else {
-    const block = raw.match(/labels_any_of:\n((?:[ \t]+-[^\n]+\n?)+)/m);
-    if (block) labels = [...block[1].matchAll(/- +(.+)/g)].map((m) => m[1].trim());
-  }
-
-  // Slot names for Anthropic extraction
-  const slotNames = [...raw.matchAll(/^  - name:\s*(.+)$/gm)].map((m) => m[1].trim());
-
-  // Step intents for plan comment
-  const stepIntents = [...raw.matchAll(/intent:\s*["']([^"']+)["']/gm)].map((m) => m[1]);
-
-  // Find openPR step's file slot references for Green execution
-  let prFiles = [];
-  const openPrBlock = raw.match(/tool: github\.openPR([\s\S]*?)(?=  - id:|\Z)/m);
-  if (openPrBlock) {
-    const filesSection = openPrBlock[1].match(/files:([\s\S]*?)(?=      body:|      labels:|    intent:)/m);
-    if (filesSection) {
-      const pathSlot = (filesSection[1].match(/path:\s*["']?\$slots\.(\w+)["']?/) || [])[1];
-      const contentSlot = (filesSection[1].match(/content:\s*["']?\$slots\.(\w+)["']?/) || [])[1];
-      if (pathSlot && contentSlot) prFiles = [{ pathSlot, contentSlot }];
+async function loadTemplates() {
+  try {
+    const file = await gh('GET', `/repos/${ORG}/factory/contents/apps/supervisor/src/planner/templates.generated.json`);
+    const data = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
+    return data.map((t) => ({
+      id:             t.id,
+      tier:           t.tier,
+      titlePattern:   t.triggers?.title_pattern  ?? '',
+      bodyPatterns:   t.triggers?.body_patterns  ?? [],
+      labels:         t.triggers?.labels_any_of ?? [],
+      slotNames:      t.slot_names      ?? [],
+      slotValidators: t.slot_validators ?? {},
+      stepIntents:    t.step_intents    ?? [],
+      prFiles:        t.pr_files        ?? [],
+    }));
+  } catch (e) {
+    if (e.message.includes(' 404: ')) {
+      console.warn('[WARN] templates.generated.json not found; supervisor will run in observation mode only.');
+      return [];
     }
+    throw e;
   }
-
-  return { id, tier, titlePattern, labels, slotNames, stepIntents, prFiles };
 }
 
 // ─── Deterministic template matching ─────────────────────────────────────────
-
-const MATCH_RULES = {
-  'syn-package-migration': ({ title, labels }) =>
-    /\bSYN-[0-9]+\b|@latimer-woods-tech\/|extract .*package|package migration|monitoring\)|realtime\)|stripe\)|publish skills|composite action/i.test(title) ||
-    labels.includes('area:packages') ||
-    labels.includes('area:realtime') ||
-    labels.includes('area:monitoring'),
-  'ux-regression-triage': ({ title, labels }) =>
-    /\[P[0-3]\]\[UX\]|\bUX\b|mobile|viewport|accessibility|a11y|dashboard|modal|pricing/i.test(title) ||
-    labels.includes('ux') ||
-    labels.includes('accessibility'),
-  'docs-naming-convention': ({ title, labels }) =>
-    /doc|naming|convention|readme|changelog/i.test(`${title} ${labels.join(' ')}`),
-  'deps-bump-minor-patch': ({ title }) =>
-    /dep|bump|renovate|dependabot/i.test(title) && !/major/i.test(title),
-  'db-migration-gap-fix': ({ title, labels }) =>
-    labels.includes('area:database') || /migration|column|schema/i.test(title),
-  'reusable-workflow-rollout': ({ title, labels }) =>
-    labels.includes('area:ci') || /workflow|rollout|reusable/i.test(title),
-  'sentry-triage-new-issue': ({ title, labels }) =>
-    labels.includes('source:sentry') || /sentry|error|exception/i.test(title),
-  'wrangler-config-drift-fix': ({ title, labels }) =>
-    labels.includes('area:infra') || /wrangler|config|drift/i.test(title),
-};
+// Derives match score from each template's `triggers` block (labels_any_of,
+// title_pattern, body_patterns) — no per-template hardcoded rules.
 
 function matchTemplate(issue, templates) {
-  for (const [id, test] of Object.entries(MATCH_RULES)) {
-    if (test(issue)) return templates.find((t) => t.id === id) ?? null;
+  const { title, labels, body = '' } = issue;
+  const scores = [];
+
+  for (const tmpl of templates) {
+    let score = 0;
+
+    // Signal 1: label overlap
+    if (tmpl.labels?.some((l) => labels.includes(l))) score += 0.5;
+
+    // Signal 2: title pattern
+    if (tmpl.titlePattern) {
+      try {
+        if (new RegExp(tmpl.titlePattern, 'i').test(title)) score += 0.5;
+      } catch {
+        // ignore malformed regex
+      }
+    }
+
+    // Signal 3: body patterns (strip PCRE inline flags — JS uses flag args)
+    for (const p of tmpl.bodyPatterns ?? []) {
+      const jsPattern = p.replace(/^\(\?[is]+\)/, '');
+      try {
+        if (new RegExp(jsPattern, 'is').test(body)) {
+          score += 0.25;
+          break; // body counts once
+        }
+      } catch {
+        // ignore malformed regex
+      }
+    }
+
+    if (score >= 0.35) {
+      scores.push({ tmpl, score });
+    }
   }
-  return null;
+
+  if (scores.length === 0) return null;
+  scores.sort((a, b) => b.score - a.score);
+  return scores[0].tmpl;
 }
 
 // ─── Plan comment ─────────────────────────────────────────────────────────────
@@ -223,7 +226,7 @@ function checkGeneratedContent(filename, content) {
     violations.push('No jsonwebtoken — use Web Crypto API');
 
   // Flag suspiciously large generated files — configurable via MAX_GENERATED_LINES env var
-  const maxLines = parseInt(process.env.MAX_GENERATED_LINES ?? '800', 10);
+  const maxLines = MAX_GENERATED_LINES;
   if (lines.length > maxLines)
     violations.push(`Generated file is ${lines.length} lines — exceeds ${maxLines}-line safety limit (set MAX_GENERATED_LINES to adjust)`);
 
@@ -235,28 +238,40 @@ function checkGeneratedContent(filename, content) {
   return violations;
 }
 
-// 2. Schema guard — strip keys not declared in the template's slotNames
-function enforceSlotSchema(raw, slotNames) {
+// 2. Schema guard — strip keys not declared in the template's slotNames,
+//    validate values against per-slot regex validators from the YAML schema.
+function enforceSlotSchema(raw, slotNames, slotValidators = {}) {
   if (!raw || typeof raw !== 'object') return {};
   const allowed = new Set(slotNames);
   const clean = {};
+  const INJECTION_RE = /\b(ignore|disregard|forget|override)\s+(previous|above|all|prior|earlier)\s+(instructions?|context|rules?|prompt)/i;
+
   for (const key of Object.keys(raw)) {
-    if (allowed.has(key)) {
-      // Reject slot values that look like prompt-injection instructions.
-      // Pattern requires an imperative verb followed by its target to avoid
-      // false positives on legitimate content (e.g. "never disregard errors",
-      // "the system prompt structure", security docs that mention jailbreak).
-      const val = raw[key];
-      const INJECTION_RE = /\b(ignore|disregard|forget|override)\s+(previous|above|all|prior|earlier)\s+(instructions?|context|rules?|prompt)/i;
-      if (typeof val === 'string' && INJECTION_RE.test(val)) {
-        console.warn(`[GUARD] Slot "${key}" contains suspicious instruction text — nulled`);
-        clean[key] = null;
-      } else {
-        clean[key] = val;
-      }
-    } else {
+    if (!allowed.has(key)) {
       console.warn(`[GUARD] Slot "${key}" not in template schema — stripped`);
+      continue;
     }
+    const val = raw[key];
+    // Injection guard
+    if (typeof val === 'string' && INJECTION_RE.test(val)) {
+      console.warn(`[GUARD] Slot "${key}" contains suspicious instruction text — nulled`);
+      clean[key] = null;
+      continue;
+    }
+    // Validator guard — reject values that don't match the YAML-declared regex
+    const validatorPattern = slotValidators[key];
+    if (validatorPattern && typeof val === 'string') {
+      try {
+        if (!new RegExp(validatorPattern).test(val)) {
+          console.warn(`[GUARD] Slot "${key}" value ${JSON.stringify(val)} failed validator /${validatorPattern}/ — nulled`);
+          clean[key] = null;
+          continue;
+        }
+      } catch {
+        // Malformed regex in validator (shouldn't happen — generator validates them) — allow through
+      }
+    }
+    clean[key] = val;
   }
   // Ensure all declared slots exist (even if null)
   for (const name of slotNames) {
@@ -298,7 +313,7 @@ function fixAddressesConcerns(concernLines, oldContent, newContent) {
 
 // ─── Anthropic slot extraction ────────────────────────────────────────────────
 
-async function extractSlots(slotNames, issue, factoryContext = '') {
+async function extractSlots(slotNames, issue, factoryContext = '', slotValidators = {}) {
   const contextPrefix = factoryContext
     ? `[FACTORY CONTEXT — immutable architectural rules]\n${factoryContext}\n\n`
     : '';
@@ -337,13 +352,43 @@ async function extractSlots(slotNames, issue, factoryContext = '') {
   } catch {
     parsed = {};
   }
-  // Guard 2: enforce schema — strip hallucinated keys, null missing ones
-  return enforceSlotSchema(parsed, slotNames);
+  // Guard 2: enforce schema — strip hallucinated keys, null missing ones, validate formats
+  return enforceSlotSchema(parsed, slotNames, slotValidators);
 }
 
 // ─── Green execution (create branch + files + PR) ────────────────────────────
 
+/**
+ * Returns an existing open supervisor PR for this issue, or null.
+ * Prevents duplicate PRs when the Supervisor loop runs concurrently or
+ * retries before the `agent:claimed:sauna` label propagates via GitHub API.
+ */
+async function findExistingPR(repo, issueNumber) {
+  try {
+    // Search open PRs whose title contains [Supervisor] and the source issue marker
+    const prs = await gh('GET', `/repos/${ORG}/${repo}/pulls?state=open&per_page=50`);
+    const marker = `#${issueNumber}`;
+    return prs.find(
+      (pr) =>
+        pr.title.startsWith('[Supervisor]') &&
+        (pr.body ?? '').includes(`**Source issue:** ${marker}`),
+    ) ?? null;
+  } catch {
+    return null; // non-fatal — proceed and let GitHub reject the dup branch
+  }
+}
+
 async function executeGreen(repo, issue, template, slots) {
+  // Dedup guard: if a supervisor PR already exists for this issue, return it
+  // without creating a branch or committing files. This prevents the race
+  // condition where multiple concurrent loop runs each open a PR before the
+  // `agent:claimed:sauna` label is visible via the GitHub API.
+  const existing = await findExistingPR(repo, issue.number);
+  if (existing) {
+    console.log(`[DEDUP] PR #${existing.number} already open for ${repo}#${issue.number} — skipping`);
+    return { branch: existing.head.ref, prUrl: existing.html_url, prNumber: existing.number, deduped: true };
+  }
+
   const slug = issue.title
     .slice(0, 40)
     .toLowerCase()
@@ -577,7 +622,7 @@ If a concern cannot be resolved without human input, output an empty fixes array
 
             await gh('PUT', `/repos/${ORG}/${repo}/contents/${fix.filename}`, {
               message: `fix: supervisor auto-fix attempt ${rejectionCount + 1} — ${fixResult.explanation?.slice(0, 60) ?? 'resolve review concerns'} [${RUN_ID}]`,
-              content: btoa(unescape(encodeURIComponent(fix.content))),
+              content: Buffer.from(fix.content).toString('base64'),
               branch,
               ...(existingSha ? { sha: existingSha } : {}),
             });
@@ -608,17 +653,8 @@ async function main() {
   // ── PR feedback loop first: clear stuck PRs before claiming new issues ──────
   await runPrFeedbackLoop(outcomes);
 
-  // Load templates from docs/supervisor/plans/
-  const tplList = await gh('GET', `/repos/${ORG}/factory/contents/docs/supervisor/plans`);
-  const templates = await Promise.all(
-    tplList
-      .filter((f) => f.name.endsWith('.yml'))
-      .map(async (f) => {
-        const file = await gh('GET', f.url);
-        const raw = Buffer.from(file.content, 'base64').toString('utf8');
-        return parseTemplate(raw);
-      }),
-  );
+  // Load pre-generated templates from templates.generated.json (built from docs/supervisor/plans/*.yml)
+  const templates = await loadTemplates();
   console.log(`[INFO] Loaded ${templates.length} templates: ${templates.map((t) => t.id).join(', ')}`);
 
   // Fetch CONTEXT.md to use as system prompt prefix for all LLM calls
@@ -656,7 +692,11 @@ async function main() {
     }
   }
 
-  // Filter already-processed or explicitly opted out of template matching
+  // Filter already-processed or explicitly opted out of template matching.
+  // The `agent:claimed:sauna` label is the primary dedup signal. However,
+  // GitHub label API propagation can be delayed by several seconds when
+  // the supervisor runs concurrently. `executeGreen` performs a secondary
+  // PR-level dedup check (findExistingPR) to guard against that window.
   candidates = candidates.filter((i) => {
     const lbls = i.labels.map((l) => l.name);
     return !lbls.includes('agent:claimed:sauna') &&
@@ -716,7 +756,7 @@ async function main() {
       }
 
       // Green — extract slots, execute, open PR
-      const slots = await extractSlots(template.slotNames, ctx, factoryContext);
+      const slots = await extractSlots(template.slotNames, ctx, factoryContext, template.slotValidators);
       console.log(`[SLOTS] ${JSON.stringify(slots)}`);
 
       let execNote = '';

@@ -1,0 +1,682 @@
+[
+  {
+    "id": "db-migration-gap-fix",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "bug",
+      "migration",
+      "gap",
+      "fix"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug"
+      ],
+      "title_pattern": "^(MIGRATION:|DatabaseError|column .* does not exist)",
+      "body_patterns": [
+        "(sentry\\.io/|DatabaseError|does not exist)"
+      ]
+    },
+    "slot_names": [
+      "sentry_issue_id",
+      "table_name",
+      "column_or_relation"
+    ],
+    "slot_validators": {
+      "sentry_issue_id": "^[A-Z][A-Z0-9\\-]+-\\d+$",
+      "table_name": "^[a-z_][a-z0-9_]{0,62}$",
+      "column_or_relation": "^[a-z_][a-z0-9_]{0,62}$"
+    },
+    "step_intents": [
+      "Fetch the Sentry issue to confirm the DatabaseError text and extract stack context.",
+      "Scan migrations directory for a migration that creates the referenced column or relation.",
+      "Cross-check the table name in migrations to bracket the migration range to apply.",
+      "Post the apply-runbook as a comment so a human can execute the psql step; supervisor never writes to prod DB.",
+      "Flag the issue so an on-call human picks up the psql apply step."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "sentry.getIssue",
+        "slots": {
+          "issue_id": "$slots.sentry_issue_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "path": "workers/src/db/migrations/",
+          "ref": "main",
+          "grep": "$slots.column_or_relation"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "path": "workers/src/db/migrations/",
+          "ref": "main",
+          "grep": "$slots.table_name"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "Supervisor runbook: apply migrations that introduce `$slots.table_name.$slots.column_or_relation` on prod. Migration authored in repo (see $s2.matches, $s3.matches) but not applied in prod database. Human action required: run `psql` against prod replica of the affected worker DB and apply migrations N..M in order. Sentry: $slots.sentry_issue_id. If no matching migration is found in $s2/$s3, reclassify this issue to tier:red (migration authoring needed)."
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "label": "needs-human:db-migration"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "deps-bump-minor-patch",
+    "tier": "green",
+    "description": "",
+    "trigger_keywords": [
+      "dependencies",
+      "deps",
+      "bump",
+      "minor",
+      "patch"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "dependencies"
+      ],
+      "title_pattern": "^(chore\\(deps\\):|Bump)",
+      "body_patterns": [
+        "(?i)bumps?\\s+\\[?[@A-Za-z0-9._/-]+\\]?\\s+from\\s+v?\\d+\\.\\d+\\.\\d+\\s+to\\s+v?\\d+\\.\\d+\\.\\d+"
+      ]
+    },
+    "slot_names": [
+      "package_name",
+      "from_version",
+      "to_version",
+      "bump_kind",
+      "repo_name",
+      "ci_status",
+      "security_advisory"
+    ],
+    "slot_validators": {
+      "package_name": "^(@[a-z0-9][a-z0-9._-]*\\/)?[a-z0-9][a-z0-9._-]*$",
+      "from_version": "^v?\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+      "to_version": "^v?\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+      "repo_name": "^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+$"
+    },
+    "step_intents": [
+      "Confirm the PR only touches package.json (and lockfile) and that the bumped package matches the slot.",
+      "Sanity-check the lockfile resolves $slots.package_name to $slots.to_version.",
+      "Mark the PR as approved by the green-tier supervisor for audit.",
+      "Leave a human-readable rationale on the PR before merging.",
+      "Squash-merge the dependency bump now that all preconditions hold."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "path": "package.json"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "path": "package-lock.json"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "label": "auto-merge-green"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "body": "Green-tier supervisor approving $slots.bump_kind bump of $slots.package_name from $slots.from_version to $slots.to_version. CI is green and no security advisory blocks."
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.mergePR",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "merge_method": "squash"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "docs-naming-convention",
+    "tier": "green",
+    "description": "",
+    "trigger_keywords": [
+      "docs",
+      "documentation",
+      "hardening",
+      "naming",
+      "convention"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "docs",
+        "documentation",
+        "hardening"
+      ],
+      "title_pattern": "^docs[(:]",
+      "body_patterns": [
+        "(?is)path\\s*[:=]\\s*(docs|documents)/",
+        "(?is)(content|body)\\s*[:=]"
+      ]
+    },
+    "slot_names": [
+      "target_path",
+      "parent_dir",
+      "commit_message",
+      "doc_body",
+      "branch_name",
+      "scope"
+    ],
+    "slot_validators": {
+      "target_path": "^(docs|documents)/.+\\.md$",
+      "parent_dir": "^(docs|documents)(/.+)?$",
+      "commit_message": "^(docs|chore)[(:]",
+      "doc_body": "^[\\s\\S]{1,200000}$",
+      "branch_name": "^supervisor/docs/[a-z0-9][a-z0-9-]{0,60}$"
+    },
+    "step_intents": [
+      "Verify the parent directory exists before writing a new doc into it.",
+      "Check whether the target doc already exists so the PR is an add vs. update.",
+      "Open a docs-only PR adding/updating the target markdown file.",
+      "Leave a reviewer-facing note on the PR explaining provenance."
+    ],
+    "pr_files": [
+      {
+        "pathSlot": "target_path",
+        "contentSlot": "doc_body"
+      }
+    ],
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "path": "$slots.parent_dir",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "path": "$slots.target_path",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.target_path",
+              "content": "$slots.doc_body"
+            }
+          ],
+          "body": "Auto-drafted by supervisor for cluster `docs-naming-convention`.\nScope: $slots.scope\nTarget: $slots.target_path\nSource issue: see linked issue.\n",
+          "labels": [
+            "docs",
+            "supervisor",
+            "tier-green"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s3.number",
+          "body": "Supervisor opened this docs PR from the linked issue. CI runs docs-lint + credential-scrub only; no code paths touched."
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "package-version-migration",
+    "tier": "yellow",
+    "description": "Migrate a worker/app to consume a @latimer-woods-tech/* package, removing the inline implementation",
+    "trigger_keywords": [
+      "area",
+      "packages",
+      "type",
+      "refactor",
+      "package",
+      "version",
+      "migration",
+      "migrate",
+      "workerapp",
+      "consume",
+      "latimerwoodstech",
+      "removing"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "area:packages",
+        "type:refactor"
+      ],
+      "title_pattern": "consume|migrate|@latimer-woods-tech|delete.*lib|remove.*inline"
+    },
+    "slot_names": [
+      "package_name",
+      "file_to_delete",
+      "repo"
+    ],
+    "slot_validators": {
+      "package_name": "^@latimer-woods-tech/[a-z-]+$",
+      "file_to_delete": "^[a-zA-Z0-9/_.-]+\\.(?:js|ts)$",
+      "repo": "^[a-zA-Z0-9-]+$"
+    },
+    "step_intents": [
+      "read existing inline implementation to verify replacement is complete",
+      "verify new package is listed as dependency",
+      "open PR updating imports and removing inline file"
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.repo",
+          "path": "$slots.file_to_delete"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.repo",
+          "path": "package.json"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "side_effects": "write-app"
+      }
+    ]
+  },
+  {
+    "id": "reusable-workflow-rollout",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "enhancement",
+      "hardening",
+      "reusable",
+      "workflow",
+      "rollout"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "hardening"
+      ],
+      "title_pattern": "(_app-ci|_app-deploy|reusable workflow|factory workflow)",
+      "body_patterns": [
+        "(?i)(replace|migrate|adopt|switch).*(workflow|deploy\\.yml|ci\\.yml)"
+      ]
+    },
+    "slot_names": [
+      "target_repo",
+      "workflow_kind",
+      "existing_workflow_path"
+    ],
+    "slot_validators": {
+      "existing_workflow_path": "^\\.github/workflows/[A-Za-z0-9_.-]+\\.ya?ml$"
+    },
+    "step_intents": [
+      "Confirm the target repo is healthy and reachable before proposing workflow changes.",
+      "Read the app's current workflow file so the caller can preserve any custom inputs.",
+      "Read the factory reusable workflow signature to wire the caller's inputs correctly.",
+      "Open a PR that swaps the bespoke workflow for a thin caller of the factory reusable."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "factory_admin.repo.health",
+        "slots": {
+          "repo": "$slots.target_repo"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "path": "$slots.existing_workflow_path",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory-admin",
+          "path": ".github/workflows/_app-$slots.workflow_kind.yml",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "base": "main",
+          "head": "supervisor/reusable-$slots.workflow_kind-rollout",
+          "title": "Adopt factory reusable _app-$slots.workflow_kind workflow",
+          "body": "Replaces `$slots.existing_workflow_path` with a thin caller that invokes\nfactory's reusable `_app-$slots.workflow_kind.yml`.\n\n- Removes: `$slots.existing_workflow_path`\n- Adds: `.github/workflows/$slots.workflow_kind.yml` (caller, ~5-10 lines)\n\nPattern source: VK-7, xpelevator/ijustus adoption.\n",
+          "changes": [
+            {
+              "op": "delete",
+              "path": "$slots.existing_workflow_path"
+            },
+            {
+              "op": "create",
+              "path": ".github/workflows/$slots.workflow_kind.yml",
+              "from_template": "factory/callers/_app-$slots.workflow_kind.caller.yml",
+              "inputs_from": "$s2.content",
+              "reusable_signature": "$s3.content"
+            }
+          ],
+          "labels": [
+            "enhancement",
+            "hardening",
+            "supervisor"
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "sentry-triage-new-issue",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "bug",
+      "sentry",
+      "triage",
+      "new",
+      "issue"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug",
+        "sentry"
+      ],
+      "title_pattern": "^Sentry:",
+      "body_patterns": [
+        "sentry\\.io/.*/issues/"
+      ]
+    },
+    "slot_names": [
+      "sentry_short_id",
+      "repo_name",
+      "severity",
+      "fix_mode"
+    ],
+    "slot_validators": {
+      "sentry_short_id": "^[A-Z][A-Z0-9\\-]+-\\d+$",
+      "repo_name": "^[a-z0-9][a-z0-9\\-_]*\\/[a-zA-Z0-9][a-zA-Z0-9\\-_.]*$"
+    },
+    "step_intents": [
+      "Fetch the Sentry issue detail including stacktrace, breadcrumbs, and culprit frame.",
+      "Read the implicated source file at the top stack frame to localize the defect line.",
+      "Post a structured diagnosis comment on the originating GitHub issue linking Sentry evidence to the source line.",
+      "Mark the issue as triaged so downstream automation does not re-enter this template.",
+      "Open a draft PR only when fix_mode=auto_patch and a <5 line patch is derivable from the diagnosis; otherwise the orchestrator skips this step and escalates to Red."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "sentry.getIssue",
+        "slots": {
+          "short_id": "$slots.sentry_short_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "path": "$s1.culprit_file",
+          "ref": "$s1.release_sha"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "Supervisor diagnosis for $slots.sentry_short_id\n\nCulprit: $s1.culprit\nTop frame: $s1.top_frame\nFile excerpt:\n$s2.excerpt\n\nProposed remediation mode: $slots.fix_mode"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "label": "supervisor/triaged"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "$slots.repo_name",
+          "base": "main",
+          "head": "supervisor/sentry-$slots.sentry_short_id",
+          "title": "fix: $s1.culprit (Sentry $slots.sentry_short_id)",
+          "body": "Automated small-patch proposal for Sentry $slots.sentry_short_id.\n\nDiagnosis: see issue comment $s3.comment_url\nPatch size constraint: <5 lines.\nMode: $slots.fix_mode\n\nRequires human review before merge.",
+          "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "syn-package-migration",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "dependencies",
+      "packages",
+      "migration",
+      "refactor",
+      "syn",
+      "package"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "dependencies",
+        "packages",
+        "migration",
+        "refactor"
+      ],
+      "title_pattern": "^(feat|refactor|chore)\\(.*\\):\\s*(SYN-|.*package|.*extract)",
+      "body_patterns": [
+        "(?is)(package|migration|extract|workspace|publish|composite action|shared)"
+      ]
+    },
+    "slot_names": [
+      "package_name",
+      "target_repo"
+    ],
+    "slot_validators": {
+      "package_name": "^[\\s\\S]{0,120}$",
+      "target_repo": "^[\\s\\S]{0,120}$"
+    },
+    "step_intents": [
+      "Post migration triage checklist and request explicit review."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue": "$issue.number",
+          "body": "Supervisor triage plan for SYN/package migration.\n- Confirm API compatibility and semver impact\n- Verify import path + build/test changes across affected apps\n- Validate release, changelog, and rollback plan\n- Require human approval before execution\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "ux-regression-triage",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "accessibility",
+      "bug",
+      "regression",
+      "triage"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "ux",
+        "accessibility",
+        "bug"
+      ],
+      "title_pattern": "^(\\[P[0-3]\\]\\[UX\\]|ux|bug)",
+      "body_patterns": [
+        "(?is)(repro|steps|expected|actual|viewport|mobile|a11y|accessibility)"
+      ]
+    },
+    "slot_names": [
+      "severity",
+      "component"
+    ],
+    "slot_validators": {
+      "component": "^[\\s\\S]{0,200}$"
+    },
+    "step_intents": [
+      "Post a structured triage plan comment and request human approval for execution."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue": "$issue.number",
+          "body": "Supervisor triage plan for UX regression.\n- Confirm reproducibility (device + viewport)\n- Capture expected vs actual behavior\n- Propose minimal-risk fix path\n- Escalate P0/P1 for immediate assignment\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "wrangler-config-drift-fix",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "bug",
+      "wrangler",
+      "config",
+      "drift",
+      "fix"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug"
+      ],
+      "title_pattern": "(wrangler|binding|Hyperdrive)",
+      "body_patterns": [
+        "(wrangler\\.jsonc|binding|hyperdrive|kv|r2|d1|durable_object)"
+      ]
+    },
+    "slot_names": [
+      "app_name",
+      "binding_kind",
+      "binding_id",
+      "worker_name"
+    ],
+    "slot_validators": {
+      "binding_id": "^[a-f0-9]{32}$|^[A-Z][A-Z0-9_]{2,63}$",
+      "worker_name": "^[a-z][a-z0-9-]{1,62}$"
+    },
+    "step_intents": [
+      "Read the worker's current wrangler.jsonc to inspect declared bindings.",
+      "Verify whether the referenced binding exists in the Cloudflare account and resolve the correct ID if drifted.",
+      "Cross-check the worker's deploy status to confirm the drift is live and not mid-deploy.",
+      "Open a PR with the corrected binding ID so a human can review and merge."
+    ],
+    "pr_files": [],
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "$slots.app_name",
+          "path": "wrangler.jsonc"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "cloudflare.listWorkers",
+        "slots": {
+          "filter_binding_kind": "$slots.binding_kind",
+          "filter_binding_id": "$slots.binding_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "factory_admin.worker.status",
+        "slots": {
+          "worker": "$slots.worker_name"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "$slots.app_name",
+          "branch": "supervisor/wrangler-drift-$slots.worker_name",
+          "title": "fix(wrangler): correct $slots.binding_kind binding for $slots.worker_name",
+          "body": "Automated fix: wrangler.jsonc referenced a stale $slots.binding_kind binding. Updated to the resolved ID from cloudflare.listWorkers (see $s2). Current file state captured in $s1.",
+          "files": [
+            {
+              "path": "wrangler.jsonc",
+              "from_step": "s1",
+              "patch_kind": "update_binding",
+              "binding_kind": "$slots.binding_kind",
+              "new_binding_id": "$s2.resolved_id"
+            }
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  }
+]
