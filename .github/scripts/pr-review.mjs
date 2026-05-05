@@ -242,23 +242,40 @@ function loadDoc(filePath, maxChars = 8000) {
   }
 }
 
+// Tracks which docs were missing at load time so the review body can surface the gap.
+const MISSING_DOCS = [];
+
 function buildConstraintBlock(repoName) {
   const sections = [];
 
   const claudeMd = loadDoc('CLAUDE.md');
-  if (claudeMd) sections.push(`## CLAUDE.md — Factory Standing Orders\n\n${claudeMd}`);
+  if (claudeMd) {
+    sections.push(`## CLAUDE.md — Factory Standing Orders\n\n${claudeMd}`);
+  } else {
+    MISSING_DOCS.push('CLAUDE.md');
+    console.warn('[WARN] CLAUDE.md not found on disk');
+  }
 
   const fridge = loadDoc('docs/supervisor/FRIDGE.md', 4000);
-  if (fridge) sections.push(`## FRIDGE.md — Non-Negotiable Operating Rules\n\n${fridge}`);
+  if (fridge) {
+    sections.push(`## FRIDGE.md — Non-Negotiable Operating Rules\n\n${fridge}`);
+  } else {
+    MISSING_DOCS.push('docs/supervisor/FRIDGE.md');
+    console.warn('[WARN] docs/supervisor/FRIDGE.md not found on disk');
+  }
 
-  // Per-repo standing orders for cross-repo reviews (e.g. _external_reviews/coh/CLAUDE.md)
+  // Per-repo standing orders for cross-repo reviews (.github/repo-contexts/{repo}/CLAUDE.md)
   if (repoName && repoName !== 'factory') {
-    const perRepo = loadDoc(`_external_reviews/${repoName}/CLAUDE.md`, 4000);
-    if (perRepo) sections.push(`## ${repoName}/CLAUDE.md — Repo-Specific Standing Orders\n\n${perRepo}`);
+    const perRepo = loadDoc(`.github/repo-contexts/${repoName}/CLAUDE.md`, 4000);
+    if (perRepo) {
+      sections.push(`## ${repoName}/CLAUDE.md — Repo-Specific Standing Orders\n\n${perRepo}`);
+    } else {
+      MISSING_DOCS.push(`.github/repo-contexts/${repoName}/CLAUDE.md`);
+      console.warn(`[WARN] No per-repo CLAUDE.md found at .github/repo-contexts/${repoName}/CLAUDE.md — review proceeds without repo-specific context`);
+    }
   }
 
   if (sections.length === 0) {
-    // Hard fallback — should never happen in a normal checkout
     console.warn('[WARN] No canonical docs found on disk — falling back to minimal constraint set');
     return '## Factory Hard Constraints\nSee CLAUDE.md and docs/supervisor/FRIDGE.md for full constraints.';
   }
@@ -586,6 +603,12 @@ function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTit
   lines.push(`**Decision:** ${decisionLine}`);
   lines.push(`**Reviewers:** 🤖 Grok (party 1) → 🤖 Claude (party 2) — both must approve`);
   lines.push('');
+
+  if (MISSING_DOCS.length > 0) {
+    lines.push(`> ⚠️ **Partial context** — the following canonical docs were not found at review time. The LLM reviewed with reduced context. Add these files and re-run to get a fully-informed review:`);
+    for (const f of MISSING_DOCS) lines.push(`> - \`${f}\``);
+    lines.push('');
+  }
 
   // Violations
   const allViolations = [
