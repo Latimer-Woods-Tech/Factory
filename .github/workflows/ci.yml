@@ -72,3 +72,8 @@ jobs:
       - name: Enforce service registry / app-registry drift check (FRH-01)
         working-directory: apps/admin-studio
         run: node scripts/check-service-registry.mjs
+
+      - name: Lint publish workflow with actionlint (FRH-06)
+        run: |
+          bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint .github/workflows/publish.yml
