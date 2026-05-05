@@ -21,6 +21,24 @@
 #   When you add a new hardcoded URL in a frontend: add it to the consumers list.
 #   When you rename a worker: update both the name and the url here after the migration.
 
+# ─── AUTOMATION DENYLIST ──────────────────────────────────────────────────────
+#
+# Repos and workers listed here are FORBIDDEN to automation at the registry level.
+# This is layer 2 of the 3-layer lockout described in docs/supervisor/FRIDGE.md rule 1.
+# Layer 1: CODEOWNERS on the target repo. Layer 3: supervisor denylist in supervisor-core.mjs.
+#
+# automation: forbidden  — The supervisor, Copilot, and any automated agent must
+#   never open a PR, touch a worker, or read data in this repo under any circumstances.
+#
+automation_denylist:
+  - id: wordis-bond
+    repo: Latimer-Woods-Tech/wordis-bond
+    automation: forbidden
+    reason: >
+      FRIDGE rule 1 — three-layer lockout (CODEOWNERS + this registry + supervisor denylist).
+      Any breach here carries TCPA / production-data-loss risk.
+      No exceptions. Contact @adrper79-dot for any human-initiated work.
+
 workers:
   - id: prime-self
     name: prime-self                                       # matches wrangler.jsonc `name`

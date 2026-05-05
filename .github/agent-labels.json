@@ -54,6 +54,11 @@
       "name": "status:abandoned",
       "color": "8c959f",
       "description": "Agent stopped and the issue needs reassignment"
+    },
+    {
+      "name": "supervisor:no-template",
+      "color": "b60205",
+      "description": "No template matched — Red tier, requires CODEOWNER to author template or handle manually"
     }
   ]
 }
