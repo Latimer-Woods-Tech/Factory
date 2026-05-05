@@ -68,3 +68,6 @@ jobs:
 
       - name: Enforce smoke secret contract
         run: node scripts/check-smoke-secret-contract.mjs
+
+      - name: Validate docs quality (broken internal links)
+        run: node scripts/validate-docs-quality.mjs --max-errors 50
