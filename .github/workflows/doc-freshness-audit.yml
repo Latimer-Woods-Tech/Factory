@@ -55,6 +55,18 @@ jobs:
               console.log(`Created issue #${issue.data.number}`);
             }
 
+
+      - name: Check STACK.md version drift
+        id: stack-drift
+        run: node scripts/update-stack-manifest.js --check
+        continue-on-error: true
+
+      - name: Flag STACK.md drift in summary
+        if: steps.stack-drift.outcome == 'failure'
+        run: |
+          echo "## ⚠️ STACK.md Version Drift Detected" >> $GITHUB_STEP_SUMMARY
+          echo "Package versions in `docs/STACK.md` are out of sync with `packages/*/package.json`." >> $GITHUB_STEP_SUMMARY
+          echo "Run `node scripts/update-stack-manifest.js` or trigger the [Update Stack Manifest workflow](../../actions/workflows/update-stack-manifest.yml)." >> $GITHUB_STEP_SUMMARY
       - name: Publish audit report to workflow summary
         if: always()
         run: |
