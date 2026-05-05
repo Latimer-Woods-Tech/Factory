@@ -110,20 +110,23 @@ jobs:
 
       - name: Apply database migrations
         run: |
-          # Run migrations against Neon via psql
-          # The migrations use IF NOT EXISTS, so they're safe to run multiple times
-          if [ -z "${{ secrets.NEON_DATABASE_URL }}" ]; then
-            echo "::warning::NEON_DATABASE_URL not set; skipping migrations"
+          # Run all migrations against Neon via psql.
+          # All migrations use IF NOT EXISTS, so they are idempotent and safe to re-run.
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "::warning::DATABASE_URL not set; skipping migrations — ensure tables exist in the target database"
             exit 0
           fi
-          # Install psql if not available
-          apt-get update && apt-get install -y postgresql-client || true
-          # Apply migrations in sequence
-          psql "${{ secrets.NEON_DATABASE_URL }}" < apps/admin-studio/migrations/0001_studio_audit_log.sql
-          psql "${{ secrets.NEON_DATABASE_URL }}" < apps/admin-studio/migrations/0005_function_catalog.sql
+          # Install psql
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          # Apply all pending migrations in sequence (sorted by filename)
+          for f in $(ls apps/admin-studio/migrations/*.sql | sort); do
+            echo "Applying migration: $f"
+            psql "${{ secrets.DATABASE_URL }}" -v ON_ERROR_STOP=1 -f "$f"
+          done
           echo "✓ Database migrations applied successfully"
-        continue-on-error: true
         shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Deploy
         run: npx wrangler deploy --env ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
