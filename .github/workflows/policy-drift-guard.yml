@@ -16,7 +16,7 @@ jobs:
       - uses: actions/create-github-app-token@v3
         id: app-token
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
+          client-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
 
@@ -138,10 +138,20 @@ jobs:
             fi
 
             # Block force pushes
-            force=$(jq -r '.allow_force_pushes.enabled // true' "$body")
+            force=$(jq -r '
+              if (.allow_force_pushes | type) == "object" and (.allow_force_pushes | has("enabled")) then
+                .allow_force_pushes.enabled | tostring
+              elif .allow_force_pushes == null then
+                "unknown"
+              else
+                .allow_force_pushes | tostring
+              end
+            ' "$body")
             if [ "$force" = "true" ]; then
               echo "::error::factory main allows force pushes. (SEC-1.2)"
               FAILED=1
+            elif [ "$force" = "unknown" ]; then
+              echo "::warning::Could not determine allow_force_pushes from the branch protection payload; token visibility may be limited."
             fi
 
             echo "require_pr=$require_pr, dismiss_stale=$dismiss_stale, codeowners=$codeowners, linear=$linear, allow_force_pushes=$force"
