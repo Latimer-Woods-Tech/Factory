@@ -296,6 +296,7 @@ not inside Cloudflare Workers V8 isolates. apt-get, psql, bash, Node.js, and she
 expected and correct in those files. Do NOT flag them as Workers violations.
 
 ## EXPLICITLY NOT YOUR JOB — do NOT flag these as violations
+const REVIEW_POLICY_PROMPT = `
 - The design of the PR review pipeline itself (trust tiers, bot review, 2-party consensus, CODEOWNERS structure).
   These are intentional governance choices made by the repository owners.
 - CODEOWNERS file changes — the bot co-ownership assignments are deliberate and correct.
@@ -316,16 +317,16 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
 
 ### Security — flag as architectural_concern (blocks merge)
-- SQL injection: raw string interpolation into Drizzle queries or `sql` tagged templates with unescaped user input
-- Auth bypass: JWT verification skipped, `alg: none` accepted, token fields trusted without signature check
+- SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input
+- Auth bypass: JWT verification skipped, \`alg: none\` accepted, token fields trusted without signature check
 - Credentials or PII logged to console or included in error responses sent to clients
 - User-controlled input reflected in HTTP responses without sanitization (XSS)
-- CORS configured with `*` on routes that accept cookies or Authorization headers
+- CORS configured with \`*\` on routes that accept cookies or Authorization headers
 - Missing RLS enforcement on Neon queries that touch multi-tenant user data
 - Secrets or API keys hardcoded in source (not caught by the wrangler-vars check)
 
 ### Correctness — flag as architectural_concern (blocks merge)
-- Missing `await` on a Promise where the result or side-effect matters (silent data loss)
+- Missing \`await\` on a Promise where the result or side-effect matters (silent data loss)
 - Durable Object state mutated from outside the DO class (breaks actor isolation)
 - Race condition: shared mutable state between concurrent requests in a Worker (Workers share nothing — flag globals that accumulate state across requests)
 - DB mutations that must be atomic but lack a transaction (e.g., debit + credit, insert + update)
