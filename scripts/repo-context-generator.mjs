@@ -10,7 +10,7 @@
 //      when the search index doesn't have them yet.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { execSync, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 const ORG = 'Latimer-Woods-Tech';
 const {
@@ -91,8 +91,8 @@ Output ONLY the raw markdown — no explanation, no code fences wrapping the who
 
 // ─── Git / PR helpers ─────────────────────────────────────────────────────────
 
-function git(cmd) {
-  return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+function git(...args) {
+  return execFileSync('git', args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
 }
 
 function openPR(repoName, branchName, groundedSources) {
@@ -133,6 +133,12 @@ const manifest = JSON.parse(readFileSync('.github/repo-contexts/manifest.json', 
 const generated = [];
 
 for (const repoName of manifest.repos) {
+  // Validate repoName to prevent path traversal or shell injection
+  if (!/^[a-zA-Z0-9_.-]+$/.test(repoName) || repoName.includes('..')) {
+    console.warn(`[SKIP] ${repoName} — invalid repo name, skipping`);
+    continue;
+  }
+
   const contextPath = `.github/repo-contexts/${repoName}/CLAUDE.md`;
 
   if (existsSync(contextPath)) {
@@ -159,15 +165,23 @@ for (const repoName of manifest.repos) {
   }
 
   mkdirSync(`.github/repo-contexts/${repoName}`, { recursive: true });
-  writeFileSync(contextPath, content.trim() + '\n', 'utf8');
+  try {
+    writeFileSync(contextPath, content.trim() + '\n', { encoding: 'utf8', flag: 'wx' });
+  } catch (e) {
+    if (/** @type {NodeJS.ErrnoException} */ (e).code === 'EEXIST') {
+      console.log(`[SKIP] ${repoName} — context already exists`);
+      continue;
+    }
+    throw e;
+  }
 
   const branchName = `chore/repo-context-${repoName}-${Date.now()}`;
-  git(`git checkout -b ${branchName}`);
-  git(`git add ${contextPath}`);
-  git(`git commit -m "docs(repo-contexts): generate ${repoName}/CLAUDE.md"`);
-  git(`git push origin ${branchName}`);
+  git('checkout', '-b', branchName);
+  git('add', contextPath);
+  git('commit', '-m', `docs(repo-contexts): generate ${repoName}/CLAUDE.md`);
+  git('push', 'origin', branchName);
   openPR(repoName, branchName);
-  git('git checkout -');
+  git('checkout', '-');
 
   console.log(`[OK] ${repoName} — PR opened`);
   generated.push(repoName);
