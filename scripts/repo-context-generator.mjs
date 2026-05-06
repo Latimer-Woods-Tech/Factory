@@ -10,7 +10,7 @@
 //      when the search index doesn't have them yet.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 
 const ORG = 'Latimer-Woods-Tech';
 const {
@@ -113,8 +113,16 @@ function openPR(repoName, branchName, groundedSources) {
     `🤖 Generated with [Claude Code](https://claude.com/claude-code)`,
   ].join('\n');
 
-  execSync(
-    `gh pr create --repo ${ORG}/factory --title "docs(repo-contexts): generate ${repoName}/CLAUDE.md" --body ${JSON.stringify(body)} --base main --head ${branchName}`,
+  execFileSync(
+    'gh',
+    [
+      'pr', 'create',
+      '--repo', `${ORG}/factory`,
+      '--title', `docs(repo-contexts): generate ${repoName}/CLAUDE.md`,
+      '--body', body,
+      '--base', 'main',
+      '--head', branchName,
+    ],
     { encoding: 'utf8' },
   );
 }
