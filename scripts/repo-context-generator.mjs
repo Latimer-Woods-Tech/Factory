@@ -9,8 +9,9 @@
 //   2. GitHub API supplement — fetches CLAUDE.md / README.md from private repos
 //      when the search index doesn't have them yet.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 
 const ORG = 'Latimer-Woods-Tech';
 const {
@@ -139,12 +140,8 @@ for (const repoName of manifest.repos) {
     continue;
   }
 
-  const contextPath = `.github/repo-contexts/${repoName}/CLAUDE.md`;
-
-  if (existsSync(contextPath)) {
-    console.log(`[SKIP] ${repoName} — context already exists`);
-    continue;
-  }
+  const contextDir = join('.github', 'repo-contexts', repoName);
+  const contextPath = join(contextDir, 'CLAUDE.md');
 
   console.log(`[GEN] ${repoName} — discovering via Google Search grounding...`);
 
@@ -164,7 +161,7 @@ for (const repoName of manifest.repos) {
     continue;
   }
 
-  mkdirSync(`.github/repo-contexts/${repoName}`, { recursive: true });
+  mkdirSync(contextDir, { recursive: true });
   try {
     writeFileSync(contextPath, content.trim() + '\n', { encoding: 'utf8', flag: 'wx' });
   } catch (e) {
