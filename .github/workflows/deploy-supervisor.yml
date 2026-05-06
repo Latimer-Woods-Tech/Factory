@@ -58,7 +58,8 @@ jobs:
       - name: Build dependency packages
         run: |
           set -euo pipefail
-          for pkg in errors monitoring logger llm llm-meter admin; do
+          # Build in strict dependency order (see CLAUDE.md §Package Dependency Order)
+          for pkg in errors monitoring logger neon analytics llm llm-meter admin; do
             echo "=== Building packages/${pkg} ==="
             cd "packages/${pkg}"
             npm ci --ignore-scripts
