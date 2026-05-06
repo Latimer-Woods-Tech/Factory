@@ -296,7 +296,6 @@ not inside Cloudflare Workers V8 isolates. apt-get, psql, bash, Node.js, and she
 expected and correct in those files. Do NOT flag them as Workers violations.
 
 ## EXPLICITLY NOT YOUR JOB — do NOT flag these as violations
-const REVIEW_POLICY_PROMPT = `
 - The design of the PR review pipeline itself (trust tiers, bot review, 2-party consensus, CODEOWNERS structure).
   These are intentional governance choices made by the repository owners.
 - CODEOWNERS file changes — the bot co-ownership assignments are deliberate and correct.
@@ -330,17 +329,17 @@ const REVIEW_POLICY_PROMPT = `
 - Durable Object state mutated from outside the DO class (breaks actor isolation)
 - Race condition: shared mutable state between concurrent requests in a Worker (Workers share nothing — flag globals that accumulate state across requests)
 - DB mutations that must be atomic but lack a transaction (e.g., debit + credit, insert + update)
-- Unhandled rejection: `.catch()` or `try/catch` absent on a top-level async call that can fail at runtime
+- Unhandled rejection: \`.catch()\` or \`try/catch\` absent on a top-level async call that can fail at runtime
 
 ### Reliability — flag as warning (non-blocking)
-- External API call with no timeout (beyond the fetch `.ok` check — is there an AbortController?)
+- External API call with no timeout (beyond the fetch \`.ok\` check — is there an AbortController?)
 - Webhook or payment handler missing idempotency key (duplicate delivery = duplicate charge)
 - Polling loop or retry without exponential backoff inside a Worker (CPU budget risk)
 - Error message exposes internal stack trace or DB schema details to the HTTP client
 
 ### Cloudflare Workers specifics — flag as architectural_concern if severe, warning otherwise
 - Synchronous CPU loop > ~5ms estimated wall time (Workers have a 10ms CPU subrequest limit in the free tier, 30ms paid — flag obvious offenders like sorting large arrays, heavy regex on large strings)
-- Streaming response (`TransformStream`, SSE) that never closes on error path (leaks the connection)
+- Streaming response (\`TransformStream\`, SSE) that never closes on error path (leaks the connection)
 - KV or R2 used for data that requires strong consistency (flag if the comment or logic implies read-your-writes guarantee)
 
 ### RED-TIER HARDCODED RULES — these override lgtm:true. Apply when the PR touches these paths.
@@ -348,26 +347,26 @@ const REVIEW_POLICY_PROMPT = `
 #### GitHub Actions security (.github/workflows/**, .github/scripts/**)
 These run with GITHUB_TOKEN repo access and can exfiltrate all secrets or rewrite code.
 You are the ONLY gate — flag any of these as architectural_concern and set lgtm:false:
-- CRITICAL: User-controlled data interpolated directly into a `run:` shell step — e.g., `run: echo "${{ github.event.pull_request.title }}"` or any `${{ github.event.* }}` / `${{ github.head_ref }}` / `${{ inputs.* }}` used directly in shell. Script injection. Fix is always `env: { VAR: "${{ ... }}" }` then reference `$VAR` in shell.
-- CRITICAL: `pull_request_target` trigger combined with `actions/checkout` of the PR head SHA or branch — allows arbitrary code from a fork to execute with elevated token. Flag any workflow with `on: pull_request_target` that also checks out the PR head.
-- CRITICAL: Third-party `uses:` action pinned to a mutable ref (tag like `@v3`, branch like `@main`) rather than a full commit SHA — tag can be moved to point to malicious code. Only exempt actions in the `actions/*`, `github/*`, or `Latimer-Woods-Tech/*` namespaces from this rule.
-- CRITICAL: `.github/CODEOWNERS` change that removes `@adrper79-dot` from ANY path — eliminates the human safety anchor from the trust model.
-- Warning: Secrets passed via `with:` to third-party actions — prefer passing via `env:` to limit surface.
-- Warning: Job declares `permissions: write-all` or `contents: write` when triggered by an external event (pull_request, issues, etc.) — scope to least privilege.
+- CRITICAL: User-controlled data interpolated directly into a \`run:\` shell step — e.g., \`run: echo "\${{ github.event.pull_request.title }}"\` or any \`\${{ github.event.* }}\` / \`\${{ github.head_ref }}\` / \`\${{ inputs.* }}\` used directly in shell. Script injection. Fix is always \`env: { VAR: "\${{ ... }}" }\` then reference \`\$VAR\` in shell.
+- CRITICAL: \`pull_request_target\` trigger combined with \`actions/checkout\` of the PR head SHA or branch — allows arbitrary code from a fork to execute with elevated token. Flag any workflow with \`on: pull_request_target\` that also checks out the PR head.
+- CRITICAL: Third-party \`uses:\` action pinned to a mutable ref (tag like \`@v3\`, branch like \`@main\`) rather than a full commit SHA — tag can be moved to point to malicious code. Only exempt actions in the \`actions/*\`, \`github/*\`, or \`Latimer-Woods-Tech/*\` namespaces from this rule.
+- CRITICAL: \`.github/CODEOWNERS\` change that removes \`@adrper79-dot\` from ANY path — eliminates the human safety anchor from the trust model.
+- Warning: Secrets passed via \`with:\` to third-party actions — prefer passing via \`env:\` to limit surface.
+- Warning: Job declares \`permissions: write-all\` or \`contents: write\` when triggered by an external event (pull_request, issues, etc.) — scope to least privilege.
 
 #### Database migrations (migrations/**, workers/src/db/migrations/**)
 Migrations are irreversible on production. You are the ONLY gate:
-- CRITICAL: `DROP TABLE` or `DROP COLUMN` with no corresponding rollback/down migration in the same PR — data loss with no recovery path.
+- CRITICAL: \`DROP TABLE\` or \`DROP COLUMN\` with no corresponding rollback/down migration in the same PR — data loss with no recovery path.
 - CRITICAL: Adding a NOT NULL column without a DEFAULT value to a table that has existing rows — will crash the migration on any populated database.
 - CRITICAL: RLS policy removed or disabled without an equivalent replacement in the same PR — exposes multi-tenant data immediately on deploy.
-- Warning: `CREATE INDEX` without `CONCURRENTLY` on a table that is likely to have significant data (production tables) — takes an exclusive lock.
+- Warning: \`CREATE INDEX\` without \`CONCURRENTLY\` on a table that is likely to have significant data (production tables) — takes an exclusive lock.
 
 #### Billing and Stripe handlers (handlers/billing*, handlers/stripe*, apps/*/src/billing**)
 Money errors are not recoverable. You are the ONLY gate:
-- CRITICAL: Stripe PaymentIntent, charge, or Subscription creation missing an `idempotencyKey` — duplicate webhook delivery = duplicate charge to the customer.
-- CRITICAL: Stripe webhook handler that does not call `stripe.webhooks.constructEvent(body, sig, secret)` before processing — forged webhook events can trigger charges or subscription changes.
+- CRITICAL: Stripe PaymentIntent, charge, or Subscription creation missing an \`idempotencyKey\` — duplicate webhook delivery = duplicate charge to the customer.
+- CRITICAL: Stripe webhook handler that does not call \`stripe.webhooks.constructEvent(body, sig, secret)\` before processing — forged webhook events can trigger charges or subscription changes.
 - CRITICAL: Non-atomic read-then-write on billing state (e.g., read subscription status, then conditionally create a charge without a transaction or lock) — race condition = double charge.
-- CRITICAL: `sk_test_` key used in a production code path, or `sk_live_` key referenced outside of a clearly production-gated path — mode mismatch causes real charges in test or missed charges in prod.
+- CRITICAL: \`sk_test_\` key used in a production code path, or \`sk_live_\` key referenced outside of a clearly production-gated path — mode mismatch causes real charges in test or missed charges in prod.
 
 Output ONLY valid JSON — no markdown wrapper, no explanation outside the JSON:
 {
