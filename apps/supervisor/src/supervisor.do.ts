@@ -45,8 +45,9 @@ export class SupervisorDO {
           return new Response('not found', { status: 404 });
       }
     } catch (e) {
+      console.error('[supervisor.do] unhandled error:', e);
       return new Response(
-        JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+        JSON.stringify({ error: 'internal error' }),
         { status: 500, headers: { 'content-type': 'application/json' } },
       );
     }

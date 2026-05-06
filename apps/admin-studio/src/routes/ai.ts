@@ -363,7 +363,9 @@ ai.post('/chat', async (c) => {
       model: 'claude-haiku-4-20250514',
       max_tokens: 2048,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
-      system,
+      system: system.length >= 4096
+        ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
+        : system,
       messages,
       stream: true,
     }),
