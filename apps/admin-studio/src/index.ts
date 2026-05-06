@@ -13,6 +13,7 @@ import { auditMiddleware } from './middleware/audit.js';
 
 import auth from './routes/auth.js';
 import { runAnalysisCycle } from './routes/ai.js';
+import { runDigest } from './digest/index.js';
 import me from './routes/me.js';
 import tests from './routes/tests.js';
 import deploy from './routes/deploy.js';
@@ -119,9 +120,18 @@ app.notFound((c) =>
   c.json({ error: 'Not found', path: c.req.path, requestId: c.var.requestId }, 404),
 );
 
+/** Cron expressions that fire the digest (UTC): 06:30 ET and 18:30 ET */
+const DIGEST_CRONS = new Set(['30 10 * * *', '30 22 * * *']);
+
 export default {
   fetch: app.fetch,
-  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+  scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+    // Always run the self-improvement analysis cycle
     ctx.waitUntil(runAnalysisCycle(env));
+
+    // Run the digest only on the 10:30 UTC and 22:30 UTC crons
+    if (DIGEST_CRONS.has(controller.cron)) {
+      ctx.waitUntil(runDigest(env));
+    }
   },
 } satisfies ExportedHandler<Env>;

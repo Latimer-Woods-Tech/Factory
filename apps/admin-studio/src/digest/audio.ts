@@ -1,0 +1,114 @@
+/**
+ * Factory Digest — ElevenLabs TTS + R2 upload.
+ *
+ * Best-effort: if ElevenLabs is unavailable or R2 is unconfigured the
+ * function returns null and the email is sent without an audio link.
+ *
+ * Steps:
+ *   1. Call ElevenLabs TTS API with the plain-text summary.
+ *   2. Upload the MP3 to R2 under `digest/{label}.mp3`.
+ *   3. Return the public URL (R2_PUBLIC_DOMAIN + key).
+ */
+
+import type { Env } from '../env.js';
+
+const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
+const TTS_TIMEOUT_MS = 30_000;
+
+/**
+ * Truncates text to a safe length for TTS (ElevenLabs default limit ≤5 000 chars).
+ * The digest renderer already targets ≤500 words; this is a safety net.
+ */
+function safeTruncate(text: string, maxChars = 4_500): string {
+  if (text.length <= maxChars) return text;
+  const truncated = text.slice(0, maxChars);
+  const lastPeriod = truncated.lastIndexOf('.');
+  return lastPeriod > maxChars - 200 ? truncated.slice(0, lastPeriod + 1) : truncated;
+}
+
+/**
+ * Generates an MP3 from the plain-text digest summary via ElevenLabs TTS,
+ * uploads it to R2, and returns the public URL.
+ *
+ * Returns null (never throws) if generation or upload fails.
+ */
+export async function generateAndUploadAudio(
+  text: string,
+  label: string,
+  env: Env,
+): Promise<string | null> {
+  const apiKey = env.ELEVENLABS_API_KEY;
+  const voiceId = env.ELEVENLABS_VOICE_DEFAULT;
+  const r2Bucket = env.DIGEST_R2;
+  const r2PublicDomain = env.R2_PUBLIC_DOMAIN;
+
+  if (!apiKey || !voiceId) {
+    console.warn('[digest/audio] ElevenLabs not configured — skipping audio generation');
+    return null;
+  }
+
+  if (!r2Bucket || !r2PublicDomain) {
+    console.warn('[digest/audio] R2 not configured (DIGEST_R2 binding or R2_PUBLIC_DOMAIN missing) — skipping upload');
+    return null;
+  }
+
+  const safeText = safeTruncate(text);
+
+  // ── 1. Call ElevenLabs TTS ────────────────────────────────────────────────
+  let mp3Buffer: ArrayBuffer;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TTS_TIMEOUT_MS);
+
+    const ttsRes = await fetch(
+      `${ELEVENLABS_API_BASE}/text-to-speech/${encodeURIComponent(voiceId)}`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': apiKey,
+          'Content-Type': 'application/json',
+          Accept: 'audio/mpeg',
+        },
+        body: JSON.stringify({
+          text: safeText,
+          model_id: 'eleven_turbo_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
+        signal: ctrl.signal,
+      },
+    );
+    clearTimeout(timer);
+
+    if (!ttsRes.ok) {
+      const errBody = await ttsRes.text();
+      console.error(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status}: ${errBody}`);
+      return null;
+    }
+
+    mp3Buffer = await ttsRes.arrayBuffer();
+  } catch (err) {
+    console.error('[digest/audio] ElevenLabs TTS fetch failed:', (err as Error).message);
+    return null;
+  }
+
+  // ── 2. Upload to R2 ───────────────────────────────────────────────────────
+  const key = `digest/${label}.mp3`;
+  try {
+    await r2Bucket.put(key, mp3Buffer, {
+      httpMetadata: {
+        contentType: 'audio/mpeg',
+        cacheControl: 'public, max-age=86400',
+      },
+    });
+  } catch (err) {
+    console.error('[digest/audio] R2 upload failed:', (err as Error).message);
+    return null;
+  }
+
+  // ── 3. Build public URL ───────────────────────────────────────────────────
+  const domain = r2PublicDomain.replace(/\/$/, '');
+  return `${domain}/${key}`;
+}
