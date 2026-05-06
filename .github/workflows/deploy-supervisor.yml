@@ -102,7 +102,10 @@ jobs:
               echo "::warning::Skipping $name — secret not set in this repo"
               return 0
             fi
-            echo "$val" | npx wrangler secret put "$name" --env "${TARGET_ENV}" 2>&1 | grep -v "^$"
+            # Staging = no --env (top-level config, all bindings available)
+            # Production = --env production (routes override)
+            ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+            echo "$val" | npx wrangler secret put "$name" ${ENV_FLAG} 2>&1 | grep -v "^$"
           }
 
           put_secret ANTHROPIC_API_KEY   "${{ secrets.ANTHROPIC_API_KEY }}"
@@ -118,7 +121,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
-          npx wrangler deploy --env "${TARGET_ENV}"
+          # Staging: deploy top-level config (workers_dev: true, all bindings including DO/D1)
+          # Production: deploy --env production (adds custom routes, disables workers_dev)
+          if [ "${TARGET_ENV}" = "production" ]; then
+            npx wrangler deploy --env production
+          else
+            npx wrangler deploy
+          fi
 
       - name: Post-deploy health check (staging)
         if: ${{ (github.event.inputs.env != 'production') && (github.event_name != 'push' || github.ref != 'refs/heads/main') }}
