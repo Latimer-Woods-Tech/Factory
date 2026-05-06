@@ -25,7 +25,7 @@ export interface Template {
   id: string;
   tier: 'green' | 'yellow' | 'red';
   description: string;
-  trigger_keywords?: (string | number)[];
+  trigger_keywords?: string[];
   triggers?: TemplateTriggers;
   steps?: Array<{
     tool: string;

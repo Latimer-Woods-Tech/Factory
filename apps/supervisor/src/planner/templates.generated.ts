@@ -2,7 +2,7 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-06T03:45:20.989Z
+// Generated: 2026-05-06T05:36:00.563Z
 // Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, migration-drift-fix.yml, package-version-migration.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
@@ -754,8 +754,8 @@ export const GENERATED_TEMPLATES: Template[] = [
       "health",
       "degraded",
       "down",
-      503,
-      502,
+      "503",
+      "502",
       "timeout",
       "unreachable",
       "synthetic monitor"

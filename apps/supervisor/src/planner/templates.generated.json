@@ -962,8 +962,8 @@
       "health",
       "degraded",
       "down",
-      503,
-      502,
+      "503",
+      "502",
       "timeout",
       "unreachable",
       "synthetic monitor"
