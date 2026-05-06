@@ -38,7 +38,7 @@
   ],
 
   "vars": {
-    "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/REPLACE/supervisor",
+    "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/supervisor",
     "VERTEX_PROJECT": "factory-495015",
     "VERTEX_LOCATION": "us-central1",
     "PER_RUN_CAP_CENTS": "500"
@@ -51,7 +51,13 @@
       ]
     },
     "staging": {
-      "workers_dev": true
+      "workers_dev": true,
+      "vars": {
+        "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/supervisor",
+        "VERTEX_PROJECT": "factory-495015",
+        "VERTEX_LOCATION": "us-central1",
+        "PER_RUN_CAP_CENTS": "500"
+      }
     }
   }
 }
