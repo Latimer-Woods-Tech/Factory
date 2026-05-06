@@ -5,6 +5,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
 
+  // Cron: daily weekday heartbeat at 12:00 UTC (≈07:00 ET).
+  // Phase-1: noop heartbeat only. Enable after D1 databases are provisioned.
+  "triggers": {
+    "crons": ["0 12 * * 1-5"]
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "SUPERVISOR", "class_name": "SupervisorDO" },
