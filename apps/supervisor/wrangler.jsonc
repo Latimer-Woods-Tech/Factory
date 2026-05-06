@@ -11,6 +11,15 @@
     "crons": ["0 12 * * 1-5"]
   },
 
+  // Cron: 11:00 UTC = 07:00 AM ET on weekdays (Mon–Fri).
+  // Required secrets (set via `wrangler secret put <NAME>`):
+  //   GH_TOKEN          — GitHub fine-grained token: repo:read, issues:write, reactions:read
+  //   PUSHOVER_TOKEN    — Pushover application token
+  //   PUSHOVER_USER_KEY — Pushover user/group key
+  "triggers": {
+    "crons": ["0 11 * * 1-5"]
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "SUPERVISOR", "class_name": "SupervisorDO" },

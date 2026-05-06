@@ -15,6 +15,12 @@ export interface Env {
   VERTEX_LOCATION: string;
   PER_RUN_CAP_CENTS?: string;
   JWT_SECRET: string;
+  /** GitHub personal access token with repo:read, issues:write scope. Set via `wrangler secret put GH_TOKEN`. */
+  GH_TOKEN: string;
+  /** Pushover application token. Set via `wrangler secret put PUSHOVER_TOKEN`. */
+  PUSHOVER_TOKEN: string;
+  /** Pushover user key. Set via `wrangler secret put PUSHOVER_USER_KEY`. */
+  PUSHOVER_USER_KEY: string;
 }
 
 /**
