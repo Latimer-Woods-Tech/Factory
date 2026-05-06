@@ -78,6 +78,7 @@ export interface CreatePortalSessionOptions {
 }
 
 const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-02-24.acacia';
+const PLACEHOLDER_PRICE_ID_PATTERN = /^price_x+$/i;
 
 /**
  * Creates a Stripe client configured with the Factory-standard API
@@ -220,12 +221,22 @@ export async function getSubscription(
 export async function createCheckoutSession(
   options: CreateCheckoutSessionOptions,
 ): Promise<string> {
+  const priceId = options.priceId.trim();
+
+  if (!priceId) {
+    throw new ValidationError('Stripe price ID is required');
+  }
+
+  if (PLACEHOLDER_PRICE_ID_PATTERN.test(priceId)) {
+    throw new ValidationError('Stripe price ID must be configured with a real Stripe price');
+  }
+
   const params: Stripe.Checkout.SessionCreateParams = {
     mode: options.mode ?? 'subscription',
     customer: options.customerId,
     success_url: options.successUrl,
     cancel_url: options.cancelUrl,
-    line_items: [{ price: options.priceId, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
   };
 
   if (options.paymentMethodTypes) {
@@ -241,7 +252,19 @@ export async function createCheckoutSession(
     requestOptions.idempotencyKey = options.idempotencyKey;
   }
 
-  const session = await options.stripeClient.checkout.sessions.create(params, requestOptions);
+  let session: Stripe.Checkout.Session;
+
+  try {
+    session = await options.stripeClient.checkout.sessions.create(params, requestOptions);
+  } catch (err) {
+    if (err instanceof Error && /no such price/i.test(err.message)) {
+      throw new ValidationError('Stripe price ID is not recognized by Stripe', {
+        priceId,
+      });
+    }
+
+    throw err;
+  }
 
   if (!session.url) {
     throw new InternalError('Stripe did not return a checkout URL', {

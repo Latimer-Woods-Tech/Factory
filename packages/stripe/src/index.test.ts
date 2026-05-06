@@ -231,6 +231,53 @@ describe('createCheckoutSession', () => {
     ).rejects.toThrow('Stripe did not return a checkout URL');
   });
 
+  it('throws when priceId is blank', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+
+    await expect(
+      createCheckoutSession({
+        priceId: '   ',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+      }),
+    ).rejects.toThrow('Stripe price ID is required');
+
+    expect(checkoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('throws before calling Stripe when priceId is an unresolved placeholder', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+
+    await expect(
+      createCheckoutSession({
+        priceId: 'price_xxxxxxxxxxxxx',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+      }),
+    ).rejects.toThrow('Stripe price ID must be configured with a real Stripe price');
+
+    expect(checkoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('wraps Stripe no such price failures as validation errors', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+    checkoutCreate.mockRejectedValue(new Error("No such price: 'price_missing'"));
+
+    await expect(
+      createCheckoutSession({
+        priceId: 'price_missing',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+      }),
+    ).rejects.toThrow('Stripe price ID is not recognized by Stripe');
+  });
+
   it('passes mode:"payment" for one-time purchases', async () => {
     const { client, checkoutCreate } = buildStripeMock();
     checkoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/sess_2' });
