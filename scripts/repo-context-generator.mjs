@@ -18,10 +18,31 @@ const {
   GH_TOKEN,
   GEMINI_API_KEY,
   GEMINI_MODEL = 'gemini-2.0-flash',
+  ALLOW_PRIVATE_CONTEXT_EXPORT,
 } = process.env;
 
 if (!GH_TOKEN)       throw new Error('GH_TOKEN required');
 if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY required');
+
+// ─── Security helpers ────────────────────────────────────────────────────────
+
+// Redact common secret patterns before any content leaves this process.
+const SECRET_RE = /\b(?:password|passwd|secret|token|api[_-]?key|auth(?:orization)?|credential|private[_-]?key|access[_-]?key)\s*[:=]\s*\S+/gim;
+function redactSecrets(text) {
+  return text.replace(SECRET_RE, '[REDACTED]');
+}
+
+// Validate and clean LLM-generated content before writing to disk.
+const MAX_GENERATED_BYTES = 50_000;
+function sanitiseLLMContent(raw) {
+  if (typeof raw !== 'string') throw new Error('LLM returned non-string content');
+  const clean = raw.replace(/\0/g, ''); // strip null bytes
+  const byteLen = Buffer.byteLength(clean, 'utf8');
+  if (byteLen > MAX_GENERATED_BYTES) {
+    throw new Error(`LLM response (${byteLen} bytes) exceeds ${MAX_GENERATED_BYTES}-byte limit`);
+  }
+  return clean;
+}
 
 // ─── GitHub API supplement (private repo files) ───────────────────────────────
 
@@ -145,16 +166,21 @@ for (const repoName of manifest.repos) {
 
   console.log(`[GEN] ${repoName} — discovering via Google Search grounding...`);
 
-  // Supplement grounding with any private files the crawler can't reach
+  // Supplement grounding with private files only when explicitly opted in.
+  // Gate: set ALLOW_PRIVATE_CONTEXT_EXPORT=true to enable.
+  // Secrets are redacted before the content leaves this process.
   const privateFiles = [];
-  for (const f of ['CLAUDE.md', 'README.md']) {
-    const content = await fetchPrivateFile(repoName, f);
-    if (content) privateFiles.push(`#### ${f}\n${content.slice(0, 2000)}`);
+  if (ALLOW_PRIVATE_CONTEXT_EXPORT === 'true') {
+    for (const f of ['CLAUDE.md', 'README.md']) {
+      const fileContent = await fetchPrivateFile(repoName, f);
+      if (fileContent) privateFiles.push(`#### ${f}\n${redactSecrets(fileContent).slice(0, 2000)}`);
+    }
   }
   const privateContext = privateFiles.length > 0 ? privateFiles.join('\n\n') : null;
-  if (privateContext) console.log(`  Supplementing with ${privateFiles.length} private file(s) via GitHub API`);
+  if (privateContext) console.log(`  Supplementing with ${privateFiles.length} private file(s) via GitHub API (secrets redacted)`);
 
-  const content = await generateWithGrounding(repoName, privateContext);
+  const rawContent = await generateWithGrounding(repoName, privateContext);
+  const content = sanitiseLLMContent(rawContent);
 
   if (!content.trim()) {
     console.warn(`[WARN] ${repoName} — Gemini returned empty content, skipping`);
