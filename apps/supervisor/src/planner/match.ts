@@ -19,7 +19,7 @@ export interface MatchScore {
   matchedKeywords: string[];
 }
 
-const MIN_SCORE = 0.35;
+const MIN_SCORE = 1 / 3;
 
 export function matchTemplate(
   description: string,

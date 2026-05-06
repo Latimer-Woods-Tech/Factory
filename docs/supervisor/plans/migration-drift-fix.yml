@@ -1,0 +1,83 @@
+id: migration-drift-fix
+version: 1
+tier: yellow
+trigger_keywords: [migration, drift, schema, column, relation, does not exist, applied]
+triggers:
+  labels_any_of: [bug, area:database]
+  title_pattern: "Migration drift|column .* does not exist|relation .* does not exist|migration.*not applied"
+  body_patterns:
+    - "(migration.*drift|column.*does not exist|relation.*does not exist|DatabaseError.*schema)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city, factory-admin, wordis-bond]
+    source: issue_body
+  - name: missing_item
+    type: string
+    validator: "^[a-z_][a-z0-9_.]{0,120}$"
+    source: issue_body
+  - name: migration_number
+    type: string
+    validator: "^\\d{3,4}$"
+    source: issue_body
+    optional: true
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      path: "workers/src/db/migrations"
+      ref: "main"
+      grep: "$slots.missing_item"
+    intent: "Scan migration files for the missing column/relation to identify which migration creates it."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      path: "workers/src/db/migrations"
+      ref: "main"
+      grep: "CREATE TABLE"
+    intent: "List all migration files to establish the apply sequence."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor — migration drift runbook for `$slots.affected_app`**
+
+        Missing: `$slots.missing_item`
+        Migration scan result: $s1.matches
+
+        **Root cause:** A migration that creates `$slots.missing_item` was merged to the repo but was not applied to the production Neon database.
+
+        **Fix (human action required):**
+        1. Connect to the production Neon branch for `$slots.affected_app` (see `docs/runbooks/database.md`).
+        2. Run: `npm run migrate` from the app's `workers/` directory with `DATABASE_URL` set to the production connection string.
+        3. Verify: query `SELECT column_name FROM information_schema.columns WHERE table_name = '<table>'` to confirm the column exists.
+        4. Monitor Sentry for 15 min post-apply to confirm the error stops.
+
+        The supervisor cannot write to production databases (FRIDGE rule 8 — irreversible action). A CODEOWNER must execute this runbook.
+
+        If the migration is not in the repo (migration was never authored), file a new `bug` issue tagged `supervisor:approved-source` for the DB migration gap fix template.
+
+        _Run ID: $RUN_ID_
+    intent: "Post migration apply runbook with specific file references."
+    requires_human_review: false
+  - id: s4
+    tool: github.addLabel
+    depends_on: s3
+    params:
+      labels: ["status:triaged", "area:database", "supervisor:human-action-required"]
+    intent: "Label issue as triaged, requiring human to apply the migration."
+    requires_human_review: false
+acceptance_gate:
+  comment_posted: true
+  labels_added: ["status:triaged"]

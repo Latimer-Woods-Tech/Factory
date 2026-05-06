@@ -81,21 +81,5 @@ jobs:
       - name: Enforce dependency version policy (FRH-08)
         run: node scripts/lint-dependency-versions.mjs
 
-      - name: Check canonical docs presence
-        run: |
-          set -euo pipefail
-          missing=()
-          [ ! -s CLAUDE.md ]                    && missing+=("CLAUDE.md")
-          [ ! -f docs/supervisor/FRIDGE.md ]    && missing+=("docs/supervisor/FRIDGE.md")
-          for dir in .github/repo-contexts/*/; do
-            [ -f "$dir" ] && continue  # skip manifest.json and other files
-            repo=$(basename "$dir")
-            [ ! -f ".github/repo-contexts/${repo}/CLAUDE.md" ] && missing+=(".github/repo-contexts/${repo}/CLAUDE.md")
-          done
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "⚠️  Missing canonical docs (doc-freshness-audit will auto-generate):"
-            for f in "${missing[@]}"; do echo "  - $f"; done
-            echo "Add the repo to .github/repo-contexts/manifest.json to trigger generation."
-          else
-            echo "✅ All canonical docs present"
-          fi
+      - name: Enforce docs-to-service-registry endpoint consistency (FRH-10)
+        run: node scripts/check-docs-registry-consistency.mjs

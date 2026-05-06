@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.internal-packages.json",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -12,7 +13,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
