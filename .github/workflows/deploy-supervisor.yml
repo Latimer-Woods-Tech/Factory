@@ -102,7 +102,7 @@ jobs:
               echo "::warning::Skipping $name — secret not set in this repo"
               return 0
             fi
-            echo "$val" | npx wrangler secret put "$name" --name factory-supervisor 2>&1 | grep -v "^$"
+            echo "$val" | npx wrangler secret put "$name" --env "${TARGET_ENV}" 2>&1 | grep -v "^$"
           }
 
           put_secret ANTHROPIC_API_KEY   "${{ secrets.ANTHROPIC_API_KEY }}"
@@ -118,7 +118,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
-          npx wrangler deploy --name factory-supervisor
+          npx wrangler deploy --env "${TARGET_ENV}"
 
       - name: Post-deploy health check (staging)
         if: ${{ (github.event.inputs.env != 'production') && (github.event_name != 'push' || github.ref != 'refs/heads/main') }}
