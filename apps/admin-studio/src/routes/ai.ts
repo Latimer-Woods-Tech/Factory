@@ -360,7 +360,7 @@ ai.post('/chat', async (c) => {
       'anthropic-beta': 'prompt-caching-2024-07-31',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-20250514',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096

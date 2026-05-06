@@ -105,9 +105,9 @@ export interface LLMDeps {
 // Model catalogue — keep in sync with docs/architecture/FACTORY_V1.md § LLM substrate.
 const MODELS = {
   anthropic: {
-    fast: 'claude-haiku-4-20250514',
-    balanced: 'claude-sonnet-4-20250514',
-    smart: 'claude-opus-4-20250514',
+    fast: 'claude-haiku-4-5-20251001',
+    balanced: 'claude-sonnet-4-6',
+    smart: 'claude-opus-4-7',
   },
   gemini: {
     smart: 'gemini-2.5-pro',
