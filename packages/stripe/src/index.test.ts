@@ -265,7 +265,12 @@ describe('createCheckoutSession', () => {
 
   it('wraps Stripe no such price failures as validation errors', async () => {
     const { client, checkoutCreate } = buildStripeMock();
-    checkoutCreate.mockRejectedValue(new Error("No such price: 'price_missing'"));
+    checkoutCreate.mockRejectedValue(
+      Object.assign(new Error("No such price: 'price_missing'"), {
+        type: 'StripeInvalidRequestError',
+        code: 'resource_missing',
+      }),
+    );
 
     await expect(
       createCheckoutSession({
@@ -276,6 +281,26 @@ describe('createCheckoutSession', () => {
         stripeClient: client,
       }),
     ).rejects.toThrow('Stripe price ID is not recognized by Stripe');
+  });
+
+  it('rethrows unrelated Stripe resource-missing errors', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+    checkoutCreate.mockRejectedValue(
+      Object.assign(new Error("No such customer: 'cus_missing'"), {
+        type: 'StripeInvalidRequestError',
+        code: 'resource_missing',
+      }),
+    );
+
+    await expect(
+      createCheckoutSession({
+        priceId: 'price_pro',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+      }),
+    ).rejects.toThrow("No such customer: 'cus_missing'");
   });
 
   it('passes mode:"payment" for one-time purchases', async () => {

@@ -161,6 +161,19 @@ function readNumber(source: unknown, key: string): number | null {
   return null;
 }
 
+function isStripeMissingPriceError(err: unknown): err is Error {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+
+  const stripeError = err as Error & { type?: unknown; code?: unknown };
+  return (
+    stripeError.type === 'StripeInvalidRequestError'
+    && stripeError.code === 'resource_missing'
+    && /no such price/i.test(err.message)
+  );
+}
+
 function subscriptionToStatus(
   customerId: string,
   subscription: Stripe.Subscription,
@@ -257,7 +270,7 @@ export async function createCheckoutSession(
   try {
     session = await options.stripeClient.checkout.sessions.create(params, requestOptions);
   } catch (err) {
-    if (err instanceof Error && /no such price/i.test(err.message)) {
+    if (isStripeMissingPriceError(err)) {
       throw new ValidationError('Stripe price ID is not recognized by Stripe', {
         priceId,
       });
