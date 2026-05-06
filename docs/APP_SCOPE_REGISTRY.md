@@ -14,9 +14,9 @@
 
 | App Name | Type | Owner | Repo | Status | Health | CI | Docs | Gates | W360 Phase |
 |---|---|---|---|---|---|---|---|---|---|
-| **admin-studio** | Hono Worker | Revenue/Admin team | factory (apps/) | ⚡ IN PROGRESS | /health ❓ | 🟡 Local typecheck passing | ✅ Full | RBAC, audit, deploy, smoke | P0 |
-| **schedule-worker** | Hono Worker (Cron) | Video/Ops team | factory (apps/) | ⚠️ BETA | /health ❓ | 🟡 Local typecheck passing | ✅ Full | cron schedule, video dispatch queue | P0 |
-| **video-cron** | Hono Worker (Cron) | Video team | factory (apps/) | ⚠️ BETA | /health ❓ | 🟡 Local typecheck passing | ✅ Partial | cron schedule, video rendering | P0 |
+| **admin-studio** | Hono Worker | Revenue/Admin team | factory (apps/) | ⚡ IN PROGRESS | /health ✅ (staging + production verified 2026-05-06) | 🟡 Local typecheck passing | ✅ Full | RBAC, audit, deploy, smoke | P0 |
+| **schedule-worker** | Hono Worker (Cron) | Video/Ops team | factory (apps/) | ⚠️ BETA | /health ✅ (verified 2026-05-06) | 🟡 Local typecheck passing | ✅ Full | cron schedule, video dispatch queue | P0 |
+| **video-cron** | Hono Worker (Cron) | Video team | factory (apps/) | ⚠️ BETA | /health ✅ (verified 2026-05-06) | 🟡 Local typecheck passing | ✅ Partial | cron schedule, video rendering | P0 |
 | **synthetic-monitor** | Hono Worker (Scheduled) | Observability/SRE | factory (apps/) | ⚠️ BETA | /health ✅ | ✅ Passing | ✅ Full | journey probes, SLO enforcement | P0 |
 
 ### UI Apps (React/Vite/Pages)
@@ -102,7 +102,8 @@
 - ✅ `admin-studio`, `admin-studio-ui`, `schedule-worker`, and `video-cron` now pass local `tsc --noEmit`
 - ✅ `prime-self-smoke` now has a repo-native `typecheck` script and local TS config
 - ✅ `factory-supervisor` planner test regression is fixed and local tests pass
-- 🟡 Live `/health`, deployed smoke, and environment-specific runtime verification still require direct HTTP checks after deploy
+- ✅ Direct `/health` verification completed for `schedule-worker`, `video-cron`, `admin-studio-staging`, and `admin-studio-production` on 2026-05-06
+- 🟡 Deployed smoke and deeper environment-specific runtime verification still require direct endpoint checks beyond `/health`
 
 ---
 
