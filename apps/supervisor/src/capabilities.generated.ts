@@ -14,6 +14,8 @@ export interface Capability {
   idempotency_key?: string;
   reversibility?: string;
   extra_guard?: string;
+  params_schema?: Record<string, unknown>;
+  body_schema?: Record<string, unknown>;
 }
 
 export interface AppCapabilities {

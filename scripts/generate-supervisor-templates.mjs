@@ -116,7 +116,7 @@ function buildTemplate(parsed) {
     id: parsed.id,
     tier: parsed.tier,
     description: parsed.description ?? '',
-    trigger_keywords: keywords,
+    trigger_keywords: keywords.map(String),
     triggers: {
       ...(parsed.triggers.labels_any_of ? { labels_any_of: parsed.triggers.labels_any_of } : {}),
       ...(parsed.triggers.title_pattern ? { title_pattern: parsed.triggers.title_pattern } : {}),
