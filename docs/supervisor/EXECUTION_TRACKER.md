@@ -2,7 +2,7 @@
 
 > Mirror of the LatWood Operations board. Canonical operational truth is the board itself (`PVT_kwDOEL0sNc4BWWtg`). This file is narrative; board is state.
 
-**Last updated:** 2026-05-02 10:30 ET · **Owner:** Adrian + Sauna · **Plan:** `ARCHITECTURE_PLAN_2026-05-02_SUPERVISOR_v2.1.md`
+**Last updated:** 2026-05-06 ET · **Owner:** Adrian + Sauna · **Plan:** `ARCHITECTURE_PLAN_2026-05-02_SUPERVISOR_v2.1.md`
 
 Live mirror of LatWood Operations board (`PVT_kwDOEL0sNc4BWWtg`). Kanban is operational truth; this is narrative truth. Sauna updates after every working session.
 
@@ -13,9 +13,9 @@ Live mirror of LatWood Operations board (`PVT_kwDOEL0sNc4BWWtg`). Kanban is oper
 | Epic | Issue | Gate to exit | Status |
 |---|---|---|---|
 | **SUP-0** Weekend kickoff | factory#94 | 1 verified selfprime conversion + GCP key rotated | 🟡 In progress |
-| **SUP-1** Control plane primitives | factory#96 | 8/9 kanban→prod hands-off + Vertex proven | ⚪ Todo |
-| **SUP-2** LLM substrate | factory#100 | Every org LLM call metered + gateway-routed | ⚪ Todo |
-| **SUP-3** Capabilities + templates + scaffold | factory#103 | Supervisor compiles + runs fixture end-to-end | ⚪ Todo |
+| **SUP-1** Control plane primitives | factory#96 | 8/9 kanban→prod hands-off + Vertex proven | 🟡 In progress |
+| **SUP-2** LLM substrate | factory#100 | Every org LLM call metered + gateway-routed | 🟡 In progress |
+| **SUP-3** Capabilities + templates + scaffold | factory#103 | Supervisor compiles + runs fixture end-to-end | 🟢 Code complete (PRs #359, #360 — pending deploy) |
 | **SUP-4** First supervised Green runs | (not yet filed) | 4 Green closures, 0 reverts, ≥2 new templates | — |
 | **SUP-5** Yellow + Dreamstate + steady budget | (not yet filed) | Yellow-tier VK work under supervisor review | — |
 
@@ -66,11 +66,11 @@ Sauna drafts all PRs. Adrian reviews Red-tier (these all are — revenue code).
 
 Sauna does the work. Adrian reviews templates and the supervisor scaffold.
 
-- [ ] `SUP-3.1` (factory#104) — `@latimer-woods-tech/admin@0.3.0` (side_effects-aware, parameterized query enforcement)
-- [ ] `SUP-3.2` (factory#105) — `capabilities.yml` in selfprime, videoking, xico-city, factory-admin (4 PRs)
-- [ ] `SUP-3.3` (factory#106) — Bootstrap 6–8 starter templates from last 50 merged PRs (candidates pre-analyzed in `file://session/template-bootstrap-candidates.md`)
-- [ ] `SUP-3.4` (factory#107) — Scaffold `apps/supervisor` (DO + LockDO + tools + planner + memory + auth + stats)
-- [ ] `SUP-3.5` (factory#108) — Daily scheduled Sauna supervisor (Phase-1) — drafted at `file://schedules/daily-factory-supervisor/schedule.md` (DISABLED)
+- [x] `SUP-3.1` (factory#104) — `@latimer-woods-tech/admin@0.3.0` — **Published ✅**
+- [x] `SUP-3.2` (factory#105) — `capabilities.yml` in selfprime, videoking, xico-city, factory-admin — **4 YAML files + code generator merged in PR #359 ✅**
+- [x] `SUP-3.3` (factory#106) — 15 templates total (11 original + migration-drift-fix, sentry-stripe-error-triage, user-account-suspend, worker-health-degraded) — **merged in PR #359 ✅**
+- [x] `SUP-3.4` (factory#107) — `apps/supervisor` scaffold: SupervisorDO + LockDO + ToolRegistry + planner + memory + template_stats D1 — **merged in PR #359 ✅**
+- [x] `SUP-3.5` (factory#108) — capabilities.generated.ts, stats wiring (recordRun/dry_run), GET /capabilities, daily cron trigger in wrangler.jsonc — **PR #360 in auto-merge queue ✅** (enable after D1 provisioned)
 
 **Exit gate:** supervisor compiles, one fixture issue runs end-to-end on test branch with no production effects.
 
@@ -137,12 +137,13 @@ Gated on SUP-4. Not yet filed.
 
 ## Open decisions left
 
-- **O1** Supervisor runtime: new `apps/supervisor` worker (recommended) vs extend `factory-admin` — decide Week 3
+- ~~**O1** Supervisor runtime: standalone `apps/supervisor` worker~~ — **RESOLVED 2026-05-06:** Standalone CF Worker with SupervisorDO. Closed factory#110.
 - ~~**O2** Memory backend default: Agent Memory primary + D1 dual-write~~ — **RESOLVED 2026-05-02:** CF Agent Memory primary (`MEMORY_BACKEND=agent` default), D1 dual-write. [factory#111](https://github.com/Latimer-Woods-Tech/factory/issues/111)
-- **O3** Template authoring surface: YAML in factory repo (recommended) vs Notion — decide Week 3
+- ~~**O3** Template authoring surface: YAML in factory repo~~ — **RESOLVED 2026-05-06:** YAML in `docs/supervisor/plans/` + build-time codegen. Closed factory#112.
 
 ---
 
 ## Change log
 
+- **2026-05-06 ET** — SUP-3 fully code-complete. PRs #359 (merged) + #360 (auto-merge queue). 4 capabilities.yml files (26 caps), 15 templates, template_stats D1 migration, SUP-1.4 migration drift guard, capabilities code generator, supervisor DO wired with stats/capabilities/cron. O1+O3 decision issues closed. Remaining blocker: D1 database provisioning (REPLACE_AFTER_PROVISIONING in wrangler.jsonc).
 - **2026-05-02 10:30 ET** — Tracker created. SUP-0/1/2/3 epics + 15 sub-issues filed, linked, added to board with Priority + Status. HumanDesign#39 closed as dup of HumanDesign#68. 19 new labels on factory. Scheduled supervisor task drafted (DISABLED). Template bootstrap candidates analyzed in `file://session/template-bootstrap-candidates.md`.

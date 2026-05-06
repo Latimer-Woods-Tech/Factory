@@ -5,6 +5,12 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
 
+  // Cron: daily weekday heartbeat at 12:00 UTC (≈07:00 ET).
+  // Phase-1: noop heartbeat only. Enable after D1 databases are provisioned.
+  "triggers": {
+    "crons": ["0 12 * * 1-5"]
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "SUPERVISOR", "class_name": "SupervisorDO" },
@@ -22,12 +28,12 @@
     {
       "binding": "MEMORY",
       "database_name": "factory-supervisor-memory",
-      "database_id": "REPLACE_AFTER_PROVISIONING"
+      "database_id": "9463b4a2-06c4-4f6a-b6ac-d6e1cb552bc2"
     },
     {
       "binding": "LLM_LEDGER",
       "database_name": "factory-supervisor-ledger",
-      "database_id": "REPLACE_AFTER_PROVISIONING"
+      "database_id": "1033b6bf-d38f-4948-8f3b-0de787c87f6b"
     }
   ],
 
