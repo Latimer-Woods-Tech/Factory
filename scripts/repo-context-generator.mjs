@@ -96,8 +96,9 @@ function git(cmd) {
 }
 
 function openPR(repoName, branchName, groundedSources) {
-  const sourceNote = groundedSources?.length
-    ? `Sources discovered by Gemini Search: ${groundedSources.slice(0, 5).join(', ')}`
+  const sources = Array.isArray(groundedSources) ? groundedSources : [];
+  const sourceNote = sources.length
+    ? `Sources discovered by Gemini Search: ${sources.slice(0, 5).join(', ')}`
     : 'Sources: training data + GitHub API supplement (repo may be private/unindexed)';
 
   const body = [
