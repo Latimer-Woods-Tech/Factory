@@ -93,16 +93,21 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
-          put_secret() { echo "$2" | npx wrangler secret put "$1" --name factory-supervisor 2>&1 | grep -v "^$"; }
+          # Only provision secrets that are actually set — skip empties with a warning.
+          put_secret() {
+            local name="$1" val="$2"
+            if [ -z "$val" ]; then
+              echo "::warning::Skipping $name — secret not set in this repo"
+              return 0
+            fi
+            echo "$val" | npx wrangler secret put "$name" --name factory-supervisor 2>&1 | grep -v "^$"
+          }
 
           put_secret ANTHROPIC_API_KEY   "${{ secrets.ANTHROPIC_API_KEY }}"
           put_secret GROQ_API_KEY        "${{ secrets.GROQ_API_KEY }}"
           put_secret JWT_SECRET          "${{ secrets.SUPERVISOR_JWT_SECRET }}"
           put_secret VERTEX_ACCESS_TOKEN "${{ secrets.VERTEX_ACCESS_TOKEN }}"
-
-          if [ -n "${{ secrets.GROK_API_KEY }}" ]; then
-            put_secret GROK_API_KEY "${{ secrets.GROK_API_KEY }}"
-          fi
+          put_secret GROK_API_KEY        "${{ secrets.GROK_API_KEY }}"
 
       - name: Deploy
         working-directory: apps/supervisor
