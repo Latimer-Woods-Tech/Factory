@@ -324,30 +324,30 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
 
 ### Security — flag as architectural_concern (blocks merge)
-- SQL injection: raw string interpolation into Drizzle queries or `sql` tagged templates with unescaped user input
-- Auth bypass: JWT verification skipped, `alg: none` accepted, token fields trusted without signature check
+- SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input
+- Auth bypass: JWT verification skipped, \`alg: none\` accepted, token fields trusted without signature check
 - Credentials or PII logged to console or included in error responses sent to clients
 - User-controlled input reflected in HTTP responses without sanitization (XSS)
-- CORS configured with `*` on routes that accept cookies or Authorization headers
+- CORS configured with \`*\` on routes that accept cookies or Authorization headers
 - Missing RLS enforcement on Neon queries that touch multi-tenant user data
 - Secrets or API keys hardcoded in source (not caught by the wrangler-vars check)
 
 ### Correctness — flag as architectural_concern (blocks merge)
-- Missing `await` on a Promise where the result or side-effect matters (silent data loss)
+- Missing \`await\` on a Promise where the result or side-effect matters (silent data loss)
 - Durable Object state mutated from outside the DO class (breaks actor isolation)
 - Race condition: shared mutable state between concurrent requests in a Worker (Workers share nothing — flag globals that accumulate state across requests)
 - DB mutations that must be atomic but lack a transaction (e.g., debit + credit, insert + update)
-- Unhandled rejection: `.catch()` or `try/catch` absent on a top-level async call that can fail at runtime
+- Unhandled rejection: \`.catch()\` or \`try/catch\` absent on a top-level async call that can fail at runtime
 
 ### Reliability — flag as warning (non-blocking)
-- External API call with no timeout (beyond the fetch `.ok` check — is there an AbortController?)
+- External API call with no timeout (beyond the fetch \`.ok\` check — is there an AbortController?)
 - Webhook or payment handler missing idempotency key (duplicate delivery = duplicate charge)
 - Polling loop or retry without exponential backoff inside a Worker (CPU budget risk)
 - Error message exposes internal stack trace or DB schema details to the HTTP client
 
 ### Cloudflare Workers specifics — flag as architectural_concern if severe, warning otherwise
 - Synchronous CPU loop > ~5ms estimated wall time (Workers have a 10ms CPU subrequest limit in the free tier, 30ms paid — flag obvious offenders like sorting large arrays, heavy regex on large strings)
-- Streaming response (`TransformStream`, SSE) that never closes on error path (leaks the connection)
+- Streaming response (\`TransformStream\`, SSE) that never closes on error path (leaks the connection)
 - KV or R2 used for data that requires strong consistency (flag if the comment or logic implies read-your-writes guarantee)
 
 Output ONLY valid JSON — no markdown wrapper, no explanation outside the JSON:
