@@ -53,7 +53,9 @@ function toLlmEnv(
   return {
     AI_GATEWAY_BASE_URL: env.AI_GATEWAY_BASE_URL ?? '',
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
-    GROK_API_KEY: env.XAI_API_KEY ?? '',
+    // XAI_API_KEY is the env var name; GROK_API_KEY is what LLMEnv calls it.
+    // Pass undefined (not '') so the library treats it as absent, not empty.
+    GROK_API_KEY: env.XAI_API_KEY,
     GROQ_API_KEY: env.GROQ_API_KEY ?? '',
     VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN ?? '',
     VERTEX_PROJECT: env.VERTEX_PROJECT ?? '',
@@ -297,19 +299,34 @@ function isProposedPatch(value: unknown): value is ProposedPatch {
 }
 
 ai.post('/chat', async (c) => {
-  const body = await c.req.json<AIChatRequest>();
+  let body: AIChatRequest;
+  try {
+    body = await c.req.json<AIChatRequest>();
+  } catch {
+    return c.json({ error: 'invalid JSON body' }, 400);
+  }
   if (!body.history?.length) {
     return c.json({ error: 'history required' }, 400);
   }
+  if (!body.mode || !Object.prototype.hasOwnProperty.call(SYSTEM_PROMPTS, body.mode)) {
+    return c.json({ error: 'invalid mode', allowed: Object.keys(SYSTEM_PROMPTS) }, 400);
+  }
   if (!c.env.ANTHROPIC_API_KEY) {
     return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
+  }
+  // All provider calls must route through Cloudflare AI Gateway (STACK.md).
+  if (!c.env.AI_GATEWAY_BASE_URL) {
+    return c.json({ error: 'AI_GATEWAY_BASE_URL not configured' }, 503);
   }
 
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
     : 'execution';
 
-  const system = buildSystem(body);
+  // Load factory CONTEXT.md once per cold start and inject as immutable prefix.
+  const factoryCtx = c.env.GITHUB_TOKEN ? await loadFactoryContext(c.env.GITHUB_TOKEN) : '';
+  const ctxPrefix = factoryCtx ? `[FACTORY CONTEXT — immutable architectural rules]\n${factoryCtx}\n\n` : '';
+  const system = ctxPrefix + buildSystem(body);
   const messages = body.history.map((t) => ({ role: t.role, content: t.content }));
 
   if (strategy !== 'execution') {
@@ -350,7 +367,8 @@ ai.post('/chat', async (c) => {
   }
 
   const apiKey = c.env.ANTHROPIC_API_KEY;
-  const baseUrl = c.env.AI_GATEWAY_BASE_URL ? `${c.env.AI_GATEWAY_BASE_URL}/anthropic` : 'https://api.anthropic.com';
+  // AI Gateway is required — no fallback to direct Anthropic (STACK.md).
+  const baseUrl = `${c.env.AI_GATEWAY_BASE_URL}/anthropic`;
   const upstream = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
