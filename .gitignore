@@ -13,3 +13,4 @@ apps/*/*.tsbuildinfo
 _external_reviews/
 
 package-lock.json
+!apps/supervisor/package-lock.json
