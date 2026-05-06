@@ -78,6 +78,10 @@ export interface CreatePortalSessionOptions {
 }
 
 const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-02-24.acacia';
+/**
+ * Matches unresolved placeholder price IDs such as `price_xxx` that should
+ * never be sent to Stripe in a real checkout flow.
+ */
 const PLACEHOLDER_PRICE_ID_PATTERN = /^price_x+$/i;
 
 /**
@@ -161,6 +165,13 @@ function readNumber(source: unknown, key: string): number | null {
   return null;
 }
 
+/**
+ * Detects the Stripe invalid-request error emitted when a checkout references
+ * a missing price object.
+ *
+ * @param err - Unknown error thrown by the Stripe SDK.
+ * @returns `true` when Stripe identifies the failure as a missing price.
+ */
 function isStripeMissingPriceError(err: unknown): err is Error {
   if (!(err instanceof Error)) {
     return false;
