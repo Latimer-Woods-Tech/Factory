@@ -12,10 +12,14 @@
   },
 
   // Cron: 11:00 UTC = 07:00 AM ET on weekdays (Mon–Fri).
-  // Required secrets (set via `wrangler secret put <NAME>`):
-  //   GH_TOKEN          — GitHub fine-grained token: repo:read, issues:write, reactions:read
-  //   PUSHOVER_TOKEN    — Pushover application token
-  //   PUSHOVER_USER_KEY — Pushover user/group key
+  // Required secrets (injected by deploy-supervisor.yml from GitHub repo secrets):
+  //   FACTORY_APP_ID              — GitHub App numeric ID
+  //   FACTORY_APP_PRIVATE_KEY     — GitHub App RSA private key PEM
+  //   FACTORY_APP_INSTALLATION_ID — GitHub App installation ID for Latimer-Woods-Tech/factory
+  //   PUSHOVER_TOKEN              — Pushover application token
+  //   PUSHOVER_USER_KEY           — Pushover user/group key
+  //   JWT_SECRET                  — Supervisor JWT signing secret
+  //   GROQ_API_KEY                — Groq API key for LLM fallback
   "triggers": {
     "crons": ["0 11 * * 1-5"]
   },

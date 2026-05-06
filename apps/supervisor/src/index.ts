@@ -15,8 +15,12 @@ export interface Env {
   VERTEX_LOCATION: string;
   PER_RUN_CAP_CENTS?: string;
   JWT_SECRET: string;
-  /** GitHub personal access token with repo:read, issues:write scope. Set via `wrangler secret put GH_TOKEN`. */
-  GH_TOKEN: string;
+  /** GitHub App numeric ID. Set via `wrangler secret put FACTORY_APP_ID`. */
+  FACTORY_APP_ID: string;
+  /** GitHub App RSA private key PEM. Set via `wrangler secret put FACTORY_APP_PRIVATE_KEY`. */
+  FACTORY_APP_PRIVATE_KEY: string;
+  /** GitHub App installation ID for Latimer-Woods-Tech/factory. Set via `wrangler secret put FACTORY_APP_INSTALLATION_ID`. */
+  FACTORY_APP_INSTALLATION_ID: string;
   /** Pushover application token. Set via `wrangler secret put PUSHOVER_TOKEN`. */
   PUSHOVER_TOKEN: string;
   /** Pushover user key. Set via `wrangler secret put PUSHOVER_USER_KEY`. */
