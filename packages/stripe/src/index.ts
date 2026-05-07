@@ -52,15 +52,14 @@ export interface CreateCheckoutSessionOptions {
   /** Checkout mode. Defaults to `'subscription'`. Use `'payment'` for one-time purchases. */
   mode?: 'subscription' | 'payment';
   /**
-   * Idempotency key to prevent duplicate session creation on retry.
-   * Recommended when creating sessions inside retry loops.
+   * Stable idempotency key scoped to the logical purchase operation.
+   * Tie this to an external business ID (order ID, cart ID, webhook event ID)
+   * so that retries and double-clicks within Stripe's 24-hour window
+   * are deduplicated. When omitted, a deterministic key is derived from
+   * `customerId + priceId + hour-epoch`; callers that need tighter retry
+   * windows or support re-purchases within the same hour must supply their own.
    */
   idempotencyKey?: string;
-  /**
-   * Explicitly list accepted payment method types (e.g. `['card']`).
-   * When omitted, Stripe determines the list automatically.
-   */
-  paymentMethodTypes?: string[];
   /** Metadata to attach to the Checkout session. */
   metadata?: Record<string, string>;
 }
@@ -277,10 +276,6 @@ export async function createCheckoutSession(
     cancel_url: options.cancelUrl,
     line_items: [{ price: priceId, quantity: 1 }],
   };
-
-  if (options.paymentMethodTypes) {
-    params.payment_method_types = options.paymentMethodTypes as Stripe.Checkout.SessionCreateParams['payment_method_types'];
-  }
 
   if (options.metadata) {
     params.metadata = options.metadata;

@@ -368,7 +368,7 @@ describe('createCheckoutSession', () => {
     );
   });
 
-  it('passes paymentMethodTypes when provided', async () => {
+  it('never passes payment_method_types — dynamic payment methods only', async () => {
     const { client, checkoutCreate } = buildStripeMock();
     checkoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/sess_4' });
 
@@ -378,13 +378,10 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
-      paymentMethodTypes: ['card'],
     });
 
-    expect(checkoutCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ payment_method_types: ['card'] }),
-      expect.objectContaining({ idempotencyKey: expect.any(String) }),
-    );
+    const [params] = checkoutCreate.mock.calls[0];
+    expect(params).not.toHaveProperty('payment_method_types');
   });
 
   it('passes metadata when provided', async () => {
@@ -406,7 +403,7 @@ describe('createCheckoutSession', () => {
     );
   });
 
-  it('omits payment_method_types and metadata when not provided', async () => {
+  it('omits metadata when not provided', async () => {
     const { client, checkoutCreate } = buildStripeMock();
     checkoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/sess_6' });
 
@@ -418,7 +415,7 @@ describe('createCheckoutSession', () => {
       stripeClient: client,
     });
 
-    // Exact match confirms neither payment_method_types nor metadata was passed
+    // Exact match confirms metadata is absent and payment_method_types is never present
     expect(checkoutCreate).toHaveBeenCalledWith(
       {
         mode: 'subscription',
