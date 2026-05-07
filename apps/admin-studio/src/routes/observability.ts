@@ -375,6 +375,9 @@ interface PostHogFunnelResponse {
   funnel: FunnelStep[];
 }
 
+// Returns a literal SQL interval string for a known FunnelWindow enum value.
+// All branches return compile-time string literals — no user input reaches this
+// function directly (the caller enforces a strict allowlist before calling).
 function funnelIntervalSql(window: FunnelWindow): string {
   switch (window) {
     case '7d':
