@@ -50,26 +50,39 @@ async function expectedConfirmToken(
 /**
  * Computes the expected co-signer token for tier-3 two-person approval.
  *
- * The token is bound to the co-signer's userId so it cannot be self-signed:
- * the initiator is blocked from supplying their own userId as X-Co-Signer-Id.
- * Each co-signer computes the token in the Admin Studio UI from their own
- * identity, enforcing FRIDGE rule 8 (distinct second principal required).
+ * Binds to a server-issued nonce (stored in KV) so the token cannot be
+ * precomputed by the initiator — the nonce is random and unknown until the
+ * server generates it. This satisfies FRIDGE rule 8: a genuine second principal
+ * must retrieve the nonce from the initiator out-of-band and compute the token
+ * using their own identity.
  *
+ * @param nonce - random hex string issued by the server for this co-sign session
  * @param action - the action name (e.g. "ops.rollback")
  * @param cosignerId - the co-signer's userId (must differ from initiator)
  * @param env - the runtime environment string (e.g. "production")
  */
 async function expectedCosignerToken(
+  nonce: string,
   action: string,
   cosignerId: string,
   env: string,
 ): Promise<string> {
-  const data = new TextEncoder().encode(`cosign:${action}:${cosignerId}:${env}`);
+  // Nonce binding prevents precomputation: the token is unpredictable without
+  // the server-issued nonce, which is only revealed after the initiator's first
+  // (unsuccessful) attempt. KV TTL ensures nonces expire after 5 minutes.
+  const data = new TextEncoder().encode(`cosign:${nonce}:${action}:${cosignerId}:${env}`);
   const hash = await crypto.subtle.digest('SHA-256', data);
   const hex = [...new Uint8Array(hash)]
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
   return hex.slice(0, 16);
+}
+
+/** Generate a cryptographically random 32-byte hex nonce. */
+function generateNonce(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<AppEnv> {
@@ -132,21 +145,52 @@ export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<App
     // Tier 3 (two-key): FRIDGE rule 8 — irreversible actions require a second
     // human principal distinct from the initiator.
     //
-    // Protocol:
-    //   1. Initiator shares the action name + their own userId out-of-band.
-    //   2. Co-signer computes X-Co-Signer-Token = SHA-256(cosign:action:cosignerUserId:env)[0:16]
-    //      using their own userId in the Admin Studio UI.
-    //   3. Co-signer passes both X-Co-Signer-Id (their userId) and X-Co-Signer-Token.
-    //   4. Middleware verifies: cosignerId ≠ initiatorId AND token matches expected.
+    // Protocol (nonce-bound — prevents precomputation):
+    //   Phase 1 (no cosigner headers):
+    //     Server generates a random nonce, stores it in KV (5-min TTL), returns 412
+    //     with the nonce. Initiator shares action name, nonce, AND their userId
+    //     out-of-band with the co-signer.
+    //   Phase 2 (cosigner headers present):
+    //     Co-signer computes X-Co-Signer-Token =
+    //       SHA-256(cosign:nonce:action:cosignerUserId:env)[0:16]
+    //     Initiator submits with: X-Co-Signer-Id, X-Co-Signer-Token, X-Cosign-Nonce.
+    //     Server verifies nonce (from KV, single-use), principal check, and token.
     if (tier === 3) {
+      if (!c.env.MONITOR_KV) {
+        // Fail closed: tier-3 actions are disabled if KV is not configured, since
+        // without KV we cannot issue or verify nonces (precomputation risk).
+        return c.json({ error: 'Two-person approval requires MONITOR_KV binding (not configured)', tier }, 503);
+      }
+
       const cosignerId = c.req.header('X-Co-Signer-Id');
       const cosignerToken = c.req.header('X-Co-Signer-Token');
-      if (!cosignerId || !cosignerToken) {
+      const providedNonce = c.req.header('X-Cosign-Nonce');
+
+      const nonceKey = `cosign-nonce:${opts.action}:${ctx.userId}`;
+
+      if (!cosignerId || !cosignerToken || !providedNonce) {
+        // Phase 1: issue a server-side nonce. The nonce binds the co-signer token
+        // to a random value the initiator could not predict before this call.
+        const nonce = generateNonce();
+        await c.env.MONITOR_KV.put(nonceKey, nonce, { expirationTtl: 300 });
         return c.json(
-          { error: 'Two-person approval required: provide X-Co-Signer-Id and X-Co-Signer-Token', tier },
+          {
+            error: 'Two-person approval required',
+            tier,
+            action: opts.action,
+            cosignNonce: nonce,
+            instructions: 'Share cosignNonce, action, and your userId out-of-band. Co-signer computes X-Co-Signer-Token = SHA-256(cosign:nonce:action:cosignerId:env)[0:16] and supplies X-Co-Signer-Id + X-Co-Signer-Token + X-Cosign-Nonce.',
+          },
           412,
         );
       }
+
+      // Phase 2: verify the nonce from KV (proves server issued it; enforces TTL).
+      const storedNonce = await c.env.MONITOR_KV.get(nonceKey);
+      if (!storedNonce || storedNonce !== providedNonce) {
+        return c.json({ error: 'Co-sign nonce invalid or expired — restart the approval flow', tier }, 412);
+      }
+
       // The co-signer MUST be a different principal than the initiator.
       if (cosignerId === ctx.userId) {
         return c.json(
@@ -154,13 +198,14 @@ export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<App
           412,
         );
       }
-      const expectedCosigner = await expectedCosignerToken(opts.action, cosignerId, ctx.env);
+
+      const expectedCosigner = await expectedCosignerToken(storedNonce, opts.action, cosignerId, ctx.env);
       if (cosignerToken !== expectedCosigner) {
-        return c.json(
-          { error: 'Invalid co-signer token', tier },
-          412,
-        );
+        return c.json({ error: 'Invalid co-signer token', tier }, 412);
       }
+
+      // Single-use nonce: delete after successful verification to prevent replay.
+      await c.env.MONITOR_KV.delete(nonceKey);
     }
 
     await next();

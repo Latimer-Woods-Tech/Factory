@@ -450,8 +450,11 @@ observability.get('/posthog/funnel', async (c) => {
   }
 
   // `window` is user-controlled; the allowlist below is the ONLY gate before
-  // it reaches HogQL interpolation. Keep this assignment and the allowlist
-  // together — never pass `rawWindow` directly to SQL builders.
+  // it reaches HogQL. After this assignment, `window` is always one of the three
+  // FunnelWindow literals — never a raw user string. funnelIntervalSql(window)
+  // returns only compile-time constants ('24 HOUR', '7 DAY', '30 DAY'); no user
+  // input reaches HogQL interpolation. No parameterized query API is needed here
+  // because the interpolated value is ALWAYS a server-controlled literal.
   const rawWindow = c.req.query('window') ?? '24h';
   const window: FunnelWindow =
     rawWindow === '7d' || rawWindow === '30d' ? rawWindow : '24h';
