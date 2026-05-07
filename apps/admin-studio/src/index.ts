@@ -31,6 +31,7 @@ import payouts from './routes/payouts.js';
 import stripeConnectWebhooks from './routes/webhooks-stripe-connect.js';
 import studioTestsWebhook from './routes/webhooks-studio-tests.js';
 import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.js';
+import dsr from './routes/dsr.js';
 
 const app = new Hono<AppEnv>();
 
@@ -82,6 +83,7 @@ app.use('/catalog/*', envContextMiddleware(), auditMiddleware());
 app.use('/smoke/*', envContextMiddleware(), auditMiddleware());
 app.use('/api/creator/*', envContextMiddleware());
 app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
+app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -97,6 +99,7 @@ app.route('/smoke', smoke);
 app.route('/api/creator/onboarding', creatorOnboarding);
 app.route('/api/admin/creators', creators);
 app.route('/api/admin/payouts', payouts);
+app.route('/dsr', dsr);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
