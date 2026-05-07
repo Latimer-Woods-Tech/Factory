@@ -19,16 +19,15 @@ export async function synthesizeAndStore(input: TtsInput): Promise<string | null
   // Trim to ElevenLabs' safe limit (~4 500 chars) — the narration should be well under this
   const safeText = text.slice(0, 4_400);
 
-  // 25 s ceiling — audio synthesis is slow but cron has a hard 30 s cap
-  const audioBuffer = await Promise.race([
-    synthesize(safeText, env.ELEVENLABS_VOICE_ID, env.ELEVENLABS_API_KEY, {
-      stability: 0.55,
-      similarityBoost: 0.75,
-    }),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('[daily-brief] ElevenLabs TTS timeout after 25s')), 25_000),
-    ),
-  ]);
+  // 25 s ceiling — audio synthesis is slow but cron has a hard 30 s cap.
+  // AbortSignal.timeout cancels the underlying ElevenLabs HTTP request if it
+  // does not complete in time, preventing the Worker from consuming CPU budget
+  // on a hung connection after the timeout fires.
+  const audioBuffer = await synthesize(safeText, env.ELEVENLABS_VOICE_ID, env.ELEVENLABS_API_KEY, {
+    stability: 0.55,
+    similarityBoost: 0.75,
+    signal: AbortSignal.timeout(25_000),
+  });
 
   const key = `briefs/${dateLabel}-narration.mp3`;
 
