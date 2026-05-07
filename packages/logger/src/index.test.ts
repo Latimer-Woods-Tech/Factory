@@ -286,7 +286,7 @@ describe('getRequestId', () => {
   });
 
   it('returns undefined when requestId is not set', () => {
-    const mockCtx = { get: (_key: string) => undefined as string | undefined };
+    const mockCtx = { get: (key: 'requestId'): string | undefined => { void key; return undefined; } };
     expect(getRequestId(mockCtx)).toBeUndefined();
   });
 });
@@ -298,7 +298,7 @@ describe('getRequestId', () => {
 describe('tracedFetch', () => {
   it('injects x-request-id header into outbound requests', async () => {
     let capturedHeaders: Headers | undefined;
-    const mockFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const mockFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
       capturedHeaders = new Headers(init?.headers);
       return new Response(JSON.stringify({ ok: true }), { status: 200 });
     });
@@ -312,7 +312,7 @@ describe('tracedFetch', () => {
 
   it('preserves existing headers alongside the injected request ID', async () => {
     let capturedHeaders: Headers | undefined;
-    const mockFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const mockFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
       capturedHeaders = new Headers(init?.headers);
       return new Response('', { status: 200 });
     });
