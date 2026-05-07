@@ -169,6 +169,8 @@ function isNonWorkerFile(filename) {
   if (/^(CODEOWNERS|\.gitignore|\.gitattributes|renovate\.json|package\.json|tsconfig\.json)$/.test(basename)) return true;
   // Test-runner config files are Node.js infrastructure, not Cloudflare Workers code
   if (/^(playwright|vitest|jest)\.config\.(ts|js|mjs|cjs)$/.test(basename)) return true;
+  // Unit/integration test files run in Node.js test environment, not Workers runtime
+  if (/\.(test|spec)\.(ts|js|mjs|cjs)$/.test(basename)) return true;
   return false;
 }
 
@@ -194,13 +196,20 @@ function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
   const violations = [];
   const warnings = [];
 
-  if (/\bprocess\.env\b/.test(workerAddedLines))
+  // Strip string literal contents before constraint checks to avoid false positives
+  // when patterns like "process.env" or "Buffer" appear only as text in LLM prompts.
+  const workerCodeOnly = workerAddedLines
+    .split('\n')
+    .map(l => l.replace(/('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*`)/g, '""'))
+    .join('\n');
+
+  if (/\bprocess\.env\b/.test(workerCodeOnly))
     violations.push({ constraint: 'No process.env', detail: 'Use c.env / env bindings instead of process.env' });
 
   if (/\brequire\s*\(/.test(workerAddedLines))
     violations.push({ constraint: 'No CommonJS require()', detail: 'ESM imports only — replace require() with import' });
 
-  if (/\bnew Buffer\b|\bBuffer\.from\b|\bBuffer\.alloc\b/.test(workerAddedLines))
+  if (/\bnew Buffer\b|\bBuffer\.from\b|\bBuffer\.alloc\b/.test(workerCodeOnly))
     violations.push({ constraint: 'No Buffer', detail: 'Use Uint8Array, TextEncoder, or TextDecoder instead of Buffer' });
 
   if (/from\s+['"](?:fs|path|crypto)['"]/m.test(workerAddedLines))
