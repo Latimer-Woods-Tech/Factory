@@ -29,6 +29,26 @@ export interface D1Like {
 }
 
 /**
+ * Supported subscription tiers for per-tenant monthly budget enforcement.
+ */
+export type TenantTier = 'free' | 'individual' | 'practitioner' | 'agency';
+
+/**
+ * Monthly LLM budget caps per subscription tier, in US cents.
+ *
+ * - free:         $0.50 — allows 1 synthesis + 5 questions, hard-stops abuse
+ * - individual:   $3.00 — 3× headroom over expected $0.43 COGS
+ * - practitioner: $35.00 — 60% of $97/mo MRR floor
+ * - agency:       $150.00 — $30/seat × 5 seats
+ */
+export const TIER_BUDGET_CENTS: Record<TenantTier, number> = {
+  free:          50,   // $0.50
+  individual:    300,  // $3.00
+  practitioner:  3500, // $35.00
+  agency:        15000, // $150.00
+};
+
+/**
  * Budget configuration for a metered call.
  */
 export interface BudgetConfig {
@@ -36,6 +56,32 @@ export interface BudgetConfig {
   perRunCapCents?: number;
   /** Optional per-project monthly cap in US cents. No default — opt-in. */
   perProjectMonthlyCapCents?: number;
+  /** Tenant identifier for per-tenant monthly budget enforcement. */
+  tenantId?: string;
+  /** Subscription tier used to look up the monthly cap in {@link TIER_BUDGET_CENTS}. */
+  tenantTier?: TenantTier;
+  /**
+   * Callback invoked when the tenant crosses the 80% threshold.
+   * Callers can use this to send admin email/Slack alerts.
+   * Errors thrown by this callback are swallowed — alerting must never block the request.
+   */
+  onBudgetAlert?: (ctx: BudgetAlertContext) => Promise<void> | void;
+}
+
+/**
+ * Context passed to {@link BudgetConfig.onBudgetAlert}.
+ */
+export interface BudgetAlertContext {
+  tenantId: string;
+  tier: TenantTier;
+  /** Current month spend in cents. */
+  spentCents: number;
+  /** Monthly cap in cents for this tier. */
+  capCents: number;
+  /** Percentage of the cap already consumed (0–100). */
+  percentUsed: number;
+  /** Calendar month, e.g. "2026-05". */
+  yyyyMm: string;
 }
 
 /**
@@ -65,6 +111,16 @@ export interface MeteredOptions extends LLMOptions, LedgerContext {
   actor: string;
   /** Required: overrides the optional `project` in LLMOptions. */
   project: string;
+  /**
+   * Tenant identifier. When provided together with `tenantTier`, a per-tenant
+   * monthly budget check is performed before the LLM call.
+   */
+  tenantId?: string;
+  /**
+   * Subscription tier used to look up the monthly cap in {@link TIER_BUDGET_CENTS}.
+   * Required when `tenantId` is set.
+   */
+  tenantTier?: TenantTier;
   budget?: BudgetConfig;
 }
 
@@ -74,6 +130,8 @@ export interface MeteredOptions extends LLMOptions, LedgerContext {
 export interface LedgerRow {
   project: string;
   actor: string;
+  /** Tenant identifier for per-tenant monthly budget enforcement. */
+  tenantId?: string;
   runId?: string;
   workload?: string;
   provider: LLMProvider;
@@ -149,14 +207,15 @@ export async function recordCall(
     await db
       .prepare(
         `INSERT INTO llm_ledger
-         (project, actor, run_id, workload, provider, model,
+         (project, actor, tenant_id, run_id, workload, provider, model,
           input_tokens, cached_input_tokens, output_tokens,
           cost_cents, latency_ms, at, yyyy_mm)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         row.project,
         row.actor,
+        row.tenantId ?? null,
         row.runId ?? null,
         row.workload ?? null,
         row.provider,
@@ -219,6 +278,115 @@ export async function getProjectMonthTotal(
 }
 
 /**
+ * Get cost total for a (tenant_id, yyyy-mm) bucket.
+ * Uses the `tenant_id` column added by migration 0002.
+ */
+export async function getTenantMonthTotal(
+  db: D1Like,
+  tenantId: string,
+  yyyyMm: string,
+): Promise<number> {
+  const row = await db
+    .prepare(
+      `SELECT COALESCE(SUM(cost_cents), 0) AS cost_cents
+       FROM llm_ledger WHERE tenant_id = ? AND yyyy_mm = ?`,
+    )
+    .bind(tenantId, yyyyMm)
+    .first<{ cost_cents: number }>();
+  return Number(row?.cost_cents ?? 0);
+}
+
+/**
+ * Assert that the tenant has not exceeded their monthly tier budget.
+ *
+ * Thresholds:
+ * - ≥ 80 %: calls `opts.onBudgetAlert` (fire-and-forget; never throws) **and**
+ *   writes a `BUDGET_ALERT` row to `tenant_budget_warnings`.
+ * - ≥ 90 %: logs a `BUDGET_WARNING` event via `deps.logger` **and**
+ *   writes a `BUDGET_WARNING` row to `tenant_budget_warnings`.
+ * - ≥ 100 %: throws `BUDGET_EXCEEDED` (HTTP 429).
+ *
+ * Warning rows in `tenant_budget_warnings` are best-effort; write failures are
+ * swallowed so that metering never blocks a valid request.
+ */
+export async function assertTenantBudget(
+  db: D1Like,
+  tenantId: string,
+  tier: TenantTier,
+  opts: {
+    yyyyMm?: string;
+    onBudgetAlert?: (ctx: BudgetAlertContext) => Promise<void> | void;
+  } = {},
+  deps: { logger?: Logger; now?: () => number } = {},
+): Promise<void> {
+  const nowMs = deps.now?.() ?? Date.now();
+  const now = new Date(nowMs);
+  const yyyyMm = opts.yyyyMm ?? currentYyyyMm(now);
+  const capCents = TIER_BUDGET_CENTS[tier];
+  const spentCents = await getTenantMonthTotal(db, tenantId, yyyyMm);
+  const percentUsed = capCents > 0 ? (spentCents / capCents) * 100 : 0;
+
+  if (percentUsed >= 80) {
+    const alertCtx: BudgetAlertContext = {
+      tenantId,
+      tier,
+      spentCents,
+      capCents,
+      percentUsed,
+      yyyyMm,
+    };
+
+    // Persist warning row for admin dashboards (best-effort)
+    const event = percentUsed >= 90 ? 'BUDGET_WARNING' : 'BUDGET_ALERT';
+    db.prepare(
+      `INSERT INTO tenant_budget_warnings
+       (tenant_id, tier, event, spent_cents, cap_cents, percent_used, yyyy_mm, at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(tenantId, tier, event, spentCents, capCents, Math.round(percentUsed), yyyyMm, nowMs)
+      .run()
+      .catch((e: unknown) => {
+        deps.logger?.error?.('llm-meter.budget.warning.insert.failed', {
+          error: e instanceof Error ? e.message : String(e),
+          tenantId,
+        });
+      });
+
+    // Fire alert callback (fire-and-forget — never blocks the request path)
+    if (opts.onBudgetAlert) {
+      Promise.resolve(opts.onBudgetAlert(alertCtx)).catch((e: unknown) => {
+        deps.logger?.error?.('llm-meter.budget.alert.failed', {
+          error: e instanceof Error ? e.message : String(e),
+          tenantId,
+        });
+      });
+    }
+  }
+
+  if (percentUsed >= 90) {
+    deps.logger?.warn?.('llm-meter.budget.warning', {
+      event: 'BUDGET_WARNING',
+      tenantId,
+      tier,
+      spentCents,
+      capCents,
+      percentUsed: Math.round(percentUsed),
+      yyyyMm,
+    });
+  }
+
+  if (spentCents >= capCents) {
+    throw new FactoryBaseError(
+      'BUDGET_EXCEEDED',
+      `tenant ${tenantId} (${tier}) hit $${(capCents / 100).toFixed(2)} monthly cap (spent $${(spentCents / 100).toFixed(2)})`,
+      429,
+      false,
+      { tenantId, tier, capCents, spentCents, yyyyMm },
+    );
+  }
+}
+
+/**
  * Throws `BUDGET_EXCEEDED` if the run's running total already equals or
  * exceeds the cap. Called before executing an LLM call.
  */
@@ -244,6 +412,11 @@ export async function assertRunBudget(
  * per-run budget before the call (short-circuits with `BUDGET_EXCEEDED` if
  * exceeded), then records one ledger row after success.
  *
+ * When `opts.tenantId` and `opts.tenantTier` are provided, a per-tenant
+ * monthly budget check is also performed. At 80% the `onBudgetAlert` callback
+ * fires (admin email/Slack); at 90% a `BUDGET_WARNING` log event is emitted;
+ * at 100% the call short-circuits with `BUDGET_EXCEEDED` (HTTP 429).
+ *
  * On LLM failure, no ledger row is written — we only bill for completed work.
  */
 export async function meteredComplete(
@@ -254,6 +427,8 @@ export async function meteredComplete(
   deps: { fetch?: typeof fetch; logger?: Logger; now?: () => number } = {},
 ): Promise<FactoryResponse<LLMResult>> {
   const cap = opts.budget?.perRunCapCents ?? DEFAULT_RUN_CAP_CENTS;
+
+  // Per-run budget check
   if (opts.runId) {
     try {
       await assertRunBudget(db, opts.runId, cap);
@@ -261,6 +436,26 @@ export async function meteredComplete(
       if (e instanceof FactoryBaseError) return toErrorResponse(e);
       return toErrorResponse(
         new InternalError('budget check failed', { error: e instanceof Error ? e.message : String(e) }),
+      );
+    }
+  }
+
+  // Per-tenant monthly budget check
+  const tenantId = opts.tenantId ?? opts.budget?.tenantId;
+  const tenantTier = opts.tenantTier ?? opts.budget?.tenantTier;
+  if (tenantId && tenantTier) {
+    try {
+      await assertTenantBudget(
+        db,
+        tenantId,
+        tenantTier,
+        { onBudgetAlert: opts.budget?.onBudgetAlert },
+        deps,
+      );
+    } catch (e) {
+      if (e instanceof FactoryBaseError) return toErrorResponse(e);
+      return toErrorResponse(
+        new InternalError('tenant budget check failed', { error: e instanceof Error ? e.message : String(e) }),
       );
     }
   }
@@ -275,6 +470,7 @@ export async function meteredComplete(
     {
       project: opts.project,
       actor: opts.actor,
+      tenantId: tenantId ?? undefined,
       runId: opts.runId,
       workload: opts.workload,
       provider: d.provider,
@@ -291,4 +487,7 @@ export async function meteredComplete(
   return llmResp;
 }
 
-export { PRICING_UCENTS_PER_MTOK, DEFAULT_RUN_CAP_CENTS };
+export {
+  PRICING_UCENTS_PER_MTOK,
+  DEFAULT_RUN_CAP_CENTS,
+};

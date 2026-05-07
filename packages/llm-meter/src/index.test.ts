@@ -1,11 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   assertRunBudget,
+  assertTenantBudget,
   computeCostCents,
   getProjectMonthTotal,
+  getTenantMonthTotal,
   getRunTotal,
   meteredComplete,
   recordCall,
+  TIER_BUDGET_CENTS,
+  type BudgetAlertContext,
   type D1Like,
   type LedgerRow,
 } from './index.js';
@@ -146,6 +150,129 @@ describe('getProjectMonthTotal', () => {
   });
 });
 
+describe('TIER_BUDGET_CENTS', () => {
+  it('has entries for all four tiers', () => {
+    expect(TIER_BUDGET_CENTS.free).toBe(50);
+    expect(TIER_BUDGET_CENTS.individual).toBe(300);
+    expect(TIER_BUDGET_CENTS.practitioner).toBe(3500);
+    expect(TIER_BUDGET_CENTS.agency).toBe(15000);
+  });
+});
+
+describe('getTenantMonthTotal', () => {
+  it('queries by tenant_id', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 42 };
+    const total = await getTenantMonthTotal(h.db, 'tenant-1', '2026-05');
+    expect(total).toBe(42);
+    const q = h.queries.find(q => q.sql.includes('tenant_id'));
+    expect(q).toBeTruthy();
+    expect(q?.binds).toContain('tenant-1');
+  });
+
+  it('returns 0 when no rows', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 0 };
+    expect(await getTenantMonthTotal(h.db, 't', '2026-05')).toBe(0);
+  });
+});
+
+describe('assertTenantBudget', () => {
+  it('passes when under 80%', async () => {
+    const h = makeDb();
+    // individual cap = 300 cents; 50% spent = 150 cents
+    h.firstResult = { cost_cents: 150 };
+    await expect(
+      assertTenantBudget(h.db, 'tenant-1', 'individual'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('fires onBudgetAlert callback at 80% but does not throw', async () => {
+    const h = makeDb();
+    // individual cap = 300; 80% = 240
+    h.firstResult = { cost_cents: 240 };
+    const alertFn = vi.fn<(ctx: BudgetAlertContext) => void>();
+    await expect(
+      assertTenantBudget(h.db, 'tenant-1', 'individual', { onBudgetAlert: alertFn }),
+    ).resolves.toBeUndefined();
+    // Alert fires asynchronously; give the microtask queue a turn
+    await new Promise(r => setTimeout(r, 0));
+    expect(alertFn).toHaveBeenCalledOnce();
+    expect(alertFn.mock.calls[0]![0].percentUsed).toBeGreaterThanOrEqual(80);
+  });
+
+  it('logs BUDGET_WARNING at 90% but does not throw', async () => {
+    const h = makeDb();
+    // individual cap = 300; 90% = 270
+    h.firstResult = { cost_cents: 270 };
+    const warn = vi.fn();
+    await expect(
+      assertTenantBudget(h.db, 'tenant-1', 'individual', {}, { logger: { warn } as unknown as import('@latimer-woods-tech/logger').Logger }),
+    ).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0]![0]).toBe('llm-meter.budget.warning');
+    expect(warn.mock.calls[0]![1]).toMatchObject({ event: 'BUDGET_WARNING' });
+  });
+
+  it('throws BUDGET_EXCEEDED at 100%', async () => {
+    const h = makeDb();
+    // individual cap = 300; 100% = 300
+    h.firstResult = { cost_cents: 300 };
+    await expect(
+      assertTenantBudget(h.db, 'tenant-1', 'individual'),
+    ).rejects.toMatchObject({ code: 'BUDGET_EXCEEDED' });
+  });
+
+  it('throws BUDGET_EXCEEDED when over cap', async () => {
+    const h = makeDb();
+    // free cap = 50; spent 60 = over cap
+    h.firstResult = { cost_cents: 60 };
+    await expect(
+      assertTenantBudget(h.db, 'tenant-x', 'free'),
+    ).rejects.toMatchObject({ code: 'BUDGET_EXCEEDED', status: 429 });
+  });
+
+  it('writes a BUDGET_ALERT row to tenant_budget_warnings at 80%', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 240 }; // 80% of individual (300)
+    await assertTenantBudget(h.db, 'tenant-1', 'individual');
+    await new Promise(r => setTimeout(r, 0));
+    const warningInsert = h.queries.find(q => q.sql.includes('tenant_budget_warnings'));
+    expect(warningInsert).toBeTruthy();
+    expect(warningInsert?.binds[2]).toBe('BUDGET_ALERT');
+  });
+
+  it('writes a BUDGET_WARNING row to tenant_budget_warnings at 90%', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 270 }; // 90% of individual (300)
+    await assertTenantBudget(h.db, 'tenant-1', 'individual');
+    await new Promise(r => setTimeout(r, 0));
+    const warningInsert = h.queries.find(q => q.sql.includes('tenant_budget_warnings'));
+    expect(warningInsert).toBeTruthy();
+    expect(warningInsert?.binds[2]).toBe('BUDGET_WARNING');
+  });
+
+
+  it('swallows alerting errors and does not throw', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 240 }; // 80% of individual (300)
+    const failingAlert = vi.fn<(ctx: BudgetAlertContext) => Promise<void>>().mockRejectedValue(new Error('email down'));
+    const errorLog = vi.fn();
+    await expect(
+      assertTenantBudget(
+        h.db,
+        'tenant-1',
+        'individual',
+        { onBudgetAlert: failingAlert },
+        { logger: { error: errorLog } as unknown as import('@latimer-woods-tech/logger').Logger },
+      ),
+    ).resolves.toBeUndefined();
+    // Give the async rejection a chance to propagate
+    await new Promise(r => setTimeout(r, 0));
+    expect(errorLog).toHaveBeenCalledOnce();
+  });
+});
+
 describe('meteredComplete', () => {
   it('records a ledger row on success', async () => {
     const h = makeDb();
@@ -193,6 +320,55 @@ describe('meteredComplete', () => {
     // No SELECT-for-budget query; only INSERT
     const selects = h.queries.filter(q => q.sql.includes('SELECT') && q.sql.includes('run_id'));
     expect(selects).toHaveLength(0);
+  });
+
+  it('short-circuits with BUDGET_EXCEEDED when tenant monthly cap is hit', async () => {
+    const h = makeDb();
+    // free cap = 50; query returns 50 (at cap)
+    h.firstResult = { cost_cents: 50, input_tokens: 0, output_tokens: 0, call_count: 0 };
+    const fetchImpl = vi.fn();
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'prime-self',
+        actor: 'worker',
+        tier: 'balanced',
+        tenantId: 'tenant-free-1',
+        tenantTier: 'free',
+      },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.data).toBeNull();
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('records tenant_id in ledger row on success', async () => {
+    const h = makeDb();
+    // Return 0 cost for budget check, then handle INSERT
+    h.firstResult = { cost_cents: 0, input_tokens: 0, output_tokens: 0, call_count: 0 };
+    const fetchImpl = vi.fn(() => Promise.resolve(llmResponse()));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'prime-self',
+        actor: 'worker',
+        runId: 'r-99',
+        tier: 'balanced',
+        tenantId: 'tenant-pro-1',
+        tenantTier: 'practitioner',
+      },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    const insertCall = h.queries.find(q => q.sql.includes('INSERT'));
+    expect(insertCall).toBeTruthy();
+    // tenant_id is the 3rd bind parameter in the INSERT
+    expect(insertCall?.binds[2]).toBe('tenant-pro-1');
   });
 
   it('does not record on LLM failure', async () => {
