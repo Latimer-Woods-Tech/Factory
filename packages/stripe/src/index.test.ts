@@ -10,6 +10,7 @@ import {
   priceToTier,
   stripeWebhookHandler,
   validateWebhook,
+  type StripeKVCache,
   type SubscriptionStatus,
 } from './index';
 
@@ -527,9 +528,22 @@ describe('createPortalSession', () => {
 });
 
 describe('stripeWebhookHandler', () => {
-  function buildApp(opts: Parameters<typeof stripeWebhookHandler>[0]) {
+  /** Builds a simple in-memory KV mock. */
+  function buildKVMock(): StripeKVCache & { store: Map<string, string> } {
+    const store = new Map<string, string>();
+    return {
+      store,
+      async get(key: string) { return store.get(key) ?? null; },
+      async put(key: string, value: string) { store.set(key, value); },
+    };
+  }
+
+  function buildApp(
+    opts: Omit<Parameters<typeof stripeWebhookHandler>[0], 'kvCache'>,
+    kvCache: StripeKVCache = buildKVMock(),
+  ) {
     const app = new Hono();
-    app.post('/webhooks/stripe', stripeWebhookHandler(opts));
+    app.post('/webhooks/stripe', stripeWebhookHandler({ ...opts, kvCache }));
     return app;
   }
 
@@ -596,9 +610,10 @@ describe('stripeWebhookHandler', () => {
   it('classifies price upgrades and downgrades', async () => {
     const sub = buildSubscription();
     sub.items.data[0]!.price.id = 'price_z';
-    const upgradeEvent = buildEvent('customer.subscription.updated', sub, {
+    // Use distinct event IDs so KV deduplication does not suppress the second delivery.
+    const upgradeEvent = { ...buildEvent('customer.subscription.updated', sub, {
       items: { data: [{ price: { id: 'price_a' } }] },
-    });
+    }), id: 'evt_upgrade' };
     const body1 = JSON.stringify(upgradeEvent);
     const sig1 = await signBody(body1);
 
@@ -616,9 +631,9 @@ describe('stripeWebhookHandler', () => {
 
     const sub2 = buildSubscription();
     sub2.items.data[0]!.price.id = 'price_a';
-    const downgradeEvent = buildEvent('customer.subscription.updated', sub2, {
+    const downgradeEvent = { ...buildEvent('customer.subscription.updated', sub2, {
       items: { data: [{ price: { id: 'price_z' } }] },
-    });
+    }), id: 'evt_downgrade' };
     const body2 = JSON.stringify(downgradeEvent);
     const sig2 = await signBody(body2);
 
@@ -696,6 +711,75 @@ describe('stripeWebhookHandler', () => {
     });
     expect(response.status).toBe(200);
     expect(created).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates a repeated event.id — handler called once, second delivery returns deduplicated:true', async () => {
+    const subscription = buildSubscription();
+    const event = buildEvent('customer.subscription.created', subscription);
+    const body = JSON.stringify(event);
+
+    const created = vi.fn(((status: SubscriptionStatus) => { void status; return Promise.resolve(); }));
+    const kv = buildKVMock();
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { created } }, kv);
+
+    // First delivery — should process normally
+    const sig1 = await signBody(body);
+    const res1 = await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig1 },
+      body,
+    });
+    expect(res1.status).toBe(200);
+    expect(created).toHaveBeenCalledTimes(1);
+    const body1 = await res1.json() as { data: { deduplicated?: boolean } };
+    expect(body1.data.deduplicated).toBeUndefined();
+
+    // Second delivery with the same event.id — must NOT call handler again
+    const sig2 = await signBody(body);
+    const res2 = await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig2 },
+      body,
+    });
+    expect(res2.status).toBe(200);
+    expect(created).toHaveBeenCalledTimes(1); // still 1 — not called again
+    const body2 = await res2.json() as { data: { deduplicated?: boolean } };
+    expect(body2.data.deduplicated).toBe(true);
+  });
+
+  it('stores the event.id in KV after processing', async () => {
+    const subscription = buildSubscription();
+    const event = buildEvent('customer.subscription.created', subscription);
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
+
+    const kv = buildKVMock();
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: {} }, kv);
+
+    await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig },
+      body,
+    });
+
+    expect(kv.store.get(`stripe:event:${event.id}`)).toBe('1');
+  });
+
+  it('stores unclassified event.id in KV to prevent redundant delivery', async () => {
+    const event = { id: 'evt_unrelated', type: 'invoice.paid', data: { object: {} } } as unknown as Stripe.Event;
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
+
+    const kv = buildKVMock();
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: {} }, kv);
+
+    const response = await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig },
+      body,
+    });
+    expect(response.status).toBe(200);
+    expect(kv.store.get('stripe:event:evt_unrelated')).toBe('1');
   });
 });
 
