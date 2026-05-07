@@ -77,7 +77,9 @@ export async function runDailyBrief(env: Env): Promise<void> {
     dateLabel,
   });
 
-  // Synthesize the PM narration to audio and store in R2
+  // Synthesize the PM narration to audio and store in R2.
+  // synthesizeAndStore() passes AbortSignal.timeout(25_000) to ElevenLabs, so
+  // the request self-cancels after 25 s without a caller-level Promise.race guard.
   const audioUrl = await synthesizeAndStore({
     text: insights.narration,
     dateLabel: now.toISOString().slice(0, 10),
@@ -109,15 +111,22 @@ export async function runDailyBrief(env: Env): Promise<void> {
     fromName: 'Daily Brief',
   });
 
-  // Use allSettled so a single bad address never silences the rest of the batch
+  // Use allSettled so a single bad address never silences the rest of the batch.
+  // Each call is capped at 15 s via withTimeout — sendTransactional() does not yet
+  // accept a native AbortSignal, so this Promise.race guard ensures a stalled Resend
+  // call does not block the cron trigger indefinitely.
   const sendResults = await Promise.allSettled(
     recipients.map((to) =>
-      emailClient.sendTransactional({
-        to,
-        subject: `📋 Daily Brief — ${dateLabel}`,
-        html,
-        text: insights.textSummary,
-      }),
+      withTimeout(
+        emailClient.sendTransactional({
+          to,
+          subject: `📋 Daily Brief — ${dateLabel}`,
+          html,
+          text: insights.textSummary,
+        }),
+        15_000,
+        'email-send',
+      ),
     ),
   );
 
