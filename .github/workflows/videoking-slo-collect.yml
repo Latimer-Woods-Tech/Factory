@@ -65,13 +65,15 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          echo "## VideoKing SLO Collection" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f slo-report-latest.json ]; then
-            echo "**Report:** Created $(date)" >> $GITHUB_STEP_SUMMARY
-            cat slo-report-latest.json >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Status:** ⚠️ Report not generated" >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "## VideoKing SLO Collection"
+            echo ""
+            echo "**Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
+            if [ -f slo-report-latest.json ]; then
+              echo "**Report:** Created $(date)"
+              cat slo-report-latest.json
+            else
+              echo "**Status:** ⚠️ Report not generated"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
