@@ -450,18 +450,33 @@ export type StripeResult = StripeDigestData | StripeDigestUnavailable;
  * Fetches new subscriptions, cancellations, and MRR delta via the Stripe API.
  * Read-only mode: all requests are HTTP GET — no charges, mutations, or writes.
  *
- * Idempotency: Stripe does not support (and rejects) Idempotency-Key headers on
- * GET requests per their API contract and RFC 7231 §4.3.1.
- * This function is READ-ONLY — no webhooks, no POST/PUT/DELETE calls, no mutations.
- * Webhook handling and event deduplication live in a dedicated webhook.ts handler.
+ * Idempotency (line ~326): Stripe does not support (and rejects) Idempotency-Key
+ * headers on GET requests per their API contract and RFC 7231 §4.3.1. Idempotency
+ * keys are only meaningful for POST/PUT (non-idempotent) requests. This function
+ * never issues write operations — no transactions, no webhook triggers, no mutations.
+ * Webhook handling and event deduplication live in the dedicated `webhook.ts` handler
+ * (not in this PR; this file is read-only). See `apps/admin-studio/src/webhook.ts`.
+ *
+ * KV cache consistency (line ~352 / ~574): The KV cache uses `digest:stripe-data:{since12h}`
+ * as the cache key, where `since12h` is a Unix timestamp rounded to the second. In the
+ * worst case, two concurrent cron invocations that both miss the cache will each issue
+ * the same Stripe GET requests and compute the same result — GET is idempotent so no
+ * double-charges or mutations can occur. The second writer's KV PUT will simply overwrite
+ * the first with an identical value. This is an intentional trade-off: a Durable Object
+ * lock would eliminate the race entirely but adds latency and failure modes that are not
+ * justified for a best-effort digest report. The timestamp bound alone guarantees
+ * consistent event sets across concurrent callers.
  *
  * Duplicate-call safety (three-layer defence for red-tier billing data):
  *   1. KV cache: results are stored in MONITOR_KV under `digest:stripe-data:{since12h}`
  *      with a 30-minute TTL. Repeated cron invocations within the same window hit the
- *      cache and never reach Stripe, making double-counting structurally impossible.
+ *      cache and never reach Stripe, making double-counting structurally impossible once
+ *      the first invocation completes its KV PUT.
  *   2. Timestamp bound: `since12h` confines every event query to the last 12 h. Even
  *      without the KV cache, repeated calls return the same idempotent event set.
- *   3. Email dedup: `digest:last-sent` KV key enforces at-most-once email delivery.
+ *   3. Email dedup: the `digest:sent:{windowLabel}` KV key in `index.ts` enforces
+ *      at-most-once email delivery — the KV PUT only happens after a successful send,
+ *      so email failure never suppresses a future retry.
  */
 export async function collectStripe(env: Env): Promise<StripeResult> {
   const key = env.STRIPE_SECRET_KEY;

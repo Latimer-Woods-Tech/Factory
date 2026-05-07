@@ -27,6 +27,13 @@ export type SendOutcome = SendResult | SendFailure;
 /**
  * Delivers the digest email via Resend.
  *
+ * Transaction ordering / KV dedup (see also `index.ts`):
+ *   The caller (`runDigest` in index.ts) writes the dedup KV key
+ *   (`digest:sent:{windowLabel}`) ONLY after this function returns `{ ok: true }`.
+ *   If email delivery fails, the KV write never happens, so the next cron retry
+ *   will attempt delivery again. There is no risk of KV suppression without a
+ *   confirmed successful send.
+ *
  * @param digest  - Rendered subject, HTML, and plain-text body.
  * @param env     - Worker bindings (needs RESEND_API_KEY + DIGEST_TO_EMAIL).
  */
@@ -41,9 +48,9 @@ export async function sendDigestEmail(
     return { ok: false, reason: 'RESEND_API_KEY not configured' };
   }
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), SEND_TIMEOUT_MS);
-
+  // AbortSignal.timeout() is the Workers-native timeout pattern — no manual
+  // AbortController + setTimeout needed. If the request exceeds SEND_TIMEOUT_MS,
+  // the signal fires automatically and the catch block returns a typed failure.
   try {
     const res = await fetch(RESEND_API, {
       method: 'POST',
@@ -58,9 +65,8 @@ export async function sendDigestEmail(
         html: digest.html,
         text: digest.text,
       }),
-      signal: ctrl.signal,
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     });
-    clearTimeout(timer);
 
     if (!res.ok) {
       const body = await res.text();
@@ -70,7 +76,6 @@ export async function sendDigestEmail(
     const json = await res.json() as { id?: string };
     return { ok: true, messageId: json.id ?? 'unknown' };
   } catch (err) {
-    clearTimeout(timer);
     const msg = (err as Error).message;
     return { ok: false, reason: `Resend fetch failed: ${msg}` };
   }
