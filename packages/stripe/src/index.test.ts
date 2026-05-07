@@ -533,8 +533,8 @@ describe('stripeWebhookHandler', () => {
     const store = new Map<string, string>();
     return {
       store,
-      async get(key: string) { return store.get(key) ?? null; },
-      async put(key: string, value: string) { store.set(key, value); },
+      get(key: string) { return Promise.resolve(store.get(key) ?? null); },
+      put(key: string, value: string) { store.set(key, value); return Promise.resolve(); },
     };
   }
 
