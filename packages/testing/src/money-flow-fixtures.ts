@@ -27,9 +27,12 @@ export type MockStripeWebhookType =
   | 'payment_intent.succeeded'
   | 'payment_intent.canceled';
 
+/** JSON-safe primitive types used in fixture overrides. */
 export type JsonPrimitive = string | number | boolean | null;
+/** Recursive JSON-safe value — covers primitives, objects, and arrays. */
 export type JsonValue = JsonPrimitive | { [key: string]: JsonValue } | JsonValue[];
 
+/** Field overrides applied when building a mock Stripe webhook payload. */
 export interface MockStripeWebhookOverrides {
   customerId?: string;
   amount?: number;
@@ -43,6 +46,7 @@ export interface MockStripeWebhookOverrides {
   eventData?: Record<string, JsonValue>;
 }
 
+/** Fully-shaped mock Stripe webhook event envelope returned by {@link createMockStripeWebhook}. */
 export interface MockStripeWebhookPayload {
   id: string;
   object: 'event';
@@ -371,6 +375,7 @@ export interface SeedData {
   dlqEvents?: MockDLQEvent[];
 }
 
+/** IDs of records created by {@link seedDatabase} — use for deterministic assertions and cleanup. */
 export interface SeedResult {
   creatorIds: string[];
   earningsIds: string[];
