@@ -55,6 +55,8 @@ notes: <plain-English context, blockers, decisions>
 
 The fields are machine-readable. Coordinators and dashboards parse them. Don't decorate, don't paraphrase, don't omit.
 
+Project-board automation now treats the issue audit trail as canonical. Claim labels, assignees, linked PRs, and `/status` comments drive the shared project board, and missing cards are backfilled automatically. Agents should update the issue state, not manually curate the board.
+
 ### 5. Tests must run locally
 
 Before posting `state: done`, you must:
@@ -69,7 +71,7 @@ A subagent posting `tests: ran=true, passing=true` without actually running the 
 
 Subagents open PRs. Subagents do not merge to main. The coordinator (or human) merges only after:
 
-- All required status checks green on the PR's head SHA
+- All required status checks green on the PR's head SHA: `CI / validate`, `CodeQL Security Analysis / Analyze (javascript)`, and `Dependency Review / dependency-review`
 - The PR body references the issue (`Closes #N`)
 - The agent's final `/status state: done` comment is on the issue
 
@@ -123,5 +125,7 @@ When something doesn't work, say so plainly. `state: blocked` with the actual er
 This protocol is versioned via git history. Material changes require a PR with `process` label and at least 24h review window. Rev bumps go in the changelog at the bottom.
 
 ---
+
+**v1.1** — 2026-05-07 — Added explicit required-check gate and clarified that project-board state is derived from issue/PR audit trail plus self-healing sync.
 
 **v1.0** — 2026-05-01 — Initial protocol after the May 1 stack-up incident.
