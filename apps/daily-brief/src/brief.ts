@@ -103,17 +103,38 @@ export async function runDailyBrief(env: Env): Promise<void> {
     fromName: 'Daily Brief',
   });
 
+  // Idempotency note: this is a once-per-day scheduled cron. A double-fire on the
+  // same day is the only realistic idempotency risk — the Workers cron scheduler
+  // guarantees at-most-once delivery per trigger, but a manual re-run or mis-fire
+  // could cause a second send. Resend deduplication is not available without an
+  // `Idempotency-Key` request header; adding that support to the email package is
+  // tracked separately (DEBT-005). For now, operational idempotency is enforced at
+  // the scheduling layer (cron fires once per day).
+
+  /**
+   * Send with a single retry on transient failure.
+   * Permanent failures (4xx status in the error message) are not retried.
+   */
+  async function sendWithRetry(to: string): Promise<{ id: string }> {
+    const sendOpts = {
+      to,
+      subject: `Daily Brief — ${dateLabel}`,
+      html,
+      text: insights.textSummary,
+    };
+    try {
+      return await emailClient.sendTransactional(sendOpts);
+    } catch (firstErr) {
+      // Retry once for transient network/5xx failures. Skip retry for permanent
+      // 4xx errors (invalid address, rate limit, etc.) — they won't self-resolve.
+      const msg = firstErr instanceof Error ? firstErr.message : String(firstErr);
+      if (/\b4\d\d\b/.test(msg)) throw firstErr;
+      return await emailClient.sendTransactional(sendOpts);
+    }
+  }
+
   // Use allSettled so a single bad address never silences the rest of the batch
-  const sendResults = await Promise.allSettled(
-    recipients.map((to) =>
-      emailClient.sendTransactional({
-        to,
-        subject: `📋 Daily Brief — ${dateLabel}`,
-        html,
-        text: insights.textSummary,
-      }),
-    ),
-  );
+  const sendResults = await Promise.allSettled(recipients.map(sendWithRetry));
 
   for (const [i, result] of sendResults.entries()) {
     if (result.status === 'rejected') {
