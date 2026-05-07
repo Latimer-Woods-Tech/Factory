@@ -254,7 +254,11 @@ export async function createCheckoutSession(
 ): Promise<string> {
   const priceId = options.priceId?.trim() ?? '';
 
-  if (!priceId || !priceId.startsWith('price_')) {
+  if (!priceId) {
+    throw new ValidationError('Stripe price ID is required', { code: ErrorCodes.VALIDATION_ERROR });
+  }
+
+  if (!priceId.startsWith('price_')) {
     throw new ValidationError(
       `priceId must be a valid Stripe price ID (starts with "price_"); got: "${priceId}". ` +
       'Read the price ID from env/secrets — never hardcode it in source.',
