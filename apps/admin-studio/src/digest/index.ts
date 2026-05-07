@@ -34,6 +34,25 @@ function digestLabel(collectedAt: string): string {
  * Exported so it can be unit-tested and called from the `scheduled` handler.
  */
 export async function runDigest(env: Env): Promise<void> {
+  // ── 0. Deduplication guard ────────────────────────────────────────────────
+  // The cron fires twice daily. A Worker restart or retry within the same
+  // half-day window must not send a duplicate email.
+  const windowLabel = (() => {
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    const period = now.getUTCHours() < 12 ? 'am' : 'pm';
+    return `${date}-${period}`;
+  })();
+  const dedupKey = `digest:sent:${windowLabel}`;
+
+  if (env.MONITOR_KV) {
+    const already = await env.MONITOR_KV.get(dedupKey);
+    if (already) {
+      console.log(`[digest] already sent for window ${windowLabel} — skipping duplicate run`);
+      return;
+    }
+  }
+
   console.log('[digest] starting collection');
 
   // ── 1. Collect ────────────────────────────────────────────────────────────
@@ -59,6 +78,10 @@ export async function runDigest(env: Env): Promise<void> {
   const outcome = await sendDigestEmail(rendered, env);
   if (outcome.ok) {
     console.log(`[digest] email sent successfully, messageId=${outcome.messageId}`);
+    // Mark this window as sent so cron retries don't send a duplicate.
+    if (env.MONITOR_KV) {
+      await env.MONITOR_KV.put(dedupKey, '1', { expirationTtl: 86400 });
+    }
   } else {
     console.error(`[digest] email send failed: ${outcome.reason}`);
   }

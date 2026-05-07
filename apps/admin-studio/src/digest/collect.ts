@@ -51,13 +51,18 @@ async function buildAppJwt(appId: string, privateKeyPem: string): Promise<string
     .replace(/-----BEGIN [^-]+-----|-----END [^-]+-----|\s/g, '');
   const derBuffer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
 
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    derBuffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
+  let key: CryptoKey;
+  try {
+    key = await crypto.subtle.importKey(
+      'pkcs8',
+      derBuffer,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+  } catch {
+    throw new Error('Failed to parse FACTORY_APP_PRIVATE_KEY: key must be a PKCS#8 PEM (RS256)');
+  }
 
   const enc = new TextEncoder();
   const sig = await crypto.subtle.sign(
@@ -462,11 +467,11 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
 
   function stripeGet(path: string): Promise<Response> {
     const ctrl = withTimeout(FETCH_TIMEOUT_MS);
+    // GET requests are inherently idempotent — no Idempotency-Key needed.
     return fetch(`https://api.stripe.com/v1/${path}`, {
       headers: {
         Authorization: `Bearer ${key}`,
         'User-Agent': 'factory-admin-studio-digest',
-        'Idempotency-Key': `digest-get-${path.replace(/[^a-zA-Z0-9]/g, '-')}-${Math.floor(Date.now() / 60_000)}`,
       },
       signal: ctrl.signal,
     });
