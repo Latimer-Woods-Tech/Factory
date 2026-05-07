@@ -144,7 +144,7 @@ In Factory Admin dashboard:
 If endpoints don't respond:
 
 - **Verify auth:** All endpoints require `Authorization: Bearer {token}` with `admin:read` permission
-- **Check CORS:** Factory Admin makes cross-origin requests; ensure CORS headers allow `https://admin.adrper79.workers.dev`
+- **Check CORS:** Factory Admin makes cross-origin requests; ensure CORS headers allow `https://admin-studio-staging.adrper79.workers.dev`
 - **Test manually:** `curl -H "Authorization: Bearer $(echo $JWT_SECRET | ...)" https://my-app.adrper79.workers.dev/api/admin/health`
 
 ---

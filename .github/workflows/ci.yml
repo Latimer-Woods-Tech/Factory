@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -80,3 +81,6 @@ jobs:
 
       - name: Enforce dependency version policy (FRH-08)
         run: node scripts/lint-dependency-versions.mjs
+
+      - name: Enforce docs-to-service-registry endpoint consistency (FRH-10)
+        run: node scripts/check-docs-registry-consistency.mjs

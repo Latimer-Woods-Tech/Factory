@@ -27,7 +27,10 @@
   "navigation": [
     {
       "group": "Get Started",
-      "pages": ["introduction", "quickstart"]
+      "pages": [
+        "introduction",
+        "quickstart"
+      ]
     },
     {
       "group": "Foundations",
@@ -41,15 +44,21 @@
     },
     {
       "group": "Payments",
-      "pages": ["packages/stripe"]
+      "pages": [
+        "packages/stripe"
+      ]
     },
     {
       "group": "AI",
-      "pages": ["packages/llm"]
+      "pages": [
+        "packages/llm"
+      ]
     },
     {
       "group": "Telephony",
-      "pages": ["packages/telephony"]
+      "pages": [
+        "packages/telephony"
+      ]
     },
     {
       "group": "Operations",
@@ -86,6 +95,13 @@
         "runbooks/database",
         "runbooks/slo",
         "runbooks/transfer"
+      ]
+    },
+    {
+      "group": "Reference",
+      "pages": [
+        "STACK",
+        "APP_SCOPE_REGISTRY"
       ]
     }
   ],

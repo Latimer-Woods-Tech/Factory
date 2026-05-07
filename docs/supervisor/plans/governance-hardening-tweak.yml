@@ -1,0 +1,96 @@
+id: governance-hardening-tweak
+version: 1
+tier: green
+triggers:
+  labels_any_of: [hardening, governance, engineering]
+  title_pattern: "^(chore|feat|docs)[(](governance|triage|review|reliability|docs|security)[)]:"
+  body_patterns:
+    - "(?i)(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+slots:
+  - name: change_type
+    type: enum
+    values: [workflow-addition, label-addition, readme-edit, codeowners-update, branch-policy-doc]
+    source: issue_body
+    default: workflow-addition
+  - name: scope
+    type: enum
+    values: [governance, triage, review, reliability, docs, security]
+    source: issue_title
+  - name: target_path
+    type: string
+    validator: "^(\\.github/(workflows/[a-z0-9][a-z0-9_-]{0,60}\\.ya?ml|labels\\.ya?ml|CODEOWNERS)|(README|docs/[A-Za-z0-9/_-]{1,120})\\.md)$"
+    source: issue_body
+  - name: file_content
+    type: string
+    validator: "(?s)^.{1,50000}$"
+    source: issue_body
+  - name: commit_message
+    type: string
+    validator: "^(chore|feat|docs)(\\([a-z0-9-]+\\))?:"
+    source: issue_title
+  - name: branch_name
+    type: string
+    validator: "^supervisor/governance/[a-z0-9][a-z0-9-]{0,60}$"
+    source: issue_body
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      path: "$slots.target_path"
+      ref: "main"
+      allow_missing: true
+    intent: "Read the target file (if it exists) to determine whether this is an add or update and avoid clobbering existing content."
+    requires_human_review: false
+  - id: s2
+    tool: github.openPR
+    depends_on: s1
+    params:
+      branch: "$slots.branch_name"
+      base: "main"
+      title: "$slots.commit_message"
+      commit_message: "$slots.commit_message"
+      files:
+        - path: "$slots.target_path"
+          content: "$slots.file_content"
+      body: |
+        Auto-drafted by supervisor for cluster `governance-hardening-tweak`.
+        Change type: $slots.change_type
+        Scope: $slots.scope
+        Target: $slots.target_path
+        Source issue: see linked issue.
+
+        This is a low-risk governance/hardening artifact. Human review is required before merge.
+        The supervisor has captured the intent from the linked issue; please verify the generated
+        file content matches the desired policy before approving.
+      labels: [hardening, supervisor, tier-green]
+    intent: "Open a draft PR adding or updating the governance/hardening artifact so a human can review and merge."
+    requires_human_review: true
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      pr: "$s2.number"
+      body: "Supervisor drafted this governance PR from the linked issue. Only `.github/`, `docs/`, or root-level `README.md` files are touched; no runtime code paths changed. Pre-existing file content (if any) was captured in step s1."
+    intent: "Leave a reviewer-facing note on the PR explaining provenance and scope."
+acceptance_gate:
+  description: "A PR was opened on the expected branch with exactly one changed file whose path equals the requested target_path."
+  verifier_query:
+    tool: github.openPR
+    query: "pr:$s2.number files.path == '$slots.target_path' AND files.count == 1 AND base == 'main' AND head == '$slots.branch_name'"
+    assert: "count >= 1"
+rollback:
+  - on_step: s2
+    action: github.closePR
+    params:
+      pr: "$s2.number"
+      comment: "Rolling back supervisor-drafted governance PR; see linked issue for retry."
+  - on_step: s3
+    action: github.removeLabel
+    params:
+      pr: "$s2.number"
+      label: "supervisor"

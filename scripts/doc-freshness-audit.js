@@ -77,6 +77,12 @@ const DOC_REGISTRY = [
   // Foundation (not typically updated)
   { path: 'CLAUDE.md', cadence: 'quarterly', owner: 'Engineer / EM' },
   { path: 'START_HERE.md', cadence: 'annually', owner: 'Tech Writer' },
+
+  // Per-repo standing orders (read by LLM reviewer on every PR)
+  // Keep current with each repo's actual stack — semi-annual review minimum.
+  { path: '.github/repo-contexts/coh/CLAUDE.md',        cadence: 'semi-annually', owner: 'Engineer / EM' },
+  { path: '.github/repo-contexts/humandesign/CLAUDE.md', cadence: 'semi-annually', owner: 'Engineer / EM' },
+  { path: '.github/repo-contexts/videoking/CLAUDE.md',  cadence: 'semi-annually', owner: 'Engineer / EM' },
 ];
 
 /**
