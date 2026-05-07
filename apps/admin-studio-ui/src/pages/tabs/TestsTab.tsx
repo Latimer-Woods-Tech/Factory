@@ -48,7 +48,7 @@ export function TestsTab() {
   const token = useSession((s) => s.token);
 
   useEffect(() => {
-    apiFetch<{ suites: Suite[] }>('/tests/').then((r) => setSuites(r.suites));
+    apiFetch<{ suites: Suite[] }>('/tests').then((r) => setSuites(r.suites));
   }, []);
 
   const closeStream = useCallback(() => {

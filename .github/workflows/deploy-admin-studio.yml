@@ -80,6 +80,21 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
 
+      - name: Provision studio credentials
+        run: |
+          target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
+          if [ -z "${{ secrets.FACTORY_USER }}" ] || [ -z "${{ secrets.FACTORY_PW }}" ]; then
+            echo "::warning::FACTORY_USER or FACTORY_PW missing; using placeholder credentials"
+            exit 0
+          fi
+          password_hash=$(echo -n "${{ secrets.FACTORY_PW }}" | sha256sum | cut -d' ' -f1)
+          echo "${{ secrets.FACTORY_USER }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "$target_env"
+          echo "$password_hash" | npx wrangler secret put STUDIO_ADMIN_PASSWORD_SHA256 --env "$target_env"
+        working-directory: apps/admin-studio
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
       - name: Push self-improvement secrets
         run: |
           target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
@@ -92,6 +107,27 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      - name: Apply database migrations
+        run: |
+          # Run all migrations against Neon via psql.
+          # All migrations use IF NOT EXISTS, so they are idempotent and safe to re-run.
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "::warning::DATABASE_URL not set; skipping migrations — ensure tables exist in the target database"
+            exit 0
+          fi
+          # Install psql
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          # Apply all pending migrations in sequence (sorted by filename)
+          for f in $(ls apps/admin-studio/migrations/*.sql | sort); do
+            echo "Applying migration: $f"
+            psql "${{ secrets.DATABASE_URL }}" -v ON_ERROR_STOP=1 -f "$f"
+          done
+          echo "✓ Database migrations applied successfully"
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Deploy
         run: npx wrangler deploy --env ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         working-directory: apps/admin-studio

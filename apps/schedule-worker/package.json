@@ -14,7 +14,7 @@
     "@latimer-woods-tech/neon": "file:../../packages/neon",
     "@latimer-woods-tech/schedule": "file:../../packages/schedule",
     "@neondatabase/serverless": "^0.10.4",
-    "drizzle-orm": "^0.45.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.14",
     "postgres": "^3.4.9"
   },
@@ -23,10 +23,10 @@
     "@types/node": "^25.6.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "eslint": "^8.57.0",
     "typescript": "^5.4.0",
-    "vitest": "^1.6.0",
+    "vitest": "^1.6.1",
     "wrangler": "^3.0.0"
   }
 }

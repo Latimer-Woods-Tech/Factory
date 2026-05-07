@@ -559,3 +559,157 @@ Update this doc if any of the following occur:
 - [Secret Rotation Runbook](./secret-rotation.md) — How to rotate specific secrets
 - [Deployment Runbook](./deployment.md) — How to deploy apps
 - [Getting Started Runbook](./getting-started.md) — First-time setup
+
+---
+
+## GitHub Governance & Autonomous LLM Review
+
+This section covers patterns and lessons from building the factory's fully autonomous PR review pipeline (shipped May 2026).
+
+### Architecture: Grok → Claude 2-Party Consensus
+
+All LLM-gated PRs go through two independent model passes before any action is taken:
+
+```
+PR opened / synchronize
+  └─► pr-review.yml
+        └─► pr-review.mjs
+              1. Grok first-pass  (xAI API)  → { lgtm, concerns[] }
+              2. Claude second-pass (Anthropic) → { lgtm, concerns[] }
+              APPROVE only when BOTH lgtm=true
+              Otherwise CHANGES_REQUESTED with merged concerns
+```
+
+**Why two models?** Single-model reviews hallucinate approvals on code that violates constraints. Requiring *both* Grok and Anthropic-Claude to independently confirm reduces false approvals without requiring human intervention on green/yellow PRs.
+
+**Lesson Learned:** Do not short-circuit on first-pass LGTM. The second pass consistently catches constraint violations (process.env, Buffer, require) that Grok misses when they appear in large diffs.
+
+### Bot Identity: CODEOWNERS + Ruleset Bypass
+
+Enabling a GitHub App bot to merge as a co-owner requires **both**:
+
+1. **CODEOWNERS co-ownership** — add `factory-cross-repo[bot]` as a co-owner on the paths you want the bot to approve:
+   ```
+   # Green paths (docs, markdown)
+   docs/**  @adrper79-dot factory-cross-repo[bot]
+   *.md     @adrper79-dot factory-cross-repo[bot]
+
+   # Yellow paths (app source, tests)
+   apps/*/src/**  @adrper79-dot factory-cross-repo[bot]
+   tests/**       @adrper79-dot factory-cross-repo[bot]
+
+   # Red paths (infrastructure) — human only
+   packages/**  @adrper79-dot
+   .github/workflows/**  @adrper79-dot
+   wrangler.jsonc  @adrper79-dot
+   ```
+
+2. **Ruleset bypass actor** — add the GitHub App as an `Integration` bypass actor on the branch-protection ruleset (UI: Settings → Rules → Rulesets → edit ruleset → add bypass actor type=Integration, actor=factory-cross-repo).
+
+**Lesson Learned:** CODEOWNERS co-ownership alone is not enough. Without the ruleset bypass actor, the bot's approval satisfies CODEOWNERS but the ruleset still blocks the merge. Both are required.
+
+**Lesson Learned:** Never add the bot as a bypass actor on red-tier paths (infrastructure). Red PRs must always require a human review even if the bot passes both LLM checks.
+
+### Retry Limit and Escalation
+
+After `MAX_REVIEW_ATTEMPTS` bot-submitted `CHANGES_REQUESTED` reviews on a single PR, escalate rather than loop:
+
+1. Label PR `supervisor:review-limit-reached`
+2. File a GitHub issue describing the stalled PR
+3. Request human review from `HUMAN_REVIEWER`
+4. Post a PR comment linking the issue
+
+```yaml
+env:
+  MAX_REVIEW_ATTEMPTS: '3'        # default; override per-workflow
+  HUMAN_REVIEWER: 'adrper79-dot'
+```
+
+**Lesson Learned:** Without a retry limit, a PR that the LLM perpetually disagrees with will loop forever, burning API credits. Three attempts is a reasonable threshold before assuming the diff requires human judgment.
+
+### Supervisor PR Feedback Loop
+
+The supervisor's scheduled job (`supervisor-loop.yml`, every 4 hours) now includes a pre-pass that self-heals stalled bot PRs:
+
+```
+supervisor-core.mjs main()
+  1. runPrFeedbackLoop()
+     - Find all open PRs opened by factory-cross-repo[bot] with state CHANGES_REQUESTED
+     - For each: fetch review comments, call Claude to generate file fixes
+     - Apply three hallucination guards (see below)
+     - Commit fixes to the PR branch  →  triggers `synchronize`  →  pr-review.yml reruns
+  2. processIssues() — normal issue→PR flow
+```
+
+**Lesson Learned:** Committing to the PR branch and letting `pr-review.yml` re-trigger via `synchronize` is cleaner than calling the review API directly from the supervisor. It keeps review logic in one place.
+
+### Hallucination Guards
+
+Three guards run on every LLM-generated file before it is committed:
+
+| # | Guard | What it checks |
+|---|-------|---------------|
+| 1 | `checkGeneratedContent()` | Constraint violations (process.env, require, Buffer, Node built-ins, Express); empty files; line-count limit configurable via `MAX_GENERATED_LINES` (default 800) |
+| 2 | `enforceSlotSchema()` | Strip keys not in declared template schema; null values matching injection verb patterns |
+| 3 | `fixAddressesConcerns()` | At least one concern keyword from the review must appear in changed lines (added OR removed) |
+
+**Guard 1 — Strip comments before scanning:** Run `stripCommentsAndStrings()` on the source before applying the constraint regexes. Otherwise JSDoc examples (`// never use Buffer`) trigger false violations.
+
+**Guard 2 — Injection filter must be structural:** A broad substring match (`/ignore previous/i`) will null legitimate content (e.g., security docs that discuss jailbreaking). Use a 3-token imperative-verb pattern instead:
+```js
+const INJECTION_RE = /\b(ignore|disregard|forget|override)\s+(previous|above|all|prior|earlier)\s+(instructions?|context|rules?|prompt)/i;
+```
+
+**Guard 3 — Count removed lines too:** A fix that works by deleting bad code produces zero added lines. Check `addedLines ∪ removedLines` against concern keywords, not just added lines.
+
+**Lesson Learned:** All three guards had initially high false-positive rates in the first pass. The root causes were: (1) scanning comments, (2) overly broad injection filter, and (3) only checking added lines. All three are now patched.
+
+### GraphQL Variable Naming in Project Board Sync
+
+GitHub's Projects v2 GraphQL API is strict about variable declarations. A `$contentId` variable used in the mutation body **must** be declared in the query signature:
+
+```graphql
+# ❌ Breaks silently — contentId used but not declared
+mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!) {
+  updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $contentId } })
+}
+
+# ✅ Correct — all variables declared
+mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $contentId: String!) {
+  updateProjectV2ItemFieldValue(...)
+}
+```
+
+**Lesson Learned:** GraphQL variable errors in Actions workflows produce a `422 Unprocessable Entity` with a `{"message": "Variable $contentId is not defined..."}` body. They do NOT cause the workflow to exit — the `gh api graphql` call returns exit 0 with the error body in stdout. Always pipe through `jq .errors` to detect these silently swallowed failures.
+
+
+---
+
+## Supervisor System — May 2026
+
+### Best-Practice Template Pipeline
+
+**Problem:** The supervisor had a 3-place sync requirement: every new template type needed to be added to (1) a YAML file, (2) MATCH_RULES in supervisor-core.mjs, and (3) the SEED array in load.ts. This caused package-version-migration to never match — it existed in YAML but not in MATCH_RULES.
+
+**Fix:** Build-time generator (scripts/generate-supervisor-templates.mjs) reads all docs/supervisor/plans/*.yml via js-yaml, validates schema and regex patterns, and emits 	emplates.generated.ts. The Worker's load.ts imports from that file. Both the Worker's match.ts and the GHA supervisor-core.mjs derive match signals exclusively from the YAML 	riggers block. Adding a new template now requires only editing the YAML file.
+
+**Key pitfalls fixed:**
+- YAML double-quoted strings mangle \s → s and \. → . — always use single quotes for regex values
+- PCRE inline flags (?is) are incompatible with JS RegExp — strip them and use flag arguments instead
+- @cloudflare/workers-types injected via 	sconfig.types + imported via import type creates duplicate type identities → TS2322 mismatch. Use only the 	ypes injection; remove named imports
+- ScheduledHandler expects ScheduledController as first param, not ScheduledEvent
+
+### Supervisor Duplicate PR Race Condition
+
+**Problem:** The supervisor ran concurrently (or retried before GH API label propagation) and opened 3 identical PRs (#287, #288, #289) for issue #286. The gent:claimed:sauna label filter is the primary dedup, but it isn't visible until after the label write completes — which happens after PR creation.
+
+**Fix:** indExistingPR() queries open pulls for PRs whose body contains **Source issue:** #N before calling xecuteGreen. If a matching PR exists, return it without creating a branch. This is a secondary guard; the label filter remains the primary.
+
+**Key insight:** Always add a PR-level dedup check when automation can open PRs, because label propagation is eventually-consistent — not immediate.
+
+### validate-docs-quality.mjs Design
+
+**Requirements (issue #286):** Fast (< 10 s), deterministic, bounded output, --max-errors N, --json report mode, no symlink loops.
+
+**Implementation:** Bounded traversal of docs/, pps/*/README.md, and root *.md only. Skips symlinks, 
+ode_modules, dist, .wrangler. Builds an anchor index from headings and id= attributes. Extracts relative Markdown links and resolves against the filesystem. Exits 1 with one FILE:LINE → TARGET (reason) line per broken link.
