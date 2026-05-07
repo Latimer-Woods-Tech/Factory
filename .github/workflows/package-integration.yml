@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: package-integration-${{ github.ref }}
@@ -39,7 +40,7 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
+          scope: '@latimer-woods-tech'
 
       - name: Install and build package dependency chain
         shell: bash
