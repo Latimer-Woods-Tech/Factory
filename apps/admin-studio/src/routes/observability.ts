@@ -101,6 +101,7 @@ observability.get('/sentry/issues', async (c) => {
       { headers: { Authorization: `Bearer ${token}` }, signal: ct.signal },
     );
     if (!res.ok) {
+      await res.body?.cancel();
       return c.json(
         { ...errorEnvelope(`sentry upstream returned ${res.status}`), issues: [] as SentryIssue[] },
         502,
@@ -150,6 +151,7 @@ observability.get('/posthog/tiles', async (c) => {
       },
     );
     if (!res.ok) {
+      await res.body?.cancel();
       return c.json(
         { ...errorEnvelope(`posthog upstream returned ${res.status}`), tiles: [] as PostHogTile[] },
         502,
