@@ -13,22 +13,12 @@ import { synthesizeAndStore } from './render/tts';
 import { buildEmailHtml } from './render/email';
 
 /**
- * Races a promise against a timeout — rejects with a labeled error if `ms` elapses first.
- * Section fetches don't accept AbortController signals, so this is the safe cross-platform
- * alternative that keeps us compliant with the no-Node-built-ins constraint.
- */
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`[daily-brief] timeout after ${ms}ms: ${label}`)), ms),
-    ),
-  ]);
-}
-
-/**
  * Top-level orchestrator. Gathers all data sections, runs the LLM,
  * generates TTS audio, and fires the email to all recipients.
+ *
+ * Each section fetch already guards itself with AbortSignal.timeout, so no
+ * additional setTimeout wrapper is needed here. Promise.allSettled ensures a
+ * single slow or failing section never blocks the rest of the brief.
  */
 export async function runDailyBrief(env: Env): Promise<void> {
   const now = new Date();
@@ -40,21 +30,22 @@ export async function runDailyBrief(env: Env): Promise<void> {
     timeZone: 'America/New_York',
   });
 
-  // Gather all data sections in parallel — each capped at 8 s to prevent cron overruns
+  // Gather all data sections in parallel. Each section's internal fetch is
+  // guarded by AbortSignal.timeout, so no outer setTimeout wrapper is required.
   const [weather, news, activity, health, wisdom, stripeMrr, postHog, sentry] = await Promise.allSettled([
-    withTimeout(fetchWeather(), 8_000, 'weather'),
-    withTimeout(fetchNewsSection(env.NEWS_API_KEY), 8_000, 'news'),
-    withTimeout(fetchGitHubActivity(env.GITHUB_TOKEN, env.GITHUB_ORG), 8_000, 'github-activity'),
-    withTimeout(fetchWorkerHealth(), 8_000, 'worker-health'),
-    withTimeout(fetchWisdomSection(env), 8_000, 'wisdom'),
+    fetchWeather(),
+    fetchNewsSection(env.NEWS_API_KEY),
+    fetchGitHubActivity(env.GITHUB_TOKEN, env.GITHUB_ORG),
+    fetchWorkerHealth(),
+    fetchWisdomSection(env),
     env.STRIPE_SECRET_KEY
-      ? withTimeout(fetchStripeMrr(env.STRIPE_SECRET_KEY), 8_000, 'stripe')
+      ? fetchStripeMrr(env.STRIPE_SECRET_KEY)
       : Promise.reject('Stripe not configured'),
     env.POSTHOG_API_KEY && env.POSTHOG_PROJECT_ID
-      ? withTimeout(fetchPostHogSnapshot(env.POSTHOG_API_KEY, env.POSTHOG_PROJECT_ID), 8_000, 'posthog')
+      ? fetchPostHogSnapshot(env.POSTHOG_API_KEY, env.POSTHOG_PROJECT_ID)
       : Promise.reject('PostHog not configured'),
     env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG
-      ? withTimeout(fetchSentryErrors(env.SENTRY_AUTH_TOKEN, env.SENTRY_ORG), 8_000, 'sentry')
+      ? fetchSentryErrors(env.SENTRY_AUTH_TOKEN, env.SENTRY_ORG)
       : Promise.reject('Sentry not configured'),
   ]);
 
@@ -77,7 +68,10 @@ export async function runDailyBrief(env: Env): Promise<void> {
     dateLabel,
   });
 
-  // Synthesize the PM narration to audio and store in R2
+  // Synthesize the PM narration to audio and store in R2.
+  // synthesizeAndStore passes AbortSignal.timeout(25_000) to the ElevenLabs
+  // fetch, so the underlying request is actually cancelled on expiry rather
+  // than leaving a dangling connection consuming Worker CPU budget.
   const audioUrl = await synthesizeAndStore({
     text: insights.narration,
     dateLabel: now.toISOString().slice(0, 10),
@@ -123,8 +117,10 @@ export async function runDailyBrief(env: Env): Promise<void> {
 
   for (const [i, result] of sendResults.entries()) {
     if (result.status === 'rejected') {
-      // Omit email address from log to avoid PII in Worker logs.
-      console.error(`[daily-brief] email send failed (recipient ${i + 1}/${recipients.length}):`, result.reason);
+      // Redact recipient address — log only the domain to avoid PII in Worker logs.
+      const addr = recipients[i] ?? '';
+      const masked = addr.includes('@') ? `***@${addr.split('@')[1]}` : `recipient[${i + 1}]`;
+      console.error(`[daily-brief] email send failed for ${masked} (${i + 1}/${recipients.length}):`, result.reason);
     }
   }
 }
