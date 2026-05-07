@@ -524,11 +524,13 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     }
   }
 
-  // Retries stripeGet up to MAX_RETRIES times on transient failures (429 or 5xx) using
-  // exponential backoff. AbortError (timeout) is NOT retried — a timed-out request
-  // returned synthetic 503 from stripeGet; a second attempt would likely also time out.
-  // Circuit breakers are not feasible in stateless Cloudflare Workers (no shared memory
-  // between isolate invocations); the digest cron cadence (12 h) is the natural rate limiter.
+  // SAFE TO RETRY — READ ONLY. stripeGet issues only HTTP GET requests; Stripe's API
+  // contract (RFC 7231 §4.3.1) makes GET requests inherently idempotent with no
+  // side effects. Retrying a failed GET cannot duplicate charges or mutate state.
+  // Additional double-count protection: collectStripe() KV-caches results keyed by
+  // the 12-hour window timestamp so that a second invocation returns the cached value.
+  // Retries stripeGet up to maxRetries times on transient 429/5xx using exponential
+  // backoff via scheduler.wait(). AbortError (timeout) is NOT retried.
   // Returns the final Response regardless of status — callers check res.ok.
   async function stripeGetWithRetry(path: string, maxRetries = 2): Promise<Response> {
     let res = await stripeGet(path);
