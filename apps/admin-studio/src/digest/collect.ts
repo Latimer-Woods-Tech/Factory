@@ -556,21 +556,16 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   // side effects. Retrying a failed GET cannot duplicate charges or mutate state.
   // Additional double-count protection: collectStripe() KV-caches results keyed by
   // the 12-hour window timestamp so that a second invocation returns the cached value.
-  // Retries stripeGet once on transient 429/5xx using a fixed 1 s scheduler.wait()
-  // pause. AbortError (timeout) is NOT retried.
+  // Retries stripeGet on transient 429/5xx using exponential backoff.
+  // AbortError (timeout) is NOT retried.
   // Returns the final Response regardless of status — callers check res.ok.
-  //
-  // Wall-clock budget: called exclusively from the digest `scheduled` handler (see
-  // index.ts). CF scheduled triggers are not subject to the 30 ms request-CPU cap;
-  // the 1 s I/O pause does not consume CPU budget and is safe to use here.
   async function stripeGetWithRetry(path: string, maxRetries = 1): Promise<Response> {
     let res = await stripeGet(path);
     let attempt = 0;
     while ((res.status === 429 || res.status >= 500) && attempt < maxRetries) {
+      const delayMs = Math.min(1_000 * 2 ** attempt, 30_000);
       logStripeError(`${path} (attempt ${attempt + 1})`, res.status);
-      const delayMs = 1_000; // fixed 1 s pause between retries
-      // scheduler.wait() is the Workers-native I/O delay API (not setTimeout).
-      await scheduler.wait(delayMs);
+      await new Promise<void>((resolve) => { setTimeout(resolve, delayMs); });
       res = await stripeGet(path);
       attempt++;
     }

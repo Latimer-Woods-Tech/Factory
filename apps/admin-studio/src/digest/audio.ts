@@ -109,8 +109,9 @@ export async function generateAndUploadAudio(
     let attempt = 0;
     const MAX_TTS_RETRIES = 1;
     while (ttsRes && (ttsRes.status === 429 || ttsRes.status >= 500) && attempt < MAX_TTS_RETRIES) {
-      console.warn(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status} (attempt ${attempt + 1}) — retrying after 1 s`);
-      await new Promise<void>((resolve) => { setTimeout(resolve, 1_000); });
+      const delayMs = Math.min(1_000 * 2 ** attempt, 30_000);
+      console.warn(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status} (attempt ${attempt + 1}) — retrying after ${delayMs}ms`);
+      await new Promise<void>((resolve) => { setTimeout(resolve, delayMs); });
       ttsRes = await attemptTts();
       attempt++;
     }
