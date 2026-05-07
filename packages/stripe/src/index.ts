@@ -30,6 +30,25 @@ export type SubscriptionEvent =
   | 'past_due';
 
 /**
+ * Minimal KV namespace interface required by {@link stripeWebhookHandler} for
+ * event-ID deduplication. Satisfied by Cloudflare Workers `KVNamespace` and any
+ * compatible mock.
+ */
+export interface StripeKVCache {
+  /** Returns the stored string value, or `null` if the key does not exist. */
+  get(key: string): Promise<string | null>;
+  /**
+   * Stores a string value with an optional TTL.
+   *
+   * @param key - Cache key.
+   * @param value - String value to store.
+   * @param options - Optional write options.
+   * @param options.expirationTtl - Seconds until the key expires.
+   */
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
+/**
  * Options for {@link stripeWebhookHandler}.
  */
 export interface StripeWebhookHandlerOptions {
@@ -37,6 +56,20 @@ export interface StripeWebhookHandlerOptions {
   handlers: Partial<
     Record<SubscriptionEvent, (status: SubscriptionStatus) => Promise<void>>
   >;
+  /**
+   * KV namespace used to deduplicate Stripe events by `event.id`.
+   *
+   * Stripe may deliver the same event more than once within its 7-day retry
+   * window. Providing a KV binding here ensures at-most-once processing:
+   * a processed event ID is stored with a 7-day TTL, and any duplicate
+   * delivery returns HTTP 200 immediately without re-invoking the handler.
+   *
+   * **This field is REQUIRED for production deployments.** Omitting it
+   * disables deduplication and risks duplicate billing side-effects.
+   *
+   * Pass `env.KV` (your Worker's KV binding) as this value.
+   */
+  kvCache: StripeKVCache;
 }
 
 /**
@@ -103,8 +136,10 @@ export function createStripeClient(secretKey: string): Stripe {
 /** @internal Constant-time byte comparison — prevents timing-based side-channel attacks. */
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;
+  const va = new DataView(a.buffer, a.byteOffset, a.byteLength);
+  const vb = new DataView(b.buffer, b.byteOffset, b.byteLength);
   let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  for (let i = 0; i < a.length; i++) diff |= va.getUint8(i) ^ vb.getUint8(i);
   return diff === 0;
 }
 
@@ -120,7 +155,21 @@ function hexToBytes(hex: string): Uint8Array | null {
   return bytes;
 }
 
-/** @internal HMAC-SHA256 verification using the Web Crypto API — no SDK required. */
+/**
+ * @internal HMAC-SHA256 webhook signature verification via Web Crypto API.
+ *
+ * Validates all security properties required by the Stripe signature scheme:
+ * - Format: rejects headers missing `t=` timestamp or `v1=` signature components.
+ * - Replay protection: rejects timestamps outside the ±300-second tolerance window.
+ * - Signature integrity: computes HMAC-SHA256 over `"${timestamp}.${body}"` and
+ *   compares against every `v1=` candidate in the header.
+ * - Timing safety: comparison uses `bytesEqual()` (XOR accumulator) to prevent
+ *   timing side-channel attacks that could leak information about the correct value.
+ *
+ * Edge-case test coverage lives in `index.test.ts` → `describe('validateWebhook')`:
+ * missing header, no timestamp, no v1 component, expired timestamp, HMAC mismatch,
+ * invalid JSON post-signature, and a fully valid round-trip.
+ */
 async function verifyStripeSignature(
   body: string,
   signature: string,
@@ -306,6 +355,12 @@ export async function getSubscription(
  * `StripeInvalidRequestError: No such price` at runtime (factory#343).
  *
  * @param options - Checkout session inputs.
+ * @param options - Checkout session inputs.  `options.idempotencyKey` **must**
+ *   be a stable, unique value scoped to the business operation — e.g., a cart
+ *   ID, order ID, or server-side checkout UUID.  Callers that generate a fresh
+ *   random key on every call defeat Stripe's 24-hour deduplication window and
+ *   risk duplicate charges on retries or double-clicks.  See
+ *   {@link CreateCheckoutSessionOptions.idempotencyKey} for the full contract.
  * @returns The hosted Checkout URL.
  * @throws {ValidationError} If `priceId` is missing or malformed.
  * @throws {InternalError} If Stripe does not return a URL.
@@ -419,13 +474,23 @@ function classifyEvent(event: Stripe.Event): SubscriptionEvent | null {
   }
 }
 
+/** TTL for processed Stripe event IDs in KV — matches Stripe's 7-day retry window. */
+const STRIPE_EVENT_DEDUP_TTL_SECONDS = 60 * 60 * 24 * 7;
+
 /**
  * Hono route handler for `/webhooks/stripe`.
  *
- * Validates the Stripe signature, classifies the subscription event,
+ * Validates the Stripe signature, deduplicates the event via KV (to guard
+ * against Stripe's at-least-once delivery), classifies the subscription event,
  * and dispatches it to the matching handler in `options.handlers`.
  *
- * @param options - Handler configuration.
+ * **Event deduplication (RED-tier billing requirement):**
+ * After signature verification, the handler checks `event.id` against
+ * `options.kvCache`. If the event has already been processed it returns
+ * HTTP 200 immediately with `{ deduplicated: true }` — no handler is called.
+ * Processed event IDs are stored with a 7-day TTL matching Stripe's retry window.
+ *
+ * @param options - Handler configuration including a KV binding for dedup.
  * @returns A Hono handler.
  */
 export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Handler {
@@ -438,8 +503,20 @@ export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Hand
       return c.json(response, 400 as ContentfulStatusCode);
     }
 
+    // RED-tier billing requirement: deduplicate by Stripe event.id.
+    // Stripe guarantees at-least-once delivery; the same event can arrive
+    // multiple times within its 7-day retry window.
+    const dedupKey = `stripe:event:${event.id}`;
+    const alreadyProcessed = await options.kvCache.get(dedupKey);
+    if (alreadyProcessed) {
+      return c.json({ data: { received: true, deduplicated: true }, error: null });
+    }
+
     const kind = classifyEvent(event);
     if (!kind) {
+      // Mark as processed even for unclassified events to prevent repeat delivery
+      // of non-actionable events from triggering redundant work.
+      await options.kvCache.put(dedupKey, '1', { expirationTtl: STRIPE_EVENT_DEDUP_TTL_SECONDS });
       return c.json({ data: { received: true }, error: null });
     }
 
@@ -454,6 +531,10 @@ export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Hand
     if (handler) {
       await handler(status);
     }
+
+    // Persist the event ID AFTER successful handler execution so that a handler
+    // crash does not permanently suppress retry delivery.
+    await options.kvCache.put(dedupKey, '1', { expirationTtl: STRIPE_EVENT_DEDUP_TTL_SECONDS });
 
     return c.json({ data: { received: true, kind }, error: null });
   };
