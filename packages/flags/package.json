@@ -1,0 +1,42 @@
+{
+  "name": "@latimer-woods-tech/flags",
+  "version": "0.1.0",
+  "description": "Typed Cloudflare Flagship wrapper with telemetry, naming enforcement, and mock client for the Latimer-Woods-Tech factory platform.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./testing": {
+      "import": "./dist/mock.mjs",
+      "require": "./dist/mock.js",
+      "types": "./dist/mock.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts src/mock.ts --format esm,cjs --dts --clean",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0",
+    "@cloudflare/vitest-pool-workers": "^0.5.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
