@@ -22,12 +22,6 @@ import type { Env } from '../env.js';
 
 const FETCH_TIMEOUT_MS = 10_000;
 
-function withTimeout(ms: number): AbortController {
-  const ctrl = new AbortController();
-  setTimeout(() => ctrl.abort(), ms);
-  return ctrl;
-}
-
 // ── GitHub App auth ───────────────────────────────────────────────────────────
 
 /**
@@ -86,8 +80,7 @@ async function getInstallationToken(
   installationId: string,
 ): Promise<string> {
   const jwt = await buildAppJwt(appId, privateKeyPem);
-  const ctrl = withTimeout(FETCH_TIMEOUT_MS);
-  const res = await fetch(
+    const res = await fetch(
     `https://api.github.com/app/installations/${installationId}/access_tokens`,
     {
       method: 'POST',
@@ -97,7 +90,7 @@ async function getInstallationToken(
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'factory-admin-studio-digest',
       },
-      signal: ctrl.signal,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     },
   );
   if (!res.ok) {
@@ -156,8 +149,7 @@ async function fetchGitHubRepoPRs(
   repo: string,
   since: string,
 ): Promise<GitHubPR[]> {
-  const ctrl = withTimeout(FETCH_TIMEOUT_MS);
-  const url = `https://api.github.com/repos/${owner}/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=30`;
+    const url = `https://api.github.com/repos/${owner}/${repo}/pulls?state=closed&sort=updated&direction=desc&per_page=30`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -165,7 +157,7 @@ async function fetchGitHubRepoPRs(
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'factory-admin-studio-digest',
     },
-    signal: ctrl.signal,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) return [];
   const prs = await res.json() as Array<{
@@ -193,8 +185,7 @@ async function fetchGitHubRepoIssues(
   repo: string,
   since: string,
 ): Promise<{ opened: GitHubIssue[]; closed: GitHubIssue[] }> {
-  const ctrl = withTimeout(FETCH_TIMEOUT_MS);
-  const url = `https://api.github.com/repos/${owner}/${repo}/issues?state=all&sort=updated&direction=desc&per_page=50&since=${encodeURIComponent(since)}`;
+    const url = `https://api.github.com/repos/${owner}/${repo}/issues?state=all&sort=updated&direction=desc&per_page=50&since=${encodeURIComponent(since)}`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -202,7 +193,7 @@ async function fetchGitHubRepoIssues(
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'factory-admin-studio-digest',
     },
-    signal: ctrl.signal,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) return { opened: [], closed: [] };
   const issues = await res.json() as Array<{
@@ -292,10 +283,9 @@ export async function collectGitHub(env: Env): Promise<GitHubResult> {
     let supervisorRun: string | null = null;
     if (env.SUPERVISOR_URL) {
       try {
-        const ctrl = withTimeout(FETCH_TIMEOUT_MS);
-        const supRes = await fetch(`${env.SUPERVISOR_URL}/state`, {
+                const supRes = await fetch(`${env.SUPERVISOR_URL}/state`, {
           headers: { 'User-Agent': 'factory-admin-studio-digest' },
-          signal: ctrl.signal,
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
         if (supRes.ok) {
           const state = await supRes.json() as Record<string, unknown>;
@@ -354,13 +344,12 @@ export async function collectSentry(env: Env): Promise<SentryResult> {
   try {
     const since12h = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
 
-    const ctrl = withTimeout(FETCH_TIMEOUT_MS);
-    const issuesRes = await fetch(
+        const issuesRes = await fetch(
       `https://sentry.io/api/0/organizations/${encodeURIComponent(org)}/issues/` +
       `?statsPeriod=12h&query=is:unresolved&limit=25&sort=date`,
       {
         headers: { Authorization: `Bearer ${token}` },
-        signal: ctrl.signal,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
 
@@ -390,13 +379,12 @@ export async function collectSentry(env: Env): Promise<SentryResult> {
       }));
 
     // Fetch event counts for current and previous 12h windows
-    const statsCtrl = withTimeout(FETCH_TIMEOUT_MS);
-    const statsRes = await fetch(
+        const statsRes = await fetch(
       `https://sentry.io/api/0/organizations/${encodeURIComponent(org)}/stats_v2/` +
       `?groupBy=outcome&field=sum(quantity)&statsPeriod=24h&interval=12h&category=error`,
       {
         headers: { Authorization: `Bearer ${token}` },
-        signal: statsCtrl.signal,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
 
@@ -466,14 +454,13 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   const since12h = Math.floor((Date.now() - 12 * 60 * 60 * 1000) / 1000);
 
   function stripeGet(path: string): Promise<Response> {
-    const ctrl = withTimeout(FETCH_TIMEOUT_MS);
-    // GET requests are inherently idempotent — no Idempotency-Key needed.
+        // GET requests are inherently idempotent — no Idempotency-Key needed.
     return fetch(`https://api.stripe.com/v1/${path}`, {
       headers: {
         Authorization: `Bearer ${key}`,
         'User-Agent': 'factory-admin-studio-digest',
       },
-      signal: ctrl.signal,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   }
 
