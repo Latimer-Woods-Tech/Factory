@@ -2,11 +2,14 @@ name: Project Board Sync
 
 on:
   issues:
-    types: [opened, reopened, assigned, labeled, unlabeled]
+    types: [opened, reopened, assigned, labeled, unlabeled, closed]
   issue_comment:
     types: [created]
   pull_request:
     types: [closed]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
 
 permissions:
   contents: read
@@ -69,6 +72,63 @@ jobs:
           if [ -z "$OPTION_ID" ]; then echo "In Progress option not found, skipping"; exit 0; fi
           gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$OPTION_ID"
           echo "✓ issue moved to In Progress"
+
+  sync-status-on-issue-lifecycle:
+    if: github.event_name == 'issues' && (github.event.action == 'closed' || github.event.action == 'reopened')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - name: Sync issue lifecycle state to project board
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_ACTION: ${{ github.event.action }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
+          FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
+
+          case "$ISSUE_ACTION" in
+            closed)
+              TARGET_STATUS="Done"
+              ;;
+            reopened)
+              ASSIGNEE_COUNT=$(gh api "/repos/$REPO/issues/$ISSUE_NUMBER" --jq '.assignees | length')
+              if [ "$ASSIGNEE_COUNT" -gt 0 ]; then
+                TARGET_STATUS="In Progress"
+              else
+                TARGET_STATUS="Todo"
+              fi
+              ;;
+            *)
+              echo "unsupported issue action: $ISSUE_ACTION"
+              exit 0
+              ;;
+          esac
+
+          OPTION_ID=$(echo "$STATUS_FIELD" | jq -r --arg n "$TARGET_STATUS" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$n) | .id')
+          ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE_ID" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id" 2>/dev/null || echo "")
+
+          if [ -z "$ITEM_ID" ]; then
+            echo "item not on board, skipping"
+            exit 0
+          fi
+          if [ -z "$OPTION_ID" ]; then
+            echo "status option $TARGET_STATUS not found, skipping"
+            exit 0
+          fi
+
+          gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$OPTION_ID"
+          echo "✓ issue #$ISSUE_NUMBER → $TARGET_STATUS"
 
   sync-agent-field:
     if: github.event_name == 'issues' && startsWith(github.event.label.name, 'agent:claimed:')
@@ -208,3 +268,81 @@ jobs:
             gh api graphql -f query='mutation($p: ID!, $i: ID!, $f: ID!, $v: String!) { updateProjectV2ItemFieldValue(input: { projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $v } }) { projectV2Item { id } } }' -f p="$PROJECT_ID" -f i="$ITEM_ID" -f f="$STATUS_FIELD" -f v="$DONE_OPT"
             echo "✓ #$N → Deploy SHA $MERGE_SHA, Status Done"
           done
+
+  reconcile-issue-cards:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - name: Reconcile closed and reopened issue cards
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          PROJECT_NUMBER="1"
+          PROJECT_OWNER="Latimer-Woods-Tech"
+          STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
+          FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
+          TODO_OPT=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Todo") | .id')
+          IN_PROGRESS_OPT=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="In Progress") | .id')
+          DONE_OPT=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Done") | .id')
+          ITEMS=$(gh project item-list "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --limit 200 --format json | jq -c '.items[] | select(.content.type=="Issue") | {itemId: .id, number: .content.number, repo: .content.repository, status: .status}')
+
+          if [ -z "$ITEMS" ]; then
+            echo "no issue cards found"
+            exit 0
+          fi
+
+          UPDATED=0
+          while IFS= read -r item; do
+            [ -z "$item" ] && continue
+            ITEM_ID=$(echo "$item" | jq -r '.itemId')
+            ISSUE_NUMBER=$(echo "$item" | jq -r '.number')
+            ISSUE_REPO=$(echo "$item" | jq -r '.repo')
+            BOARD_STATUS=$(echo "$item" | jq -r '.status')
+            ISSUE_JSON=$(gh issue view "$ISSUE_NUMBER" --repo "$ISSUE_REPO" --json state,assignees,labels 2>/dev/null || echo "")
+
+            if [ -z "$ISSUE_JSON" ]; then
+              echo "could not load $ISSUE_REPO#$ISSUE_NUMBER, skipping"
+              continue
+            fi
+
+            ISSUE_STATE=$(echo "$ISSUE_JSON" | jq -r '.state')
+            ASSIGNEE_COUNT=$(echo "$ISSUE_JSON" | jq -r '.assignees | length')
+            LABELS=$(echo "$ISSUE_JSON" | jq -r '.labels[].name' 2>/dev/null || true)
+            TARGET_STATUS=""
+            TARGET_OPTION_ID=""
+
+            if [ "$ISSUE_STATE" = "CLOSED" ] && [ "$BOARD_STATUS" != "Done" ]; then
+              TARGET_STATUS="Done"
+              TARGET_OPTION_ID="$DONE_OPT"
+            elif [ "$ISSUE_STATE" = "OPEN" ] && [ "$BOARD_STATUS" = "Done" ]; then
+              if echo "$LABELS" | grep -Eq '^status:(wip|in_progress)$'; then
+                TARGET_STATUS="In Progress"
+                TARGET_OPTION_ID="$IN_PROGRESS_OPT"
+              elif [ "$ASSIGNEE_COUNT" -gt 0 ]; then
+                TARGET_STATUS="In Progress"
+                TARGET_OPTION_ID="$IN_PROGRESS_OPT"
+              else
+                TARGET_STATUS="Todo"
+                TARGET_OPTION_ID="$TODO_OPT"
+              fi
+            fi
+
+            if [ -z "$TARGET_STATUS" ] || [ -z "$TARGET_OPTION_ID" ]; then
+              continue
+            fi
+
+            gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$TARGET_OPTION_ID"
+            echo "✓ $ISSUE_REPO#$ISSUE_NUMBER: $BOARD_STATUS → $TARGET_STATUS"
+            UPDATED=$((UPDATED + 1))
+          done <<< "$ITEMS"
+
+          echo "reconciled=$UPDATED"

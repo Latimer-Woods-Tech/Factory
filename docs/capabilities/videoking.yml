@@ -1,0 +1,61 @@
+app: videoking
+repo: Latimer-Woods-Tech/videoking
+base_url: https://api.itsjusus.com
+auth: admin_jwt
+supervisor_access: approved
+tiers_allowed: [green, yellow]
+
+capabilities:
+  - id: creator.lookup
+    desc: "Fetch a creator's profile, onboarding status, and Stripe connect state."
+    route: GET /api/admin/creators/:id
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: creator.list
+    desc: "Paginated list of creators with optional status filter."
+    route: GET /api/admin/creators
+    params_schema:
+      page: { type: integer, min: 1 }
+      limit: { type: integer, min: 1, max: 100 }
+      status: { type: enum, values: [pending, active, suspended, onboarding], optional: true }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: creator.verify_stripe
+    desc: "Trigger Stripe Connect verification for a creator. Idempotent — safe to re-run."
+    route: POST /api/admin/creators/:id/verify-stripe
+    idempotency_key: "creator_id + 'verify-stripe'"
+    side_effects: write-external
+    reversibility: idempotent
+    required_scope: supervisor.mutator-stripe-verify
+    extra_guard: requires_codeowner_approval
+
+  - id: creator.mark_ready_for_payout
+    desc: "Mark a creator as payout-eligible after manual KYC confirmation."
+    route: POST /api/admin/creators/:id/mark-ready-for-payout
+    idempotency_key: "creator_id + 'mark-ready'"
+    side_effects: write-app
+    reversibility: reversible-with-effort
+    required_scope: supervisor.mutator-creator-payout-ready
+    extra_guard: requires_codeowner_approval
+
+  - id: payout.list_batches
+    desc: "List payout batches with status."
+    route: GET /api/admin/payouts/batches
+    params_schema:
+      limit: { type: integer, min: 1, max: 50 }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: onboarding.status
+    desc: "Fetch a creator's onboarding funnel position."
+    route: GET /api/creator/onboarding
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: health.check
+    desc: "Worker liveness check."
+    route: GET /health
+    side_effects: none
+    required_scope: supervisor.readonly
