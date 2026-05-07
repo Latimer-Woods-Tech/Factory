@@ -44,7 +44,7 @@ workers:
     name: prime-self                                       # matches wrangler.jsonc `name`
     repo: Latimer-Woods-Tech/prime-self
     url: https://prime-self.adrper79.workers.dev           # canonical workers.dev URL
-    custom_domain: null                                    # custom domain if any
+    custom_domain: api.selfprime.net                                    # custom domain if any
     health_endpoint: /health
     critical_endpoints:
       - /auth/login
