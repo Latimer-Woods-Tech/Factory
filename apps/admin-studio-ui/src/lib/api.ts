@@ -2,9 +2,7 @@
  * Thin fetch wrapper. Adds JWT, request id, and forces logout for invalid session responses.
  */
 import { useSession } from '../stores/session.js';
-
-// Strip any trailing slash from the base so `${API_BASE}/path` never produces `//path`.
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/$/, '');
+import { getApiBase } from './env-config.js';
 
 export interface ApiError extends Error {
   status: number;
@@ -25,7 +23,7 @@ export async function apiFetch<T = unknown>(
   if (init.dryRun) headers.set('X-Dry-Run', 'true');
   headers.set('X-Request-Id', crypto.randomUUID());
 
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  const res = await fetch(`${getApiBase()}${path}`, { ...init, headers });
 
   const text = await res.text();
   const body = text ? safeJson(text) : null;
