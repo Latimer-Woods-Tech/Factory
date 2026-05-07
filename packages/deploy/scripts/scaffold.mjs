@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @node-runtime — Node.js CLI script; not a Cloudflare Worker.
 /**
  * scaffold.mjs — Factory app scaffolding CLI
  *
@@ -23,11 +24,11 @@
  * Cloudflare Worker that consumes @latimer-woods-tech/* packages.
  */
 
-import { execSync } from 'node:child_process';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createInterface } from 'node:readline';
+import { execSync } from 'child_process';
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { createInterface } from 'readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
