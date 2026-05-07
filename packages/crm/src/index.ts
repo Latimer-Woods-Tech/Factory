@@ -1,4 +1,4 @@
-import { sql } from '@latimer-woods-tech/neon';
+import { sql, withTenant } from '@latimer-woods-tech/neon';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
 import { NotFoundError, InternalError, ErrorCodes } from '@latimer-woods-tech/errors';
 import type { Analytics } from '@latimer-woods-tech/analytics';
@@ -616,26 +616,28 @@ export class ContactService {
       });
     }
 
-    const rows = await db.execute<ContactRow>(
-      sql`INSERT INTO outreach_contacts (
-          tenant_id, first_name, last_name, phone, email, consent_status,
-          provider_call_id, provider, metadata
-        )
-        VALUES (
-          ${tenantId}, ${data.firstName}, ${data.lastName}, ${data.phone}, ${data.email},
-          ${data.consentStatus}, ${data.providerCallId ?? null}, ${data.provider ?? null},
-          ${data.metadata ? JSON.stringify(data.metadata) : null}
-        )
-        RETURNING *`,
-    );
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<ContactRow>(
+        sql`INSERT INTO outreach_contacts (
+            tenant_id, first_name, last_name, phone, email, consent_status,
+            provider_call_id, provider, metadata
+          )
+          VALUES (
+            ${tenantId}, ${data.firstName}, ${data.lastName}, ${data.phone}, ${data.email},
+            ${data.consentStatus}, ${data.providerCallId ?? null}, ${data.provider ?? null},
+            ${data.metadata ? JSON.stringify(data.metadata) : null}
+          )
+          RETURNING *`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new InternalError('ContactService.createContact: no row returned', {
-        code: ErrorCodes.DB_QUERY_FAILED,
-      });
-    }
-    return rowToContact(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new InternalError('ContactService.createContact: no row returned', {
+          code: ErrorCodes.DB_QUERY_FAILED,
+        });
+      }
+      return rowToContact(row);
+    });
   }
 
   /**
@@ -653,15 +655,17 @@ export class ContactService {
       });
     }
 
-    const rows = await db.execute<ContactRow>(
-      sql`SELECT * FROM outreach_contacts WHERE id = ${id} AND tenant_id = ${tenantId} LIMIT 1`,
-    );
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<ContactRow>(
+        sql`SELECT * FROM outreach_contacts WHERE id = ${id} AND tenant_id = ${tenantId} LIMIT 1`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new NotFoundError(`Contact ${id} not found for tenant ${tenantId}`);
-    }
-    return rowToContact(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Contact ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToContact(row);
+    });
   }
 
   /**
@@ -679,45 +683,47 @@ export class ContactService {
       });
     }
 
-    const limit = filters.limit ?? 100;
-    const offset = filters.offset ?? 0;
+    return withTenant(db, tenantId, async (db) => {
+      const limit = filters.limit ?? 100;
+      const offset = filters.offset ?? 0;
 
-    let rows;
-    if (filters.consentStatus && filters.provider) {
-      rows = await db.execute<ContactRow>(
-        sql`SELECT * FROM outreach_contacts
-            WHERE tenant_id = ${tenantId}
-              AND consent_status = ${filters.consentStatus}
-              AND provider = ${filters.provider}
-            ORDER BY created_at DESC
-            LIMIT ${limit} OFFSET ${offset}`,
-      );
-    } else if (filters.consentStatus) {
-      rows = await db.execute<ContactRow>(
-        sql`SELECT * FROM outreach_contacts
-            WHERE tenant_id = ${tenantId}
-              AND consent_status = ${filters.consentStatus}
-            ORDER BY created_at DESC
-            LIMIT ${limit} OFFSET ${offset}`,
-      );
-    } else if (filters.provider) {
-      rows = await db.execute<ContactRow>(
-        sql`SELECT * FROM outreach_contacts
-            WHERE tenant_id = ${tenantId}
-              AND provider = ${filters.provider}
-            ORDER BY created_at DESC
-            LIMIT ${limit} OFFSET ${offset}`,
-      );
-    } else {
-      rows = await db.execute<ContactRow>(
-        sql`SELECT * FROM outreach_contacts
-            WHERE tenant_id = ${tenantId}
-            ORDER BY created_at DESC
-            LIMIT ${limit} OFFSET ${offset}`,
-      );
-    }
+      let rows;
+      if (filters.consentStatus && filters.provider) {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+                AND consent_status = ${filters.consentStatus}
+                AND provider = ${filters.provider}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      } else if (filters.consentStatus) {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+                AND consent_status = ${filters.consentStatus}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      } else if (filters.provider) {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+                AND provider = ${filters.provider}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      } else {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      }
 
-    return rows.rows.map(rowToContact);
+      return rows.rows.map(rowToContact);
+    });
   }
 
   /**
@@ -741,18 +747,20 @@ export class ContactService {
       });
     }
 
-    const rows = await db.execute<ContactRow>(
-      sql`UPDATE outreach_contacts
-          SET consent_status = ${status}, updated_at = NOW()
-          WHERE id = ${id} AND tenant_id = ${tenantId}
-          RETURNING *`,
-    );
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<ContactRow>(
+        sql`UPDATE outreach_contacts
+            SET consent_status = ${status}, updated_at = NOW()
+            WHERE id = ${id} AND tenant_id = ${tenantId}
+            RETURNING *`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new NotFoundError(`Contact ${id} not found for tenant ${tenantId}`);
-    }
-    return rowToContact(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Contact ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToContact(row);
+    });
   }
 }
 
@@ -775,19 +783,21 @@ export class CampaignService {
       });
     }
 
-    const rows = await db.execute<CampaignRow>(
-      sql`INSERT INTO outreach_campaigns (tenant_id, name, description, status)
-          VALUES (${tenantId}, ${data.name}, ${data.description || null}, 'draft')
-          RETURNING *`,
-    );
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`INSERT INTO outreach_campaigns (tenant_id, name, description, status)
+            VALUES (${tenantId}, ${data.name}, ${data.description || null}, 'draft')
+            RETURNING *`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new InternalError('CampaignService.createCampaign: no row returned', {
-        code: ErrorCodes.DB_QUERY_FAILED,
-      });
-    }
-    return rowToCampaign(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new InternalError('CampaignService.createCampaign: no row returned', {
+          code: ErrorCodes.DB_QUERY_FAILED,
+        });
+      }
+      return rowToCampaign(row);
+    });
   }
 
   /**
@@ -805,15 +815,17 @@ export class CampaignService {
       });
     }
 
-    const rows = await db.execute<CampaignRow>(
-      sql`SELECT * FROM outreach_campaigns WHERE id = ${id} AND tenant_id = ${tenantId} LIMIT 1`,
-    );
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`SELECT * FROM outreach_campaigns WHERE id = ${id} AND tenant_id = ${tenantId} LIMIT 1`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new NotFoundError(`Campaign ${id} not found for tenant ${tenantId}`);
-    }
-    return rowToCampaign(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Campaign ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToCampaign(row);
+    });
   }
 
   /**
@@ -830,11 +842,12 @@ export class CampaignService {
       });
     }
 
-    const rows = await db.execute<CampaignRow>(
-      sql`SELECT * FROM outreach_campaigns WHERE tenant_id = ${tenantId} ORDER BY created_at DESC`,
-    );
-
-    return rows.rows.map(rowToCampaign);
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`SELECT * FROM outreach_campaigns WHERE tenant_id = ${tenantId} ORDER BY created_at DESC`,
+      );
+      return rows.rows.map(rowToCampaign);
+    });
   }
 
   /**
@@ -858,18 +871,20 @@ export class CampaignService {
       });
     }
 
-    const rows = await db.execute<CampaignRow>(
-      sql`UPDATE outreach_campaigns
-          SET status = ${status}, updated_at = NOW()
-          WHERE id = ${id} AND tenant_id = ${tenantId}
-          RETURNING *`,
-    );
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`UPDATE outreach_campaigns
+            SET status = ${status}, updated_at = NOW()
+            WHERE id = ${id} AND tenant_id = ${tenantId}
+            RETURNING *`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new NotFoundError(`Campaign ${id} not found for tenant ${tenantId}`);
-    }
-    return rowToCampaign(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Campaign ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToCampaign(row);
+    });
   }
 }
 
@@ -962,13 +977,14 @@ export class CallLogService {
       });
     }
 
-    const rows = await db.execute<CallLogRow>(
-      sql`SELECT cl.* FROM call_logs cl
-          JOIN outreach_campaigns oc ON cl.campaign_id = oc.id
-          WHERE cl.campaign_id = ${campaignId} AND oc.tenant_id = ${tenantId}
-          ORDER BY cl.call_started DESC`,
-    );
-
-    return rows.rows.map(rowToCallLog);
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CallLogRow>(
+        sql`SELECT cl.* FROM call_logs cl
+            JOIN outreach_campaigns oc ON cl.campaign_id = oc.id
+            WHERE cl.campaign_id = ${campaignId} AND oc.tenant_id = ${tenantId}
+            ORDER BY cl.call_started DESC`,
+      );
+      return rows.rows.map(rowToCallLog);
+    });
   }
 }
