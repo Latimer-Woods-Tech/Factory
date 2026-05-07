@@ -478,35 +478,3 @@ describe('CallProvider type', () => {
     expect(providers).toHaveLength(2);
   });
 });
-    const session = new VoiceSession(baseConfig(), { fetch: vi.fn() as unknown as typeof fetch });
-    await expect(session.processAudio(makeAudio())).rejects.toMatchObject({
-      code: 'TELEPHONY_SESSION_FAILED',
-    });
-    await session.start();
-    await session.end();
-    await expect(session.processAudio(makeAudio())).rejects.toMatchObject({
-      code: 'TELEPHONY_SESSION_FAILED',
-    });
-    await expect(session.start()).rejects.toMatchObject({
-      code: 'TELEPHONY_SESSION_FAILED',
-    });
-  });
-
-  it('throws when LLM chain returns an error response', async () => {
-    const fetchMock = vi.fn((input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-      if (url.includes('deepgram')) {
-        return Promise.resolve(
-          jsonResponse({ results: { channels: [{ alternatives: [{ transcript: 'hi' }] }] } }),
-        );
-      }
-      // All three LLM providers fail with 500 (failover-eligible)
-      return Promise.resolve(new Response('fail', { status: 500 }));
-    });
-    const session = new VoiceSession(baseConfig(), { fetch: fetchMock as unknown as typeof fetch });
-    await session.start();
-    await expect(session.processAudio(makeAudio())).rejects.toMatchObject({
-      code: 'INTERNAL_ERROR',
-    });
-  });
-});
