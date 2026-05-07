@@ -102,7 +102,7 @@ async function getInstallationToken(
     const body = await res.text();
     throw new Error(`GitHub App token exchange failed ${res.status}: ${body}`);
   }
-  const json = await res.json() as { token: string };
+  const json = await res.json<{ token: string }>();
   return json.token;
 }
 
@@ -165,13 +165,13 @@ async function fetchGitHubRepoPRs(
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) return [];
-  const prs = await res.json() as Array<{
+  const prs = await res.json<Array<{
     number: number;
     title: string;
     user: { login: string };
     merged_at: string | null;
     html_url: string;
-  }>;
+  }>>();
   return prs
     .filter((pr) => pr.merged_at && pr.merged_at >= since)
     .map((pr) => ({
@@ -201,7 +201,7 @@ async function fetchGitHubRepoIssues(
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) return { opened: [], closed: [] };
-  const issues = await res.json() as Array<{
+  const issues = await res.json<Array<{
     number: number;
     title: string;
     state: string;
@@ -210,7 +210,7 @@ async function fetchGitHubRepoIssues(
     closed_at: string | null;
     html_url: string;
     pull_request?: unknown;
-  }>;
+  }>>();
 
   // GitHub issues API returns PRs too — filter them out
   const realIssues = issues.filter((i) => !i.pull_request);
@@ -293,7 +293,7 @@ export async function collectGitHub(env: Env): Promise<GitHubResult> {
           signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         });
         if (supRes.ok) {
-          const state = await supRes.json() as Record<string, unknown>;
+          const state = await supRes.json<Record<string, unknown>>();
           supervisorRun = typeof state.lastRunSummary === 'string'
             ? state.lastRunSummary
             : JSON.stringify(state).slice(0, 300);
@@ -362,14 +362,14 @@ export async function collectSentry(env: Env): Promise<SentryResult> {
       return { available: false, reason: `Sentry issues API returned ${issuesRes.status}` };
     }
 
-    const rawIssues = await issuesRes.json() as Array<{
+    const rawIssues = await issuesRes.json<Array<{
       id: string;
       title: string;
       level: string;
       count: string;
       firstSeen: string;
       permalink: string;
-    }>;
+    }>>();
 
     // Filter to issues first seen in the past 12h
     const newIssues: SentryIssueEntry[] = rawIssues
@@ -397,10 +397,10 @@ export async function collectSentry(env: Env): Promise<SentryResult> {
     let baselineEvents = 0;
 
     if (statsRes.ok) {
-      const stats = await statsRes.json() as {
+      const stats = await statsRes.json<{
         intervals: string[];
         groups: Array<{ totals: Record<string, number> }>;
-      };
+      }>();
       // intervals: [T-24h, T-12h] — index 0 = baseline, index 1 = current
       const groups = stats.groups ?? [];
       const sumGroup = groups.find((g) => g.totals) ?? groups[0];
@@ -608,10 +608,10 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       }>;
     };
 
-    const createdEvents = await createdRes.json() as StripeEventsResponse;
-    const cancelledEvents = await cancelledRes.json() as StripeEventsResponse;
+    const createdEvents = await createdRes.json<StripeEventsResponse>();
+    const cancelledEvents = await cancelledRes.json<StripeEventsResponse>();
 
-    function mapEvent(e: StripeEventsResponse['data'][number], type: 'new_subscription' | 'cancellation'): StripeEvent {
+    const mapEvent = (e: StripeEventsResponse['data'][number], type: 'new_subscription' | 'cancellation'): StripeEvent => {
       const plan = e.data.object.items.data[0]?.plan;
       return {
         id: e.id,
@@ -622,7 +622,7 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
         currency: plan?.currency ?? 'usd',
         createdAt: new Date(e.created * 1000).toISOString(),
       };
-    }
+    };
 
     const newSubscriptions = createdEvents.data.map((e) => mapEvent(e, 'new_subscription'));
     const cancellations = cancelledEvents.data.map((e) => mapEvent(e, 'cancellation'));
@@ -630,9 +630,9 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     // Compute current MRR from active subscriptions
     let currentMrr = 0;
     if (subsRes.ok) {
-      const subs = await subsRes.json() as {
+      const subs = await subsRes.json<{
         data: Array<{ items: { data: Array<{ plan: { amount: number; interval: string } }> } }>;
-      };
+      }>();
       for (const sub of subs.data) {
         for (const item of sub.items.data) {
           const { amount, interval } = item.plan;
