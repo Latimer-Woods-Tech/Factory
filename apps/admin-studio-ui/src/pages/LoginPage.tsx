@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
 import { apiFetch } from '../lib/api.js';
+import { setTargetEnv } from '../lib/env-config.js';
 
 const ENV_CARDS: Array<{ env: Environment; title: string; subtitle: string; classes: string }> = [
   { env: 'local',      title: 'Local',      subtitle: 'Your dev box. Sandbox.',                 classes: 'bg-slate-800 hover:ring-slate-400'   },
@@ -30,12 +31,18 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
+      // Persist the chosen env before making the auth call so the request is
+      // routed to the correct backend via getApiBase().
+      setTargetEnv(env);
       const res = await apiFetch<{ token: string; expiresAt: number }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password, env }),
       });
       login(res.token, env, res.expiresAt);
-      navigate('/');
+      // Redirect to the originally requested path if the router preserved it in ?next=.
+      const params = new URLSearchParams(window.location.search);
+      const next = params.get('next') ?? '/';
+      navigate(next, { replace: true });
     } catch (err) {
       setError((err as Error).message);
     } finally {
