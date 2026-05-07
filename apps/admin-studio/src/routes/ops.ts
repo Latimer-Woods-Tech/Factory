@@ -1,5 +1,5 @@
 /**
- * ADM-6: Guarded operational actions panel.
+ * ADM-6: Guarded operational actions panel (ops endpoints).
  *
  * Exposes safe operational triggers (test dispatch, deploy, rollback) from a
  * single unified panel, with role + confirmation guards on every write action.
