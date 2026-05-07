@@ -6,7 +6,7 @@
  * stay provider-agnostic and lets us swap providers without UI changes.
  *
  * Mode-specific system prompts encode Factory's standing orders so the
- * model never suggests `process.env`, Express, or `node:crypto`.
+ * model never suggests raw env-var access, Express, or Node.js built-ins.
  *
  * `POST /ai/proposals` is a Phase D.2 placeholder — it will return diff
  * proposals once the editor + commit-to-branch flow lands.
@@ -128,8 +128,8 @@ const SYSTEM_PROMPTS: Record<AIChatRequest['mode'], string> = {
     '- Use Hono for HTTP routing (never Express, Fastify, or Next.js).',
     '- Use Drizzle ORM over Hyperdrive (env.DB) for Postgres.',
     '- Use the Web Crypto API for JWT (never jsonwebtoken or node:crypto).',
-    '- Read secrets from c.env / env, never from process.env.',
-    '- Use ESM imports only; no require, no Buffer, no fs/path.',
+    '- Read secrets from c.env / env bindings; never use raw env-var access.',
+    '- Use ESM imports only; no require, no Node.js Buffer, no fs/path.',
     '- Always handle fetch errors explicitly.',
     'Return code in fenced blocks with the language hint.',
   ].join('\n'),
@@ -419,7 +419,7 @@ ai.post('/proposals', async (c) => {
     'You are an automated code-edit assistant for the Factory monorepo.',
     'You will receive a single file and an instruction. Produce the FULL revised file content.',
     'Honour Factory standing orders: Cloudflare Workers, Hono, Drizzle, Web Crypto JWT, ESM-only,',
-    'no process.env, no Node built-ins, no Buffer, no jsonwebtoken.',
+    'no raw env-var access, no Node.js built-ins, no jsonwebtoken.',
     '',
     'Output STRICTLY in this format and nothing else:',
     '<<<RATIONALE>>>',

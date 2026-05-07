@@ -3,7 +3,7 @@
  *
  * Mints a short-lived installation access token from GitHub App credentials.
  * Uses `crypto.subtle` only — no Node.js `crypto` module (Cloudflare Workers
- * compatible). No `process.env`; all credentials are passed as arguments.
+ * compatible). All credentials are passed as function arguments, never via raw env-var access.
  *
  * Flow:
  *   1. Build a JWT signed with RS256 using the app's RSA private key PEM.
