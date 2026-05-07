@@ -2,6 +2,10 @@ import { sql, withTenant } from '@latimer-woods-tech/neon';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
 import { NotFoundError, InternalError, ErrorCodes } from '@latimer-woods-tech/errors';
 import type { Analytics } from '@latimer-woods-tech/analytics';
+import { validateAiOutput } from '@latimer-woods-tech/validation';
+import type { OutputValidationIssue, BrandVoiceRules } from '@latimer-woods-tech/validation';
+import { complete } from '@latimer-woods-tech/llm';
+import type { LLMEnv } from '@latimer-woods-tech/llm';
 
 // ---------------------------------------------------------------------------
 // WB-2: Outreach Types
@@ -60,6 +64,11 @@ export interface OutreachCampaign {
   description?: string;
   /** Campaign lifecycle status. */
   status: CampaignStatus;
+  /**
+   * LLM-generated call script. Must pass brand voice validation before the
+   * campaign can transition from `draft` → `active`.
+   */
+  script?: string;
   /** When the campaign was created. */
   createdAt: Date;
   /** When the campaign was last updated. */
@@ -244,9 +253,19 @@ CREATE TABLE IF NOT EXISTS outreach_campaigns (
   name        TEXT NOT NULL,
   description TEXT,
   status      TEXT NOT NULL DEFAULT 'draft',
+  script      TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+`.trim();
+
+/**
+ * Migration to add the `script` column to an existing `outreach_campaigns` table.
+ * Idempotent via `IF NOT EXISTS`.
+ */
+export const ADD_CAMPAIGNS_SCRIPT_COLUMN = `
+ALTER TABLE outreach_campaigns
+  ADD COLUMN IF NOT EXISTS script TEXT;
 `.trim();
 
 /**
@@ -370,6 +389,7 @@ interface CampaignRow extends Record<string, unknown> {
   name: string;
   description: string | null;
   status: string;
+  script: string | null;
   created_at: string | Date;
   updated_at: string | Date;
 }
@@ -391,7 +411,9 @@ function rowToContact(row: ContactRow): OutreachContact {
   let metadata: Record<string, unknown> | undefined;
   if (row.metadata) {
     metadata =
-      typeof row.metadata === 'string' ? (JSON.parse(row.metadata) as Record<string, unknown>) : row.metadata;
+      typeof row.metadata === 'string'
+        ? (JSON.parse(row.metadata) as Record<string, unknown>)
+        : row.metadata;
   }
   return {
     id: row.id,
@@ -416,6 +438,7 @@ function rowToCampaign(row: CampaignRow): OutreachCampaign {
     name: row.name,
     description: row.description ?? undefined,
     status: row.status as CampaignStatus,
+    script: row.script ?? undefined,
     createdAt: new Date(row.created_at as string),
     updatedAt: new Date(row.updated_at as string),
   };
@@ -594,19 +617,96 @@ export async function getCustomerView(db: FactoryDb, userId: string): Promise<Cu
 }
 
 // ---------------------------------------------------------------------------
+// WB-4: Brand voice gate helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Result returned by {@link CampaignService.transitionCampaignStatus}.
+ *
+ * When `success` is `false`, `validationErrors` contains only `major` or
+ * `critical` issues that blocked the transition. Minor issues are logged as
+ * warnings and do not populate this field.
+ */
+export interface TransitionResult {
+  /** Whether the status transition was applied. */
+  success: boolean;
+  /** Major or critical validation issues that blocked the transition. */
+  validationErrors?: OutputValidationIssue[];
+}
+
+/**
+ * Result returned by {@link CampaignService.generateCampaignScript}.
+ *
+ * On success, the `script` field contains the validated text that has been
+ * persisted to the campaign row.  On failure, `validationErrors` describes
+ * the issues that prevented the script from being stored.
+ */
+export interface ScriptGenerationResult {
+  /** Whether a valid script was generated and stored. */
+  success: boolean;
+  /** The generated and validated script text (only when `success` is `true`). */
+  script?: string;
+  /** Major or critical validation issues (only when `success` is `false`). */
+  validationErrors?: OutputValidationIssue[];
+}
+
+/**
+ * Minimal brand voice data stored per known Factory application.
+ *
+ * Keyed by `appId` (the same identifier used in `crm_leads.app_id`).
+ * Consumer apps may supply their own profile via the `appId` parameter;
+ * unknown IDs fall back to an empty set of rules (no-op validation).
+ *
+ * @internal
+ */
+const BRAND_PROFILES: Record<string, BrandVoiceRules> = {
+  humandesign: {
+    requiredTerms: ['human design', 'chart', 'type'],
+    blockedTerms: ['hustle', 'grind'],
+  },
+  capricast: {
+    requiredTerms: [],
+    blockedTerms: ['hustle', 'quick fix'],
+  },
+  xicocity: {
+    requiredTerms: [],
+    blockedTerms: ['toxic positivity'],
+  },
+  prime_self: {
+    requiredTerms: [],
+    blockedTerms: ['lazy', 'excuse', 'average'],
+  },
+  cypher_healing: {
+    requiredTerms: [],
+    blockedTerms: ['hustle', 'grind', 'quick fix'],
+  },
+  ijustus: {
+    requiredTerms: [],
+    blockedTerms: ['surface-level', 'performative'],
+  },
+  the_calling: {
+    requiredTerms: [],
+    blockedTerms: ['secular shortcuts'],
+  },
+};
+
+/**
+ * Returns the {@link BrandVoiceRules} registered for `appId`, or `undefined`
+ * when the ID is unknown (meaning no brand-voice rules apply).
+ *
+ * @param appId - The application identifier (e.g. `'humandesign'`).
+ * @internal
+ */
+function getBrandVoiceRules(appId: string): BrandVoiceRules | undefined {
+  return BRAND_PROFILES[appId];
+}
+
+// ---------------------------------------------------------------------------
 // WB-2: Outreach Service Classes
 // ---------------------------------------------------------------------------
 
 /**
  * Service for managing outreach contacts with tenant isolation.
- *
- * Security: every method wraps its query in `withTenant(db, tenantId, ...)`, which
- * opens an explicit transaction and issues `SET LOCAL app.tenant_id = tenantId`
- * before any DML, enforcing the RLS policies on `outreach_contacts`.
- *
- * Injection safety: all user-supplied values are passed as `sql` tagged-template
- * parameters, which Drizzle/Neon serialize as positional placeholders ($1, $2, …).
- * No string concatenation reaches the database.
  */
 export class ContactService {
   /**
@@ -774,11 +874,6 @@ export class ContactService {
 
 /**
  * Service for managing outreach campaigns with tenant isolation.
- *
- * Security: every method wraps its query in `withTenant(db, tenantId, ...)`, which
- * opens an explicit transaction and issues `SET LOCAL app.tenant_id = tenantId`
- * before any DML, enforcing RLS on `outreach_campaigns`.
- * All parameters use Drizzle's `sql` tagged-template placeholders (no concatenation).
  */
 export class CampaignService {
   /**
@@ -898,6 +993,173 @@ export class CampaignService {
       }
       return rowToCampaign(row);
     });
+  }
+
+  /**
+   * Transitions a campaign to a new lifecycle status, enforcing the brand
+   * voice gate when moving from `draft` → `active`.
+   *
+   * Gate logic:
+   * - If the campaign has no `script`, the transition proceeds without
+   *   validation (a campaign without copy cannot be blocked).
+   * - `critical` or `major` validation issues → `{ success: false, validationErrors }`.
+   * - `minor` issues only → logged as a warning, transition allowed.
+   * - All other status transitions (e.g. `active` → `paused`) bypass
+   *   validation entirely.
+   *
+   * @param db - Database client.
+   * @param campaignId - Campaign UUID.
+   * @param tenantId - Tenant identifier.
+   * @param newStatus - Target lifecycle status.
+   * @param appId - Optional app identifier used to look up brand voice rules.
+   * @returns `{ success: true }` on success or `{ success: false, validationErrors }` on block.
+   */
+  async transitionCampaignStatus(
+    db: FactoryDb,
+    campaignId: string,
+    tenantId: string,
+    newStatus: CampaignStatus,
+    appId?: string,
+  ): Promise<TransitionResult> {
+    if (!campaignId || !tenantId || !newStatus) {
+      throw new InternalError(
+        'CampaignService.transitionCampaignStatus: campaignId, tenantId, and newStatus are required',
+        { code: ErrorCodes.VALIDATION_ERROR },
+      );
+    }
+
+    const campaign = await this.getCampaign(db, campaignId, tenantId);
+
+    // Enforce brand voice gate only on draft → active when a script exists
+    if (campaign.status === 'draft' && newStatus === 'active' && campaign.script) {
+      const brandVoice = appId ? getBrandVoiceRules(appId) : undefined;
+      const result = validateAiOutput(campaign.script, { brandVoice });
+
+      const blocking = result.issues.filter(
+        (i) => i.severity === 'critical' || i.severity === 'major',
+      );
+      const warnings = result.issues.filter((i) => i.severity === 'minor');
+
+      if (blocking.length > 0) {
+        return { success: false, validationErrors: blocking };
+      }
+
+      if (warnings.length > 0) {
+        // Minor issues are non-blocking; surface them as structured warnings
+        // so they flow into Sentry breadcrumbs or PostHog properties upstream.
+        console.warn('campaign.script.minor_violations', {
+          campaignId,
+          tenantId,
+          count: warnings.length,
+          rules: warnings.map((w) => w.rule),
+        });
+      }
+    }
+
+    await this.updateCampaignStatus(db, campaignId, tenantId, newStatus);
+    return { success: true };
+  }
+
+  /**
+   * Generates a brand-voice-aligned call script for a campaign using the LLM,
+   * validates it, and persists it if it passes the gate.
+   *
+   * Steps:
+   * 1. Fetch the campaign to confirm it exists and belongs to the tenant.
+   * 2. Ask the LLM to draft a script for the campaign name/description.
+   * 3. Run {@link validateAiOutput} with the app's brand voice rules.
+   * 4. If major/critical issues are found, return `{ success: false, validationErrors }`.
+   * 5. Otherwise persist the script and return `{ success: true, script }`.
+   *
+   * @param db - Database client.
+   * @param campaignId - Campaign UUID.
+   * @param tenantId - Tenant identifier.
+   * @param llmEnv - LLM provider environment bindings.
+   * @param appId - Optional app identifier used for brand voice lookup.
+   * @returns Generation result with the script text on success.
+   */
+  async generateCampaignScript(
+    db: FactoryDb,
+    campaignId: string,
+    tenantId: string,
+    llmEnv: LLMEnv,
+    appId?: string,
+  ): Promise<ScriptGenerationResult> {
+    if (!campaignId || !tenantId) {
+      throw new InternalError(
+        'CampaignService.generateCampaignScript: campaignId and tenantId are required',
+        { code: ErrorCodes.VALIDATION_ERROR },
+      );
+    }
+
+    const campaign = await this.getCampaign(db, campaignId, tenantId);
+
+    const brandVoice = appId ? getBrandVoiceRules(appId) : undefined;
+    const brandContext = brandVoice?.requiredTerms?.length
+      ? `Include these preferred terms naturally: ${brandVoice.requiredTerms.join(', ')}.`
+      : '';
+    const avoidContext = brandVoice?.blockedTerms?.length
+      ? `Avoid these terms entirely: ${brandVoice.blockedTerms.join(', ')}.`
+      : '';
+
+    const systemPrompt = [
+      'You are a professional outreach copywriter. Write a concise, persuasive call script.',
+      'The script must be between 150 and 600 words.',
+      'Produce plain prose — no JSON, no markdown headings.',
+      brandContext,
+      avoidContext,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const userPrompt = [
+      `Campaign name: ${campaign.name}`,
+      campaign.description ? `Description: ${campaign.description}` : '',
+      'Write a call script for a sales representative to use when reaching out to prospects.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const llmResponse = await complete(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      llmEnv,
+      { tier: 'balanced' },
+    );
+
+    if (!llmResponse.data) {
+      throw new InternalError('CampaignService.generateCampaignScript: LLM returned no data', {
+        code: ErrorCodes.INTERNAL_ERROR,
+      });
+    }
+    const generatedScript = llmResponse.data.content;
+
+    const validation = validateAiOutput(generatedScript, {
+      brandVoice,
+      minCharacters: 150,
+      maxCharacters: 3600,
+    });
+
+    const blocking = validation.issues.filter(
+      (i) => i.severity === 'critical' || i.severity === 'major',
+    );
+
+    if (blocking.length > 0) {
+      return { success: false, validationErrors: blocking };
+    }
+
+    // Persist validated script
+    await withTenant(db, tenantId, async (txDb) => {
+      await txDb.execute(
+        sql`UPDATE outreach_campaigns
+            SET script = ${generatedScript}, updated_at = NOW()
+            WHERE id = ${campaignId} AND tenant_id = ${tenantId}`,
+      );
+    });
+
+    return { success: true, script: generatedScript };
   }
 }
 
