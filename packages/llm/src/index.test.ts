@@ -1,5 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
-import { complete, type LLMEnv } from './index.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  complete,
+  completionStream,
+  assertGrounding,
+  isProviderCoolingDown,
+  markProviderCoolingDown,
+  clearProviderCooldown,
+  PROVIDER_COOLDOWN_MS,
+  type LLMEnv,
+} from './index.js';
 
 const ENV: LLMEnv = {
   AI_GATEWAY_BASE_URL: 'https://gateway.test/v1',
@@ -46,6 +55,81 @@ function groqResponse(text = 'verdict') {
     { status: 200 },
   );
 }
+
+// ─── SSE helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Builds a ReadableStream that emits Anthropic SSE events for the given text chunks.
+ */
+function buildAnthropicStream(chunks: string[], modelName = 'claude-sonnet-4-20250514'): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const events: string[] = [];
+
+  events.push(
+    `data: ${JSON.stringify({
+      type: 'message_start',
+      message: {
+        usage: { input_tokens: 10, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        model: modelName,
+      },
+    })}\n\n`,
+  );
+
+  for (const chunk of chunks) {
+    events.push(
+      `data: ${JSON.stringify({
+        type: 'content_block_delta',
+        delta: { type: 'text_delta', text: chunk },
+      })}\n\n`,
+    );
+  }
+
+  events.push(
+    `data: ${JSON.stringify({
+      type: 'message_delta',
+      usage: { output_tokens: chunks.reduce((s, c) => s + c.length, 0) },
+    })}\n\n`,
+  );
+
+  events.push('data: [DONE]\n\n');
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const e of events) {
+        controller.enqueue(encoder.encode(e));
+      }
+      controller.close();
+    },
+  });
+}
+
+/** Drains an async generator collecting all yielded values and the return value. */
+async function drainStream(gen: AsyncGenerator<string, unknown, unknown>): Promise<{ chunks: string[]; result: unknown }> {
+  const chunks: string[] = [];
+  let done = false;
+  let result: unknown;
+  while (!done) {
+    const next = await gen.next();
+    if (next.done) {
+      result = next.value;
+      done = true;
+    } else {
+      chunks.push(next.value);
+    }
+  }
+  return { chunks, result };
+}
+
+// ─── Reset cooldown state before each test ───────────────────────────────────
+beforeEach(() => {
+  // Clear all provider cooldown states to prevent test pollution.
+  clearProviderCooldown('anthropic');
+  clearProviderCooldown('gemini');
+  clearProviderCooldown('groq');
+  clearProviderCooldown('grok');
+});
+
+// ─── Existing complete() tests (unchanged) ───────────────────────────────────
 
 describe('complete', () => {
   it('routes balanced tier to Anthropic and returns parsed result', async () => {
@@ -288,5 +372,453 @@ describe('complete', () => {
     const res = await p;
     expect(res.data).toBeNull();
     expect(res.error?.message).toMatch(/aborted/);
+  });
+});
+
+// ─── Feature 1 + 2: Per-provider exponential backoff & cooldown ──────────────
+
+describe('per-provider exponential backoff', () => {
+  it('retries on 429 up to 2 times then marks provider cooling down', async () => {
+    // The provider returns 429 all 3 attempts; after exhaustion it should be marked cooling down.
+    const now = vi.fn(() => 1_000_000);
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('rate', { status: 429 })));
+
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast' }, // fast = anthropic only, no fallback
+      { fetch: fetchImpl as unknown as typeof fetch, now },
+    );
+
+    // 3 attempts (1 initial + 2 retries)
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(res.error!.code).toBe('RATE_LIMITED');
+
+    // Provider should now be in cooldown
+    expect(isProviderCoolingDown('anthropic', now)).toBe(true);
+  });
+
+  it('does NOT retry on a terminal 4xx (403)', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('forbidden', { status: 403 })));
+
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+
+    // Should stop immediately — only 1 call
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(res.data).toBeNull();
+  });
+
+  it('retries on 5xx up to PER_PROVIDER_MAX_ATTEMPTS times', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(() => {
+      calls++;
+      if (calls < 3) return Promise.resolve(new Response('server error', { status: 500 }));
+      return Promise.resolve(anthropicResponse('recovered'));
+    });
+
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(res.data!.provider).toBe('anthropic');
+    expect(res.data!.attempts).toBe(3);
+  });
+
+  it('clears cooldown on success after a previous failure', () => {
+    const now = vi.fn(() => 1_000_000);
+    // Mark anthropic as cooling down
+    markProviderCoolingDown('anthropic', now);
+    expect(isProviderCoolingDown('anthropic', now)).toBe(true);
+
+    // Advance time past cooldown
+    now.mockReturnValue(1_000_000 + PROVIDER_COOLDOWN_MS + 1);
+    expect(isProviderCoolingDown('anthropic', now)).toBe(false);
+  });
+});
+
+describe('per-provider cooldown state', () => {
+  it('skips a cooling-down provider and uses the fallback leg', async () => {
+    const now = vi.fn(() => 1_000_000);
+    // Mark anthropic as cooling down
+    markProviderCoolingDown('anthropic', now);
+
+    const fetchImpl = vi.fn((url: string | URL | Request) => {
+      // Anthropic should never be called while cooling down
+      if (String(url).includes('anthropic')) return Promise.resolve(new Response('should not call', { status: 500 }));
+      if (String(url).includes('google-vertex-ai')) return Promise.resolve(geminiResponse('fallback-from-cooldown'));
+      return Promise.resolve(new Response('', { status: 500 }));
+    });
+
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'balanced' },
+      { fetch: fetchImpl as unknown as typeof fetch, now },
+    );
+
+    // Anthropic should not have been called
+    const anthropicCalls = (fetchImpl.mock.calls as Array<[string | URL | Request, RequestInit?]>).filter(
+      ([url]) => String(url).includes('anthropic'),
+    );
+    expect(anthropicCalls).toHaveLength(0);
+    expect(res.data!.provider).toBe('gemini');
+  });
+
+  it('does not skip a provider after the cooldown window expires', async () => {
+    const now = vi.fn(() => 1_000_000);
+    markProviderCoolingDown('anthropic', now);
+
+    // Advance past cooldown
+    now.mockReturnValue(1_000_000 + PROVIDER_COOLDOWN_MS + 1);
+
+    const fetchImpl = vi.fn(() => Promise.resolve(anthropicResponse('back-online')));
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch, now },
+    );
+
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(res.data!.provider).toBe('anthropic');
+  });
+
+  it('returns ALL_PROVIDERS_FAILED when all providers are in cooldown', async () => {
+    const now = vi.fn(() => 1_000_000);
+    markProviderCoolingDown('anthropic', now);
+    markProviderCoolingDown('gemini', now);
+
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('', { status: 500 })));
+
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'balanced' },
+      { fetch: fetchImpl as unknown as typeof fetch, now },
+    );
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(res.data).toBeNull();
+    expect(res.error!.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('isProviderCoolingDown returns false when no cooldown is set', () => {
+    clearProviderCooldown('anthropic');
+    expect(isProviderCoolingDown('anthropic')).toBe(false);
+  });
+
+  it('isProviderCoolingDown returns true within the window', () => {
+    const now = vi.fn(() => 1_000_000);
+    markProviderCoolingDown('anthropic', now);
+    // Same timestamp — still within window
+    expect(isProviderCoolingDown('anthropic', now)).toBe(true);
+  });
+});
+
+// ─── Feature 3: completionStream() ───────────────────────────────────────────
+
+describe('completionStream', () => {
+  it('yields text chunks and returns LLMResult', async () => {
+    const stream = buildAnthropicStream(['Hello', ', ', 'world!']);
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'cf-aig-request-id': 'stream-aig-1' },
+        }),
+      ),
+    );
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch, now: () => 1000 } },
+    );
+
+    const { chunks, result } = await drainStream(gen);
+
+    expect(chunks).toEqual(['Hello', ', ', 'world!']);
+    const llmResult = result as import('./index.js').LLMResult;
+    expect(llmResult.content).toBe('Hello, world!');
+    expect(llmResult.provider).toBe('anthropic');
+    expect(llmResult.tier).toBe('balanced');
+    expect(llmResult.gatewayRequestId).toBe('stream-aig-1');
+    expect(llmResult.tokens.input).toBe(10);
+  });
+
+  it('sends stream=true in the request body', async () => {
+    const stream = buildAnthropicStream(['ok']);
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response(stream, { status: 200 })),
+    );
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+    await drainStream(gen);
+
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { stream?: boolean };
+    expect(body.stream).toBe(true);
+  });
+
+  it('falls back to non-streaming complete() for non-Anthropic primary', async () => {
+    // Groq (verifier tier) does not support streaming — falls back to complete().
+    const fetchImpl = vi.fn(() => Promise.resolve(groqResponse('groq-result')));
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'verify' }],
+      ENV,
+      { tier: 'verifier', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+
+    const { chunks, result } = await drainStream(gen);
+
+    const llmResult = result as import('./index.js').LLMResult;
+    // The entire content is yielded in one chunk via the fallback path
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toBe('groq-result');
+    expect(llmResult.provider).toBe('groq');
+  });
+
+  it('falls back when streaming response is non-ok (503)', async () => {
+    let callCount = 0;
+    const fetchImpl = vi.fn((url: string | URL | Request) => {
+      callCount++;
+      if (callCount === 1 && String(url).includes('anthropic')) {
+        // First call: streaming attempt returns 503
+        return Promise.resolve(new Response('', { status: 503 }));
+      }
+      if (String(url).includes('google-vertex-ai')) {
+        return Promise.resolve(geminiResponse('gemini-fallback'));
+      }
+      return Promise.resolve(new Response('', { status: 500 }));
+    });
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+
+    const { chunks, result } = await drainStream(gen);
+    const llmResult = result as import('./index.js').LLMResult;
+    expect(chunks).toHaveLength(1);
+    expect(llmResult.provider).toBe('gemini');
+  });
+
+  it('throws ValidationError for empty messages', async () => {
+    const gen = completionStream([], ENV, {});
+    await expect(gen.next()).rejects.toThrow(/messages must not be empty/);
+  });
+
+  it('throws ValidationError for missing AI_GATEWAY_BASE_URL', async () => {
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV, AI_GATEWAY_BASE_URL: '' },
+      {},
+    );
+    await expect(gen.next()).rejects.toThrow(/AI_GATEWAY_BASE_URL/);
+  });
+
+  it('falls back when primary provider is cooling down', async () => {
+    const now = vi.fn(() => 1_000_000);
+    markProviderCoolingDown('anthropic', now);
+
+    const fetchImpl = vi.fn((url: string | URL | Request) => {
+      if (String(url).includes('google-vertex-ai')) return Promise.resolve(geminiResponse('stream-cooldown-fallback'));
+      return Promise.resolve(new Response('', { status: 500 }));
+    });
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch, now } },
+    );
+
+    const { result } = await drainStream(gen);
+    const llmResult = result as import('./index.js').LLMResult;
+    expect(llmResult.provider).toBe('gemini');
+  });
+
+  it('throws on AbortError during stream fetch', async () => {
+    const ctl = new AbortController();
+    const fetchImpl = vi.fn((_url: string | URL | Request, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError')),
+        );
+      });
+    });
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast', signal: ctl.signal, deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+
+    const p = gen.next();
+    ctl.abort();
+    await expect(p).rejects.toThrow(/aborted/);
+  });
+
+  it('handles non-text SSE delta types gracefully', async () => {
+    const encoder = new TextEncoder();
+    const sseData = [
+      `data: ${JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 5 }, model: 'claude-sonnet-4-20250514' } })}\n\n`,
+      // An unknown delta type that should be ignored
+      `data: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'unknown_type', text: 'ignore me' } })}\n\n`,
+      `data: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'real text' } })}\n\n`,
+      `data: ${JSON.stringify({ type: 'message_delta', usage: { output_tokens: 2 } })}\n\n`,
+      'data: [DONE]\n\n',
+    ].join('');
+
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(sseData));
+        controller.close();
+      },
+    });
+
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, { status: 200 })));
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+
+    const { chunks, result } = await drainStream(gen);
+    expect(chunks).toEqual(['real text']);
+    const llmResult = result as import('./index.js').LLMResult;
+    expect(llmResult.content).toBe('real text');
+  });
+
+  it('handles null response body gracefully', async () => {
+    // Create a response with a null body by mocking the body property.
+    const mockResponse = {
+      ok: true,
+      body: null,
+      headers: { get: () => null },
+    } as unknown as Response;
+
+    const fetchImpl = vi.fn(() => Promise.resolve(mockResponse));
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+
+    await expect(gen.next()).rejects.toThrow(/response body is null/);
+  });
+
+  it('logs completion info to logger', async () => {
+    const info = vi.fn();
+    const stream = buildAnthropicStream(['logged']);
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, { status: 200 })));
+
+    const gen = completionStream(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        tier: 'fast',
+        runId: 'r-stream',
+        deps: {
+          fetch: fetchImpl as unknown as typeof fetch,
+          logger: { info } as unknown as import('@latimer-woods-tech/logger').Logger,
+        },
+      },
+    );
+
+    await drainStream(gen);
+    expect(info).toHaveBeenCalled();
+    const args = info.mock.calls[0] as unknown as [string, Record<string, unknown>];
+    expect(args[1]).toMatchObject({ runId: 'r-stream' });
+  });
+});
+
+// ─── Feature 4: assertGrounding() ────────────────────────────────────────────
+
+describe('assertGrounding', () => {
+  it('returns true when sources is empty (no grounding violation possible)', () => {
+    expect(assertGrounding('any response text here', [])).toBe(true);
+  });
+
+  it('returns true when response contains a 5-token phrase from a source', () => {
+    const source = 'The quick brown fox jumps over the lazy dog';
+    const response = 'According to the source, the quick brown fox jumps over the lazy dog today.';
+    expect(assertGrounding(response, [source])).toBe(true);
+  });
+
+  it('returns false when response shares no 5-token phrase with any source', () => {
+    const source = 'The quick brown fox jumps over the lazy dog';
+    const response = 'A completely unrelated sentence about something else entirely different here.';
+    expect(assertGrounding(response, [source])).toBe(false);
+  });
+
+  it('returns true when phrase spans the exact window boundary', () => {
+    // Response contains exactly the first 5 tokens of the source
+    const source = 'alpha beta gamma delta epsilon zeta eta';
+    const response = 'alpha beta gamma delta epsilon is documented in the source';
+    expect(assertGrounding(response, [source])).toBe(true);
+  });
+
+  it('returns false when response has fewer than 5 tokens', () => {
+    const source = 'alpha beta gamma delta epsilon zeta';
+    const response = 'alpha beta';
+    expect(assertGrounding(response, [source])).toBe(false);
+  });
+
+  it('returns false when source has fewer than 5 tokens (no ngrams to match)', () => {
+    const source = 'alpha beta';
+    const response = 'alpha beta gamma delta epsilon zeta eta theta';
+    expect(assertGrounding(response, [source])).toBe(false);
+  });
+
+  it('matches across multiple sources', () => {
+    const sources = [
+      'unrelated text without any match at all',
+      'the factory system uses cloudflare workers for routing',
+    ];
+    const response = 'As stated: the factory system uses cloudflare workers for routing requests.';
+    expect(assertGrounding(response, sources)).toBe(true);
+  });
+
+  it('is case-sensitive (does not match different casing)', () => {
+    const source = 'The Quick Brown Fox Jumps';
+    const response = 'the quick brown fox jumps over things';
+    // Different casing — should not match
+    expect(assertGrounding(response, [source])).toBe(false);
+  });
+
+  it('returns false for response that only partially shares 4 tokens', () => {
+    // Shares 4 consecutive tokens but not 5
+    const source = 'alpha beta gamma delta epsilon';
+    const response = 'alpha beta gamma delta but then diverges from the source entirely';
+    // "alpha beta gamma delta epsilon" is in source but only "alpha beta gamma delta" matches up to 4 tokens in response
+    // Response does not contain the 5th token "epsilon" in sequence
+    expect(assertGrounding(response, [source])).toBe(false);
+  });
+
+  it('handles whitespace-heavy text correctly', () => {
+    const source = '  one   two   three   four   five   six  ';
+    const response = 'one two three four five six words here';
+    expect(assertGrounding(response, [source])).toBe(true);
+  });
+
+  it('returns false when sources array contains only empty strings', () => {
+    expect(assertGrounding('some response text here today', ['', '   '])).toBe(false);
   });
 });
