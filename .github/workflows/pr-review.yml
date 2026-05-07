@@ -3,10 +3,11 @@ name: Canonical PR Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
+  merge_group:
 
 # Cancel in-progress review when a new push lands on the same PR
 concurrency:
-  group: pr-review-${{ github.event.pull_request.number }}
+  group: pr-review-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -17,8 +18,9 @@ jobs:
     name: Factory architecture review
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Skip draft PRs — re-triggers automatically when marked ready
-    if: ${{ !github.event.pull_request.draft }}
+    # Skip draft PRs. Skip merge_group — review already passed on the PR;
+    # re-running the LLM review in a merge group has no useful target to post to.
+    if: ${{ github.event_name != 'merge_group' && !github.event.pull_request.draft }}
     steps:
       - uses: actions/checkout@v6
 

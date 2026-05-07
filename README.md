@@ -10,6 +10,7 @@ If you're an agent or a new contributor, **start here**, then go to:
 - [`docs/AGENTS.md`](docs/AGENTS.md) — explicit agent onboarding guide
 - [`docs/CI_CD.md`](docs/CI_CD.md) — CI/CD architecture
 - [`docs/NEW_APP_CHECKLIST.md`](docs/NEW_APP_CHECKLIST.md) — adding a new app to the ecosystem
+- [`docs/runbooks/agent-ship.md`](docs/runbooks/agent-ship.md) — canonical cross-repo agent shipping workflow
 
 ---
 

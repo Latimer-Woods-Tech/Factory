@@ -16,6 +16,9 @@ permissions:
 
 jobs:
   audit:
+    permissions:
+      contents: read
+      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -126,3 +129,34 @@ jobs:
             });
 
             console.log(`Created docs-debt issue #${issue.data.number}: ${issue.data.html_url}`);
+
+  bootstrap-missing-contexts:
+    name: Generate missing repo context docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Configure git
+        run: |
+          git config user.name  "factory-docs-bot"
+          git config user.email "factory-docs-bot@users.noreply.github.com"
+      - name: Create org-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Generate missing repo contexts
+        env:
+          GH_TOKEN:          ${{ steps.app-token.outputs.token }}
+          GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/repo-context-generator.mjs

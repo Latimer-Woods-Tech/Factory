@@ -11,29 +11,9 @@
       "description": "Issue currently claimed by Claude Code"
     },
     {
-      "name": "agent:claimed:sauna-1",
+      "name": "agent:claimed:supervisor",
       "color": "1d76db",
-      "description": "Issue currently claimed by Sauna agent 1"
-    },
-    {
-      "name": "agent:claimed:sauna-2",
-      "color": "1d76db",
-      "description": "Issue currently claimed by Sauna agent 2"
-    },
-    {
-      "name": "agent:claimed:sauna-3",
-      "color": "1d76db",
-      "description": "Issue currently claimed by Sauna agent 3"
-    },
-    {
-      "name": "agent:claimed:sauna-4",
-      "color": "1d76db",
-      "description": "Issue currently claimed by Sauna agent 4"
-    },
-    {
-      "name": "agent:claimed:sauna-5",
-      "color": "1d76db",
-      "description": "Issue currently claimed by Sauna agent 5"
+      "description": "Issue claimed by the supervisor loop (dedup lock)"
     },
     {
       "name": "status:in_progress",
@@ -54,6 +34,26 @@
       "name": "status:abandoned",
       "color": "8c959f",
       "description": "Agent stopped and the issue needs reassignment"
+    },
+    {
+      "name": "area:auth",
+      "color": "d93f0b",
+      "description": "Changes touch authentication or JWT handling"
+    },
+    {
+      "name": "area:migrations",
+      "color": "e4e669",
+      "description": "Changes include database migrations"
+    },
+    {
+      "name": "risk:high",
+      "color": "b60205",
+      "description": "High-risk change: workflows, packages, wrangler config, or migrations"
+    },
+    {
+      "name": "supervisor:no-template",
+      "color": "b60205",
+      "description": "No template matched — Red tier, requires CODEOWNER to author template or handle manually"
     }
   ]
 }
