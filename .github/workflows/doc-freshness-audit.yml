@@ -9,16 +9,28 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 permissions:
   contents: read
+  issues: write
 
 jobs:
   audit:
+    permissions:
+      contents: read
+      issues: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -30,33 +42,121 @@ jobs:
         run: node scripts/doc-freshness-audit.js > audit-report.md
         continue-on-error: true
 
-      - name: Read audit report
-        id: report
-        run: cat audit-report.md >> $GITHUB_STEP_SUMMARY
-
-      - name: Create issue if stale docs found
-        if: failure()
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('audit-report.md', 'utf8');
-
-            // Check if we have any stale docs
-            if (report.includes('Yellow Flags') || report.includes('Red Flags') || report.includes('Critical')) {
-              const issue = await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title: '📋 Documentation Freshness Alert — Stale Docs Detected',
-                body: `## Stale Documentation Report\n\n${report}\n\n### Action Required\n\nPlease update stale docs according to their assigned cadence. See [DOCS_OWNERSHIP.md](docs/DOCS_OWNERSHIP.md) for owner assignments.`,
-                labels: ['docs', 'maintenance'],
-              });
-
-              console.log(`Created issue #${issue.data.number}`);
-            }
-
       - name: Publish audit report to workflow summary
         if: always()
         run: |
           echo "## 📋 Documentation Freshness Audit" >> $GITHUB_STEP_SUMMARY
           cat audit-report.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Open docs-debt issue if stale docs found
+        # steps.audit.outcome is 'failure' when the script exits non-zero,
+        # even though continue-on-error prevents the job from failing.
+        # (The old `if: failure()` never triggered for the same reason.)
+        if: steps.audit.outcome == 'failure'
+        uses: actions/github-script@v9
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('audit-report.md', 'utf8');
+
+            const DEBT_LABEL = 'docs:debt';
+            const ISSUE_TITLE_PREFIX = '📋 Docs Drift Audit — stale docs detected';
+
+            // Ensure the docs:debt label exists (idempotent).
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: DEBT_LABEL,
+              });
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: DEBT_LABEL,
+                  color: 'e4e669',
+                  description: 'Documentation is drifting out of date (auto-opened by freshness audit)',
+                });
+                console.log(`Created label "${DEBT_LABEL}".`);
+              } else {
+                throw e;
+              }
+            }
+
+            // Deduplication: skip if an open docs:debt issue already exists.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: DEBT_LABEL,
+              state: 'open',
+              per_page: 10,
+            });
+
+            const alreadyOpen = existing.data.some(i =>
+              i.title.startsWith(ISSUE_TITLE_PREFIX)
+            );
+
+            if (alreadyOpen) {
+              console.log('An open docs-debt issue already exists — skipping creation.');
+              return;
+            }
+
+            const date = new Date().toISOString().split('T')[0];
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `${ISSUE_TITLE_PREFIX} (${date})`,
+              body: [
+                '## 📋 Documentation Drift — Report-Only',
+                '',
+                `> Auto-opened by the [Documentation Freshness Audit](${runUrl}) on ${date}.`,
+                '> **This is a report-only issue. No CI gates are blocked.**',
+                '',
+                report,
+                '',
+                '### Action Required',
+                '',
+                'Please update stale docs according to their assigned cadence.',
+                'See [DOCS_OWNERSHIP.md](docs/DOCS_OWNERSHIP.md) for owner assignments.',
+                '',
+                '_Close this issue once all flagged docs have been updated._',
+              ].join('\n'),
+              labels: [DEBT_LABEL, 'docs', 'maintenance'],
+            });
+
+            console.log(`Created docs-debt issue #${issue.data.number}: ${issue.data.html_url}`);
+
+  bootstrap-missing-contexts:
+    name: Generate missing repo context docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Configure git
+        run: |
+          git config user.name  "factory-docs-bot"
+          git config user.email "factory-docs-bot@users.noreply.github.com"
+      - name: Create org-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Generate missing repo contexts
+        env:
+          GH_TOKEN:          ${{ steps.app-token.outputs.token }}
+          GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/repo-context-generator.mjs

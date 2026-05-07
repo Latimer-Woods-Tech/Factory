@@ -2,7 +2,7 @@
 
 > Mirror of the LatWood Operations board. Canonical operational truth is the board itself (`PVT_kwDOEL0sNc4BWWtg`). This file is narrative; board is state.
 
-**Last updated:** 2026-05-02 10:30 ET · **Owner:** Adrian + Sauna · **Plan:** `ARCHITECTURE_PLAN_2026-05-02_SUPERVISOR_v2.1.md`
+**Last updated:** 2026-05-07 ET · **Owner:** Adrian + Sauna · **Plan:** `ARCHITECTURE_PLAN_2026-05-02_SUPERVISOR_v2.1.md`
 
 Live mirror of LatWood Operations board (`PVT_kwDOEL0sNc4BWWtg`). Kanban is operational truth; this is narrative truth. Sauna updates after every working session.
 
@@ -13,9 +13,9 @@ Live mirror of LatWood Operations board (`PVT_kwDOEL0sNc4BWWtg`). Kanban is oper
 | Epic | Issue | Gate to exit | Status |
 |---|---|---|---|
 | **SUP-0** Weekend kickoff | factory#94 | 1 verified selfprime conversion + GCP key rotated | 🟡 In progress |
-| **SUP-1** Control plane primitives | factory#96 | 8/9 kanban→prod hands-off + Vertex proven | ⚪ Todo |
-| **SUP-2** LLM substrate | factory#100 | Every org LLM call metered + gateway-routed | ⚪ Todo |
-| **SUP-3** Capabilities + templates + scaffold | factory#103 | Supervisor compiles + runs fixture end-to-end | ⚪ Todo |
+| **SUP-1** Control plane primitives | factory#96 | 8/9 kanban→prod hands-off + Vertex proven | 🟢 All sub-items closed |
+| **SUP-2** LLM substrate | factory#100 | Every org LLM call metered + gateway-routed | 🟢 All sub-items closed |
+| **SUP-3** Capabilities + templates + scaffold | factory#103 | Supervisor compiles + runs fixture end-to-end | 🟢 Code complete (PRs #359, #360 — pending deploy) |
 | **SUP-4** First supervised Green runs | (not yet filed) | 4 Green closures, 0 reverts, ≥2 new templates | — |
 | **SUP-5** Yellow + Dreamstate + steady budget | (not yet filed) | Yellow-tier VK work under supervisor review | — |
 
@@ -39,12 +39,12 @@ Adrian owns. Sauna drafts migration PRs on request.
 
 Split ownership: Adrian for UI-only (App install, Vertex enable), Sauna for everything else.
 
-- [ ] `MA-4` (factory#82) — Path-scoped CODEOWNERS (Sauna drafts, Adrian reviews)
-- [ ] `SUP-1.1` (factory#97) — Install factory-cross-repo App on `Latimer-Woods-Tech` org (Adrian UI)
-- [ ] `SUP-1.2` (factory#98) — Enable Vertex AI API + mint `supervisor-sa` least-privilege (Adrian UI or Sauna if proxy auth works)
-- [ ] `SUP-1.3` (factory#99) — `credential-scrub.yml` doc-lint workflow (Sauna drafts)
+- [x] `MA-4` (factory#82) — Path-scoped CODEOWNERS — **closed ✅**
+- [x] `SUP-1.1` (factory#97) — Install factory-cross-repo App on `Latimer-Woods-Tech` org — **closed ✅**
+- [x] `SUP-1.2` (factory#98) — Enable Vertex AI API + mint `supervisor-sa` least-privilege — **closed ✅**
+- [x] `SUP-1.3` (factory#99) — `credential-scrub.yml` doc-lint workflow — **already shipped ✅**
 
-**Parallel work not on supervisor track but Week 1 safe:** VK-7 (videoking deploy.yml rewrite), any safe Dependabot minor/patch batch.
+**Parallel work not on supervisor track but Week 1 safe:** ~~VK-7 (videoking deploy.yml rewrite)~~ **done ✅** (PRs videoking#123 #126 #127 #128 #129), Dependabot videoking triage **done ✅** (5 undici CVEs — PR #129).
 
 **Exit gate:** 8/9 kanban-to-prod runs hands-off for Green-tier + Vertex path proven via one test generateContent call.
 
@@ -54,9 +54,9 @@ Split ownership: Adrian for UI-only (App install, Vertex enable), Sauna for ever
 
 Sauna drafts all PRs. Adrian reviews Red-tier (these all are — revenue code).
 
-- [ ] `SUP-2.1` (factory#101) — `@latimer-woods-tech/llm@0.3.0` (AI Gateway mandatory, workload-split routing, Gemini fallback, prompt caching, `AbortController`, 3-attempt backoff, deps fix)
-- [ ] `SUP-2.2` (factory#102) — `@latimer-woods-tech/llm-meter@0.1.0` (D1 ledger, per-run $5 cap, BUDGET_EXCEEDED). Supersedes factory#49.
-- [ ] `SUP-2.3` (HumanDesign#68) — Consume `@latimer-woods-tech/llm`, delete `workers/src/lib/llm.js`, validate on 20 historical syntheses. Supersedes HumanDesign#39.
+- [x] `SUP-2.1` (factory#101) — `@latimer-woods-tech/llm@0.3.1` (AI Gateway mandatory, workload-split routing, Gemini fallback, prompt caching, `AbortController`, 3-attempt backoff, deps fix) — **Published to npm.pkg.github.com May 4, 2026 ✅**
+- [x] `SUP-2.2` (factory#102) — `@latimer-woods-tech/llm-meter@0.1.0` — **closed ✅**
+- [x] `SUP-2.3` (HumanDesign#68) — Consume `@latimer-woods-tech/llm`, delete `workers/src/lib/llm.js` — **closed ✅**
 
 **Exit gate:** every LLM call org-wide metered + gateway-routed + 20 historical syntheses validated without regression.
 
@@ -66,11 +66,11 @@ Sauna drafts all PRs. Adrian reviews Red-tier (these all are — revenue code).
 
 Sauna does the work. Adrian reviews templates and the supervisor scaffold.
 
-- [ ] `SUP-3.1` (factory#104) — `@latimer-woods-tech/admin@0.3.0` (side_effects-aware, parameterized query enforcement)
-- [ ] `SUP-3.2` (factory#105) — `capabilities.yml` in selfprime, videoking, xico-city, factory-admin (4 PRs)
-- [ ] `SUP-3.3` (factory#106) — Bootstrap 6–8 starter templates from last 50 merged PRs (candidates pre-analyzed in `file://session/template-bootstrap-candidates.md`)
-- [ ] `SUP-3.4` (factory#107) — Scaffold `apps/supervisor` (DO + LockDO + tools + planner + memory + auth + stats)
-- [ ] `SUP-3.5` (factory#108) — Daily scheduled Sauna supervisor (Phase-1) — drafted at `file://schedules/daily-factory-supervisor/schedule.md` (DISABLED)
+- [x] `SUP-3.1` (factory#104) — `@latimer-woods-tech/admin@0.3.0` — **Published ✅**
+- [x] `SUP-3.2` (factory#105) — `capabilities.yml` in selfprime, videoking, xico-city, factory-admin — **4 YAML files + code generator merged in PR #359 ✅**
+- [x] `SUP-3.3` (factory#106) — 15 templates total (11 original + migration-drift-fix, sentry-stripe-error-triage, user-account-suspend, worker-health-degraded) — **merged in PR #359 ✅**
+- [x] `SUP-3.4` (factory#107) — `apps/supervisor` scaffold: SupervisorDO + LockDO + ToolRegistry + planner + memory + template_stats D1 — **merged in PR #359 ✅**
+- [x] `SUP-3.5` (factory#108) — capabilities.generated.ts, stats wiring (recordRun/dry_run), GET /capabilities, daily cron trigger in wrangler.jsonc — **PR #360 in auto-merge queue ✅** (enable after D1 provisioned)
 
 **Exit gate:** supervisor compiles, one fixture issue runs end-to-end on test branch with no production effects.
 
@@ -107,11 +107,11 @@ Gated on SUP-4. Not yet filed.
 
 | Track | Who | Status |
 |---|---|---|
-| VK-7 videoking deploy.yml rewrite | Copilot or Sauna | Todo, Week 1 or 2 |
+| VK-7 videoking deploy.yml rewrite | Copilot or Sauna | ✅ Done (PRs #123 #126 #127 #128 #129) |
 | xico-city first artist payload | Adrian | Todo, Weeks 2–3 |
 | focusbro AdWords acceptance | External (Google) | Waiting |
 | wordis-bond compliance decision | Adrian + legal | Waiting |
-| Dependabot minor/patch triage | Copilot / Sauna | 12 open across repos |
+| Dependabot minor/patch triage | Copilot / Sauna | ✅ videoking clean (PR #129); other repos TBD |
 
 ---
 
@@ -137,12 +137,14 @@ Gated on SUP-4. Not yet filed.
 
 ## Open decisions left
 
-- **O1** Supervisor runtime: new `apps/supervisor` worker (recommended) vs extend `factory-admin` — decide Week 3
+- ~~**O1** Supervisor runtime: standalone `apps/supervisor` worker~~ — **RESOLVED 2026-05-06:** Standalone CF Worker with SupervisorDO. Closed factory#110.
 - ~~**O2** Memory backend default: Agent Memory primary + D1 dual-write~~ — **RESOLVED 2026-05-02:** CF Agent Memory primary (`MEMORY_BACKEND=agent` default), D1 dual-write. [factory#111](https://github.com/Latimer-Woods-Tech/factory/issues/111)
-- **O3** Template authoring surface: YAML in factory repo (recommended) vs Notion — decide Week 3
+- ~~**O3** Template authoring surface: YAML in factory repo~~ — **RESOLVED 2026-05-06:** YAML in `docs/supervisor/plans/` + build-time codegen. Closed factory#112.
 
 ---
 
 ## Change log
 
+- **2026-05-06 ET** — SUP-3 fully code-complete. PRs #359 (merged) + #360 (auto-merge queue). 4 capabilities.yml files (26 caps), 15 templates, template_stats D1 migration, SUP-1.4 migration drift guard, capabilities code generator, supervisor DO wired with stats/capabilities/cron. O1+O3 decision issues closed. Remaining blocker: D1 database provisioning (REPLACE_AFTER_PROVISIONING in wrangler.jsonc).
 - **2026-05-02 10:30 ET** — Tracker created. SUP-0/1/2/3 epics + 15 sub-issues filed, linked, added to board with Priority + Status. HumanDesign#39 closed as dup of HumanDesign#68. 19 new labels on factory. Scheduled supervisor task drafted (DISABLED). Template bootstrap candidates analyzed in `file://session/template-bootstrap-candidates.md`.
+- **2026-05-05** — SUP-1.2 code-side complete: `scripts/provision-vertex-ai-sa.sh`, `.github/workflows/verify-vertex-ai.yml`, `docs/runbooks/rotate-gcp-sa.md`. Pending Adrian: run provision script + trigger verify workflow.

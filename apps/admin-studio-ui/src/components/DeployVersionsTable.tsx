@@ -9,6 +9,11 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api.js';
 import type { DeployVersion } from '@latimer-woods-tech/studio-core';
 
+// Sentinel value returned by the backend when CF API has no deployment record.
+const EPOCH_ISO = new Date(0).toISOString();
+// Sentinel values returned when the CF API call itself fails.
+const ERROR_SENTINELS = new Set(['unknown', 'error']);
+
 interface Props {
   env: string;
 }
@@ -59,7 +64,7 @@ export function DeployVersionsTable({ env }: Props) {
                   {row.versionId.slice(0, 8)}
                 </td>
                 <td className="px-4 py-2 text-slate-400">
-                  {row.deployedAt === new Date(0).toISOString()
+                  {row.deployedAt === EPOCH_ISO || ERROR_SENTINELS.has(row.versionId)
                     ? '—'
                     : new Date(row.deployedAt).toLocaleString()}
                 </td>

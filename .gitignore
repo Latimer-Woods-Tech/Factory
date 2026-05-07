@@ -7,6 +7,12 @@ apps/*/node_modules/
 apps/*/*.tsbuildinfo
 .env.sentry
 .env.*.local
+.dev.vars
+**/.dev.vars
+**/.dev.vars.*
 _external_reviews/
+# Track standing orders for each external repo but not the repo code itself
+!_external_reviews/*/CLAUDE.md
 
 package-lock.json
+!apps/supervisor/package-lock.json

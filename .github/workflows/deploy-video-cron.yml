@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     name: Deploy video-cron to Cloudflare
+    environment: production
     
     steps:
       - name: Generate GitHub App token

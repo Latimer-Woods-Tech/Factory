@@ -22,22 +22,49 @@ jobs:
           node-version: '24'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@adrper79-dot'
-      - name: Detect package from tag
-        run: echo "PACKAGE=$(echo $GITHUB_REF_NAME | cut -d'/' -f1)" >> $GITHUB_ENV
+      - name: Detect and validate package from tag
+        run: |
+          set -euo pipefail
+          PACKAGE=$(echo "$GITHUB_REF_NAME" | cut -d'/' -f1)
+          ALLOWED_PACKAGES=(errors monitoring logger realtime auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin video schedule validation)
+          VALID=false
+          for pkg in "${ALLOWED_PACKAGES[@]}"; do
+            if [ "$pkg" = "$PACKAGE" ]; then
+              VALID=true
+              break
+            fi
+          done
+          if [ "$VALID" = "false" ]; then
+            echo "::error::Unknown package '${PACKAGE}' in tag '${GITHUB_REF_NAME}'. Allowed: ${ALLOWED_PACKAGES[*]}"
+            exit 1
+          fi
+          if [ ! -d "packages/${PACKAGE}" ]; then
+            echo "::error::Package directory 'packages/${PACKAGE}' does not exist for tag '${GITHUB_REF_NAME}'."
+            exit 1
+          fi
+          PKG_NAME=$(node -e "process.stdout.write(require('./packages/${PACKAGE}/package.json').name)")
+          echo "Resolved package: ${PKG_NAME} from packages/${PACKAGE}"
+          echo "PACKAGE=${PACKAGE}" >> "$GITHUB_ENV"
       - name: Build local dependencies in order
         run: |
+          set -euo pipefail
           DEPS=(errors monitoring logger auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin video schedule)
           for pkg in "${DEPS[@]}"; do
             if [ "$pkg" = "$PACKAGE" ]; then
               break
             fi
             echo "--- Building dependency: $pkg ---"
-            (cd packages/$pkg && npm ci && npm run build)
+            (cd "packages/${pkg}" && npm ci && npm run build)
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: cd packages/${{ env.PACKAGE }} && npm ci
-      - run: cd packages/${{ env.PACKAGE }} && npm run prepublish
-      - run: cd packages/${{ env.PACKAGE }} && npm publish
+      - name: Install package
+        run: cd "packages/${PACKAGE}" && npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pre-publish checks
+        run: cd "packages/${PACKAGE}" && npm run prepublish
+      - name: Publish to GitHub Packages
+        run: cd "packages/${PACKAGE}" && npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

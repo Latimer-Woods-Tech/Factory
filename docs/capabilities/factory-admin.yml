@@ -1,0 +1,65 @@
+app: factory-admin
+repo: Latimer-Woods-Tech/factory
+base_url: https://admin-studio.adrper79.workers.dev
+auth: admin_jwt
+supervisor_access: approved
+tiers_allowed: [green, yellow, red]
+
+capabilities:
+  - id: health.check
+    desc: "Admin-studio liveness check."
+    route: GET /health
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: deploys.list
+    desc: "List recent Cloudflare Worker deployments across all apps."
+    route: GET /deploys
+    params_schema:
+      limit: { type: integer, min: 1, max: 50 }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: deploys.trigger
+    desc: "Dispatch a workflow_dispatch to re-deploy an app. Only for Green-tier deploys (docs-only). Red-tier deploys require human."
+    route: POST /deploys
+    body_schema:
+      app: { type: enum, values: [humandesign, videoking, xico-city, factory-admin] }
+      ref: { type: string, validator: "^[a-zA-Z0-9/_\\-\\.]{1,100}$" }
+      env: { type: enum, values: [staging] }
+    idempotency_key: "app + ref + env"
+    side_effects: write-external
+    reversibility: reversible-with-effort
+    required_scope: supervisor.mutator-deploy
+    extra_guard: requires_codeowner_approval
+
+  - id: observability.summary
+    desc: "Fetch cross-app Sentry error rates and synthetic monitor status."
+    route: GET /observability
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: audit.list
+    desc: "Fetch recent studio audit log entries."
+    route: GET /audit
+    params_schema:
+      limit: { type: integer, min: 1, max: 100 }
+      app: { type: string, validator: "^[a-z\\-]{3,40}$", optional: true }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: catalog.list
+    desc: "List function_catalog entries for an app."
+    route: GET /catalog
+    params_schema:
+      app: { type: string, validator: "^[a-z\\-]{3,40}$" }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: timeline.list
+    desc: "Fetch incident/audit timeline for correlation."
+    route: GET /timeline
+    params_schema:
+      limit: { type: integer, min: 1, max: 100 }
+    side_effects: none
+    required_scope: supervisor.readonly

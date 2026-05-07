@@ -1,6 +1,6 @@
 {
   "name": "@latimer-woods-tech/llm-meter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -29,15 +29,15 @@
   },
   "dependencies": {
     "@latimer-woods-tech/errors": "^0.2.0",
-    "@latimer-woods-tech/llm": "^0.3.0",
+    "@latimer-woods-tech/llm": "^0.3.1",
     "@latimer-woods-tech/logger": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "typescript": "^5.4.0",
     "tsup": "^8.1.0",
-    "vitest": "^1.6.0",
-    "@vitest/coverage-v8": "^1.6.0",
+    "vitest": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.5",
     "eslint": "^8.57.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0"
