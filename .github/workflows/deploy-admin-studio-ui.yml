@@ -58,14 +58,11 @@ jobs:
           # Multi-environment API bases — resolved by the app at runtime based on the current environment.
           # VITE_API_BASE_LOCAL is static (local dev convenience); never varies between CI runs.
           VITE_API_BASE_LOCAL: "http://localhost:8787/api"
-          # Canonical staging and production URLs from docs/service-registry.yml.
-          # Prefer GitHub secrets (ADMIN_STUDIO_STAGING_URL / ADMIN_STUDIO_PROD_URL) so the
-          # values can be rotated without a code change.  The inline fallbacks match the
-          # service-registry entries and are safe to hard-code because they are backend
-          # API endpoints (not user-facing HTML), but converting them to secrets is
-          # recommended for future-proofing.
-          VITE_API_BASE_STAGING: "${{ secrets.ADMIN_STUDIO_STAGING_URL || 'https://admin-studio-staging.adrper79.workers.dev' }}/api"
-          VITE_API_BASE_PROD: "${{ secrets.ADMIN_STUDIO_PROD_URL || 'https://admin-studio-production.adrper79.workers.dev' }}/api"
+          # Staging and production API bases — injected from GitHub Secrets.
+          # Required: ADMIN_STUDIO_STAGING_URL, ADMIN_STUDIO_PROD_URL (no workers.dev fallbacks).
+          # If a secret is unset the variable is empty and the app falls back to /api (relative).
+          VITE_API_BASE_STAGING: "${{ secrets.ADMIN_STUDIO_STAGING_URL }}/api"
+          VITE_API_BASE_PROD: "${{ secrets.ADMIN_STUDIO_PROD_URL }}/api"
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
