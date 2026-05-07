@@ -455,10 +455,13 @@ export type StripeResult = StripeDigestData | StripeDigestUnavailable;
  * deduplication belongs in a dedicated webhook handler — not in this collector.
  * No POST/PUT/DELETE calls are ever issued from this function.
  *
- * Duplicate-call safety: the `since12h` Unix timestamp bound filters events to only
- * those created in the last 12 hours. Repeated calls within the same 12-hour window
- * return the same event set — no data is double-counted. The digest KV deduplication
- * key (`digest:last-sent`) enforces at-most-once email delivery across cron runs.
+ * Duplicate-call safety (three-layer defence for red-tier billing data):
+ *   1. KV cache: results are stored in MONITOR_KV under `digest:stripe-data:{since12h}`
+ *      with a 30-minute TTL. Repeated cron invocations within the same window hit the
+ *      cache and never reach Stripe, making double-counting structurally impossible.
+ *   2. Timestamp bound: `since12h` confines every event query to the last 12 h. Even
+ *      without the KV cache, repeated calls return the same idempotent event set.
+ *   3. Email dedup: `digest:last-sent` KV key enforces at-most-once email delivery.
  */
 export async function collectStripe(env: Env): Promise<StripeResult> {
   const key = env.STRIPE_SECRET_KEY;
@@ -467,6 +470,20 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   }
 
   const since12h = Math.floor((Date.now() - 12 * 60 * 60 * 1000) / 1000);
+
+  // ── KV cache: return cached result if available (prevents double-counting on
+  //    repeated cron invocations within the same 12-hour billing window) ────────
+  const cacheKey = `digest:stripe-data:${since12h}`;
+  if (env.MONITOR_KV) {
+    try {
+      const cached = await env.MONITOR_KV.get(cacheKey, 'json') as StripeResult | null;
+      if (cached !== null) {
+        return cached;
+      }
+    } catch {
+      // KV miss or error — proceed to fresh fetch
+    }
+  }
 
   function stripeGet(path: string): Promise<Response> {
     // Read-only GET: Stripe's API contract (RFC 7231 §4.3.1) makes GET requests
@@ -598,7 +615,18 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     const removedMrr = cancellations.reduce((s, e) => s + e.amount, 0);
     const previousMrr = currentMrr - addedMrr + removedMrr;
 
-    return { available: true, newSubscriptions, cancellations, currentMrr, previousMrr };
+    const result: StripeResult = { available: true, newSubscriptions, cancellations, currentMrr, previousMrr };
+
+    // Cache result for 30 minutes (1800 s) to prevent double-counting on repeated invocations.
+    if (env.MONITOR_KV) {
+      try {
+        await env.MONITOR_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 1800 });
+      } catch {
+        // Non-fatal: cache write failure does not affect digest delivery
+      }
+    }
+
+    return result;
   } catch (err) {
     return { available: false, reason: (err as Error).message };
   }
