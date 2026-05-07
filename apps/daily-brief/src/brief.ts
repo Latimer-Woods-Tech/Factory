@@ -123,7 +123,8 @@ export async function runDailyBrief(env: Env): Promise<void> {
 
   for (const [i, result] of sendResults.entries()) {
     if (result.status === 'rejected') {
-      console.error(`[daily-brief] email send failed for ${recipients[i]}:`, result.reason);
+      // Omit email address from log to avoid PII in Worker logs.
+      console.error(`[daily-brief] email send failed (recipient ${i + 1}/${recipients.length}):`, result.reason);
     }
   }
 }
