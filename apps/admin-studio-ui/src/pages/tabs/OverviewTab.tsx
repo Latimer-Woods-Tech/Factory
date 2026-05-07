@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api.js';
 import { AppHealthGrid } from '../../components/AppHealthGrid.js';
 import { DeployVersionsTable } from '../../components/DeployVersionsTable.js';
+import { SyntheticJourneyPanel } from '../../components/SyntheticJourneyPanel.js';
 
 interface Me {
   env: string;
@@ -115,6 +116,8 @@ export function OverviewTab() {
       {me && (
         <>
           <AppHealthGrid env={me.env} />
+
+          <SyntheticJourneyPanel />
 
           {/* PostHog */}
           <div className="rounded border border-slate-800 bg-slate-900 p-4">
