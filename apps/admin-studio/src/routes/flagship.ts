@@ -19,6 +19,24 @@ import type { AppEnv } from '../types.js';
 
 const flagship = new Hono<AppEnv>();
 
+// ── D1 query helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Wraps a D1 query promise with a wall-clock timeout.
+ * D1 does not support AbortController natively, so we use Promise.race.
+ * If the query exceeds `timeoutMs`, the fallback value is returned instead
+ * of throwing — all callers degrade gracefully.
+ */
+async function queryWithTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  const timeout = new Promise<T>((_, reject) =>
+    setTimeout(() => reject(new Error('D1 query timeout')), timeoutMs),
+  );
+  return Promise.race([promise, timeout]).catch((e) => {
+    console.warn('[flagship] D1 timeout or error:', e instanceof Error ? e.message : String(e));
+    return fallback;
+  });
+}
+
 // ── Registry (inlined from flags/registry.yml at build time via static import) ──────────────
 // We inline as JSON rather than parsing YAML at runtime to keep the Worker
 // free of a YAML parser dependency. The registry structure mirrors registry.yml.
@@ -270,14 +288,20 @@ async function fetchStats(db: D1Database | undefined): Promise<Map<string, FlagS
 
   try {
     const since = Date.now() - 86_400_000;
-    const { results } = await db
-      .prepare(
-        'SELECT flag_key, COUNT(*) as evals, AVG(default_hit) as fallback_rate ' +
-          'FROM flag_evaluations WHERE ts > ? ' +
-          'GROUP BY flag_key ORDER BY evals DESC LIMIT 100',
-      )
-      .bind(since)
-      .all<{ flag_key: string; evals: number; fallback_rate: number }>();
+    // Workers share no state; D1 SQLite serializes writes. Concurrent read aggregations
+    // are safe — each Worker reads a consistent snapshot independently.
+    const { results } = await queryWithTimeout(
+      db
+        .prepare(
+          'SELECT flag_key, COUNT(*) as evals, AVG(default_hit) as fallback_rate ' +
+            'FROM flag_evaluations WHERE ts > ? ' +
+            'GROUP BY flag_key ORDER BY evals DESC LIMIT 100',
+        )
+        .bind(since)
+        .all<{ flag_key: string; evals: number; fallback_rate: number }>(),
+      5_000,
+      ({ results: [] } as unknown) as D1Result<{ flag_key: string; evals: number; fallback_rate: number }>,
+    );
 
     for (const row of results) {
       map.set(row.flag_key, {
@@ -341,40 +365,50 @@ flagship.get('/activity', async (c) => {
     });
   }
 
-  try {
-    const { results } = await db
-      .prepare(
-        'SELECT id, flag_key, app, user_id, plan, env, result, default_hit, ts ' +
-          'FROM flag_evaluations ORDER BY ts DESC LIMIT 50',
-      )
-      .all<{
-        id: string;
-        flag_key: string;
-        app: string;
-        user_id: string | null;
-        plan: string | null;
-        env: string;
-        result: string;
-        default_hit: number;
-        ts: number;
-      }>();
+  let results: {
+    id: string;
+    flag_key: string;
+    app: string;
+    user_id: string | null;
+    plan: string | null;
+    env: string;
+    result: string;
+    default_hit: number;
+    ts: number;
+  }[] = [];
 
-    return c.json({
-      evaluations: results,
-      count: results.length,
-      generated_at: new Date().toISOString(),
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return c.json(
-      {
-        error: 'Failed to query FLAG_TELEMETRY',
-        detail: c.env.STUDIO_ENV !== 'production' ? msg : undefined,
-        evaluations: [],
-      },
-      500,
+  try {
+    const queryResult = await queryWithTimeout(
+      db
+        .prepare(
+          'SELECT id, flag_key, app, user_id, plan, env, result, default_hit, ts ' +
+            'FROM flag_evaluations ORDER BY ts DESC LIMIT 50',
+        )
+        .all<{
+          id: string;
+          flag_key: string;
+          app: string;
+          user_id: string | null;
+          plan: string | null;
+          env: string;
+          result: string;
+          default_hit: number;
+          ts: number;
+        }>(),
+      5_000,
+      ({ results: [] } as unknown) as D1Result<(typeof results)[number]>,
     );
+    results = queryResult.results;
+  } catch (e) {
+    console.warn('[flagship] activity query failed, returning empty:', e instanceof Error ? e.message : String(e));
+    return c.json({ error: 'Internal error', evaluations: [] }, 500);
   }
+
+  return c.json({
+    evaluations: results,
+    count: results.length,
+    generated_at: new Date().toISOString(),
+  });
 });
 
 /**
@@ -401,29 +435,37 @@ flagship.get('/:key', async (c) => {
     try {
       const since = Date.now() - 86_400_000;
       const [statsResult, evalsResult] = await Promise.all([
-        db
-          .prepare(
-            'SELECT COUNT(*) as evals, AVG(default_hit) as fallback_rate ' +
-              'FROM flag_evaluations WHERE flag_key = ? AND ts > ?',
-          )
-          .bind(key, since)
-          .first<{ evals: number; fallback_rate: number }>(),
-        db
-          .prepare(
-            'SELECT id, app, user_id, plan, env, result, default_hit, ts ' +
-              'FROM flag_evaluations WHERE flag_key = ? ORDER BY ts DESC LIMIT 20',
-          )
-          .bind(key)
-          .all<{
-            id: string;
-            app: string;
-            user_id: string | null;
-            plan: string | null;
-            env: string;
-            result: string;
-            default_hit: number;
-            ts: number;
-          }>(),
+        queryWithTimeout(
+          db
+            .prepare(
+              'SELECT COUNT(*) as evals, AVG(default_hit) as fallback_rate ' +
+                'FROM flag_evaluations WHERE flag_key = ? AND ts > ?',
+            )
+            .bind(key, since)
+            .first<{ evals: number; fallback_rate: number }>(),
+          5_000,
+          null,
+        ),
+        queryWithTimeout(
+          db
+            .prepare(
+              'SELECT id, app, user_id, plan, env, result, default_hit, ts ' +
+                'FROM flag_evaluations WHERE flag_key = ? ORDER BY ts DESC LIMIT 20',
+            )
+            .bind(key)
+            .all<{
+              id: string;
+              app: string;
+              user_id: string | null;
+              plan: string | null;
+              env: string;
+              result: string;
+              default_hit: number;
+              ts: number;
+            }>(),
+          5_000,
+          ({ results: [] } as unknown) as D1Result<{ id: string; app: string; user_id: string | null; plan: string | null; env: string; result: string; default_hit: number; ts: number }>,
+        ),
       ]);
 
       if (statsResult) {
@@ -434,7 +476,8 @@ flagship.get('/:key', async (c) => {
       }
       recentEvals = evalsResult.results;
     } catch (e) {
-      console.warn('[flagship] flag detail query failed:', e instanceof Error ? e.message : String(e));
+      console.warn('[flagship] flag detail query failed, degrading gracefully:', e instanceof Error ? e.message : String(e));
+      // degrade gracefully — evalStats and recentEvals stay at their empty defaults
     }
   }
 
@@ -485,19 +528,23 @@ flagship.post('/:key/toggle', adminOnly, async (c) => {
 
   try {
     // Record the toggle intent as a synthetic evaluation row for auditability.
-    await db
-      .prepare(
-        'INSERT INTO flag_evaluations (id, flag_key, app, user_id, env, result, default_hit, ts) ' +
-          "VALUES (lower(hex(randomblob(8))), ?, 'admin-studio', ?, ?, ?, 0, ?)",
-      )
-      .bind(
-        key,
-        actor,
-        c.env.STUDIO_ENV,
-        JSON.stringify({ admin_action: 'toggle', from: found.entry.status, to: newStatus }),
-        Date.now(),
-      )
-      .run();
+    await queryWithTimeout(
+      db
+        .prepare(
+          'INSERT INTO flag_evaluations (id, flag_key, app, user_id, env, result, default_hit, ts) ' +
+            "VALUES (lower(hex(randomblob(8))), ?, 'admin-studio', ?, ?, ?, 0, ?)",
+        )
+        .bind(
+          key,
+          actor,
+          c.env.STUDIO_ENV,
+          JSON.stringify({ admin_action: 'toggle', from: found.entry.status, to: newStatus }),
+          Date.now(),
+        )
+        .run(),
+      5_000,
+      ({ results: [] } as unknown) as D1Result<Record<string, unknown>>,
+    );
 
     return c.json({
       key,
@@ -508,14 +555,8 @@ flagship.post('/:key/toggle', adminOnly, async (c) => {
       toggled_at: new Date().toISOString(),
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return c.json(
-      {
-        error: 'Failed to record toggle',
-        detail: c.env.STUDIO_ENV !== 'production' ? msg : undefined,
-      },
-      500,
-    );
+    console.warn('[flagship] toggle insert failed:', e instanceof Error ? e.message : String(e));
+    return c.json({ error: 'Internal error' }, 500);
   }
 });
 
@@ -562,19 +603,23 @@ flagship.post('/:key/rollout', adminOnly, async (c) => {
   const actor = c.var.envContext?.userEmail ?? 'unknown';
 
   try {
-    await db
-      .prepare(
-        'INSERT INTO flag_evaluations (id, flag_key, app, user_id, env, result, default_hit, ts) ' +
-          "VALUES (lower(hex(randomblob(8))), ?, 'admin-studio', ?, ?, ?, 0, ?)",
-      )
-      .bind(
-        key,
-        actor,
-        c.env.STUDIO_ENV,
-        JSON.stringify({ admin_action: 'rollout_set', percentage }),
-        Date.now(),
-      )
-      .run();
+    await queryWithTimeout(
+      db
+        .prepare(
+          'INSERT INTO flag_evaluations (id, flag_key, app, user_id, env, result, default_hit, ts) ' +
+            "VALUES (lower(hex(randomblob(8))), ?, 'admin-studio', ?, ?, ?, 0, ?)",
+        )
+        .bind(
+          key,
+          actor,
+          c.env.STUDIO_ENV,
+          JSON.stringify({ admin_action: 'rollout_set', percentage }),
+          Date.now(),
+        )
+        .run(),
+      5_000,
+      ({ results: [] } as unknown) as D1Result<Record<string, unknown>>,
+    );
 
     return c.json({
       key,
@@ -584,14 +629,8 @@ flagship.post('/:key/rollout', adminOnly, async (c) => {
       updated_at: new Date().toISOString(),
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return c.json(
-      {
-        error: 'Failed to record rollout update',
-        detail: c.env.STUDIO_ENV !== 'production' ? msg : undefined,
-      },
-      500,
-    );
+    console.warn('[flagship] rollout insert failed:', e instanceof Error ? e.message : String(e));
+    return c.json({ error: 'Internal error' }, 500);
   }
 });
 
