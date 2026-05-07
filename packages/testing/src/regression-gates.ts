@@ -27,6 +27,7 @@ type AnyValue = unknown;
 // Types
 // ---------------------------------------------------------------------------
 
+/** Lighthouse audit scores and Web Vitals collected by {@link collectLighthouse}. */
 export interface LighthouseMetrics {
   performance: number;
   accessibility: number;
@@ -37,6 +38,7 @@ export interface LighthouseMetrics {
   cls: number;
 }
 
+/** Pixel-level diff result returned by {@link compareScreenshots}. */
 export interface ScreenshotDiffResult {
   match: boolean;
   pixelDiff: number;
@@ -44,12 +46,14 @@ export interface ScreenshotDiffResult {
   message: string;
 }
 
+/** File paths for each viewport screenshot captured by {@link captureScreenshots}. */
 export interface CapturedScreenshots {
   desktop: string;
   mobile: string;
   tablet: string;
 }
 
+/** Threshold values used by {@link assertLighthouseBudget} to gate CI on performance. */
 export interface PerformanceBudget {
   performanceScore: number;
   fcp: number;
@@ -61,6 +65,7 @@ export interface PerformanceBudget {
 // Performance Budget Defaults
 // ---------------------------------------------------------------------------
 
+/** Default per-route performance budgets used when no custom budget is supplied. */
 export const DEFAULT_PERFORMANCE_BUDGETS: Record<string, PerformanceBudget> = {
   homepage: {
     performanceScore: 80,

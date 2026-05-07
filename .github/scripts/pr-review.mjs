@@ -1135,6 +1135,11 @@ async function main() {
       // Path-based false positives: CI runner/config/docs/non-worker files.
       if (NON_WORKER_PATH_PREFIXES.some(p => c.file.startsWith(p))) return false;
 
+      // File-type false positives: spec/test files, config files, non-Worker extensions.
+      // LLMs sometimes flag process.env/Buffer/require in test files that run on GitHub
+      // Actions runners (not in Cloudflare Workers V8 isolates).
+      if (isNonWorkerFile(c.file)) return false;
+
       // Frontend UI code is not Workers runtime code; Workers hard constraints
       // (like mandatory fetch handling semantics) should not block merge here.
       if (isFrontendUiFile(c.file)) return false;

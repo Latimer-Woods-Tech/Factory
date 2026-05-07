@@ -105,7 +105,7 @@ const PROMPT_LEAK_PATTERNS = [
 ] as const;
 
 const PLACEHOLDER_PATTERNS = [
-  /\{\{[^}]+\}\}/,
+  /\{\{[^{}]+\}\}/,
   /\[insert [^\]]+\]/i,
   /\bTODO\b/,
   /\bTBD\b/,
