@@ -18,6 +18,7 @@
 /** Wire-format version. Increment on breaking schema change. */
 export const MANIFEST_VERSION = 1;
 
+/** Auth gating level — determines token handling in smoke tests and admin UI. */
 export type AuthRequirement = 'public' | 'session' | 'admin' | 'webhook';
 
 /**
@@ -54,6 +55,7 @@ export interface SmokeProbe {
   readonly expectContains?: string;
 }
 
+/** One entry in the function manifest describing a single HTTP endpoint. */
 export interface ManifestEntry {
   /** HTTP method, e.g. 'GET', 'POST' */
   readonly method: string;
@@ -75,6 +77,7 @@ export interface ManifestEntry {
   readonly tags?: ReadonlyArray<string>;
 }
 
+/** Full function manifest document served at GET /manifest by each Factory app. */
 export interface FunctionManifest {
   /** Schema version */
   readonly manifestVersion: typeof MANIFEST_VERSION;
