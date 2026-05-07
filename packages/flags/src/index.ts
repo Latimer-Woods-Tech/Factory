@@ -10,8 +10,12 @@
 export type { FlagKey, FlagContext, FlagsEnv, FlagClient, FlagsbindingType } from './types.js';
 import type { FlagContext, FlagsEnv, FlagClient, FlagKey } from './types.js';
 import { recordEvaluation } from './telemetry.js';
+import { withTimeout } from './timeout.js';
 
 const FLAG_KEY_RE = /^(global|[a-z][a-z0-9-]*):(ks|ro|ex|cfg|ops):[a-z][a-z0-9_]{0,50}$/;
+
+/** Milliseconds before a Flagship API call is abandoned and the fallback is returned. */
+const FLAGSHIP_TIMEOUT_MS = 5_000;
 
 function guard(key: string, env: string): void {
   if (!FLAG_KEY_RE.test(key)) {
@@ -42,7 +46,7 @@ export function createFlagClient(
       guard(key, envStr);
       let r = fallback, hit = true;
       try {
-        r = await workerEnv.FLAGS.getBooleanValue(key, fallback, fctx);
+        r = await withTimeout(workerEnv.FLAGS.getBooleanValue(key, fallback, fctx), FLAGSHIP_TIMEOUT_MS);
         hit = r === fallback;
       } catch (e) {
         console.warn('[flags] boolean(' + key + ') Flagship call failed, returning fallback:', e instanceof Error ? e.message : String(e));
@@ -55,7 +59,7 @@ export function createFlagClient(
       guard(key, envStr);
       let r = true, hit = true;
       try {
-        r = await workerEnv.FLAGS.getBooleanValue(key, true, fctx);
+        r = await withTimeout(workerEnv.FLAGS.getBooleanValue(key, true, fctx), FLAGSHIP_TIMEOUT_MS);
         hit = r === true;
       } catch (e) {
         console.warn('[flags] killSwitch(' + key + ') Flagship call failed, returning fallback:', e instanceof Error ? e.message : String(e));
@@ -68,7 +72,7 @@ export function createFlagClient(
       guard(key, envStr);
       let r = fallback, hit = true;
       try {
-        r = await workerEnv.FLAGS.getStringValue(key, fallback, fctx);
+        r = await withTimeout(workerEnv.FLAGS.getStringValue(key, fallback, fctx), FLAGSHIP_TIMEOUT_MS);
         hit = r === fallback;
       } catch (e) {
         console.warn('[flags] string(' + key + ') Flagship call failed, returning fallback:', e instanceof Error ? e.message : String(e));
@@ -81,7 +85,7 @@ export function createFlagClient(
       guard(key, envStr);
       let r = fallback, hit = true;
       try {
-        r = await workerEnv.FLAGS.getNumberValue(key, fallback, fctx);
+        r = await withTimeout(workerEnv.FLAGS.getNumberValue(key, fallback, fctx), FLAGSHIP_TIMEOUT_MS);
         hit = r === fallback;
       } catch (e) {
         console.warn('[flags] number(' + key + ') Flagship call failed, returning fallback:', e instanceof Error ? e.message : String(e));
@@ -94,7 +98,7 @@ export function createFlagClient(
       guard(key, envStr);
       let r = fallback, hit = true;
       try {
-        r = await workerEnv.FLAGS.getJSONValue<T>(key, fallback, fctx);
+        r = await withTimeout(workerEnv.FLAGS.getJSONValue<T>(key, fallback, fctx), FLAGSHIP_TIMEOUT_MS);
         hit = JSON.stringify(r) === JSON.stringify(fallback);
       } catch (e) {
         console.warn('[flags] json(' + key + ') Flagship call failed, returning fallback:', e instanceof Error ? e.message : String(e));

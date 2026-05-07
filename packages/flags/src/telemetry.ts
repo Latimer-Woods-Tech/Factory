@@ -7,6 +7,10 @@
  */
 
 import type { FlagContext } from './types.js';
+import { withTimeout } from './timeout.js';
+
+/** Milliseconds before a D1 telemetry write is abandoned. */
+const TELEMETRY_TIMEOUT_MS = 3_000;
 
 export interface EvaluationRecord {
   flag_key: string;
@@ -38,18 +42,21 @@ export function recordEvaluation(
     default_hit: defaultHit ? 1 : 0,
     ts: Date.now(),
   };
-  const write = db.prepare(
-    'INSERT INTO flag_evaluations (flag_key, app, user_id, plan, env, result, default_hit, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(
-    record.flag_key,
-    record.app,
-    record.user_id,
-    record.plan,
-    record.env,
-    record.result,
-    record.default_hit,
-    record.ts,
-  ).run().catch((e: unknown) => {
+  const write = withTimeout(
+    db.prepare(
+      'INSERT INTO flag_evaluations (flag_key, app, user_id, plan, env, result, default_hit, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      record.flag_key,
+      record.app,
+      record.user_id,
+      record.plan,
+      record.env,
+      record.result,
+      record.default_hit,
+      record.ts,
+    ).run(),
+    TELEMETRY_TIMEOUT_MS,
+  ).catch((e: unknown) => {
     // Non-fatal: telemetry must never break the hot path, but failures should be observable.
     console.warn('[flags] telemetry write failed:', e instanceof Error ? e.message : String(e));
   });
