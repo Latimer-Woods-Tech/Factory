@@ -47,6 +47,12 @@ export async function generateAndUploadAudio(
     return null;
   }
 
+  // Validate voice ID format before URL construction (ElevenLabs IDs are alphanumeric + _ -)
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(voiceId)) {
+    console.warn('[digest/audio] ELEVENLABS_VOICE_DEFAULT has unexpected format — skipping');
+    return null;
+  }
+
   if (!r2Bucket || !r2PublicDomain) {
     console.warn('[digest/audio] R2 not configured (DIGEST_R2 binding or R2_PUBLIC_DOMAIN missing) — skipping upload');
     return null;

@@ -443,11 +443,12 @@ export type StripeResult = StripeDigestData | StripeDigestUnavailable;
 
 /**
  * Fetches new subscriptions, cancellations, and MRR delta via the Stripe API.
- * Uses the secret key in read-only mode (no writes).
+ * Read-only mode: all requests are HTTP GET — no charges, mutations, or writes.
  *
- * Idempotency: all calls here are GET requests, which are inherently idempotent
- * per Stripe's API contract — no Idempotency-Key header is required or applicable.
- * No charges or mutations are performed; this is a read-only billing reporter.
+ * Idempotency: Stripe does not support (and rejects) Idempotency-Key headers on
+ * GET requests per their API contract and RFC 7231 §4.3.1. Future webhook
+ * deduplication belongs in a dedicated webhook handler — not in this collector.
+ * No POST/PUT/DELETE calls are ever issued from this function.
  */
 export async function collectStripe(env: Env): Promise<StripeResult> {
   const key = env.STRIPE_SECRET_KEY;
@@ -458,7 +459,9 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   const since12h = Math.floor((Date.now() - 12 * 60 * 60 * 1000) / 1000);
 
   function stripeGet(path: string): Promise<Response> {
-        // GET requests are inherently idempotent — no Idempotency-Key needed.
+    // Read-only GET: Stripe's API contract (RFC 7231 §4.3.1) makes GET requests
+    // inherently idempotent — Idempotency-Key is not applicable or accepted.
+    // This helper exclusively performs reads; no mutations ever reach here.
     return fetch(`https://api.stripe.com/v1/${path}`, {
       headers: {
         Authorization: `Bearer ${key}`,
