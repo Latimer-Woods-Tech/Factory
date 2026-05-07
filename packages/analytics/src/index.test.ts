@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import { initAnalytics, type AnalyticsConfig } from './index';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
+
+type FetchFn = (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 type FetchCall = [string, RequestInit];
 
@@ -32,12 +34,10 @@ function makeConfig(overrides: Partial<AnalyticsConfig> = {}): AnalyticsConfig {
 }
 
 describe('initAnalytics', () => {
-  let fetchMock: ReturnType<typeof vi.fn<[RequestInfo | URL, RequestInit?], Promise<Response>>>;
+  let fetchMock: Mock<FetchFn>;
 
   beforeEach(() => {
-    fetchMock = vi.fn<[RequestInfo | URL, RequestInit?], Promise<Response>>(() =>
-      Promise.resolve(okResponse()),
-    );
+    fetchMock = vi.fn<FetchFn>(() => Promise.resolve(okResponse()));
   });
 
   describe('track', () => {
@@ -63,7 +63,7 @@ describe('initAnalytics', () => {
       expect(body.properties.button).toBe('cta');
       expect(body.properties.app_id).toBe('test-app');
       // factory_events NOT called for non-business events
-      const db = config.db as unknown as { execute: ReturnType<typeof vi.fn> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).not.toHaveBeenCalled();
     });
 
@@ -89,7 +89,7 @@ describe('initAnalytics', () => {
       expect(body.event).toBe('revenue.mrr_updated');
 
       // factory_events call
-      const db = config.db as unknown as { execute: ReturnType<typeof vi.fn> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -98,7 +98,7 @@ describe('initAnalytics', () => {
       const analytics = initAnalytics(config, { fetch: fetchMock });
       await analytics.track('subscription.created', { plan: 'pro' });
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const db = config.db as unknown as { execute: ReturnType<typeof vi.fn> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -107,14 +107,12 @@ describe('initAnalytics', () => {
       const analytics = initAnalytics(config, { fetch: fetchMock });
       await analytics.track('compliance.gdpr_request', { userId: 'u' });
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const db = config.db as unknown as { execute: ReturnType<typeof vi.fn> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
     it('throws InternalError when PostHog returns non-2xx', async () => {
-      fetchMock = vi.fn<[RequestInfo | URL, RequestInit?], Promise<Response>>(() =>
-        Promise.resolve(new Response('bad', { status: 500 })),
-      );
+      fetchMock = vi.fn<FetchFn>(() => Promise.resolve(new Response('bad', { status: 500 })));
       const analytics = initAnalytics(makeConfig(), { fetch: fetchMock });
       await expect(analytics.track('button.clicked')).rejects.toMatchObject({
         code: 'INTERNAL_ERROR',
@@ -123,9 +121,8 @@ describe('initAnalytics', () => {
 
     it('throws InternalError when factory_events insert fails', async () => {
       const db = makeDb();
-      (db as unknown as { execute: ReturnType<typeof vi.fn> }).execute = (
-        vi.fn(() => Promise.reject(new Error('db err')))
-      ) as unknown as ReturnType<typeof vi.fn>;
+      (db as unknown as { execute: Mock<FactoryDb['execute']> }).execute =
+        vi.fn<FactoryDb['execute']>(() => Promise.reject(new Error('db err')));
       const analytics = initAnalytics(
         { postHogKey: 'k', db, appId: 'app' },
         { fetch: fetchMock },
@@ -161,7 +158,7 @@ describe('initAnalytics', () => {
       await analytics.businessEvent('revenue.invoice_paid', { amount: 9900 }, 'user-4');
 
       expect(fetchMock).not.toHaveBeenCalled();
-      const db = config.db as unknown as { execute: ReturnType<typeof vi.fn> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -171,7 +168,7 @@ describe('initAnalytics', () => {
       await analytics.businessEvent('compliance.deletion_request', { reason: 'gdpr' });
 
       expect(fetchMock).not.toHaveBeenCalled();
-      const db = config.db as unknown as { execute: ReturnType<typeof vi.fn> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
   });
