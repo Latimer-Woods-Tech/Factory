@@ -7,7 +7,15 @@ vi.mock('@latimer-woods-tech/monitoring', () => ({
 }));
 
 import { captureError } from '@latimer-woods-tech/monitoring';
-import { createLogger, generateRequestId, sanitizeId, withRequestId } from './index.js';
+import {
+  createLogger,
+  generateRequestId,
+  getRequestId,
+  requestTracingMiddleware,
+  sanitizeId,
+  tracedFetch,
+  withRequestId,
+} from './index.js';
 
 // ---------------------------------------------------------------------------
 // createLogger
@@ -220,5 +228,99 @@ describe('sanitizeId', () => {
 
   it('returns an empty string for an empty string', () => {
     expect(sanitizeId('')).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// requestTracingMiddleware
+// ---------------------------------------------------------------------------
+
+describe('requestTracingMiddleware', () => {
+  it('mints a new request ID when x-request-id header is absent', async () => {
+    const app = new Hono();
+    app.use('*', requestTracingMiddleware());
+    app.get('/test', (c) => c.json({ id: c.get('requestId') }));
+
+    const res = await app.request('/test');
+    const body = await res.json() as { id: string };
+    expect(typeof body.id).toBe('string');
+    expect(body.id.length).toBeGreaterThan(0);
+  });
+
+  it('propagates incoming x-request-id header', async () => {
+    const app = new Hono();
+    app.use('*', requestTracingMiddleware());
+    app.get('/test', (c) => c.json({ id: c.get('requestId') }));
+
+    const res = await app.request('/test', { headers: { 'x-request-id': 'upstream-abc123' } });
+    const body = await res.json() as { id: string };
+    expect(body.id).toBe('upstream-abc123');
+  });
+
+  it('echoes x-request-id in the response header', async () => {
+    const app = new Hono();
+    app.use('*', requestTracingMiddleware());
+    app.get('/test', (c) => c.json({ ok: true }));
+
+    const res = await app.request('/test', { headers: { 'x-request-id': 'my-id' } });
+    expect(res.headers.get('x-request-id')).toBe('my-id');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getRequestId
+// ---------------------------------------------------------------------------
+
+describe('getRequestId', () => {
+  it('returns the requestId stored in context', async () => {
+    const app = new Hono();
+    app.use('*', requestTracingMiddleware());
+    let captured: string | undefined;
+    app.get('/test', (c) => {
+      captured = getRequestId(c);
+      return c.json({ ok: true });
+    });
+
+    await app.request('/test', { headers: { 'x-request-id': 'trace-xyz' } });
+    expect(captured).toBe('trace-xyz');
+  });
+
+  it('returns undefined when requestId is not set', () => {
+    const mockCtx = { get: (_key: string) => undefined as string | undefined };
+    expect(getRequestId(mockCtx)).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// tracedFetch
+// ---------------------------------------------------------------------------
+
+describe('tracedFetch', () => {
+  it('injects x-request-id header into outbound requests', async () => {
+    let capturedHeaders: Headers | undefined;
+    const mockFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedHeaders = new Headers(init?.headers);
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+
+    const tfetch = tracedFetch('test-request-id', mockFetch as unknown as typeof fetch);
+    await tfetch('https://example.workers.dev/api', { method: 'GET' });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    expect(capturedHeaders?.get('x-request-id')).toBe('test-request-id');
+  });
+
+  it('preserves existing headers alongside the injected request ID', async () => {
+    let capturedHeaders: Headers | undefined;
+    const mockFetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedHeaders = new Headers(init?.headers);
+      return new Response('', { status: 200 });
+    });
+
+    const tfetch = tracedFetch('my-id', mockFetch as unknown as typeof fetch);
+    await tfetch('https://example.workers.dev/', { headers: { authorization: 'Bearer token' } });
+
+    expect(capturedHeaders?.get('authorization')).toBe('Bearer token');
+    expect(capturedHeaders?.get('x-request-id')).toBe('my-id');
   });
 });
