@@ -466,9 +466,9 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     // The since12h timestamp bound acts as the natural deduplication boundary:
     // repeated calls within the same window return the same event set.
     //
-    // Network errors (DNS failure, AbortError on timeout) are caught and converted
-    // to a synthetic 503 Response so all callers handle failure uniformly via
-    // res.ok rather than needing per-call try/catch.
+    // Network errors are caught and converted to a synthetic 503 Response so all
+    // callers handle failure uniformly via res.ok rather than needing per-call try/catch.
+    // AbortError (timeout) is logged separately from DNS/connection failures.
     return fetch(`https://api.stripe.com/v1/${path}`, {
       headers: {
         Authorization: `Bearer ${key}`,
@@ -476,31 +476,49 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     }).catch((err: unknown) => {
-      console.error('[digest/collect] stripeGet network error:', (err as Error).message?.slice(0, 100));
+      const e = err as Error;
+      if (e.name === 'AbortError') {
+        console.warn(`[digest/collect] stripeGet timed out after ${FETCH_TIMEOUT_MS}ms — returning synthetic 503`);
+      } else {
+        console.error('[digest/collect] stripeGet network error:', e.message?.slice(0, 100));
+      }
       return new Response(null, { status: 503 });
     });
   }
 
+  // Retries stripeGet once on transient failures (429 rate limit or 5xx server errors)
+  // with a 2-second delay. AbortError (timeout) is not retried — a second timeout only delays.
+  async function stripeGetWithRetry(path: string): Promise<Response> {
+    const res = await stripeGet(path);
+    if (res.status === 429 || res.status >= 500) {
+      logStripeError(`${path} (first attempt)`, res.status);
+      await new Promise<void>((r) => setTimeout(r, 2_000));
+      return stripeGet(path);
+    }
+    return res;
+  }
+
   // Log specific Stripe error categories to aid operations:
-  // 401 = auth failure (check STRIPE_SECRET_KEY), 429 = rate limit (transient).
+  // 401 = auth failure (check STRIPE_SECRET_KEY), 429 = rate limit (transient, will retry).
   function logStripeError(label: string, status: number): void {
     if (status === 401) {
       console.error(`[digest/collect] Stripe auth failure on ${label} — verify STRIPE_SECRET_KEY`);
     } else if (status === 429) {
-      console.warn(`[digest/collect] Stripe rate limit on ${label} — digest will retry next scheduled run`);
+      console.warn(`[digest/collect] Stripe rate limit on ${label} — retrying after 2s backoff`);
     } else if (status >= 500) {
-      console.warn(`[digest/collect] Stripe server error ${status} on ${label}`);
+      console.warn(`[digest/collect] Stripe server error ${status} on ${label} — retrying after 2s backoff`);
     } else {
       console.warn(`[digest/collect] Stripe ${status} on ${label}`);
     }
   }
 
   try {
-    // Fetch subscription events (created + deleted) in the past 12h
+    // Fetch subscription events (created + deleted) in the past 12h.
+    // stripeGetWithRetry handles transient 429/5xx with one retry before failing.
     const [createdRes, cancelledRes, subsRes] = await Promise.all([
-      stripeGet(`events?type=customer.subscription.created&created[gte]=${since12h}&limit=25`),
-      stripeGet(`events?type=customer.subscription.deleted&created[gte]=${since12h}&limit=25`),
-      stripeGet('subscriptions?status=active&limit=100'),
+      stripeGetWithRetry(`events?type=customer.subscription.created&created[gte]=${since12h}&limit=25`),
+      stripeGetWithRetry(`events?type=customer.subscription.deleted&created[gte]=${since12h}&limit=25`),
+      stripeGetWithRetry('subscriptions?status=active&limit=100'),
     ]);
 
     if (!createdRes.ok || !cancelledRes.ok || !subsRes.ok) {

@@ -63,40 +63,64 @@ export async function generateAndUploadAudio(
   // ── 1. Call ElevenLabs TTS ────────────────────────────────────────────────
   let mp3Buffer: ArrayBuffer;
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TTS_TIMEOUT_MS);
-
-    const ttsRes = await fetch(
-      `${ELEVENLABS_API_BASE}/text-to-speech/${encodeURIComponent(voiceId)}`,
-      {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          Accept: 'audio/mpeg',
-        },
-        body: JSON.stringify({
-          text: safeText,
-          model_id: 'eleven_turbo_v2',
-          voice_settings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
+    // Helper: one TTS attempt with AbortSignal.timeout for clean cancellation.
+    // Returns null on timeout or network error; returns the Response otherwise.
+    async function attemptTts(): Promise<Response | null> {
+      try {
+        return await fetch(
+          `${ELEVENLABS_API_BASE}/text-to-speech/${encodeURIComponent(voiceId)}`,
+          {
+            method: 'POST',
+            headers: {
+              'xi-api-key': apiKey,
+              'Content-Type': 'application/json',
+              Accept: 'audio/mpeg',
+            },
+            body: JSON.stringify({
+              text: safeText,
+              model_id: 'eleven_turbo_v2',
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+              },
+            }),
+            signal: AbortSignal.timeout(TTS_TIMEOUT_MS),
           },
-        }),
-        signal: ctrl.signal,
-      },
-    );
-    clearTimeout(timer);
+        );
+      } catch (err) {
+        const e = err as Error;
+        if (e.name === 'AbortError') {
+          console.warn(`[digest/audio] ElevenLabs TTS timed out after ${TTS_TIMEOUT_MS}ms`);
+        } else {
+          console.error('[digest/audio] ElevenLabs TTS fetch failed:', e.message);
+        }
+        return null;
+      }
+    }
+
+    let ttsRes = await attemptTts();
+
+    // Retry once on transient failures (429 rate limit, 5xx server errors).
+    // AbortError (timeout) is not retried — a second attempt would also likely time out.
+    if (ttsRes && (ttsRes.status === 429 || ttsRes.status >= 500)) {
+      console.warn(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status} — retrying after 3s`);
+      await new Promise<void>((r) => setTimeout(r, 3_000));
+      ttsRes = await attemptTts();
+    }
+
+    if (!ttsRes) {
+      return null;
+    }
 
     if (!ttsRes.ok) {
       const errBody = await ttsRes.text();
-      console.error(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status}: ${errBody}`);
+      console.error(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status}: ${errBody.slice(0, 200)}`);
       return null;
     }
 
     mp3Buffer = await ttsRes.arrayBuffer();
   } catch (err) {
-    console.error('[digest/audio] ElevenLabs TTS fetch failed:', (err as Error).message);
+    console.error('[digest/audio] ElevenLabs TTS unexpected error:', (err as Error).message);
     return null;
   }
 
