@@ -2,6 +2,7 @@
 export * from './env-context.js';
 export * from './audit.js';
 export * from './health.js';
+export * from './timeline.js';
 export * from './test-runner.js';
 export * from './repo.js';
 export * from './manifest.js';

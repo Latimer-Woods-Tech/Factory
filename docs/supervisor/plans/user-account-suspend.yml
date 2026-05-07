@@ -1,0 +1,75 @@
+id: user-account-suspend
+version: 1
+tier: yellow
+trigger_keywords: [suspend, ban, block, abuse, fraud, spam, violat]
+triggers:
+  labels_any_of: [moderation, abuse, fraud]
+  title_pattern: "Suspend (user|account)|Account suspension|Fraudulent (account|activity)"
+  body_patterns:
+    - "(suspend|ban|block|abuse|fraud|spam|violat)"
+preconditions:
+  - capability_exists: humandesign.user.lookup
+  - capability_exists: humandesign.user.suspend
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: user_id
+    type: string
+    validator: "^[a-zA-Z0-9\\-_]{1,64}$"
+    source: issue_body
+    referential_check: humandesign.user.lookup
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city]
+    source: issue_labels
+  - name: reason
+    type: string
+    validator: "^[\\w\\s,\\.\\-]{10,200}$"
+    source: issue_body
+steps:
+  - id: s1
+    tool: humandesign.user.lookup
+    depends_on: null
+    params:
+      id: "$slots.user_id"
+    intent: "Verify user exists and fetch current account status before suspending."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      body: |
+        **Supervisor — pre-suspension verification**
+
+        User `$slots.user_id` found:
+        - Email: $s1.email
+        - Tier: $s1.tier
+        - Status: $s1.status
+        - Created: $s1.created_at
+
+        Proposed action: **suspend** with reason: "$slots.reason"
+
+        ⚠️ This action requires CODEOWNER approval. React ✅ to this comment to authorize.
+        Once approved, the supervisor will call `$slots.affected_app.user.suspend`.
+
+        _Run ID: $RUN_ID_
+    intent: "Post verification summary and request CODEOWNER approval before executing suspension."
+    requires_human_review: true
+  - id: s3
+    tool: humandesign.user.suspend
+    depends_on: s2
+    params:
+      id: "$slots.user_id"
+      reason: "$slots.reason"
+    intent: "Suspend the user account after CODEOWNER approval."
+    requires_human_review: false
+  - id: s4
+    tool: github.addLabel
+    depends_on: s3
+    params:
+      labels: ["status:done", "moderation:suspended"]
+    intent: "Mark issue resolved."
+    requires_human_review: false
+acceptance_gate:
+  labels_added: ["status:done"]
+  tool_called: humandesign.user.suspend

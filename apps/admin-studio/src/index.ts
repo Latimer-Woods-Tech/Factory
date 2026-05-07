@@ -18,6 +18,7 @@ import tests from './routes/tests.js';
 import deploy from './routes/deploy.js';
 import ai from './routes/ai.js';
 import audit from './routes/audit.js';
+import timeline from './routes/timeline.js';
 import apps from './routes/apps.js';
 import observability from './routes/observability.js';
 import repo from './routes/repo.js';
@@ -30,6 +31,7 @@ import payouts from './routes/payouts.js';
 import stripeConnectWebhooks from './routes/webhooks-stripe-connect.js';
 import studioTestsWebhook from './routes/webhooks-studio-tests.js';
 import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.js';
+import dsr from './routes/dsr.js';
 
 const app = new Hono<AppEnv>();
 
@@ -69,6 +71,7 @@ app.use('/tests/*', envContextMiddleware(), auditMiddleware());
 app.use('/deploys/*', envContextMiddleware(), auditMiddleware());
 app.use('/ai/*', envContextMiddleware(), auditMiddleware());
 app.use('/audit/*', envContextMiddleware());
+app.use('/timeline/*', envContextMiddleware());
 app.use('/apps/*', envContextMiddleware());
 app.use('/observability/*', envContextMiddleware());
 // Audit middleware skips GET/HEAD/OPTIONS, so reads stay cheap and
@@ -80,12 +83,14 @@ app.use('/catalog/*', envContextMiddleware(), auditMiddleware());
 app.use('/smoke/*', envContextMiddleware(), auditMiddleware());
 app.use('/api/creator/*', envContextMiddleware());
 app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
+app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
 app.route('/deploys', deploy);
 app.route('/ai', ai);
 app.route('/audit', audit);
+app.route('/timeline', timeline);
 app.route('/apps', apps);
 app.route('/observability', observability);
 app.route('/repo', repo);
@@ -94,6 +99,7 @@ app.route('/smoke', smoke);
 app.route('/api/creator/onboarding', creatorOnboarding);
 app.route('/api/admin/creators', creators);
 app.route('/api/admin/payouts', payouts);
+app.route('/dsr', dsr);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {

@@ -21,6 +21,24 @@
 #   When you add a new hardcoded URL in a frontend: add it to the consumers list.
 #   When you rename a worker: update both the name and the url here after the migration.
 
+# ─── AUTOMATION DENYLIST ──────────────────────────────────────────────────────
+#
+# Repos and workers listed here are FORBIDDEN to automation at the registry level.
+# This is layer 2 of the 3-layer lockout described in docs/supervisor/FRIDGE.md rule 1.
+# Layer 1: CODEOWNERS on the target repo. Layer 3: supervisor denylist in supervisor-core.mjs.
+#
+# automation: forbidden  — The supervisor, Copilot, and any automated agent must
+#   never open a PR, touch a worker, or read data in this repo under any circumstances.
+#
+automation_denylist:
+  - id: wordis-bond
+    repo: Latimer-Woods-Tech/wordis-bond
+    automation: forbidden
+    reason: >
+      FRIDGE rule 1 — three-layer lockout (CODEOWNERS + this registry + supervisor denylist).
+      Any breach here carries TCPA / production-data-loss risk.
+      No exceptions. Contact @adrper79-dot for any human-initiated work.
+
 workers:
   - id: prime-self
     name: prime-self                                       # matches wrangler.jsonc `name`
@@ -176,12 +194,11 @@ workers:
     custom_domain: null
     health_endpoint: /health
     telemetry_required: false                              # Studio itself; telemetry not required
-    deployment_status: configured_not_live_verified_2026-04-29
+    deployment_status: live_health_verified_2026-05-06
     notes: >
-      Production worker name and URL are configured in wrangler, but `/health`
-      returned `404` when checked on 2026-04-29. Treat this as a configured
-      target, not a live-verified production surface, until a production deploy
-      plus direct health verification succeeds.
+      Production `/health` returned `200` on 2026-05-06. Treat this as a
+      live-verified production surface as of that check; re-verify after any
+      future production rename or routing change.
     critical_endpoints:
       - /health
       - /auth/login
@@ -214,6 +231,7 @@ workers:
 
   - id: videoking
     name: nichestream-api                                  # Cloudflare Worker serving VideoKing API
+    legacy_names: [videoking]                              # historical worker name used in docs; CF name is nichestream-api
     repo: Latimer-Woods-Tech/videoking
     url: https://api.itsjusus.com
     custom_domain: api.itsjusus.com

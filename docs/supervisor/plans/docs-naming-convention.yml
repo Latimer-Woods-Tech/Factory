@@ -5,8 +5,8 @@ triggers:
   labels_any_of: [docs, documentation, hardening]
   title_pattern: "^docs[(:]"
   body_patterns:
-    - "(?is)path\s*[:=]\s*(docs|documents)/"
-    - "(?is)(content|body)\s*[:=]"
+    - '(?is)path\s*[:=]\s*(docs|documents)/'
+    - '(?is)(content|body)\s*[:=]'
 preconditions:
   - capability_exists: github.readFile
   - capability_exists: github.openPR
@@ -15,7 +15,7 @@ preconditions:
 slots:
   - name: target_path
     type: string
-    validator: "^(docs|documents)/.+\.md$"
+    validator: '^(docs|documents)/.+\.md$'
     source: issue_body
   - name: parent_dir
     type: string
@@ -27,7 +27,7 @@ slots:
     source: issue_title
   - name: doc_body
     type: string
-    validator: "(?s)^.{1,200000}$"
+    validator: "^[\\s\\S]{1,200000}$"
     source: issue_body
   - name: branch_name
     type: string

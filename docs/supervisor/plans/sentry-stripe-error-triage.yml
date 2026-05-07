@@ -1,0 +1,67 @@
+id: sentry-stripe-error-triage
+version: 1
+tier: yellow
+trigger_keywords: [stripe, payment, webhook, subscription, billing, price, checkout]
+triggers:
+  labels_any_of: [bug, source:sentry]
+  title_pattern: "StripeInvalidRequest|StripeCardError|No such (price|customer|product)|stripe.*error"
+  body_patterns:
+    - "(StripeInvalidRequest|StripeCardError|stripe\\.com/docs/error-codes)"
+preconditions:
+  - capability_exists: sentry.getIssue
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: sentry_issue_id
+    type: string
+    validator: "^[A-Z][A-Z0-9\\-]+-\\d+$"
+    source: issue_body
+    referential_check: sentry.getIssue
+  - name: stripe_error_code
+    type: enum
+    values: [no_such_price, no_such_customer, no_such_product, card_declined, insufficient_funds, invalid_request_error, resource_missing]
+    source: issue_body
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city]
+    source: issue_labels
+steps:
+  - id: s1
+    tool: sentry.getIssue
+    depends_on: null
+    params:
+      issue_id: "$slots.sentry_issue_id"
+    intent: "Fetch Sentry issue to confirm Stripe error code, affected user, and stack frame."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      body: |
+        **Supervisor triage — Stripe error `$slots.stripe_error_code`**
+
+        Sentry: $slots.sentry_issue_id
+        App: $slots.affected_app
+        Error: $s1.exception_type — $s1.exception_value
+
+        **Runbook:**
+        - `no_such_price` / `no_such_product` — price/product ID in code doesn't exist in Stripe. Check if the live-mode ID was accidentally replaced with a test-mode ID. Look up `$s1.exception_value` in the Stripe dashboard and update the env var or DB row.
+        - `no_such_customer` — customer record deleted in Stripe or created in wrong mode. Check `stripe_customer_id` column for the user mentioned in the stack trace.
+        - `card_declined` / `insufficient_funds` — user-facing; no code change needed. Check if webhook handler marks the subscription as `past_due` correctly.
+        - `invalid_request_error` — inspect the Stripe API call arguments in the stack frame. Common cause: empty/null fields passed to the API.
+
+        **Next step:** A CODEOWNER should investigate the linked Sentry issue and apply the appropriate fix. If a code change is needed, file a new issue tagged `supervisor:approved-source` with the specific file + line.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a structured triage comment with app-specific Stripe error runbook."
+    requires_human_review: false
+  - id: s3
+    tool: github.addLabel
+    depends_on: s2
+    params:
+      labels: ["status:triaged", "area:billing"]
+    intent: "Mark issue as triaged so it doesn't get picked up again."
+    requires_human_review: false
+acceptance_gate:
+  comment_posted: true
+  labels_added: ["status:triaged"]

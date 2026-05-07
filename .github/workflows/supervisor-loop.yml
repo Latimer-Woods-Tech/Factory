@@ -12,14 +12,37 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: supervisor-loop-${{ github.event_name }}-${{ github.event.issue.number || inputs.issue_number || 'scheduled' }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   supervise:
+    if: |
+      github.event_name != 'issues' ||
+      (
+        github.event.action == 'labeled' &&
+        startsWith(github.event.label.name, 'agent:')
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Debounce rapid label bursts
+        run: sleep 5
+
+      - name: Log trigger context
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number || '' }}
+          ISSUE_LABEL: ${{ github.event.label.name || '' }}
+        run: |
+          echo "Event: $EVENT_NAME"
+          echo "Issue: $ISSUE_NUMBER"
+          echo "Label: $ISSUE_LABEL"
+
       - uses: actions/checkout@v6
       - uses: actions/create-github-app-token@v3
         id: app-token

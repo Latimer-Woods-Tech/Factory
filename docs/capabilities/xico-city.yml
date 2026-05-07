@@ -1,0 +1,46 @@
+app: xico-city
+repo: Latimer-Woods-Tech/xico-city
+base_url: https://xico-city.adrper79.workers.dev
+auth: admin_jwt
+supervisor_access: approved
+tiers_allowed: [green, yellow]
+
+capabilities:
+  - id: health.check
+    desc: "Worker liveness check — /health and /ready."
+    route: GET /health
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: compat.check
+    desc: "Verify factory-core package compatibility contract."
+    route: GET /factory/compat
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: user.me
+    desc: "Fetch the authenticated user's profile."
+    route: GET /api/me
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: admin.users.list
+    desc: "List users (artist roles)."
+    route: GET /admin/users
+    params_schema:
+      page: { type: integer, min: 1 }
+      limit: { type: integer, min: 1, max: 100 }
+      role: { type: string, validator: "^[a-z_]{3,40}$", optional: true }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: admin.users.suspend
+    desc: "Suspend an artist account."
+    route: POST /admin/users/:id/suspend
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+    idempotency_key: "user_id + 'suspend'"
+    side_effects: write-app
+    reversibility: reversible-with-effort
+    required_scope: supervisor.mutator-user-suspend
+    extra_guard: requires_codeowner_approval
