@@ -12,6 +12,7 @@
 
 import type { SmokeProbe, AuthRequirement } from './manifest.js';
 
+/** Single probe result returned by the smoke probe executor. */
 export interface SmokeProbeResult {
   /** Probe label (if provided) or index */
   label: string;
@@ -27,6 +28,7 @@ export interface SmokeProbeResult {
   bodyPreview?: string;
 }
 
+/** Aggregate result for a full smoke probe suite run against one endpoint. */
 export interface SmokeSuiteResult {
   /** (method path, e.g. "POST /orders/create") */
   endpoint: string;

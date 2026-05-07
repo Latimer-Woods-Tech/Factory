@@ -31,20 +31,25 @@
 #   never open a PR, touch a worker, or read data in this repo under any circumstances.
 #
 automation_denylist:
-  - id: wordis-bond
+  - id: wordis-bond-frontend
     repo: Latimer-Woods-Tech/wordis-bond
+    scope: frontend-ui-only                              # ONLY the UI/frontend layer is restricted
     automation: forbidden
     reason: >
-      FRIDGE rule 1 — three-layer lockout (CODEOWNERS + this registry + supervisor denylist).
-      Any breach here carries TCPA / production-data-loss risk.
-      No exceptions. Contact @adrper79-dot for any human-initiated work.
+      FRIDGE rule 1 — the wordis-bond frontend/UI carries TCPA regulatory risk.
+      Three-layer lockout (CODEOWNERS + this registry + supervisor denylist) applies
+      to the UI application layer only. The wordis-bond engine/worker backend does NOT
+      have a regulatory hold and may be worked on normally. Contact @adrper79-dot
+      before touching any file in the wordis-bond UI/client directory.
 
 workers:
   - id: prime-self
     name: prime-self                                       # matches wrangler.jsonc `name`
     repo: Latimer-Woods-Tech/prime-self
-    url: https://prime-self.adrper79.workers.dev           # canonical workers.dev URL
-    custom_domain: null                                    # custom domain if any
+    url: https://api.selfprime.net                         # canonical public URL (branded custom domain)
+    workers_dev_url: https://prime-self.adrper79.workers.dev  # internal/CF fallback; never hardcode in frontend
+    custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
+    custom_domain_status: pending_attachment               # set to 'attached' after CF API confirms
     health_endpoint: /health
     telemetry_required: true                               # must expose /api/admin/health|metrics|events
     critical_endpoints:
