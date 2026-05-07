@@ -222,7 +222,7 @@ export const contacts = pgTable('contacts', {
 });
 
 /**
- * consent_log — TCPA/GDPR audit trail
+ * consent_log — consent audit trail (GDPR, outreach opt-in/opt-out)
  */
 export const consent_log = pgTable('consent_log', {
   id: uuid('id').primaryKey().defaultRandom(),
