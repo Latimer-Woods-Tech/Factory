@@ -1,8 +1,9 @@
 /**
  * @latimer-woods-tech/flags — Telemetry
  *
- * Fire-and-forget logging of every flag evaluation to D1 (flag_evaluations).
+ * Logging of every flag evaluation to D1 (flag_evaluations).
  * Non-fatal: if D1 is unavailable or the write fails, the evaluation still succeeds.
+ * Pass executionCtx to guarantee the write completes before Worker exit.
  */
 
 import type { FlagContext } from './types.js';
@@ -24,6 +25,7 @@ export function recordEvaluation(
   context: FlagContext,
   result: unknown,
   defaultHit: boolean,
+  executionCtx?: Pick<ExecutionContext, 'waitUntil'>,
 ): void {
   if (!db) return;
   const record: EvaluationRecord = {
@@ -36,8 +38,7 @@ export function recordEvaluation(
     default_hit: defaultHit ? 1 : 0,
     ts: Date.now(),
   };
-  // Intentionally NOT awaited — fire-and-forget
-  db.prepare(
+  const write = db.prepare(
     'INSERT INTO flag_evaluations (flag_key, app, user_id, plan, env, result, default_hit, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
   ).bind(
     record.flag_key,
@@ -52,4 +53,9 @@ export function recordEvaluation(
     // Non-fatal: telemetry must never break the hot path, but failures should be observable.
     console.warn('[flags] telemetry write failed:', e instanceof Error ? e.message : String(e));
   });
+  // Use waitUntil when ExecutionContext is available to guarantee the write
+  // completes before the Worker exits, preventing silent telemetry loss.
+  if (executionCtx) {
+    executionCtx.waitUntil(write);
+  }
 }
