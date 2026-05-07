@@ -383,28 +383,38 @@ interface PostHogFunnelResponse {
   dataWarnings?: string[];
 }
 
-// Predefined SQL interval literals keyed by FunnelWindow — exhaustively typed so
-// TypeScript enforces that every member is covered. No user input is ever used as
-// a key; the caller validates `window` against the FunnelWindow union before lookup.
-const FUNNEL_INTERVAL: Record<FunnelWindow, string> = {
-  '24h': '24 HOUR',
-  '7d': '7 DAY',
-  '30d': '30 DAY',
+// Fully pre-built HogQL query strings for each FunnelWindow — no string interpolation
+// at the call site. TypeScript exhaustively checks that every FunnelWindow member is
+// covered, so adding a new window value is a compile-time error until queries are added.
+const FUNNEL_QUERIES: Record<FunnelWindow, {
+  dau: string;
+  prevDau: string;
+  newUsers: string;
+  churn: string;
+  kpis: string;
+}> = {
+  '24h': {
+    dau:      "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR",
+    prevDau:  "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 48 HOUR AND timestamp < now() - INTERVAL 24 HOUR",
+    newUsers: "SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL 24 HOUR)",
+    churn:    "SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 48 HOUR AND timestamp < now() - INTERVAL 24 HOUR AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR)",
+    kpis:     "SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR",
+  },
+  '7d': {
+    dau:      "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 7 DAY",
+    prevDau:  "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY",
+    newUsers: "SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL 7 DAY)",
+    churn:    "SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL 7 DAY)",
+    kpis:     "SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL 7 DAY",
+  },
+  '30d': {
+    dau:      "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 30 DAY",
+    prevDau:  "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 60 DAY AND timestamp < now() - INTERVAL 30 DAY",
+    newUsers: "SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL 30 DAY)",
+    churn:    "SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 60 DAY AND timestamp < now() - INTERVAL 30 DAY AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL 30 DAY)",
+    kpis:     "SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL 30 DAY",
+  },
 };
-
-const FUNNEL_PREV_INTERVAL: Record<FunnelWindow, string> = {
-  '24h': '48 HOUR',
-  '7d': '14 DAY',
-  '30d': '60 DAY',
-};
-
-function funnelIntervalSql(window: FunnelWindow): string {
-  return FUNNEL_INTERVAL[window];
-}
-
-function prevFunnelIntervalSql(window: FunnelWindow): string {
-  return FUNNEL_PREV_INTERVAL[window];
-}
 
 /**
  * Run a HogQL query against PostHog and return the raw results array.
@@ -447,18 +457,11 @@ observability.get('/posthog/funnel', async (c) => {
     });
   }
 
-  // `window` is user-controlled; the allowlist below is the ONLY gate before
-  // it reaches HogQL. After this assignment, `window` is always one of the three
-  // FunnelWindow literals — never a raw user string. funnelIntervalSql(window)
-  // returns only compile-time constants ('24 HOUR', '7 DAY', '30 DAY'); no user
-  // input reaches HogQL interpolation. No parameterized query API is needed here
-  // because the interpolated value is ALWAYS a server-controlled literal.
   const rawWindow = c.req.query('window') ?? '24h';
   const window: FunnelWindow =
     rawWindow === '7d' || rawWindow === '30d' ? rawWindow : '24h';
 
-  const interval = funnelIntervalSql(window);
-  const prevInterval = prevFunnelIntervalSql(window);
+  const q = FUNNEL_QUERIES[window];
 
   const ct = new AbortController();
   // 8 s leaves headroom within Cloudflare's 30 s CPU wall for multi-query fan-out.
@@ -466,31 +469,11 @@ observability.get('/posthog/funnel', async (c) => {
 
   try {
     const [dauRows, prevDauRows, newUsersRows, churnRows, funnelRows] = await Promise.all([
-      hogql(
-        host, key, projectId,
-        `SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL ${interval}`,
-        ct.signal,
-      ),
-      hogql(
-        host, key, projectId,
-        `SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL ${prevInterval} AND timestamp < now() - INTERVAL ${interval}`,
-        ct.signal,
-      ),
-      hogql(
-        host, key, projectId,
-        `SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL ${interval})`,
-        ct.signal,
-      ),
-      hogql(
-        host, key, projectId,
-        `SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL ${prevInterval} AND timestamp < now() - INTERVAL ${interval} AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL ${interval})`,
-        ct.signal,
-      ),
-      hogql(
-        host, key, projectId,
-        `SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL ${interval}`,
-        ct.signal,
-      ),
+      hogql(host, key, projectId, q.dau,      ct.signal),
+      hogql(host, key, projectId, q.prevDau,  ct.signal),
+      hogql(host, key, projectId, q.newUsers, ct.signal),
+      hogql(host, key, projectId, q.churn,    ct.signal),
+      hogql(host, key, projectId, q.kpis,     ct.signal),
     ]);
 
     // Track which queries returned null (non-ok PostHog response) so we can

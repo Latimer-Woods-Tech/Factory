@@ -53,7 +53,9 @@ async function checkRateLimit(
   action: string,
   userId: string,
 ): Promise<{ allowed: boolean; remaining: number }> {
-  if (!kv) return { allowed: true, remaining: RATE_LIMIT_MAX };
+  // Fail closed when KV is unconfigured — irreversible tier-3 actions (deploy,
+  // rollback) must never bypass rate limiting due to a missing binding.
+  if (!kv) return { allowed: false, remaining: 0 };
 
   const key = `${RATE_LIMIT_KEY_PREFIX}${action}:${userId}`;
   const now = Date.now();
@@ -213,9 +215,14 @@ ops.post(
       await updateTestRunStatus(env.DB, runId, { status: 'dispatched' });
     } catch (err) {
       const detail = err instanceof DispatchError ? err.body : (err as Error).message;
-      await updateTestRunStatus(env.DB, runId, { status: 'failed' }).catch((e: unknown) => {
-        console.error('[ops.test-run] failed to mark run as failed:', (e as Error).message?.slice(0, 200));
-      });
+      // Guarantee the compensating update — if this fails too, the DB row is in an
+      // unknown state and we must return 500 so the caller knows to investigate.
+      try {
+        await updateTestRunStatus(env.DB, runId, { status: 'failed' });
+      } catch (dbErr) {
+        console.error('[ops.test-run] failed to mark run as failed:', (dbErr as Error).message?.slice(0, 200));
+        return c.json({ runId, status: 'unknown', error: 'GH dispatch failed and DB compensation failed', detail }, 500);
+      }
       return c.json({ runId, status: 'failed', error: 'GH dispatch failed', detail }, 502);
     }
 
