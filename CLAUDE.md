@@ -32,6 +32,7 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - No `Buffer`; use `Uint8Array`, `TextEncoder`, or `TextDecoder`
 - No raw `fetch` without explicit error handling
 - No secrets in source code or in `wrangler.jsonc` `vars`
+- No `*.workers.dev` URLs in any user-facing HTML, JS, or API client code — every user-facing worker endpoint must have a branded custom domain (e.g. `api.selfprime.net`, `api.itsjusus.com`). The `.workers.dev` URL is the CF infrastructure fallback and must never be exposed to end users or hardcoded in frontend assets. Check `docs/service-registry.yml` for the canonical `url` field; use that, never `workers_dev_url`.
 
 ## Worker Rename Protocol (STOP — read this before changing any wrangler.jsonc `name`)
 Never rename a worker without completing this checklist in order:
