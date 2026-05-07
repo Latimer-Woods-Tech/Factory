@@ -73,7 +73,6 @@ jobs:
             echo "count=skip" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Drizzle stores applied migrations in __drizzle_migrations table
           count=$(psql "$DATABASE_URL" -t -c \
             "SELECT COUNT(*) FROM __drizzle_migrations" 2>/dev/null | tr -d ' ' || echo "error")
           echo "count=$count" >> "$GITHUB_OUTPUT"
@@ -81,53 +80,46 @@ jobs:
       - name: Compare and alert
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO_COUNT: ${{ steps.repo-count.outputs.count }}
+          DB_COUNT: ${{ steps.db-count.outputs.count }}
+          APP: ${{ matrix.app }}
         run: |
-          REPO_COUNT="${{ steps.repo-count.outputs.count }}"
-          DB_COUNT="${{ steps.db-count.outputs.count }}"
-          APP="${{ matrix.app }}"
-
           if [ "$DB_COUNT" = "skip" ]; then
-            echo "⚠️  $APP: DB check skipped (no connection string)"
+            echo "⚠️ $APP: DB check skipped (no connection string)"
             exit 0
           fi
-
           if [ "$DB_COUNT" = "error" ]; then
             echo "::warning::$APP: could not query __drizzle_migrations — table may not exist yet"
             exit 0
           fi
-
           GAP=$((REPO_COUNT - DB_COUNT))
           echo "$APP: repo=$REPO_COUNT applied=$DB_COUNT gap=$GAP"
-
           if [ "$GAP" -gt 0 ]; then
             echo "::error::$APP has $GAP unapplied migration(s). Run 'npm run migrate' against the production Neon branch."
+            cat > /tmp/issue-body.md <<EOF
+          ## Migration Drift Detected: \`$APP\`
 
-            # File a GitHub issue if gap > 0
-            BODY="## Migration Drift Detected: \`$APP\`
+          **Repo migrations:** $REPO_COUNT
+          **Applied in prod:** $DB_COUNT
+          **Gap:** $GAP
 
-        **Repo migrations:** $REPO_COUNT
-        **Applied in prod:** $DB_COUNT
-        **Gap:** $GAP
+          The production Neon database is missing $GAP migration(s) that exist in the repo.
 
-        The production Neon database is missing $GAP migration(s) that exist in the repo.
+          ### Fix
+          \`\`\`bash
+          cd apps/$APP/workers && DATABASE_URL=$PROD_CONNECTION_STRING npm run migrate
+          \`\`\`
 
-        ### Fix
-        \`\`\`bash
-        cd apps/$APP/workers && DATABASE_URL=\$PROD_CONNECTION_STRING npm run migrate
-        \`\`\`
+          See \`docs/runbooks/database.md\` for the full procedure.
 
-        See \`docs/runbooks/database.md\` for the full procedure.
-
-        /cc @adrper79-dot"
-
+          /cc @adrper79-dot
+          EOF
             gh issue create \
               --repo Latimer-Woods-Tech/factory \
               --title "Migration drift: $APP ($GAP unapplied)" \
-              --body "$BODY" \
+              --body-file /tmp/issue-body.md \
               --label "bug,area:database,supervisor:approved-source,priority:P1" \
               2>/dev/null || echo "::warning::Could not file issue (may already exist)"
-
             exit 1
           fi
-
           echo "✅ $APP: no migration drift (repo=$REPO_COUNT applied=$DB_COUNT)"
