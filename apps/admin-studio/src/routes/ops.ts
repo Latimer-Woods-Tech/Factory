@@ -84,7 +84,7 @@ async function checkRateLimit(
   bucket.timestamps.push(now);
   await kv
     .put(key, JSON.stringify(bucket), { expirationTtl: Math.ceil(RATE_LIMIT_WINDOW_MS / 1000) })
-    .catch(() => {});
+    .catch((err: unknown) => { console.warn('[ops:ratelimit] KV.put failed; rate limit state lost:', err instanceof Error ? err.message : String(err)); });
 
   return { allowed: true, remaining: remaining - 1 };
 }
