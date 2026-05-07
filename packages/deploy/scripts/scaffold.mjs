@@ -648,7 +648,7 @@ Optional extras (install as needed):
   @latimer-woods-tech/telephony  — Telnyx + Deepgram + ElevenLabs
   @latimer-woods-tech/email      — Resend transactional + drip
   @latimer-woods-tech/crm        — cross-app lead + conversion tracking
-  @latimer-woods-tech/compliance — TCPA / FDCPA consent logging
+  @latimer-woods-tech/compliance — consent audit logging (opt-in / opt-out / do-not-contact)
   @latimer-woods-tech/admin      — Hono admin router (dashboard, users, events)
 `);
 }

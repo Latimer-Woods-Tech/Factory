@@ -2,7 +2,7 @@
 /**
  * update-stack-manifest.js
  *
- * Reads all packages/*/package.json files and updates the AUTO-UPDATED block
+ * Reads all packages/<name>/package.json manifests and updates the AUTO-UPDATED block
  * in docs/STACK.md with current package names and versions.
  *
  * Usage:  node scripts/update-stack-manifest.js
@@ -38,13 +38,8 @@ for (const dir of pkgDirs.sort()) {
 
 if (!versions.length) { console.error('No packages found. Aborting.'); process.exit(1); }
 
-const rows = versions.map(({ name, version }) => '| `' + name + '` | `' + version + '` | stable |').join('
-');
-const newBlock = AUTO_START + '
-| Package | Version | Status |
-|---------|---------|--------|
-' + rows + '
-' + AUTO_END;
+const rows = versions.map(({ name, version }) => '| `' + name + '` | `' + version + '` | stable |').join('\n');
+const newBlock = AUTO_START + '\n| Package | Version | Status |\n|---------|---------|--------|\n' + rows + '\n' + AUTO_END;
 
 const stackContent = fs.readFileSync(STACK_MD_PATH, 'utf8');
 const startIdx = stackContent.indexOf(AUTO_START);
