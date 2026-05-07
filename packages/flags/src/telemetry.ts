@@ -48,7 +48,8 @@ export function recordEvaluation(
     record.result,
     record.default_hit,
     record.ts,
-  ).run().catch(() => {
-    // Swallow — telemetry must never break the hot path
+  ).run().catch((e: unknown) => {
+    // Non-fatal: telemetry must never break the hot path, but failures should be observable.
+    console.warn('[flags] telemetry write failed:', e instanceof Error ? e.message : String(e));
   });
 }
