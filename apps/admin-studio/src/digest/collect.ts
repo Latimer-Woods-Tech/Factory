@@ -505,6 +505,8 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       }
       // Cache miss — fall through to fresh Stripe fetch below.
       // Concurrent misses produce identical results; see note above.
+      // jitter 0–500ms to reduce concurrent cache-miss collision
+      await new Promise<void>(r => setTimeout(r, Math.random() * 500));
     } catch (kvErr) {
       // KV read error — log and proceed to fresh Stripe fetch so the digest is
       // never silently suppressed by a cache layer failure.
@@ -641,6 +643,9 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       }
     }
 
+    // NOTE: MRR delta uses two separate Stripe API calls at ~current and ~12h-ago timestamps.
+    // Subscription state can change between calls; this is an accepted approximation —
+    // Stripe's API does not provide atomic point-in-time snapshots.
     // Approximate previous MRR: subtract new, add back cancelled
     const addedMrr = newSubscriptions.reduce((s, e) => s + e.amount, 0);
     const removedMrr = cancellations.reduce((s, e) => s + e.amount, 0);

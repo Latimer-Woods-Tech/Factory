@@ -63,6 +63,11 @@ export async function generateAndUploadAudio(
   }
 
   const safeText = safeTruncate(text);
+  // Capture narrowed string values for use inside the async closure below.
+  // TypeScript cannot narrow `const` variables declared as `string | undefined`
+  // through an early-return guard when they are closed over by an inner async function.
+  const narrowedApiKey: string = apiKey;
+  const narrowedVoiceId: string = voiceId;
 
   // ── 1. Call ElevenLabs TTS ────────────────────────────────────────────────
   let mp3Buffer: ArrayBuffer;
@@ -72,11 +77,11 @@ export async function generateAndUploadAudio(
     async function attemptTts(): Promise<Response | null> {
       try {
         return await fetch(
-          `${ELEVENLABS_API_BASE}/text-to-speech/${encodeURIComponent(voiceId)}`,
+          `${ELEVENLABS_API_BASE}/text-to-speech/${encodeURIComponent(narrowedVoiceId)}`,
           {
             method: 'POST',
             headers: {
-              'xi-api-key': apiKey,
+              'xi-api-key': narrowedApiKey,
               'Content-Type': 'application/json',
               Accept: 'audio/mpeg',
             },
