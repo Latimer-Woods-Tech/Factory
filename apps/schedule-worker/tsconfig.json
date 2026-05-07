@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.internal-packages.json",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
@@ -6,9 +7,9 @@
     "lib": ["ES2022", "ESNext", "WebWorker"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
     "types": ["@cloudflare/workers-types"],
     "outDir": "dist",
-    "rootDir": "src"
   },
   "include": ["src/**/*"]
 }

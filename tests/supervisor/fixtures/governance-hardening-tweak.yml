@@ -1,0 +1,31 @@
+fixture_for: governance-hardening-tweak
+issue:
+  title: "feat(triage): auto-label PRs by changed paths and risk"
+  labels: [enhancement, hardening, engineering]
+  body: |
+    Apply area/risk labels automatically (area:auth, area:migrations, risk:high) using
+    changed file patterns.
+
+    Parent rollout issue: #270
+
+    change_type: workflow-addition
+    scope: triage
+    target_path: .github/workflows/pr-labeler.yml
+    branch: supervisor/governance/auto-label-pr-paths
+
+    file_content: |
+      name: PR Auto-labeler
+      on:
+        pull_request:
+          types: [opened, synchronize]
+      jobs:
+        label:
+          runs-on: ubuntu-latest
+          permissions:
+            contents: read
+            pull-requests: write
+          steps:
+            - uses: actions/labeler@v5
+              with:
+                repo-token: "${{ secrets.GITHUB_TOKEN }}"
+                configuration-path: .github/labeler.yml

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@latimer-woods-tech/auth": "file:../../packages/auth",
+    "@latimer-woods-tech/compliance": "file:../../packages/compliance",
     "@latimer-woods-tech/errors": "file:../../packages/errors",
     "@latimer-woods-tech/llm": "file:../../packages/llm",
     "@latimer-woods-tech/logger": "file:../../packages/logger",

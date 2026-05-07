@@ -1,10 +1,9 @@
-/* eslint-disable no-restricted-imports, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars, @typescript-eslint/no-var-requires */
 /**
  * W360-042: UI Regression Gates — Node.js-Only Testing Infrastructure
  *
  * This module provides utilities for multi-viewport visual regression testing,
  * performance auditing via Lighthouse, and pixel-level screenshot diffing.
- * 
+ *
  * ⚠️ **Node.js Only**: This module is exclusively for local test environments and CI/CD.
  * It is NOT available in Cloudflare Workers (requires Node.js fs, path, dynamic imports).
  *
@@ -113,8 +112,9 @@ export async function collectLighthouse(
 
   try {
     // Dynamic require for Node.js test environment (safe to use in tests)
-    // eslint-disable-next-line global-require
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
     const lighthouseModule = require('lighthouse');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const lighthouse = lighthouseModule.default;
 
     const browserWSEndpoint = (page as { context: (() => { browser?: { wsEndpoint?: (() => string) } }) }).context?.()?.browser?.wsEndpoint?.();
@@ -126,17 +126,20 @@ export async function collectLighthouse(
     const portMatch = String(browserWSEndpoint).match(/:(\d+)/);
     const port = portMatch?.[1] ? parseInt(portMatch[1], 10) : 9222;
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const result = await lighthouse(url, {
       port,
       logLevel: 'error',
       output: 'json',
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!result?.lhr) {
       return null;
     }
 
     // Extract metrics from Lighthouse report
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const lhr = result.lhr as { categories: { performance: { score: number }, accessibility: { score: number }, 'best-practices': { score: number }, seo: { score: number } }, audits: Record<string, { numericValue?: number }> };
     const audits = lhr.audits as Record<string, { numericValue?: number }>;
 
@@ -165,9 +168,9 @@ export async function captureScreenshots(
   routeName: string,
   outputDir: string,
 ): Promise<CapturedScreenshots> {
-  // eslint-disable-next-line global-require
+  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
   const fs = require('fs/promises');
-  // eslint-disable-next-line global-require
+  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
   const path = require('path');
 
   const viewports = ['desktop', 'mobile', 'tablet'] as const;
@@ -186,8 +189,11 @@ export async function captureScreenshots(
       console.warn(`Network wait timeout for ${routeName}.${viewport}`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const outputPath = path.join(outputDir, routeName, `${viewport}.png`);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const screenshotPath = await (page as { screenshot: (opts: { path: string }) => Promise<string> }).screenshot({ path: outputPath });
     paths[viewport] = screenshotPath;
   }
@@ -206,19 +212,22 @@ export async function compareScreenshots(
   baselinePath: string,
   pixelThreshold: number = 100,
 ): Promise<ScreenshotDiffResult> {
-  // eslint-disable-next-line global-require
+  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
   const fs = require('fs/promises');
-  // eslint-disable-next-line global-require
+  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
   const path = require('path');
 
   try {
     // Check if baseline exists
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await fs.stat(baselinePath);
     } catch {
       // Baseline doesn't exist: create it from actual
       console.info(`[Screenshots] Creating baseline for ${routeName}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await fs.mkdir(path.dirname(baselinePath), { recursive: true });
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await fs.copyFile(actualPath, baselinePath);
       return {
         match: true,
@@ -228,36 +237,33 @@ export async function compareScreenshots(
       };
     }
 
-    // Read both screenshots
-    const actualRaw = await fs.readFile(actualPath);
-    const baselineRaw = await fs.readFile(baselinePath);
+    // Read and decode both screenshots using pngjs for deterministic pixel comparison.
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
+    const { PNG } = require('pngjs') as { PNG: { sync: { read: (buf: Uint8Array) => { data: Uint8Array; width: number; height: number } } } };
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
+    const pixelmatch = require('pixelmatch') as (img1: Uint8Array, img2: Uint8Array, output: null, width: number, height: number, opts?: { threshold?: number }) => number;
 
-    // PNG decode (minimal, just extract width/height from header)
-    const getPNGDims = (buf: unknown): { width: number; height: number } => {
-      const typedBuf = buf as { buffer: ArrayBuffer; byteOffset: number; length: number };
-      const dataView = new DataView(typedBuf.buffer, typedBuf.byteOffset, typedBuf.length);
-      const width = dataView.getUint32(16, false);
-      const height = dataView.getUint32(20, false);
-      return { width, height };
-    };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const actualRaw: Uint8Array = await fs.readFile(actualPath);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const baselineRaw: Uint8Array = await fs.readFile(baselinePath);
 
-    const actualDims = getPNGDims(actualRaw);
-    const baselineDims = getPNGDims(baselineRaw);
+    const actualPng = PNG.sync.read(actualRaw);
+    const baselinePng = PNG.sync.read(baselineRaw);
 
-    if (actualDims.width !== baselineDims.width || actualDims.height !== baselineDims.height) {
+    if (actualPng.width !== baselinePng.width || actualPng.height !== baselinePng.height) {
       return {
         match: false,
-        pixelDiff: actualDims.width * actualDims.height,
+        pixelDiff: actualPng.width * actualPng.height,
         pixelPercent: 100,
-        message: `Dimension mismatch for ${routeName}: actual ${actualDims.width}x${actualDims.height}, baseline ${baselineDims.width}x${baselineDims.height}`,
+        message: `Dimension mismatch for ${routeName}: actual ${actualPng.width}x${actualPng.height}, baseline ${baselinePng.width}x${baselinePng.height}`,
       };
     }
 
-    // Compare file sizes as proxy for pixel diff (MVP approach)
-    // In production, use proper PNG decoder (pngjs, sharp)
-    const sizeDiff = Math.abs((actualRaw).length - (baselineRaw).length);
-    const pixelDiff = Math.round(sizeDiff / 100); // Rough heuristic
-    const pixelPercent = (pixelDiff / (actualDims.width * actualDims.height)) * 100;
+    const { width, height } = actualPng;
+    const pixelDiff = pixelmatch(actualPng.data, baselinePng.data, null, width, height, { threshold: 0.1 });
+    const totalPixels = width * height;
+    const pixelPercent = (pixelDiff / totalPixels) * 100;
 
     const match = pixelDiff <= pixelThreshold;
     return {

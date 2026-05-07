@@ -1,0 +1,72 @@
+app: humandesign
+repo: Latimer-Woods-Tech/HumanDesign
+base_url: https://api.selfprime.net
+auth: admin_jwt
+supervisor_access: approved
+tiers_allowed: [green, yellow]
+
+capabilities:
+  - id: user.lookup
+    desc: "Fetch a user's profile, tier, and account status by ID or email."
+    route: GET /admin/users/:id
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: user.list
+    desc: "Paginated list of users, optionally filtered by tier or status."
+    route: GET /admin/users
+    params_schema:
+      page: { type: integer, min: 1 }
+      limit: { type: integer, min: 1, max: 100 }
+      tier: { type: enum, values: [individual, practitioner, agency], optional: true }
+      status: { type: enum, values: [active, suspended, pending], optional: true }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: user.suspend
+    desc: "Suspend a user account. Reversible via user.reinstate."
+    route: POST /admin/users/:id/suspend
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+    idempotency_key: "user_id + 'suspend'"
+    side_effects: write-app
+    reversibility: reversible-with-effort
+    required_scope: supervisor.mutator-user-suspend
+    extra_guard: requires_codeowner_approval
+
+  - id: user.reinstate
+    desc: "Reinstate a suspended user account."
+    route: POST /admin/users/:id/reinstate
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+    idempotency_key: "user_id + 'reinstate'"
+    side_effects: write-app
+    reversibility: idempotent
+    required_scope: supervisor.mutator-user-reinstate
+    extra_guard: requires_codeowner_approval
+
+  - id: subscription.tier_change
+    desc: "Change a user's subscription tier. Writes to Stripe."
+    route: POST /admin/users/:id/tier
+    body_schema:
+      new_tier: { type: enum, values: [individual, practitioner, agency] }
+    idempotency_key: "user_id + new_tier"
+    side_effects: write-external
+    reversibility: reversible-with-effort
+    required_scope: supervisor.mutator-subscription-tier-change
+    extra_guard: requires_codeowner_approval
+
+  - id: events.recent
+    desc: "Fetch recent factory_events for a user."
+    route: GET /admin/events
+    params_schema:
+      user_id: { type: string, validator: "^[a-zA-Z0-9\\-]{1,64}$", optional: true }
+      limit: { type: integer, min: 1, max: 100 }
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: health.check
+    desc: "Worker liveness check."
+    route: GET /health
+    side_effects: none
+    required_scope: supervisor.readonly

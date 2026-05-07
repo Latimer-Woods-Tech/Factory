@@ -9,11 +9,11 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-permissions:
-  contents: read
 
 jobs:
   audit:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -55,8 +55,51 @@ jobs:
               console.log(`Created issue #${issue.data.number}`);
             }
 
+
+      - name: Check STACK.md version drift
+        id: stack-drift
+        run: node scripts/update-stack-manifest.js --check
+        continue-on-error: true
+
+      - name: Flag STACK.md drift in summary
+        if: steps.stack-drift.outcome == 'failure'
+        run: |
+          echo "## ⚠️ STACK.md Version Drift Detected" >> $GITHUB_STEP_SUMMARY
+          echo "Package versions in `docs/STACK.md` are out of sync with `packages/*/package.json`." >> $GITHUB_STEP_SUMMARY
+          echo "Run `node scripts/update-stack-manifest.js` or trigger the [Update Stack Manifest workflow](../../actions/workflows/update-stack-manifest.yml)." >> $GITHUB_STEP_SUMMARY
       - name: Publish audit report to workflow summary
         if: always()
         run: |
           echo "## 📋 Documentation Freshness Audit" >> $GITHUB_STEP_SUMMARY
           cat audit-report.md >> $GITHUB_STEP_SUMMARY
+
+  bootstrap-missing-contexts:
+    name: Generate missing repo context docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Configure git
+        run: |
+          git config user.name  "factory-docs-bot"
+          git config user.email "factory-docs-bot@users.noreply.github.com"
+      - name: Create org-scoped GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: Generate missing repo contexts
+        env:
+          GH_TOKEN:          ${{ steps.app-token.outputs.token }}
+          GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/repo-context-generator.mjs
