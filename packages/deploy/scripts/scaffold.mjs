@@ -18,9 +18,12 @@
  */
 
 import { execSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── Args ─────────────────────────────────────────────────────────────────────
 
@@ -155,6 +158,7 @@ coverage/
       '@latimer-woods-tech/neon': '^0.2.0',
       '@latimer-woods-tech/analytics': '^0.2.0',
       '@latimer-woods-tech/deploy': '^0.2.0',
+      '@latimer-woods-tech/flags': '^0.1.0',
       'drizzle-orm': '^0.43.0',
       hono: '^4.12.15',
     },
@@ -201,6 +205,14 @@ coverage/
     }
   ],
 
+  // ── Flagship feature flags ────────────────────────────────────────────────
+  "flagship": { "binding": "FLAGS" },
+
+  // ── Flag telemetry (flag-meter D1) ────────────────────────────────────────
+  "d1_databases": [
+    { "binding": "FLAG_TELEMETRY", "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4", "database_name": "flag-meter" }
+  ],
+
   // ── Non-secret vars (secrets go in wrangler secret put, never here) ────────
   "vars": {
     "ENVIRONMENT": "production",
@@ -238,6 +250,10 @@ export interface Env {
   // ── Cloudflare bindings ──────────────────────────────────────────────────
   DB: Hyperdrive;
   AUTH_RATE_LIMITER: RateLimit;
+  /** Cloudflare Flagship feature-flag binding. */
+  FLAGS: Fetcher;
+  /** flag-meter D1 database for flag evaluation telemetry. */
+  FLAG_TELEMETRY: D1Database;
 
   // ── Secrets (set via wrangler secret put or GitHub Actions env secrets) ──
   JWT_SECRET: string;
@@ -257,18 +273,27 @@ export interface Env {
   write('src/index.ts', `import { Hono } from 'hono';
 import {
   FactoryBaseError,
-  ErrorCodes,
   withErrorBoundary,
   toErrorResponse,
 } from '@latimer-woods-tech/errors';
 import { createDb } from '@latimer-woods-tech/neon';
 import { jwtMiddleware } from '@latimer-woods-tech/auth';
+import { createFlagClient } from '@latimer-woods-tech/flags';
 import type { Env } from './env.js';
 
-const app = new Hono<{ Bindings: Env }>();
+const APP_NAME = '${APP_NAME}';
+
+const app = new Hono<{ Bindings: Env; Variables: { flags: ReturnType<typeof createFlagClient> } }>();
 
 // ── Middleware ───────────────────────────────────────────────────────────────
 app.use('*', withErrorBoundary());
+
+// ── Flagship feature flags ────────────────────────────────────────────────
+app.use('*', async (c, next) => {
+  const flags = createFlagClient(c.env, { app: APP_NAME, env: c.env.ENVIRONMENT });
+  c.set('flags', flags);
+  await next();
+});
 
 // ── Health check (public) ────────────────────────────────────────────────────
 app.get('/health', (c) =>
@@ -289,8 +314,12 @@ app.get('/api/me', (c) => {
 // import { createAdminRouter } from '@latimer-woods-tech/admin';
 // app.route('/admin', createAdminRouter({
 //   db: createDb(c.env.DB),
-//   appId: '${APP_NAME}',
+//   appId: APP_NAME,
 // }));
+//
+// Example: read a flag in a route handler
+// const flags = c.get('flags');
+// const inMaintenance = await flags.getBool(\`\${APP_NAME}:ks:maintenance_mode\`);
 
 // ── Global unhandled error handler ───────────────────────────────────────────
 app.onError((err, c) => {
@@ -379,6 +408,9 @@ describe('${APP_NAME}', () => {
       ENVIRONMENT: 'test',
       WORKER_NAME: '${APP_NAME}',
       DB: {} as Hyperdrive,
+      FLAGS: {} as Fetcher,
+      FLAG_TELEMETRY: {} as D1Database,
+      AUTH_RATE_LIMITER: {} as RateLimit,
       JWT_SECRET: 'test-secret',
       SENTRY_DSN: '',
       POSTHOG_KEY: '',
@@ -565,6 +597,86 @@ async function configureSecrets() {
   }
 }
 
+// ── Flag Registry ─────────────────────────────────────────────────────────────
+
+/**
+ * Appends two standard flag entries to flags/registry.yml in the Factory Core
+ * repo (the directory from which scaffold.mjs is invoked, typically the repo root).
+ *
+ * Two flags are added per app:
+ *   {appName}:ks:maintenance_mode  — kill switch for instant app-level maintenance
+ *   {appName}:ops:llm_tier         — ops override for LLM tier selection
+ *
+ * If the registry file does not exist this is a no-op with a warning so that
+ * running scaffold.mjs outside the Factory Core repo does not hard-fail.
+ */
+function appendFlagRegistryEntries(appName) {
+  // Resolve the registry relative to the Factory Core repo root (two levels up
+  // from packages/deploy/scripts/).
+  const factoryCoreRoot = join(__dirname, '../../..');
+  const registryPath = join(factoryCoreRoot, 'flags/registry.yml');
+
+  if (!existsSync(registryPath)) {
+    console.warn(`\n⚠️  flags/registry.yml not found at ${registryPath}`);
+    console.warn('   Skipping flag registry update. Add these entries manually:\n');
+    console.warn(`   - key: "${appName}:ks:maintenance_mode"`);
+    console.warn(`     type: kill_switch`);
+    console.warn(`     description: "Kill switch — enables maintenance mode for ${appName}"`);
+    console.warn(`     apps: ["${appName}"]`);
+    console.warn(`     owner: ${appName}`);
+    console.warn(`     status: active`);
+    console.warn(`     default_value: false`);
+    console.warn(`     created_at: "${new Date().toISOString().slice(0, 10)}"`);
+    console.warn(`     cleanup_policy: permanent\n`);
+    console.warn(`   - key: "${appName}:ops:llm_tier"`);
+    console.warn(`     type: ops`);
+    console.warn(`     description: "LLM tier for ${appName}: balanced | fast | quality"`);
+    console.warn(`     apps: ["${appName}"]`);
+    console.warn(`     owner: ${appName}`);
+    console.warn(`     status: active`);
+    console.warn(`     default_value: "balanced"`);
+    console.warn(`     created_at: "${new Date().toISOString().slice(0, 10)}"`);
+    console.warn(`     cleanup_policy: permanent\n`);
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const existing = readFileSync(registryPath, 'utf8');
+
+  // Guard against duplicate entries so re-running scaffold is idempotent.
+  if (existing.includes(`"${appName}:ks:maintenance_mode"`)) {
+    console.log(`\n  ℹ️  Flag entries for ${appName} already present in registry.yml — skipping.`);
+    return;
+  }
+
+  const entries = `
+# ── ${appName} ─────────────────────────────────────────────────────────────────
+
+- key: "${appName}:ks:maintenance_mode"
+  type: kill_switch
+  description: "Kill switch — enables maintenance mode for ${appName}"
+  apps: ["${appName}"]
+  owner: ${appName}
+  status: active
+  default_value: false
+  created_at: "${today}"
+  cleanup_policy: permanent
+
+- key: "${appName}:ops:llm_tier"
+  type: ops
+  description: "LLM tier for ${appName}: balanced | fast | quality"
+  apps: ["${appName}"]
+  owner: ${appName}
+  status: active
+  default_value: "balanced"
+  created_at: "${today}"
+  cleanup_policy: permanent
+`;
+
+  writeFileSync(registryPath, existing.trimEnd() + '\n' + entries, 'utf8');
+  console.log(`\n  📋 Appended ${appName}:ks:maintenance_mode and ${appName}:ops:llm_tier to flags/registry.yml`);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -587,6 +699,10 @@ async function main() {
   // Create directory + all files
   mkdirSync(TARGET, { recursive: true });
   generateFiles(hyperdriveId, rateLimiterId);
+
+  // Append app-specific flags to Factory Core flag registry
+  console.log('\n🏳️  Wiring Flagship flags...');
+  appendFlagRegistryEntries(APP_NAME);
 
   // git init
   console.log('\n🔧 Initialising git...');
