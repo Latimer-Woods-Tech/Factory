@@ -286,12 +286,15 @@ export async function createCheckoutSession(
     params.metadata = options.metadata;
   }
 
-  // Always set an idempotency key to prevent duplicate charges from retries or
-  // double-clicks. Callers may pass a stable key (e.g. tied to their order ID);
-  // otherwise we generate a UUID per-request — still prevents server-side dupes
-  // within Stripe's 24-hour idempotency window.
+  // Always set a deterministic idempotency key to prevent duplicate charges from
+  // concurrent double-clicks or client retries. The fallback key is derived from
+  // customerId + priceId + hour-epoch so identical requests within the same hour
+  // map to the same Stripe idempotency window; callers may supply an explicit key
+  // (e.g. tied to an internal order ID) to override the default.
+  const hourEpoch = Math.floor(Date.now() / 3_600_000);
   const requestOptions: Stripe.RequestOptions = {
-    idempotencyKey: options.idempotencyKey ?? crypto.randomUUID(),
+    idempotencyKey: options.idempotencyKey
+      ?? `checkout:${options.customerId}:${options.priceId}:${hourEpoch}`,
   };
 
   let session: Stripe.Checkout.Session;
