@@ -411,12 +411,15 @@ export function isWithinCallingHours(ianaTimezone: string, nowUtc: Date = new Da
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: ianaTimezone,
     hour: 'numeric',
+    minute: 'numeric',
     hour12: false,
   });
   const parts = formatter.formatToParts(nowUtc);
-  const hourPart = parts.find((p) => p.type === 'hour');
-  const hour = Number(hourPart?.value ?? '0');
-  return hour >= 8 && hour <= 21;
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  const totalMinutes = hour * 60 + minute;
+  // FDCPA window: 08:00 to 21:00 inclusive (caller must stop by 9:00 PM local time).
+  return totalMinutes >= 8 * 60 && totalMinutes <= 21 * 60;
 }
 
 /**
