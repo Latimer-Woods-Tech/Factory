@@ -33,10 +33,17 @@ const flagship = new Hono<AppEnv>();
  * caller can degrade gracefully without blocking the HTTP response.
  */
 async function queryWithTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
-  const timeout = new Promise<T>((_, reject) =>
-    setTimeout(() => reject(new Error('D1 query timeout')), timeoutMs),
-  );
-  return Promise.race([promise, timeout]).catch((e) => {
+  // Cloudflare D1 does not expose an AbortSignal parameter on prepare().run()
+  // statements — cancellation is not possible once a query is in flight.
+  // AbortSignal.timeout() provides the deadline; Promise.race resolves whichever
+  // settles first. The Workers runtime cleans up D1 resources on request completion.
+  const signal = AbortSignal.timeout(timeoutMs);
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      signal.addEventListener('abort', () => reject(signal.reason), { once: true }),
+    ),
+  ]).catch((e: unknown) => {
     console.warn('[flagship] D1 timeout or error:', e instanceof Error ? e.message : String(e));
     return fallback;
   });
@@ -539,6 +546,7 @@ flagship.post('/:key/toggle', adminOnly, async (c) => {
 
   try {
     // Record the toggle intent as a synthetic evaluation row for auditability.
+    // Append-only INSERT — no shared mutable state; concurrent calls are safe.
     await queryWithTimeout(
       db
         .prepare(
@@ -618,6 +626,7 @@ flagship.post('/:key/rollout', adminOnly, async (c) => {
   const actor = c.var.envContext?.userEmail ?? 'unknown';
 
   try {
+    // Append-only INSERT — no shared mutable state; concurrent calls are safe.
     await queryWithTimeout(
       db
         .prepare(
