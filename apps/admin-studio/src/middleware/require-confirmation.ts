@@ -49,13 +49,22 @@ async function expectedConfirmToken(
 
 /**
  * Computes the expected co-signer token for tier-3 two-person approval.
- * Input intentionally excludes userId so a DIFFERENT principal (the co-signer)
- * can compute it independently in the Admin Studio UI without knowing the
- * initiator's identity. Enforces FRIDGE rule 8: irreversible actions require
- * explicit approval from a second human principal out-of-band.
+ *
+ * The token is bound to the co-signer's userId so it cannot be self-signed:
+ * the initiator is blocked from supplying their own userId as X-Co-Signer-Id.
+ * Each co-signer computes the token in the Admin Studio UI from their own
+ * identity, enforcing FRIDGE rule 8 (distinct second principal required).
+ *
+ * @param action - the action name (e.g. "ops.rollback")
+ * @param cosignerId - the co-signer's userId (must differ from initiator)
+ * @param env - the runtime environment string (e.g. "production")
  */
-async function expectedCosignerToken(action: string, env: string): Promise<string> {
-  const data = new TextEncoder().encode(`cosign:${action}:${env}`);
+async function expectedCosignerToken(
+  action: string,
+  cosignerId: string,
+  env: string,
+): Promise<string> {
+  const data = new TextEncoder().encode(`cosign:${action}:${cosignerId}:${env}`);
   const hash = await crypto.subtle.digest('SHA-256', data);
   const hex = [...new Uint8Array(hash)]
     .map((b) => b.toString(16).padStart(2, '0'))
@@ -121,14 +130,34 @@ export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<App
     }
 
     // Tier 3 (two-key): FRIDGE rule 8 — irreversible actions require a second
-    // human principal. The co-signer computes X-Co-Signer-Token independently
-    // in the Admin Studio UI (shared out-of-band by the initiator).
+    // human principal distinct from the initiator.
+    //
+    // Protocol:
+    //   1. Initiator shares the action name + their own userId out-of-band.
+    //   2. Co-signer computes X-Co-Signer-Token = SHA-256(cosign:action:cosignerUserId:env)[0:16]
+    //      using their own userId in the Admin Studio UI.
+    //   3. Co-signer passes both X-Co-Signer-Id (their userId) and X-Co-Signer-Token.
+    //   4. Middleware verifies: cosignerId ≠ initiatorId AND token matches expected.
     if (tier === 3) {
-      const cosigner = c.req.header('X-Co-Signer-Token');
-      const expectedCosigner = await expectedCosignerToken(opts.action, ctx.env);
-      if (!cosigner || cosigner !== expectedCosigner) {
+      const cosignerId = c.req.header('X-Co-Signer-Id');
+      const cosignerToken = c.req.header('X-Co-Signer-Token');
+      if (!cosignerId || !cosignerToken) {
         return c.json(
-          { error: 'Two-person approval required for irreversible production action', tier },
+          { error: 'Two-person approval required: provide X-Co-Signer-Id and X-Co-Signer-Token', tier },
+          412,
+        );
+      }
+      // The co-signer MUST be a different principal than the initiator.
+      if (cosignerId === ctx.userId) {
+        return c.json(
+          { error: 'Co-signer must be a different principal than the request initiator', tier },
+          412,
+        );
+      }
+      const expectedCosigner = await expectedCosignerToken(opts.action, cosignerId, ctx.env);
+      if (cosignerToken !== expectedCosigner) {
+        return c.json(
+          { error: 'Invalid co-signer token', tier },
           412,
         );
       }

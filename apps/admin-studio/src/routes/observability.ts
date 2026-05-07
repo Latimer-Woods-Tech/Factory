@@ -373,6 +373,14 @@ interface PostHogFunnelResponse {
   window: FunnelWindow;
   kpis: KpiMetric[];
   funnel: FunnelStep[];
+  /**
+   * False when any of the five PostHog queries returned a non-ok response.
+   * All-zero metrics are indistinguishable from genuine zero traffic — this flag
+   * lets the UI surface a "data unavailable" state rather than showing zeroes.
+   */
+  dataAvailable: boolean;
+  /** Populated when dataAvailable is false; explains which queries failed. */
+  dataWarnings?: string[];
 }
 
 // Returns a literal SQL interval string for a known FunnelWindow enum value.
@@ -484,6 +492,14 @@ observability.get('/posthog/funnel', async (c) => {
       ),
     ]);
 
+    // Track which queries returned null (non-ok PostHog response) so we can
+    // surface dataAvailable=false instead of silently returning all-zero metrics.
+    const queryResults = { dauRows, prevDauRows, newUsersRows, churnRows, funnelRows };
+    const failedQueries = Object.entries(queryResults)
+      .filter(([, v]) => v === null)
+      .map(([k]) => k);
+    const dataAvailable = failedQueries.length === 0;
+
     const dau = safeNum(dauRows?.[0]?.[0]);
     const prevDau = safeNum(prevDauRows?.[0]?.[0]);
     const dauTrend = prevDau > 0 ? Math.round(((dau - prevDau) / prevDau) * 100) : 0;
@@ -514,7 +530,15 @@ observability.get('/posthog/funnel', async (c) => {
       { step: 'payment', label: 'Payments', count: payments, dropoffPct: dropoff(subscriptions, payments) },
     ];
 
-    const payload: PostHogFunnelResponse = { window, kpis, funnel };
+    const payload: PostHogFunnelResponse = {
+      window,
+      kpis,
+      funnel,
+      dataAvailable,
+      ...(failedQueries.length > 0 && {
+        dataWarnings: [`PostHog queries returned no data: ${failedQueries.join(', ')}. Metrics may be zero due to API unavailability, not genuine zero traffic.`],
+      }),
+    };
     return c.json({ ...okEnvelope(), ...payload });
   } catch (err) {
     const timedOut = (err as Error).name === 'AbortError';

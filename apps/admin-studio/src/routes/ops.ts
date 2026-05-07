@@ -290,11 +290,16 @@ ops.post(
         ref: plan.ref,
         inputs: plan.inputs,
       });
-      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, plan.workflow, dispatchedAt);
 
+      // Set audit fields immediately after dispatch — before fetchDispatchedRunUrl
+      // which can throw. This ensures the audit record is written even if the
+      // run-URL lookup fails (the dispatch already happened and is irreversible).
       c.set('auditAction', 'ops.deploy.dispatch');
       c.set('auditResource', body.app);
       c.set('auditReversibility', 'manual-rollback');
+
+      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, plan.workflow, dispatchedAt);
+
       c.set('auditResultDetail', {
         env: plan.targetEnv,
         workflow: plan.workflow,
@@ -365,6 +370,11 @@ ops.post(
     if (!body.versionId || typeof body.versionId !== 'string') {
       return c.json({ error: 'versionId is required' }, 400);
     }
+    // Format validation: Cloudflare deployment version IDs are hex strings.
+    // Reject any value that doesn't match to prevent injection into workflow inputs.
+    if (!/^[a-f0-9]{8,64}$/.test(body.versionId)) {
+      return c.json({ error: 'versionId format invalid: expected a hex deployment ID' }, 400);
+    }
 
     const target = DEPLOY_TARGETS[body.app];
     if (!target) {
@@ -408,11 +418,16 @@ ops.post(
         ref: 'main',
         inputs: { version_id: body.versionId, env: ctx.env },
       });
-      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, rollbackWorkflow, dispatchedAt);
 
+      // Set audit fields immediately after dispatch — before fetchDispatchedRunUrl
+      // which can throw. Rollback is irreversible once dispatched, so the audit
+      // record must be written regardless of whether the run-URL lookup succeeds.
       c.set('auditAction', 'ops.rollback.dispatch');
       c.set('auditResource', body.app);
       c.set('auditReversibility', 'irreversible');
+
+      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, rollbackWorkflow, dispatchedAt);
+
       c.set('auditResultDetail', {
         env: ctx.env,
         versionId: body.versionId,
