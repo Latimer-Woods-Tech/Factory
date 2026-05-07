@@ -286,10 +286,13 @@ export async function createCheckoutSession(
     params.metadata = options.metadata;
   }
 
-  const requestOptions: Stripe.RequestOptions = {};
-  if (options.idempotencyKey) {
-    requestOptions.idempotencyKey = options.idempotencyKey;
-  }
+  // Always set an idempotency key to prevent duplicate charges from retries or
+  // double-clicks. Callers may pass a stable key (e.g. tied to their order ID);
+  // otherwise we generate a UUID per-request — still prevents server-side dupes
+  // within Stripe's 24-hour idempotency window.
+  const requestOptions: Stripe.RequestOptions = {
+    idempotencyKey: options.idempotencyKey ?? crypto.randomUUID(),
+  };
 
   let session: Stripe.Checkout.Session;
 
