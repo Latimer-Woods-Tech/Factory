@@ -4,6 +4,7 @@
 
 import type { Environment, Role, ReversibilityTier } from './env-context.js';
 
+/** Structured audit log entry — every mutating Studio action must produce one. */
 export interface AuditEntry {
   id: string;
   occurredAt: string; // ISO 8601
@@ -46,6 +47,7 @@ const SECRET_KEYS = new Set([
   'private_key',
 ]);
 
+/** Strips well-known secret key names from an object before it reaches any log sink. */
 export function redactSecrets<T extends Record<string, unknown>>(obj: T): T {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {

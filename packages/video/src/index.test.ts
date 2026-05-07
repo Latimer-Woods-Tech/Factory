@@ -65,7 +65,7 @@ afterEach(() => {
 
 describe('uploadFromUrl', () => {
   it('posts to /stream/copy and returns a StreamVideo', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse(streamOk(MOCK_VIDEO), true, 200),
     );
 
@@ -88,7 +88,7 @@ describe('uploadFromUrl', () => {
   });
 
   it('throws InternalError on non-OK HTTP status', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse('Internal Server Error', false, 500),
     );
     await expect(
@@ -97,7 +97,7 @@ describe('uploadFromUrl', () => {
   });
 
   it('throws InternalError when success is false', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse(
         { success: false, result: null, errors: [{ message: 'invalid URL' }] },
         true,
@@ -122,7 +122,7 @@ describe('uploadFromUrl', () => {
 
 describe('getStreamVideo', () => {
   it('returns a video by UID', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse(streamOk(MOCK_VIDEO), true, 200),
     );
     const result = await getStreamVideo('abc123def456', MOCK_ENV, { fetch: mockFetch });
@@ -131,7 +131,7 @@ describe('getStreamVideo', () => {
   });
 
   it('includes the UID in the request URL', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse(streamOk(MOCK_VIDEO), true, 200),
     );
     await getStreamVideo('uid-xyz', MOCK_ENV, { fetch: mockFetch });
@@ -140,7 +140,7 @@ describe('getStreamVideo', () => {
   });
 
   it('throws InternalError on HTTP 404', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse('not found', false, 404),
     );
     await expect(
@@ -161,7 +161,7 @@ describe('getStreamVideo', () => {
 
 describe('listStreamVideos', () => {
   it('returns an array of videos', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse(streamOk([MOCK_VIDEO, { ...MOCK_VIDEO, uid: 'second' }]), true, 200),
     );
     const result = await listStreamVideos(MOCK_ENV, { fetch: mockFetch });
@@ -171,7 +171,7 @@ describe('listStreamVideos', () => {
   });
 
   it('throws InternalError on HTTP 403', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce(
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
       makeResponse('Forbidden', false, 403),
     );
     await expect(
@@ -192,7 +192,7 @@ describe('listStreamVideos', () => {
 
 describe('deleteStreamVideo', () => {
   it('resolves when deletion succeeds (204)', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce({
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce({
       ok: true,
       status: 204,
       text: () => Promise.resolve(''),
@@ -208,7 +208,7 @@ describe('deleteStreamVideo', () => {
   });
 
   it('throws InternalError when deletion fails', async () => {
-    const mockFetch = vi.fn<Parameters<FetchFn>, ReturnType<FetchFn>>().mockResolvedValueOnce({
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce({
       ok: false,
       status: 404,
       text: () => Promise.resolve('not found'),
