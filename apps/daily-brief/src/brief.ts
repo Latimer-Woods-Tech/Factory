@@ -77,15 +77,12 @@ export async function runDailyBrief(env: Env): Promise<void> {
     dateLabel,
   });
 
-  // Synthesize the PM narration to audio and store in R2 (25s timeout guard)
-  const audioUrl = await Promise.race([
-    synthesizeAndStore({
-      text: insights.narration,
-      dateLabel: now.toISOString().slice(0, 10),
-      env,
-    }).catch(() => null),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 25_000)),
-  ]);
+  // Synthesize the PM narration to audio and store in R2
+  const audioUrl = await synthesizeAndStore({
+    text: insights.narration,
+    dateLabel: now.toISOString().slice(0, 10),
+    env,
+  }).catch(() => null);
 
   // Build HTML email
   const html = buildEmailHtml({
@@ -112,7 +109,8 @@ export async function runDailyBrief(env: Env): Promise<void> {
     fromName: 'Daily Brief',
   });
 
-  const emailResults = await Promise.allSettled(
+  // Use allSettled so a single bad address never silences the rest of the batch
+  const sendResults = await Promise.allSettled(
     recipients.map((to) =>
       emailClient.sendTransactional({
         to,
@@ -123,13 +121,9 @@ export async function runDailyBrief(env: Env): Promise<void> {
     ),
   );
 
-  for (let i = 0; i < emailResults.length; i++) {
-    const result = emailResults[i];
-    if (result?.status === 'rejected') {
-      // Mask recipient address to avoid PII in worker logs
-      const addr = recipients[i] ?? '';
-      const masked = addr.includes('@') ? `***@${addr.split('@')[1]}` : `recipient[${i}]`;
-      console.warn(`[daily-brief] Failed to send to ${masked}: ${String(result.reason)}`);
+  for (const [i, result] of sendResults.entries()) {
+    if (result.status === 'rejected') {
+      console.error(`[daily-brief] email send failed for ${recipients[i]}:`, result.reason);
     }
   }
 }
