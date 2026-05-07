@@ -391,7 +391,7 @@ function rowToContact(row: ContactRow): OutreachContact {
   let metadata: Record<string, unknown> | undefined;
   if (row.metadata) {
     metadata =
-      typeof row.metadata === 'string' ? JSON.parse(row.metadata) : (row.metadata as Record<string, unknown>);
+      typeof row.metadata === 'string' ? (JSON.parse(row.metadata) as Record<string, unknown>) : row.metadata;
   }
   return {
     id: row.id,
