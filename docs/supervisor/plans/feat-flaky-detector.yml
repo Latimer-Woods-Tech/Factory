@@ -1,0 +1,127 @@
+id: feat-flaky-detector
+version: 1
+tier: yellow
+description: >
+  Flaky check detector: tracks CI checks that fail then pass on re-run and publishes a
+  weekly GitHub issue with a remediation report. Implements a new workflow file under
+  .github/workflows/; no production code is changed.
+triggers:
+  labels_any_of: [engineering, hardening, enhancement]
+  title_pattern: "^feat[(]reliability[)]:.*flaky"
+  body_patterns:
+    - "(?i)(flaky|flak|check.?fail.*re.?run|re.?run.*fail|intermittent.?check|weekly.?report|track.?fail|fail.?pass)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+slots:
+  - name: workflow_name
+    type: string
+    validator: "^[a-z][a-z0-9\\-]+$"
+    source: issue_body
+    default: flaky-check-detector
+  - name: report_schedule
+    type: string
+    validator: "^[0-9*/, ]{5,30}$"
+    source: issue_body
+    default: "0 9 * * 1"
+  - name: branch_name
+    type: string
+    validator: "^supervisor/ci/flaky-[a-z0-9][a-z0-9-]{0,50}$"
+    source: issue_body
+    default: supervisor/ci/flaky-detector
+  - name: commit_message
+    type: string
+    validator: "^feat[(]reliability[)]:"
+    source: issue_title
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: factory
+      path: ".github/workflows/COORDINATION.md"
+      ref: main
+      allow_missing: true
+    intent: "Read the workflow coordination guide to confirm naming conventions and approval patterns before adding a new workflow."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: factory
+      path: ".github/workflows/flaky-check-detector.yml"
+      ref: main
+      allow_missing: true
+    intent: "Check whether a flaky-detector workflow already exists to avoid duplicate creation."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      issue_ref: "$triggers.issue_number"
+      body: |
+        **Supervisor — flaky check detector plan (YELLOW tier)**
+
+        Workflow name: `$slots.workflow_name`
+        Report schedule (cron): `$slots.report_schedule`
+
+        This plan adds a new `.github/workflows/$slots.workflow_name.yml` that:
+        1. On `workflow_run` completion events, records checks that failed then passed on re-run.
+        2. On a weekly schedule (`$slots.report_schedule` UTC), opens a GitHub issue listing
+           flaky check names, frequency counts, and recommended remediation.
+
+        No production code paths are modified. Will open a draft PR for review.
+
+        React ✅ to proceed, or comment with adjustments needed.
+    intent: "Post a plan summary for CODEOWNER confirmation before drafting the PR. Yellow-tier requires human ✅."
+    requires_human_review: true
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: factory
+      base: main
+      head: "$slots.branch_name"
+      title: "$slots.commit_message"
+      draft: true
+      body: |
+        Closes #$triggers.issue_number
+
+        Adds `.github/workflows/$slots.workflow_name.yml` — flaky check detector.
+
+        **Behaviour:**
+        - Listens on `workflow_run` events; records check names that fail then pass on re-run.
+        - Weekly cron (`$slots.report_schedule`) opens a GitHub issue with the remediation report.
+
+        No runtime code changed. Only `.github/workflows/$slots.workflow_name.yml` added.
+
+        Yellow-tier: human review required before merge. Draft until approved.
+      labels: [engineering, hardening, enhancement, supervisor, tier-yellow]
+    intent: "Open a draft PR containing the new flaky-detector workflow YAML."
+    requires_human_review: true
+  - id: s5
+    tool: github.comment
+    depends_on: s4
+    params:
+      pr: "$s4.number"
+      body: |
+        Supervisor drafted this flaky-check-detector PR (yellow tier).
+        - Only `.github/workflows/$slots.workflow_name.yml` is added; no runtime paths touched.
+        - Report cron: `$slots.report_schedule` UTC (Monday 09:00).
+        - Source issue: #$triggers.issue_number (parent: #270)
+    intent: "Leave reviewer-facing provenance note on the PR."
+    requires_human_review: false
+acceptance_gate:
+  description: "A draft PR exists on the expected branch adding the flaky-detector workflow file."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=factory pr=$s4.number path=.github/workflows/$slots.workflow_name.yml"
+    assert: "count >= 1"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: factory
+      pr_number: "$s4.number"
+      comment: "Supervisor rollback: closing flaky-detector draft PR. Manual implementation required."

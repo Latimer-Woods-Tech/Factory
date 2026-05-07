@@ -63,6 +63,8 @@ export interface TranscribeOptions {
 export interface SynthesizeOptions {
   stability?: number;
   similarityBoost?: number;
+  /** AbortSignal for cancelling the underlying ElevenLabs request (e.g. AbortSignal.timeout). */
+  signal?: AbortSignal;
 }
 
 interface DeepgramResponse {
@@ -174,6 +176,7 @@ export async function synthesize(
   try {
     response = await fetchImpl(url, {
       method: 'POST',
+      signal: opts.signal,
       headers: {
         'xi-api-key': apiKey,
         'Content-Type': 'application/json',

@@ -22,6 +22,7 @@ export type TestRunStatus =
   | 'cancelled'
   | 'timed-out';
 
+/** Outcome of an individual test case. */
 export type TestOutcome = 'passed' | 'failed' | 'skipped' | 'todo';
 
 /**

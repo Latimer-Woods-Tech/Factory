@@ -2,7 +2,9 @@
   "name": "@latimer-woods-tech/monitoring",
   "version": "0.2.1",
   "private": false,
-  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -12,7 +14,11 @@
       "types": "./dist/index.d.mts"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts",
     "test": "vitest run --coverage",
@@ -30,8 +36,8 @@
     "@types/node": "^25.6.0",
     "typescript": "^5.4.0",
     "tsup": "^8.1.0",
-    "vitest": "^1.6.1",
-    "@vitest/coverage-v8": "^1.6.1",
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^8.57.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0"
