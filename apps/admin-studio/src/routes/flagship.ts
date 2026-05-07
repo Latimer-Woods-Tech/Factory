@@ -23,9 +23,14 @@ const flagship = new Hono<AppEnv>();
 
 /**
  * Wraps a D1 query promise with a wall-clock timeout.
- * D1 does not support AbortController natively, so we use Promise.race.
- * If the query exceeds `timeoutMs`, the fallback value is returned instead
- * of throwing — all callers degrade gracefully.
+ *
+ * **Why not AbortController?** Cloudflare D1's prepared-statement API (`.run()`,
+ * `.all()`, `.first()`) does not accept an `AbortSignal` — passing one silently
+ * has no effect and the underlying Worker sub-request cannot be cancelled at the
+ * network level. `Promise.race` is the only reliable timeout mechanism available
+ * for D1 in the Workers runtime. The D1 request will still complete (or fail)
+ * independently; we simply stop waiting for it and return `fallback` so the
+ * caller can degrade gracefully without blocking the HTTP response.
  */
 async function queryWithTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
   const timeout = new Promise<T>((_, reject) =>
@@ -508,6 +513,12 @@ flagship.get('/:key', async (c) => {
  * the toggle is a logical state tracked in FLAG_TELEMETRY. A real flip would
  * go through the Flagship Dashboard API or a cron job reading this table.
  * This endpoint records the operator intent as a canonical audit event.
+ *
+ * **Concurrency safety:** each call performs a single INSERT with a freshly
+ * generated UUID (`randomblob(8)`). There is no read-then-write sequence on a
+ * shared row, so concurrent toggle calls cannot overwrite each other. The D1
+ * table is an append-only audit log; the authoritative flag state lives in the
+ * Cloudflare Flagship Dashboard, not in this table.
  */
 flagship.post('/:key/toggle', adminOnly, async (c) => {
   const rawKey = c.req.param('key');
@@ -566,6 +577,10 @@ flagship.post('/:key/toggle', adminOnly, async (c) => {
  * Set a rollout percentage (0–100) for rollout-type flags.
  * Body: { percentage: number }
  * Requires admin/owner role.
+ *
+ * **Concurrency safety:** identical to the toggle endpoint — each call is a
+ * single INSERT with a new UUID. Concurrent rollout calls produce independent
+ * audit rows; no shared row is updated, so there is no overwrite hazard.
  */
 flagship.post('/:key/rollout', adminOnly, async (c) => {
   const rawKey = c.req.param('key');
