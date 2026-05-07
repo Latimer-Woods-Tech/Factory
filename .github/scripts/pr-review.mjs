@@ -166,7 +166,10 @@ function isNonWorkerFile(filename) {
   if (NON_WORKER_EXTENSIONS.includes(ext)) return true;
   // Config/dotfiles with no path prefix
   const basename = filename.split('/').pop() ?? filename;
-  return /^(CODEOWNERS|\.gitignore|\.gitattributes|renovate\.json|package\.json|tsconfig\.json)$/.test(basename);
+  if (/^(CODEOWNERS|\.gitignore|\.gitattributes|renovate\.json|package\.json|tsconfig\.json)$/.test(basename)) return true;
+  // Test-runner config files are Node.js infrastructure, not Cloudflare Workers code
+  if (/^(playwright|vitest|jest)\.config\.(ts|js|mjs|cjs)$/.test(basename)) return true;
+  return false;
 }
 
 function isFrontendUiFile(filename) {
