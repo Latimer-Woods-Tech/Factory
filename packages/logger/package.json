@@ -1,6 +1,6 @@
 {
   "name": "@latimer-woods-tech/logger",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -35,8 +35,8 @@
     "@types/node": "^25.6.0",
     "typescript": "^5.4.0",
     "tsup": "^8.1.0",
-    "vitest": "^1.6.1",
-    "@vitest/coverage-v8": "^1.6.1",
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^8.57.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0"
