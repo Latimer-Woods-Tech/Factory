@@ -26,8 +26,12 @@ const TABS = [
 
 export function Dashboard() {
   return (
-    <div className="flex h-[calc(100vh-44px)]">
-      <nav aria-label="Studio sections" className="w-56 border-r border-slate-800 bg-slate-950 p-3">
+    <div className="flex h-[calc(100vh-44px)] overflow-hidden">
+      {/* Sidebar — desktop only */}
+      <nav
+        aria-label="Studio sections"
+        className="hidden md:flex flex-col w-56 shrink-0 border-r border-slate-800 bg-slate-950 p-3 overflow-y-auto"
+      >
         <ul className="space-y-1">
           {TABS.map((tab) => (
             <li key={tab.to}>
@@ -46,7 +50,8 @@ export function Dashboard() {
         </ul>
       </nav>
 
-      <main className="flex-1 overflow-auto p-6">
+      {/* Main content — pad bottom on mobile so bottom nav doesn't overlap */}
+      <main className="flex-1 overflow-auto p-4 md:p-6 pb-16 md:pb-6">
         <Routes>
           <Route path="/" element={<Navigate to="/overview" replace />} />
           <Route path="/overview" element={<OverviewTab />} />
@@ -59,6 +64,26 @@ export function Dashboard() {
           <Route path="/audit" element={<AuditTab />} />
         </Routes>
       </main>
+
+      {/* Bottom nav — mobile only */}
+      <nav
+        aria-label="Studio sections mobile"
+        className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950 border-t border-slate-800 overflow-x-auto"
+      >
+        {TABS.map((tab) => (
+          <NavLink
+            key={tab.to}
+            to={tab.to}
+            className={({ isActive }) =>
+              `flex-shrink-0 px-3 py-2 text-xs whitespace-nowrap ${
+                isActive ? 'text-white border-b-2 border-emerald-500' : 'text-slate-400'
+              }`
+            }
+          >
+            {tab.label}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }
