@@ -1,0 +1,115 @@
+# SUP-1.2 — Verify Vertex AI access for supervisor-sa
+#
+# Proves that:
+#   1. aiplatform.googleapis.com is enabled on factory-495015
+#   2. supervisor-sa@factory-495015.iam.gserviceaccount.com has roles/aiplatform.user
+#   3. SUPERVISOR_VERTEX_SA_KEY org secret is valid and can reach gemini-2.5-pro
+#
+# Run this after Adrian completes the GCP console steps (enable API + create SA + grant
+# roles/aiplatform.user + mint key → org secret SUPERVISOR_VERTEX_SA_KEY).
+#
+# References:
+#   - docs/supervisor/ARCHITECTURE.md §6 (AI tokens — workload-by-workload)
+#   - docs/supervisor/EXECUTION_TRACKER.md SUP-1.2
+
+name: Verify Vertex AI (SUP-1.2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: 'Gemini model to test against'
+        required: false
+        default: 'gemini-2.5-pro'
+        type: string
+      location:
+        description: 'Vertex AI location'
+        required: false
+        default: 'us-central1'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Test generateContent → Gemini 2.5 Pro
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GCP_PROJECT: factory-495015
+      VERTEX_LOCATION: ${{ inputs.location || 'us-central1' }}
+      VERTEX_MODEL: ${{ inputs.model || 'gemini-2.5-pro' }}
+
+    steps:
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.SUPERVISOR_VERTEX_SA_KEY }}
+
+      - name: Mint short-lived access token
+        id: token
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "access_token=$TOKEN" >> "$GITHUB_OUTPUT"
+          echo "::add-mask::$TOKEN"
+
+      - name: Call Vertex AI generateContent
+        id: gemini
+        env:
+          ACCESS_TOKEN: ${{ steps.token.outputs.access_token }}
+        run: |
+          ENDPOINT="https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT}/locations/${VERTEX_LOCATION}/publishers/google/models/${VERTEX_MODEL}:generateContent"
+
+          RESPONSE=$(curl --silent --fail-with-body \
+            -X POST "$ENDPOINT" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "contents": [
+                {
+                  "role": "user",
+                  "parts": [{ "text": "Reply with exactly the word: PONG" }]
+                }
+              ],
+              "generationConfig": {
+                "maxOutputTokens": 10,
+                "temperature": 0
+              }
+            }')
+
+          echo "Raw response:"
+          echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
+
+          TEXT=$(echo "$RESPONSE" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    candidates = data.get('candidates', [])
+    if not candidates:
+        print('ERROR: no candidates in response', file=sys.stderr)
+        sys.exit(1)
+    parts = candidates[0].get('content', {}).get('parts', [])
+    if not parts:
+        print('ERROR: no parts in first candidate', file=sys.stderr)
+        sys.exit(1)
+    text = parts[0].get('text', '')
+    print(text.strip())
+except (json.JSONDecodeError, KeyError, IndexError) as e:
+    print(f'ERROR: unexpected response structure: {e}', file=sys.stderr)
+    sys.exit(1)
+")
+
+          echo "Model replied: $TEXT"
+          echo "reply=$TEXT" >> "$GITHUB_OUTPUT"
+
+      - name: Assert response is non-empty
+        run: |
+          REPLY="${{ steps.gemini.outputs.reply }}"
+          if [ -z "$REPLY" ]; then
+            echo "::error::Vertex AI returned an empty reply — check SA permissions or API enablement"
+            exit 1
+          fi
+          echo "✅  SUP-1.2 verified: supervisor-sa can call gemini-2.5-pro via us-central1"
+          echo "    Model reply: $REPLY"
