@@ -27,6 +27,7 @@
 
 ### Code Quality
 - [ ] Code review approved (≥2 approvals if required by branch protection)
+- [ ] Required checks green on the head SHA: `CI / validate`, `CodeQL Security Analysis / Analyze (javascript)`, `Dependency Review / dependency-review`
 - [ ] TypeScript strict + no `any` in public APIs (internal-only `any` must have comment)
 - [ ] ESLint passes with `--max-warnings 0`
 - [ ] Build succeeds: `npm run build` produces clean output
@@ -51,6 +52,10 @@
 - [ ] Changelog entry added to CHANGELOG.md
 - [ ] If new service: entry added to [docs/service-registry.yml](../docs/service-registry.yml)
 - [ ] If new runbook: added to [docs/runbooks/](../docs/runbooks/)
+
+### Coordination
+- [ ] PR body links the governing issue with `Closes #N`
+- [ ] If this work affects project automation, status sync, or branch policy: issue `/status` comments were updated so the board and coordinator have machine-readable state
 
 ### Design & Product (if UI changes)
 - [ ] Design review passed
