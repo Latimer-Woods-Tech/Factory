@@ -279,7 +279,7 @@ describe('createAdminRouter', () => {
     const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
     const app = new Hono();
     app.route('/admin', router);
-    const r = await app.request('http://test/admin/');
+    const r = await app.request('http://test/admin');
     expect(r.status).toBe(200);
     const body = await r.json() as DashboardSummary;
     expect(body.appId).toBe('app');
