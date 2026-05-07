@@ -34,6 +34,8 @@ If you skipped any of those, go back. Most agent failures here come from skippin
 - **Check `.github/workflows/` before creating a workflow.** 40+ workflows already exist. Most "new" workflows are actually variations of an existing one and should be parameterized into a reusable, not duplicated.
 - **Check `packages/` before creating a package.** 24 packages cover the full stack — see [`docs/STACK.md`](STACK.md) for current versions and the banned-tools list. Don't duplicate what exists.
 
+- **Check dependency ownership before touching updater config.** In this repo, Renovate is the source of truth for npm dependency updates; Dependabot is scoped to GitHub Actions updates so bots do not open competing PRs.
+
 Use ripgrep aggressively. The repo is searchable. There is no excuse for redundant work.
 
 ---
@@ -69,6 +71,8 @@ If you need to add a new org secret, use `actions/secrets#create-or-update-an-or
 - ❌ Change Stripe products, prices, webhook endpoints, or business profile in production
 - ❌ Send live email, SMS, or push notifications outside of test mode
 - ❌ Touch user-data tables in a Neon production DB
+- ❌ Hardcode a `*.workers.dev` URL in any user-facing HTML, JS, or API client — always use the branded `custom_domain` from `docs/service-registry.yml`
+- ❌ Touch the wordis-bond UI/frontend layer under any circumstances — the engine/worker backend may be worked on normally; ask a CODEOWNER if unsure which layer a file belongs to
 
 If you think you need to do one of those, **stop and ask the human first.**
 
@@ -131,13 +135,15 @@ fix(ci): use App-token for cross-repo package installs
 
 2. **Update docs in the same PR as code.** If you change a reusable workflow's behavior, update its header comment and `docs/CI_CD.md` in the same commit.
 
-3. **Make changes idempotent.** Provisioning workflows run repeatedly. If your workflow can't be re-run safely, it's broken.
+3. **Let workflow state drive the project board.** The shared project board now self-heals missing cards and derives status from issue claims, assignees, `/status` comments, and linked PRs. Update the issue and PR truthfully; don't spend time hand-moving cards.
 
-4. **Surface receipts.** When you finish a task, post: what you ran, what changed, what you verified, and what's left. Hand-waving costs the human their trust.
+4. **Make changes idempotent.** Provisioning workflows run repeatedly. If your workflow can't be re-run safely, it's broken.
 
-5. **Be explicit about uncertainty.** If you don't know whether something is safe, say so and ask.
+5. **Surface receipts.** When you finish a task, post: what you ran, what changed, what you verified, and what's left. Hand-waving costs the human their trust.
 
-6. **Use the Factory ship orchestrator for external repos.** The canonical entrypoint is `node scripts/agent-ship.mjs`. Do not invent ad hoc per-repo push flows when a repo is already registered.
+6. **Be explicit about uncertainty.** If you don't know whether something is safe, say so and ask.
+
+7. **Use the Factory ship orchestrator for external repos.** The canonical entrypoint is `node scripts/agent-ship.mjs`. Do not invent ad hoc per-repo push flows when a repo is already registered.
 
 ---
 
@@ -171,6 +177,8 @@ When you complete work, write to `docs/sessions/YYYY-MM-DD-<short-name>.md` with
 ```
 
 Then point the human at the file. The human reads these to keep state. Don't make them dig.
+
+For workflow or governance changes, include the exact required checks and any project-board side effects in `Decisions made / pending` so coordinators know what the bots are now expected to satisfy.
 
 ---
 
