@@ -270,6 +270,45 @@ CREATE TABLE IF NOT EXISTS call_logs (
 );
 `.trim();
 
+/**
+ * DDL statements that enable Row-Level Security on the three outreach tables
+ * and add a tenant-isolation policy backed by the `app.tenant_id` session
+ * variable.  Run once during provisioning after the tables are created.
+ *
+ * The application must set `SET LOCAL app.tenant_id = '<id>'` inside each
+ * transaction before issuing any CRM query, e.g.:
+ *
+ * ```sql
+ * BEGIN;
+ * SET LOCAL app.tenant_id = 'acme-corp';
+ * SELECT * FROM outreach_contacts; -- only acme-corp rows are visible
+ * COMMIT;
+ * ```
+ *
+ * This provides defence-in-depth: even if the application-layer WHERE clause
+ * is accidentally omitted, Postgres will silently filter to the current tenant.
+ */
+export const ENABLE_OUTREACH_RLS = `
+ALTER TABLE outreach_contacts  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outreach_campaigns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE call_logs          ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY outreach_contacts_tenant_isolation  ON outreach_contacts
+  USING (tenant_id = current_setting('app.tenant_id', TRUE));
+
+CREATE POLICY outreach_campaigns_tenant_isolation ON outreach_campaigns
+  USING (tenant_id = current_setting('app.tenant_id', TRUE));
+
+CREATE POLICY call_logs_tenant_isolation ON call_logs
+  USING (
+    EXISTS (
+      SELECT 1 FROM outreach_campaigns c
+       WHERE c.id = campaign_id
+         AND c.tenant_id = current_setting('app.tenant_id', TRUE)
+    )
+  );
+`.trim();
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
