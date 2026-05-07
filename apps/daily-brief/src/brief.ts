@@ -13,6 +13,20 @@ import { synthesizeAndStore } from './render/tts';
 import { buildEmailHtml } from './render/email';
 
 /**
+ * Races a promise against a timeout — rejects with a labeled error if `ms` elapses first.
+ * Section fetches don't accept AbortController signals, so this is the safe cross-platform
+ * alternative that keeps us compliant with the no-Node-built-ins constraint.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`[daily-brief] timeout after ${ms}ms: ${label}`)), ms),
+    ),
+  ]);
+}
+
+/**
  * Top-level orchestrator. Gathers all data sections, runs the LLM,
  * generates TTS audio, and fires the email to all recipients.
  */
@@ -26,21 +40,21 @@ export async function runDailyBrief(env: Env): Promise<void> {
     timeZone: 'America/New_York',
   });
 
-  // Gather all data sections in parallel — none depend on each other
+  // Gather all data sections in parallel — each capped at 8 s to prevent cron overruns
   const [weather, news, activity, health, wisdom, stripeMrr, postHog, sentry] = await Promise.allSettled([
-    fetchWeather(),
-    fetchNewsSection(env.NEWS_API_KEY),
-    fetchGitHubActivity(env.GITHUB_TOKEN, env.GITHUB_ORG),
-    fetchWorkerHealth(),
-    fetchWisdomSection(env),
+    withTimeout(fetchWeather(), 8_000, 'weather'),
+    withTimeout(fetchNewsSection(env.NEWS_API_KEY), 8_000, 'news'),
+    withTimeout(fetchGitHubActivity(env.GITHUB_TOKEN, env.GITHUB_ORG), 8_000, 'github-activity'),
+    withTimeout(fetchWorkerHealth(), 8_000, 'worker-health'),
+    withTimeout(fetchWisdomSection(env), 8_000, 'wisdom'),
     env.STRIPE_SECRET_KEY
-      ? fetchStripeMrr(env.STRIPE_SECRET_KEY)
+      ? withTimeout(fetchStripeMrr(env.STRIPE_SECRET_KEY), 8_000, 'stripe')
       : Promise.reject('Stripe not configured'),
     env.POSTHOG_API_KEY && env.POSTHOG_PROJECT_ID
-      ? fetchPostHogSnapshot(env.POSTHOG_API_KEY, env.POSTHOG_PROJECT_ID)
+      ? withTimeout(fetchPostHogSnapshot(env.POSTHOG_API_KEY, env.POSTHOG_PROJECT_ID), 8_000, 'posthog')
       : Promise.reject('PostHog not configured'),
     env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG
-      ? fetchSentryErrors(env.SENTRY_AUTH_TOKEN, env.SENTRY_ORG)
+      ? withTimeout(fetchSentryErrors(env.SENTRY_AUTH_TOKEN, env.SENTRY_ORG), 8_000, 'sentry')
       : Promise.reject('Sentry not configured'),
   ]);
 
@@ -95,7 +109,7 @@ export async function runDailyBrief(env: Env): Promise<void> {
     fromName: 'Daily Brief',
   });
 
-  await Promise.all(
+  const emailResults = await Promise.allSettled(
     recipients.map((to) =>
       emailClient.sendTransactional({
         to,
@@ -105,4 +119,11 @@ export async function runDailyBrief(env: Env): Promise<void> {
       }),
     ),
   );
+
+  for (let i = 0; i < emailResults.length; i++) {
+    const result = emailResults[i];
+    if (result?.status === 'rejected') {
+      console.warn(`[daily-brief] Failed to send to ${recipients[i]}: ${String(result.reason)}`);
+    }
+  }
 }
