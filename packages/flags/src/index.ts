@@ -33,17 +33,19 @@ const FLAGSHIP_TIMEOUT_MS = 5_000;
 
 /**
  * Race a Flagship binding call against a hard timeout so Workers never hang waiting for the API.
- * On timeout the AbortError is re-thrown so the caller's catch returns the fallback.
+ * Uses setTimeout so the implementation is compatible with all Workers runtimes.
  */
 function withTimeout<T>(promise: Promise<T>): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      AbortSignal.timeout(FLAGSHIP_TIMEOUT_MS).addEventListener('abort', () =>
-        reject(new DOMException('Flagship call timed out', 'AbortError'))
-      )
-    ),
-  ]);
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(
+      () => reject(new Error(`[flags] Flagship call timed out after ${FLAGSHIP_TIMEOUT_MS} ms`)),
+      FLAGSHIP_TIMEOUT_MS,
+    );
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e: unknown) => { clearTimeout(t); reject(e instanceof Error ? e : new Error(String(e))); },
+    );
+  });
 }
 
 /** @public */
