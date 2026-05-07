@@ -1,0 +1,132 @@
+id: feat-memory-single-writer
+version: 1
+tier: yellow
+description: >
+  Memory single-writer policy (MA-8): adds a CI workflow that prevents concurrent
+  memory/*.md edits by enforcing a file-lock check on PRs targeting memory/ paths.
+  Implements the policy as a GitHub Actions workflow; no runtime code is changed.
+triggers:
+  labels_any_of: [engineering, hardening]
+  title_pattern: "^MA-8|memory.?single.?writer|concurrent.?memory|memory.*lock"
+  body_patterns:
+    - "(?i)(memory.?single.?writer|memory/.*\\.md|concurrent.*edit|single.?writer|prevent.?concurrent|file.?lock|ma.?8)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+slots:
+  - name: memory_path_glob
+    type: string
+    validator: "^[a-zA-Z0-9*/_\\-\\.]{3,80}$"
+    source: issue_body
+    default: "memory/*.md"
+  - name: workflow_name
+    type: string
+    validator: "^[a-z][a-z0-9\\-]+$"
+    source: issue_body
+    default: memory-single-writer
+  - name: branch_name
+    type: string
+    validator: "^supervisor/ci/memory-[a-z0-9][a-z0-9-]{0,50}$"
+    source: issue_body
+    default: supervisor/ci/memory-single-writer
+  - name: commit_message
+    type: string
+    validator: "^feat[(](ci|engineering|hardening)[)]:"
+    source: issue_title
+    default: "feat(ci): add memory single-writer lock workflow (MA-8)"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: factory
+      path: ".github/workflows/COORDINATION.md"
+      ref: main
+      allow_missing: true
+    intent: "Read the workflow coordination guide to confirm naming conventions for the new lock workflow."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: factory
+      path: ".github/workflows/memory-single-writer.yml"
+      ref: main
+      allow_missing: true
+    intent: "Check whether a memory-lock workflow already exists to avoid duplicate creation."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      issue_ref: "$triggers.issue_number"
+      body: |
+        **Supervisor — memory single-writer policy plan (YELLOW tier)**
+
+        Memory path glob: `$slots.memory_path_glob`
+        Workflow name: `$slots.workflow_name`
+
+        This plan adds `.github/workflows/$slots.workflow_name.yml` that:
+        1. Triggers on `pull_request` events touching `$slots.memory_path_glob`.
+        2. Checks that no other open PR is simultaneously modifying paths matching
+           `$slots.memory_path_glob`.
+        3. Fails the check (blocks merge) if a concurrent memory-file edit is detected,
+           linking to the conflicting PR for resolution.
+
+        No runtime code is changed. Only the new CI workflow file is added.
+
+        React ✅ to confirm, or comment with adjustments needed.
+    intent: "Post the plan for CODEOWNER confirmation. Yellow-tier — human ✅ required before file creation."
+    requires_human_review: true
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: factory
+      base: main
+      head: "$slots.branch_name"
+      title: "$slots.commit_message"
+      draft: true
+      body: |
+        Closes #$triggers.issue_number
+
+        Adds `.github/workflows/$slots.workflow_name.yml` — memory single-writer lock.
+
+        **Policy enforced:**
+        - On any PR touching `$slots.memory_path_glob`, fail CI if another open PR
+          is simultaneously modifying a file matching the same glob.
+        - Prevents concurrent memory/*.md edits from diverging or overwriting each other.
+
+        No runtime code touched. Only `.github/workflows/$slots.workflow_name.yml` added.
+
+        Yellow-tier: human review required before merge. Draft until approved.
+      labels: [engineering, hardening, supervisor, tier-yellow]
+    intent: "Open a draft PR adding the memory-lock workflow. Low blast radius — only CI is affected."
+    requires_human_review: true
+  - id: s5
+    tool: github.comment
+    depends_on: s4
+    params:
+      pr: "$s4.number"
+      body: |
+        Supervisor drafted this memory-single-writer PR (yellow tier).
+        - Only `.github/workflows/$slots.workflow_name.yml` is added.
+        - Memory path glob enforced: `$slots.memory_path_glob`
+        - No runtime packages, migrations, or production config modified.
+        - Source issue: #$triggers.issue_number (MA-8)
+    intent: "Leave reviewer-facing provenance note on the PR."
+    requires_human_review: false
+acceptance_gate:
+  description: "A draft PR exists on the expected branch adding the memory-lock workflow file."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=factory pr=$s4.number path=.github/workflows/$slots.workflow_name.yml"
+    assert: "count >= 1"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: factory
+      pr_number: "$s4.number"
+      comment: "Supervisor rollback: closing memory-single-writer draft PR. Manual implementation required."

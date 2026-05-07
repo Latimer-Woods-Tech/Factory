@@ -1,0 +1,132 @@
+id: repo-governance-audit
+version: 1
+tier: yellow
+description: >
+  Repo governance audit: reads repository metadata for all Latimer-Woods-Tech repos and
+  produces a structured audit comment listing merge-settings drift, missing descriptions,
+  incorrect visibility, and missing SECURITY.md. Outputs a findings comment and optionally
+  a docs PR with the audit report. No repos are archived or mutated automatically.
+triggers:
+  labels_any_of: [area:ops, hardening]
+  title_pattern: "^OPS-2|repo.?governance|legacy.?cleanup|visibility.?audit"
+  body_patterns:
+    - "(?i)(legacy.?cleanup|visibility.?audit|merge.?setting|squash.?only|SECURITY\\.md|archive|repo.?governance|pre.?factory)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.comment
+  - capability_exists: github.openPR
+slots:
+  - name: audit_scope
+    type: enum
+    values: [all-repos, factory-managed, legacy-only]
+    source: issue_body
+    default: all-repos
+  - name: branch_name
+    type: string
+    validator: "^supervisor/governance/repo-audit-[a-z0-9][a-z0-9-]{0,50}$"
+    source: issue_body
+    default: supervisor/governance/repo-audit
+  - name: commit_message
+    type: string
+    validator: "^(chore|docs)[(](governance|ops)[)]:"
+    source: issue_title
+    default: "docs(governance): add repo governance audit report"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: factory
+      path: "docs/runbooks/transfer.md"
+      ref: main
+      allow_missing: true
+    intent: "Read the transfer runbook to understand the pre-archive checklist criteria used to evaluate legacy repos."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: factory
+      path: "docs/service-registry.yml"
+      ref: main
+      allow_missing: true
+    intent: "Read the service registry to enumerate known Factory-managed repos and distinguish them from legacy repos."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      issue_ref: "$triggers.issue_number"
+      body: |
+        **Supervisor — repo governance audit (YELLOW tier)**
+
+        Audit scope: `$slots.audit_scope`
+
+        The supervisor will produce a structured audit report covering:
+        - Merge settings drift (`squashMergeAllowed`, `rebaseMergeAllowed`, `deleteBranchOnMerge`)
+        - Repos missing descriptions
+        - Public repos without `SECURITY.md`
+        - Legacy repos (`coh`, `The_Calling`, `focusbro`) — archive candidates
+
+        **No repos will be archived or mutated automatically.**
+        All findings are report-only. Mutations require explicit human action per FRIDGE rule 8.
+
+        Will open a draft PR adding `docs/governance/repo-audit-$(date +%Y-%m).md`.
+        React ✅ to proceed.
+    intent: "Post the audit plan for CODEOWNER confirmation. Yellow-tier requires human ✅ before proceeding."
+    requires_human_review: true
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: factory
+      base: main
+      head: "$slots.branch_name"
+      title: "$slots.commit_message"
+      draft: true
+      body: |
+        Closes #$triggers.issue_number (or enables human to action sub-issues)
+
+        Adds `docs/governance/repo-audit.md` — structured findings from the OPS-2
+        repo governance audit.
+
+        **Scope:** $slots.audit_scope
+
+        **Findings format:**
+        | Repo | Issue | Required action |
+        |------|-------|----------------|
+        | (populated from audit) | ... | ... |
+
+        **No repos are archived or mutated by this PR.**
+        All mutations are manual follow-ups per the transfer runbook.
+
+        Yellow-tier: human review required before merge.
+      labels: [area:ops, hardening, supervisor, tier-yellow]
+    intent: "Open a draft PR adding the governance audit report doc. Read-only findings; no mutations."
+    requires_human_review: true
+  - id: s5
+    tool: github.comment
+    depends_on: s4
+    params:
+      pr: "$s4.number"
+      body: |
+        Supervisor drafted this repo governance audit PR (yellow tier).
+        - Only `docs/governance/repo-audit.md` is added (new doc, no existing files modified).
+        - No repos archived, no settings changed — findings only.
+        - Sub-issues OPS-2.1, OPS-2.2, OPS-2.3 require separate human-initiated actions.
+        - Source issue: #$triggers.issue_number
+    intent: "Leave reviewer-facing provenance note on the PR."
+    requires_human_review: false
+acceptance_gate:
+  description: "A draft PR exists on the expected branch adding the audit report doc, with no mutation steps executed."
+  verifier_query:
+    tool: github.openPR
+    query: "pr:$s4.number draft==true labels contains 'tier-yellow' AND base == 'main'"
+    assert: "count >= 1"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: factory
+      pr_number: "$s4.number"
+      comment: "Supervisor rollback: closing repo-governance-audit draft PR. Manual audit required."
