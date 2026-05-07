@@ -157,7 +157,7 @@ function extractAddedLines(files) {
 // Files that are NOT Cloudflare Workers runtime code.
 // Workers runtime constraints (process.env, require, Buffer, Node built-ins)
 // do NOT apply to these files — applying them causes false positives.
-const NON_WORKER_PATH_PREFIXES = ['.github/', 'scripts/', 'docs/', 'tests/', 'migrations/'];
+const NON_WORKER_PATH_PREFIXES = ['.github/', 'scripts/', 'docs/', 'tests/', 'migrations/', 'e2e/'];
 const NON_WORKER_EXTENSIONS = ['.md', '.yml', '.yaml', '.json', '.jsonc', '.toml', '.txt', '.gitignore'];
 
 function isNonWorkerFile(filename) {
