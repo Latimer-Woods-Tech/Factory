@@ -6,7 +6,7 @@
  *   - admin/owner:   any user
  *
  * Filters:
- *   - env, userId, action (substring), from, to (ISO 8601)
+ *   - env, userId, action (substring), actor, requestId, sessionId, from, to (ISO 8601)
  *   - limit (1..200, default 50), cursor (ISO timestamp)
  *
  * @see packages/studio-core/src/health.ts for AuditQuery / AuditPage shape
@@ -15,6 +15,7 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../types.js';
 import { isEnvironment, type AuditQuery } from '@latimer-woods-tech/studio-core';
 import { queryAuditEntries } from '../lib/audit-store.js';
+import { isTableMissing } from '../lib/schema-readiness.js';
 
 const audit = new Hono<AppEnv>();
 
@@ -31,6 +32,9 @@ audit.get('/', async (c) => {
   const query: AuditQuery = {
     env: env ?? ctx.env,
     action: params.get('action') ?? undefined,
+    actor: params.get('actor') ?? undefined,
+    requestId: params.get('requestId') ?? undefined,
+    sessionId: params.get('sessionId') ?? undefined,
     from: params.get('from') ?? undefined,
     to: params.get('to') ?? undefined,
     cursor: params.get('cursor') ?? undefined,
@@ -54,9 +58,23 @@ audit.get('/', async (c) => {
     const page = await queryAuditEntries(c.env.DB, query);
     return c.json(page);
   } catch (err) {
+    if (isTableMissing(err, 'studio_audit_log')) {
+      return c.json(
+        {
+          error: 'schema not ready',
+          detail: 'studio_audit_log table does not exist — run database migrations',
+        },
+        503,
+      );
+    }
+    console.error('[audit] query failed:', {
+      requestId: c.var.requestId,
+      error: (err as Error).message,
+    });
     return c.json(
       {
         error: 'Audit query failed',
+        requestId: c.var.requestId,
         detail: c.env.STUDIO_ENV !== 'production' ? (err as Error).message : undefined,
       },
       500,

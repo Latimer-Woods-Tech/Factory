@@ -2,7 +2,9 @@
 
 **Purpose:** Comprehensive inventory of all Factory apps and external platforms, including status, ownership, delivery gates, W360 disposition, and verification requirements.
 
-**Last Updated:** 2026-04-29 (W360-031 initiation)
+**Last Updated:** 2026-05-06 (local validation refresh)
+
+**Validation note:** Factory-internal rows below reflect the latest local validation sweep in this repo. Live `/health` and deployed smoke verification remain pending unless explicitly marked verified.
 
 ---
 
@@ -12,18 +14,18 @@
 
 | App Name | Type | Owner | Repo | Status | Health | CI | Docs | Gates | W360 Phase |
 |---|---|---|---|---|---|---|---|---|---|
-| **admin-studio** | Hono Worker | Revenue/Admin team | factory (apps/) | ⚡ IN PROGRESS | /health ❓ | 🟡 Failing | ✅ Full | RBAC, audit, deploy, smoke | P0 |
-| **schedule-worker** | Hono Worker (Cron) | Video/Ops team | factory (apps/) | ⚠️ BETA | /health ❓ | 🟡 Failing | ✅ Full | cron schedule, video dispatch queue | P0 |
-| **video-cron** | Hono Worker (Cron) | Video team | factory (apps/) | ⚠️ BETA | /health ❓ | 🟡 Failing | ✅ Partial | cron schedule, video rendering | P0 |
+| **admin-studio** | Hono Worker | Revenue/Admin team | factory (apps/) | ⚡ IN PROGRESS | /health ✅ (staging + production verified 2026-05-06) | 🟡 Local typecheck passing | ✅ Full | RBAC, audit, deploy, smoke | P0 |
+| **schedule-worker** | Hono Worker (Cron) | Video/Ops team | factory (apps/) | ⚠️ BETA | /health ✅ (verified 2026-05-06) | 🟡 Local typecheck passing | ✅ Full | cron schedule, video dispatch queue | P0 |
+| **video-cron** | Hono Worker (Cron) | Video team | factory (apps/) | ⚠️ BETA | /health ✅ (verified 2026-05-06) | 🟡 Local typecheck passing | ✅ Partial | cron schedule, video rendering | P0 |
 | **synthetic-monitor** | Hono Worker (Scheduled) | Observability/SRE | factory (apps/) | ⚠️ BETA | /health ✅ | ✅ Passing | ✅ Full | journey probes, SLO enforcement | P0 |
 
 ### UI Apps (React/Vite/Pages)
 
 | App Name | Type | Owner | Repo | Status | Build | CI | Docs | Gates | W360 Phase |
 |---|---|---|---|---|---|---|---|---|---|
-| **admin-studio-ui** | React app | Revenue/Admin team | factory (apps/) | ⚡ IN PROGRESS | Vite | 🟡 Failing | ✅ Full | a11y ≥95, component test harness | P1 |
+| **admin-studio-ui** | React app | Revenue/Admin team | factory (apps/) | ⚡ IN PROGRESS | Vite | 🟡 Local typecheck passing | ✅ Full | a11y ≥95, component test harness | P1 |
 | **video-studio** | React app | Video team | factory (apps/) | ⚠️ BETA | TBD | ❓ Unknown | ✅ Partial | video form validation, preview, status | P1 |
-| **prime-self-smoke** | React smoke tests | Product/Design team | factory (apps/) | ⚠️ BETA | Vitest | ⚡ Disabled | ✅ Partial | e2e landing page, auth flow | P1 |
+| **prime-self-smoke** | React smoke tests | Product/Design team | factory (apps/) | ⚠️ BETA | Vitest | 🟡 Typecheck added; smoke disabled | ✅ Partial | e2e landing page, auth flow | P1 |
 
 ### Reference/Template Apps
 
@@ -95,6 +97,14 @@
 - ⚡ **video-cron** — Video rendering automation, pipeline orchestration
 - ✅ **synthetic-monitor** — Live probes running; W360-022 7/9 active (4 journey proxies + 3 manifest probes)
 
+### Local Validation Refresh (2026-05-06)
+
+- ✅ `admin-studio`, `admin-studio-ui`, `schedule-worker`, and `video-cron` now pass local `tsc --noEmit`
+- ✅ `prime-self-smoke` now has a repo-native `typecheck` script and local TS config
+- ✅ `factory-supervisor` planner test regression is fixed and local tests pass
+- ✅ Direct `/health` verification completed for `schedule-worker`, `video-cron`, `admin-studio-staging`, and `admin-studio-production` on 2026-05-06
+- 🟡 Deployed smoke and deeper environment-specific runtime verification still require direct endpoint checks beyond `/health`
+
 ---
 
 ## Graduation Gates Matrix (W360-035)
@@ -157,6 +167,11 @@ For each app in W360-035, verify:
 - Documented graduation gate matrix (W360-035 prerequisite)
 - Linked package dependency chain to W360 roadmap
 - Established verification checklist for launch readiness
+
+**Validation refresh — 2026-05-06:**
+- Updated Factory-internal app rows to distinguish local validation from live verification
+- Recorded the restored local typecheck status for admin-studio, admin-studio-ui, schedule-worker, and video-cron
+- Recorded the new `prime-self-smoke` typecheck support and supervisor test fix
 
 **Next Steps:**
 1. W360-034: Audit configs across all apps + normalize
