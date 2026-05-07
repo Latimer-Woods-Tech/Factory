@@ -51,6 +51,15 @@ env:
 | `NODE_AUTH_TOKEN` | npm registry auth for @latimer-woods-tech/* packages | `.npmrc` (in GitHub Packages) | Quarterly via GitHub PAT | `ghp_xxx...` (GitHub PAT) |
 | `GH_PAT` | PAT for scaffold workflows to push to app repos | `scaffold-*.yml` workflows | Quarterly | `ghp_xxx...` (repo + read:packages) |
 
+### Required for Supervisor Vertex AI (SUP-1.2)
+
+These secrets enable the supervisor planner's Gemini 2.5 Pro long-context fallback via Google Vertex AI.
+Provisioned by `scripts/provision-vertex-ai-sa.sh`; rotation procedure at `docs/runbooks/rotate-gcp-sa.md`.
+
+| Secret | Purpose | Set In | Rotation | Provider |
+|--------|---------|--------|----------|----------|
+| `SUPERVISOR_VERTEX_SA_KEY` | JSON key for `supervisor-sa@factory-495015.iam.gserviceaccount.com` (roles/aiplatform.user only). Used by `verify-vertex-ai.yml` and to mint `VERTEX_ACCESS_TOKEN` at deploy time. | **Org secret** (`Latimer-Woods-Tech`) — default visibility: all repos. Restrict to `factory` repo only if Vertex AI is not needed elsewhere. | Quarterly or on compromise — see `docs/runbooks/rotate-gcp-sa.md` | Google Cloud IAM |
+
 ### Required for Each App Repository
 
 | Secret | Purpose | Set In | Rotation | Provider |
