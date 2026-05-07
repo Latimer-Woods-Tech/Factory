@@ -323,4 +323,31 @@ describe('tracedFetch', () => {
     expect(capturedHeaders?.get('authorization')).toBe('Bearer token');
     expect(capturedHeaders?.get('x-request-id')).toBe('my-id');
   });
+
+  it('injects a default 30 s AbortSignal when none is provided', async () => {
+    let capturedInit: RequestInit | undefined;
+    const mockFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response('', { status: 200 });
+    });
+
+    const tfetch = tracedFetch('req-1', mockFetch as unknown as typeof fetch);
+    await tfetch('https://example.workers.dev/');
+
+    expect(capturedInit?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('respects a caller-provided AbortSignal over the default', async () => {
+    let capturedInit: RequestInit | undefined;
+    const mockFetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response('', { status: 200 });
+    });
+
+    const callerSignal = AbortSignal.timeout(5_000);
+    const tfetch = tracedFetch('req-2', mockFetch as unknown as typeof fetch);
+    await tfetch('https://example.workers.dev/', { signal: callerSignal });
+
+    expect(capturedInit?.signal).toBe(callerSignal);
+  });
 });

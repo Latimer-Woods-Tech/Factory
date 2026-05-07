@@ -231,6 +231,7 @@ export function tracedFetch(requestId: string, baseFetch: typeof fetch = fetch):
   return (input, init) => {
     const headers = new Headers(init?.headers);
     headers.set('x-request-id', requestId);
-    return baseFetch(input, { ...init, headers });
+    const signal = init?.signal ?? AbortSignal.timeout(30_000);
+    return baseFetch(input, { ...init, headers, signal });
   };
 }
