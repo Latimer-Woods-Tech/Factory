@@ -536,7 +536,8 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     while ((res.status === 429 || res.status >= 500) && attempt < maxRetries) {
       logStripeError(`${path} (attempt ${attempt + 1})`, res.status);
       const delayMs = Math.min(1_000 * 2 ** attempt, 8_000); // 1s, 2s, 4s, …, cap 8s
-      await new Promise<void>((r) => setTimeout(r, delayMs));
+      // scheduler.wait() is the Workers-native delay API (not setTimeout).
+      await scheduler.wait(delayMs);
       res = await stripeGet(path);
       attempt++;
     }

@@ -105,14 +105,15 @@ export async function generateAndUploadAudio(
     let ttsRes = await attemptTts();
 
     // Retry up to 2 times on transient failures (429 rate limit, 5xx server errors)
-    // using exponential backoff (1s, 2s, cap 8s) — matching the Stripe retry pattern.
+    // using exponential backoff (1s, 2s, cap 8s) via scheduler.wait() — the
+    // Workers-native delay API (not setTimeout).
     // AbortError (timeout) comes back as null from attemptTts() and is not retried.
     let attempt = 0;
     const MAX_TTS_RETRIES = 2;
     while (ttsRes && (ttsRes.status === 429 || ttsRes.status >= 500) && attempt < MAX_TTS_RETRIES) {
       const delayMs = Math.min(1_000 * 2 ** attempt, 8_000); // 1s, 2s, cap 8s
       console.warn(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status} (attempt ${attempt + 1}) — retrying after ${delayMs}ms`);
-      await new Promise<void>((r) => setTimeout(r, delayMs));
+      await scheduler.wait(delayMs);
       ttsRes = await attemptTts();
       attempt++;
     }
