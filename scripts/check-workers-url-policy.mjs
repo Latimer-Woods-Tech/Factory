@@ -1,7 +1,85 @@
 #!/usr/bin/env node
-import {readFileSync,readdirSync,statSync}from'node:fs';import path from'node:path';const ACCOUNT_SUBDOMAIN='adrper79';const WORKERS_DEV_RE=/.workers.dev/i;const CANONICAL_RE=new RegExp(String.raw`.${ACCOUNT_SUBDOMAIN}.workers.dev`,'i');const URL_RE=/https://[^s'"`),>]+/g;const SKIP_DIRS=new Set(['node_modules','.git','dist','.wrangler','_external_reviews','.cache']);function*walkDir(dir){for(const entry of readdirSync(dir,{withFileTypes:true})){if(SKIP_DIRS.has(entry.name))continue;const full=path.join(dir,entry.name);if(entry.isDirectory())yield*walkDir(full);else yield full;}}const violations=[];function addViolation(file,line,msg){violations.push({file,line,msg});}const DOCS_TARGET_FILES=['docs/APP_README_TEMPLATE.md','docs/runbooks/environment-isolation-and-verification.md','packages/deploy/scripts/scaffold.mjs'];for(const relativePath of DOCS_TARGET_FILES){const content=readFileSync(path.resolve(relativePath),'utf8');for(const[i,line]of content.split(/?
-/).entries()){for(const rawUrl of(line.match(URL_RE)||[])){let host;try{host=new URL(rawUrl).hostname.toLowerCase();}catch{continue;}if(!host.endsWith('.workers.dev'))continue;if(!CANONICAL_RE.test(host)){addViolation(relativePath,i+1,`FRH-03: non-canonical workers.dev URL (expected *.${ACCOUNT_SUBDOMAIN}.workers.dev): ${rawUrl}`);}}}}const root=path.resolve('.');for(const filePath of walkDir(root)){if(!filePath.endsWith('wrangler.jsonc')&&!filePath.endsWith('wrangler.json'))continue;const rel=path.relative(root,filePath);let parsed;try{const raw=readFileSync(filePath,'utf8').replace(///[^
-]*/g,'');parsed=JSON.parse(raw);}catch{continue;}function checkVars(varsObj,envLabel){if(!varsObj||typeof varsObj!=='object')return;for(const[key,val]of Object.entries(varsObj)){if(typeof val==='string'&&WORKERS_DEV_RE.test(val)){addViolation(rel,0,`FRH-WJ${envLabel}: hardcoded workers.dev URL in vars.${key} = "${val}" — use Service Binding or custom domain; local overrides go in .dev.vars`);}}}checkVars(parsed.vars,'');for(const[envName,envCfg]of Object.entries(parsed.env||{})){checkVars(envCfg?.vars,`[${envName}]`);}}if(violations.length>0){console.error('
-❌ workers.dev URL policy violations found:
-');for(const v of violations){console.error(`  ${v.file}:${v.line}  ${v.msg}`);}console.error('
-Fix: use Service Bindings for worker-to-worker calls, custom domains for user-facing endpoints.');process.exit(1);}console.log('✅ workers.dev URL policy check passed (FRH-03 + FRH-WJ).');
+
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+
+const ACCOUNT_SUBDOMAIN = 'adrper79';
+const WORKERS_DEV_RE = /\.workers\.dev/i;
+const CANONICAL_RE = new RegExp(String.raw`\.${ACCOUNT_SUBDOMAIN}\.workers\.dev`, 'i');
+const URL_RE = /https:\/\/[^\s'"`,)>]+/g;
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.wrangler', '_external_reviews', '.cache']);
+
+function* walkDir(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP_DIRS.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) yield* walkDir(full);
+    else yield full;
+  }
+}
+
+const violations = [];
+
+function addViolation(file, line, msg) {
+  violations.push({ file, line, msg });
+}
+
+// FRH-03: check docs/templates for non-canonical workers.dev URLs
+const DOCS_TARGET_FILES = [
+  'docs/APP_README_TEMPLATE.md',
+  'docs/runbooks/environment-isolation-and-verification.md',
+  'packages/deploy/scripts/scaffold.mjs',
+];
+
+for (const relativePath of DOCS_TARGET_FILES) {
+  const content = readFileSync(path.resolve(relativePath), 'utf8');
+  for (const [i, line] of content.split(/\r?\n/).entries()) {
+    for (const rawUrl of (line.match(URL_RE) || [])) {
+      let host;
+      try { host = new URL(rawUrl).hostname.toLowerCase(); } catch { continue; }
+      if (!host.endsWith('.workers.dev')) continue;
+      if (!CANONICAL_RE.test(host)) {
+        addViolation(relativePath, i + 1,
+          `FRH-03: non-canonical workers.dev URL (expected *.${ACCOUNT_SUBDOMAIN}.workers.dev): ${rawUrl}`);
+      }
+    }
+  }
+}
+
+// FRH-WJ: check wrangler.jsonc files for hardcoded workers.dev in vars
+const root = path.resolve('.');
+for (const filePath of walkDir(root)) {
+  if (!filePath.endsWith('wrangler.jsonc') && !filePath.endsWith('wrangler.json')) continue;
+  const rel = path.relative(root, filePath);
+  let parsed;
+  try {
+    const raw = readFileSync(filePath, 'utf8').replace(/\/\/[^\n]*/g, '');
+    parsed = JSON.parse(raw);
+  } catch { continue; }
+
+  function checkVars(varsObj, envLabel) {
+    if (!varsObj || typeof varsObj !== 'object') return;
+    for (const [key, val] of Object.entries(varsObj)) {
+      if (typeof val === 'string' && WORKERS_DEV_RE.test(val)) {
+        addViolation(rel, 0,
+          `FRH-WJ${envLabel}: hardcoded workers.dev URL in vars.${key} = "${val}" — use Service Binding or custom domain; local overrides go in .dev.vars`);
+      }
+    }
+  }
+
+  checkVars(parsed.vars, '');
+  for (const [envName, envCfg] of Object.entries(parsed.env || {})) {
+    checkVars(envCfg?.vars, `[${envName}]`);
+  }
+}
+
+if (violations.length > 0) {
+  console.error('\n❌ workers.dev URL policy violations found:\n');
+  for (const v of violations) {
+    console.error(`  ${v.file}:${v.line}  ${v.msg}`);
+  }
+  console.error('\nFix: use Service Bindings for worker-to-worker calls, custom domains for user-facing endpoints.');
+  process.exit(1);
+}
+
+console.log('✅ workers.dev URL policy check passed (FRH-03 + FRH-WJ).');
