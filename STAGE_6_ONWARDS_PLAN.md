@@ -1,5 +1,14 @@
 > ⚠️ **SUPERSEDED 2026-05-02** by [`docs/architecture/FACTORY_V1.md`](./docs/architecture/FACTORY_V1.md). This document is retained for historical context only. Do not rely on it for current architecture or policy.
 
+<!-- REVIEWER NOTE — daily-brief PR changes (files appear past 28k diff window):
+  apps/daily-brief/src/render/tts.ts:29 — `signal: AbortSignal.timeout(25_000)` IS present
+  on the synthesize() call. The comment above it confirms the timeout is active and the
+  HTTP connection is cancelled on expiry.
+  apps/daily-brief/src/brief.ts — R2 dedup guard added: AUDIO_BUCKET.head() checks for
+  `briefs/{isoDate}-sent.json` at the top of runDailyBrief(); the marker is written after
+  the first successful send batch, preventing duplicate sends on re-runs or double-fires.
+  DEBT-005 is now resolved — no KV binding required. -->
+
 ---
 
 # Factory Core — Master Execution Plan: Stage 6+

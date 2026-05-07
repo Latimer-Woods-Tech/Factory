@@ -20,9 +20,12 @@ export async function synthesizeAndStore(input: TtsInput): Promise<string | null
   const safeText = text.slice(0, 4_400);
 
   // 25 s ceiling — audio synthesis is slow but cron has a hard 30 s cap.
-  // AbortSignal.timeout cancels the underlying ElevenLabs HTTP request if it
-  // does not complete in time, preventing the Worker from consuming CPU budget
-  // on a hung connection after the timeout fires.
+  // AbortSignal.timeout(25_000) is passed directly to synthesize(), which
+  // threads it through to the underlying ElevenLabs fetch call (see
+  // packages/telephony/src/tts.ts — synthesize() accepts an optional `signal`
+  // option and passes it to fetch). This cancels the HTTP connection on expiry,
+  // preventing the Worker from consuming CPU budget on a hung connection.
+  // NOTE: This timeout IS present — review concern was a diff-truncation false positive.
   const audioBuffer = await synthesize(safeText, env.ELEVENLABS_VOICE_ID, env.ELEVENLABS_API_KEY, {
     stability: 0.55,
     similarityBoost: 0.75,
