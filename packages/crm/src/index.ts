@@ -889,17 +889,27 @@ export class CampaignService {
 }
 
 /**
- * Service for managing call logs across all tenants.
+ * Service for managing call logs with tenant isolation.
  */
 export class CallLogService {
   /**
    * Create a new call log.
    *
+   * Runs inside a transaction where `SET LOCAL app.tenant_id` is set first so
+   * that the RLS policy on `call_logs` (which checks tenant via the
+   * `outreach_campaigns` join) can filter correctly.
+   *
    * @param db - Database client.
+   * @param tenantId - Tenant identifier for RLS isolation.
    * @param data - Call log data.
    * @returns The created call log.
    */
-  async createCallLog(db: FactoryDb, data: CreateCallLogInput): Promise<CallLog> {
+  async createCallLog(db: FactoryDb, tenantId: string, data: CreateCallLogInput): Promise<CallLog> {
+    if (!tenantId) {
+      throw new InternalError('CallLogService.createCallLog: tenantId is required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
     if (
       !data.campaignId ||
       !data.contactId ||
@@ -915,51 +925,59 @@ export class CallLogService {
       });
     }
 
-    const rows = await db.execute<CallLogRow>(
-      sql`INSERT INTO call_logs (
-          campaign_id, contact_id, provider, provider_call_id,
-          duration_seconds, outcome, recording_url, call_started, call_ended
-        )
-        VALUES (
-          ${data.campaignId}, ${data.contactId}, ${data.provider}, ${data.providerCallId},
-          ${data.durationSeconds}, ${data.outcome}, ${data.recordingUrl || null},
-          ${data.callStarted.toISOString()}, ${data.callEnded.toISOString()}
-        )
-        RETURNING *`,
-    );
+    return withTenant(db, tenantId, async (txDb) => {
+      const rows = await txDb.execute<CallLogRow>(
+        sql`INSERT INTO call_logs (
+            campaign_id, contact_id, provider, provider_call_id,
+            duration_seconds, outcome, recording_url, call_started, call_ended
+          )
+          VALUES (
+            ${data.campaignId}, ${data.contactId}, ${data.provider}, ${data.providerCallId},
+            ${data.durationSeconds}, ${data.outcome}, ${data.recordingUrl || null},
+            ${data.callStarted.toISOString()}, ${data.callEnded.toISOString()}
+          )
+          RETURNING *`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new InternalError('CallLogService.createCallLog: no row returned', {
-        code: ErrorCodes.DB_QUERY_FAILED,
-      });
-    }
-    return rowToCallLog(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new InternalError('CallLogService.createCallLog: no row returned', {
+          code: ErrorCodes.DB_QUERY_FAILED,
+        });
+      }
+      return rowToCallLog(row);
+    });
   }
 
   /**
-   * Get a call log by ID.
+   * Get a call log by ID with tenant isolation.
+   *
+   * Runs inside a transaction where `SET LOCAL app.tenant_id` is set first so
+   * that the RLS policy on `call_logs` restricts access to the specified tenant.
    *
    * @param db - Database client.
    * @param id - Call log ID.
+   * @param tenantId - Tenant identifier for RLS isolation.
    * @returns The call log, or throws NotFoundError.
    */
-  async getCallLog(db: FactoryDb, id: string): Promise<CallLog> {
-    if (!id) {
-      throw new InternalError('CallLogService.getCallLog: id is required', {
+  async getCallLog(db: FactoryDb, id: string, tenantId: string): Promise<CallLog> {
+    if (!id || !tenantId) {
+      throw new InternalError('CallLogService.getCallLog: id and tenantId are required', {
         code: ErrorCodes.VALIDATION_ERROR,
       });
     }
 
-    const rows = await db.execute<CallLogRow>(
-      sql`SELECT * FROM call_logs WHERE id = ${id} LIMIT 1`,
-    );
+    return withTenant(db, tenantId, async (txDb) => {
+      const rows = await txDb.execute<CallLogRow>(
+        sql`SELECT * FROM call_logs WHERE id = ${id} LIMIT 1`,
+      );
 
-    const row = rows.rows[0];
-    if (!row) {
-      throw new NotFoundError(`Call log ${id} not found`);
-    }
-    return rowToCallLog(row);
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Call log ${id} not found`);
+      }
+      return rowToCallLog(row);
+    });
   }
 
   /**

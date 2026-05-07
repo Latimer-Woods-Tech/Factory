@@ -24,8 +24,14 @@ import type { Analytics } from '@latimer-woods-tech/analytics';
 function makeDb(overrides: Partial<{ rows: unknown[]; rowCount: number }> = {}): FactoryDb {
   const rows = overrides.rows ?? [];
   const rowCount = overrides.rowCount ?? rows.length;
+  const executeMock = vi.fn().mockResolvedValue({ rows, rowCount });
+  // transaction() simulates withTenant: run the callback with a tx that has
+  // the same execute mock, so SET LOCAL + the real query both succeed.
+  const txDb = { execute: executeMock } as unknown as FactoryDb;
+  const transactionMock = vi.fn().mockImplementation((fn: (tx: FactoryDb) => Promise<unknown>) => fn(txDb));
   return {
-    execute: vi.fn().mockResolvedValue({ rows, rowCount }),
+    execute: executeMock,
+    transaction: transactionMock,
   } as unknown as FactoryDb;
 }
 
@@ -528,7 +534,7 @@ describe('CallLogService', () => {
   describe('createCallLog', () => {
     it('creates and returns a call log', async () => {
       const db = makeDb({ rows: [BASE_CALL_LOG_ROW] });
-      const callLog = await service.createCallLog(db, {
+      const callLog = await service.createCallLog(db, 'tenant-1', {
         campaignId: 'campaign-uuid-1',
         contactId: 'contact-uuid-1',
         provider: 'telnyx',
@@ -545,10 +551,26 @@ describe('CallLogService', () => {
       expect(callLog.callStarted).toBeInstanceOf(Date);
     });
 
+    it('throws when tenantId missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createCallLog(db, '', {
+          campaignId: 'campaign-uuid-1',
+          contactId: 'contact-uuid-1',
+          provider: 'telnyx',
+          providerCallId: 'call-123456',
+          durationSeconds: 120,
+          outcome: 'completed',
+          callStarted: new Date(),
+          callEnded: new Date(),
+        }),
+      ).rejects.toThrow();
+    });
+
     it('throws when required fields missing', async () => {
       const db = makeDb({ rows: [] });
       await expect(
-        service.createCallLog(db, {
+        service.createCallLog(db, 'tenant-1', {
           campaignId: '',
           contactId: 'contact-uuid-1',
           provider: 'telnyx',
@@ -564,7 +586,7 @@ describe('CallLogService', () => {
     it('throws when no row returned', async () => {
       const db = makeDb({ rows: [] });
       await expect(
-        service.createCallLog(db, {
+        service.createCallLog(db, 'tenant-1', {
           campaignId: 'campaign-uuid-1',
           contactId: 'contact-uuid-1',
           provider: 'telnyx',
@@ -581,35 +603,32 @@ describe('CallLogService', () => {
   describe('getCallLog', () => {
     it('returns a call log by id', async () => {
       const db = makeDb({ rows: [BASE_CALL_LOG_ROW] });
-      const callLog = await service.getCallLog(db, 'calllog-uuid-1');
+      const callLog = await service.getCallLog(db, 'calllog-uuid-1', 'tenant-1');
       expect(callLog.id).toBe('calllog-uuid-1');
     });
 
     it('throws when call log not found', async () => {
       const db = makeDb({ rows: [] });
-      await expect(service.getCallLog(db, 'missing-id')).rejects.toThrow('not found');
+      await expect(service.getCallLog(db, 'missing-id', 'tenant-1')).rejects.toThrow('not found');
     });
 
-    it('throws when id missing', async () => {
+    it('throws when id or tenantId missing', async () => {
       const db = makeDb({ rows: [] });
-      await expect(service.getCallLog(db, '')).rejects.toThrow();
+      await expect(service.getCallLog(db, '', 'tenant-1')).rejects.toThrow();
+      await expect(service.getCallLog(db, 'calllog-uuid-1', '')).rejects.toThrow();
     });
   });
 
   describe('listCallLogsByCampaign', () => {
     it('lists call logs with tenant isolation', async () => {
-      const db = {
-        execute: vi.fn().mockResolvedValue({ rows: [BASE_CALL_LOG_ROW] }),
-      } as unknown as FactoryDb;
+      const db = makeDb({ rows: [BASE_CALL_LOG_ROW] });
       const callLogs = await service.listCallLogsByCampaign(db, 'campaign-uuid-1', 'tenant-1');
       expect(callLogs).toHaveLength(1);
       expect(callLogs[0]?.campaignId).toBe('campaign-uuid-1');
     });
 
     it('enforces tenant isolation via campaign join', async () => {
-      const db = {
-        execute: vi.fn().mockResolvedValue({ rows: [] }),
-      } as unknown as FactoryDb;
+      const db = makeDb({ rows: [] });
       const callLogs = await service.listCallLogsByCampaign(db, 'campaign-uuid-1', 'other-tenant');
       expect(callLogs).toHaveLength(0);
     });
