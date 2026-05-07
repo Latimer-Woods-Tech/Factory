@@ -3,6 +3,6 @@
   "private": true,
   "description": "Factory Core monorepo root — shared tooling and base configurations",
   "devDependencies": {
-    "typescript": "~5.4.0"
+    "typescript": "^5.4.0"
   }
 }
