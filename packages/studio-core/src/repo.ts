@@ -153,6 +153,7 @@ export interface RepoCommitRequest {
   message: string;
 }
 
+/** Response returned by POST /repo/commits after a successful file commit. */
 export interface RepoCommitResponse {
   /** SHA of the new commit. */
   commitSha: string;
