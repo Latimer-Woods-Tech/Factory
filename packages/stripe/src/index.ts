@@ -34,7 +34,6 @@ export type SubscriptionEvent =
  */
 export interface StripeWebhookHandlerOptions {
   webhookSecret: string;
-  stripeClient: Stripe;
   handlers: Partial<
     Record<SubscriptionEvent, (status: SubscriptionStatus) => Promise<void>>
   >;
@@ -76,7 +75,7 @@ export interface CreatePortalSessionOptions {
   stripeClient: Stripe;
 }
 
-const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-02-24.acacia';
+const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-07-30.basil';
 /**
  * Matches unresolved placeholder price IDs such as `price_xxx` that should
  * never be sent to Stripe in a real checkout flow.
@@ -103,19 +102,61 @@ export function createStripeClient(secretKey: string): Stripe {
   });
 }
 
+/** @internal HMAC-SHA256 verification using the Web Crypto API — no SDK required. */
+async function verifyStripeSignature(
+  body: string,
+  signature: string,
+  secret: string,
+): Promise<void> {
+  const parts = signature.split(',');
+  const timestamp = parts.find((p) => p.startsWith('t='))?.slice(2);
+  const v1Sigs = parts.filter((p) => p.startsWith('v1=')).map((p) => p.slice(3));
+
+  if (!timestamp || v1Sigs.length === 0) {
+    throw new ValidationError('Invalid stripe-signature format', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
+  }
+
+  if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) {
+    throw new ValidationError('Stripe webhook timestamp outside tolerance window', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
+  }
+
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(`${timestamp}.${body}`));
+  const expected = Array.from(new Uint8Array(sigBytes))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  if (!v1Sigs.includes(expected)) {
+    throw new ValidationError('Stripe webhook signature mismatch', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
+  }
+}
+
 /**
- * Validates a Stripe webhook signature against the request body.
+ * Validates a Stripe webhook signature using the Web Crypto API (HMAC-SHA256)
+ * and returns the parsed event. No Stripe SDK required — compatible with all
+ * Cloudflare Workers runtimes.
  *
  * @param request - Inbound webhook request.
- * @param webhookSecret - Stripe webhook signing secret.
- * @param stripeClient - Stripe client used to construct the event.
+ * @param webhookSecret - Stripe webhook signing secret (`whsec_…`).
  * @returns The parsed and verified Stripe event.
- * @throws {ValidationError} If the signature header is missing or invalid.
+ * @throws {ValidationError} If the signature header is missing, invalid, or expired.
  */
 export async function validateWebhook(
   request: Request,
   webhookSecret: string,
-  stripeClient: Stripe,
 ): Promise<Stripe.Event> {
   const signature = request.headers.get('stripe-signature');
   if (!signature) {
@@ -126,17 +167,14 @@ export async function validateWebhook(
 
   const body = await request.text();
 
+  await verifyStripeSignature(body, signature, webhookSecret);
+
   try {
-    return await stripeClient.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret,
-    );
-  } catch (err) {
-    throw new ValidationError(
-      err instanceof Error ? err.message : 'Invalid Stripe webhook',
-      { code: ErrorCodes.STRIPE_WEBHOOK_INVALID },
-    );
+    return JSON.parse(body) as Stripe.Event;
+  } catch {
+    throw new ValidationError('Invalid webhook payload JSON', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
   }
 }
 
@@ -377,7 +415,7 @@ export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Hand
   return async (c) => {
     let event: Stripe.Event;
     try {
-      event = await validateWebhook(c.req.raw.clone(), options.webhookSecret, options.stripeClient);
+      event = await validateWebhook(c.req.raw.clone(), options.webhookSecret);
     } catch (err) {
       const response = toErrorResponse(err);
       return c.json(response, 400 as ContentfulStatusCode);
