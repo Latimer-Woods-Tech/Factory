@@ -22,6 +22,7 @@ The owner is [@adrper79-dot](https://github.com/adrper79-dot). When in doubt, pr
 4. [`docs/CI_CD.md`](CI_CD.md) — how CI/CD works
 5. [`docs/NEW_APP_CHECKLIST.md`](NEW_APP_CHECKLIST.md) — how to add an app
 6. The header comment of any reusable workflow you're modifying
+7. [`docs/runbooks/agent-ship.md`](runbooks/agent-ship.md) — how Factory ships work into external repos
 
 If you skipped any of those, go back. Most agent failures here come from skipping reading.
 
@@ -135,6 +136,8 @@ fix(ci): use App-token for cross-repo package installs
 4. **Surface receipts.** When you finish a task, post: what you ran, what changed, what you verified, and what's left. Hand-waving costs the human their trust.
 
 5. **Be explicit about uncertainty.** If you don't know whether something is safe, say so and ask.
+
+6. **Use the Factory ship orchestrator for external repos.** The canonical entrypoint is `node scripts/agent-ship.mjs`. Do not invent ad hoc per-repo push flows when a repo is already registered.
 
 ---
 
