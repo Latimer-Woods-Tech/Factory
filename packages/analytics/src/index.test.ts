@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 import { initAnalytics, type AnalyticsConfig } from './index';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
@@ -34,7 +34,7 @@ function makeConfig(overrides: Partial<AnalyticsConfig> = {}): AnalyticsConfig {
 }
 
 describe('initAnalytics', () => {
-  let fetchMock: MockInstance<FetchFn>;
+  let fetchMock: Mock<FetchFn>;
 
   beforeEach(() => {
     fetchMock = vi.fn<FetchFn>(() => Promise.resolve(okResponse()));
@@ -63,7 +63,7 @@ describe('initAnalytics', () => {
       expect(body.properties.button).toBe('cta');
       expect(body.properties.app_id).toBe('test-app');
       // factory_events NOT called for non-business events
-      const db = config.db as unknown as { execute: MockInstance<FactoryDb['execute']> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).not.toHaveBeenCalled();
     });
 
@@ -89,7 +89,7 @@ describe('initAnalytics', () => {
       expect(body.event).toBe('revenue.mrr_updated');
 
       // factory_events call
-      const db = config.db as unknown as { execute: MockInstance<FactoryDb['execute']> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -98,7 +98,7 @@ describe('initAnalytics', () => {
       const analytics = initAnalytics(config, { fetch: fetchMock });
       await analytics.track('subscription.created', { plan: 'pro' });
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const db = config.db as unknown as { execute: MockInstance<FactoryDb['execute']> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -107,7 +107,7 @@ describe('initAnalytics', () => {
       const analytics = initAnalytics(config, { fetch: fetchMock });
       await analytics.track('compliance.gdpr_request', { userId: 'u' });
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      const db = config.db as unknown as { execute: MockInstance<FactoryDb['execute']> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -121,7 +121,7 @@ describe('initAnalytics', () => {
 
     it('throws InternalError when factory_events insert fails', async () => {
       const db = makeDb();
-      (db as unknown as { execute: MockInstance<FactoryDb['execute']> }).execute =
+      (db as unknown as { execute: Mock<FactoryDb['execute']> }).execute =
         vi.fn<FactoryDb['execute']>(() => Promise.reject(new Error('db err')));
       const analytics = initAnalytics(
         { postHogKey: 'k', db, appId: 'app' },
@@ -158,7 +158,7 @@ describe('initAnalytics', () => {
       await analytics.businessEvent('revenue.invoice_paid', { amount: 9900 }, 'user-4');
 
       expect(fetchMock).not.toHaveBeenCalled();
-      const db = config.db as unknown as { execute: MockInstance<FactoryDb['execute']> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
 
@@ -168,7 +168,7 @@ describe('initAnalytics', () => {
       await analytics.businessEvent('compliance.deletion_request', { reason: 'gdpr' });
 
       expect(fetchMock).not.toHaveBeenCalled();
-      const db = config.db as unknown as { execute: MockInstance<FactoryDb['execute']> };
+      const db = config.db as unknown as { execute: Mock<FactoryDb['execute']> };
       expect(db.execute).toHaveBeenCalledTimes(1);
     });
   });
