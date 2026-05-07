@@ -51,6 +51,8 @@ jobs:
             video
             schedule
             validation
+            llm-meter
+            studio-core
           )
 
           for package in "${packages[@]}"; do
