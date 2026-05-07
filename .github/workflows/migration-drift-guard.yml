@@ -55,13 +55,10 @@ jobs:
           MIGRATION_DIR="app/workers/src/db/migrations"
           if [ ! -d "$MIGRATION_DIR" ]; then
             echo "count=0" >> "$GITHUB_OUTPUT"
-            echo "files=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          files=$(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | sort)
-          count=$(echo "$files" | grep -c '.sql' || true)
+          count=$(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | wc -l | tr -d ' ')
           echo "count=$count" >> "$GITHUB_OUTPUT"
-          echo "files=$files" >> "$GITHUB_OUTPUT"
 
       - name: Count applied migrations in Neon
         id: db-count
