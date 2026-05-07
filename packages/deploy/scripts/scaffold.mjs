@@ -2,6 +2,12 @@
 /**
  * scaffold.mjs — Factory app scaffolding CLI
  *
+ * **Runtime: Node.js only.** This script runs under `node` (shebang above) in a
+ * developer terminal or GitHub Actions runner — NOT inside a Cloudflare Worker.
+ * `node:` protocol imports, `process.argv`, `__dirname`, and `execSync` are all
+ * intentional and correct here; the Worker constraint that bans `node:` imports
+ * applies only to files compiled with tsup and deployed to Workers.
+ *
  * Usage:
  *   node scaffold.mjs <app-name> [--github] [--no-deploy]
  *     [--hyperdrive-id <id>] [--rate-limiter-id <id>]
