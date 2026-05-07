@@ -50,12 +50,12 @@ jobs:
             content
             social
             seo
+            validation
             crm
             compliance
             admin
             video
             schedule
-            validation
           )
 
           for package in "${packages[@]}"; do
