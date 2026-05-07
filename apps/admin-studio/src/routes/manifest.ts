@@ -146,6 +146,14 @@ const ENTRIES: ReadonlyArray<ManifestEntry> = [
   },
   {
     method: 'GET',
+    path: '/observability/synthetic/journey',
+    auth: 'admin',
+    summary: 'Synthetic journey probe results with pass/fail trend and outage classification',
+    slo: { p95Ms: 500, errorRate: 0.01 },
+    tags: ['ops', 'monitoring', 'synthetic'],
+  },
+  {
+    method: 'GET',
     path: '/observability/sentry/issues',
     auth: 'admin',
     summary: 'Recent Sentry issues with triage-grade signal (count, users, culprit)',
