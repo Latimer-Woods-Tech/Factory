@@ -6,6 +6,10 @@ export interface Env {
   LOCK: DurableObjectNamespace;
   MEMORY: D1Database;
   LLM_LEDGER: D1Database;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
   AI_GATEWAY_BASE_URL: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
