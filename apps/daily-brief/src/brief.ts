@@ -5,6 +5,10 @@ import { fetchNewsSection } from './sections/news';
 import { fetchGitHubActivity } from './sections/github';
 import { fetchWorkerHealth } from './sections/health';
 import { generateInsights } from './sections/insights';
+import { fetchWisdomSection } from './sections/wisdom';
+import { fetchStripeMrr } from './sections/stripe';
+import { fetchPostHogSnapshot } from './sections/posthog';
+import { fetchSentryErrors } from './sections/sentry';
 import { synthesizeAndStore } from './render/tts';
 import { buildEmailHtml } from './render/email';
 
@@ -23,17 +27,31 @@ export async function runDailyBrief(env: Env): Promise<void> {
   });
 
   // Gather all data sections in parallel — none depend on each other
-  const [weather, news, activity, health] = await Promise.allSettled([
+  const [weather, news, activity, health, wisdom, stripeMrr, postHog, sentry] = await Promise.allSettled([
     fetchWeather(),
     fetchNewsSection(env.NEWS_API_KEY),
     fetchGitHubActivity(env.GITHUB_TOKEN, env.GITHUB_ORG),
     fetchWorkerHealth(),
+    fetchWisdomSection(env),
+    env.STRIPE_SECRET_KEY
+      ? fetchStripeMrr(env.STRIPE_SECRET_KEY)
+      : Promise.reject('Stripe not configured'),
+    env.POSTHOG_API_KEY && env.POSTHOG_PROJECT_ID
+      ? fetchPostHogSnapshot(env.POSTHOG_API_KEY, env.POSTHOG_PROJECT_ID)
+      : Promise.reject('PostHog not configured'),
+    env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG
+      ? fetchSentryErrors(env.SENTRY_AUTH_TOKEN, env.SENTRY_ORG)
+      : Promise.reject('Sentry not configured'),
   ]);
 
   const safeWeather = weather.status === 'fulfilled' ? weather.value : null;
   const safeNews = news.status === 'fulfilled' ? news.value : null;
   const safeActivity = activity.status === 'fulfilled' ? activity.value : null;
   const safeHealth = health.status === 'fulfilled' ? health.value : null;
+  const safeWisdom = wisdom.status === 'fulfilled' ? wisdom.value : null;
+  const safeStripeMrr = stripeMrr.status === 'fulfilled' ? stripeMrr.value : null;
+  const safePostHog = postHog.status === 'fulfilled' ? postHog.value : null;
+  const safeSentry = sentry.status === 'fulfilled' ? sentry.value : null;
 
   // LLM insights depend on all gathered data
   const insights = await generateInsights({
@@ -61,6 +79,10 @@ export async function runDailyBrief(env: Env): Promise<void> {
     health: safeHealth,
     insights,
     audioUrl,
+    wisdom: safeWisdom,
+    stripeMrr: safeStripeMrr,
+    postHog: safePostHog,
+    sentry: safeSentry,
   });
 
   const recipients = env.RECIPIENTS.split(',')

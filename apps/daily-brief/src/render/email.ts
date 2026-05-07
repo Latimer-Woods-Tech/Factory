@@ -9,6 +9,10 @@ import type { NewsSection } from '../sections/news';
 import type { GitHubActivity } from '../sections/github';
 import type { HealthRollup } from '../sections/health';
 import type { BriefInsights } from '../sections/insights';
+import type { WisdomSection } from '../sections/wisdom';
+import type { StripeMrrData } from '../sections/stripe';
+import type { PostHogSnapshot } from '../sections/posthog';
+import type { SentryErrorData } from '../sections/sentry';
 
 interface EmailInput {
   dateLabel: string;
@@ -18,6 +22,10 @@ interface EmailInput {
   health: HealthRollup | null;
   insights: BriefInsights;
   audioUrl: string | null;
+  wisdom: WisdomSection | null;
+  stripeMrr: StripeMrrData | null;
+  postHog: PostHogSnapshot | null;
+  sentry: SentryErrorData | null;
 }
 
 const COLORS = {
@@ -343,11 +351,146 @@ function buildInsightsSection(insights: BriefInsights, audioUrl: string | null):
   );
 }
 
+function buildWisdomSection(w: WisdomSection): string {
+  const wisdomLinesHtml = w.wisdomLines
+    .map(
+      (line) =>
+        `<div style="padding:12px 0;border-bottom:1px solid ${COLORS.border};font-size:14px;line-height:1.7;color:${COLORS.text};font-style:italic">&ldquo;${line}&rdquo;</div>`,
+    )
+    .join('');
+
+  const wotd = w.wordOfTheDay;
+  const wotdHtml = `
+    <div style="background:${COLORS.accent}18;border:1px solid ${COLORS.accent}44;border-radius:10px;padding:18px 20px;margin-top:20px">
+      <div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.accentLight};margin-bottom:4px">Word of the Day</div>
+      <div style="font-size:22px;font-weight:700;color:${COLORS.text};margin-bottom:2px">${wotd.word}</div>
+      <div style="font-size:12px;color:${COLORS.muted};margin-bottom:10px">${wotd.pronunciation} &middot; <em>${wotd.partOfSpeech}</em></div>
+      <div style="font-size:13px;color:${COLORS.text};margin-bottom:8px;line-height:1.5">${wotd.definition}</div>
+      <div style="font-size:12px;color:${COLORS.muted};font-style:italic">&ldquo;${wotd.usageExample}&rdquo;</div>
+      ${wotd.whyItMatters ? `<div style="font-size:12px;color:${COLORS.accentLight};margin-top:8px;font-weight:500">Why it matters: ${wotd.whyItMatters}</div>` : ''}
+    </div>`;
+
+  const body = `
+    <div style="font-size:18px;font-weight:700;color:${COLORS.accentLight};text-align:center;padding:16px 0 20px;border-bottom:1px solid ${COLORS.border};margin-bottom:20px;font-style:italic;line-height:1.6">${w.mantra}</div>
+    ${wisdomLinesHtml}
+    ${wotdHtml}`;
+
+  return section('Morning Wisdom &amp; Intention', '🌅', body);
+}
+
+function buildStripeSection(s: StripeMrrData): string {
+  const dc = s.deltaDirection === 'up' ? COLORS.green : s.deltaDirection === 'down' ? COLORS.red : COLORS.muted;
+  const di = s.deltaDirection === 'up' ? '&#8593;' : s.deltaDirection === 'down' ? '&#8595;' : '&mdash;';
+
+  const body = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+      <div style="flex:1;min-width:150px;text-align:center;padding:16px;background:${COLORS.green}15;border:1px solid ${COLORS.green}33;border-radius:10px">
+        <div style="font-size:28px;font-weight:700;color:${COLORS.green}">${s.mrrFormatted}</div>
+        <div style="font-size:11px;color:${COLORS.muted};margin-top:4px">Monthly Recurring Revenue</div>
+      </div>
+      <div style="flex:1;min-width:150px;text-align:center;padding:16px;background:${dc}15;border:1px solid ${dc}33;border-radius:10px">
+        <div style="font-size:28px;font-weight:700;color:${dc}">${di} ${s.deltaFormatted}</div>
+        <div style="font-size:11px;color:${COLORS.muted};margin-top:4px">vs yesterday</div>
+      </div>
+    </div>
+    ${row('Active Subscriptions', s.activeSubscriptions.toLocaleString())}
+    ${row('New Today', `+${s.newSubscriptionsToday}`)}
+    ${row('Cancelled Today', s.cancelledToday > 0 ? `&minus;${s.cancelledToday}` : '0')}
+    ${s.trialCount > 0 ? row('In Trial', String(s.trialCount)) : ''}`;
+
+  return section('Revenue Pulse', '&#x1F4B3;', body);
+}
+
+function buildPostHogSection(ph: PostHogSnapshot): string {
+  const tc = ph.dailyActiveUsersTrend === 'up' ? COLORS.green : ph.dailyActiveUsersTrend === 'down' ? COLORS.red : COLORS.muted;
+  const ti = ph.dailyActiveUsersTrend === 'up' ? '&#8593;' : ph.dailyActiveUsersTrend === 'down' ? '&#8595;' : '&rarr;';
+
+  const statsHtml = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+    ${[
+      { label: 'DAU', val: String(ph.dailyActiveUsers), sub: `${ti} vs 7d avg`, color: tc },
+      { label: 'Sessions', val: String(ph.sessions24h), sub: '24h', color: COLORS.blue },
+      { label: 'Signups', val: String(ph.signups24h), sub: '24h', color: COLORS.green },
+      { label: 'Pageviews', val: ph.pageviews24h.toLocaleString(), sub: '24h', color: COLORS.accent },
+    ]
+      .map(
+        ({ label, val, sub, color }) =>
+          `<div style="flex:1;min-width:100px;text-align:center;padding:12px 8px;background:${color}15;border:1px solid ${color}33;border-radius:10px">
+            <div style="font-size:22px;font-weight:700;color:${color}">${val}</div>
+            <div style="font-size:11px;color:${COLORS.muted};margin-top:2px">${label}</div>
+            <div style="font-size:10px;color:${COLORS.muted}">${sub}</div>
+          </div>`,
+      )
+      .join('')}
+  </div>`;
+
+  const topEventsHtml =
+    ph.topEvents.length > 0
+      ? `<div>
+          <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:8px">Top Events (24h)</div>
+          ${ph.topEvents
+            .map(
+              (e) => `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${COLORS.border};font-size:13px">
+                <span style="color:${COLORS.text};font-family:monospace;font-size:12px">${e.event}</span>
+                <span style="color:${COLORS.accentLight};font-weight:600">${e.count.toLocaleString()}</span>
+              </div>`,
+            )
+            .join('')}
+        </div>`
+      : '';
+
+  return section('Product Analytics', '&#x1F4CA;', statsHtml + topEventsHtml);
+}
+
+function buildSentrySection(s: SentryErrorData): string {
+  const sc = s.spikeDetected ? COLORS.red : COLORS.green;
+  const sl = s.spikeDetected
+    ? `&#9888; Spike detected: ${s.spikePercent > 0 ? `+${s.spikePercent}%` : ''} above 7-day average`
+    : '&#10003; Error rates are normal';
+
+  const projectsHtml = s.projects.length
+    ? s.projects
+        .map((p) => {
+          const pc = p.trend === 'spike' ? COLORS.red : p.trend === 'quiet' ? COLORS.muted : COLORS.green;
+          const topHtml = p.topIssues
+            .map(
+              (i) => `<div style="font-size:11px;color:${COLORS.muted};padding:2px 0">
+                  <a href="${i.url}" style="color:${COLORS.muted};text-decoration:none">${i.title.slice(0, 72)}</a>
+                  <span style="color:${pc}"> &times;${i.count}</span>
+                </div>`,
+            )
+            .join('');
+          return `<div style="padding:10px 0;border-bottom:1px solid ${COLORS.border}">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span style="color:${COLORS.text};font-family:monospace">${p.projectSlug}</span>
+              <span>${pill(p.trend, pc)}<span style="font-size:12px;color:${COLORS.muted}">${p.errors24h} err / 7d avg ${p.errors7dAvg}</span></span>
+            </div>
+            ${topHtml}
+          </div>`;
+        })
+        .join('')
+    : `<div style="color:${COLORS.muted};font-size:13px">No project data.</div>`;
+
+  const body = `
+    <div style="padding:12px 16px;border-radius:8px;background:${sc}15;border:1px solid ${sc}44;margin-bottom:16px;font-size:13px;color:${sc};font-weight:600">${sl}</div>
+    ${row('Total Errors (24h)', s.totalErrors24h.toLocaleString())}
+    ${row('7-Day Average', s.totalErrors7dAvg.toLocaleString())}
+    <div style="margin-top:16px">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:8px">By Project</div>
+      ${projectsHtml}
+    </div>`;
+
+  return section('Error Monitoring', '&#x1F534;', body);
+}
+
 export function buildEmailHtml(input: EmailInput): string {
+  const wisdomHtml = input.wisdom ? buildWisdomSection(input.wisdom) : '';
   const weatherHtml = input.weather ? buildWeatherSection(input.weather) : '';
   const newsHtml = input.news ? buildNewsSection(input.news) : '';
   const githubHtml = input.activity ? buildGithubSection(input.activity) : '';
   const healthHtml = input.health ? buildHealthSection(input.health) : '';
+  const stripeHtml = input.stripeMrr ? buildStripeSection(input.stripeMrr) : '';
+  const postHogHtml = input.postHog ? buildPostHogSection(input.postHog) : '';
+  const sentryHtml = input.sentry ? buildSentrySection(input.sentry) : '';
   const insightsHtml = buildInsightsSection(input.insights, input.audioUrl);
 
   return `<!DOCTYPE html>
@@ -374,10 +517,14 @@ export function buildEmailHtml(input: EmailInput): string {
       <div style="width:40px;height:2px;background:${COLORS.accent};margin:12px auto 0"></div>
     </div>
 
+    ${wisdomHtml}
     ${weatherHtml}
     ${insightsHtml}
+    ${stripeHtml}
+    ${postHogHtml}
     ${githubHtml}
     ${healthHtml}
+    ${sentryHtml}
     ${newsHtml}
 
     <!-- Footer -->

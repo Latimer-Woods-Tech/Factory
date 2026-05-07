@@ -36,6 +36,17 @@ export interface Env {
   GITHUB_TOKEN: string;
   NEWS_API_KEY: string;
 
+  // Revenue
+  STRIPE_SECRET_KEY?: string;
+
+  // Product analytics
+  POSTHOG_API_KEY?: string;
+  POSTHOG_PROJECT_ID?: string;
+
+  // Error monitoring
+  SENTRY_AUTH_TOKEN?: string;
+  SENTRY_ORG?: string;
+
   // Config
   GITHUB_ORG: string;
   ZIP_CODE: string;
