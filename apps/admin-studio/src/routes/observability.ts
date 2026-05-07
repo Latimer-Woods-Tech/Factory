@@ -2,16 +2,57 @@
  * Read-only proxies into Sentry + PostHog so the Studio can render
  * recent-error and metrics tiles without exposing API tokens to the browser.
  *
- * Both endpoints are tolerant of missing config: if secrets aren't set
- * they return `{ configured: false }` instead of 500. This lets us ship
- * the UI before the secret rotation is finished.
+ * FRH-09: All responses carry a machine-detectable degraded-state envelope:
+ *   - `degraded: true` whenever data is unavailable for ANY reason
+ *   - `providerStatus`: 'ok' | 'unconfigured' | 'error' | 'timeout'
+ *   - `retryable`: whether the caller should retry
  *
- * Phase C will add SSE streaming for live error tails.
+ * This lets the UI distinguish "0 issues right now" from "Sentry unreachable".
  */
 import { Hono } from 'hono';
 import type { AppEnv } from '../types.js';
+import { FACTORY_APPS, healthUrlFor } from '../lib/app-registry.js';
+import type { Environment } from '@latimer-woods-tech/studio-core';
 
 const observability = new Hono<AppEnv>();
+
+// ---------------------------------------------------------------------------
+// Shared degraded-state envelope
+// ---------------------------------------------------------------------------
+
+type ProviderStatus = 'ok' | 'unconfigured' | 'error' | 'timeout';
+
+interface DegradedEnvelope {
+  /** Always present. True when the provider could not supply live data. */
+  degraded: boolean;
+  /** Machine-readable provider state — never rely on the `error` string alone. */
+  providerStatus: ProviderStatus;
+  /** True when the client should retry the same request later. */
+  retryable: boolean;
+  /** Human-readable explanation, only present when `degraded` is true. */
+  error?: string;
+}
+
+function okEnvelope(): DegradedEnvelope {
+  return { degraded: false, providerStatus: 'ok', retryable: false };
+}
+
+function unconfiguredEnvelope(note: string): DegradedEnvelope {
+  return { degraded: true, providerStatus: 'unconfigured', retryable: false, error: note };
+}
+
+function errorEnvelope(message: string, timedOut = false): DegradedEnvelope {
+  return {
+    degraded: true,
+    providerStatus: timedOut ? 'timeout' : 'error',
+    retryable: true,
+    error: message,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface SentryIssue {
   id: string;
@@ -25,14 +66,25 @@ interface SentryIssue {
   permalink: string;
 }
 
+interface PostHogTile {
+  id: string;
+  label: string;
+  value: number;
+  unit?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Routes
+// ---------------------------------------------------------------------------
+
 observability.get('/sentry/issues', async (c) => {
   const token = c.env.SENTRY_AUTH_TOKEN;
   const org = c.env.SENTRY_ORG;
   const project = c.env.SENTRY_PROJECT;
+
   if (!token || !org || !project) {
     return c.json({
-      configured: false,
-      note: 'Set SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT.',
+      ...unconfiguredEnvelope('Set SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT.'),
       issues: [] as SentryIssue[],
     });
   }
@@ -41,70 +93,83 @@ observability.get('/sentry/issues', async (c) => {
   const limit = clamp(Number.parseInt(url.searchParams.get('limit') ?? '20', 10), 1, 100);
   const env = url.searchParams.get('env') ?? c.var.envContext.env;
 
+  const ct = new AbortController();
+  const timer = setTimeout(() => ct.abort(), 8_000);
   try {
     const res = await fetch(
       `https://sentry.io/api/0/projects/${encodeURIComponent(org)}/${encodeURIComponent(project)}/issues/?limit=${limit}&environment=${encodeURIComponent(env)}&statsPeriod=24h&query=is:unresolved`,
-      { headers: { Authorization: `Bearer ${token}` } },
+      { headers: { Authorization: `Bearer ${token}` }, signal: ct.signal },
     );
     if (!res.ok) {
-      return c.json({ configured: true, error: `sentry-${res.status}`, issues: [] }, 502);
+      return c.json(
+        { ...errorEnvelope(`sentry upstream returned ${res.status}`), issues: [] as SentryIssue[] },
+        502,
+      );
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const issues: SentryIssue[] = await res.json();
-    return c.json({ configured: true, env, issues });
+    return c.json({ ...okEnvelope(), env, issues });
   } catch (err) {
-    return c.json({ configured: true, error: (err as Error).message, issues: [] }, 502);
+    const timedOut = (err as Error).name === 'AbortError';
+    return c.json(
+      { ...errorEnvelope((err as Error).message, timedOut), issues: [] as SentryIssue[] },
+      502,
+    );
+  } finally {
+    clearTimeout(timer);
   }
 });
-
-interface PostHogTile {
-  id: string;
-  label: string;
-  value: number;
-  unit?: string;
-}
 
 observability.get('/posthog/tiles', async (c) => {
   const key = c.env.POSTHOG_API_KEY;
   const projectId = c.env.POSTHOG_PROJECT_ID;
   const host = c.env.POSTHOG_HOST ?? 'https://us.i.posthog.com';
+
   if (!key || !projectId) {
     return c.json({
-      configured: false,
-      note: 'Set POSTHOG_API_KEY + POSTHOG_PROJECT_ID.',
+      ...unconfiguredEnvelope('Set POSTHOG_API_KEY + POSTHOG_PROJECT_ID.'),
       tiles: [] as PostHogTile[],
     });
   }
 
-  // Minimal viable tile: total events in last 24h via the Insights API.
-  // Richer tiles (DAU, retention, conversion) land in Phase C.
+  const ct = new AbortController();
+  const timer = setTimeout(() => ct.abort(), 8_000);
   try {
     const res = await fetch(
       `${host}/api/projects/${encodeURIComponent(projectId)}/query/`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${key}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: {
             kind: 'HogQLQuery',
             query: `SELECT count() AS total FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR`,
           },
         }),
+        signal: ct.signal,
       },
     );
     if (!res.ok) {
-      return c.json({ configured: true, error: `posthog-${res.status}`, tiles: [] }, 502);
+      return c.json(
+        { ...errorEnvelope(`posthog upstream returned ${res.status}`), tiles: [] as PostHogTile[] },
+        502,
+      );
     }
-    const json: { results?: Array<[number]> } = await res.json();
-    const total = json.results?.[0]?.[0] ?? 0;
-    const tiles: PostHogTile[] = [
-      { id: 'events_24h', label: 'Events (24h)', value: total },
-    ];
-    return c.json({ configured: true, tiles });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const json: { results?: unknown } = await res.json();
+    const rows = Array.isArray(json.results) ? json.results : [];
+    const firstRow = Array.isArray(rows[0]) ? (rows[0] as unknown[]) : [];
+    const total = typeof firstRow[0] === 'number' ? firstRow[0] : 0;
+    const tiles: PostHogTile[] = [{ id: 'events_24h', label: 'Events (24h)', value: total }];
+    return c.json({ ...okEnvelope(), tiles });
   } catch (err) {
-    return c.json({ configured: true, error: (err as Error).message, tiles: [] }, 502);
+    const timedOut = (err as Error).name === 'AbortError';
+    return c.json(
+      { ...errorEnvelope((err as Error).message, timedOut), tiles: [] as PostHogTile[] },
+      502,
+    );
+  } finally {
+    clearTimeout(timer);
   }
 });
 
@@ -216,6 +281,68 @@ observability.get('/synthetic/journey', async (c) => {
     probes,
     trend,
   });
+});
+
+// ── Telemetry contract coverage (ADM-7) ─────────────────────────────────────
+
+const TELEMETRY_ENDPOINTS = ['/api/admin/health', '/api/admin/metrics', '/api/admin/events'] as const;
+
+interface EndpointResult {
+  path: string;
+  status: 'ok' | 'missing' | 'error' | 'skipped';
+  httpStatus?: number;
+  latencyMs?: number;
+}
+
+interface AppCoverageRow {
+  id: string;
+  label: string;
+  endpoints: EndpointResult[];
+}
+
+/** Probe a single telemetry path with a 5-second timeout. */
+async function probeEndpoint(baseUrl: string, path: string): Promise<EndpointResult> {
+  const ct = new AbortController();
+  const timer = setTimeout(() => ct.abort(), 5_000);
+  const start = Date.now();
+  try {
+    const res = await fetch(`${baseUrl}${path}`, { signal: ct.signal });
+    const latencyMs = Date.now() - start;
+    if (res.status === 404) return { path, status: 'missing', httpStatus: 404, latencyMs };
+    if (res.ok || res.status === 401 || res.status === 403) {
+      return { path, status: 'ok', httpStatus: res.status, latencyMs };
+    }
+    return { path, status: 'error', httpStatus: res.status, latencyMs };
+  } catch {
+    return { path, status: 'error', latencyMs: Date.now() - start };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+observability.get('/telemetry-coverage', async (c) => {
+  const env = (c.req.query('env') ?? c.var.envContext.env) as Environment;
+  if (env === 'local') {
+    return c.json({ env, apps: [] as AppCoverageRow[], note: 'Coverage checks not available for local environment.' });
+  }
+
+  const rows = await Promise.all(
+    FACTORY_APPS.map(async (app): Promise<AppCoverageRow> => {
+      const health = healthUrlFor(app, env);
+      if (!health) {
+        return {
+          id: app.id,
+          label: app.label,
+          endpoints: TELEMETRY_ENDPOINTS.map((p) => ({ path: p, status: 'skipped' as const })),
+        };
+      }
+      const base = health.replace(/\/health$/, '');
+      const endpoints = await Promise.all(TELEMETRY_ENDPOINTS.map((p) => probeEndpoint(base, p)));
+      return { id: app.id, label: app.label, endpoints };
+    }),
+  );
+
+  return c.json({ env, apps: rows });
 });
 
 export default observability;
