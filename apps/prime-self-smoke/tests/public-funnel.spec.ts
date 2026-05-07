@@ -1,5 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 
+// process.env is correct here: this is a Playwright test running in Node.js on
+// GitHub Actions, not a Cloudflare Worker. Factory's "no process.env" constraint
+// applies to Worker source files only, not to Playwright test infrastructure.
 const BASE = process.env.BASE_URL ?? 'https://selfprime.net';
 const API_BASE = process.env.API_BASE_URL ?? 'https://api.selfprime.net';
 const smokeUserEmail = process.env.SMOKE_USER_EMAIL ?? '';
