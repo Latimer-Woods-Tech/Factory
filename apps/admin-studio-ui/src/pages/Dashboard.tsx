@@ -11,6 +11,7 @@ import { AiTab } from './tabs/AiTab.js';
 import { AuditTab } from './tabs/AuditTab.js';
 import { FunctionsTab } from './tabs/FunctionsTab.js';
 import { TimelineTab } from './tabs/TimelineTab.js';
+import { FlagsTab } from './tabs/FlagsTab.js';
 
 const TABS = [
   { to: '/overview',  label: 'Overview' },
@@ -19,6 +20,7 @@ const TABS = [
   { to: '/ai',        label: 'AI Chat' },
   { to: '/functions', label: 'Functions' },
   { to: '/timeline',  label: 'Timeline' },
+  { to: '/flags',     label: 'Flags' },
   { to: '/audit',     label: 'Audit Log' },
 ];
 
@@ -53,6 +55,7 @@ export function Dashboard() {
           <Route path="/ai" element={<AiTab />} />
           <Route path="/functions" element={<FunctionsTab />} />
           <Route path="/timeline" element={<TimelineTab />} />
+          <Route path="/flags" element={<FlagsTab />} />
           <Route path="/audit" element={<AuditTab />} />
         </Routes>
       </main>
