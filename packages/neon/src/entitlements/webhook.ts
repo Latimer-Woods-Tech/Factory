@@ -98,11 +98,13 @@ export interface StripeSubscription {
   canceled_at?: number | null;
 }
 
+/** Minimal Stripe Customer shape used in webhook event data. */
 export interface StripeCustomer {
   id: string;
   email: string;
 }
 
+/** Minimal Stripe Invoice shape used in webhook event data. */
 export interface StripeInvoice {
   id: string;
   subscription: string;

@@ -93,6 +93,7 @@ export const KNOWN_ACTORS = ['human', 'sauna', 'copilot', 'supervisor-future', '
 /** Known workload values for {@link LedgerContext.workload}. */
 export const KNOWN_WORKLOADS = ['synthesis', 'planner', 'verifier', 'small'] as const;
 
+/** Provenance metadata attached to every billing ledger row. */
 export interface LedgerContext {
   project: string;
   /** One of {@link KNOWN_ACTORS}, or any custom string. */
@@ -143,6 +144,7 @@ export interface LedgerRow {
   latencyMs: number;
 }
 
+/** Aggregated token and cost totals returned by {@link meteredComplete} for a run. */
 export interface RunTotals {
   costCents: number;
   inputTokens: number;

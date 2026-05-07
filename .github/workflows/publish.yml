@@ -21,12 +21,12 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
+          scope: '@latimer-woods-tech'
       - name: Detect and validate package from tag
         run: |
           set -euo pipefail
           PACKAGE=$(echo "$GITHUB_REF_NAME" | cut -d'/' -f1)
-          ALLOWED_PACKAGES=(errors monitoring logger realtime auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin video schedule validation)
+          ALLOWED_PACKAGES=(errors monitoring logger realtime auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin video schedule validation flags llm-meter protocol studio-core entitlements creator)
           VALID=false
           for pkg in "${ALLOWED_PACKAGES[@]}"; do
             if [ "$pkg" = "$PACKAGE" ]; then
