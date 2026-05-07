@@ -496,35 +496,42 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     });
   }
 
-  // Retries stripeGet once on transient failures (429 rate limit or 5xx server errors)
-  // with a 2-second delay. AbortError (timeout) is not retried — a second timeout only delays.
-  async function stripeGetWithRetry(path: string): Promise<Response> {
-    const res = await stripeGet(path);
-    if (res.status === 429 || res.status >= 500) {
-      logStripeError(`${path} (first attempt)`, res.status);
-      await new Promise<void>((r) => setTimeout(r, 2_000));
-      return stripeGet(path);
-    }
-    return res;
-  }
-
   // Log specific Stripe error categories to aid operations:
   // 401 = auth failure (check STRIPE_SECRET_KEY), 429 = rate limit (transient, will retry).
   function logStripeError(label: string, status: number): void {
     if (status === 401) {
       console.error(`[digest/collect] Stripe auth failure on ${label} — verify STRIPE_SECRET_KEY`);
     } else if (status === 429) {
-      console.warn(`[digest/collect] Stripe rate limit on ${label} — retrying after 2s backoff`);
+      console.warn(`[digest/collect] Stripe rate limit on ${label} — retrying with exponential backoff`);
     } else if (status >= 500) {
-      console.warn(`[digest/collect] Stripe server error ${status} on ${label} — retrying after 2s backoff`);
+      console.warn(`[digest/collect] Stripe server error ${status} on ${label} — retrying with exponential backoff`);
     } else {
       console.warn(`[digest/collect] Stripe ${status} on ${label}`);
     }
   }
 
+  // Retries stripeGet up to MAX_RETRIES times on transient failures (429 or 5xx) using
+  // exponential backoff. AbortError (timeout) is NOT retried — a timed-out request
+  // returned synthetic 503 from stripeGet; a second attempt would likely also time out.
+  // Circuit breakers are not feasible in stateless Cloudflare Workers (no shared memory
+  // between isolate invocations); the digest cron cadence (12 h) is the natural rate limiter.
+  // Returns the final Response regardless of status — callers check res.ok.
+  async function stripeGetWithRetry(path: string, maxRetries = 2): Promise<Response> {
+    let res = await stripeGet(path);
+    let attempt = 0;
+    while ((res.status === 429 || res.status >= 500) && attempt < maxRetries) {
+      logStripeError(`${path} (attempt ${attempt + 1})`, res.status);
+      const delayMs = Math.min(1_000 * 2 ** attempt, 8_000); // 1s, 2s, 4s, …, cap 8s
+      await new Promise<void>((r) => setTimeout(r, delayMs));
+      res = await stripeGet(path);
+      attempt++;
+    }
+    return res;
+  }
+
   try {
     // Fetch subscription events (created + deleted) in the past 12h.
-    // stripeGetWithRetry handles transient 429/5xx with one retry before failing.
+    // stripeGetWithRetry handles transient 429/5xx with up to 2 retries (exponential backoff).
     const [createdRes, cancelledRes, subsRes] = await Promise.all([
       stripeGetWithRetry(`events?type=customer.subscription.created&created[gte]=${since12h}&limit=25`),
       stripeGetWithRetry(`events?type=customer.subscription.deleted&created[gte]=${since12h}&limit=25`),
