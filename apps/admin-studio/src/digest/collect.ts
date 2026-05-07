@@ -505,8 +505,10 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       }
       // Cache miss — fall through to fresh Stripe fetch below.
       // Concurrent misses produce identical results; see note above.
-    } catch {
-      // KV read error — proceed to fresh fetch
+    } catch (kvErr) {
+      // KV read error — log and proceed to fresh Stripe fetch so the digest is
+      // never silently suppressed by a cache layer failure.
+      console.warn('[digest/collect] KV get error for stripe cache (non-fatal, fetching live):', (kvErr as Error).message?.slice(0, 120));
     }
   }
 
@@ -651,8 +653,11 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     if (env.MONITOR_KV) {
       try {
         await env.MONITOR_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 1800 });
-      } catch {
-        // Non-fatal: cache write failure does not affect digest delivery
+      } catch (kvErr) {
+        // Non-fatal: cache write failure does not affect digest delivery, but log
+        // so that persistent KV unavailability is visible in Sentry/logs rather
+        // than silently causing every cron invocation to hit the live Stripe API.
+        console.warn('[digest/collect] KV put error for stripe cache (non-fatal, result still returned):', (kvErr as Error).message?.slice(0, 120));
       }
     }
 
