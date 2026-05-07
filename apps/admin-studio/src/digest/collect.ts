@@ -462,12 +462,19 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     // Read-only GET: Stripe's API contract (RFC 7231 §4.3.1) makes GET requests
     // inherently idempotent — Idempotency-Key is not applicable or accepted.
     // This helper exclusively performs reads; no mutations ever reach here.
+    //
+    // Network errors (DNS failure, AbortError on timeout) are caught and converted
+    // to a synthetic 503 Response so all callers handle failure uniformly via
+    // res.ok rather than needing per-call try/catch.
     return fetch(`https://api.stripe.com/v1/${path}`, {
       headers: {
         Authorization: `Bearer ${key}`,
         'User-Agent': 'factory-admin-studio-digest',
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    }).catch((err: unknown) => {
+      console.error('[digest/collect] stripeGet network error:', (err as Error).message?.slice(0, 100));
+      return new Response(null, { status: 503 });
     });
   }
 
