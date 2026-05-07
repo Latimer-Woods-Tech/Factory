@@ -110,8 +110,31 @@ Gated on SUP-4. Not yet filed.
 | VK-7 videoking deploy.yml rewrite | Copilot or Sauna | ✅ Done (PRs #123 #126 #127 #128 #129) |
 | xico-city first artist payload | Adrian | Todo, Weeks 2–3 |
 | focusbro AdWords acceptance | External (Google) | Waiting |
-| wordis-bond compliance decision | Adrian + legal | Waiting |
+| wordis-bond engine synergy (WB-1 → WB-5) | Copilot / CODEOWNER | 📋 Epics #420–427 filed; WB-1 is first unblock |
 | Dependabot minor/patch triage | Copilot / Sauna | ✅ videoking clean (PR #129); other repos TBD |
+
+---
+
+## WB — wordis-bond Engine Synergy
+
+**Status: Todo (all issues filed, board: LatWood Operations)**  
+**Owner:** CODEOWNER (all Red-tier) · **Tier:** Red → Yellow (WB-5)
+
+The front-end remains locked. The outreach engine is cleared for synergy with HumanDesign, capricast, and xico-city.
+
+| Issue | Epic | Blocks | Status |
+|---|---|---|---|
+| [#420](https://github.com/Latimer-Woods-Tech/factory/issues/420) | WB parent | — | 📋 Todo |
+| [#421](https://github.com/Latimer-Woods-Tech/factory/issues/421) | WB-1: Engine Decouple | WB-2, WB-3 | 📋 Todo |
+| [#422](https://github.com/Latimer-Woods-Tech/factory/issues/422) | WB-2: CRM Package Graduation | WB-4, WB-6 | 📋 Todo (blocked on WB-1) |
+| [#424](https://github.com/Latimer-Woods-Tech/factory/issues/424) | WB-3: Telephony Hardening | WB-4, WB-6 | 📋 Todo (blocked on WB-1) |
+| [#425](https://github.com/Latimer-Woods-Tech/factory/issues/425) | WB-4: Validation Layer | WB-5 | 📋 Todo (blocked on WB-2, WB-3) |
+| [#427](https://github.com/Latimer-Woods-Tech/factory/issues/427) | WB-6: Compliance Package Upgrade | WB-5 | 📋 Todo (blocked on WB-2, WB-3) |
+| [#426](https://github.com/Latimer-Woods-Tech/factory/issues/426) | WB-5: Per-App Wiring (HD + capricast + xico-city) | — | 📋 Todo (blocked on WB-4, WB-6) |
+
+**Dependency chain:** WB-1 → WB-2 + WB-3 → WB-4 + WB-6 → WB-5
+
+**Exit gate:** Campaign infrastructure consumable by ≥2 live apps, zero debt-specific terminology in any public API or schema.
 
 ---
 
