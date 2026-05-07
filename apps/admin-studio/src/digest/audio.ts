@@ -104,14 +104,18 @@ export async function generateAndUploadAudio(
 
     let ttsRes = await attemptTts();
 
-    // Retry up to 2 times on transient failures (429 rate limit, 5xx server errors)
-    // using exponential backoff (1s, 2s, cap 8s) via scheduler.wait() — the
-    // Workers-native delay API (not setTimeout).
-    // AbortError (timeout) comes back as null from attemptTts() and is not retried.
+    // Retry once on transient failures (429 rate limit, 5xx server errors) using a
+    // 1 s scheduler.wait() delay — the Workers-native I/O pause (not setTimeout).
+    // AbortError (timeout) comes back as null from attemptTts() and is NOT retried.
+    //
+    // Wall-clock budget: this function is called exclusively from the digest
+    // `scheduled` handler (not a fetch handler). CF scheduled triggers are not
+    // subject to the 30 ms request-CPU cap; the I/O wait does not consume CPU
+    // budget. The 1 s delay is safe.  See index.ts for the invocation context.
     let attempt = 0;
-    const MAX_TTS_RETRIES = 2;
+    const MAX_TTS_RETRIES = 1;
     while (ttsRes && (ttsRes.status === 429 || ttsRes.status >= 500) && attempt < MAX_TTS_RETRIES) {
-      const delayMs = Math.min(1_000 * 2 ** attempt, 8_000); // 1s, 2s, cap 8s
+      const delayMs = 1_000;
       console.warn(`[digest/audio] ElevenLabs TTS returned ${ttsRes.status} (attempt ${attempt + 1}) — retrying after ${delayMs}ms`);
       await scheduler.wait(delayMs);
       ttsRes = await attemptTts();
