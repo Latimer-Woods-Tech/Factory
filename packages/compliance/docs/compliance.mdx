@@ -1,11 +1,11 @@
 ---
 title: "@latimer-woods-tech/compliance"
-description: TCPA suppression, FDCPA contact windows, and immutable consent logging.
+description: TCPA suppression, FDCPA contact windows, immutable consent logging, and DSR (Data Subject Request) lifecycle management.
 ---
 
 # @latimer-woods-tech/compliance
 
-TCPA suppression list management, FDCPA 24-hour contact window enforcement, and immutable consent records. Depends on `@latimer-woods-tech/neon`.
+TCPA suppression list management, FDCPA 24-hour contact window enforcement, immutable consent records, and end-to-end Data Subject Request (DSR) lifecycle tracking. Depends on `@latimer-woods-tech/neon`.
 
 ## Installation
 
@@ -20,11 +20,15 @@ import {
   CREATE_COMPLIANCE_CONSENTS_TABLE,
   CREATE_COMPLIANCE_CONTACTS_TABLE,
   CREATE_TCPA_SUPPRESSION_TABLE,
+  CREATE_DSR_REQUESTS_TABLE,
+  CREATE_DSR_ARTIFACTS_TABLE,
 } from '@latimer-woods-tech/compliance';
 
 await db.execute(CREATE_COMPLIANCE_CONSENTS_TABLE);
 await db.execute(CREATE_COMPLIANCE_CONTACTS_TABLE);
 await db.execute(CREATE_TCPA_SUPPRESSION_TABLE);
+await db.execute(CREATE_DSR_REQUESTS_TABLE);
+await db.execute(CREATE_DSR_ARTIFACTS_TABLE);
 ```
 
 ## API
@@ -55,12 +59,10 @@ Appends an immutable consent record. Records are never updated or deleted.
 ```typescript
 function logConsent(db: Db, opts: {
   userId: string;
-  appId: string;
-  consentType: 'marketing' | 'sms' | 'call' | 'terms';
-  granted: boolean;
-  ipAddress?: string;
+  consentType: 'TCPA' | 'FDCPA' | 'GDPR' | 'CCPA';
+  ipAddress: string;
   userAgent?: string;
-}): Promise<ConsentRecord>;
+}): Promise<void>;
 ```
 
 ### `checkFDCPA(db, opts)`
@@ -69,9 +71,9 @@ Returns whether a contact attempt is permitted under FDCPA's 24-hour rule.
 
 ```typescript
 function checkFDCPA(db: Db, opts: {
-  userId: string;
-  appId: string;
-}): Promise<{ allowed: boolean; nextAllowedAt?: Date }>;
+  contactId: string;
+  callType: 'initial' | 'follow_up';
+}): Promise<{ allowed: boolean; nextAllowedAt?: Date; reason?: string }>;
 ```
 
 ### `recordContact(db, opts)`
@@ -80,17 +82,86 @@ Inserts a contact record used by `checkFDCPA`.
 
 ```typescript
 function recordContact(db: Db, opts: {
-  userId: string;
-  appId: string;
-  channel: 'sms' | 'call' | 'email';
-  outcome?: string;
-}): Promise<ContactRecord>;
+  contactId: string;
+  callType: 'initial' | 'follow_up';
+}): Promise<void>;
 ```
+
+---
+
+## DSR (Data Subject Request) API
+
+These functions implement the G-15 compliance gap: end-to-end DSR lifecycle for the HumanDesign Practitioner tier.
+
+### `submitDSR(db, opts)`
+
+Submits a new Data Subject Request and returns its generated ID.
+
+```typescript
+function submitDSR(db: Db, opts: {
+  userId: string;
+  appId?: string;
+  requestType: 'access' | 'erasure' | 'portability' | 'rectification';
+  notes?: string;
+}): Promise<string>;
+```
+
+### `getDSRStatus(db, requestId)`
+
+Returns the current status and metadata of a DSR.
+
+```typescript
+function getDSRStatus(db: Db, requestId: string): Promise<DsrRequest>;
+```
+
+### `listDSRRequests(db, opts?)`
+
+Lists DSR requests for the operator admin surface, optionally filtered.
+
+```typescript
+function listDSRRequests(db: Db, opts?: {
+  userId?: string;
+  appId?: string;
+  status?: 'pending' | 'in_progress' | 'fulfilled' | 'rejected';
+  limit?: number;
+}): Promise<DsrRequest[]>;
+```
+
+### `fulfillDSR(db, opts)`
+
+Records a fulfillment artifact and marks the DSR as `fulfilled`.
+
+```typescript
+function fulfillDSR(db: Db, opts: {
+  requestId: string;
+  kind: string;
+  payload: Record<string, unknown>;
+}): Promise<void>;
+```
+
+### `eraseDSR(db, userId)`
+
+Enforces erasure semantics: anonymises PII in consent records and fulfils any open `erasure` DSRs for the user. Does not hard-delete rows.
+
+```typescript
+function eraseDSR(db: Db, userId: string): Promise<void>;
+```
+
+---
 
 ## Example
 
 ```typescript
-import { checkTCPA, logConsent, checkFDCPA, recordContact } from '@latimer-woods-tech/compliance';
+import {
+  checkTCPA,
+  logConsent,
+  checkFDCPA,
+  recordContact,
+  submitDSR,
+  getDSRStatus,
+  fulfillDSR,
+  eraseDSR,
+} from '@latimer-woods-tech/compliance';
 
 // Before placing a call
 const tcpa = await checkTCPA({ db, phone: '+15551234567' });
@@ -98,10 +169,28 @@ if (!tcpa.safe) {
   return c.json({ error: 'Phone suppressed' }, 403);
 }
 
-const fdcpa = await checkFDCPA(db, { userId: user.id, appId: 'my-app' });
+const fdcpa = await checkFDCPA(db, { contactId: contact.id, callType: 'initial' });
 if (!fdcpa.allowed) {
   return c.json({ error: 'FDCPA window not open', nextAllowedAt: fdcpa.nextAllowedAt }, 429);
 }
 
-await recordContact(db, { userId: user.id, appId: 'my-app', channel: 'call' });
+await recordContact(db, { contactId: contact.id, callType: 'initial' });
+
+// DSR intake
+const dsrId = await submitDSR(db, {
+  userId: 'user-123',
+  appId: 'humandesign',
+  requestType: 'erasure',
+});
+
+// DSR fulfilment
+await fulfillDSR(db, {
+  requestId: dsrId,
+  kind: 'erasure_manifest',
+  payload: { erasedAt: new Date().toISOString(), tables: ['compliance_consents'] },
+});
+
+// Or enforce immediate erasure
+await eraseDSR(db, 'user-123');
 ```
+

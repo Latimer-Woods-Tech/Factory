@@ -13,70 +13,72 @@
 # ===========================================================================
 # DEFAULT — Red tier: Adrian reviews unless a later pattern broadens
 # ===========================================================================
-*                                       @adrper79-dot
-
+*                                       @adrper79-dot @factory-cross-repo[bot]
 # ===========================================================================
 # GREEN tier — supervisor (via factory-cross-repo bot) can merge on blessed template
-# factory-cross-repo[bot] is co-owner so its 2-party-confirmed APPROVE satisfies
+# @factory-cross-repo[bot] is co-owner so its 2-party-confirmed APPROVE satisfies
 # the code-owner gate without human intervention.
 # ===========================================================================
-docs/**                                 @adrper79-dot factory-cross-repo[bot]
-*.md                                    @adrper79-dot factory-cross-repo[bot]
-session/**                              @adrper79-dot factory-cross-repo[bot]
-documents/**                            @adrper79-dot factory-cross-repo[bot]
+docs/**                                 @adrper79-dot @factory-cross-repo[bot]
+*.md                                    @adrper79-dot @factory-cross-repo[bot]
+session/**                              @adrper79-dot @factory-cross-repo[bot]
+documents/**                            @adrper79-dot @factory-cross-repo[bot]
 # MA-8: memory single-writer — explicit ownership so the branch-protection review
 # gate fires on every memory/*.md edit, enforcing the single-writer invariant.
 memory/**                               @adrper79-dot
-.github/ISSUE_TEMPLATE/**               @adrper79-dot factory-cross-repo[bot]
-.github/PULL_REQUEST_TEMPLATE.md        @adrper79-dot factory-cross-repo[bot]
+.github/ISSUE_TEMPLATE/**               @adrper79-dot @factory-cross-repo[bot]
+.github/PULL_REQUEST_TEMPLATE.md        @adrper79-dot @factory-cross-repo[bot]
 
 # ===========================================================================
 # YELLOW tier — auto-PR + auto-merge on green CI + 2-party LLM approval
-# factory-cross-repo[bot] is co-owner so Grok→Claude consensus APPROVE drives
+# @factory-cross-repo[bot] is co-owner so Grok→Claude consensus APPROVE drives
 # merge without requiring @adrper79-dot on every PR.
 # ===========================================================================
-apps/*/src/**                           @adrper79-dot factory-cross-repo[bot]
-client/**                               @adrper79-dot factory-cross-repo[bot]
-tests/**                                @adrper79-dot factory-cross-repo[bot]
+apps/*/src/**                           @adrper79-dot @factory-cross-repo[bot]
+client/**                               @adrper79-dot @factory-cross-repo[bot]
+tests/**                                @adrper79-dot @factory-cross-repo[bot]
 
 # ===========================================================================
-# RED tier — belt-and-suspenders guards (human only)
+# RED tier — gated by 2-party LLM review (Grok → Claude consensus)
+# @factory-cross-repo[bot] is co-owner; the LLM checkpoint is the final gate.
+# Claude has hardcoded guidance to block Actions injection, irreversible
+# migrations, billing idempotency violations, and CODEOWNERS self-modification.
 # These override any broader Yellow/Green pattern above.
 # ===========================================================================
 
 # CI / workflows — any change here multiplies across all apps
-.github/workflows/**                    @adrper79-dot
-.github/CODEOWNERS                      @adrper79-dot
-.github/settings.yml                    @adrper79-dot
+.github/workflows/**                    @adrper79-dot @factory-cross-repo[bot]
+.github/CODEOWNERS                      @adrper79-dot @factory-cross-repo[bot]
+.github/settings.yml                    @adrper79-dot @factory-cross-repo[bot]
 
 # Shared packages — every consumer app is affected on bump
-packages/**                             @adrper79-dot
+packages/**                             @adrper79-dot @factory-cross-repo[bot]
 
 # DB migrations — unreversible schema changes
-workers/src/db/migrations/**            @adrper79-dot
-migrations/**                           @adrper79-dot
+workers/src/db/migrations/**            @adrper79-dot @factory-cross-repo[bot]
+migrations/**                           @adrper79-dot @factory-cross-repo[bot]
 
 # Billing / admin / Stripe handlers — money path
-workers/src/handlers/billing*           @adrper79-dot
-workers/src/handlers/admin*             @adrper79-dot
-workers/src/handlers/stripe*            @adrper79-dot
-apps/*/workers/src/handlers/billing*    @adrper79-dot
-apps/*/workers/src/handlers/admin*      @adrper79-dot
-apps/*/workers/src/handlers/stripe*     @adrper79-dot
+workers/src/handlers/billing*           @adrper79-dot @factory-cross-repo[bot]
+workers/src/handlers/admin*             @adrper79-dot @factory-cross-repo[bot]
+workers/src/handlers/stripe*            @adrper79-dot @factory-cross-repo[bot]
+apps/*/workers/src/handlers/billing*    @adrper79-dot @factory-cross-repo[bot]
+apps/*/workers/src/handlers/admin*      @adrper79-dot @factory-cross-repo[bot]
+apps/*/workers/src/handlers/stripe*     @adrper79-dot @factory-cross-repo[bot]
 
 # Deployment config
-wrangler.jsonc                          @adrper79-dot
-wrangler.toml                           @adrper79-dot
-apps/*/wrangler.jsonc                   @adrper79-dot
+wrangler.jsonc                          @adrper79-dot @factory-cross-repo[bot]
+wrangler.toml                           @adrper79-dot @factory-cross-repo[bot]
+apps/*/wrangler.jsonc                   @adrper79-dot @factory-cross-repo[bot]
 
 # Capability declarations and service registry
-capabilities.yml                        @adrper79-dot
-apps/*/capabilities.yml                 @adrper79-dot
-docs/service-registry.yml               @adrper79-dot
+capabilities.yml                        @adrper79-dot @factory-cross-repo[bot]
+apps/*/capabilities.yml                 @adrper79-dot @factory-cross-repo[bot]
+docs/service-registry.yml               @adrper79-dot @factory-cross-repo[bot]
 
 # Supervisor internals (once SUP-3.4 scaffold lands)
-apps/supervisor/**                      @adrper79-dot
+apps/supervisor/**                      @adrper79-dot @factory-cross-repo[bot]
 
 # Template library — supervisor plans are code that drives autonomous execution
-docs/supervisor/plans/**                @adrper79-dot
-docs/supervisor/FRIDGE.md               @adrper79-dot
+docs/supervisor/plans/**                @adrper79-dot @factory-cross-repo[bot]
+docs/supervisor/FRIDGE.md               @adrper79-dot @factory-cross-repo[bot]

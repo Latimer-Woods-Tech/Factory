@@ -1,0 +1,162 @@
+name: Deploy factory-supervisor (Worker + DO)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/supervisor/**'
+      - 'packages/llm/**'
+      - 'packages/llm-meter/**'
+      - 'packages/admin/**'
+      - 'packages/errors/**'
+      - 'packages/logger/**'
+      - 'scripts/generate-supervisor-capabilities.mjs'
+      - 'scripts/generate-supervisor-templates.mjs'
+      - 'docs/capabilities/**'
+      - 'docs/supervisor/plans/**'
+      - '.github/workflows/deploy-supervisor.yml'
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: supervisor-${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  deploy:
+    name: Deploy to ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build dependency packages
+        run: |
+          set -euo pipefail
+          # Build in strict dependency order (see CLAUDE.md §Package Dependency Order)
+          for pkg in errors monitoring logger neon analytics llm llm-meter admin; do
+            echo "=== Building packages/${pkg} ==="
+            cd "packages/${pkg}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install supervisor
+        run: npm ci
+        working-directory: apps/supervisor
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Regenerate capabilities + templates
+        run: |
+          node scripts/generate-supervisor-capabilities.mjs
+          node scripts/generate-supervisor-templates.mjs
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: apps/supervisor
+
+      - name: Confirm CF_API_TOKEN is set
+        run: |
+          test -n "${{ secrets.CF_API_TOKEN }}" || \
+            (echo "::error::CF_API_TOKEN secret is not set. Create a token at https://dash.cloudflare.com/profile/api-tokens with Workers Scripts:Edit + D1:Edit permissions." && exit 1)
+
+      - name: Provision secrets
+        working-directory: apps/supervisor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
+          # Only provision secrets that are actually set — skip empties with a warning.
+          put_secret() {
+            local name="$1" val="$2"
+            if [ -z "$val" ]; then
+              echo "::warning::Skipping $name — secret not set in this repo"
+              return 0
+            fi
+            # Staging = no --env (top-level config, all bindings available)
+            # Production = --env production (routes override)
+            ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+            echo "$val" | npx wrangler secret put "$name" ${ENV_FLAG} 2>&1 | grep -v "^$"
+          }
+
+          put_secret ANTHROPIC_API_KEY   "${{ secrets.ANTHROPIC_API_KEY }}"
+          put_secret GROQ_API_KEY        "${{ secrets.GROQ_API_KEY }}"
+          put_secret JWT_SECRET          "${{ secrets.SUPERVISOR_JWT_SECRET }}"
+          put_secret VERTEX_ACCESS_TOKEN "${{ secrets.VERTEX_ACCESS_TOKEN }}"
+          put_secret GROK_API_KEY        "${{ secrets.GROK_API_KEY }}"
+
+      - name: Deploy
+        working-directory: apps/supervisor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
+          # Staging: deploy top-level config (workers_dev: true, all bindings including DO/D1)
+          # Production: deploy --env production (adds custom routes, disables workers_dev)
+          if [ "${TARGET_ENV}" = "production" ]; then
+            npx wrangler deploy --env production
+          else
+            npx wrangler deploy
+          fi
+
+      - name: Post-deploy health check (staging)
+        if: ${{ (github.event.inputs.env != 'production') && (github.event_name != 'push' || github.ref != 'refs/heads/main') }}
+        run: |
+          URL="https://factory-supervisor.adrper79.workers.dev"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ /health returned 200"
+              exit 0
+            fi
+            echo "Attempt $i: status=${STATUS}, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Health check failed after 5 attempts (last status: ${STATUS})"
+          exit 1
+
+      - name: Post-deploy health check (production)
+        if: ${{ github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+        run: |
+          URL="https://supervisor.apunlimited.com"
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ /health returned 200 on ${URL}"
+              exit 0
+            fi
+            echo "Attempt $i: status=${STATUS}, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Health check failed after 5 attempts (last status: ${STATUS})"
+          exit 1

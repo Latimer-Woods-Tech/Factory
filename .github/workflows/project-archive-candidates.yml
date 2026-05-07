@@ -1,0 +1,85 @@
+name: Project Archive Candidates Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '31 7 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Report archive candidates without mutating the board
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          PROJECT_NUMBER="1"
+          PROJECT_OWNER="Latimer-Woods-Tech"
+          THRESHOLD_DAYS=14
+          CUTOFF_EPOCH=$(date -u -d "$THRESHOLD_DAYS days ago" +%s)
+          ITEMS=$(gh project item-list "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --limit 200 --format json | jq -c '.items[] | select(.status=="Done" and (.content.type=="Issue" or .content.type=="PullRequest")) | {repo: .content.repository, number: .content.number, type: .content.type, title: .title}')
+
+          {
+            echo "## Project archive candidates"
+            echo
+            echo "Report-only. No cards were archived."
+            echo
+            echo "Threshold: closed for at least ${THRESHOLD_DAYS} days and already in Done."
+            echo
+            echo "| Repository | Type | Number | Updated | Title |"
+            echo "| --- | --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          CANDIDATES=0
+          while IFS= read -r item; do
+            [ -z "$item" ] && continue
+            REPO=$(echo "$item" | jq -r '.repo')
+            NUMBER=$(echo "$item" | jq -r '.number')
+            TYPE=$(echo "$item" | jq -r '.type')
+            TITLE=$(echo "$item" | jq -r '.title | gsub("\\|"; "\\\\|")')
+
+            if [ "$TYPE" = "Issue" ]; then
+              STATE_JSON=$(gh issue view "$NUMBER" --repo "$REPO" --json state,updatedAt 2>/dev/null || echo "")
+            else
+              STATE_JSON=$(gh pr view "$NUMBER" --repo "$REPO" --json state,updatedAt 2>/dev/null || echo "")
+            fi
+
+            if [ -z "$STATE_JSON" ]; then
+              continue
+            fi
+
+            STATE=$(echo "$STATE_JSON" | jq -r '.state')
+            UPDATED_AT=$(echo "$STATE_JSON" | jq -r '.updatedAt')
+            UPDATED_EPOCH=$(date -u -d "$UPDATED_AT" +%s)
+
+            if [ "$STATE" = "OPEN" ]; then
+              continue
+            fi
+
+            if [ "$UPDATED_EPOCH" -gt "$CUTOFF_EPOCH" ]; then
+              continue
+            fi
+
+            echo "| $REPO | $TYPE | #$NUMBER | $UPDATED_AT | $TITLE |" >> "$GITHUB_STEP_SUMMARY"
+            echo "$REPO $TYPE #$NUMBER updated $UPDATED_AT is an archive candidate"
+            CANDIDATES=$((CANDIDATES + 1))
+          done <<< "$ITEMS"
+
+          if [ "$CANDIDATES" -eq 0 ]; then
+            echo "| none | - | - | - | No cards met the archive threshold. |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo
+          echo "archive_candidates=$CANDIDATES"

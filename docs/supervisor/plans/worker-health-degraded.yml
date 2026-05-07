@@ -1,0 +1,67 @@
+id: worker-health-degraded
+version: 1
+tier: green
+trigger_keywords: [health, degraded, down, 503, 502, timeout, unreachable, synthetic monitor]
+triggers:
+  labels_any_of: [incident, monitoring, source:synthetic-monitor]
+  title_pattern: "Worker (health|degraded|down|503|502)|Synthetic monitor (fail|alert)|/health (returning|returning 5)"
+  body_patterns:
+    - "(/health.*5[0-9]{2}|synthetic.*monitor.*fail|worker.*unreachable)"
+preconditions:
+  - capability_exists: factory-admin.observability.summary
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: affected_worker
+    type: enum
+    values: [humandesign, videoking, xico-city, factory-admin, admin-studio, prime-self-worker]
+    source: issue_body
+  - name: error_code
+    type: enum
+    values: ["502", "503", "504", "000", "timeout"]
+    source: issue_body
+steps:
+  - id: s1
+    tool: factory-admin.observability.summary
+    depends_on: null
+    params: {}
+    intent: "Fetch cross-app Sentry error rates and synthetic monitor status to confirm scope of degradation."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      body: |
+        **Supervisor — worker health degradation triage**
+
+        Affected worker: `$slots.affected_worker` (HTTP $slots.error_code)
+        Observability summary: $s1.summary
+
+        **Immediate checks (human):**
+        1. `curl -I https://$slots.affected_worker.adrper79.workers.dev/health` — confirm current status
+        2. Check Cloudflare dashboard for the worker at https://dash.cloudflare.com
+        3. Check Sentry project for `$slots.affected_worker` for recent error spike
+        4. If 502/503: check if a recent deployment is the cause via `wrangler rollback`
+
+        **Rollback command (if deployment-related):**
+        ```
+        cd apps/$slots.affected_worker && wrangler rollback
+        ```
+
+        **Escalation:** If the worker is still degraded after 15 min, page on-call via Pushover.
+
+        The supervisor cannot invoke `wrangler rollback` (FRIDGE rule 8 — irreversible infra action). A CODEOWNER must execute this runbook.
+
+        _Run ID: $RUN_ID_
+    intent: "Post structured degradation runbook with curl commands and rollback instructions."
+    requires_human_review: false
+  - id: s3
+    tool: github.addLabel
+    depends_on: s2
+    params:
+      labels: ["status:triaged", "incident", "supervisor:human-action-required"]
+    intent: "Label as triaged."
+    requires_human_review: false
+acceptance_gate:
+  comment_posted: true
+  labels_added: ["status:triaged", "incident"]
