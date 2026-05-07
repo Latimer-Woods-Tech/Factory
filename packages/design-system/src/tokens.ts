@@ -28,6 +28,7 @@
 // COLOR PALETTE
 // ============================================================================
 
+/** Brand, semantic, neutral and surface color palette for all Factory UI. */
 export const colors = {
   // Brand Colors
   primary: '#0052CC',           // Core blue — primary actions, links, focus states
@@ -80,6 +81,7 @@ export const colors = {
 // SPACING SCALE (4px Grid)
 // ============================================================================
 
+/** 4px-grid spacing scale used for padding, margin, and gap values. */
 export const spacing = {
   // Base unit: 4px (follow 4px grid system for consistency)
   xs: '4px',
@@ -112,6 +114,7 @@ export const spacing = {
 // TYPOGRAPHY
 // ============================================================================
 
+/** Font families, sizes, weights, and line heights for all Factory text styles. */
 export const typography = {
   // Font Families
   fontFamily: {
@@ -241,6 +244,7 @@ export const typography = {
 // SHADOWS
 // ============================================================================
 
+/** Box shadow elevation scale — from none to xl for depth layering. */
 export const shadows = {
   // Elevation shadows (increasing depth)
   none: 'none',
@@ -263,6 +267,7 @@ export const shadows = {
 // BORDER RADIUS
 // ============================================================================
 
+/** Border radius scale — from sharp (none) to pill (full). */
 export const borderRadius = {
   none: '0px',
   sm: '4px',                // Slight rounding (minor elements)
@@ -276,6 +281,7 @@ export const borderRadius = {
 // Z-INDEX SCALE
 // ============================================================================
 
+/** CSS z-index stacking scale — from hidden (-1) to toast (1070). */
 export const zIndex = {
   // Layer ordering (CSS z-index values)
   hide: -1,                 // Hidden
@@ -294,6 +300,7 @@ export const zIndex = {
 // TRANSITIONS / ANIMATIONS
 // ============================================================================
 
+/** CSS transition durations and timing functions for consistent animation. */
 export const transitions = {
   // Duration (milliseconds)
   duration: {
@@ -317,6 +324,7 @@ export const transitions = {
 // BREAKPOINTS (Responsive Design)
 // ============================================================================
 
+/** Responsive breakpoint values for media queries. */
 export const breakpoints = {
   xs: '0px',                // Mobile
   sm: '640px',              // Tablet
