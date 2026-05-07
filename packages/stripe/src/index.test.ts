@@ -201,7 +201,7 @@ describe('createCheckoutSession', () => {
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
       }),
-    ).rejects.toThrow('priceId must be a valid Stripe price ID');
+    ).rejects.toThrow('Stripe price ID is required');
   });
 
   it('throws ValidationError when priceId lacks price_ prefix (factory#343 guard)', async () => {
@@ -238,7 +238,7 @@ describe('createCheckoutSession', () => {
         cancel_url: 'https://app/cancel',
         line_items: [{ price: 'price_pro', quantity: 1 }],
       },
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
 
@@ -345,7 +345,7 @@ describe('createCheckoutSession', () => {
     expect(url).toBe('https://checkout.stripe.com/sess_2');
     expect(checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({ mode: 'payment' }),
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
 
@@ -383,7 +383,7 @@ describe('createCheckoutSession', () => {
 
     expect(checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({ payment_method_types: ['card'] }),
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
 
@@ -402,7 +402,7 @@ describe('createCheckoutSession', () => {
 
     expect(checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: { userId: 'u_42', tier: 'pro' } }),
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
 
@@ -427,7 +427,7 @@ describe('createCheckoutSession', () => {
         cancel_url: 'https://app/cancel',
         line_items: [{ price: 'price_pro', quantity: 1 }],
       },
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
   });
 });
