@@ -78,7 +78,11 @@ export async function runDigest(env: Env): Promise<void> {
   const outcome = await sendDigestEmail(rendered, env);
   if (outcome.ok) {
     console.log(`[digest] email sent successfully, messageId=${outcome.messageId}`);
-    // Mark this window as sent so cron retries don't send a duplicate.
+    // KV dedup write is intentionally AFTER confirmed delivery (outcome.ok === true).
+    // If sendDigestEmail returns { ok: false }, this block is skipped entirely so the
+    // KV key is never written — future cron retries will re-attempt delivery.
+    // This prevents the failure mode where a suppression key is written before the
+    // email is confirmed delivered, which would silently skip all future retries.
     if (env.MONITOR_KV) {
       await env.MONITOR_KV.put(dedupKey, '1', { expirationTtl: 86400 });
     }

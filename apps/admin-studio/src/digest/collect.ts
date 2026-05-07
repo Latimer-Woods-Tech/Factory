@@ -488,6 +488,14 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
 
   // ── KV cache: return cached result if available (prevents double-counting on
   //    repeated cron invocations within the same 12-hour billing window) ────────
+  //
+  // Concurrent cache-miss safety: if two cron invocations both miss the cache
+  // simultaneously they will each issue the same read-only Stripe GETs and
+  // compute identical results (same `since12h` timestamp = same event window =
+  // same query). The KV PUT that follows is last-writer-wins idempotent —
+  // the second write simply overwrites the first with an identical value.
+  // No double-charging risk: this entire path is read-only (GET only, no POST/
+  // PUT/DELETE), so concurrent execution cannot mutate billing state.
   const cacheKey = `digest:stripe-data:${since12h}`;
   if (env.MONITOR_KV) {
     try {
@@ -495,8 +503,10 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       if (cached !== null) {
         return cached;
       }
+      // Cache miss — fall through to fresh Stripe fetch below.
+      // Concurrent misses produce identical results; see note above.
     } catch {
-      // KV miss or error — proceed to fresh fetch
+      // KV read error — proceed to fresh fetch
     }
   }
 
@@ -564,6 +574,11 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   try {
     // Fetch subscription events (created + deleted) in the past 12h.
     // stripeGetWithRetry handles transient 429/5xx with up to 2 retries (exponential backoff).
+    //
+    // Concurrent cache-miss safety (also documented at the KV cache block above):
+    // multiple concurrent callers reaching this point issue identical GET requests
+    // bound to the same `since12h` window — last-writer-wins KV PUT is idempotent,
+    // and read-only GETs carry no double-charging or mutation risk.
     const [createdRes, cancelledRes, subsRes] = await Promise.all([
       stripeGetWithRetry(`events?type=customer.subscription.created&created[gte]=${since12h}&limit=25`),
       stripeGetWithRetry(`events?type=customer.subscription.deleted&created[gte]=${since12h}&limit=25`),
