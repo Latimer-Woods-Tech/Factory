@@ -10,7 +10,7 @@
 
 ## The ten rules
 
-1. **wordis-bond is off-limits to automation.** Three-layer lockout: CODEOWNERS, `service-registry.yml`, supervisor denylist. Never open a PR, never touch a worker, never read data. Period.
+1. **wordis-bond frontend is off-limits to automation.** The wordis-bond frontend/UI application carries TCPA regulatory risk and is subject to a three-layer lockout: CODEOWNERS, `service-registry.yml` automation_denylist, and supervisor denylist. Never open a PR or push code touching the wordis-bond UI layer. The wordis-bond **engine/worker backend** does NOT carry this restriction and may be worked on normally — treat it like any other Factory Worker. When in doubt about which layer a file belongs to, ask a CODEOWNER before proceeding.
 2. **No credentials in docs, memory, plans, issue bodies, PRs, or comments.** The `credential-scrub` workflow blocks CI. Respect it. If a key leaks in a doc: rotate it, do not just delete it from git.
 3. **Red-tier paths never auto-merge.** Includes `.github/workflows/**`, `packages/**`, `migrations/**`, any Stripe code, production Wrangler config, production Neon user tables.
 4. **Every `/admin` mutation requires out-of-band CODEOWNER ✅** regardless of trust tier, even on Green. Plan-approval and PR-review do not substitute.

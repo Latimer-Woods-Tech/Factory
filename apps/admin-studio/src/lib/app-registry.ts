@@ -40,7 +40,7 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     productionWorkerName: 'prime-self',
     // No distinct staging worker is currently registry-backed for prime-self.
     stagingWorkerName: 'prime-self',
-    productionCustomDomain: 'selfprime.net',
+    productionCustomDomain: 'api.selfprime.net',
   },
   {
     id: 'schedule-worker',
