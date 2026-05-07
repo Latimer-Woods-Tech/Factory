@@ -599,6 +599,14 @@ export async function getCustomerView(db: FactoryDb, userId: string): Promise<Cu
 
 /**
  * Service for managing outreach contacts with tenant isolation.
+ *
+ * Security: every method wraps its query in `withTenant(db, tenantId, ...)`, which
+ * opens an explicit transaction and issues `SET LOCAL app.tenant_id = tenantId`
+ * before any DML, enforcing the RLS policies on `outreach_contacts`.
+ *
+ * Injection safety: all user-supplied values are passed as `sql` tagged-template
+ * parameters, which Drizzle/Neon serialize as positional placeholders ($1, $2, …).
+ * No string concatenation reaches the database.
  */
 export class ContactService {
   /**
@@ -766,6 +774,11 @@ export class ContactService {
 
 /**
  * Service for managing outreach campaigns with tenant isolation.
+ *
+ * Security: every method wraps its query in `withTenant(db, tenantId, ...)`, which
+ * opens an explicit transaction and issues `SET LOCAL app.tenant_id = tenantId`
+ * before any DML, enforcing RLS on `outreach_campaigns`.
+ * All parameters use Drizzle's `sql` tagged-template placeholders (no concatenation).
  */
 export class CampaignService {
   /**
