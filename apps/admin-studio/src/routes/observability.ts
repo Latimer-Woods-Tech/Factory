@@ -178,6 +178,111 @@ function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+interface MonitorSnapshot {
+  ts: string;
+  status: 'ok' | 'degraded';
+  failed: Array<{ id: string; url?: string; latencyMs: number; error?: string }>;
+  latencies: Record<string, number>;
+  urls?: Record<string, string>;
+}
+
+/** Outage classification for journey probes. */
+export type JourneyOutageClass = 'ok' | 'partial' | 'outage' | 'unknown';
+
+interface JourneyProbe {
+  id: string;
+  ok: boolean;
+  latencyMs: number;
+  url?: string;
+  error?: string;
+}
+
+interface JourneyTrendPoint {
+  ts: string;
+  status: 'ok' | 'degraded';
+  journeyOk: number;
+  journeyFailed: number;
+}
+
+const JOURNEY_PREFIX = 'slo.journey.';
+
+function classifyOutage(probes: JourneyProbe[]): JourneyOutageClass {
+  if (probes.length === 0) return 'unknown';
+  const failedCount = probes.filter((p) => !p.ok).length;
+  if (failedCount === 0) return 'ok';
+  if (failedCount === probes.length) return 'outage';
+  return 'partial';
+}
+
+function snapshotToJourneyProbes(snapshot: MonitorSnapshot): JourneyProbe[] {
+  const failedMap = new Map(snapshot.failed.map((f) => [f.id, f]));
+  return Object.entries(snapshot.latencies)
+    .filter(([id]) => id.startsWith(JOURNEY_PREFIX))
+    .map(([id, latencyMs]) => {
+      const failed = failedMap.get(id);
+      return {
+        id,
+        ok: !failed,
+        latencyMs,
+        url: snapshot.urls?.[id] ?? failed?.url,
+        error: failed?.error,
+      };
+    });
+}
+
+observability.get('/synthetic/journey', async (c) => {
+  const kv = c.env.MONITOR_KV;
+  if (!kv) {
+    return c.json({
+      configured: false,
+      note: 'MONITOR_KV binding not configured.',
+      outageClass: 'unknown' as JourneyOutageClass,
+      probes: [] as JourneyProbe[],
+      trend: [] as JourneyTrendPoint[],
+    });
+  }
+
+  const latestRaw = await kv.get('latest');
+  if (!latestRaw) {
+    return c.json({
+      configured: true,
+      note: 'No monitor snapshot found yet.',
+      outageClass: 'unknown' as JourneyOutageClass,
+      probes: [] as JourneyProbe[],
+      trend: [] as JourneyTrendPoint[],
+    });
+  }
+
+  const latest = JSON.parse(latestRaw) as MonitorSnapshot;
+  const probes = snapshotToJourneyProbes(latest);
+  const outageClass = classifyOutage(probes);
+
+  // Fetch recent snapshots (up to 12) for trend display.
+  // Keys are ISO timestamp strings (lexicographically sortable), so
+  // sorting them descending gives the most-recent-first ordering.
+  const list = await kv.list({ prefix: 'snapshots:', limit: 12 });
+  const sortedKeys = list.keys.map((k) => k.name).sort().reverse();
+  const trendRaws = await Promise.all(sortedKeys.map((k) => kv.get(k)));
+
+  const trend: JourneyTrendPoint[] = trendRaws
+    .filter((r): r is string => r !== null)
+    .map((raw) => {
+      const s = JSON.parse(raw) as MonitorSnapshot;
+      const journeyIds = Object.keys(s.latencies).filter((id) => id.startsWith(JOURNEY_PREFIX));
+      const journeyFailed = s.failed.filter((f) => f.id.startsWith(JOURNEY_PREFIX)).length;
+      const journeyOk = Math.max(0, journeyIds.length - journeyFailed);
+      return { ts: s.ts, status: s.status, journeyOk, journeyFailed };
+    });
+
+  return c.json({
+    configured: true,
+    checkedAt: latest.ts,
+    outageClass,
+    probes,
+    trend,
+  });
+});
+
 // ── Telemetry contract coverage (ADM-7) ─────────────────────────────────────
 
 const TELEMETRY_ENDPOINTS = ['/api/admin/health', '/api/admin/metrics', '/api/admin/events'] as const;
