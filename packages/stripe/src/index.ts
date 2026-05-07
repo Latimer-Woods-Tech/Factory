@@ -238,17 +238,28 @@ export async function getSubscription(
 /**
  * Creates a Stripe Checkout session for a subscription or one-time payment.
  *
+ * `priceId` must be a live Stripe price ID read from env/secrets — never
+ * hardcode it in source.  The function validates the value is non-empty and
+ * starts with the canonical `price_` prefix before calling the Stripe API,
+ * so misconfigured environments fail fast with a clear error instead of a
+ * `StripeInvalidRequestError: No such price` at runtime (factory#343).
+ *
  * @param options - Checkout session inputs.
  * @returns The hosted Checkout URL.
+ * @throws {ValidationError} If `priceId` is missing or malformed.
  * @throws {InternalError} If Stripe does not return a URL.
  */
 export async function createCheckoutSession(
   options: CreateCheckoutSessionOptions,
 ): Promise<string> {
-  const priceId = options.priceId.trim();
+  const priceId = options.priceId?.trim() ?? '';
 
-  if (!priceId) {
-    throw new ValidationError('Stripe price ID is required');
+  if (!priceId || !priceId.startsWith('price_')) {
+    throw new ValidationError(
+      `priceId must be a valid Stripe price ID (starts with "price_"); got: "${priceId}". ` +
+      'Read the price ID from env/secrets — never hardcode it in source.',
+      { code: ErrorCodes.VALIDATION_ERROR },
+    );
   }
 
   if (PLACEHOLDER_PRICE_ID_PATTERN.test(priceId)) {

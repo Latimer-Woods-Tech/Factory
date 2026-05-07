@@ -41,7 +41,7 @@ Split ownership: Adrian for UI-only (App install, Vertex enable), Sauna for ever
 
 - [ ] `MA-4` (factory#82) — Path-scoped CODEOWNERS (Sauna drafts, Adrian reviews)
 - [ ] `SUP-1.1` (factory#97) — Install factory-cross-repo App on `Latimer-Woods-Tech` org (Adrian UI)
-- [ ] `SUP-1.2` (factory#98) — Enable Vertex AI API + mint `supervisor-sa` least-privilege (Adrian UI or Sauna if proxy auth works)
+- [ ] `SUP-1.2` (factory#98) — Enable Vertex AI API + mint `supervisor-sa` least-privilege (Adrian UI or Sauna if proxy auth works) — **Code ready**: `scripts/provision-vertex-ai-sa.sh` (gcloud steps 1–4) + `.github/workflows/verify-vertex-ai.yml` (step 5 test) + `docs/runbooks/rotate-gcp-sa.md`. **Pending Adrian**: run provision script + set `SUPERVISOR_VERTEX_SA_KEY` org secret + trigger verify workflow.
 - [ ] `SUP-1.3` (factory#99) — `credential-scrub.yml` doc-lint workflow (Sauna drafts)
 
 **Parallel work not on supervisor track but Week 1 safe:** VK-7 (videoking deploy.yml rewrite), any safe Dependabot minor/patch batch.
@@ -147,3 +147,4 @@ Gated on SUP-4. Not yet filed.
 
 - **2026-05-06 ET** — SUP-3 fully code-complete. PRs #359 (merged) + #360 (auto-merge queue). 4 capabilities.yml files (26 caps), 15 templates, template_stats D1 migration, SUP-1.4 migration drift guard, capabilities code generator, supervisor DO wired with stats/capabilities/cron. O1+O3 decision issues closed. Remaining blocker: D1 database provisioning (REPLACE_AFTER_PROVISIONING in wrangler.jsonc).
 - **2026-05-02 10:30 ET** — Tracker created. SUP-0/1/2/3 epics + 15 sub-issues filed, linked, added to board with Priority + Status. HumanDesign#39 closed as dup of HumanDesign#68. 19 new labels on factory. Scheduled supervisor task drafted (DISABLED). Template bootstrap candidates analyzed in `file://session/template-bootstrap-candidates.md`.
+- **2026-05-05** — SUP-1.2 code-side complete: `scripts/provision-vertex-ai-sa.sh`, `.github/workflows/verify-vertex-ai.yml`, `docs/runbooks/rotate-gcp-sa.md`. Pending Adrian: run provision script + trigger verify workflow.
