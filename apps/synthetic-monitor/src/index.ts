@@ -357,10 +357,8 @@ export default {
         urls: Object.fromEntries(result.results.map(r => [r.id, r.url])),
       };
       const key = `snapshots:${result.checkedAt}`;
-      await Promise.all([
-        env.MONITOR_KV.put(key, JSON.stringify(snapshot), { expirationTtl: 604800 }),
-        env.MONITOR_KV.put('latest', JSON.stringify(snapshot)),
-      ]);
+      await env.MONITOR_KV.put(key, JSON.stringify(snapshot), { expirationTtl: 604800 });
+      await env.MONITOR_KV.put('latest', JSON.stringify(snapshot));
     }
   },
 };
