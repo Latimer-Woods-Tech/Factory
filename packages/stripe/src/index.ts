@@ -75,7 +75,7 @@ export interface CreatePortalSessionOptions {
   stripeClient: Stripe;
 }
 
-const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-07-30.basil';
+const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-02-24.acacia';
 /**
  * Matches unresolved placeholder price IDs such as `price_xxx` that should
  * never be sent to Stripe in a real checkout flow.
