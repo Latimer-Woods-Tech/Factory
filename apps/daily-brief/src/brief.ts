@@ -126,7 +126,10 @@ export async function runDailyBrief(env: Env): Promise<void> {
   for (let i = 0; i < emailResults.length; i++) {
     const result = emailResults[i];
     if (result?.status === 'rejected') {
-      console.warn(`[daily-brief] Failed to send to ${recipients[i]}: ${String(result.reason)}`);
+      // Mask recipient address to avoid PII in worker logs
+      const addr = recipients[i] ?? '';
+      const masked = addr.includes('@') ? `***@${addr.split('@')[1]}` : `recipient[${i}]`;
+      console.warn(`[daily-brief] Failed to send to ${masked}: ${String(result.reason)}`);
     }
   }
 }

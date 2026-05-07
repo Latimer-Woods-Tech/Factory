@@ -94,22 +94,23 @@ function formatDollars(cents: number): string {
   }).format(Math.abs(cents) / 100);
 }
 
+async function fetchTrialingSubs(secretKey: string): Promise<StripeSubscription[]> {
+  const res = await fetch(
+    `https://api.stripe.com/v1/subscriptions?status=trialing&limit=100&expand[]=data.items`,
+    { headers: stripeHeaders(secretKey), signal: AbortSignal.timeout(10_000) },
+  );
+  if (!res.ok) return [];
+  const body = (await res.json()) as StripeListResponse;
+  return body.data;
+}
+
 export async function fetchStripeMrr(secretKey: string): Promise<StripeMrrData> {
   const now = Math.floor(Date.now() / 1000);
   const oneDayAgo = now - 86_400;
 
   const [allActive, trialSubs] = await Promise.all([
     fetchAllActive(secretKey),
-    // Trialing subs (separate status)
-    fetch(
-      `https://api.stripe.com/v1/subscriptions?status=trialing&limit=100&expand[]=data.items`,
-      { headers: stripeHeaders(secretKey), signal: AbortSignal.timeout(10_000) },
-    )
-      .then(async (r): Promise<StripeListResponse> => {
-        if (!r.ok) return { data: [], has_more: false };
-        return r.json() as Promise<StripeListResponse>;
-      })
-      .then((b) => b.data as StripeSubscription[]),
+    fetchTrialingSubs(secretKey),
   ]);
 
   const currentMrrCents = allActive.reduce((acc, s) => acc + toMonthlyCents(s), 0);
