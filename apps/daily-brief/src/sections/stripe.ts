@@ -74,6 +74,7 @@ async function fetchAllActive(secretKey: string): Promise<StripeSubscription[]> 
 
     const res = await fetch(`https://api.stripe.com/v1/subscriptions?${params.toString()}`, {
       headers: stripeHeaders(secretKey),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) break;
     const body = (await res.json()) as StripeListResponse;
@@ -102,7 +103,7 @@ export async function fetchStripeMrr(secretKey: string): Promise<StripeMrrData> 
     // Trialing subs (separate status)
     fetch(
       `https://api.stripe.com/v1/subscriptions?status=trialing&limit=100&expand[]=data.items`,
-      { headers: stripeHeaders(secretKey) },
+      { headers: stripeHeaders(secretKey), signal: AbortSignal.timeout(10_000) },
     )
       .then(async (r): Promise<StripeListResponse> => {
         if (!r.ok) return { data: [], has_more: false };

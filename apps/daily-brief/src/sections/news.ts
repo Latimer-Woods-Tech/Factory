@@ -61,8 +61,8 @@ export async function fetchNewsSection(apiKey: string): Promise<NewsSection> {
   });
 
   const [industryRes, localRes] = await Promise.allSettled([
-    fetch(`https://newsapi.org/v2/top-headlines?${industryParams.toString()}`, { headers }),
-    fetch(`https://newsapi.org/v2/everything?${localParams.toString()}`, { headers }),
+    fetch(`https://newsapi.org/v2/top-headlines?${industryParams.toString()}`, { headers, signal: AbortSignal.timeout(8_000) }),
+    fetch(`https://newsapi.org/v2/everything?${localParams.toString()}`, { headers, signal: AbortSignal.timeout(8_000) }),
   ]);
 
   const industryArticles: NewsArticle[] = [];

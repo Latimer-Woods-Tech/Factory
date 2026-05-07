@@ -98,10 +98,12 @@ export async function fetchWeather(): Promise<WeatherData> {
   });
 
   const [meteoRes, alertsRes] = await Promise.allSettled([
-    fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`),
+    fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, {
+      signal: AbortSignal.timeout(8_000),
+    }),
     fetch(
       `https://api.weather.gov/alerts/active?point=${LAT},${LON}`,
-      { headers: { 'User-Agent': 'daily-brief/1.0 (aperry@latwoodtech.com)' } },
+      { headers: { 'User-Agent': 'daily-brief/1.0 (aperry@latwoodtech.com)' }, signal: AbortSignal.timeout(8_000) },
     ),
   ]);
 

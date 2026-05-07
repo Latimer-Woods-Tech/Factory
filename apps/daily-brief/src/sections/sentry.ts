@@ -42,6 +42,7 @@ async function sentryFetch<T>(
   try {
     const res = await fetch(`https://sentry.io/api/0${path}`, {
       headers: { Authorization: `Bearer ${authToken}` },
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) return null;
     return (await res.json()) as T;

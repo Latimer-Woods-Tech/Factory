@@ -77,12 +77,15 @@ export async function runDailyBrief(env: Env): Promise<void> {
     dateLabel,
   });
 
-  // Synthesize the PM narration to audio and store in R2
-  const audioUrl = await synthesizeAndStore({
-    text: insights.narration,
-    dateLabel: now.toISOString().slice(0, 10),
-    env,
-  }).catch(() => null);
+  // Synthesize the PM narration to audio and store in R2 (25s timeout guard)
+  const audioUrl = await Promise.race([
+    synthesizeAndStore({
+      text: insights.narration,
+      dateLabel: now.toISOString().slice(0, 10),
+      env,
+    }).catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 25_000)),
+  ]);
 
   // Build HTML email
   const html = buildEmailHtml({

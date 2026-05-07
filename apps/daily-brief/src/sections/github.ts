@@ -97,7 +97,7 @@ function ghHeaders(token: string): Record<string, string> {
 
 async function ghFetch<T>(url: string, token: string): Promise<T | null> {
   try {
-    const res = await fetch(url, { headers: ghHeaders(token) });
+    const res = await fetch(url, { headers: ghHeaders(token), signal: AbortSignal.timeout(8_000) });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {

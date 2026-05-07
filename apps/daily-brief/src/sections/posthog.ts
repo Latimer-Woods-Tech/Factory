@@ -34,6 +34,7 @@ async function hogqlQuery(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ query: { kind: 'HogQLQuery', query } }),
+        signal: AbortSignal.timeout(10_000),
       },
     );
     if (!res.ok) return null;
