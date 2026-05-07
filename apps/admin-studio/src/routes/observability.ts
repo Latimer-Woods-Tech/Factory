@@ -446,6 +446,7 @@ observability.get('/posthog/funnel', async (c) => {
   const prevInterval = prevFunnelIntervalSql(window);
 
   const ct = new AbortController();
+  // 8 s leaves headroom within Cloudflare's 30 s CPU wall for multi-query fan-out.
   const timer = setTimeout(() => ct.abort(), 8_000);
 
   try {
