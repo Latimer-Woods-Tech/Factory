@@ -16,12 +16,14 @@ import {
 // 0.2.0 API — preserved verbatim for back-compat
 // ---------------------------------------------------------------------------
 
+/** Options required when constructing the admin Hono router. */
 export interface AdminRouterOpts {
   db: FactoryDb;
   analytics: Analytics;
   appId: string;
 }
 
+/** Aggregate metrics returned by GET /admin — displayed on the dashboard overview. */
 export interface DashboardSummary {
   appId: string;
   totalUsers: number;
@@ -29,7 +31,9 @@ export interface DashboardSummary {
   recentEvents: number;
 }
 
+/** User row shape returned by GET /admin/users. */
 export interface UserRow { id: string; email: string; status: string; created_at: string }
+/** Factory event row shape returned by GET /admin/events. */
 export interface EventRow { event: string; user_id: string | null; occurred_at: string; properties: string | Record<string, unknown> }
 
 /**
@@ -326,6 +330,7 @@ export async function validateSlots(
 
 // -- Audit sink --------------------------------------------------------------
 
+/** Audit record written to the audit sink for every capability-gated route invocation. */
 export interface AuditRecord {
   at: number;
   route: string;
@@ -338,12 +343,14 @@ export interface AuditRecord {
   reason?: string;
 }
 
+/** Sink that receives audit records — implement to persist to DB, log to Sentry, etc. */
 export interface AuditSink {
   write(r: AuditRecord): Promise<void> | void;
 }
 
 // -- Middleware --------------------------------------------------------------
 
+/** Options for {@link createCapabilityMiddleware} — capability, JWT config, optional audit sink. */
 export interface CapabilityMiddlewareOpts {
   capability: RouteCapability;
   jwt: JwtVerifyOpts;
