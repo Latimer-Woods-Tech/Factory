@@ -368,13 +368,20 @@ async function main() {
     console.warn('⚠️  SLACK_WEBHOOK_OPS not set; skipping Slack');
   }
   
-  // Save to file for CI/CD artifact
+  // Save to file for CI/CD artifact.
+  // Sanitize metrics to ensure only numeric values are persisted (breaks HTTP taint chain).
   const reportPath = path.join(process.cwd(), 'slo-report-latest.json');
+  const safeMetrics = {
+    availability_percent: Number(metrics.availability_percent),
+    error_rate_percent: Number(metrics.error_rate_percent),
+    total_requests: Number(metrics.total_requests),
+    avg_response_time_ms: Number(metrics.avg_response_time_ms),
+  };
   fs.writeFileSync(reportPath, JSON.stringify({
     week_start: startDate.toISOString(),
     week_end: endDate.toISOString(),
     collected_at: new Date().toISOString(),
-    metrics,
+    metrics: safeMetrics,
   }, null, 2));
   console.log(`✓ Saved report to ${reportPath}`);
   

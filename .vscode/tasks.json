@@ -1,0 +1,112 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "factory: agent ship repo",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/agent-ship.mjs",
+        "--repo",
+        "${input:agentShipRepo}",
+        "--message",
+        "${input:agentShipMessage}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "factory: agent validate repo",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/agent-ship.mjs",
+        "--repo",
+        "${input:agentShipRepo}",
+        "--validate-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "factory: agent validate all repos",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/agent-ship.mjs",
+        "--all",
+        "--validate-only"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "factory: agent ship repo dry run",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/agent-ship.mjs",
+        "--repo",
+        "${input:agentShipRepo}",
+        "--message",
+        "${input:agentShipMessage}",
+        "--dry-run"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "factory: agent ship repo and open PR",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/agent-ship.mjs",
+        "--repo",
+        "${input:agentShipRepo}",
+        "--message",
+        "${input:agentShipMessage}",
+        "--open-pr",
+        "--pr-title",
+        "${input:agentShipPrTitle}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "agentShipRepo",
+      "type": "pickString",
+      "description": "Choose the repo to validate or ship",
+      "options": [
+        "coh",
+        "focusbro",
+        "humandesign",
+        "videoking",
+        "xico-city"
+      ],
+      "default": "videoking"
+    },
+    {
+      "id": "agentShipMessage",
+      "type": "promptString",
+      "description": "Commit message for repo shipping"
+    },
+    {
+      "id": "agentShipPrTitle",
+      "type": "promptString",
+      "description": "Pull request title",
+      "default": "Automated agent ship"
+    }
+  ]
+}
