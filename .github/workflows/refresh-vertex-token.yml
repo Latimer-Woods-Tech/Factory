@@ -1,0 +1,40 @@
+name: Refresh Vertex AI Access Token (SUP-1.2)
+
+on:
+  schedule:
+    - cron: '0,45 * * * *'   # every 45 min — tokens expire at 60 min
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  refresh:
+    name: Mint fresh Vertex AI token for supervisor-sa
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Authenticate to GCP as supervisor-sa
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Mint access token
+        id: token
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Store token as Actions secret
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_GITHUB_TOKEN }}
+        run: |
+          gh secret set VERTEX_ACCESS_TOKEN \
+            --repo Latimer-Woods-Tech/factory \
+            --body "${{ steps.token.outputs.token }}"
+          echo "✅ VERTEX_ACCESS_TOKEN rotated (valid ~60 min)"

@@ -18,9 +18,11 @@ The owner is [@adrper79-dot](https://github.com/adrper79-dot). When in doubt, pr
 
 1. [`README.md`](../README.md) — repo orientation
 2. This file — rules for agents
-3. [`docs/CI_CD.md`](CI_CD.md) — how CI/CD works
-4. [`docs/NEW_APP_CHECKLIST.md`](NEW_APP_CHECKLIST.md) — how to add an app
-5. The header comment of any reusable workflow you're modifying
+3. [`docs/STACK.md`](STACK.md) — **versioned stack manifest** (package versions, AI tier routing, banned tools); check before touching any package or AI integration
+4. [`docs/CI_CD.md`](CI_CD.md) — how CI/CD works
+5. [`docs/NEW_APP_CHECKLIST.md`](NEW_APP_CHECKLIST.md) — how to add an app
+6. The header comment of any reusable workflow you're modifying
+7. [`docs/runbooks/agent-ship.md`](runbooks/agent-ship.md) — how Factory ships work into external repos
 
 If you skipped any of those, go back. Most agent failures here come from skipping reading.
 
@@ -30,7 +32,7 @@ If you skipped any of those, go back. Most agent failures here come from skippin
 
 - **Look in `docs/` before writing anything new.** This repo has accumulated a lot of documentation. Search before creating; you will likely find someone has already written what you're about to write.
 - **Check `.github/workflows/` before creating a workflow.** 40+ workflows already exist. Most "new" workflows are actually variations of an existing one and should be parameterized into a reusable, not duplicated.
-- **Check `packages/` before creating a package.** 12 packages already cover ui, validation, monitoring, seo, stripe, errors, deploy, compliance, admin, llm, schedule, telephony.
+- **Check `packages/` before creating a package.** 24 packages cover the full stack — see [`docs/STACK.md`](STACK.md) for current versions and the banned-tools list. Don't duplicate what exists.
 
 Use ripgrep aggressively. The repo is searchable. There is no excuse for redundant work.
 
@@ -134,6 +136,8 @@ fix(ci): use App-token for cross-repo package installs
 4. **Surface receipts.** When you finish a task, post: what you ran, what changed, what you verified, and what's left. Hand-waving costs the human their trust.
 
 5. **Be explicit about uncertainty.** If you don't know whether something is safe, say so and ask.
+
+6. **Use the Factory ship orchestrator for external repos.** The canonical entrypoint is `node scripts/agent-ship.mjs`. Do not invent ad hoc per-repo push flows when a repo is already registered.
 
 ---
 

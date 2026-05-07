@@ -203,3 +203,4 @@ Add the new app and its rate limiter ID to the registry table at the top of this
 - [ ] `setup-{app}-secrets.yml` workflow run successfully
 - [ ] Rate limiter registry table updated in this file
 - [ ] Update `github-secrets-and-tokens.md` to include new app in the app list
+- [ ] Create `.github/repo-contexts/{app}/CLAUDE.md` with the repo's standing orders (stack, hard constraints, surfaces, commit format). The CI `validate` job will fail until this file exists — see coh or humandesign for examples.
