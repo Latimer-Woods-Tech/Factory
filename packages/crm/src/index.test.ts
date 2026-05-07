@@ -7,6 +7,7 @@ import {
   CREATE_CONTACTS_TABLE,
   CREATE_CAMPAIGNS_TABLE,
   CREATE_CALL_LOGS_TABLE,
+  ENABLE_OUTREACH_RLS,
   ContactService,
   CampaignService,
   CallLogService,
@@ -233,6 +234,14 @@ describe('DDL constants', () => {
 
   it('CREATE_CALL_LOGS_TABLE contains the table name', () => {
     expect(CREATE_CALL_LOGS_TABLE).toContain('call_logs');
+  });
+
+  it('ENABLE_OUTREACH_RLS enables RLS on all three outreach tables', () => {
+    expect(ENABLE_OUTREACH_RLS).toContain('ENABLE ROW LEVEL SECURITY');
+    expect(ENABLE_OUTREACH_RLS).toContain('outreach_contacts');
+    expect(ENABLE_OUTREACH_RLS).toContain('outreach_campaigns');
+    expect(ENABLE_OUTREACH_RLS).toContain('call_logs');
+    expect(ENABLE_OUTREACH_RLS).toContain("current_setting('app.tenant_id'");
   });
 });
 
