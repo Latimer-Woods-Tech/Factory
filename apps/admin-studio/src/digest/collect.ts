@@ -37,7 +37,7 @@ function withTimeout(ms: number): AbortController {
 async function buildAppJwt(appId: string, privateKeyPem: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = { iat: now - 30, exp: now + 60, iss: appId };
+  const payload = { iat: now - 30, exp: now + 300, iss: appId };
 
   const b64u = (obj: unknown) =>
     btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -466,6 +466,7 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       headers: {
         Authorization: `Bearer ${key}`,
         'User-Agent': 'factory-admin-studio-digest',
+        'Idempotency-Key': `digest-get-${path.replace(/[^a-zA-Z0-9]/g, '-')}-${Math.floor(Date.now() / 60_000)}`,
       },
       signal: ctrl.signal,
     });
