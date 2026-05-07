@@ -213,7 +213,9 @@ ops.post(
       await updateTestRunStatus(env.DB, runId, { status: 'dispatched' });
     } catch (err) {
       const detail = err instanceof DispatchError ? err.body : (err as Error).message;
-      await updateTestRunStatus(env.DB, runId, { status: 'failed' }).catch(() => {});
+      await updateTestRunStatus(env.DB, runId, { status: 'failed' }).catch((e: unknown) => {
+        console.error('[ops.test-run] failed to mark run as failed:', (e as Error).message?.slice(0, 200));
+      });
       return c.json({ runId, status: 'failed', error: 'GH dispatch failed', detail }, 502);
     }
 

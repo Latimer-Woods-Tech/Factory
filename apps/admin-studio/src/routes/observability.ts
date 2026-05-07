@@ -438,6 +438,9 @@ observability.get('/posthog/funnel', async (c) => {
     });
   }
 
+  // `window` is user-controlled; the allowlist below is the ONLY gate before
+  // it reaches HogQL interpolation. Keep this assignment and the allowlist
+  // together — never pass `rawWindow` directly to SQL builders.
   const rawWindow = c.req.query('window') ?? '24h';
   const window: FunnelWindow =
     rawWindow === '7d' || rawWindow === '30d' ? rawWindow : '24h';

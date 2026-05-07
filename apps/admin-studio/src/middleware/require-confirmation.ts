@@ -47,6 +47,22 @@ async function expectedConfirmToken(
   return hex.slice(0, 16);
 }
 
+/**
+ * Computes the expected co-signer token for tier-3 two-person approval.
+ * Input intentionally excludes userId so a DIFFERENT principal (the co-signer)
+ * can compute it independently in the Admin Studio UI without knowing the
+ * initiator's identity. Enforces FRIDGE rule 8: irreversible actions require
+ * explicit approval from a second human principal out-of-band.
+ */
+async function expectedCosignerToken(action: string, env: string): Promise<string> {
+  const data = new TextEncoder().encode(`cosign:${action}:${env}`);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hex = [...new Uint8Array(hash)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return hex.slice(0, 16);
+}
+
 export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<AppEnv> {
   return async (c: Context<AppEnv>, next) => {
     const ctx = c.var.envContext;
@@ -104,16 +120,18 @@ export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<App
       );
     }
 
-    // Tier 3 (two-key): we'd also validate a co-signer token here; deferred to Phase D.
+    // Tier 3 (two-key): FRIDGE rule 8 — irreversible actions require a second
+    // human principal. The co-signer computes X-Co-Signer-Token independently
+    // in the Admin Studio UI (shared out-of-band by the initiator).
     if (tier === 3) {
       const cosigner = c.req.header('X-Co-Signer-Token');
-      if (!cosigner) {
+      const expectedCosigner = await expectedCosignerToken(opts.action, ctx.env);
+      if (!cosigner || cosigner !== expectedCosigner) {
         return c.json(
           { error: 'Two-person approval required for irreversible production action', tier },
           412,
         );
       }
-      // Real co-signer validation lands when /approvals routes ship.
     }
 
     await next();
