@@ -41,7 +41,7 @@ export const useSession = create<SessionState>((set, get) => ({
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as Omit<SessionState, 'login' | 'logout' | 'hydrate' | 'isAuthed'>;
-      if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
+      if (!parsed.expiresAt || parsed.expiresAt < Date.now()) {
         sessionStorage.removeItem(STORAGE_KEY);
         return;
       }
@@ -69,7 +69,17 @@ function decodeJwt(token: string): DecodedPayload | null {
     if (parts.length < 2) return null;
     const payloadB64 = parts[1]!;
     const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
-    return JSON.parse(json) as DecodedPayload;
+    const parsed = JSON.parse(json) as unknown;
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      typeof (parsed as Record<string, unknown>).userId !== 'string' ||
+      typeof (parsed as Record<string, unknown>).userEmail !== 'string' ||
+      typeof (parsed as Record<string, unknown>).role !== 'string'
+    ) {
+      return null;
+    }
+    return parsed as DecodedPayload;
   } catch {
     return null;
   }

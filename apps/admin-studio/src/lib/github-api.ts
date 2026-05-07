@@ -341,3 +341,38 @@ export async function dispatchWorkflow(token: string, args: WorkflowDispatchArgs
     throw new GitHubApiError(`dispatchWorkflow ${res.status}`, res.status, text);
   }
 }
+
+interface GhRunsResponse {
+  workflow_runs: Array<{
+    id: number;
+    html_url: string;
+    created_at: string;
+    status: string;
+  }>;
+}
+
+/**
+ * Poll for the GitHub Actions run URL created immediately after a workflow_dispatch.
+ *
+ * GitHub queues the run asynchronously — it typically appears within 1–5 seconds.
+ * We wait 3 s then try once; returns null if the run hasn't appeared yet rather
+ * than blocking indefinitely.
+ */
+export async function fetchDispatchedRunUrl(
+  token: string,
+  workflowFile: string,
+  dispatchedAt: Date,
+): Promise<string | null> {
+  await new Promise<void>((resolve) => setTimeout(resolve, 3000));
+
+  const createdFilter = dispatchedAt.toISOString();
+  const res = await gh(
+    token,
+    `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/actions/runs?event=workflow_dispatch&workflow_id=${encodeURIComponent(workflowFile)}&created=>=${encodeURIComponent(createdFilter)}&per_page=5`,
+  );
+  if (!res.ok) return null;
+
+  const data = await readJson<GhRunsResponse>(res);
+  const run = data.workflow_runs.find((r) => new Date(r.created_at) >= dispatchedAt);
+  return run?.html_url ?? null;
+}

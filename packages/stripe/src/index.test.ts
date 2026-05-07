@@ -191,6 +191,32 @@ describe('getSubscription', () => {
 });
 
 describe('createCheckoutSession', () => {
+  it('throws ValidationError when priceId is empty (factory#343 guard)', async () => {
+    const { client } = buildStripeMock();
+    await expect(
+      createCheckoutSession({
+        priceId: '',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+      }),
+    ).rejects.toThrow('priceId must be a valid Stripe price ID');
+  });
+
+  it('throws ValidationError when priceId lacks price_ prefix (factory#343 guard)', async () => {
+    const { client } = buildStripeMock();
+    await expect(
+      createCheckoutSession({
+        priceId: 'prod_something',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+      }),
+    ).rejects.toThrow('priceId must be a valid Stripe price ID');
+  });
+
   it('calls Stripe with the correct params and returns the URL', async () => {
     const { client, checkoutCreate } = buildStripeMock();
     checkoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/sess_1' });

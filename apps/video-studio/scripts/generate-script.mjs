@@ -72,7 +72,11 @@ async function callLLM(messages, opts = {}) {
   return result.data.content.trim();
 }
 
-/** Writes key=value pairs to GITHUB_OUTPUT using heredoc format. */
+/** Writes key=value pairs to GITHUB_OUTPUT using heredoc format.
+ *
+ * Sanitizes values by removing any line that equals the heredoc delimiter,
+ * preventing GITHUB_OUTPUT injection from untrusted content (e.g. LLM output).
+ */
 function writeOutput(pairs) {
   if (!GITHUB_OUTPUT) {
     // Local dev: just log the values
@@ -84,7 +88,9 @@ function writeOutput(pairs) {
   const lines = [];
   for (const [k, v] of Object.entries(pairs)) {
     const delimiter = `${k.toUpperCase()}_EOF`;
-    lines.push(`${k}<<${delimiter}`, v, delimiter);
+    // Strip any line that matches the delimiter to prevent heredoc injection.
+    const safeValue = String(v).split('\n').filter((l) => l.trim() !== delimiter).join('\n');
+    lines.push(`${k}<<${delimiter}`, safeValue, delimiter);
   }
   appendFileSync(GITHUB_OUTPUT, lines.join('\n') + '\n');
 }

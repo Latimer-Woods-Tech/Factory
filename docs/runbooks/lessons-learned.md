@@ -682,3 +682,34 @@ mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $contentId: String!) {
 
 **Lesson Learned:** GraphQL variable errors in Actions workflows produce a `422 Unprocessable Entity` with a `{"message": "Variable $contentId is not defined..."}` body. They do NOT cause the workflow to exit — the `gh api graphql` call returns exit 0 with the error body in stdout. Always pipe through `jq .errors` to detect these silently swallowed failures.
 
+
+---
+
+## Supervisor System — May 2026
+
+### Best-Practice Template Pipeline
+
+**Problem:** The supervisor had a 3-place sync requirement: every new template type needed to be added to (1) a YAML file, (2) MATCH_RULES in supervisor-core.mjs, and (3) the SEED array in load.ts. This caused package-version-migration to never match — it existed in YAML but not in MATCH_RULES.
+
+**Fix:** Build-time generator (scripts/generate-supervisor-templates.mjs) reads all docs/supervisor/plans/*.yml via js-yaml, validates schema and regex patterns, and emits 	emplates.generated.ts. The Worker's load.ts imports from that file. Both the Worker's match.ts and the GHA supervisor-core.mjs derive match signals exclusively from the YAML 	riggers block. Adding a new template now requires only editing the YAML file.
+
+**Key pitfalls fixed:**
+- YAML double-quoted strings mangle \s → s and \. → . — always use single quotes for regex values
+- PCRE inline flags (?is) are incompatible with JS RegExp — strip them and use flag arguments instead
+- @cloudflare/workers-types injected via 	sconfig.types + imported via import type creates duplicate type identities → TS2322 mismatch. Use only the 	ypes injection; remove named imports
+- ScheduledHandler expects ScheduledController as first param, not ScheduledEvent
+
+### Supervisor Duplicate PR Race Condition
+
+**Problem:** The supervisor ran concurrently (or retried before GH API label propagation) and opened 3 identical PRs (#287, #288, #289) for issue #286. The gent:claimed:sauna label filter is the primary dedup, but it isn't visible until after the label write completes — which happens after PR creation.
+
+**Fix:** indExistingPR() queries open pulls for PRs whose body contains **Source issue:** #N before calling xecuteGreen. If a matching PR exists, return it without creating a branch. This is a secondary guard; the label filter remains the primary.
+
+**Key insight:** Always add a PR-level dedup check when automation can open PRs, because label propagation is eventually-consistent — not immediate.
+
+### validate-docs-quality.mjs Design
+
+**Requirements (issue #286):** Fast (< 10 s), deterministic, bounded output, --max-errors N, --json report mode, no symlink loops.
+
+**Implementation:** Bounded traversal of docs/, pps/*/README.md, and root *.md only. Skips symlinks, 
+ode_modules, dist, .wrangler. Builds an anchor index from headings and id= attributes. Extracts relative Markdown links and resolves against the filesystem. Exits 1 with one FILE:LINE → TARGET (reason) line per broken link.

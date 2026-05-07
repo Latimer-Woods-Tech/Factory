@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -68,3 +69,18 @@ jobs:
 
       - name: Enforce smoke secret contract
         run: node scripts/check-smoke-secret-contract.mjs
+
+      - name: Enforce service registry / app-registry drift check (FRH-01)
+        working-directory: apps/admin-studio
+        run: node scripts/check-service-registry.mjs
+
+      - name: Lint publish workflow with actionlint (FRH-06)
+        run: |
+          bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint .github/workflows/publish.yml
+
+      - name: Enforce dependency version policy (FRH-08)
+        run: node scripts/lint-dependency-versions.mjs
+
+      - name: Enforce docs-to-service-registry endpoint consistency (FRH-10)
+        run: node scripts/check-docs-registry-consistency.mjs

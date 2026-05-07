@@ -1,0 +1,89 @@
+name: Sync Security Policy
+# SEC-1.4 — Pushes SECURITY.md from factory to all public sibling repos
+# (ijustus, xpelevator, videoking) whenever it changes on main, or on demand.
+# Uses the factory-cross-repo GitHub App for cross-repo write access.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'SECURITY.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        repo: [ijustus, xpelevator, videoking]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Sync SECURITY.md → ${{ matrix.repo }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TARGET_REPO: ${{ matrix.repo }}
+        run: |
+          set -euo pipefail
+          CONTENT=$(base64 -w 0 SECURITY.md)
+          FILE_ENDPOINT="https://api.github.com/repos/Latimer-Woods-Tech/${TARGET_REPO}/contents/SECURITY.md"
+
+          # Get current file SHA (needed by the API if the file already exists)
+          meta=$(mktemp)
+          meta_code=$(curl -sS -o "$meta" -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$FILE_ENDPOINT")
+
+          if [ "$meta_code" = "200" ]; then
+            SHA=$(jq -r '.sha' "$meta")
+            PAYLOAD=$(jq -n \
+              --arg msg "chore: sync SECURITY.md from factory (SEC-1.4)" \
+              --arg content "$CONTENT" \
+              --arg sha "$SHA" \
+              '{"message": $msg, "content": $content, "sha": $sha}')
+          elif [ "$meta_code" = "404" ]; then
+            PAYLOAD=$(jq -n \
+              --arg msg "chore: add SECURITY.md from factory (SEC-1.4)" \
+              --arg content "$CONTENT" \
+              '{"message": $msg, "content": $content}')
+          elif [ "$meta_code" = "403" ]; then
+            echo "::error::403 Forbidden reading from Latimer-Woods-Tech/${TARGET_REPO}. Grant the factory-cross-repo App 'contents: write' on that repo and re-run. (SEC-1.4)"
+            exit 1
+          else
+            echo "::error::Unexpected $meta_code reading SECURITY.md from Latimer-Woods-Tech/${TARGET_REPO}."
+            cat "$meta"
+            exit 1
+          fi
+
+          result=$(mktemp)
+          result_code=$(curl -sS -o "$result" -w "%{http_code}" \
+            -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$FILE_ENDPOINT")
+
+          if [ "$result_code" = "200" ] || [ "$result_code" = "201" ]; then
+            echo "✅ SECURITY.md synced to Latimer-Woods-Tech/${TARGET_REPO}."
+          elif [ "$result_code" = "403" ]; then
+            echo "::error::403 Forbidden writing to Latimer-Woods-Tech/${TARGET_REPO}. Grant the factory-cross-repo App 'contents: write' on that repo and re-run. (SEC-1.4)"
+            exit 1
+          else
+            echo "::error::Failed to sync to Latimer-Woods-Tech/${TARGET_REPO} (HTTP $result_code)."
+            cat "$result"
+            exit 1
+          fi
