@@ -1,13 +1,13 @@
-# NicheStream (videoking) — Standing Orders
+# Capricast (videoking) — Standing Orders
 
 > Canonical reference for all agents, engineers, and AI tools working in this repository.
-> Read `docs/ARCHITECTURE.md` for the system model and `docs/ENGINEERING.md` for code conventions.
+> Architecture: `docs/architecture/` | Factory constraints: `docs/STACK.md` | Operating rules: `docs/supervisor/FRIDGE.md`
 
 ## Mission
 
-NicheStream is a hyper-niche interactive video platform built on the Cloudflare edge stack.
-Stream, interact, and monetize — all in real time. Operates as a monorepo with a Next.js
-frontend on Cloudflare Pages and a Hono Worker API backend.
+Capricast is a short-form creator video platform — TikTok-class feature set, $0 third-party SDK budget.
+Monorepo: Next.js 15 frontend on Cloudflare Pages + Hono Worker API backend.
+Brand: capricast.com | Repo slug: videoking (historical)
 
 ## Stack
 
@@ -17,56 +17,42 @@ frontend on Cloudflare Pages and a Hono Worker API backend.
 | Frontend | Next.js 15 (App Router) — Cloudflare Pages |
 | Backend | Cloudflare Workers (Hono) + Durable Objects |
 | Database | Neon PostgreSQL via Cloudflare Hyperdrive + Drizzle ORM |
-| Video | Cloudflare Stream |
-| Storage | Cloudflare R2 |
-| Auth | BetterAuth |
+| Video | Cloudflare Stream + R2 |
+| Auth | BetterAuth (intentional deviation from Factory JWT — do NOT flag) |
 | Payments | Stripe Connect (Express) |
-| Realtime | Durable Objects WebSocket Hibernation API |
+| Realtime | Durable Objects WebSocket Hibernation API + Cloudflare Calls SFU |
 | Styling | Tailwind CSS |
+| Analytics | PostHog client + PostHog server-side via waitUntil() |
 
-## Hard Constraints
+## Hard Constraints — Worker Only (apps/worker/)
 
 - No `process.env` in Worker code — use Hono bindings (`c.env.VAR`)
-- `import.meta.env.VAR` is valid in the Next.js frontend (Vite/Next env model)
 - No Node.js built-ins in Worker code (`fs`, `path`, `crypto`) — use Web APIs
 - No `Buffer` in Worker code — use `TextEncoder` / `TextDecoder` / `Uint8Array`
-- No raw `fetch` without error handling
-- Secrets via `wrangler secret put` — never in `wrangler.toml` or source
-- Stripe webhook handlers must verify signature with BetterAuth/Stripe SDK before processing
-- Durable Objects state must only be mutated from within the DO class (actor isolation)
-- All WebSocket connections must use the Hibernation API — never hold connections open across requests
+- No raw `fetch` without explicit error handling
+- Secrets via `wrangler secret put` — never in `wrangler.toml` [vars] or source
+- Stripe webhook handlers must verify the Stripe signature before processing
+- Durable Objects state mutated only from within the DO class (actor isolation)
+- All WebSocket connections must use the Hibernation API
 
-## Key Divergence from Factory Defaults
+## Key Divergences from Factory Defaults — Do NOT flag these as violations
 
-- **Auth**: Uses BetterAuth, not Factory's JWT self-managed Web Crypto API approach. This is intentional for this repo — do not flag BetterAuth usage as a violation.
-- **Frontend**: Next.js 15 (App Router), not a plain Vite SPA. `process.env` / `import.meta.env` are valid in Next.js frontend code — only flag `process.env` in Worker source files.
-- **Monorepo tooling**: Turborepo + pnpm, not the Factory npm workspace pattern.
+- **Auth**: BetterAuth instead of Factory JWT. Intentional for this repo.
+- **Frontend env vars**: `process.env.NEXT_PUBLIC_*` and `import.meta.env.*` ARE valid in `apps/web/` (Next.js App Router). Only flag `process.env` in `apps/worker/` source files.
+- **Next.js**: `apps/web/` is a Next.js app. This is expected. Do NOT flag Next.js as a banned framework for this repo — the "no Next.js" rule applies to Worker routing only.
+- **Monorepo**: Turborepo + pnpm, not Factory npm workspace pattern.
 
 ## Apps
 
-| App | Path | Deploy |
-|-----|------|--------|
-| Web frontend | `apps/web/` | Cloudflare Pages |
-| Worker API | `apps/worker/` | Cloudflare Workers |
-
-## Surfaces
-
-| Surface | URL |
-|---------|-----|
-| Production | NicheStream production domain |
-| Worker health | `curl https://{worker-name}.adrper79.workers.dev/health` |
-
-## Pre-Deploy Validation
-
-```bash
-pnpm pre-deploy-check   # validates env vars, static files, no localhost hardcoded
-```
-
-Runs automatically in GitHub Actions on every push to `main`.
+| App | Path | Deploy target |
+|-----|------|---------------|
+| Web frontend | `apps/web/` | Cloudflare Pages at capricast.com |
+| Worker API | `apps/worker/` | Cloudflare Workers at api.capricast.com |
+| DB package | `packages/db/` | Drizzle schema + migrations |
 
 ## Commit Format
 
 `type(scope): description`
 
-Scopes: `web`, `worker`, `auth`, `stripe`, `stream`, `r2`, `do`, `db`, `docs`
+Scopes: `web`, `worker`, `auth`, `stripe`, `stream`, `r2`, `do`, `db`, `docs`, `ci`
 Types: `feat`, `fix`, `refactor`, `test`, `docs`, `perf`, `chore`
