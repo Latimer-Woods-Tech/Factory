@@ -444,6 +444,10 @@ export type StripeResult = StripeDigestData | StripeDigestUnavailable;
 /**
  * Fetches new subscriptions, cancellations, and MRR delta via the Stripe API.
  * Uses the secret key in read-only mode (no writes).
+ *
+ * Idempotency: all calls here are GET requests, which are inherently idempotent
+ * per Stripe's API contract — no Idempotency-Key header is required or applicable.
+ * No charges or mutations are performed; this is a read-only billing reporter.
  */
 export async function collectStripe(env: Env): Promise<StripeResult> {
   const key = env.STRIPE_SECRET_KEY;
