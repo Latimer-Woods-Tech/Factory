@@ -12,6 +12,7 @@ import { withTimeout } from './timeout.js';
 /** Milliseconds before a D1 telemetry write is abandoned. */
 const TELEMETRY_TIMEOUT_MS = 3_000;
 
+/** Row shape for a single flag evaluation persisted to D1 `flag_evaluations`. */
 export interface EvaluationRecord {
   flag_key: string;
   app: string;
@@ -23,6 +24,11 @@ export interface EvaluationRecord {
   ts: number; // epoch ms
 }
 
+/**
+ * Writes a flag evaluation record to D1 asynchronously.
+ * Non-fatal: failures are logged but never surface to callers.
+ * Pass `executionCtx` to guarantee the write completes before Worker exit.
+ */
 export function recordEvaluation(
   db: D1Database | undefined,
   key: string,
