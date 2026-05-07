@@ -433,7 +433,10 @@ async function hogql(
     body: JSON.stringify({ query: { kind: 'HogQLQuery', query } }),
     signal,
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    await res.body?.cancel();
+    return null;
+  }
   const json: { results?: unknown } = await res.json();
   const rows = Array.isArray(json.results) ? (json.results as unknown[][]) : [];
   return rows;
