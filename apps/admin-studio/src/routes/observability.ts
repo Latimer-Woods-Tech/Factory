@@ -446,7 +446,7 @@ observability.get('/posthog/funnel', async (c) => {
   const prevInterval = prevFunnelIntervalSql(window);
 
   const ct = new AbortController();
-  const timer = setTimeout(() => ct.abort(), 12_000);
+  const timer = setTimeout(() => ct.abort(), 8_000);
 
   try {
     const [dauRows, prevDauRows, newUsersRows, churnRows, funnelRows] = await Promise.all([
