@@ -170,7 +170,11 @@ function isNonWorkerFile(filename) {
 }
 
 function isFrontendUiFile(filename) {
-  return /^apps\/[^/]+-ui\//.test(filename) || filename.startsWith('apps/admin-studio-ui/');
+  return (
+    /^apps\/[^/]+-ui\//.test(filename) ||
+    filename.startsWith('apps/admin-studio-ui/') ||
+    filename.startsWith('apps/web/')  // Next.js frontend app — not CF Workers runtime
+  );
 }
 
 function hasFetchCallInPatch(file) {
@@ -883,7 +887,7 @@ async function main() {
   // workerAddedLines — only files that run in CF Workers (excludes Actions runner files)
   // allAddedLines — all files (for universal checks: secrets in wrangler, fetch handling, any type)
   const allAddedLines = extractAddedLines(files);
-  const workerAddedLines = extractAddedLines(files.filter(f => !isNonWorkerFile(f.filename ?? '')));
+  const workerAddedLines = extractAddedLines(files.filter(f => !isNonWorkerFile(f.filename ?? '') && !isFrontendUiFile(f.filename ?? '')));
   const deterministicResult = runDeterministicChecks(workerAddedLines, allAddedLines, filenames);
 
   console.log(`[INFO] Deterministic: ${deterministicResult.violations.length} violations, ${deterministicResult.warnings.length} warnings`);
