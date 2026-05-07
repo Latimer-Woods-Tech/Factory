@@ -14,9 +14,8 @@
     {
       "binding": "AUDIO_BUCKET",
       // Create with: npx wrangler r2 bucket create daily-brief-audio
-      "bucket_name": "daily-brief-audio",
+      "bucket_name": "daily-brief-audio"
       // After creating, enable public access and copy the r2.dev URL into AUDIO_PUBLIC_BASE_URL
-      "jurisdiction": "default"
     }
   ],
 
@@ -46,3 +45,4 @@
     }
   }
 }
+
