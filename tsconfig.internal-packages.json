@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@latimer-woods-tech/admin": ["packages/admin/src/index.ts"],
+      "@latimer-woods-tech/analytics": ["packages/analytics/src/index.ts"],
+      "@latimer-woods-tech/auth": ["packages/auth/src/index.ts"],
+      "@latimer-woods-tech/compliance": ["packages/compliance/src/index.ts"],
+      "@latimer-woods-tech/content": ["packages/content/src/index.ts"],
+      "@latimer-woods-tech/copy": ["packages/copy/src/index.ts"],
+      "@latimer-woods-tech/deploy": ["packages/deploy/src/index.ts"],
+      "@latimer-woods-tech/design-tokens": ["packages/design-tokens/src/index.ts"],
+      "@latimer-woods-tech/email": ["packages/email/src/index.ts"],
+      "@latimer-woods-tech/errors": ["packages/errors/src/index.ts"],
+      "@latimer-woods-tech/llm": ["packages/llm/src/index.ts"],
+      "@latimer-woods-tech/llm-meter": ["packages/llm-meter/src/index.ts"],
+      "@latimer-woods-tech/logger": ["packages/logger/src/index.ts"],
+      "@latimer-woods-tech/monitoring": ["packages/monitoring/src/index.ts"],
+      "@latimer-woods-tech/neon": ["packages/neon/src/index.ts"],
+      "@latimer-woods-tech/realtime": ["packages/realtime/src/index.ts"],
+      "@latimer-woods-tech/schedule": ["packages/schedule/src/index.ts"],
+      "@latimer-woods-tech/seo": ["packages/seo/src/index.ts"],
+      "@latimer-woods-tech/social": ["packages/social/src/index.ts"],
+      "@latimer-woods-tech/studio-core": ["packages/studio-core/src/index.ts"],
+      "@latimer-woods-tech/stripe": ["packages/stripe/src/index.ts"],
+      "@latimer-woods-tech/telephony": ["packages/telephony/src/index.ts"],
+      "@latimer-woods-tech/testing": ["packages/testing/src/index.ts"],
+      "@latimer-woods-tech/ui": ["packages/ui/src/index.ts"],
+      "@latimer-woods-tech/validation": ["packages/validation/src/index.ts"],
+      "@latimer-woods-tech/video": ["packages/video/src/index.ts"]
+    }
+  }
+}

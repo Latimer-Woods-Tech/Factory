@@ -30,6 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Debounce rapid label bursts
+        run: sleep 5
+
       - name: Log trigger context
         env:
           EVENT_NAME: ${{ github.event_name }}

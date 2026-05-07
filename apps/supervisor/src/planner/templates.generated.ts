@@ -2,8 +2,8 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-05T14:25:02.898Z
-// Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, package-version-migration.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, ux-regression-triage.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-06T05:36:00.563Z
+// Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, migration-drift-fix.yml, package-version-migration.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
@@ -260,6 +260,70 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "migration-drift-fix",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "migration",
+      "drift",
+      "schema",
+      "column",
+      "relation",
+      "does not exist",
+      "applied"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug",
+        "area:database"
+      ],
+      "title_pattern": "Migration drift|column .* does not exist|relation .* does not exist|migration.*not applied",
+      "body_patterns": [
+        "(migration.*drift|column.*does not exist|relation.*does not exist|DatabaseError.*schema)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "workers/src/db/migrations",
+          "ref": "main",
+          "grep": "$slots.missing_item"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "workers/src/db/migrations",
+          "ref": "main",
+          "grep": "CREATE TABLE"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor — migration drift runbook for `$slots.affected_app`**\n\nMissing: `$slots.missing_item`\nMigration scan result: $s1.matches\n\n**Root cause:** A migration that creates `$slots.missing_item` was merged to the repo but was not applied to the production Neon database.\n\n**Fix (human action required):**\n1. Connect to the production Neon branch for `$slots.affected_app` (see `docs/runbooks/database.md`).\n2. Run: `npm run migrate` from the app's `workers/` directory with `DATABASE_URL` set to the production connection string.\n3. Verify: query `SELECT column_name FROM information_schema.columns WHERE table_name = '<table>'` to confirm the column exists.\n4. Monitor Sentry for 15 min post-apply to confirm the error stops.\n\nThe supervisor cannot write to production databases (FRIDGE rule 8 — irreversible action). A CODEOWNER must execute this runbook.\n\nIf the migration is not in the repo (migration was never authored), file a new `bug` issue tagged `supervisor:approved-source` for the DB migration gap fix template.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "labels": [
+            "status:triaged",
+            "area:database",
+            "supervisor:human-action-required"
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "package-version-migration",
     "tier": "yellow",
     "description": "Migrate a worker/app to consume a @latimer-woods-tech/* package, removing the inline implementation",
@@ -439,6 +503,56 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "sentry-stripe-error-triage",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "stripe",
+      "payment",
+      "webhook",
+      "subscription",
+      "billing",
+      "price",
+      "checkout"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug",
+        "source:sentry"
+      ],
+      "title_pattern": "StripeInvalidRequest|StripeCardError|No such (price|customer|product)|stripe.*error",
+      "body_patterns": [
+        "(StripeInvalidRequest|StripeCardError|stripe\\.com/docs/error-codes)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "sentry.getIssue",
+        "slots": {
+          "issue_id": "$slots.sentry_issue_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor triage — Stripe error `$slots.stripe_error_code`**\n\nSentry: $slots.sentry_issue_id\nApp: $slots.affected_app\nError: $s1.exception_type — $s1.exception_value\n\n**Runbook:**\n- `no_such_price` / `no_such_product` — price/product ID in code doesn't exist in Stripe. Check if the live-mode ID was accidentally replaced with a test-mode ID. Look up `$s1.exception_value` in the Stripe dashboard and update the env var or DB row.\n- `no_such_customer` — customer record deleted in Stripe or created in wrong mode. Check `stripe_customer_id` column for the user mentioned in the stack trace.\n- `card_declined` / `insufficient_funds` — user-facing; no code change needed. Check if webhook handler marks the subscription as `past_due` correctly.\n- `invalid_request_error` — inspect the Stripe API call arguments in the stack frame. Common cause: empty/null fields passed to the API.\n\n**Next step:** A CODEOWNER should investigate the linked Sentry issue and apply the appropriate fix. If a code change is needed, file a new issue tagged `supervisor:approved-source` with the specific file + line.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "labels": [
+            "status:triaged",
+            "area:billing"
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "sentry-triage-new-issue",
     "tier": "yellow",
     "description": "",
@@ -542,6 +656,65 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "user-account-suspend",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "suspend",
+      "ban",
+      "block",
+      "abuse",
+      "fraud",
+      "spam",
+      "violat"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "moderation",
+        "abuse",
+        "fraud"
+      ],
+      "title_pattern": "Suspend (user|account)|Account suspension|Fraudulent (account|activity)",
+      "body_patterns": [
+        "(suspend|ban|block|abuse|fraud|spam|violat)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "humandesign.user.lookup",
+        "slots": {
+          "id": "$slots.user_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor — pre-suspension verification**\n\nUser `$slots.user_id` found:\n- Email: $s1.email\n- Tier: $s1.tier\n- Status: $s1.status\n- Created: $s1.created_at\n\nProposed action: **suspend** with reason: \"$slots.reason\"\n\n⚠️ This action requires CODEOWNER approval. React ✅ to this comment to authorize.\nOnce approved, the supervisor will call `$slots.affected_app.user.suspend`.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "humandesign.user.suspend",
+        "slots": {
+          "id": "$slots.user_id",
+          "reason": "$slots.reason"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "labels": [
+            "status:done",
+            "moderation:suspended"
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "ux-regression-triage",
     "tier": "yellow",
     "description": "",
@@ -568,6 +741,57 @@ export const GENERATED_TEMPLATES: Template[] = [
         "slots": {
           "issue": "$issue.number",
           "body": "Supervisor triage plan for UX regression.\n- Confirm reproducibility (device + viewport)\n- Capture expected vs actual behavior\n- Propose minimal-risk fix path\n- Escalate P0/P1 for immediate assignment\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "worker-health-degraded",
+    "tier": "green",
+    "description": "",
+    "trigger_keywords": [
+      "health",
+      "degraded",
+      "down",
+      "503",
+      "502",
+      "timeout",
+      "unreachable",
+      "synthetic monitor"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "incident",
+        "monitoring",
+        "source:synthetic-monitor"
+      ],
+      "title_pattern": "Worker (health|degraded|down|503|502)|Synthetic monitor (fail|alert)|/health (returning|returning 5)",
+      "body_patterns": [
+        "(/health.*5[0-9]{2}|synthetic.*monitor.*fail|worker.*unreachable)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "factory-admin.observability.summary",
+        "slots": {},
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor — worker health degradation triage**\n\nAffected worker: `$slots.affected_worker` (HTTP $slots.error_code)\nObservability summary: $s1.summary\n\n**Immediate checks (human):**\n1. `curl -I https://$slots.affected_worker.adrper79.workers.dev/health` — confirm current status\n2. Check Cloudflare dashboard for the worker at https://dash.cloudflare.com\n3. Check Sentry project for `$slots.affected_worker` for recent error spike\n4. If 502/503: check if a recent deployment is the cause via `wrangler rollback`\n\n**Rollback command (if deployment-related):**\n```\ncd apps/$slots.affected_worker && wrangler rollback\n```\n\n**Escalation:** If the worker is still degraded after 15 min, page on-call via Pushover.\n\nThe supervisor cannot invoke `wrangler rollback` (FRIDGE rule 8 — irreversible infra action). A CODEOWNER must execute this runbook.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "labels": [
+            "status:triaged",
+            "incident",
+            "supervisor:human-action-required"
+          ]
         },
         "side_effects": "none"
       }

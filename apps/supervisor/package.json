@@ -6,7 +6,8 @@
   "main": "src/index.ts",
   "scripts": {
     "generate:templates": "node ../../scripts/generate-supervisor-templates.mjs",
-    "prebuild": "npm run generate:templates",
+    "generate:capabilities": "node ../../scripts/generate-supervisor-capabilities.mjs",
+    "prebuild": "npm run generate:templates && npm run generate:capabilities",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --env production",
     "deploy:staging": "wrangler deploy --env staging",

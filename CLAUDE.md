@@ -9,11 +9,13 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - Treat every package as reusable infrastructure, never as a home for app-specific business logic.
 
 ## Stack
+> **Versioned manifest (packages + AI chain + banned tools):** [`docs/STACK.md`](./docs/STACK.md). Check there before installing any `@latimer-woods-tech/*` package or referencing model names.
+
 - Runtime: Cloudflare Workers only
 - Router: Hono (never Express, Fastify, Next.js)
 - Database: Neon Postgres via Hyperdrive binding (`env.DB`)
 - Auth: JWT self-managed with the Web Crypto API (never `jsonwebtoken`)
-- LLM chain: Anthropic → Grok → Groq
+- LLM chain: Anthropic → Grok → Groq — see [`docs/STACK.md`](./docs/STACK.md) for tier routing and current model names
 - Telephony: Telnyx + Deepgram + ElevenLabs
 - Email: Resend
 - Errors: Sentry via `@latimer-woods-tech/monitoring`
