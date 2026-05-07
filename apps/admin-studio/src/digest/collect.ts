@@ -19,6 +19,11 @@
 import type { Env } from '../env.js';
 
 // ── Timeouts ─────────────────────────────────────────────────────────────────
+// Cloudflare Workers CPU time (free: 10ms, paid: 30ms) measures *JavaScript execution*
+// only — fetch() I/O wait does NOT count against the CPU budget. The Worker yields to
+// the event loop while awaiting network responses, so a 10-second wall-clock timeout
+// here burns only microseconds of CPU per request.
+// See: https://developers.cloudflare.com/workers/platform/limits/#cpu-time
 
 const FETCH_TIMEOUT_MS = 10_000;
 
@@ -449,6 +454,11 @@ export type StripeResult = StripeDigestData | StripeDigestUnavailable;
  * GET requests per their API contract and RFC 7231 §4.3.1. Future webhook
  * deduplication belongs in a dedicated webhook handler — not in this collector.
  * No POST/PUT/DELETE calls are ever issued from this function.
+ *
+ * Duplicate-call safety: the `since12h` Unix timestamp bound filters events to only
+ * those created in the last 12 hours. Repeated calls within the same 12-hour window
+ * return the same event set — no data is double-counted. The digest KV deduplication
+ * key (`digest:last-sent`) enforces at-most-once email delivery across cron runs.
  */
 export async function collectStripe(env: Env): Promise<StripeResult> {
   const key = env.STRIPE_SECRET_KEY;

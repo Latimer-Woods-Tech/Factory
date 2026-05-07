@@ -13,6 +13,10 @@
 import type { Env } from '../env.js';
 
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
+// 30-second wall-clock timeout for the ElevenLabs TTS round-trip.
+// CF Workers CPU budget (free: 10ms, paid: 30ms) counts JavaScript *execution* only —
+// awaiting fetch() I/O does NOT consume CPU time. The Worker is idle during the network wait.
+// See: https://developers.cloudflare.com/workers/platform/limits/#cpu-time
 const TTS_TIMEOUT_MS = 30_000;
 
 /**
