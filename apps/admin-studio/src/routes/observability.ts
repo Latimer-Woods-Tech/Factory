@@ -383,32 +383,27 @@ interface PostHogFunnelResponse {
   dataWarnings?: string[];
 }
 
-// Returns a literal SQL interval string for a known FunnelWindow enum value.
-// All branches return compile-time string literals — no user input reaches this
-// function directly (the caller enforces a strict allowlist before calling).
+// Predefined SQL interval literals keyed by FunnelWindow — exhaustively typed so
+// TypeScript enforces that every member is covered. No user input is ever used as
+// a key; the caller validates `window` against the FunnelWindow union before lookup.
+const FUNNEL_INTERVAL: Record<FunnelWindow, string> = {
+  '24h': '24 HOUR',
+  '7d': '7 DAY',
+  '30d': '30 DAY',
+};
+
+const FUNNEL_PREV_INTERVAL: Record<FunnelWindow, string> = {
+  '24h': '48 HOUR',
+  '7d': '14 DAY',
+  '30d': '60 DAY',
+};
+
 function funnelIntervalSql(window: FunnelWindow): string {
-  switch (window) {
-    case '7d':
-      return '7 DAY';
-    case '30d':
-      return '30 DAY';
-    default:
-      return '24 HOUR';
-  }
+  return FUNNEL_INTERVAL[window];
 }
 
-// Returns a literal SQL interval string for a known FunnelWindow enum value.
-// Mirrors funnelIntervalSql: all branches are compile-time string literals.
-// No user input reaches this function — caller enforces the allowlist first.
 function prevFunnelIntervalSql(window: FunnelWindow): string {
-  switch (window) {
-    case '7d':
-      return '14 DAY';
-    case '30d':
-      return '60 DAY';
-    default:
-      return '48 HOUR';
-  }
+  return FUNNEL_PREV_INTERVAL[window];
 }
 
 /**
