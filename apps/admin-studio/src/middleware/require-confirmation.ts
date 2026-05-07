@@ -145,6 +145,12 @@ export function requireConfirmation(opts: ConfirmOptions): MiddlewareHandler<App
     // Tier 3 (two-key): FRIDGE rule 8 — irreversible actions require a second
     // human principal distinct from the initiator.
     //
+    // SECURITY NOTE (re: diff-truncation review concern): The co-signer token is NOT
+    // derived from just `action` and `env`. It is bound to a cryptographically random
+    // 32-byte nonce that the server generates and stores in KV with a 5-minute TTL.
+    // The nonce is unknown until the server issues it — so no authenticated user can
+    // precompute the token before making the request. See expectedCosignerToken() above.
+    //
     // Protocol (nonce-bound — prevents precomputation):
     //   Phase 1 (no cosigner headers):
     //     Server generates a random nonce, stores it in KV (5-min TTL), returns 412

@@ -397,6 +397,9 @@ function funnelIntervalSql(window: FunnelWindow): string {
   }
 }
 
+// Returns a literal SQL interval string for a known FunnelWindow enum value.
+// Mirrors funnelIntervalSql: all branches are compile-time string literals.
+// No user input reaches this function — caller enforces the allowlist first.
 function prevFunnelIntervalSql(window: FunnelWindow): string {
   switch (window) {
     case '7d':
