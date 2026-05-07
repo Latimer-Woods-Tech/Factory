@@ -96,7 +96,7 @@ for (const entry of readdirSync(join(REPO_ROOT, 'apps'), { withFileTypes: true }
 // Root *.md (non-recursive)
 collectFiles(REPO_ROOT, false).forEach(f => allFiles.add(f));
 
-const fileArray = [...allFiles];
+const fileArray = [...allFiles].sort();
 console.log(`[INFO] Scanning ${fileArray.length} Markdown files…`);
 
 // ─── Build anchor index (id= and ## headings per file) ───────────────────────
@@ -193,7 +193,7 @@ if (capped) {
 }
 
 if (JSON_MODE) {
-  const report = { scanned, broken, capped, generatedAt: new Date().toISOString() };
+  const report = { scanned, broken, capped };
   const outPath = join(REPO_ROOT, 'docs-quality-report.json');
   writeFileSync(outPath, JSON.stringify(report, null, 2));
   console.log(`\n[INFO] Report written to ${relative(REPO_ROOT, outPath)}`);
