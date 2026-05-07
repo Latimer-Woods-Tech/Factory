@@ -69,6 +69,8 @@ If you need to add a new org secret, use `actions/secrets#create-or-update-an-or
 - ❌ Change Stripe products, prices, webhook endpoints, or business profile in production
 - ❌ Send live email, SMS, or push notifications outside of test mode
 - ❌ Touch user-data tables in a Neon production DB
+- ❌ Hardcode a `*.workers.dev` URL in any user-facing HTML, JS, or API client — always use the branded `custom_domain` from `docs/service-registry.yml`
+- ❌ Touch the wordis-bond UI/frontend layer under any circumstances — the engine/worker backend may be worked on normally; ask a CODEOWNER if unsure which layer a file belongs to
 
 If you think you need to do one of those, **stop and ask the human first.**
 

@@ -1,0 +1,48 @@
+{
+  "name": "daily-brief",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+
+  // Cron: 7:00 AM ET daily (11:00 UTC).
+  "triggers": {
+    "crons": ["0 11 * * *"]
+  },
+
+  "r2_buckets": [
+    {
+      "binding": "AUDIO_BUCKET",
+      // Create with: npx wrangler r2 bucket create daily-brief-audio
+      "bucket_name": "daily-brief-audio"
+      // After creating, enable public access and copy the r2.dev URL into AUDIO_PUBLIC_BASE_URL
+    }
+  ],
+
+  "vars": {
+    "GITHUB_ORG": "Latimer-Woods-Tech",
+    "ZIP_CODE": "30019",
+    "RECIPIENTS": "adrper79@gmail.com,aperry@latwoodtech.com",
+    // After enabling public R2 access: set to your r2.dev subdomain
+    "AUDIO_PUBLIC_BASE_URL": "https://pub-00000000000000000000000000000000.r2.dev",
+    "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/daily-brief",
+    "VERTEX_PROJECT": "factory-495015",
+    "VERTEX_LOCATION": "us-central1"
+  },
+
+  "env": {
+    "production": {
+      "workers_dev": false,
+      "vars": {
+        "GITHUB_ORG": "Latimer-Woods-Tech",
+        "ZIP_CODE": "30019",
+        "RECIPIENTS": "adrper79@gmail.com,aperry@latwoodtech.com",
+        "AUDIO_PUBLIC_BASE_URL": "https://pub-00000000000000000000000000000000.r2.dev",
+        "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/daily-brief",
+        "VERTEX_PROJECT": "factory-495015",
+        "VERTEX_LOCATION": "us-central1"
+      }
+    }
+  }
+}
+

@@ -21,7 +21,7 @@ if (!APP) {
 const SCHEMAS = {
   'wordis-bond': `/**
  * Drizzle ORM schema for wordis-bond.
- * Debt settlement outreach platform — accounts, contacts, campaigns, call logs.
+ * Multi-tenant outreach platform — accounts, contacts, campaigns, call logs.
  */
 import {
   pgTable,
@@ -33,7 +33,7 @@ import {
   jsonb,
 } from 'drizzle-orm/pg-core';
 
-/** Multi-tenant root: one row per law-firm / debt-collection tenant. */
+/** Multi-tenant root: one row per tenant. */
 export const accounts = pgTable('accounts', {
   id:        uuid('id').primaryKey().defaultRandom(),
   name:      text('name').notNull(),
@@ -42,22 +42,22 @@ export const accounts = pgTable('accounts', {
   updatedAt: timestamptz('updated_at').notNull().defaultNow(),
 });
 
-/** Individual debtors with TCPA consent tracking. */
+/** Individual campaign targets with consent tracking. */
 export const contacts = pgTable('contacts', {
-  id:          uuid('id').primaryKey().defaultRandom(),
-  tenantId:    uuid('tenant_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
-  firstName:   text('first_name').notNull(),
-  lastName:    text('last_name').notNull(),
-  phone:       text('phone').notNull(),
-  email:       text('email'),
-  tcpaStatus:  text('tcpa_status').notNull().default('unknown'), // unknown | consented | revoked | litigator
-  tcpaUpdated: timestamptz('tcpa_updated_at'),
-  metadata:    jsonb('metadata'),
-  createdAt:   timestamptz('created_at').notNull().defaultNow(),
-  updatedAt:   timestamptz('updated_at').notNull().defaultNow(),
+  id:             uuid('id').primaryKey().defaultRandom(),
+  tenantId:       uuid('tenant_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
+  firstName:      text('first_name').notNull(),
+  lastName:       text('last_name').notNull(),
+  phone:          text('phone').notNull(),
+  email:          text('email'),
+  consentStatus:  text('consent_status').notNull().default('unknown'), // unknown | opted_in | opted_out | do_not_contact
+  consentUpdated: timestamptz('consent_updated_at'),
+  metadata:       jsonb('metadata'),
+  createdAt:      timestamptz('created_at').notNull().defaultNow(),
+  updatedAt:      timestamptz('updated_at').notNull().defaultNow(),
 });
 
-/** Outreach campaigns: a batch of contacts targeted for settlement offers. */
+/** Outreach campaigns: a batch of contacts targeted for a given campaign objective. */
 export const campaigns = pgTable('campaigns', {
   id:        uuid('id').primaryKey().defaultRandom(),
   tenantId:  uuid('tenant_id').notNull().references(() => accounts.id, { onDelete: 'cascade' }),
@@ -75,9 +75,10 @@ export const callLogs = pgTable('call_logs', {
   id:           uuid('id').primaryKey().defaultRandom(),
   contactId:    uuid('contact_id').notNull().references(() => contacts.id),
   campaignId:   uuid('campaign_id').notNull().references(() => campaigns.id),
-  telnyxCallId: text('telnyx_call_id'),
-  status:       text('status').notNull().default('queued'),  // queued | in_progress | completed | failed
-  outcome:      text('outcome'),        // agreed | declined | callback | no_answer | voicemail
+  providerCallId: text('provider_call_id'),
+  provider:       text('provider').notNull().default('telnyx'),
+  status:         text('status').notNull().default('queued'),  // queued | in_progress | completed | failed
+  outcome:        text('outcome'),        // agreed | declined | callback | no_answer | voicemail
   durationSecs: integer('duration_secs'),
   transcript:   text('transcript'),
   recordingUrl: text('recording_url'),
