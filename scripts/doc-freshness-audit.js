@@ -62,6 +62,14 @@ const DOC_REGISTRY = [
   { path: 'docs/runbooks/slo.md', cadence: 'quarterly', owner: 'Ops Lead / SRE' },
   { path: 'docs/runbooks/transfer.md', cadence: 'as-needed', owner: 'Platform Lead' },
   { path: 'docs/runbooks/lessons-learned.md', cadence: 'monthly', owner: 'All engineers' },
+  { path: 'docs/runbooks/rfc-process.md', cadence: 'quarterly', owner: 'Platform Lead' },
+  { path: 'docs/runbooks/rollback-runbook.md', cadence: 'quarterly', owner: 'Ops Lead' },
+  { path: 'docs/runbooks/release-procedure.md', cadence: 'quarterly', owner: 'EM / Ops Lead' },
+  { path: 'docs/runbooks/incident-response-playbook.md', cadence: 'quarterly', owner: 'Ops Lead / SRE' },
+  { path: 'docs/runbooks/error-budget-policy.md', cadence: 'semi-annually', owner: 'Ops Lead / SRE' },
+  { path: 'docs/runbooks/security-review-checklist.md', cadence: 'quarterly', owner: 'DevOps / Ops Lead' },
+  { path: 'docs/runbooks/frontend-contribution-guide.md', cadence: 'semi-annually', owner: 'Tech Lead' },
+  { path: 'docs/runbooks/design-review-checklist.md', cadence: 'quarterly', owner: 'Design Lead' },
 
   // Standards & Baselines
   { path: 'docs/packages/design-standards.mdx', cadence: 'semi-annually', owner: 'Design Lead' },
@@ -73,6 +81,12 @@ const DOC_REGISTRY = [
   { path: 'docs/APP_README_TEMPLATE.md', cadence: 'annually', owner: 'Tech Writer' },
   { path: 'docs/ENVIRONMENT_VERIFICATION_SETUP.md', cadence: 'annually', owner: 'Platform Lead' },
   { path: 'docs/README.md', cadence: 'quarterly', owner: 'Tech Writer' },
+  { path: 'docs/DOCUMENTATION_HIERARCHY.md', cadence: 'semi-annually', owner: 'Tech Writer' },
+  { path: 'docs/IMPLEMENTATION_SCORECARD.md', cadence: 'monthly', owner: 'Tech Writer / EM' },
+  { path: 'docs/NAMING_CONVENTIONS.md', cadence: 'semi-annually', owner: 'Platform Lead' },
+  { path: 'docs/CI_CD.md', cadence: 'quarterly', owner: 'Platform Lead' },
+  { path: 'docs/TEAM_HANDOFF.md', cadence: 'quarterly', owner: 'EM' },
+  { path: 'docs/architecture/FACTORY_V1.md', cadence: 'semi-annually', owner: 'Architect' },
 
   // Foundation (not typically updated)
   { path: 'CLAUDE.md', cadence: 'quarterly', owner: 'Engineer / EM' },

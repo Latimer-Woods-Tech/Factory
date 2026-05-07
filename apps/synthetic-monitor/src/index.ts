@@ -351,9 +351,10 @@ export default {
         ts: result.checkedAt,
         status: result.status,
         failed: result.results.filter(r => !r.ok).map(r => ({
-          id: r.id, latencyMs: r.latencyMs, error: r.error,
+          id: r.id, url: r.url, latencyMs: r.latencyMs, error: r.error,
         })),
         latencies: Object.fromEntries(result.results.map(r => [r.id, r.latencyMs])),
+        urls: Object.fromEntries(result.results.map(r => [r.id, r.url])),
       };
       const key = `snapshots:${result.checkedAt}`;
       await Promise.all([
