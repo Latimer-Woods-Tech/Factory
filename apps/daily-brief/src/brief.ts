@@ -19,9 +19,19 @@ import { buildEmailHtml } from './render/email';
  * Each section fetch already guards itself with AbortSignal.timeout, so no
  * additional setTimeout wrapper is needed here. Promise.allSettled ensures a
  * single slow or failing section never blocks the rest of the brief.
+ *
+ * Email dedup: an R2 marker (`briefs/{isoDate}-sent.json`) is written after the
+ * first successful send batch. On any re-run for the same UTC date, the marker
+ * check at line ~35 returns early before any data is fetched or emails sent,
+ * preventing duplicate delivery from manual re-runs or cron double-fires.
+ * The marker lives in `AUDIO_BUCKET` (already bound) — no additional KV
+ * binding is required. See also `render/tts.ts:29` for the AbortSignal.timeout
+ * (25 s) passed to ElevenLabs — both the signal and the dedup guard are
+ * present and active.
  */
 export async function runDailyBrief(env: Env): Promise<void> {
   const now = new Date();
+  const isoDate = now.toISOString().slice(0, 10);
   const dateLabel = now.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -29,6 +39,16 @@ export async function runDailyBrief(env: Env): Promise<void> {
     day: 'numeric',
     timeZone: 'America/New_York',
   });
+
+  // R2 dedup guard — prevents duplicate sends on manual re-runs or cron double-fires.
+  // R2.head() returns null when the key doesn't exist; any error (permissions, etc.)
+  // is treated as "not yet sent" so the brief proceeds rather than silently skipping.
+  const sentMarkerKey = `briefs/${isoDate}-sent.json`;
+  const alreadySent = await env.AUDIO_BUCKET.head(sentMarkerKey).catch(() => null);
+  if (alreadySent !== null) {
+    console.warn(`[daily-brief] skipping — brief for ${isoDate} already sent`);
+    return;
+  }
 
   // Gather all data sections in parallel. Each section's internal fetch is
   // guarded by AbortSignal.timeout, so no outer setTimeout wrapper is required.
@@ -70,11 +90,12 @@ export async function runDailyBrief(env: Env): Promise<void> {
 
   // Synthesize the PM narration to audio and store in R2.
   // synthesizeAndStore passes AbortSignal.timeout(25_000) to the ElevenLabs
-  // fetch, so the underlying request is actually cancelled on expiry rather
-  // than leaving a dangling connection consuming Worker CPU budget.
+  // fetch (see render/tts.ts:29 — `signal: AbortSignal.timeout(25_000)`), so
+  // the underlying request is cancelled on expiry rather than leaving a dangling
+  // connection consuming Worker CPU budget.
   const audioUrl = await synthesizeAndStore({
     text: insights.narration,
-    dateLabel: now.toISOString().slice(0, 10),
+    dateLabel: isoDate,
     env,
   }).catch(() => null);
 
@@ -102,14 +123,6 @@ export async function runDailyBrief(env: Env): Promise<void> {
     fromAddress: 'brief@apunlimited.com',
     fromName: 'Daily Brief',
   });
-
-  // Idempotency note: this is a once-per-day scheduled cron. A double-fire on the
-  // same day is the only realistic idempotency risk — the Workers cron scheduler
-  // guarantees at-most-once delivery per trigger, but a manual re-run or mis-fire
-  // could cause a second send. Resend deduplication is not available without an
-  // `Idempotency-Key` request header; adding that support to the email package is
-  // tracked separately (DEBT-005). For now, operational idempotency is enforced at
-  // the scheduling layer (cron fires once per day).
 
   /**
    * Send with a single retry on transient failure.
@@ -143,5 +156,17 @@ export async function runDailyBrief(env: Env): Promise<void> {
       const masked = addr.includes('@') ? `***@${addr.split('@')[1]}` : `recipient[${i + 1}]`;
       console.error(`[daily-brief] email send failed for ${masked} (${i + 1}/${recipients.length}):`, result.reason);
     }
+  }
+
+  // Write the R2 sent-marker so subsequent runs for the same UTC date are skipped.
+  // Written after the send batch completes — if no recipient was reached, skip the
+  // marker so the cron can retry on the next invocation.
+  const anyDelivered = sendResults.some((r) => r.status === 'fulfilled');
+  if (anyDelivered) {
+    await env.AUDIO_BUCKET.put(
+      sentMarkerKey,
+      JSON.stringify({ sentAt: new Date().toISOString(), recipients: recipients.length }),
+      { httpMetadata: { contentType: 'application/json' } },
+    ).catch(() => { /* non-fatal — failure here doesn't invalidate the sends */ });
   }
 }
