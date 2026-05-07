@@ -1126,7 +1126,7 @@ export class CampaignService {
         { role: 'user', content: userPrompt },
       ],
       llmEnv,
-      { tier: 'balanced' },
+      { tier: 'balanced', signal: AbortSignal.timeout(30_000) },
     );
 
     if (!llmResponse.data) {
