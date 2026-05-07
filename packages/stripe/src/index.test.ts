@@ -254,6 +254,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('Stripe price ID is required');
   });
@@ -267,6 +268,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('priceId must be a valid Stripe price ID');
   });
@@ -281,6 +283,7 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
+      idempotencyKey: 'test-idem',
     });
 
     expect(url).toBe('https://checkout.stripe.com/sess_1');
@@ -307,6 +310,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('Stripe did not return a checkout URL');
   });
@@ -321,6 +325,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('Stripe price ID is required');
 
@@ -337,6 +342,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('Stripe price ID must be configured with a real Stripe price');
 
@@ -359,6 +365,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('Stripe price ID is not recognized by Stripe');
   });
@@ -379,6 +386,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow("No such customer: 'cus_missing'");
   });
@@ -394,6 +402,7 @@ describe('createCheckoutSession', () => {
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
       mode: 'payment',
+      idempotencyKey: 'test-idem',
     });
 
     expect(url).toBe('https://checkout.stripe.com/sess_2');
@@ -432,6 +441,7 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
+      idempotencyKey: 'test-idem',
     });
 
     const callArgs = checkoutCreate.mock.calls as Array<[Record<string, unknown>]>;
@@ -449,6 +459,7 @@ describe('createCheckoutSession', () => {
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
       metadata: { userId: 'u_42', tier: 'pro' },
+      idempotencyKey: 'test-idem',
     });
 
     expect(checkoutCreate).toHaveBeenCalledWith(
@@ -467,6 +478,7 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
+      idempotencyKey: 'test-idem',
     });
 
     expect(checkoutCreate).toHaveBeenCalledWith(

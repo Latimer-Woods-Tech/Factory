@@ -52,13 +52,11 @@ export interface CreateCheckoutSessionOptions {
   mode?: 'subscription' | 'payment';
   /**
    * Stable idempotency key scoped to the logical purchase operation.
-   * Tie this to an external business ID (order ID, cart ID, webhook event ID)
+   * Must be tied to an external business ID (order ID, cart ID, session ID)
    * so that retries and double-clicks within Stripe's 24-hour window
-   * are deduplicated. When omitted, a deterministic key is derived from
-   * `customerId + priceId + hour-epoch`; callers that need tighter retry
-   * windows or support re-purchases within the same hour must supply their own.
+   * are deduplicated without risking duplicate charges.
    */
-  idempotencyKey?: string;
+  idempotencyKey: string;
   /** Metadata to attach to the Checkout session. */
   metadata?: Record<string, string>;
 }
@@ -102,6 +100,26 @@ export function createStripeClient(secretKey: string): Stripe {
   });
 }
 
+/** @internal Constant-time byte comparison — prevents timing-based side-channel attacks. */
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
+/** @internal Convert a lowercase hex string to Uint8Array. Returns null on invalid input. */
+function hexToBytes(hex: string): Uint8Array | null {
+  if (hex.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    if (Number.isNaN(byte)) return null;
+    bytes[i] = byte;
+  }
+  return bytes;
+}
+
 /** @internal HMAC-SHA256 verification using the Web Crypto API — no SDK required. */
 async function verifyStripeSignature(
   body: string,
@@ -132,12 +150,18 @@ async function verifyStripeSignature(
     false,
     ['sign'],
   );
-  const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(`${timestamp}.${body}`));
-  const expected = Array.from(new Uint8Array(sigBytes))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  const sigBytes = new Uint8Array(
+    await crypto.subtle.sign('HMAC', key, enc.encode(`${timestamp}.${body}`)),
+  );
 
-  if (!v1Sigs.includes(expected)) {
+  // Constant-time comparison across all provided v1 signatures — prevents timing
+  // attacks that could reveal information about the correct signature value.
+  const matched = v1Sigs.some((sig) => {
+    const sigBytes2 = hexToBytes(sig);
+    return sigBytes2 !== null && bytesEqual(sigBytes, sigBytes2);
+  });
+
+  if (!matched) {
     throw new ValidationError('Stripe webhook signature mismatch', {
       code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
     });
@@ -319,15 +343,8 @@ export async function createCheckoutSession(
     params.metadata = options.metadata;
   }
 
-  // Always set a deterministic idempotency key to prevent duplicate charges from
-  // concurrent double-clicks or client retries. The fallback key is derived from
-  // customerId + priceId + hour-epoch so identical requests within the same hour
-  // map to the same Stripe idempotency window; callers may supply an explicit key
-  // (e.g. tied to an internal order ID) to override the default.
-  const hourEpoch = Math.floor(Date.now() / 3_600_000);
   const requestOptions: Stripe.RequestOptions = {
-    idempotencyKey: options.idempotencyKey
-      ?? `checkout:${options.customerId}:${options.priceId}:${hourEpoch}`,
+    idempotencyKey: options.idempotencyKey,
   };
 
   let session: Stripe.Checkout.Session;
