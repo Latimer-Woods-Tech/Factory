@@ -630,7 +630,7 @@ export const contacts = pgTable('contacts', {
   phone:      text('phone').notNull(),
   firstName:  text('first_name'),
   lastName:   text('last_name'),
-  tcpaStatus: text('tcpa_status').notNull().default('unknown'),
+  consentStatus: text('consent_status').notNull().default('unknown'), // unknown | opted_in | opted_out | do_not_contact
   tenantId:   text('tenant_id').notNull(),
   createdAt:  timestamptz('created_at').notNull().defaultNow(),
 });
