@@ -561,6 +561,7 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   // Retries stripeGet on transient 429/5xx using exponential backoff.
   // AbortError (timeout) is NOT retried.
   // Returns the final Response regardless of status — callers check res.ok.
+  // Backoff schedule: attempt 0→1 000ms, 1→2 000ms, 2→4 000ms … capped at 30 000ms.
   async function stripeGetWithRetry(path: string, maxRetries = 1): Promise<Response> {
     let res = await stripeGet(path);
     let attempt = 0;
