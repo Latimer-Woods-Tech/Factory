@@ -321,3 +321,68 @@ describe('VoiceSession', () => {
     });
   });
 });
+
+import { isWithinCallingHours, verifyTelnyxWebhook } from './index';
+
+describe('isWithinCallingHours', () => {
+  it('returns true when local hour is 8 (window start)', () => {
+    // 13:00 UTC = 08:00 America/New_York (UTC-5 in winter)
+    const winterMorning = new Date('2024-01-15T13:00:00Z');
+    expect(isWithinCallingHours('America/New_York', winterMorning)).toBe(true);
+  });
+
+  it('returns true when local hour is 21 (window end)', () => {
+    // 02:00 UTC next day = 21:00 America/New_York (UTC-5)
+    const winterEvening = new Date('2024-01-16T02:00:00Z');
+    expect(isWithinCallingHours('America/New_York', winterEvening)).toBe(true);
+  });
+
+  it('returns false when local hour is 7 (before window)', () => {
+    // 12:00 UTC = 07:00 America/New_York (UTC-5)
+    const beforeWindow = new Date('2024-01-15T12:00:00Z');
+    expect(isWithinCallingHours('America/New_York', beforeWindow)).toBe(false);
+  });
+
+  it('returns false when local hour is 22 (after window)', () => {
+    // 03:00 UTC next day = 22:00 America/New_York (UTC-5)
+    const afterWindow = new Date('2024-01-16T03:00:00Z');
+    expect(isWithinCallingHours('America/New_York', afterWindow)).toBe(false);
+  });
+
+  it('works with a Pacific timezone', () => {
+    // 16:00 UTC = 08:00 America/Los_Angeles (UTC-8 in winter)
+    const pacificMorning = new Date('2024-01-15T16:00:00Z');
+    expect(isWithinCallingHours('America/Los_Angeles', pacificMorning)).toBe(true);
+  });
+});
+
+describe('verifyTelnyxWebhook', () => {
+  it('returns false for invalid base64 signature', async () => {
+    expect(await verifyTelnyxWebhook('payload', '!!!not-base64!!!', 'validkey')).toBe(false);
+  });
+
+  it('returns false for invalid base64 public key', async () => {
+    const validBase64 = btoa('some-bytes');
+    expect(await verifyTelnyxWebhook('payload', validBase64, '!!!not-base64!!!')).toBe(false);
+  });
+
+  it('returns false for signature/key mismatch', async () => {
+    // Generate a real key pair and verify with wrong payload
+    const keyPair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+    const signatureBuffer = await crypto.subtle.sign('Ed25519', keyPair.privateKey, new TextEncoder().encode('correct-payload'));
+    const publicKeyB64 = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
+    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+    expect(await verifyTelnyxWebhook('wrong-payload', signatureB64, publicKeyB64)).toBe(false);
+  });
+
+  it('returns true for valid Ed25519 signature', async () => {
+    const keyPair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const payload = 'test-webhook-payload';
+    const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+    const signatureBuffer = await crypto.subtle.sign('Ed25519', keyPair.privateKey, new TextEncoder().encode(payload));
+    const publicKeyB64 = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
+    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
+    expect(await verifyTelnyxWebhook(payload, signatureB64, publicKeyB64)).toBe(true);
+  });
+});
