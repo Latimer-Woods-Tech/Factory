@@ -2,7 +2,7 @@
 // Run: node scripts/generate-monitor-targets.mjs
 
 export const GENERATED_TARGETS = [
-  { id: "prime-self.health", url: "https://prime-self.adrper79.workers.dev/health", contains: "ok" },
+  { id: "prime-self.health", url: "https://api.selfprime.net/health", contains: "ok" },
   { id: "schedule-worker.health", url: "https://schedule-worker.adrper79.workers.dev/health", contains: "ok" },
   { id: "video-cron.health", url: "https://video-cron.adrper79.workers.dev/health", contains: "ok" },
   { id: "admin-studio-staging.health", url: "https://admin-studio-staging.adrper79.workers.dev/health", contains: "ok" },
