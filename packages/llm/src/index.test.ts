@@ -373,6 +373,84 @@ describe('complete', () => {
     expect(res.data).toBeNull();
     expect(res.error?.message).toMatch(/aborted/);
   });
+
+  it('routes grok-* model override through buildGrokRequest (lines 529, 583-584, 602)', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: 'grok-ok' }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 5, completion_tokens: 3 },
+            model: 'grok-4-fast',
+          }),
+          { status: 200, headers: { 'cf-aig-request-id': 'grok-aig' } },
+        ),
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV, GROK_API_KEY: 'gk-test' },
+      { model: 'grok-4-fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('grok');
+    expect(res.data!.content).toBe('grok-ok');
+    const call = fetchImpl.mock.calls[0] as unknown as [string | URL | Request, RequestInit?];
+    expect(String(call[0])).toContain('/grok/');
+  });
+
+  it('falls back to groq provider for unrecognized model override (line 530)', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(groqResponse('llama-ok')));
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { model: 'llama-3.3-custom' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('groq');
+    expect(res.data!.content).toBe('llama-ok');
+  });
+
+  it('sends system as plain string when prompt is short (line 250, no cache)', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(anthropicResponse('sys-ok')));
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast', system: 'short system' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { system: unknown };
+    expect(typeof body.system).toBe('string');
+  });
+
+  it('sends systemInstruction in Gemini request when system is provided (lines 285-286)', async () => {
+    const fetchImpl = vi.fn((url: string | URL | Request) => {
+      if (String(url).includes('google-vertex-ai')) return Promise.resolve(geminiResponse('sys-gemini'));
+      return Promise.resolve(new Response('', { status: 500 }));
+    });
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { model: 'gemini-1.5-flash', system: 'be concise' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('gemini');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { systemInstruction?: unknown };
+    expect(body.systemInstruction).toBeDefined();
+  });
+
+  it('returns error when grok-* model is used without GROK_API_KEY (lines 330-331)', async () => {
+    const res = await complete([{ role: 'user', content: 'hi' }], ENV, { model: 'grok-4-fast' });
+    expect(res.data).toBeNull();
+    expect(res.error!.message).toMatch(/LLM_ALL_PROVIDERS_FAILED/);
+    expect(JSON.stringify(res.error!.context)).toMatch(/GROK_API_KEY required/);
+  });
 });
 
 // ─── Feature 1 + 2: Per-provider exponential backoff & cooldown ──────────────
@@ -442,6 +520,47 @@ describe('per-provider exponential backoff', () => {
     // Advance time past cooldown
     now.mockReturnValue(1_000_000 + PROVIDER_COOLDOWN_MS + 1);
     expect(isProviderCoolingDown('anthropic', now)).toBe(false);
+  });
+
+  it('records non-ProviderError on intermediate attempt and recovers (line 494)', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(() => {
+      calls++;
+      if (calls === 1) return Promise.reject(new Error('transient-net-err'));
+      return Promise.resolve(anthropicResponse('recovered'));
+    });
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(res.data!.content).toBe('recovered');
+  });
+
+  it('records retryable ProviderError thrown by fetchImpl and recovers (line 485)', async () => {
+    let calls = 0;
+    const fetchImpl = vi.fn(() => {
+      calls++;
+      if (calls === 1) {
+        return Promise.reject({
+          provider: 'anthropic',
+          status: 429,
+          retryable: true,
+          message: 'thrown-retryable',
+        });
+      }
+      return Promise.resolve(anthropicResponse('recovered-from-thrown'));
+    });
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(res.data!.content).toBe('recovered-from-thrown');
   });
 });
 
@@ -748,107 +867,118 @@ describe('completionStream', () => {
     expect(args[1]).toMatchObject({ runId: 'r-stream' });
   });
 
-  it('throws when non-Anthropic primary fails and complete() also fails (lines 793-794)', async () => {
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response('down', { status: 503 })));
-    const gen = completionStream([{ role: 'user', content: 'v' }], ENV, { tier: 'verifier', deps: { fetch: fetchImpl as unknown as typeof fetch } });
-    await expect(drainStream(gen)).rejects.toThrow(/LLM_ALL_PROVIDERS_FAILED/);
-  });
-
-  it('throws when cooling-down primary and complete() fallback also fails (lines 805-806)', async () => {
-    const nowMs = 9_000_000;
-    markProviderCoolingDown('anthropic', () => nowMs);
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response('down', { status: 503 })));
-    const gen = completionStream([{ role: 'user', content: 'h' }], ENV, { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch, now: () => nowMs + 1000 } });
-    await expect(drainStream(gen)).rejects.toThrow(/LLM_ALL_PROVIDERS_FAILED/);
-    clearProviderCooldown('anthropic');
-  });
-
-  it('wraps non-abort stream fetch errors as InternalError (line 828)', async () => {
-    const fetchImpl = vi.fn(() => Promise.reject(new Error('timeout')));
-    const gen = completionStream([{ role: 'user', content: 'h' }], ENV, { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } });
-    await expect(drainStream(gen)).rejects.toThrow(/llm stream fetch failed/);
-  });
-
-  it('skips malformed JSON SSE lines (lines 889-890)', async () => {
-    const enc = new TextEncoder();
-    const sse = [
-      'data: ' + JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 1 }, model: 'm' } }) + '
-
-',
-      'data: {bad json}
-
-',
-      'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'x' } }) + '
-
-',
-      'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 1 } }) + '
-
-',
-      'data: [DONE]
-
-',
-    ].join('');
-    const stream = new ReadableStream({ start(c) { c.enqueue(enc.encode(sse)); c.close(); } });
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, { status: 200 })));
-    const gen = completionStream([{ role: 'user', content: 'h' }], ENV, { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } });
-    const { chunks } = await drainStream(gen);
-    expect(chunks).toEqual(['x']);
-  });
-
-  it('ignores unknown SSE event types via default branch (line 909)', async () => {
-    const enc = new TextEncoder();
-    const sse = [
-      'data: ' + JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 1 }, model: 'm' } }) + '
-
-',
-      'data: ' + JSON.stringify({ type: 'content_block_start', index: 0 }) + '
-
-',
-      'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'y' } }) + '
-
-',
-      'data: ' + JSON.stringify({ type: 'content_block_stop', index: 0 }) + '
-
-',
-      'data: ' + JSON.stringify({ type: 'ping' }) + '
-
-',
-      'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 1 } }) + '
-
-',
-      'data: [DONE]
-
-',
-    ].join('');
-    const stream = new ReadableStream({ start(c) { c.enqueue(enc.encode(sse)); c.close(); } });
-    const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, { status: 200 })));
-    const gen = completionStream([{ role: 'user', content: 'h' }], ENV, { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } });
-    const { chunks } = await drainStream(gen);
-    expect(chunks).toEqual(['y']);
-  });
-
   it('marks provider cooling down on 429 during streaming (line 838)', async () => {
     let callCount = 0;
     const nowMs = 5_000_000;
-    const fetchImpl = vi.fn((url) => {
+    const fetchImpl = vi.fn((url: string | URL | Request) => {
       callCount++;
-      if (callCount === 1 && String(url).includes('anthropic')) return Promise.resolve(new Response('rl', { status: 429 }));
+      if (callCount === 1 && String(url).includes('anthropic')) {
+        return Promise.resolve(new Response('rate limited', { status: 429 }));
+      }
       if (String(url).includes('google-vertex-ai')) return Promise.resolve(geminiResponse('fb'));
       return Promise.resolve(new Response('', { status: 500 }));
     });
-    const gen = completionStream([{ role: 'user', content: 'h' }], ENV, { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch, now: () => nowMs } });
+    const gen = completionStream(
+      [{ role: 'user', content: 'h' }],
+      ENV,
+      { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch, now: () => nowMs } },
+    );
     const { result } = await drainStream(gen);
     expect((result as import('./index.js').LLMResult).provider).toBe('gemini');
     expect(isProviderCoolingDown('anthropic', () => nowMs + 1000)).toBe(true);
     clearProviderCooldown('anthropic');
   });
 
-  it('throws when streaming 429 fallback also fails (lines 842-846)', async () => {
+  it('throws when streaming 429 and complete() fallback also fails (lines 842-846)', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(new Response('rl', { status: 429 })));
-    const gen = completionStream([{ role: 'user', content: 'h' }], ENV, { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch } });
+    const gen = completionStream(
+      [{ role: 'user', content: 'h' }],
+      ENV,
+      { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
     await expect(drainStream(gen)).rejects.toThrow(/LLM_ALL_PROVIDERS_FAILED/);
   });
 
+  it('throws when non-Anthropic primary and complete() fallback all fail (lines 793-794)', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('down', { status: 503 })));
+    const gen = completionStream(
+      [{ role: 'user', content: 'v' }],
+      ENV,
+      { tier: 'verifier', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+    await expect(drainStream(gen)).rejects.toThrow(/LLM_ALL_PROVIDERS_FAILED/);
+  });
+
+  it('throws when cooling-down primary and complete() also fails (lines 805-806)', async () => {
+    const nowMs = 9_000_000;
+    markProviderCoolingDown('anthropic', () => nowMs);
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('down', { status: 503 })));
+    const gen = completionStream(
+      [{ role: 'user', content: 'h' }],
+      ENV,
+      { tier: 'balanced', deps: { fetch: fetchImpl as unknown as typeof fetch, now: () => nowMs + 1000 } },
+    );
+    await expect(drainStream(gen)).rejects.toThrow(/LLM_ALL_PROVIDERS_FAILED/);
+    clearProviderCooldown('anthropic');
+  });
+
+  it('wraps non-abort stream fetch errors (line 828)', async () => {
+    const fetchImpl = vi.fn(() => Promise.reject(new Error('timeout')));
+    const gen = completionStream(
+      [{ role: 'user', content: 'h' }],
+      ENV,
+      { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+    await expect(drainStream(gen)).rejects.toThrow(/llm stream fetch failed/);
+  });
+
+  it('skips malformed JSON SSE lines and continues (lines 889-890)', async () => {
+    const enc = new TextEncoder();
+    const lines = [
+      'data: ' + JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 1 }, model: 'm' } }) + '\n\n',
+      'data: {bad json}\n\n',
+      'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'x' } }) + '\n\n',
+      'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 1 } }) + '\n\n',
+      'data: [DONE]\n\n',
+    ];
+    const body = lines.join('');
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) { c.enqueue(enc.encode(body)); c.close(); },
+    });
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, { status: 200 })));
+    const gen = completionStream(
+      [{ role: 'user', content: 'h' }],
+      ENV,
+      { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+    const { chunks } = await drainStream(gen);
+    expect(chunks).toEqual(['x']);
+  });
+
+  it('ignores unknown SSE event types via default branch (line 909)', async () => {
+    const enc = new TextEncoder();
+    const lines = [
+      'data: ' + JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 1 }, model: 'm' } }) + '\n\n',
+      'data: ' + JSON.stringify({ type: 'content_block_start', index: 0 }) + '\n\n',
+      'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'y' } }) + '\n\n',
+      'data: ' + JSON.stringify({ type: 'content_block_stop', index: 0 }) + '\n\n',
+      'data: ' + JSON.stringify({ type: 'ping' }) + '\n\n',
+      'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 1 } }) + '\n\n',
+      'data: [DONE]\n\n',
+    ];
+    const body = lines.join('');
+    const stream = new ReadableStream<Uint8Array>({
+      start(c) { c.enqueue(enc.encode(body)); c.close(); },
+    });
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(stream, { status: 200 })));
+    const gen = completionStream(
+      [{ role: 'user', content: 'h' }],
+      ENV,
+      { tier: 'fast', deps: { fetch: fetchImpl as unknown as typeof fetch } },
+    );
+    const { chunks } = await drainStream(gen);
+    expect(chunks).toEqual(['y']);
+  });
 });
 
 // ─── Feature 4: assertGrounding() ────────────────────────────────────────────

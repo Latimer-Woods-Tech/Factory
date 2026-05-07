@@ -4,6 +4,15 @@ import {
   trackConversion,
   getCustomerView,
   CREATE_CRM_LEADS_TABLE,
+  CREATE_CONTACTS_TABLE,
+  CREATE_CAMPAIGNS_TABLE,
+  CREATE_CALL_LOGS_TABLE,
+  ContactService,
+  CampaignService,
+  CallLogService,
+  type OutreachContact,
+  type OutreachCampaign,
+  type CallLog,
 } from './index';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
 import type { Analytics } from '@latimer-woods-tech/analytics';
@@ -206,5 +215,399 @@ describe('getCustomerView', () => {
     } as unknown as FactoryDb;
     const view = await getCustomerView(db, 'user-1');
     expect(view.events[0]?.properties).toEqual({ button: 'cta' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WB-2 DDL tests
+// ---------------------------------------------------------------------------
+
+describe('DDL constants', () => {
+  it('CREATE_CONTACTS_TABLE contains the table name', () => {
+    expect(CREATE_CONTACTS_TABLE).toContain('outreach_contacts');
+  });
+
+  it('CREATE_CAMPAIGNS_TABLE contains the table name', () => {
+    expect(CREATE_CAMPAIGNS_TABLE).toContain('outreach_campaigns');
+  });
+
+  it('CREATE_CALL_LOGS_TABLE contains the table name', () => {
+    expect(CREATE_CALL_LOGS_TABLE).toContain('call_logs');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WB-2 fixtures
+// ---------------------------------------------------------------------------
+
+const BASE_CONTACT_ROW = {
+  id: 'contact-uuid-1',
+  tenant_id: 'tenant-1',
+  first_name: 'John',
+  last_name: 'Doe',
+  phone: '+1234567890',
+  email: 'john@example.com',
+  consent_status: 'opted_in',
+  provider_call_id: 'telnyx-12345',
+  provider: 'telnyx',
+  metadata: JSON.stringify({ custom: 'data' }),
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+
+const BASE_CAMPAIGN_ROW = {
+  id: 'campaign-uuid-1',
+  tenant_id: 'tenant-1',
+  name: 'Q1 Outreach',
+  description: 'Spring campaign',
+  status: 'draft',
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+
+const BASE_CALL_LOG_ROW = {
+  id: 'calllog-uuid-1',
+  campaign_id: 'campaign-uuid-1',
+  contact_id: 'contact-uuid-1',
+  provider: 'telnyx',
+  provider_call_id: 'call-123456',
+  duration_seconds: 120,
+  outcome: 'completed',
+  recording_url: 'https://example.com/recording.mp3',
+  call_started: '2026-01-01T10:00:00Z',
+  call_ended: '2026-01-01T10:02:00Z',
+};
+
+// Suppress unused type warnings — types are tested via assignment
+const _c: OutreachContact | undefined = undefined;
+const _p: OutreachCampaign | undefined = undefined;
+const _l: CallLog | undefined = undefined;
+void _c; void _p; void _l;
+
+// ---------------------------------------------------------------------------
+// ContactService tests
+// ---------------------------------------------------------------------------
+
+describe('ContactService', () => {
+  const service = new ContactService();
+
+  describe('createContact', () => {
+    it('creates and returns a contact', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      const contact = await service.createContact(db, 'tenant-1', {
+        tenantId: 'tenant-1',
+        firstName: 'John',
+        lastName: 'Doe',
+        phone: '+1234567890',
+        email: 'john@example.com',
+        consentStatus: 'opted_in',
+        provider: 'telnyx',
+        providerCallId: 'telnyx-12345',
+        metadata: { custom: 'data' },
+      });
+      expect(contact.id).toBe('contact-uuid-1');
+      expect(contact.tenantId).toBe('tenant-1');
+      expect(contact.firstName).toBe('John');
+      expect(contact.consentStatus).toBe('opted_in');
+      expect(contact.provider).toBe('telnyx');
+      expect(contact.metadata).toEqual({ custom: 'data' });
+      expect(contact.createdAt).toBeInstanceOf(Date);
+    });
+
+    it('throws when required fields are missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createContact(db, 'tenant-1', {
+          tenantId: 'tenant-1',
+          firstName: '',
+          lastName: 'Doe',
+          phone: '+1234567890',
+          email: 'john@example.com',
+          consentStatus: 'opted_in',
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('throws when no row is returned', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createContact(db, 'tenant-1', {
+          tenantId: 'tenant-1',
+          firstName: 'John',
+          lastName: 'Doe',
+          phone: '+1234567890',
+          email: 'john@example.com',
+          consentStatus: 'opted_in',
+        }),
+      ).rejects.toThrow('no row returned');
+    });
+  });
+
+  describe('getContact', () => {
+    it('returns a contact with tenant isolation', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      const contact = await service.getContact(db, 'contact-uuid-1', 'tenant-1');
+      expect(contact.id).toBe('contact-uuid-1');
+      expect(contact.tenantId).toBe('tenant-1');
+    });
+
+    it('throws when contact not found', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.getContact(db, 'missing-id', 'tenant-1')).rejects.toThrow('not found');
+    });
+
+    it('enforces tenant isolation', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.getContact(db, 'contact-uuid-1', 'other-tenant')).rejects.toThrow('not found');
+    });
+
+    it('throws when id or tenantId missing', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      await expect(service.getContact(db, '', 'tenant-1')).rejects.toThrow();
+    });
+  });
+
+  describe('listContacts', () => {
+    it('lists all contacts for a tenant', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      const contacts = await service.listContacts(db, 'tenant-1');
+      expect(contacts).toHaveLength(1);
+      expect(contacts[0]?.tenantId).toBe('tenant-1');
+    });
+
+    it('filters by consentStatus', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      const contacts = await service.listContacts(db, 'tenant-1', { consentStatus: 'opted_in' });
+      expect(contacts).toHaveLength(1);
+    });
+
+    it('filters by provider', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      const contacts = await service.listContacts(db, 'tenant-1', { provider: 'telnyx' });
+      expect(contacts).toHaveLength(1);
+    });
+
+    it('respects limit and offset', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      const contacts = await service.listContacts(db, 'tenant-1', { limit: 10, offset: 5 });
+      expect(contacts).toHaveLength(1);
+    });
+
+    it('throws when tenantId missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.listContacts(db, '')).rejects.toThrow();
+    });
+  });
+
+  describe('updateConsentStatus', () => {
+    it('updates consent status', async () => {
+      const db = makeDb({ rows: [{ ...BASE_CONTACT_ROW, consent_status: 'opted_out' }] });
+      const contact = await service.updateConsentStatus(db, 'contact-uuid-1', 'tenant-1', 'opted_out');
+      expect(contact.consentStatus).toBe('opted_out');
+      expect(contact.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it('enforces tenant isolation', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.updateConsentStatus(db, 'contact-uuid-1', 'other-tenant', 'do_not_contact'),
+      ).rejects.toThrow('not found');
+    });
+
+    it('throws when required fields missing', async () => {
+      const db = makeDb({ rows: [BASE_CONTACT_ROW] });
+      await expect(service.updateConsentStatus(db, '', 'tenant-1', 'opted_in')).rejects.toThrow();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CampaignService tests
+// ---------------------------------------------------------------------------
+
+describe('CampaignService', () => {
+  const service = new CampaignService();
+
+  describe('createCampaign', () => {
+    it('creates and returns a campaign', async () => {
+      const db = makeDb({ rows: [BASE_CAMPAIGN_ROW] });
+      const campaign = await service.createCampaign(db, 'tenant-1', {
+        tenantId: 'tenant-1',
+        name: 'Q1 Outreach',
+        description: 'Spring campaign',
+      });
+      expect(campaign.id).toBe('campaign-uuid-1');
+      expect(campaign.tenantId).toBe('tenant-1');
+      expect(campaign.name).toBe('Q1 Outreach');
+      expect(campaign.status).toBe('draft');
+    });
+
+    it('throws when name missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createCampaign(db, 'tenant-1', { tenantId: 'tenant-1', name: '' }),
+      ).rejects.toThrow();
+    });
+
+    it('throws when no row returned', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createCampaign(db, 'tenant-1', { tenantId: 'tenant-1', name: 'Campaign' }),
+      ).rejects.toThrow('no row returned');
+    });
+  });
+
+  describe('getCampaign', () => {
+    it('returns a campaign with tenant isolation', async () => {
+      const db = makeDb({ rows: [BASE_CAMPAIGN_ROW] });
+      const campaign = await service.getCampaign(db, 'campaign-uuid-1', 'tenant-1');
+      expect(campaign.id).toBe('campaign-uuid-1');
+    });
+
+    it('throws when campaign not found', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.getCampaign(db, 'missing-id', 'tenant-1')).rejects.toThrow('not found');
+    });
+
+    it('enforces tenant isolation', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.getCampaign(db, 'campaign-uuid-1', 'other-tenant')).rejects.toThrow('not found');
+    });
+  });
+
+  describe('listCampaigns', () => {
+    it('lists all campaigns for a tenant', async () => {
+      const db = makeDb({ rows: [BASE_CAMPAIGN_ROW] });
+      const campaigns = await service.listCampaigns(db, 'tenant-1');
+      expect(campaigns).toHaveLength(1);
+    });
+
+    it('throws when tenantId missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.listCampaigns(db, '')).rejects.toThrow();
+    });
+  });
+
+  describe('updateCampaignStatus', () => {
+    it('updates campaign status', async () => {
+      const db = makeDb({ rows: [{ ...BASE_CAMPAIGN_ROW, status: 'active' }] });
+      const campaign = await service.updateCampaignStatus(db, 'campaign-uuid-1', 'tenant-1', 'active');
+      expect(campaign.status).toBe('active');
+    });
+
+    it('enforces tenant isolation', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.updateCampaignStatus(db, 'campaign-uuid-1', 'other-tenant', 'active'),
+      ).rejects.toThrow('not found');
+    });
+
+    it('throws when required fields missing', async () => {
+      const db = makeDb({ rows: [BASE_CAMPAIGN_ROW] });
+      await expect(service.updateCampaignStatus(db, '', 'tenant-1', 'active')).rejects.toThrow();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CallLogService tests
+// ---------------------------------------------------------------------------
+
+describe('CallLogService', () => {
+  const service = new CallLogService();
+
+  describe('createCallLog', () => {
+    it('creates and returns a call log', async () => {
+      const db = makeDb({ rows: [BASE_CALL_LOG_ROW] });
+      const callLog = await service.createCallLog(db, {
+        campaignId: 'campaign-uuid-1',
+        contactId: 'contact-uuid-1',
+        provider: 'telnyx',
+        providerCallId: 'call-123456',
+        durationSeconds: 120,
+        outcome: 'completed',
+        recordingUrl: 'https://example.com/recording.mp3',
+        callStarted: new Date('2026-01-01T10:00:00Z'),
+        callEnded: new Date('2026-01-01T10:02:00Z'),
+      });
+      expect(callLog.id).toBe('calllog-uuid-1');
+      expect(callLog.provider).toBe('telnyx');
+      expect(callLog.durationSeconds).toBe(120);
+      expect(callLog.callStarted).toBeInstanceOf(Date);
+    });
+
+    it('throws when required fields missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createCallLog(db, {
+          campaignId: '',
+          contactId: 'contact-uuid-1',
+          provider: 'telnyx',
+          providerCallId: 'call-123456',
+          durationSeconds: 120,
+          outcome: 'completed',
+          callStarted: new Date(),
+          callEnded: new Date(),
+        }),
+      ).rejects.toThrow();
+    });
+
+    it('throws when no row returned', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(
+        service.createCallLog(db, {
+          campaignId: 'campaign-uuid-1',
+          contactId: 'contact-uuid-1',
+          provider: 'telnyx',
+          providerCallId: 'call-123456',
+          durationSeconds: 120,
+          outcome: 'completed',
+          callStarted: new Date(),
+          callEnded: new Date(),
+        }),
+      ).rejects.toThrow('no row returned');
+    });
+  });
+
+  describe('getCallLog', () => {
+    it('returns a call log by id', async () => {
+      const db = makeDb({ rows: [BASE_CALL_LOG_ROW] });
+      const callLog = await service.getCallLog(db, 'calllog-uuid-1');
+      expect(callLog.id).toBe('calllog-uuid-1');
+    });
+
+    it('throws when call log not found', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.getCallLog(db, 'missing-id')).rejects.toThrow('not found');
+    });
+
+    it('throws when id missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.getCallLog(db, '')).rejects.toThrow();
+    });
+  });
+
+  describe('listCallLogsByCampaign', () => {
+    it('lists call logs with tenant isolation', async () => {
+      const db = {
+        execute: vi.fn().mockResolvedValue({ rows: [BASE_CALL_LOG_ROW] }),
+      } as unknown as FactoryDb;
+      const callLogs = await service.listCallLogsByCampaign(db, 'campaign-uuid-1', 'tenant-1');
+      expect(callLogs).toHaveLength(1);
+      expect(callLogs[0]?.campaignId).toBe('campaign-uuid-1');
+    });
+
+    it('enforces tenant isolation via campaign join', async () => {
+      const db = {
+        execute: vi.fn().mockResolvedValue({ rows: [] }),
+      } as unknown as FactoryDb;
+      const callLogs = await service.listCallLogsByCampaign(db, 'campaign-uuid-1', 'other-tenant');
+      expect(callLogs).toHaveLength(0);
+    });
+
+    it('throws when campaignId or tenantId missing', async () => {
+      const db = makeDb({ rows: [] });
+      await expect(service.listCallLogsByCampaign(db, '', 'tenant-1')).rejects.toThrow();
+    });
   });
 });
