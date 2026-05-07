@@ -30,6 +30,7 @@ import type { FactoryDb } from '../index.js';
 // 1. Plans Table — Product Catalog
 // ============================================================================
 
+/** Drizzle table definition for `studio_plans` — immutable product plan catalog. */
 export const studioPlanTable = pgTable(
   'studio_plans',
   {
@@ -57,13 +58,16 @@ export const studioPlanTable = pgTable(
   }),
 );
 
+/** Inferred SELECT type for the studio_plans table. */
 export type StudioPlan = typeof studioPlanTable.$inferSelect;
+/** Inferred INSERT type for the studio_plans table. */
 export type StudioPlanInsert = typeof studioPlanTable.$inferInsert;
 
 // ============================================================================
 // 2. Customers Table — User Registration
 // ============================================================================
 
+/** Drizzle table definition for `studio_customers` — maps app users to Stripe customers. */
 export const studioCustomerTable = pgTable(
   'studio_customers',
   {
@@ -89,13 +93,16 @@ export const studioCustomerTable = pgTable(
   }),
 );
 
+/** Inferred SELECT type for the studio_customers table. */
 export type StudioCustomer = typeof studioCustomerTable.$inferSelect;
+/** Inferred INSERT type for the studio_customers table. */
 export type StudioCustomerInsert = typeof studioCustomerTable.$inferInsert;
 
 // ============================================================================
 // 3. Subscriptions Table — Billing Records
 // ============================================================================
 
+/** Drizzle table definition for `studio_subscriptions` — active Stripe billing subscriptions. */
 export const studioSubscriptionTable = pgTable(
   'studio_subscriptions',
   {
@@ -129,15 +136,19 @@ export const studioSubscriptionTable = pgTable(
   }),
 );
 
+/** Inferred SELECT type for the studio_subscriptions table. */
 export type StudioSubscription = typeof studioSubscriptionTable.$inferSelect;
+/** Inferred INSERT type for the studio_subscriptions table. */
 export type StudioSubscriptionInsert = typeof studioSubscriptionTable.$inferInsert;
 
 // ============================================================================
 // 4. Credit Ledger Table — Append-Only Transactions
 // ============================================================================
 
+/** Allowed operation types for the append-only credit ledger. */
 export type CreditLedgerOperationType = 'grant' | 'debit' | 'refund' | 'expiration';
 
+/** Drizzle table definition for `studio_credit_ledger` — append-only credit transaction log. */
 export const studioCreditLedgerTable = pgTable(
   'studio_credit_ledger',
   {
@@ -166,13 +177,16 @@ export const studioCreditLedgerTable = pgTable(
   }),
 );
 
+/** Inferred SELECT type for the studio_credit_ledger table. */
 export type StudioCreditLedgerEntry = typeof studioCreditLedgerTable.$inferSelect;
+/** Inferred INSERT type for the studio_credit_ledger table. */
 export type StudioCreditLedgerInsert = typeof studioCreditLedgerTable.$inferInsert;
 
 // ============================================================================
 // 5. Entitlements Table — Denormalized Policy View
 // ============================================================================
 
+/** Drizzle table definition for `studio_entitlements` — denormalized policy snapshot for fast render gating. */
 export const studioEntitlementTable = pgTable(
   'studio_entitlements',
   {
@@ -205,13 +219,16 @@ export const studioEntitlementTable = pgTable(
   }),
 );
 
+/** Inferred SELECT type for the studio_entitlements table. */
 export type StudioEntitlement = typeof studioEntitlementTable.$inferSelect;
+/** Inferred INSERT type for the studio_entitlements table. */
 export type StudioEntitlementInsert = typeof studioEntitlementTable.$inferInsert;
 
 // ============================================================================
 // 6. Exports & Types
 // ============================================================================
 
+/** Convenience map of all five studio entitlement tables for bulk schema registration. */
 export const studioPlanTables = {
   plans: studioPlanTable,
   customers: studioCustomerTable,
