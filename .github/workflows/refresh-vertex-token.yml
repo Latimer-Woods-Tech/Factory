@@ -17,6 +17,14 @@ jobs:
       contents: read
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
       - name: Authenticate to GCP as supervisor-sa
         id: auth
         uses: google-github-actions/auth@v2
@@ -32,7 +40,7 @@ jobs:
 
       - name: Store token as Actions secret
         env:
-          GH_TOKEN: ${{ secrets.FACTORY_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh secret set VERTEX_ACCESS_TOKEN \
             --repo Latimer-Woods-Tech/factory \
