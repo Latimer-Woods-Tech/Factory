@@ -430,7 +430,7 @@ curl https://api.stripe.com/v1/radar/review_sessions \
 
 ```bash
 # 1. Check LLM service latency
-curl https://observability.adrper79.workers.dev/metrics?name=llm_classification_latency_ms
+curl https://admin-studio-staging.adrper79.workers.dev/metrics?name=llm_classification_latency_ms
 # Look for p95 > 15s (normal is <3s)
 
 # 2. Check video encoding queue

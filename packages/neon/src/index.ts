@@ -20,10 +20,15 @@ type HyperdriveDrizzleDb = PostgresJsDatabase<Record<string, never>> & {
 
 /**
  * Drizzle client bound to a Hyperdrive-routed Postgres connection.
+ *
+ * The `execute` method only accepts {@link SQLWrapper} (i.e. values produced
+ * by the `sql` template tag or drizzle query builders).  Raw `string` is
+ * intentionally excluded to prevent accidental SQL injection — always use
+ * the `sql` tagged-template literal to compose queries.
  */
 export type FactoryDb = Omit<HyperdriveDrizzleDb, 'execute'> & {
   execute<TRow extends Record<string, unknown> = Record<string, unknown>>(
-    query: SQLWrapper | string,
+    query: SQLWrapper,
   ): Promise<FactoryQueryResult<TRow>>;
 };
 
@@ -68,7 +73,7 @@ export function createDb(hyperdrive: HyperdriveBinding): FactoryDb {
 
   return Object.assign(db, {
     async execute<TRow extends Record<string, unknown> = Record<string, unknown>>(
-      query: SQLWrapper | string,
+      query: SQLWrapper,
     ): Promise<FactoryQueryResult<TRow>> {
       const result = await execute<TRow>(query);
       const rows = Array.from(result) as TRow[];

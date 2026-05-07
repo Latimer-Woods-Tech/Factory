@@ -116,7 +116,7 @@ export function createAdminRouter(opts: AdminRouterOpts): Hono {
           ORDER BY occurred_at DESC
           LIMIT 100`,
     );
-    const events = rows.rows.map((r) => ({
+    const events = rows.rows.map((r: FactoryEvtRow) => ({
       event: r.event,
       userId: r.user_id,
       occurredAt: r.occurred_at,

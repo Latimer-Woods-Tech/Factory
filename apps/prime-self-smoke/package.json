@@ -4,6 +4,7 @@
   "private": true,
   "description": "Production Playwright smoke tests for selfprime.net",
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:report": "playwright show-report",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
-    "@playwright/test": "^1.44.0"
+    "@playwright/test": "^1.44.0",
+    "typescript": "^5.4.0"
   }
 }
