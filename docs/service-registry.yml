@@ -185,12 +185,11 @@ workers:
     url: https://admin-studio-production.adrper79.workers.dev
     custom_domain: null
     health_endpoint: /health
-    deployment_status: configured_not_live_verified_2026-04-29
+    deployment_status: live_health_verified_2026-05-06
     notes: >
-      Production worker name and URL are configured in wrangler, but `/health`
-      returned `404` when checked on 2026-04-29. Treat this as a configured
-      target, not a live-verified production surface, until a production deploy
-      plus direct health verification succeeds.
+      Production `/health` returned `200` on 2026-05-06. Treat this as a
+      live-verified production surface as of that check; re-verify after any
+      future production rename or routing change.
     critical_endpoints:
       - /health
       - /auth/login
