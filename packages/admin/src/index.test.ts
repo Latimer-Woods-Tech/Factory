@@ -1,12 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Hono } from 'hono';
+import type { FactoryDb } from '@latimer-woods-tech/neon';
 import {
+  createAdminRouter,
   verifyJwt,
   scopeMatches,
   validateSlots,
   createCapabilityMiddleware,
   type AuditRecord,
   type AuditSink,
+  type DashboardSummary,
   type JwtPayload,
   type RouteCapability,
 } from './index.js';
@@ -220,5 +223,153 @@ describe('createCapabilityMiddleware', () => {
     });
     expect(r.status).toBe(401);
     expect(audit.records[0]!.status).toBe('denied');
+  });
+
+  it('denies and audits when JWT verification throws', async () => {
+    const audit = makeAudit();
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 'status' in err ? (err as { status: number }).status as 401 : 401));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: 'Bearer invalid.jwt.token', 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(401);
+    expect(audit.records[0]!.status).toBe('denied');
+  });
+});
+
+describe('createAdminRouter', () => {
+  type DbRow = Record<string, unknown>;
+  type ExecResult = { rows: DbRow[]; rowCount: number };
+
+  function dbExecute(rows: DbRow[], rowCount?: number): FactoryDb {
+    const result: ExecResult = { rows, rowCount: rowCount ?? rows.length };
+    return {
+      execute: vi.fn(
+        () => Promise.resolve(result) as unknown as ReturnType<FactoryDb['execute']>
+      ),
+    } as unknown as FactoryDb;
+  }
+
+  function dbSequential(responses: ExecResult[]): FactoryDb {
+    let idx = 0;
+    return {
+      execute: vi.fn(() => {
+        const r = responses[idx] ?? { rows: [], rowCount: 0 };
+        idx++;
+        return Promise.resolve(r) as unknown as ReturnType<FactoryDb['execute']>;
+      }),
+    } as unknown as FactoryDb;
+  }
+
+  function dbReject(err: Error): FactoryDb {
+    return {
+      execute: vi.fn(
+        () => Promise.reject(err) as unknown as ReturnType<FactoryDb['execute']>
+      ),
+    } as unknown as FactoryDb;
+  }
+
+  it('GET / returns dashboard summary', async () => {
+    const db = dbExecute([{ count: '3' }]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/');
+    expect(r.status).toBe(200);
+    const body = await r.json() as DashboardSummary;
+    expect(body.appId).toBe('app');
+    expect(body.totalUsers).toBe(3);
+  });
+
+  it('GET /users returns paginated users', async () => {
+    const db = dbExecute([{ id: 'u_1', email: 'a@b.com', status: 'active', created_at: '2024-01-01' }]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/users?page=1&limit=10');
+    expect(r.status).toBe(200);
+    const body = await r.json() as { users: unknown[] };
+    expect(body.users).toHaveLength(1);
+  });
+
+  it('GET /users/:id returns user with subscriptions', async () => {
+    const db = dbSequential([
+      { rows: [{ id: 'u_1', email: 'a@b.com', status: 'active', created_at: '2024-01-01' }], rowCount: 1 },
+      { rows: [], rowCount: 0 },
+    ]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/users/u_1');
+    expect(r.status).toBe(200);
+    const body = await r.json() as { user: { id: string }; subscriptions: unknown[] };
+    expect(body.user.id).toBe('u_1');
+    expect(body.subscriptions).toHaveLength(0);
+  });
+
+  it('GET /users/:id returns 404 when user not found', async () => {
+    const db = dbExecute([]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/users/missing');
+    expect(r.status).toBe(404);
+  });
+
+  it('POST /users/:id/suspend suspends user', async () => {
+    const db = dbExecute([], 1);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/users/u_1/suspend', { method: 'POST' });
+    expect(r.status).toBe(200);
+    const body = await r.json() as { success: boolean; status: string };
+    expect(body.success).toBe(true);
+    expect(body.status).toBe('suspended');
+  });
+
+  it('POST /users/:id/suspend returns 404 when user not found', async () => {
+    const db = dbExecute([], 0);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/users/missing/suspend', { method: 'POST' });
+    expect(r.status).toBe(404);
+  });
+
+  it('GET /events returns events with parsed properties', async () => {
+    const db = dbExecute([{ event: 'click', user_id: 'u_1', occurred_at: '2024-01-01', properties: '{"x":1}' }]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/events');
+    expect(r.status).toBe(200);
+    const body = await r.json() as { events: Array<{ event: string }> };
+    expect(body.events[0]!.event).toBe('click');
+  });
+
+  it('GET /health returns ok when db is connected', async () => {
+    const db = dbExecute([]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/health');
+    expect(r.status).toBe(200);
+    const body = await r.json() as { status: string };
+    expect(body.status).toBe('ok');
+  });
+
+  it('GET /health returns 500 when db throws', async () => {
+    const db = dbReject(new Error('db down'));
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/health');
+    expect(r.status).toBe(500);
   });
 });
