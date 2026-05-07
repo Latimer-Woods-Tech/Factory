@@ -451,9 +451,9 @@ export type StripeResult = StripeDigestData | StripeDigestUnavailable;
  * Read-only mode: all requests are HTTP GET — no charges, mutations, or writes.
  *
  * Idempotency: Stripe does not support (and rejects) Idempotency-Key headers on
- * GET requests per their API contract and RFC 7231 §4.3.1. Future webhook
- * deduplication belongs in a dedicated webhook handler — not in this collector.
- * No POST/PUT/DELETE calls are ever issued from this function.
+ * GET requests per their API contract and RFC 7231 §4.3.1.
+ * This function is READ-ONLY — no webhooks, no POST/PUT/DELETE calls, no mutations.
+ * Webhook handling and event deduplication live in a dedicated webhook.ts handler.
  *
  * Duplicate-call safety (three-layer defence for red-tier billing data):
  *   1. KV cache: results are stored in MONITOR_KV under `digest:stripe-data:{since12h}`
@@ -486,12 +486,9 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
   }
 
   function stripeGet(path: string): Promise<Response> {
-    // Read-only GET: Stripe's API contract (RFC 7231 §4.3.1) makes GET requests
-    // inherently idempotent — Idempotency-Key is not applicable or accepted.
-    // This helper exclusively performs reads; no mutations ever reach here.
-    //
-    // The since12h timestamp bound acts as the natural deduplication boundary:
-    // repeated calls within the same window return the same event set.
+    // READ-ONLY GET — Stripe's API contract (RFC 7231 §4.3.1) makes GET requests
+    // inherently idempotent; Idempotency-Key headers are not applicable or accepted.
+    // No webhooks, no POST/PUT/DELETE — this helper only reads data.
     //
     // Network errors are caught and converted to a synthetic 503 Response so all
     // callers handle failure uniformly via res.ok rather than needing per-call try/catch.
