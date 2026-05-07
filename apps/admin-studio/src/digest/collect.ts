@@ -463,6 +463,9 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     // inherently idempotent — Idempotency-Key is not applicable or accepted.
     // This helper exclusively performs reads; no mutations ever reach here.
     //
+    // The since12h timestamp bound acts as the natural deduplication boundary:
+    // repeated calls within the same window return the same event set.
+    //
     // Network errors (DNS failure, AbortError on timeout) are caught and converted
     // to a synthetic 503 Response so all callers handle failure uniformly via
     // res.ok rather than needing per-call try/catch.
@@ -478,6 +481,20 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
     });
   }
 
+  // Log specific Stripe error categories to aid operations:
+  // 401 = auth failure (check STRIPE_SECRET_KEY), 429 = rate limit (transient).
+  function logStripeError(label: string, status: number): void {
+    if (status === 401) {
+      console.error(`[digest/collect] Stripe auth failure on ${label} — verify STRIPE_SECRET_KEY`);
+    } else if (status === 429) {
+      console.warn(`[digest/collect] Stripe rate limit on ${label} — digest will retry next scheduled run`);
+    } else if (status >= 500) {
+      console.warn(`[digest/collect] Stripe server error ${status} on ${label}`);
+    } else {
+      console.warn(`[digest/collect] Stripe ${status} on ${label}`);
+    }
+  }
+
   try {
     // Fetch subscription events (created + deleted) in the past 12h
     const [createdRes, cancelledRes, subsRes] = await Promise.all([
@@ -486,8 +503,11 @@ export async function collectStripe(env: Env): Promise<StripeResult> {
       stripeGet('subscriptions?status=active&limit=100'),
     ]);
 
-    if (!createdRes.ok || !cancelledRes.ok) {
-      return { available: false, reason: `Stripe API error: ${createdRes.status}/${cancelledRes.status}` };
+    if (!createdRes.ok || !cancelledRes.ok || !subsRes.ok) {
+      if (!createdRes.ok) logStripeError('created-events', createdRes.status);
+      if (!cancelledRes.ok) logStripeError('cancelled-events', cancelledRes.status);
+      if (!subsRes.ok) logStripeError('subscriptions', subsRes.status);
+      return { available: false, reason: `Stripe API error: ${createdRes.status}/${cancelledRes.status}/${subsRes.status}` };
     }
 
     type StripeEventsResponse = {
