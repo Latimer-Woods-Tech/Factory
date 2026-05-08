@@ -35,6 +35,7 @@ memory/**                               @adrper79-dot
 # merge without requiring @adrper79-dot on every PR.
 # ===========================================================================
 apps/*/src/**                           @adrper79-dot @factory-cross-repo[bot]
+apps/*/src/components/ui/**             @adrper79-dot @factory-cross-repo[bot]
 client/**                               @adrper79-dot @factory-cross-repo[bot]
 tests/**                                @adrper79-dot @factory-cross-repo[bot]
 
