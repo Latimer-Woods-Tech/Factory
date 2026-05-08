@@ -366,4 +366,95 @@ export class VoiceSession extends EventTarget {
     return [...this.transcripts];
   }
 }
-export {};
+
+// ---------------------------------------------------------------------------
+// WB-3: Platform-safe helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Identifies which telephony provider handled a call.
+ * Add new providers here as the platform grows.
+ */
+export type CallProvider = 'telnyx' | 'twilio';
+
+/**
+ * Converts a base64 string to a Uint8Array using the platform-safe `atob` API.
+ * Returns null if the input is not valid base64.
+ *
+ * @internal
+ */
+function base64ToUint8Array(b64: string): Uint8Array<ArrayBuffer> | null {
+  try {
+    const binary = atob(b64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns true if the current local time in `ianaTimezone` falls within the
+ * permitted calling window [08:00, 21:00] inclusive.
+ *
+ * Uses `Intl.DateTimeFormat` — fully platform-safe, no Node.js built-ins required.
+ *
+ * @param ianaTimezone - An IANA timezone identifier (e.g. `'America/New_York'`).
+ * @param nowUtc - Optional override for "now" — defaults to `new Date()`.
+ * @returns `true` if calling is permitted, `false` otherwise.
+ */
+export function isWithinCallingHours(ianaTimezone: string, nowUtc: Date = new Date()): boolean {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: ianaTimezone,
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(nowUtc);
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
+  const totalMinutes = hour * 60 + minute;
+  // FDCPA window: 08:00 to 21:00 inclusive (caller must stop by 9:00 PM local time).
+  return totalMinutes >= 8 * 60 && totalMinutes <= 21 * 60;
+}
+
+/**
+ * Verifies a Telnyx webhook signature using the Ed25519 algorithm via the Web Crypto API.
+ * Returns `false` on any error and never throws — safe to call unconditionally.
+ *
+ * @param payload - The raw request body string.
+ * @param signature - The base64-encoded Ed25519 signature from the `telnyx-signature-ed25519` header.
+ * @param publicKey - The base64-encoded SPKI DER Ed25519 public key for your Telnyx account.
+ * @returns `true` if the signature is valid, `false` otherwise.
+ */
+export async function verifyTelnyxWebhook(
+  payload: string,
+  signature: string,
+  publicKey: string,
+): Promise<boolean> {
+  try {
+    const signatureBytes = base64ToUint8Array(signature);
+    if (!signatureBytes) return false;
+
+    const publicKeyBytes = base64ToUint8Array(publicKey);
+    if (!publicKeyBytes) return false;
+
+    const key = await crypto.subtle.importKey(
+      'spki',
+      publicKeyBytes,
+      { name: 'Ed25519' },
+      false,
+      ['verify'],
+    );
+
+    const payloadBytes = new TextEncoder().encode(payload);
+
+    return await crypto.subtle.verify('Ed25519', key, signatureBytes, payloadBytes);
+  } catch {
+    return false;
+  }
+}

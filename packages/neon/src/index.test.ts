@@ -2,9 +2,13 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   const executeMock = vi.fn(() => Promise.resolve([]));
-  const drizzleClient = { execute: executeMock, $client: { __postgres: true } };
+  const transactionMock = vi.fn(
+    (fn: (tx: { execute: typeof executeMock }) => Promise<unknown>) => fn({ execute: executeMock }),
+  );
+  const drizzleClient = { execute: executeMock, transaction: transactionMock, $client: { __postgres: true } };
   return {
     executeMock,
+    transactionMock,
     drizzleClient,
     drizzleMock: vi.fn(() => drizzleClient),
     postgresMock: vi.fn(() => ({ __postgres: true })),
@@ -28,6 +32,7 @@ import { createDb, runMigrations, withTenant } from './index';
 
 beforeEach(() => {
   mocks.executeMock.mockClear();
+  mocks.transactionMock.mockClear();
   mocks.drizzleMock.mockClear();
   mocks.postgresMock.mockClear();
   mocks.migrateMock.mockClear();
@@ -48,18 +53,22 @@ describe('neon', () => {
     );
   });
 
-  it('withTenant sets the session variable and calls fn', async () => {
+  it('withTenant opens a transaction, issues SET LOCAL, and calls fn', async () => {
     const db = createDb({ connectionString: 'postgres://example' });
-    const fn = vi.fn((received: typeof db) => {
-      expect(received).toBe(db);
-      return Promise.resolve('result');
-    });
+    const fn = vi.fn(() => Promise.resolve('result'));
 
     const result = await withTenant(db, 'tenant-123', fn);
 
     expect(result).toBe('result');
     expect(fn).toHaveBeenCalledTimes(1);
+    // transaction() must be called to obtain a proper BEGIN/COMMIT block
+    expect(mocks.transactionMock).toHaveBeenCalledTimes(1);
+    // SET LOCAL must be the first execute inside the transaction
     expect(mocks.executeMock).toHaveBeenCalledTimes(1);
+    // The sql tagged template produces an object with a `queryChunks` array —
+    // stringify it to verify the SET LOCAL fragment is present.
+    const firstArg = (mocks.executeMock.mock.calls as unknown[][])[0]?.[0];
+    expect(JSON.stringify(firstArg)).toContain('SET LOCAL app.tenant_id');
   });
 
   it('withTenant rejects an empty tenantId', async () => {
