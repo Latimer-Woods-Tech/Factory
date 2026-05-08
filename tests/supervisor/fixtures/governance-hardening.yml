@@ -1,0 +1,20 @@
+fixture_for: governance-hardening
+issue:
+  title: "chore(governance): propagate AGENT_PROTOCOL + issue template to HumanDesign"
+  labels: [hardening, governance]
+  body: |
+    HumanDesign is missing .github/AGENT_PROTOCOL.md and the agent-task issue
+    template. All repos in the Latimer-Woods-Tech org need the same agent
+    coordination contract so autonomous subagents operate consistently.
+
+    Written after the May 1 2026 stack-up incident (7 agents, 5 unreviewed
+    merges, 80-min production outage).
+
+    Target repo: humandesign
+    Hardening kind: agent-protocol-propagation
+    Target file: .github/AGENT_PROTOCOL.md
+
+    Source: factory canonical .github/AGENT_PROTOCOL.md (HumanDesign PR #122
+    pattern).
+
+    No code changes — documentation and GitHub infrastructure only.

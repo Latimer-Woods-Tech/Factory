@@ -1,0 +1,106 @@
+id: governance-hardening
+version: 1
+tier: green
+description: "Small governance, process, or hardening change: adding/updating labels, branch-protection tweaks, README/CLAUDE.md edits, workflow permission tightening, or AGENT_PROTOCOL propagation."
+trigger_keywords: [governance, hardening, branch-protection, label, readme, agent-protocol, process, chore]
+triggers:
+  labels_any_of: [hardening, governance, chore]
+  title_pattern: "(governance|hardening|branch.protect|agent.protocol|AGENT_PROTOCOL|label.*add|add.*label|README.*update|CLAUDE\\.md)"
+  body_patterns:
+    - "(branch.protect|label.*config|AGENT_PROTOCOL|CLAUDE\\.md|standing.orders|governance.*playbook)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: factory_admin.repo.health
+slots:
+  - name: target_repo
+    type: enum
+    values: [humandesign, videoking, xico-city, factory-admin, factory]
+    source: issue_body
+    referential_check: factory_admin.repo.health
+  - name: hardening_kind
+    type: enum
+    values: [branch-protection, label-addition, readme-update, claude-md-update, agent-protocol-propagation, workflow-permission, other]
+    source: issue_body
+  - name: target_file
+    type: string
+    validator: "^[a-zA-Z0-9_.\\-/]+$"
+    source: issue_body
+    default: "CLAUDE.md"
+steps:
+  - id: s1
+    tool: factory_admin.repo.health
+    depends_on: null
+    params:
+      repo: "$slots.target_repo"
+    intent: "Confirm the target repo is healthy and accessible before proposing governance changes."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/$slots.target_repo"
+      path: "$slots.target_file"
+      ref: "main"
+    intent: "Read the current state of the target file so the PR diff is minimal and correct."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor plan — governance hardening for `$slots.target_repo`**
+
+        Hardening kind: `$slots.hardening_kind`
+        Target file: `$slots.target_file`
+
+        **Known patterns:**
+        - `branch-protection`: add required-status-checks + dismiss-stale-reviews (factory PR #280 playbook)
+        - `label-addition`: add label to `.github/labels.yml` and sync via label-sync workflow
+        - `readme-update` / `claude-md-update`: propagate canonical standing orders from factory to app repo
+        - `agent-protocol-propagation`: copy `.github/AGENT_PROTOCOL.md` + issue template from factory canonical (HumanDesign PR #122 pattern)
+        - `workflow-permission`: tighten `permissions:` block on a specific workflow (principle of least privilege)
+
+        Current file state: $s2.excerpt
+
+        A draft PR will implement the change. Green-tier — no destructive mutations, docs/config only.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a plan comment describing the hardening action and the canonical pattern to follow."
+    requires_human_review: false
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: "Latimer-Woods-Tech/$slots.target_repo"
+      base: "main"
+      head: "supervisor/governance-$slots.hardening_kind-$slots.target_repo"
+      title: "chore(governance): $slots.hardening_kind for $slots.target_repo"
+      body: |
+        Closes #$triggers.issue_number
+
+        **Governance hardening:** `$slots.hardening_kind` in `$slots.target_repo`
+
+        Target file: `$slots.target_file`
+
+        Changes are documentation/config only. No business logic affected.
+        Pattern source: factory PRs #280, #277, #276, #275; HumanDesign PR #122.
+
+        Plan: see issue comment $s3.comment_url
+      draft: true
+    intent: "Open a draft PR for the governance change so a CODEOWNER can review and merge."
+    requires_human_review: true
+acceptance_gate:
+  description: "Draft PR is open on the target repo targeting the governance file with the correct hardening change."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=Latimer-Woods-Tech/$slots.target_repo pr=$s4.number files_changed"
+    assert: "files_changed.any(f => f.path == '$slots.target_file')"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/$slots.target_repo"
+      pr_number: "$s4.pr_number"
+      comment: "Supervisor rollback: closing governance hardening PR. Manual review required."
