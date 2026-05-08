@@ -33,7 +33,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const ORG = process.env.FLAKY_REPO_OWNER || 'Latimer-Woods-Tech';
 const REPO = process.env.FLAKY_REPO_NAME || 'factory';
 const LOOKBACK_DAYS = Number(process.env.LOOKBACK_DAYS || '7');
-const REPORT_PATH = process.env.REPORT_PATH || '/tmp/flaky-check-report.md';
+const REPORT_PATH = process.env.REPORT_PATH || 'flaky-check-report.md';
 
 if (!GITHUB_TOKEN) {
   console.error('ERROR: GITHUB_TOKEN environment variable is required.');
