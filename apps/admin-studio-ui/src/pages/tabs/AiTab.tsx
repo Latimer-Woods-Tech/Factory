@@ -9,7 +9,7 @@
  * editing. Approving a proposal calls `useActiveFile.edit(after)` which marks
  * the file dirty, after which the user commits via CodeTab's commit panel.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   AIChatEvent,
@@ -40,6 +40,28 @@ function turn(role: 'user' | 'assistant', content: string): AIChatTurn {
   return { role, content, at: new Date().toISOString() };
 }
 
+export function getKeyboardViewportDelta(
+  layoutViewportHeight: number,
+  visualViewportHeight: number,
+  visualViewportOffsetTop: number,
+): number {
+  return Math.max(0, Math.round(layoutViewportHeight - visualViewportHeight - visualViewportOffsetTop));
+}
+
+export function isChatLogAtBottom(element: HTMLElement | null, threshold = 24): boolean {
+  if (!element) return true;
+  const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
+  return distance <= threshold;
+}
+
+export function scrollChatLogToBottom(element: HTMLElement | null, smooth: boolean): void {
+  if (!element) return;
+  element.scrollTo({
+    top: element.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto',
+  });
+}
+
 export function AiTab() {
   const active = useActiveFile();
   const [history, setHistory] = useState<AIChatTurn[]>([]);
@@ -50,6 +72,10 @@ export function AiTab() {
   const [partial, setPartial] = useState('');
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const chatLogRef = useRef<HTMLDivElement | null>(null);
+  const wasAtBottomRef = useRef(true);
+  const [visualViewportDelta, setVisualViewportDelta] = useState(0);
+  const keyboardInsetSupported = typeof CSS !== 'undefined' && CSS.supports('bottom: env(keyboard-inset-height)');
 
   // Proposal state.
   const [proposalBusy, setProposalBusy] = useState(false);
@@ -196,6 +222,30 @@ export function AiTab() {
     setPrompt('');
   }
 
+  useEffect(() => {
+    wasAtBottomRef.current = isChatLogAtBottom(chatLogRef.current);
+  }, []);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    let previousDelta = getKeyboardViewportDelta(window.innerHeight, viewport.height, viewport.offsetTop);
+    const handleResize = () => {
+      const nextDelta = getKeyboardViewportDelta(window.innerHeight, viewport.height, viewport.offsetTop);
+      if (!keyboardInsetSupported) {
+        setVisualViewportDelta(nextDelta);
+      }
+      if (nextDelta > previousDelta && wasAtBottomRef.current) {
+        scrollChatLogToBottom(chatLogRef.current, true);
+      }
+      previousDelta = nextDelta;
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    return () => viewport.removeEventListener('resize', handleResize);
+  }, [keyboardInsetSupported]);
+
   return (
     <div className="flex h-[calc(100vh-92px)] gap-4">
       <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
@@ -251,7 +301,13 @@ export function AiTab() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-3 space-y-3 text-sm">
+        <div
+          ref={chatLogRef}
+          onScroll={(event) => {
+            wasAtBottomRef.current = isChatLogAtBottom(event.currentTarget);
+          }}
+          className="flex-1 overflow-auto p-3 space-y-3 text-sm"
+        >
           {history.length === 0 && !partial && (
             <p className="text-slate-500">
               Choose a strategy, then ask AI to generate, explain, or refactor Factory code.
@@ -269,10 +325,24 @@ export function AiTab() {
           {error && <p className="text-rose-400 text-xs">⚠ {error}</p>}
         </div>
 
-        <footer className="border-t border-slate-800 p-2">
+        <footer
+          className="border-t border-slate-800 p-2 bg-slate-900 sticky"
+          style={{
+            bottom: 'calc(env(keyboard-inset-height, 0px) + env(safe-area-inset-bottom, 0px))',
+            transform: !keyboardInsetSupported && visualViewportDelta > 0
+              ? `translateY(-${visualViewportDelta}px)`
+              : undefined,
+            transition: !keyboardInsetSupported ? 'transform 120ms ease-out' : undefined,
+          }}
+        >
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onFocus={() => {
+              if (wasAtBottomRef.current) {
+                scrollChatLogToBottom(chatLogRef.current, true);
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();

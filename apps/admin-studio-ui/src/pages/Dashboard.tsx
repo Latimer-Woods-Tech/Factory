@@ -4,6 +4,7 @@
  * from /me and /tests so we can verify the auth + audit chain end-to-end.
  */
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { OverviewTab } from './tabs/OverviewTab.js';
 import { TestsTab } from './tabs/TestsTab.js';
 import { CodeTab } from './tabs/CodeTab.js';
@@ -25,6 +26,15 @@ const TABS = [
 ];
 
 export function Dashboard() {
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      virtualKeyboard?: { overlaysContent: boolean };
+    };
+    if (nav.virtualKeyboard) {
+      nav.virtualKeyboard.overlaysContent = true;
+    }
+  }, []);
+
   return (
     <div className="flex h-[calc(100vh-44px)] overflow-hidden">
       {/* Sidebar — desktop only */}
