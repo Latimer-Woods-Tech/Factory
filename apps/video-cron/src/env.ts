@@ -33,4 +33,8 @@ export interface Env {
   DEFAULT_COMPOSITION_ID: string;
   /** Worker environment label (development | staging | production). */
   ENVIRONMENT: string;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
 }
