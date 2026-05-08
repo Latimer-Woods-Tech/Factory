@@ -14,8 +14,15 @@ import { LoginPage } from './LoginPage.js';
 describe('target-size class usage', () => {
   it('uses target utilities for AI chips and primary actions', () => {
     const html = renderToStaticMarkup(<AiTab />);
-    expect(html.match(/target-min/g)?.length).toBe(7);
-    expect(html.match(/target-primary/g)?.length).toBe(2);
+    const expectTargetMin = ['Generate', 'Explain', 'Refactor', 'Execution', 'Planning', 'Drafting', 'Clear'];
+    const expectTargetPrimary = ['Propose diff', 'Send'];
+
+    for (const label of expectTargetMin) {
+      expect(html).toMatch(new RegExp(`class="[^"]*target-min[^"]*"[^>]*>${label}<`));
+    }
+    for (const label of expectTargetPrimary) {
+      expect(html).toMatch(new RegExp(`class="[^"]*target-primary[^"]*"[^>]*>${label}<`));
+    }
   });
 
   it('uses larger stacked targets for mobile bottom nav tabs', () => {
@@ -42,7 +49,7 @@ describe('target-size class usage', () => {
     expect(mobileNavLink?.textContent).toContain('Overview');
 
     const icon = mobileNavLink?.querySelector('[aria-hidden="true"]');
-    expect(icon?.textContent).toContain('🏠');
+    expect(icon?.textContent).toContain('OV');
 
     act(() => {
       root.unmount();

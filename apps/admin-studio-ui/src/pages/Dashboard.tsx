@@ -14,14 +14,14 @@ import { TimelineTab } from './tabs/TimelineTab.js';
 import { FlagsTab } from './tabs/FlagsTab.js';
 
 const TABS = [
-  { to: '/overview',  label: 'Overview', icon: '🏠' },
-  { to: '/tests',     label: 'Tests', icon: '🧪' },
-  { to: '/code',      label: 'Code', icon: '💻' },
-  { to: '/ai',        label: 'AI Chat', icon: '🤖' },
-  { to: '/functions', label: 'Functions', icon: '⚙️' },
-  { to: '/timeline',  label: 'Timeline', icon: '🕒' },
-  { to: '/flags',     label: 'Flags', icon: '🚩' },
-  { to: '/audit',     label: 'Audit Log', icon: '📋' },
+  { to: '/overview',  label: 'Overview', icon: 'OV' },
+  { to: '/tests',     label: 'Tests', icon: 'TS' },
+  { to: '/code',      label: 'Code', icon: 'CD' },
+  { to: '/ai',        label: 'AI Chat', icon: 'AI' },
+  { to: '/functions', label: 'Functions', icon: 'FN' },
+  { to: '/timeline',  label: 'Timeline', icon: 'TM' },
+  { to: '/flags',     label: 'Flags', icon: 'FG' },
+  { to: '/audit',     label: 'Audit Log', icon: 'AU' },
 ];
 
 export function Dashboard() {
@@ -75,12 +75,12 @@ export function Dashboard() {
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              `flex min-h-12 min-w-14 flex-shrink-0 flex-col items-center justify-center gap-1 px-4 py-2 text-[10px] leading-none ${
+              `flex min-h-12 min-w-14 flex-shrink-0 flex-col items-center justify-center gap-1 px-4 py-2 text-xs leading-none ${
                 isActive ? 'text-white border-b-2 border-emerald-500' : 'text-slate-400'
               }`
             }
           >
-            <span aria-hidden className="text-base leading-none">{tab.icon}</span>
+            <span aria-hidden="true" className="text-xs leading-none font-semibold">{tab.icon}</span>
             <span>{tab.label}</span>
           </NavLink>
         ))}
