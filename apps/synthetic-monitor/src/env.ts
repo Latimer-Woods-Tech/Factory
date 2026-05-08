@@ -19,4 +19,8 @@ export interface Env {
   PRIME_SELF?: Fetcher;
   /** KV namespace for writing monitor snapshots. Optional — graceful no-op if absent. */
   MONITOR_KV?: KVNamespace;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
 }

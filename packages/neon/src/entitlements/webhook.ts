@@ -493,7 +493,7 @@ export async function refreshEntitlements(
       can_render, can_publish_public, monthly_render_quota,
       max_video_seconds, max_retries_per_job, last_refreshed_at, created_at, updated_at
     ) VALUES (
-      ${entitlementId}, ${customerId}, ${null}, ${planIdToUse ?? null},
+      ${entitlementId}, ${customerId}, ${null as string | null}, ${planIdToUse ?? null},
       ${availableCredits}, ${canRender}, ${canPublishPublic === true},
       ${monthlyQuota},
       ${maxSeconds},

@@ -30,14 +30,46 @@ export type SubscriptionEvent =
   | 'past_due';
 
 /**
+ * Minimal KV namespace interface required by {@link stripeWebhookHandler} for
+ * event-ID deduplication. Satisfied by Cloudflare Workers `KVNamespace` and any
+ * compatible mock.
+ */
+export interface StripeKVCache {
+  /** Returns the stored string value, or `null` if the key does not exist. */
+  get(key: string): Promise<string | null>;
+  /**
+   * Stores a string value with an optional TTL.
+   *
+   * @param key - Cache key.
+   * @param value - String value to store.
+   * @param options - Optional write options.
+   * @param options.expirationTtl - Seconds until the key expires.
+   */
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+}
+
+/**
  * Options for {@link stripeWebhookHandler}.
  */
 export interface StripeWebhookHandlerOptions {
   webhookSecret: string;
-  stripeClient: Stripe;
   handlers: Partial<
     Record<SubscriptionEvent, (status: SubscriptionStatus) => Promise<void>>
   >;
+  /**
+   * KV namespace used to deduplicate Stripe events by `event.id`.
+   *
+   * Stripe may deliver the same event more than once within its 7-day retry
+   * window. Providing a KV binding here ensures at-most-once processing:
+   * a processed event ID is stored with a 7-day TTL, and any duplicate
+   * delivery returns HTTP 200 immediately without re-invoking the handler.
+   *
+   * **This field is REQUIRED for production deployments.** Omitting it
+   * disables deduplication and risks duplicate billing side-effects.
+   *
+   * Pass `env.KV` (your Worker's KV binding) as this value.
+   */
+  kvCache: StripeKVCache;
 }
 
 /**
@@ -52,15 +84,12 @@ export interface CreateCheckoutSessionOptions {
   /** Checkout mode. Defaults to `'subscription'`. Use `'payment'` for one-time purchases. */
   mode?: 'subscription' | 'payment';
   /**
-   * Idempotency key to prevent duplicate session creation on retry.
-   * Recommended when creating sessions inside retry loops.
+   * Stable idempotency key scoped to the logical purchase operation.
+   * Must be tied to an external business ID (order ID, cart ID, session ID)
+   * so that retries and double-clicks within Stripe's 24-hour window
+   * are deduplicated without risking duplicate charges.
    */
-  idempotencyKey?: string;
-  /**
-   * Explicitly list accepted payment method types (e.g. `['card']`).
-   * When omitted, Stripe determines the list automatically.
-   */
-  paymentMethodTypes?: string[];
+  idempotencyKey: string;
   /** Metadata to attach to the Checkout session. */
   metadata?: Record<string, string>;
 }
@@ -78,6 +107,11 @@ export interface CreatePortalSessionOptions {
 }
 
 const FACTORY_API_VERSION: Stripe.LatestApiVersion = '2025-02-24.acacia';
+/**
+ * Matches unresolved placeholder price IDs such as `price_xxx` that should
+ * never be sent to Stripe in a real checkout flow.
+ */
+const PLACEHOLDER_PRICE_ID_PATTERN = /^price_x+$/i;
 
 /**
  * Creates a Stripe client configured with the Factory-standard API
@@ -99,19 +133,103 @@ export function createStripeClient(secretKey: string): Stripe {
   });
 }
 
+/** @internal Constant-time byte comparison — prevents timing-based side-channel attacks. */
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) return false;
+  const va = new DataView(a.buffer, a.byteOffset, a.byteLength);
+  const vb = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= va.getUint8(i) ^ vb.getUint8(i);
+  return diff === 0;
+}
+
+/** @internal Convert a lowercase hex string to Uint8Array. Returns null on invalid input. */
+function hexToBytes(hex: string): Uint8Array | null {
+  if (hex.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    if (Number.isNaN(byte)) return null;
+    bytes[i] = byte;
+  }
+  return bytes;
+}
+
 /**
- * Validates a Stripe webhook signature against the request body.
+ * @internal HMAC-SHA256 webhook signature verification via Web Crypto API.
+ *
+ * Validates all security properties required by the Stripe signature scheme:
+ * - Format: rejects headers missing `t=` timestamp or `v1=` signature components.
+ * - Replay protection: rejects timestamps outside the ±300-second tolerance window.
+ * - Signature integrity: computes HMAC-SHA256 over `"${timestamp}.${body}"` and
+ *   compares against every `v1=` candidate in the header.
+ * - Timing safety: comparison uses `bytesEqual()` (XOR accumulator) to prevent
+ *   timing side-channel attacks that could leak information about the correct value.
+ *
+ * Edge-case test coverage lives in `index.test.ts` → `describe('validateWebhook')`:
+ * missing header, no timestamp, no v1 component, expired timestamp, HMAC mismatch,
+ * invalid JSON post-signature, and a fully valid round-trip.
+ */
+async function verifyStripeSignature(
+  body: string,
+  signature: string,
+  secret: string,
+): Promise<void> {
+  const parts = signature.split(',');
+  const timestamp = parts.find((p) => p.startsWith('t='))?.slice(2);
+  const v1Sigs = parts.filter((p) => p.startsWith('v1=')).map((p) => p.slice(3));
+
+  if (!timestamp || v1Sigs.length === 0) {
+    throw new ValidationError('Invalid stripe-signature format', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
+  }
+
+  if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) {
+    throw new ValidationError('Stripe webhook timestamp outside tolerance window', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
+  }
+
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sigBytes = new Uint8Array(
+    await crypto.subtle.sign('HMAC', key, enc.encode(`${timestamp}.${body}`)),
+  );
+
+  // Constant-time comparison across all provided v1 signatures — prevents timing
+  // attacks that could reveal information about the correct signature value.
+  const matched = v1Sigs.some((sig) => {
+    const sigBytes2 = hexToBytes(sig);
+    return sigBytes2 !== null && bytesEqual(sigBytes, sigBytes2);
+  });
+
+  if (!matched) {
+    throw new ValidationError('Stripe webhook signature mismatch', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
+  }
+}
+
+/**
+ * Validates a Stripe webhook signature using the Web Crypto API (HMAC-SHA256)
+ * and returns the parsed event. No Stripe SDK required — compatible with all
+ * Cloudflare Workers runtimes.
  *
  * @param request - Inbound webhook request.
- * @param webhookSecret - Stripe webhook signing secret.
- * @param stripeClient - Stripe client used to construct the event.
+ * @param webhookSecret - Stripe webhook signing secret (`whsec_…`).
  * @returns The parsed and verified Stripe event.
- * @throws {ValidationError} If the signature header is missing or invalid.
+ * @throws {ValidationError} If the signature header is missing, invalid, or expired.
  */
 export async function validateWebhook(
   request: Request,
   webhookSecret: string,
-  stripeClient: Stripe,
 ): Promise<Stripe.Event> {
   const signature = request.headers.get('stripe-signature');
   if (!signature) {
@@ -122,17 +240,14 @@ export async function validateWebhook(
 
   const body = await request.text();
 
+  await verifyStripeSignature(body, signature, webhookSecret);
+
   try {
-    return await stripeClient.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret,
-    );
-  } catch (err) {
-    throw new ValidationError(
-      err instanceof Error ? err.message : 'Invalid Stripe webhook',
-      { code: ErrorCodes.STRIPE_WEBHOOK_INVALID },
-    );
+    return JSON.parse(body) as Stripe.Event;
+  } catch {
+    throw new ValidationError('Invalid webhook payload JSON', {
+      code: ErrorCodes.STRIPE_WEBHOOK_INVALID,
+    });
   }
 }
 
@@ -158,6 +273,26 @@ function readNumber(source: unknown, key: string): number | null {
     return typeof value === 'number' ? value : null;
   }
   return null;
+}
+
+/**
+ * Detects the Stripe invalid-request error emitted when a checkout references
+ * a missing price object.
+ *
+ * @param err - Unknown error thrown by the Stripe SDK.
+ * @returns `true` when Stripe identifies the failure as a missing price.
+ */
+function isStripeMissingPriceError(err: unknown): err is Error {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+
+  const stripeError = err as Error & { type?: unknown; code?: unknown };
+  return (
+    stripeError.type === 'StripeInvalidRequestError'
+    && stripeError.code === 'resource_missing'
+    && /no such price/i.test(err.message)
+  );
 }
 
 function subscriptionToStatus(
@@ -220,6 +355,12 @@ export async function getSubscription(
  * `StripeInvalidRequestError: No such price` at runtime (factory#343).
  *
  * @param options - Checkout session inputs.
+ * @param options - Checkout session inputs.  `options.idempotencyKey` **must**
+ *   be a stable, unique value scoped to the business operation — e.g., a cart
+ *   ID, order ID, or server-side checkout UUID.  Callers that generate a fresh
+ *   random key on every call defeat Stripe's 24-hour deduplication window and
+ *   risk duplicate charges on retries or double-clicks.  See
+ *   {@link CreateCheckoutSessionOptions.idempotencyKey} for the full contract.
  * @returns The hosted Checkout URL.
  * @throws {ValidationError} If `priceId` is missing or malformed.
  * @throws {InternalError} If Stripe does not return a URL.
@@ -227,12 +368,22 @@ export async function getSubscription(
 export async function createCheckoutSession(
   options: CreateCheckoutSessionOptions,
 ): Promise<string> {
-  if (!options.priceId || !options.priceId.startsWith('price_')) {
+  const priceId = options.priceId?.trim() ?? '';
+
+  if (!priceId) {
+    throw new ValidationError('Stripe price ID is required', { code: ErrorCodes.VALIDATION_ERROR });
+  }
+
+  if (!priceId.startsWith('price_')) {
     throw new ValidationError(
-      `priceId must be a valid Stripe price ID (starts with "price_"); got: "${options.priceId ?? ''}". ` +
+      `priceId must be a valid Stripe price ID (starts with "price_"); got: "${priceId}". ` +
       'Read the price ID from env/secrets — never hardcode it in source.',
       { code: ErrorCodes.VALIDATION_ERROR },
     );
+  }
+
+  if (PLACEHOLDER_PRICE_ID_PATTERN.test(priceId)) {
+    throw new ValidationError('Stripe price ID must be configured with a real Stripe price');
   }
 
   const params: Stripe.Checkout.SessionCreateParams = {
@@ -240,23 +391,30 @@ export async function createCheckoutSession(
     customer: options.customerId,
     success_url: options.successUrl,
     cancel_url: options.cancelUrl,
-    line_items: [{ price: options.priceId, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
   };
-
-  if (options.paymentMethodTypes) {
-    params.payment_method_types = options.paymentMethodTypes as Stripe.Checkout.SessionCreateParams['payment_method_types'];
-  }
 
   if (options.metadata) {
     params.metadata = options.metadata;
   }
 
-  const requestOptions: Stripe.RequestOptions = {};
-  if (options.idempotencyKey) {
-    requestOptions.idempotencyKey = options.idempotencyKey;
-  }
+  const requestOptions: Stripe.RequestOptions = {
+    idempotencyKey: options.idempotencyKey,
+  };
 
-  const session = await options.stripeClient.checkout.sessions.create(params, requestOptions);
+  let session: Stripe.Checkout.Session;
+
+  try {
+    session = await options.stripeClient.checkout.sessions.create(params, requestOptions);
+  } catch (err) {
+    if (isStripeMissingPriceError(err)) {
+      throw new ValidationError('Stripe price ID is not recognized by Stripe', {
+        priceId,
+      });
+    }
+
+    throw err;
+  }
 
   if (!session.url) {
     throw new InternalError('Stripe did not return a checkout URL', {
@@ -316,27 +474,49 @@ function classifyEvent(event: Stripe.Event): SubscriptionEvent | null {
   }
 }
 
+/** TTL for processed Stripe event IDs in KV — matches Stripe's 7-day retry window. */
+const STRIPE_EVENT_DEDUP_TTL_SECONDS = 60 * 60 * 24 * 7;
+
 /**
  * Hono route handler for `/webhooks/stripe`.
  *
- * Validates the Stripe signature, classifies the subscription event,
+ * Validates the Stripe signature, deduplicates the event via KV (to guard
+ * against Stripe's at-least-once delivery), classifies the subscription event,
  * and dispatches it to the matching handler in `options.handlers`.
  *
- * @param options - Handler configuration.
+ * **Event deduplication (RED-tier billing requirement):**
+ * After signature verification, the handler checks `event.id` against
+ * `options.kvCache`. If the event has already been processed it returns
+ * HTTP 200 immediately with `{ deduplicated: true }` — no handler is called.
+ * Processed event IDs are stored with a 7-day TTL matching Stripe's retry window.
+ *
+ * @param options - Handler configuration including a KV binding for dedup.
  * @returns A Hono handler.
  */
 export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Handler {
   return async (c) => {
     let event: Stripe.Event;
     try {
-      event = await validateWebhook(c.req.raw.clone(), options.webhookSecret, options.stripeClient);
+      event = await validateWebhook(c.req.raw.clone(), options.webhookSecret);
     } catch (err) {
       const response = toErrorResponse(err);
       return c.json(response, 400 as ContentfulStatusCode);
     }
 
+    // RED-tier billing requirement: deduplicate by Stripe event.id.
+    // Stripe guarantees at-least-once delivery; the same event can arrive
+    // multiple times within its 7-day retry window.
+    const dedupKey = `stripe:event:${event.id}`;
+    const alreadyProcessed = await options.kvCache.get(dedupKey);
+    if (alreadyProcessed) {
+      return c.json({ data: { received: true, deduplicated: true }, error: null });
+    }
+
     const kind = classifyEvent(event);
     if (!kind) {
+      // Mark as processed even for unclassified events to prevent repeat delivery
+      // of non-actionable events from triggering redundant work.
+      await options.kvCache.put(dedupKey, '1', { expirationTtl: STRIPE_EVENT_DEDUP_TTL_SECONDS });
       return c.json({ data: { received: true }, error: null });
     }
 
@@ -351,6 +531,10 @@ export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Hand
     if (handler) {
       await handler(status);
     }
+
+    // Persist the event ID AFTER successful handler execution so that a handler
+    // crash does not permanently suppress retry delivery.
+    await options.kvCache.put(dedupKey, '1', { expirationTtl: STRIPE_EVENT_DEDUP_TTL_SECONDS });
 
     return c.json({ data: { received: true, kind }, error: null });
   };
