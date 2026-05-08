@@ -103,12 +103,41 @@ jobs:
       # Build @latimer-woods-tech/llm and its dep chain from source so the
       # video-studio can import it via the file: reference in package.json.
       # Order matches the dependency graph: errors → monitoring → logger → llm.
+      # Use local tarballs to avoid GitHub Packages authentication issues.
       - name: Build @latimer-woods-tech/llm from source
         run: |
-          for pkg in errors monitoring logger llm; do
-            echo "--- Building $pkg ---"
-            (cd packages/$pkg && npm ci && npm run build)
-          done
+          # Build errors (no @latimer-woods-tech deps)
+          echo "--- Building errors ---"
+          cd packages/errors
+          npm ci
+          npm run build
+          npm pack
+          cd ../..
+
+          # Build monitoring (devDep: errors)
+          echo "--- Building monitoring ---"
+          cd packages/monitoring
+          npm install --no-save ../errors/*.tgz
+          npm install
+          npm run build
+          npm pack
+          cd ../..
+
+          # Build logger (deps: errors, monitoring)
+          echo "--- Building logger ---"
+          cd packages/logger
+          npm install --no-save ../errors/*.tgz ../monitoring/*.tgz
+          npm install
+          npm run build
+          npm pack
+          cd ../..
+
+          # Build llm (deps: errors, logger; devDep: monitoring)
+          echo "--- Building llm ---"
+          cd packages/llm
+          npm install --no-save ../errors/*.tgz ../logger/*.tgz ../monitoring/*.tgz
+          npm install
+          npm run build
         env:
           NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
 
