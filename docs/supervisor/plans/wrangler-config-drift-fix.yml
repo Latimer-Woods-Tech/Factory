@@ -1,6 +1,6 @@
 id: wrangler-config-drift-fix
 version: 1
-tier: yellow
+tier: red
 triggers:
   labels_any_of: [bug]
   title_pattern: "(wrangler|binding|Hyperdrive)"
