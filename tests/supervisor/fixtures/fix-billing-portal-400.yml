@@ -1,0 +1,22 @@
+fixture_for: fix-billing-portal-400
+issue:
+  title: "fix(billing): Manage Subscription returns 400 for legacy paid users"
+  labels: [bug, area:billing]
+  body: |
+    POST /api/billing/portal returns HTTP 400 for paid users. The "Manage
+    Subscription" button appears to do nothing in both personal and practitioner
+    shells.
+
+    Root cause: handlePortal short-circuits with 400 when
+    users.stripe_customer_id is null. This affects legacy accounts where the
+    Stripe customer.created webhook raced with session creation.
+
+    App: humandesign
+    Handler file: workers/src/handlers/billing.js
+    Sentry issue: HUMANDESIGN-4902
+
+    Reproduces on any paid account created before the webhook backfill was
+    deployed. Stripe customer exists in the Stripe dashboard but the DB row
+    was never backfilled.
+
+    Pattern fix (from PR #152): implement three-step fallback chain.

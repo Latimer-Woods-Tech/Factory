@@ -1,0 +1,19 @@
+fixture_for: fix-analytics-event-whitelist
+issue:
+  title: "fix(analytics): shell-event 400 on every practitioner page load"
+  labels: [bug]
+  body: |
+    Every `POST /api/analytics/shell-event` call from the practitioner dashboard
+    returns HTTP 400 with "Unsupported shell event: practitioner_signup".
+
+    The client is sending the correct payload shape. The server's
+    PUBLIC_SHELL_EVENT_NAMES whitelist in workers/src/handlers/analytics.js
+    has never been updated to include events added during Phase 5.
+
+    Missing event names: practitioner_signup,share_card_generated,share_card_shared,theme_switched,weekly_digest_toggled
+
+    App: humandesign
+    Handler file: workers/src/handlers/analytics.js
+
+    Sentry is showing 8+ 400 errors per page load across practitioner accounts.
+    Closes the issue once the whitelist is extended — no client changes needed.

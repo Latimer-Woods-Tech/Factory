@@ -1,6 +1,6 @@
 id: db-migration-gap-fix
 version: 1
-tier: red
+tier: yellow
 triggers:
   labels_any_of: [bug]
   title_pattern: "^(MIGRATION:|DatabaseError|column .* does not exist)"
