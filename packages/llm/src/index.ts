@@ -816,7 +816,9 @@ export async function* completionStream(
       method: 'POST',
       headers: req.headers,
       body: req.body,
-      signal: opts.signal,
+      // Fall back to a 60 s default when the caller provides no signal — prevents
+      // a hung provider connection from consuming the Worker's wall-clock budget.
+      signal: opts.signal ?? AbortSignal.timeout(60_000),
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
