@@ -1120,6 +1120,12 @@ export class CampaignService {
       .filter(Boolean)
       .join('\n');
 
+    // AbortSignal.timeout(30_000) is a wall-clock I/O timeout, not CPU time.
+    // While the Worker awaits the LLM subrequest it is suspended and consumes
+    // zero CPU — only the brief setup and response-parsing phases count against
+    // the CPU budget. This pattern is safe for Unbound Workers; callers on
+    // Bundled plans should invoke generateCampaignScript from a Queue consumer
+    // or Durable Object rather than a short-lived HTTP handler.
     const llmResponse = await complete(
       [
         { role: 'system', content: systemPrompt },
