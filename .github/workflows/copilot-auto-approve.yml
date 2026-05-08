@@ -1,0 +1,101 @@
+name: Copilot Auto-Approve Loop
+
+# Closes the autonomous loop for Copilot-authored PRs:
+#   1. Watches `pull_request` and `workflow_run` for PRs by copilot-swe-agent.
+#   2. When CI ('validate' + 'Analyze (javascript)') is green AND the PR carries
+#      a Yellow-tier label (`area:ux`, `area:a11y`, `area:perf`), it:
+#        a. Marks the PR ready_for_review.
+#        b. Approves the PR via the factory-cross-repo App (CODEOWNER on apps/*/src/**).
+#        c. Adds `automerge:allow-bot-branch` so auto-merge-approved-prs.yml takes over.
+#
+# Scope-fenced: bails on Red-tier paths (workflows, packages, billing/admin/stripe handlers,
+# wrangler, capabilities.yml, migrations, memory) regardless of label.
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize, labeled]
+  workflow_run:
+    workflows: ["validate", "CodeQL"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: copilot-autoapprove-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: true
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve PR number
+        id: pr
+        env:
+          EVENT: ${{ toJSON(github.event) }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            n=$(echo "$EVENT" | jq -r '.workflow_run.pull_requests[0].number // empty')
+            if [ -z "$n" ]; then echo "no PR linked, skipping"; echo "skip=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+            echo "number=$n" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mint App token
+        if: steps.pr.outputs.skip != '1'
+        id: tok
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Evaluate + act
+        if: steps.pr.outputs.skip != '1'
+        env:
+          GH_TOKEN: ${{ steps.tok.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr view "$PR" --repo "$REPO" --json author,labels,isDraft,headRefName,files,reviewDecision,statusCheckRollup,mergeable)
+          author=$(echo "$pr" | jq -r '.author.login')
+          if [ "$author" != "Copilot" ] && [ "$author" != "copilot-swe-agent" ]; then
+            echo "Not a Copilot PR (author=$author); skipping."; exit 0
+          fi
+
+          labels=$(echo "$pr" | jq -r '[.labels[].name] | join(",")')
+          case ",$labels," in
+            *,area:ux,*|*,area:a11y,*|*,area:perf,*) ;;
+            *) echo "No Yellow-tier label; skipping."; exit 0;;
+          esac
+
+          # Red-path guard: bail if any changed file is Red-tier.
+          if echo "$pr" | jq -e '.files[].path' | grep -qE '^(\.github/workflows/|packages/|memory/|apps/[^/]+/wrangler\.|apps/[^/]+/capabilities\.yml|apps/[^/]+/workers/src/handlers/(billing|admin|stripe))' ; then
+            echo "Red-tier path touched; loop refuses to auto-approve."; exit 0
+          fi
+
+          # Require both required checks green.
+          rollup=$(echo "$pr" | jq -r '[.statusCheckRollup[]? | select(.name=="validate" or .name=="Analyze (javascript)") | .conclusion] | unique')
+          if [ "$rollup" != '["SUCCESS"]' ]; then
+            echo "Required checks not all green (got: $rollup); skipping."; exit 0
+          fi
+
+          if [ "$(echo "$pr" | jq -r .isDraft)" = "true" ]; then
+            echo "Marking ready for review."
+            gh pr ready "$PR" --repo "$REPO"
+          fi
+
+          decision=$(echo "$pr" | jq -r '.reviewDecision // ""')
+          if [ "$decision" != "APPROVED" ]; then
+            echo "Approving as factory-cross-repo[bot]."
+            gh pr review "$PR" --repo "$REPO" --approve \
+              --body "Auto-approved by Copilot Auto-Approve Loop. CODEOWNER: factory-cross-repo[bot]. Yellow-tier path, required checks green, no Red-path edits."
+          fi
+
+          if ! echo ",$labels," | grep -q ",automerge:allow-bot-branch,"; then
+            gh pr edit "$PR" --repo "$REPO" --add-label "automerge:allow-bot-branch"
+          fi
