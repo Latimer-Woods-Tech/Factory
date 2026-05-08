@@ -115,6 +115,7 @@ export function AiTab() {
   const [proposalBusy, setProposalBusy] = useState(false);
   const [proposal, setProposal] = useState<AIProposal | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
+  // Change-detection signal for sticky-bottom behavior when new chat content appears.
   const appendSignal = history.length + (partial ? 1 : 0) + (error ? 1 : 0);
   const { logRef, showJumpToLatest, jumpToLatest } = useStickyBottom(appendSignal);
 
@@ -365,6 +366,7 @@ export function AiTab() {
           {showJumpToLatest && (
             <button
               onClick={jumpToLatest}
+              aria-label="Jump to latest message"
               className="absolute right-3 bottom-3 min-h-11 min-w-11 rounded-full border border-emerald-600 bg-emerald-700/95 px-3 text-xs font-medium text-white hover:bg-emerald-600"
             >
               ↓ Jump to latest
@@ -461,17 +463,8 @@ export function AiTab() {
 
 function Bubble(props: { role: 'user' | 'assistant'; streaming?: boolean; children: ReactNode }) {
   const isUser = props.role === 'user';
-  const label = isUser
-    ? 'User message'
-    : props.streaming
-      ? 'Assistant message streaming'
-      : 'Assistant message';
   return (
-    <div
-      role="article"
-      aria-label={label}
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-    >
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`max-w-[80%] rounded px-3 py-2 whitespace-pre-wrap font-mono text-[12px] leading-snug ${
           isUser
