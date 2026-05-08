@@ -1,0 +1,114 @@
+# memory-single-writer — MA-8: enforce single-writer policy for memory/*.md files
+# Reference: docs/architecture/FACTORY_V1.md §6.4
+#
+# Blocks a pull request that edits files under memory/ when another open PR
+# already has pending changes to those files. Only one writer at a time.
+name: memory-single-writer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'memory/**'
+
+# Serialize checks for the same PR; cancel stale re-runs on synchronize.
+concurrency:
+  group: memory-single-writer-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Enforce memory single-writer policy (MA-8)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const currentPr = context.payload.pull_request.number;
+
+            // Collect memory/*.md files changed in this PR
+            const { data: currentFiles } = await github.rest.pulls.listFiles({
+              owner, repo, pull_number: currentPr,
+            });
+            const currentMemoryFiles = currentFiles
+              .filter(f => f.filename.startsWith('memory/') && f.filename.endsWith('.md'))
+              .map(f => f.filename);
+
+            if (currentMemoryFiles.length === 0) {
+              core.info('No memory/*.md files in this PR — skipping single-writer check');
+              return;
+            }
+
+            core.info(`This PR edits memory files: ${currentMemoryFiles.join(', ')}`);
+
+            // Scan all other open PRs for overlapping memory/*.md edits
+            // Paginate through all open PRs (not just the first 100)
+            let page = 1;
+            const allOpenPrs = [];
+            while (true) {
+              const { data: batch } = await github.rest.pulls.list({
+                owner, repo, state: 'open', per_page: 100, page,
+              });
+              if (batch.length === 0) break;
+              allOpenPrs.push(...batch);
+              if (batch.length < 100) break;
+              page++;
+            }
+            const otherPrs = allOpenPrs.filter(pr => pr.number !== currentPr);
+
+            // Fetch changed files for all other PRs concurrently
+            const fileResults = await Promise.all(
+              otherPrs.map(pr =>
+                github.rest.pulls.listFiles({ owner, repo, pull_number: pr.number })
+                  .then(({ data }) => ({ pr, files: data }))
+                  .catch(() => ({ pr, files: [] }))
+              )
+            );
+
+            const conflicts = [];
+            for (const { pr, files } of fileResults) {
+              const memoryFiles = files
+                .filter(f => f.filename.startsWith('memory/') && f.filename.endsWith('.md'))
+                .map(f => f.filename);
+              if (memoryFiles.length > 0) {
+                conflicts.push({ number: pr.number, url: pr.html_url, files: memoryFiles });
+              }
+            }
+
+            if (conflicts.length === 0) {
+              core.info(`Memory single-writer check passed — sole writer of: ${currentMemoryFiles.join(', ')}`);
+              return;
+            }
+
+            const conflictList = conflicts
+              .map(c => `- #${c.number} — ${c.url}\n  Files: \`${c.files.join('`, `')}\``)
+              .join('\n');
+
+            const body = [
+              '## ⚠️ Memory single-writer policy violation (MA-8)',
+              '',
+              'This PR edits `memory/*.md` files, but the following open PR(s) already have pending memory edits:',
+              '',
+              conflictList,
+              '',
+              'Per [§6.4 Memory single-writer](https://github.com/Latimer-Woods-Tech/factory/blob/main/docs/architecture/FACTORY_V1.md#64-memory-single-writer): only one PR at a time',
+              'may write to `memory/*.md` files to prevent concurrent edit races.',
+              '',
+              '**Action required:** wait for the conflicting PR(s) to merge or close before',
+              'landing memory edits in this PR.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: currentPr, body,
+            });
+
+            core.setFailed(
+              `Memory single-writer policy violated: PR(s) ${conflicts.map(c => '#' + c.number).join(', ')} already edit memory/*.md`
+            );

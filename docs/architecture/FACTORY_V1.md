@@ -526,9 +526,17 @@ ADRs are immutable once `Status: Accepted`. Revision = new ADR that supersedes, 
 
 ### 6.4 Memory single-writer
 
-Per MA-8 (factory#86): only one Sauna instance edits `memory/*.md` at a time. Running two Saunas in parallel writing memory creates races. This policy is enforced by discipline until MA-8 ships a mechanical lock.
+Per MA-8 (factory#86): only one Sauna instance edits `memory/*.md` at a time. Running two Saunas in parallel writing memory creates races.
 
-When the supervisor runs daily, it becomes an additional memory writer. The lock mechanism (LockDO per memory file) ships alongside the supervisor scaffold (SUP-3.4).
+**Mechanical enforcement (shipped in MA-8):**
+
+1. **`supervisor-loop.yml` concurrency group** (`group: supervisor-loop`, `cancel-in-progress: false`) — queues supervisor runs so two instances never execute simultaneously. The second run waits until the first completes; no memory-write tick is lost.
+
+2. **`memory-single-writer.yml` PR check** — blocks any PR that edits `memory/*.md` when another open PR already has pending memory edits. Posts a blocking comment identifying the conflicting PR(s) and fails the required status check.
+
+3. **`CODEOWNERS` `memory/**` entry** — pins `@adrper79-dot` as sole required reviewer for all `memory/` changes, so the branch-protection review gate fires on every memory write regardless of tier.
+
+When the supervisor runs daily, it becomes an additional memory writer. A second Sauna instance must treat `memory/*.md` as read-only and propose edits as PRs; the `memory-single-writer` check enforces this mechanically.
 
 ---
 
@@ -684,7 +692,7 @@ Decisions don't close via chat. Ever.
 
 ### 14.b Second Sauna instance (parallel worker)
 
-1. Confirm MA-8 (memory single-writer) status. Until MA-8 ships: only one Sauna at a time writes `memory/*.md`. The second Sauna must read-only memory and propose edits as PRs.
+1. MA-8 (memory single-writer) is mechanically enforced: `memory-single-writer.yml` blocks any PR that edits `memory/*.md` while another PR already has pending memory edits. The second Sauna must treat `memory/*.md` as read-only and propose edits as PRs.
 2. Agent claims issues via `agent:claimed:sauna-2` label (or similar discriminator).
 3. Same fridge rules apply.
 4. Coordinate via issue comments, not via shared memory.

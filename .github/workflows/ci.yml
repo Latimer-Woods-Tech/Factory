@@ -20,12 +20,32 @@ jobs:
       packages: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@latimer-woods-tech'
+      - name: Detect code changes
+        id: code-changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            changed=$(git diff --name-only "$BASE" HEAD 2>/dev/null \
+              | grep -E '^(packages|apps|scripts)/' | head -1 || true)
+            if [ -n "$changed" ]; then
+              echo "has_code=true" >> "$GITHUB_OUTPUT"
+              echo "Code changes detected — running full package validation."
+            else
+              echo "has_code=false" >> "$GITHUB_OUTPUT"
+              echo "No package/app/script changes — skipping package validation loop."
+            fi
+          else
+            echo "has_code=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Validate packages in dependency order
+        if: steps.code-changes.outputs.has_code == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -56,6 +76,8 @@ jobs:
             admin
             video
             schedule
+            llm-meter
+            studio-core
           )
 
           for package in "${packages[@]}"; do
@@ -64,7 +86,7 @@ jobs:
             npm ci --ignore-scripts
             npm run lint
             npm run typecheck
-            npm run test
+            npm run test -- --coverage
             npm run build
             cd ../..
           done
