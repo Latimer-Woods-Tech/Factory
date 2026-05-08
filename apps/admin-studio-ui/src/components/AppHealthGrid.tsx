@@ -68,9 +68,9 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
         {data?.map((row) => {
           const drift = row.reportedEnv && row.reportedEnv !== row.env;
           return (
-            <li key={`${row.id}-${row.env}`} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <li key={`${row.id}-${row.env}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-sm">
               <span className={`inline-block h-2 w-2 rounded-full ${statusDotClass(row.status)}`} />
-              <span className="font-medium text-white">{row.label}</span>
+              <span className="font-medium text-white min-w-0 truncate">{row.label}</span>
               <span className={`rounded border px-2 py-0.5 text-xs ${statusBadgeClass(row.status)}`}>
                 {row.status}
               </span>
@@ -85,7 +85,7 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
                 href={row.url}
                 target="_blank"
                 rel="noreferrer"
-                className="ml-auto text-xs text-slate-500 hover:text-slate-300"
+                className="ml-auto text-xs text-slate-500 hover:text-slate-300 truncate max-w-[160px]"
               >
                 {new URL(row.url).hostname}
               </a>

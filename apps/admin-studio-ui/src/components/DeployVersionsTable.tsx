@@ -47,6 +47,7 @@ export function DeployVersionsTable({ env }: Props) {
         </p>
       )}
       {data && data.configured && (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-xs uppercase text-slate-500">
             <tr>
@@ -80,6 +81,7 @@ export function DeployVersionsTable({ env }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       )}
       {!data && !err && <p className="px-4 py-3 text-sm text-slate-500">Loading…</p>}
     </div>

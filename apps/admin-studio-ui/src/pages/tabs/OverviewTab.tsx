@@ -129,7 +129,7 @@ export function OverviewTab() {
             ) : !posthog.configured ? (
               <p className="mt-1 text-xs text-amber-300">{posthog.note}</p>
             ) : (
-              <ul className="mt-2 grid grid-cols-3 gap-3">
+              <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
                 {posthog.tiles.map((t) => (
                   <li
                     key={t.id}

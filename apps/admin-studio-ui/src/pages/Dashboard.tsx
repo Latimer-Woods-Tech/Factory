@@ -75,7 +75,7 @@ export function Dashboard() {
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              `flex-shrink-0 px-3 py-2 text-xs whitespace-nowrap ${
+              `flex-shrink-0 px-2 py-2 text-xs whitespace-nowrap ${
                 isActive ? 'text-white border-b-2 border-emerald-500' : 'text-slate-400'
               }`
             }
