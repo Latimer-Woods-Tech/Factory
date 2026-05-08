@@ -83,11 +83,20 @@ export function createDb(hyperdrive: HyperdriveBinding): FactoryDb {
 }
 
 /**
- * Sets `app.tenant_id` for RLS policies and runs the supplied callback.
+ * Sets `app.tenant_id` via `SET LOCAL` inside an explicit transaction so that
+ * RLS policies keyed on `current_setting('app.tenant_id', TRUE)` filter
+ * correctly.
+ *
+ * `SET LOCAL` only takes effect for the duration of the surrounding transaction.
+ * Without an explicit transaction, `set_config(..., is_local := true)` falls
+ * back to session scope, which leaks the tenant value across requests on the
+ * same pooled connection.  Wrapping the callback in `db.transaction()` ensures
+ * the setting is scoped to a single transaction and automatically cleared when
+ * the transaction commits or rolls back.
  *
  * @param db - Drizzle client returned by {@link createDb}.
  * @param tenantId - Tenant identifier injected into the RLS policy.
- * @param fn - Callback invoked with the configured client.
+ * @param fn - Callback invoked with the transaction-scoped client.
  * @returns The resolved value of `fn`.
  */
 export async function withTenant<T>(
@@ -101,8 +110,11 @@ export async function withTenant<T>(
     });
   }
 
-  await db.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
-  return fn(db);
+  return (db as unknown as PostgresJsDatabase<Record<string, never>>).transaction(async (tx) => {
+    const txDb = tx as unknown as FactoryDb;
+    await txDb.execute(sql`SET LOCAL app.tenant_id = ${tenantId}`);
+    return fn(txDb);
+  });
 }
 
 /**
