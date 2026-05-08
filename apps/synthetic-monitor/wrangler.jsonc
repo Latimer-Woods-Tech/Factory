@@ -11,9 +11,15 @@
       "*/5 * * * *"
     ]
   },
-  "flagship": { "binding": "FLAGS" },
+  "flagship": {
+    "binding": "FLAGS"
+  },
   "d1_databases": [
-    { "binding": "FLAG_TELEMETRY", "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4", "database_name": "flag-meter" }
+    {
+      "binding": "FLAG_TELEMETRY",
+      "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4",
+      "database_name": "flag-meter"
+    }
   ],
   "vars": {
     "ENVIRONMENT": "development",
@@ -48,7 +54,7 @@
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "TARGETS_JSON": "[{\"id\":\"selfprime.home\",\"url\":\"https://selfprime.net/\",\"contains\":\"Prime Self\"},{\"id\":\"selfprime.pricing\",\"url\":\"https://selfprime.net/pricing.html\",\"contains\":\"Pricing\"},{\"id\":\"selfprime.practitioners\",\"url\":\"https://selfprime.net/practitioners.html\",\"contains\":\"Practitioner\"},{\"id\":\"selfprime.api.health\",\"url\":\"https://prime-self.adrper79.workers.dev/health\",\"contains\":\"ok\"},{\"id\":\"prime-self.api\",\"url\":\"https://prime-self.adrper79.workers.dev/health\",\"expectedStatus\":200},{\"id\":\"admin-studio.staging.health\",\"url\":\"https://admin-studio-staging.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"schedule-worker.health\",\"url\":\"https://schedule-worker.adrper79.workers.dev/health\",\"expectedStatus\":200},{\"id\":\"video-cron.health\",\"url\":\"https://video-cron.adrper79.workers.dev/health\",\"expectedStatus\":200},{\"id\":\"schedule-worker.manifest\",\"url\":\"https://schedule-worker.adrper79.workers.dev/manifest\",\"expectedStatus\":200,\"contains\":\"manifestVersion\"},{\"id\":\"video-cron.manifest\",\"url\":\"https://video-cron.adrper79.workers.dev/manifest\",\"expectedStatus\":200,\"contains\":\"manifestVersion\"},{\"id\":\"admin-studio.manifest\",\"url\":\"https://admin-studio-staging.adrper79.workers.dev/manifest\",\"expectedStatus\":200,\"contains\":\"manifestVersion\"},{\"id\":\"slo.journey.render-ingest\",\"url\":\"https://schedule-worker.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.video-dispatch\",\"url\":\"https://video-cron.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.auth-api\",\"url\":\"https://prime-self.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane\",\"url\":\"https://admin-studio-staging.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.webhook\",\"url\":\"https://schedule-worker.adrper79.workers.dev/stripe/health\",\"expectedStatus\":200,\"contains\":\"ok\"}]"
+        "TARGETS_JSON": "[{\"id\":\"selfprime.home\",\"url\":\"https://selfprime.net/\",\"contains\":\"Prime Self\"},{\"id\":\"selfprime.pricing\",\"url\":\"https://selfprime.net/pricing.html\",\"contains\":\"Pricing\"},{\"id\":\"selfprime.practitioners\",\"url\":\"https://selfprime.net/practitioners.html\",\"contains\":\"Practitioner\"},{\"id\":\"selfprime.api.health\",\"url\":\"https://api.selfprime.net/health\",\"contains\":\"ok\"},{\"id\":\"prime-self.api\",\"url\":\"https://api.selfprime.net/health\",\"expectedStatus\":200},{\"id\":\"admin-studio.staging.health\",\"url\":\"https://admin-studio-staging.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"admin-studio.production.health\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"schedule-worker.health\",\"url\":\"https://schedule.latwoodtech.work/health\",\"expectedStatus\":200},{\"id\":\"schedule-worker.manifest\",\"url\":\"https://schedule.latwoodtech.work/manifest\",\"expectedStatus\":200,\"contains\":\"manifestVersion\"},{\"id\":\"video-cron.health\",\"url\":\"https://video-cron.adrper79.workers.dev/health\",\"expectedStatus\":200},{\"id\":\"video-cron.manifest\",\"url\":\"https://video-cron.adrper79.workers.dev/manifest\",\"expectedStatus\":200,\"contains\":\"manifestVersion\"},{\"id\":\"admin-studio.manifest\",\"url\":\"https://admin-studio-staging.adrper79.workers.dev/manifest\",\"expectedStatus\":200,\"contains\":\"manifestVersion\"},{\"id\":\"slo.journey.render-ingest\",\"url\":\"https://schedule.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.video-dispatch\",\"url\":\"https://video-cron.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.auth-api\",\"url\":\"https://api.selfprime.net/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane\",\"url\":\"https://admin-studio-staging.adrper79.workers.dev/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane-prod\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.webhook\",\"url\":\"https://schedule.latwoodtech.work/stripe/health\",\"expectedStatus\":200,\"contains\":\"ok\"}]"
       },
       "kv_namespaces": [
         {
