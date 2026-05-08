@@ -6,6 +6,10 @@ export interface Env {
   LOCK: DurableObjectNamespace;
   MEMORY: D1Database;
   LLM_LEDGER: D1Database;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
   AI_GATEWAY_BASE_URL: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
@@ -15,6 +19,16 @@ export interface Env {
   VERTEX_LOCATION: string;
   PER_RUN_CAP_CENTS?: string;
   JWT_SECRET: string;
+  /** GitHub App numeric ID. Set via `wrangler secret put FACTORY_APP_ID`. */
+  FACTORY_APP_ID: string;
+  /** GitHub App RSA private key PEM. Set via `wrangler secret put FACTORY_APP_PRIVATE_KEY`. */
+  FACTORY_APP_PRIVATE_KEY: string;
+  /** GitHub App installation ID for Latimer-Woods-Tech/factory. Set via `wrangler secret put FACTORY_APP_INSTALLATION_ID`. */
+  FACTORY_APP_INSTALLATION_ID: string;
+  /** Pushover application token. Set via `wrangler secret put PUSHOVER_TOKEN`. */
+  PUSHOVER_TOKEN: string;
+  /** Pushover user key. Set via `wrangler secret put PUSHOVER_USER_KEY`. */
+  PUSHOVER_USER_KEY: string;
 }
 
 /**
