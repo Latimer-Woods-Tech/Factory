@@ -87,6 +87,14 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@adrper79-dot'
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
       # Build @latimer-woods-tech/llm and its dep chain from source so the
       # video-studio can import it via the file: reference in package.json.
       # Order matches the dependency graph: errors → monitoring → logger → llm.
