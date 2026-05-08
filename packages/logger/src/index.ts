@@ -178,3 +178,60 @@ export function sanitizeId(id: string | null | undefined): string {
   if (!id || typeof id !== 'string') return '';
   return id.length > 8 ? id.slice(0, 8) + '\u2026' : id;
 }
+
+/**
+ * Hono middleware that propagates or mints an `x-request-id` header for
+ * distributed tracing. Reads the incoming `x-request-id` header (forwarded
+ * by upstream services) or generates a new UUID when absent. Stores the ID
+ * in Hono context (`c.get('requestId')`) and echoes it in the response header
+ * so downstream consumers can correlate log lines across service hops.
+ *
+ * @returns A typed Hono `MiddlewareHandler` compatible with any `Bindings` shape.
+ *
+ * @example
+ * app.use('*', requestTracingMiddleware());
+ */
+export function requestTracingMiddleware<
+  E extends { Bindings: Record<string, unknown> } = { Bindings: Record<string, unknown> },
+>(): MiddlewareHandler<E> {
+  return async (c, next) => {
+    const id = c.req.header('x-request-id') ?? crypto.randomUUID();
+    c.set('requestId', id as never);
+    await next();
+    c.res.headers.set('x-request-id', id);
+  };
+}
+
+/**
+ * Reads the `requestId` stored by {@link requestTracingMiddleware} from the
+ * current Hono context.
+ *
+ * @param c - Hono context (or any object with a typed `get` accessor).
+ * @returns The request-correlation ID, or `undefined` if the middleware has
+ *   not run yet.
+ */
+export function getRequestId(c: { get(key: 'requestId'): string | undefined }): string | undefined {
+  return c.get('requestId');
+}
+
+/**
+ * Returns a `fetch`-compatible function that automatically attaches
+ * `x-request-id: <requestId>` to every outbound request, enabling
+ * end-to-end tracing across Worker-to-Worker calls.
+ *
+ * @param requestId - The correlation ID from the current request context.
+ * @param baseFetch - Override for the global `fetch` (useful in tests).
+ * @returns A drop-in replacement for `fetch` with the tracing header injected.
+ *
+ * @example
+ * const tfetch = tracedFetch(getRequestId(c) ?? crypto.randomUUID());
+ * const resp = await tfetch('https://other-service.adrper79.workers.dev/api/data');
+ */
+export function tracedFetch(requestId: string, baseFetch: typeof fetch = fetch): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set('x-request-id', requestId);
+    const signal = init?.signal ?? AbortSignal.timeout(30_000);
+    return baseFetch(input, { ...init, headers, signal });
+  };
+}
