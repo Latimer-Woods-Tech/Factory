@@ -1,0 +1,112 @@
+id: fix-mobile-layout
+version: 1
+tier: yellow
+description: "Mobile viewport layout regression — typically a CSS grid/flex issue at ≤768px or ≤390px causing elements to overflow, stack incorrectly, or become unreachable by touch."
+trigger_keywords: [mobile, viewport, layout, responsive, 390px, 768px, hamburger, hero, nav, css]
+triggers:
+  labels_any_of: [bug, area:frontend]
+  title_pattern: "(mobile.*layout|layout.*mobile|mobile.*viewport|viewport.*break|hero.*390|nav.*mobile|hamburger|responsive.*break)"
+  body_patterns:
+    - "(390px|768px|mobile.*viewport|@media.*max-width|overflow.*hidden|min-width:0|flex-shrink|grid.*1fr)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city]
+    source: issue_body
+    referential_check: factory_admin.repo.health
+  - name: css_file
+    type: string
+    validator: "^[a-zA-Z0-9_.\\-/]+\\.css$"
+    source: issue_body
+    default: "client/public/css/landing.css"
+  - name: breakpoint
+    type: enum
+    values: [390px, 768px, 1024px, other]
+    source: issue_body
+    default: 768px
+  - name: layout_issue_kind
+    type: enum
+    values: [grid-overflow, nav-links-reachable-offscreen, hero-column-blowout, tap-target-too-small, horizontal-scroll, other]
+    source: issue_body
+    default: other
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      path: "$slots.css_file"
+      ref: "main"
+    intent: "Read the CSS file to understand the existing breakpoint rules and locate the grid/flex context causing the regression."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      body: |
+        **Supervisor diagnosis — mobile layout regression in `$slots.affected_app`**
+
+        Breakpoint: `$slots.breakpoint`
+        CSS file: `$slots.css_file`
+        Issue kind: `$slots.layout_issue_kind`
+
+        **Known fix patterns (from HumanDesign PRs #150, #125, #119, #56):**
+        - `grid-overflow`: add `min-width: 0` to the 1fr grid child; add `max-height` cap on media-child wraps at narrow widths
+        - `nav-links-reachable-offscreen`: add `visibility: hidden` to the closed off-screen drawer; add `overflow-x: hidden` on the page root at `≤$slots.breakpoint`
+        - `hero-column-blowout`: set `order: 2` (not `order: -1`) so video renders below text; add `width: 100%` on the video wrap
+        - `tap-target-too-small`: wrap `<input>` in a 44×44px `<span>` overlay (WCAG 2.5.5); see PR #119 pattern
+        - `horizontal-scroll`: add `overflow-x: hidden` to the nearest scrollable ancestor
+
+        CSS file excerpt (current state):
+        ```css
+        $s1.excerpt
+        ```
+
+        A draft PR will be opened with the minimal targeted fix at `$slots.breakpoint`.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a diagnosis comment with the known fix pattern for this breakpoint and layout kind."
+    requires_human_review: false
+  - id: s3
+    tool: github.openPR
+    depends_on: s2
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      base: "main"
+      head: "supervisor/mobile-layout-$slots.affected_app"
+      title: "fix(mobile): resolve $slots.layout_issue_kind at $slots.breakpoint"
+      body: |
+        Closes #$triggers.issue_number
+
+        **Root cause:** CSS layout regression at `$slots.breakpoint` — `$slots.layout_issue_kind` in `$slots.css_file`.
+
+        **Fix:** Targeted CSS-only change at the `@media (max-width: $slots.breakpoint)` breakpoint. No JS or markup changes (unless nav toggle requires it).
+
+        Pattern source: HumanDesign PRs #150, #125, #119.
+        Diagnosis: see issue comment $s2.comment_url
+
+        **Test plan:**
+        - [ ] Resize browser to `$slots.breakpoint` — verify the layout issue is resolved
+        - [ ] Resize to >768px — confirm desktop layout is unaffected
+        - [ ] CI green on deploy-frontend workflow
+      draft: true
+    intent: "Open a draft PR with the minimal CSS fix for the mobile layout regression."
+    requires_human_review: true
+acceptance_gate:
+  description: "Draft PR exists on the target repo targeting the correct CSS file at the identified breakpoint."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=Latimer-Woods-Tech/$slots.affected_app pr=$s3.number files_changed"
+    assert: "files_changed.any(f => f.path == '$slots.css_file')"
+rollback:
+  - on_step: s3
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      pr_number: "$s3.pr_number"
+      comment: "Supervisor rollback: closing mobile layout fix PR. Manual CSS investigation required."
