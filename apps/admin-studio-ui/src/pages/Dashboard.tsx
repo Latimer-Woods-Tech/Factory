@@ -3,28 +3,69 @@
  * fill in over Phases B–G. Phase A renders stub panels with real data
  * from /me and /tests so we can verify the auth + audit chain end-to-end.
  */
-import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
-import { OverviewTab } from './tabs/OverviewTab.js';
-import { TestsTab } from './tabs/TestsTab.js';
-import { CodeTab } from './tabs/CodeTab.js';
-import { AiTab } from './tabs/AiTab.js';
-import { AuditTab } from './tabs/AuditTab.js';
-import { FunctionsTab } from './tabs/FunctionsTab.js';
-import { TimelineTab } from './tabs/TimelineTab.js';
-import { FlagsTab } from './tabs/FlagsTab.js';
+import { lazy, Suspense } from 'react';
+import type { ComponentType, LazyExoticComponent } from 'react';
+import { NavLink, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 
-const TABS = [
-  { to: '/overview',  label: 'Overview' },
-  { to: '/tests',     label: 'Tests' },
-  { to: '/code',      label: 'Code' },
-  { to: '/ai',        label: 'AI Chat' },
-  { to: '/functions', label: 'Functions' },
-  { to: '/timeline',  label: 'Timeline' },
-  { to: '/flags',     label: 'Flags' },
-  { to: '/audit',     label: 'Audit Log' },
+interface TabDefinition {
+  to: string;
+  label: string;
+  Component: LazyExoticComponent<ComponentType>;
+  preload: () => Promise<unknown>;
+}
+
+function defineTab<T extends ComponentType>(
+  to: string,
+  label: string,
+  importTab: () => Promise<{ default: T }>,
+): TabDefinition {
+  const Component = lazy(importTab);
+  return {
+    to,
+    label,
+    Component,
+    preload: importTab,
+  };
+}
+
+const TABS: ReadonlyArray<TabDefinition> = [
+  defineTab('/overview', 'Overview', () =>
+    import('./tabs/OverviewTab.js').then((m) => ({ default: m.OverviewTab })),
+  ),
+  defineTab('/tests', 'Tests', () =>
+    import('./tabs/TestsTab.js').then((m) => ({ default: m.TestsTab })),
+  ),
+  defineTab('/code', 'Code', () =>
+    import('./tabs/CodeTab.js').then((m) => ({ default: m.CodeTab })),
+  ),
+  defineTab('/ai', 'AI Chat', () =>
+    import('./tabs/AiTab.js').then((m) => ({ default: m.AiTab })),
+  ),
+  defineTab('/functions', 'Functions', () =>
+    import('./tabs/FunctionsTab.js').then((m) => ({ default: m.FunctionsTab })),
+  ),
+  defineTab('/timeline', 'Timeline', () =>
+    import('./tabs/TimelineTab.js').then((m) => ({ default: m.TimelineTab })),
+  ),
+  defineTab('/flags', 'Flags', () =>
+    import('./tabs/FlagsTab.js').then((m) => ({ default: m.FlagsTab })),
+  ),
+  defineTab('/audit', 'Audit Log', () =>
+    import('./tabs/AuditTab.js').then((m) => ({ default: m.AuditTab })),
+  ),
 ];
 
 export function Dashboard() {
+  const location = useLocation();
+  const activeTab = TABS.find((tab) => location.pathname.endsWith(tab.to));
+
+  function prefetchTab(tab: TabDefinition): void {
+    if (activeTab?.to === tab.to) {
+      return;
+    }
+    void tab.preload();
+  }
+
   return (
     <div className="flex h-[calc(100vh-44px)] overflow-hidden">
       {/* Sidebar — desktop only */}
@@ -37,6 +78,9 @@ export function Dashboard() {
             <li key={tab.to}>
               <NavLink
                 to={tab.to}
+                onMouseEnter={() => prefetchTab(tab)}
+                onFocus={() => prefetchTab(tab)}
+                onTouchStart={() => prefetchTab(tab)}
                 className={({ isActive }) =>
                   `block rounded px-3 py-2 text-sm ${
                     isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
@@ -52,17 +96,14 @@ export function Dashboard() {
 
       {/* Main content — pad bottom on mobile so bottom nav doesn't overlap */}
       <main className="flex-1 overflow-auto p-4 md:p-6 pb-16 md:pb-6">
-        <Routes>
-          <Route path="/" element={<Navigate to="/overview" replace />} />
-          <Route path="/overview" element={<OverviewTab />} />
-          <Route path="/tests" element={<TestsTab />} />
-          <Route path="/code" element={<CodeTab />} />
-          <Route path="/ai" element={<AiTab />} />
-          <Route path="/functions" element={<FunctionsTab />} />
-          <Route path="/timeline" element={<TimelineTab />} />
-          <Route path="/flags" element={<FlagsTab />} />
-          <Route path="/audit" element={<AuditTab />} />
-        </Routes>
+        <Suspense fallback={<TabSkeleton />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/overview" replace />} />
+            {TABS.map((tab) => (
+              <Route key={tab.to} path={tab.to} element={<tab.Component />} />
+            ))}
+          </Routes>
+        </Suspense>
       </main>
 
       {/* Bottom nav — mobile only */}
@@ -74,6 +115,9 @@ export function Dashboard() {
           <NavLink
             key={tab.to}
             to={tab.to}
+            onMouseEnter={() => prefetchTab(tab)}
+            onFocus={() => prefetchTab(tab)}
+            onTouchStart={() => prefetchTab(tab)}
             className={({ isActive }) =>
               `flex-shrink-0 px-3 py-2 text-xs whitespace-nowrap ${
                 isActive ? 'text-white border-b-2 border-emerald-500' : 'text-slate-400'
@@ -85,5 +129,15 @@ export function Dashboard() {
         ))}
       </nav>
     </div>
+  );
+}
+
+function TabSkeleton() {
+  return (
+    <section className="animate-pulse space-y-4" aria-busy="true" aria-label="Loading tab">
+      <div className="h-7 w-48 rounded bg-slate-800" />
+      <div className="h-28 rounded bg-slate-900" />
+      <div className="h-28 rounded bg-slate-900" />
+    </section>
   );
 }
