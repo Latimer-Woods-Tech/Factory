@@ -139,8 +139,8 @@ jobs:
         run: |
           target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
           if [ "$target_env" = "production" ]; then
-            base_url="https://api.apunlimited.com"
+            base_url="https://admin.latwoodtech.work"
           else
-            base_url="https://api-staging.apunlimited.com"
+            base_url="https://admin-studio-staging.adrper79.workers.dev"
           fi
           node apps/admin-studio/scripts/verify-deployment.mjs "$target_env" --base-url "$base_url"

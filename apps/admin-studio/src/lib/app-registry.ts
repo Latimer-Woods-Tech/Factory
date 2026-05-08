@@ -33,6 +33,7 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     label: 'Admin Studio',
     productionWorkerName: 'admin-studio-production',
     stagingWorkerName: 'admin-studio-staging',
+    productionCustomDomain: 'admin.latwoodtech.work',
   },
   {
     id: 'prime-self',
@@ -48,6 +49,7 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     productionWorkerName: 'schedule-worker',
     // No distinct staging worker is currently registry-backed for schedule-worker.
     stagingWorkerName: 'schedule-worker',
+    productionCustomDomain: 'schedule.latwoodtech.work',
   },
   {
     id: 'video-cron',
@@ -55,6 +57,20 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     productionWorkerName: 'video-cron',
     // No distinct staging worker is currently registry-backed for video-cron.
     stagingWorkerName: 'video-cron',
+  },
+  {
+    id: 'capricast-api',
+    label: 'Capricast API',
+    productionWorkerName: 'capricast-api',
+    stagingWorkerName: 'capricast-api-staging',
+    productionCustomDomain: 'api.capricast.com',
+  },
+  {
+    id: 'cypher-healing',
+    label: 'Cypher of Healing',
+    productionWorkerName: 'cypher-healing',
+    stagingWorkerName: 'cypher-healing',
+    productionCustomDomain: 'api.cipherofhealing.com',
   },
 ] as const;
 
