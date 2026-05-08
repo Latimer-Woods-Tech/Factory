@@ -66,6 +66,10 @@ export interface Env {
   MONITOR_KV?: KVNamespace;
   /** Service binding to schedule-worker for /diagnostics calls. */
   SCHEDULE_WORKER?: Fetcher;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
 
   // ── T3: Creator onboarding + payout operations ────────────────────────────────────────────────────────
   /** Stripe secret key for Connect OAuth and transfer operations. */
@@ -78,4 +82,26 @@ export interface Env {
   STRIPE_SUBSCRIPTION_WEBHOOK_SECRET?: string;
   /** Public base URL of the app (e.g. "https://studio.adrper79.workers.dev"). */
   APP_URL?: string;
+
+  // ── Digest: 12-hour scheduled email + audio ─────────────────────────────────────────────────────────
+  /** GitHub App ID for digest data collection. */
+  FACTORY_APP_ID?: string;
+  /** GitHub App private key (PEM) for JWT signing. */
+  FACTORY_APP_PRIVATE_KEY?: string;
+  /** GitHub App installation ID for the Latimer-Woods-Tech org. */
+  FACTORY_APP_INSTALLATION_ID?: string;
+  /** ElevenLabs API key for TTS audio generation. */
+  ELEVENLABS_API_KEY?: string;
+  /** ElevenLabs voice ID to use for digest narration. */
+  ELEVENLABS_VOICE_DEFAULT?: string;
+  /** Resend API key for email delivery. */
+  RESEND_API_KEY?: string;
+  /** Recipient email address for digest emails. Defaults to adrper79@gmail.com. */
+  DIGEST_TO_EMAIL?: string;
+  /** Public domain of the R2 bucket used to serve digest audio files. */
+  R2_PUBLIC_DOMAIN?: string;
+  /** R2 bucket binding for storing digest audio MP3 files. */
+  DIGEST_R2?: R2Bucket;
+  /** Optional factory-supervisor base URL for fetching last-run state. */
+  SUPERVISOR_URL?: string;
 }
