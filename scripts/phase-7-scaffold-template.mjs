@@ -98,7 +98,8 @@ const STANDARD_PACKAGES = [
   '@latimer-woods-tech/neon@0.2.0',
   '@latimer-woods-tech/stripe@0.2.0',
   '@latimer-woods-tech/analytics@0.2.0',
-  '@latimer-woods-tech/email@0.2.0'
+  '@latimer-woods-tech/email@0.2.0',
+  '@latimer-woods-tech/flags@0.1.0',
 ];
 
 /**

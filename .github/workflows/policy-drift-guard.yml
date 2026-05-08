@@ -2,7 +2,7 @@ name: Policy Drift Guard
 
 on:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -216,6 +216,7 @@ jobs:
             echo "::warning::Skipping branch protection check: token lacks admin access (HTTP 403)."
           elif [ "$code" = "200" ]; then
             FAILED=0
+            REQUIRED_CONTEXTS='["CI / validate","CodeQL Security Analysis / Analyze (javascript)","Dependency Review / dependency-review"]'
 
             # Require pull requests
             require_pr=$(jq -r 'if .required_pull_request_reviews then "true" else "false" end' "$body")
@@ -235,6 +236,15 @@ jobs:
             codeowners=$(jq -r '.required_pull_request_reviews.require_code_owner_reviews // false' "$body")
             if [ "$codeowners" != "true" ]; then
               echo "::error::factory main does not require CODEOWNERS review. (SEC-1.2)"
+              FAILED=1
+            fi
+
+            # Require the expected status checks
+            missing_contexts=$(jq -rn --argjson actual "$(jq -c '.required_status_checks.contexts // []' "$body")" --argjson required "$REQUIRED_CONTEXTS" '
+              [ $required[] | select(($actual | index(.)) == null) ]
+            ')
+            if [ "$missing_contexts" != "[]" ]; then
+              echo "::error::factory main is missing required status checks: $missing_contexts (SEC-1.2)"
               FAILED=1
             fi
 
@@ -263,6 +273,7 @@ jobs:
             fi
 
             echo "require_pr=$require_pr, dismiss_stale=$dismiss_stale, codeowners=$codeowners, linear=$linear, allow_force_pushes=$force"
+            echo "required_contexts=$(jq -c '.required_status_checks.contexts // []' "$body")"
             if [ "$FAILED" -eq 1 ]; then
               echo "Run the apply-sec-hardening workflow to restore the required settings."
               exit 1

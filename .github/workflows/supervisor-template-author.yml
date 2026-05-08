@@ -1,0 +1,135 @@
+name: Supervisor Template Author
+
+# Fires when an issue receives the supervisor:no-template label.
+# Runs the full draft → lint → critique pipeline and, on success, commits the
+# new template, regenerates templates.generated.json, and re-queues the issue.
+# On failure it posts a comment and sends a Pushover alert — no retry loop,
+# so the issue stays labeled supervisor:no-template for manual intervention.
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  author-template:
+    if: github.event.label.name == 'supervisor:no-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Debounce rapid label bursts
+        run: sleep 5
+
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # js-yaml is resolved from apps/supervisor/node_modules — must install first
+      - name: Install supervisor workspace deps
+        run: npm ci --prefix apps/supervisor
+
+      - name: Author template (draft → lint → critique)
+        id: author
+        run: node scripts/template-author.mjs
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE:  ${{ github.event.issue.title }}
+          ISSUE_BODY:   ${{ github.event.issue.body }}
+          ISSUE_LABELS: ${{ toJson(github.event.issue.labels) }}
+          REPO:         ${{ github.repository }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL:   claude-haiku-4-5-20251001
+          GH_TOKEN:     ${{ steps.app-token.outputs.token }}
+
+      - name: Regenerate templates.generated.json + .ts
+        run: node scripts/generate-supervisor-templates.mjs
+
+      - name: Commit template + generated artifacts
+        run: |
+          git config user.name  "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+          git add docs/supervisor/plans/${{ steps.author.outputs.template_id }}.yml
+          git add docs/supervisor/template-registry.yml
+          git add apps/supervisor/src/planner/templates.generated.json
+          git add apps/supervisor/src/planner/templates.generated.ts
+          git commit -m "feat(supervisor): auto-author template ${{ steps.author.outputs.template_id }} (issue #${{ github.event.issue.number }})"
+          git push
+
+      - name: Re-queue issue and post notice
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --remove-label "supervisor:no-template" \
+            --add-label "supervisor:approved-source"
+
+          gh issue comment ${{ github.event.issue.number }} --body "$(cat <<'EOF'
+          **Supervisor template auto-authored** ✓
+
+          Template \`${{ steps.author.outputs.template_id }}\` has been generated, linted (deterministic FRIDGE checks), and passed adversarial security critique.
+
+          **Status:** Probationary — runs as \`yellow\` tier (plan approval required) for 5 executions before promotion.
+
+          This issue has been re-queued for the next supervisor cycle.
+
+          _Authored by \`supervisor-template-author.yml\` · [Template registry](docs/supervisor/template-registry.yml)_
+          EOF
+          )"
+
+      - name: Notify success
+        if: success()
+        run: |
+          curl -s --form-string "token=${{ secrets.PUSHOVER_TOKEN }}" \
+               --form-string "user=${{ secrets.PUSHOVER_USER }}" \
+               --form-string "title=Supervisor: template deployed (probationary)" \
+               --form-string "message=Template '${{ steps.author.outputs.template_id }}' auto-authored from issue #${{ github.event.issue.number }}. Probationary mode: 5 runs to promotion." \
+               https://api.pushover.net/1/messages.json || true
+
+      # ── Failure path ───────────────────────────────────────────────────────
+      # Issue keeps supervisor:no-template — will not be retried automatically.
+      # Human must write the template manually.
+
+      - name: Post failure comment
+        if: failure()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} --body "$(cat <<'EOF'
+          **Supervisor template authoring failed** ✗
+
+          Automatic template generation was unsuccessful after 3 draft attempts and 2 critique cycles. This issue remains labeled \`supervisor:no-template\` and will not be retried automatically.
+
+          **Next step:** A human must author a template manually in \`docs/supervisor/plans/\`, then run:
+          \`\`\`
+          node scripts/generate-supervisor-templates.mjs
+          \`\`\`
+          and remove the \`supervisor:no-template\` label to re-queue this issue.
+
+          [Workflow run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          _Failed by \`supervisor-template-author.yml\`_
+          EOF
+          )"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          curl -s --form-string "token=${{ secrets.PUSHOVER_TOKEN }}" \
+               --form-string "user=${{ secrets.PUSHOVER_USER }}" \
+               --form-string "title=Supervisor: template authoring failed" \
+               --form-string "message=Issue #${{ github.event.issue.number }}: auto-template failed after max retries. Manual template needed." \
+               https://api.pushover.net/1/messages.json || true
