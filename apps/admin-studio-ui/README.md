@@ -16,6 +16,9 @@ Build:
 ```bash
 npm run build        # → dist/
 npm run preview      # serve dist/
+npm run test:e2e     # Playwright mobile smoke suite
+npm run storybook    # Storybook local review (components + primary tabs)
+npm run build-storybook
 ```
 
 ## Deploy
@@ -30,6 +33,10 @@ alternate:  https://apunlimited.com
 
 The staging Pages URL above is the currently verified live staging surface.
 The production custom domain remains the intended production target.
+
+Storybook visual regression is enforced by Chromatic in
+`.github/workflows/factory-admin-ui-ci.yml` and Storybook static output is
+deployed to Cloudflare Pages (`admin-studio-ui-storybook`) on `main`.
 
 ## Architecture summary
 
