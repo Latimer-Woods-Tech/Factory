@@ -1,0 +1,112 @@
+id: fix-ci-package-auth
+version: 1
+tier: yellow
+description: "CI fails during npm ci with E401 Unauthorized for @latimer-woods-tech/* private GitHub Packages because NODE_AUTH_TOKEN or packages:read permission is missing from a workflow."
+trigger_keywords: [ci, npm, package, auth, 401, unauthorized, PACKAGES_READ_TOKEN, github-packages]
+triggers:
+  labels_any_of: [bug, area:ci]
+  title_pattern: "(npm.*401|401.*npm|package.*auth|E401.*latimer|@latimer-woods-tech.*unauthorized|PACKAGES_READ_TOKEN|packages:read)"
+  body_patterns:
+    - "(E401|npm ci.*fail|PACKAGES_READ_TOKEN|NODE_AUTH_TOKEN|@latimer-woods-tech.*Unauthorized|packages: read)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: affected_repo
+    type: enum
+    values: [humandesign, videoking, xico-city, factory-admin]
+    source: issue_body
+    referential_check: factory_admin.repo.health
+  - name: failing_workflow_path
+    type: string
+    validator: "^\\.github/workflows/[A-Za-z0-9_.-]+\\.ya?ml$"
+    source: issue_body
+    default: ".github/workflows/ci.yml"
+  - name: failure_mode
+    type: enum
+    values: [missing-node-auth-token, missing-packages-read-permission, wrong-token-fallback, both]
+    source: issue_body
+    default: both
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_repo"
+      path: "$slots.failing_workflow_path"
+      ref: "main"
+    intent: "Read the failing workflow file to check for NODE_AUTH_TOKEN, packages:read permission, and the token fallback expression."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      body: |
+        **Supervisor diagnosis — CI package auth failure in `$slots.affected_repo`**
+
+        Failing workflow: `$slots.failing_workflow_path`
+        Failure mode: `$slots.failure_mode`
+
+        **Root cause (pattern from HumanDesign PRs #133–#136):**
+        `npm ci` on `@latimer-woods-tech/*` private packages fails with E401 when:
+        1. `NODE_AUTH_TOKEN` is not set on the install step, OR
+        2. The workflow `permissions` block is missing `packages: read`, OR
+        3. The token fallback uses `secrets.GITHUB_TOKEN` instead of `github.token` (wrong context)
+
+        **Required fix pattern:**
+        ```yaml
+        permissions:
+          packages: read   # ← add this
+
+        steps:
+          - name: Install
+            run: npm ci
+            env:
+              NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN || github.token }}  # ← github.token not secrets.GITHUB_TOKEN
+        ```
+
+        Current workflow state: $s1.excerpt
+
+        A draft PR will apply the fix to `$slots.failing_workflow_path`.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a diagnosis comment showing the exact fix pattern required."
+    requires_human_review: false
+  - id: s3
+    tool: github.openPR
+    depends_on: s2
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_repo"
+      base: "main"
+      head: "supervisor/ci-package-auth-$slots.affected_repo"
+      title: "fix(ci): add packages:read and NODE_AUTH_TOKEN to $slots.failing_workflow_path"
+      body: |
+        Closes #$triggers.issue_number
+
+        **Root cause:** `npm ci` fails with E401 for `@latimer-woods-tech/*` packages in `$slots.failing_workflow_path` due to `$slots.failure_mode`.
+
+        **Fix:**
+        - Adds `packages: read` to workflow/job `permissions`
+        - Sets `NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN || github.token }}` on the install step
+        - Corrects fallback from `secrets.GITHUB_TOKEN` to `github.token` if applicable
+
+        Pattern source: HumanDesign PRs #133–#136.
+        Diagnosis: $s2.comment_url
+      draft: true
+    intent: "Open a draft PR with the package auth fix applied to the failing workflow file."
+    requires_human_review: true
+acceptance_gate:
+  description: "Draft PR is open targeting the failing workflow file, adding packages:read and NODE_AUTH_TOKEN."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=Latimer-Woods-Tech/$slots.affected_repo pr=$s3.number files_changed"
+    assert: "files_changed.any(f => f.path == '$slots.failing_workflow_path')"
+rollback:
+  - on_step: s3
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_repo"
+      pr_number: "$s3.pr_number"
+      comment: "Supervisor rollback: closing CI auth fix PR. Manual workflow investigation required."
