@@ -1,15 +1,18 @@
 import { defineConfig } from '@playwright/test';
 
+const E2E_PORT = 4174;
+const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',
   use: {
-    baseURL: 'http://127.0.0.1:4174',
+    baseURL: E2E_BASE_URL,
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 4174',
-    url: 'http://127.0.0.1:4174',
+    command: `npm run dev -- --host 127.0.0.1 --port ${E2E_PORT}`,
+    url: E2E_BASE_URL,
     reuseExistingServer: true,
     timeout: 120_000,
   },

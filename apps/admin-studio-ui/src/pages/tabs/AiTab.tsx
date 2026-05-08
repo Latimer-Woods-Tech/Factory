@@ -259,6 +259,9 @@ export function AiTab() {
                       </button>
                     </Dialog.Close>
                   </div>
+                  <Dialog.Description className="sr-only">
+                    View active file details and proposal actions.
+                  </Dialog.Description>
                   <ActiveFilePanel
                     active={active}
                     proposal={proposal}
