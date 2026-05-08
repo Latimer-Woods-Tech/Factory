@@ -117,8 +117,7 @@ jobs:
           # Build monitoring (devDep: errors)
           echo "--- Building monitoring ---"
           cd packages/monitoring
-          npm install --no-save ../errors/*.tgz
-          rm -f package-lock.json
+          npm install ../errors/*.tgz
           npm install
           npm run build
           npm pack
@@ -127,8 +126,7 @@ jobs:
           # Build logger (deps: errors, monitoring)
           echo "--- Building logger ---"
           cd packages/logger
-          npm install --no-save ../errors/*.tgz ../monitoring/*.tgz
-          rm -f package-lock.json
+          npm install ../errors/*.tgz ../monitoring/*.tgz
           npm install
           npm run build
           npm pack
@@ -137,8 +135,7 @@ jobs:
           # Build llm (deps: errors, logger; devDep: monitoring)
           echo "--- Building llm ---"
           cd packages/llm
-          npm install --no-save ../errors/*.tgz ../logger/*.tgz ../monitoring/*.tgz
-          rm -f package-lock.json
+          npm install ../errors/*.tgz ../logger/*.tgz ../monitoring/*.tgz
           npm install
           npm run build
         env:
