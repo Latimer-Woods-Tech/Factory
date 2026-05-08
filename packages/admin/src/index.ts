@@ -1,6 +1,8 @@
 import { Hono, type Context, type MiddlewareHandler, type Next } from 'hono';
 import { sql } from '@latimer-woods-tech/neon';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
+
+export { createEntitlementsRouter, type EntitlementsRouterEnv, type GrantRequest, type RevokeRequest, type AuditLogEntry } from './entitlements-routes.js';
 import type { Analytics } from '@latimer-woods-tech/analytics';
 import {
   InternalError,

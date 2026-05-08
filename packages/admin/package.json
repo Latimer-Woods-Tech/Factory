@@ -31,6 +31,7 @@
     "@latimer-woods-tech/auth": "file:../auth",
     "@latimer-woods-tech/analytics": "file:../analytics",
     "@latimer-woods-tech/neon": "file:../neon",
+    "@latimer-woods-tech/entitlements": "file:../entitlements",
     "hono": "^4.12.14"
   },
   "devDependencies": {

@@ -63,22 +63,29 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 5. `@latimer-woods-tech/auth` (deps: errors, logger)
 6. `@latimer-woods-tech/neon` (deps: errors, logger)
 7. `@latimer-woods-tech/stripe` (deps: errors, logger, neon)
-8. `@latimer-woods-tech/llm` (deps: errors, logger)
-9. `@latimer-woods-tech/telephony` (deps: errors, logger, llm)
-10. `@latimer-woods-tech/analytics` (deps: errors, neon)
-11. `@latimer-woods-tech/deploy` (no deps; scripts only)
-12. `@latimer-woods-tech/testing` (no deps; mock factories)
-13. `@latimer-woods-tech/email` (deps: errors, logger)
-14. `@latimer-woods-tech/copy` (deps: llm)
-15. `@latimer-woods-tech/content` (deps: neon, copy)
-16. `@latimer-woods-tech/social` (deps: content)
-17. `@latimer-woods-tech/seo` (no deps)
-18. `@latimer-woods-tech/crm` (deps: neon, analytics)
-19. `@latimer-woods-tech/compliance` (deps: neon)
-20. `@latimer-woods-tech/admin` (deps: auth, analytics)
-21. `@latimer-woods-tech/video` (deps: errors) — Cloudflare Stream + R2 wrappers
-22. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
-23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
+8. `@latimer-woods-tech/entitlements` (deps: neon) — Feature flags & access control (v0.2: D1-backed, scope: tier-based subscriptions)
+9. `@latimer-woods-tech/llm` (deps: errors, logger)
+10. `@latimer-woods-tech/telephony` (deps: errors, logger, llm)
+11. `@latimer-woods-tech/analytics` (deps: errors, neon)
+12. `@latimer-woods-tech/deploy` (no deps; scripts only)
+13. `@latimer-woods-tech/testing` (no deps; mock factories)
+14. `@latimer-woods-tech/studio-core` (no deps) — Test infra for package development
+15. `@latimer-woods-tech/design-tokens` (no deps) — Design tokens (colors, spacing, typography, etc.)
+16. `@latimer-woods-tech/design-system` (deps: design-tokens) — Design tokens re-export + composition
+17. `@latimer-woods-tech/ui` (deps: design-tokens, design-system) — React UI primitives (Button, Input, Modal, etc.)
+18. `@latimer-woods-tech/email` (deps: errors, logger)
+19. `@latimer-woods-tech/copy` (deps: llm)
+20. `@latimer-woods-tech/content` (deps: neon, copy)
+21. `@latimer-woods-tech/social` (deps: content)
+22. `@latimer-woods-tech/seo` (no deps)
+23. `@latimer-woods-tech/crm` (deps: neon, analytics)
+24. `@latimer-woods-tech/compliance` (deps: neon)
+25. `@latimer-woods-tech/protocol` (no deps) — Typed message envelopes for cross-worker communication
+26. `@latimer-woods-tech/creator` (no deps) — Content creator workflow utilities (draft management, scheduling)
+27. `@latimer-woods-tech/admin` (deps: auth, analytics, entitlements, protocol) — Hono /admin router; side_effects-aware routing
+28. `@latimer-woods-tech/video` (deps: errors) — Cloudflare Stream + R2 wrappers
+29. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
+30. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
 
 ## Video Production Pipeline
 The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg):

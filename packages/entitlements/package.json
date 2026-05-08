@@ -5,6 +5,9 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "dependencies": {
+    "drizzle-orm": "^0.31.2"
+  },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -30,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^3.2.4",
+    "drizzle-orm": "^0.31.2",
     "eslint": "^8.57.0",
     "tsup": "^8.1.0",
     "typescript": "^5.4.0",
