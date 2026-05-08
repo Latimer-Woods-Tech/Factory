@@ -1,6 +1,6 @@
 id: reusable-workflow-rollout
 version: 1
-tier: yellow
+tier: red
 triggers:
   labels_any_of: [enhancement, hardening]
   title_pattern: "(_app-ci|_app-deploy|reusable workflow|factory workflow)"
