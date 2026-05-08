@@ -118,6 +118,7 @@ jobs:
           echo "--- Building monitoring ---"
           cd packages/monitoring
           npm install --no-save ../errors/*.tgz
+          rm -f package-lock.json
           npm install
           npm run build
           npm pack
@@ -127,6 +128,7 @@ jobs:
           echo "--- Building logger ---"
           cd packages/logger
           npm install --no-save ../errors/*.tgz ../monitoring/*.tgz
+          rm -f package-lock.json
           npm install
           npm run build
           npm pack
@@ -136,6 +138,7 @@ jobs:
           echo "--- Building llm ---"
           cd packages/llm
           npm install --no-save ../errors/*.tgz ../logger/*.tgz ../monitoring/*.tgz
+          rm -f package-lock.json
           npm install
           npm run build
         env:
