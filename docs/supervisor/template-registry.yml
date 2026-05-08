@@ -1,0 +1,140 @@
+# Template registry
+# Maintained by supervisor-template-author.yml (new templates) and rollback-template.mjs (rollbacks).
+# Do not edit manually — changes will be overwritten by automation.
+#
+# status values : active | probationary | rolled-back | deprecated
+# source values : manual | auto
+# probationary_runs_remaining : counts down from 5; 0 = fully promoted
+
+templates:
+  - id: db-migration-gap-fix
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: red
+    current_tier: red
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: deps-bump-minor-patch
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: green
+    current_tier: green
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: docs-naming-convention
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: green
+    current_tier: green
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: feat-ci-workflow
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: red
+    current_tier: red
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: package-version-migration
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: yellow
+    current_tier: yellow
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: reusable-workflow-rollout
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: red
+    current_tier: red
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: security-codeql-fix
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: yellow
+    current_tier: yellow
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: sentry-triage-new-issue
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: yellow
+    current_tier: yellow
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: syn-package-migration
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: yellow
+    current_tier: yellow
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: ux-regression-triage
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: yellow
+    current_tier: yellow
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
+
+  - id: wrangler-config-drift-fix
+    source: manual
+    authored_at: null
+    promoted_at: null
+    declared_tier: red
+    current_tier: red
+    status: active
+    probationary_runs_remaining: 0
+    run_count: 0
+    failure_count: 0
+    originating_issue: null
