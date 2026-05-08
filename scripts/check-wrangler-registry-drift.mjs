@@ -70,9 +70,48 @@ function parseRegistryWorkerNames(content) {
 
 /** Strip line and block comments from JSONC text before JSON.parse. */
 function stripJsoncComments(text) {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/[^\r\n]*/g, '');
+  let result = '';
+  let inString = false;
+  let inBlockComment = false;
+  let i = 0;
+
+  while (i < text.length) {
+    // Handle block comments
+    if (!inString && text[i] === '/' && text[i + 1] === '*') {
+      inBlockComment = true;
+      i += 2;
+      continue;
+    }
+    if (inBlockComment && text[i] === '*' && text[i + 1] === '/') {
+      inBlockComment = false;
+      i += 2;
+      continue;
+    }
+
+    // Handle line comments (but not inside strings or block comments)
+    if (!inString && !inBlockComment && text[i] === '/' && text[i + 1] === '/') {
+      i += 2;
+      while (i < text.length && text[i] !== '\n' && text[i] !== '\r') {
+        i++;
+      }
+      continue;
+    }
+
+    // Track string state (handle escape sequences)
+    if (!inBlockComment) {
+      if (text[i] === '"' && (i === 0 || text[i - 1] !== '\\')) {
+        inString = !inString;
+      }
+    }
+
+    if (!inBlockComment) {
+      result += text[i];
+    }
+
+    i++;
+  }
+
+  return result;
 }
 
 function collectWranglerNames() {
