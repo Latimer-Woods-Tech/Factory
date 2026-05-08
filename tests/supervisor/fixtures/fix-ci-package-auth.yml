@@ -1,0 +1,24 @@
+fixture_for: fix-ci-package-auth
+issue:
+  title: "fix(ci): E401 Unauthorized for @latimer-woods-tech/monitoring in deploy-workers"
+  labels: [bug, area:ci]
+  body: |
+    Main-branch workflow "Test, Deploy, and Verify Workers" fails during
+    npm ci --prefix workers with:
+
+    error code E401
+    npm ERR! 401 Unauthorized - GET https://npm.pkg.github.com/@latimer-woods-tech%2fmonitoring
+
+    This blocks frontend deployment so merged UX fixes are not reaching
+    production.
+
+    Affected repo: humandesign
+    Failing workflow path: .github/workflows/deploy-workers.yml
+    Failure mode: missing-node-auth-token
+
+    Fix required:
+    - Add NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN || github.token }}
+      to the npm ci step env block
+    - Add packages: read to the workflow/job permissions block
+
+    Pattern from HumanDesign PRs #133, #134, #135, #136.
