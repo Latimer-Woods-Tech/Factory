@@ -197,7 +197,7 @@ export function AiTab() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-92px)] gap-4">
+    <div className="flex h-[calc(100svh-92px)] gap-4">
       <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
         <header className="border-b border-slate-800 px-3 py-2 flex items-center gap-2">
           <div className="flex gap-1">
