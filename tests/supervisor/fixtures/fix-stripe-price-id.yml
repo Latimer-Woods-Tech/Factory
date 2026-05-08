@@ -1,0 +1,22 @@
+fixture_for: fix-stripe-price-id
+issue:
+  title: "fix(billing): StripeInvalidRequestError: No such price in prime-self-worker"
+  labels: [bug, area:billing]
+  body: |
+    Sentry is firing StripeInvalidRequestError: No such price:
+    'price_xxxxxxxxxxxxx' from createCheckoutSession in prime-self-worker.
+
+    Sentry issue: HUMANDESIGN-4843
+    App: humandesign
+    Secret name: STRIPE_PRICE_INDIVIDUAL
+    Environment: production
+
+    Root cause: the STRIPE_PRICE_INDIVIDUAL secret in the Worker was either
+    unset or set to a test/placeholder value that does not exist in the live
+    Stripe account.
+
+    This is a config/secrets gap, not a deleted Stripe price. The price exists
+    in the Stripe live dashboard under Products.
+
+    Fix requires: wrangler secret put STRIPE_PRICE_INDIVIDUAL with the correct
+    live-mode price_* ID.

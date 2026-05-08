@@ -1,0 +1,104 @@
+id: fix-csp-hash
+version: 1
+tier: green
+description: "CSP violation caused by a stale inline-script SHA-256 hash in the Cloudflare Pages _headers file after a FOUC or inline script was changed."
+trigger_keywords: [csp, hash, inline, script, headers, sha256, violation, fouc]
+triggers:
+  labels_any_of: [bug, area:frontend, area:security]
+  title_pattern: "(csp.*hash|hash.*csp|CSP.*sha256|inline.script.*violation|FOUC.*hash|_headers.*csp)"
+  body_patterns:
+    - "(sha256-[A-Za-z0-9+/=]{43}|Content-Security-Policy|inline script.*violates|_headers)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+slots:
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city]
+    source: issue_body
+    referential_check: factory_admin.repo.health
+  - name: old_hash
+    type: string
+    validator: "^sha256-[A-Za-z0-9+/=]{43,44}$"
+    source: issue_body
+  - name: new_hash
+    type: string
+    validator: "^sha256-[A-Za-z0-9+/=]{43,44}$"
+    source: issue_body
+  - name: headers_file
+    type: string
+    validator: "^[a-zA-Z0-9_.\\-/]+$"
+    source: issue_body
+    default: "client/public/_headers"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      path: "$slots.headers_file"
+      ref: "main"
+      grep: "$slots.old_hash"
+    intent: "Verify the old hash exists in the _headers file and confirm the full CSP header context."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      body: |
+        **Supervisor diagnosis — stale CSP hash in `$slots.affected_app`**
+
+        File: `$slots.headers_file`
+        Old hash (stale): `$slots.old_hash`
+        New hash (browser-reported): `$slots.new_hash`
+
+        **Root cause:** An inline script was updated (e.g. FOUC theme/density script) but the corresponding `sha256-*` hash in `Content-Security-Policy` was not updated.
+
+        **Fix:** Replace `$slots.old_hash` with `$slots.new_hash` in `$slots.headers_file`. Single-line change.
+
+        Current _headers excerpt:
+        ```
+        $s1.excerpt
+        ```
+
+        Opening a draft PR with the single-line hash swap.
+
+        _Run ID: $RUN_ID_
+    intent: "Post diagnosis comment confirming the old hash location and the new hash to substitute."
+    requires_human_review: false
+  - id: s3
+    tool: github.openPR
+    depends_on: s2
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      base: "main"
+      head: "supervisor/csp-hash-$slots.affected_app"
+      title: "fix(csp): update inline-script sha256 hash in _headers"
+      body: |
+        Closes #$triggers.issue_number
+
+        **Root cause:** Stale CSP hash after inline-script change (e.g. FOUC script updated in a recent PR but `_headers` not updated).
+
+        **Fix:** Replaces `$slots.old_hash` with `$slots.new_hash` in `$slots.headers_file`. Single-line, no logic changes.
+
+        **Risk:** Green — static Cloudflare Pages headers file only.
+
+        Diagnosis: $s2.comment_url
+        Pattern source: HumanDesign PR #74.
+      draft: false
+    intent: "Open a non-draft PR (green-tier, single-line hash swap) for fast-track review."
+    requires_human_review: true
+acceptance_gate:
+  description: "PR is opened and targets only the _headers file with the hash replacement."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=Latimer-Woods-Tech/$slots.affected_app pr=$s3.number files_changed"
+    assert: "files_changed.length == 1 and files_changed[0].path == '$slots.headers_file'"
+rollback:
+  - on_step: s3
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      pr_number: "$s3.pr_number"
+      comment: "Supervisor rollback: closing CSP hash fix PR. Verify the correct hash independently."
