@@ -18,8 +18,12 @@ describe('Dashboard mobile navigation', () => {
 
   it('marks More active for nested More routes', () => {
     expect(isMoreTabPath('/tests')).toBe(true);
+    expect(isMoreTabPath('/tests/')).toBe(true);
     expect(isMoreTabPath('/timeline/details')).toBe(true);
     expect(isMoreTabPath('/flags/experiments')).toBe(true);
     expect(isMoreTabPath('/overview')).toBe(false);
+    expect(isMoreTabPath('/')).toBe(false);
+    expect(isMoreTabPath('')).toBe(false);
+    expect(isMoreTabPath('/unknown')).toBe(false);
   });
 });

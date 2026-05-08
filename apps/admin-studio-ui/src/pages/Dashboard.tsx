@@ -72,6 +72,7 @@ export function Dashboard() {
   function handleSignOut() {
     setMoreOpen(false);
     logout();
+    navigate('/login', { replace: true });
   }
 
   const moreActive = moreOpen || isMoreTabPath(pathname);
@@ -193,7 +194,7 @@ export function Dashboard() {
                 onClick={handleSwitchEnvironment}
                 className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 hover:border-slate-600"
               >
-                Switch environment
+                Sign out to switch environment
               </button>
             </section>
 
