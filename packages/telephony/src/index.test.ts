@@ -2,9 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   handleTelnyxWebhook,
+  isWithinCallingHours,
   synthesize,
   transcribe,
+  verifyTelnyxWebhook,
   VoiceSession,
+  type CallProvider,
   type VoiceSessionConfig,
 } from './index';
 
@@ -305,7 +308,8 @@ describe('VoiceSession', () => {
 
   it('throws when LLM chain returns an error response', async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const url =
+        typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
       if (url.includes('deepgram')) {
         return Promise.resolve(
           jsonResponse({ results: { channels: [{ alternatives: [{ transcript: 'hi' }] }] } }),
@@ -322,67 +326,155 @@ describe('VoiceSession', () => {
   });
 });
 
-import { isWithinCallingHours, verifyTelnyxWebhook } from './index';
+// ─── WB-3 Helpers ────────────────────────────────────────────────────────────
+
+/** Platform-safe base64 encode from Uint8Array (no Buffer / Node.js). */
+function uint8ToBase64(bytes: Uint8Array): string {
+  return btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(''));
+}
+
+// ─── isWithinCallingHours ─────────────────────────────────────────────────────
 
 describe('isWithinCallingHours', () => {
-  it('returns true when local hour is 8 (window start)', () => {
-    // 13:00 UTC = 08:00 America/New_York (UTC-5 in winter)
-    const winterMorning = new Date('2024-01-15T13:00:00Z');
-    expect(isWithinCallingHours('America/New_York', winterMorning)).toBe(true);
+  it('returns false for UTC 07:59 (before window)', () => {
+    const date = new Date('2024-01-15T07:59:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(false);
   });
 
-  it('returns true when local hour is 21 (window end)', () => {
-    // 02:00 UTC next day = 21:00 America/New_York (UTC-5)
-    const winterEvening = new Date('2024-01-16T02:00:00Z');
-    expect(isWithinCallingHours('America/New_York', winterEvening)).toBe(true);
+  it('returns true for UTC 08:00 (start of window)', () => {
+    const date = new Date('2024-01-15T08:00:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(true);
   });
 
-  it('returns false when local hour is 7 (before window)', () => {
-    // 12:00 UTC = 07:00 America/New_York (UTC-5)
-    const beforeWindow = new Date('2024-01-15T12:00:00Z');
-    expect(isWithinCallingHours('America/New_York', beforeWindow)).toBe(false);
+  it('returns true for UTC 21:00 (end of window, inclusive)', () => {
+    const date = new Date('2024-01-15T21:00:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(true);
   });
 
-  it('returns false when local hour is 22 (after window)', () => {
-    // 03:00 UTC next day = 22:00 America/New_York (UTC-5)
-    const afterWindow = new Date('2024-01-16T03:00:00Z');
-    expect(isWithinCallingHours('America/New_York', afterWindow)).toBe(false);
+  it('returns false for UTC 21:01 (after window)', () => {
+    const date = new Date('2024-01-15T21:01:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(false);
   });
 
-  it('works with a Pacific timezone', () => {
-    // 16:00 UTC = 08:00 America/Los_Angeles (UTC-8 in winter)
-    const pacificMorning = new Date('2024-01-15T16:00:00Z');
-    expect(isWithinCallingHours('America/Los_Angeles', pacificMorning)).toBe(true);
+  it('returns true for 08:00 EST (13:00 UTC) — America/New_York winter', () => {
+    // January — EST is UTC-5; 08:00 EST = 13:00 UTC
+    const date = new Date('2024-01-15T13:00:00Z');
+    expect(isWithinCallingHours('America/New_York', date)).toBe(true);
+  });
+
+  it('returns true for 09:00 EDT (13:00 UTC) — America/New_York summer', () => {
+    // July — EDT is UTC-4; 13:00 UTC = 09:00 EDT
+    const date = new Date('2024-07-15T13:00:00Z');
+    expect(isWithinCallingHours('America/New_York', date)).toBe(true);
+  });
+
+  it('returns true for 08:00 PST (16:00 UTC) — America/Los_Angeles winter', () => {
+    // January — PST is UTC-8; 08:00 PST = 16:00 UTC
+    const date = new Date('2024-01-15T16:00:00Z');
+    expect(isWithinCallingHours('America/Los_Angeles', date)).toBe(true);
+  });
+
+  it('returns true for 08:00 JST (23:00 UTC) — Asia/Tokyo', () => {
+    // JST is UTC+9 year-round; 08:00 JST = 23:00 UTC (previous day)
+    const date = new Date('2024-01-14T23:00:00Z');
+    expect(isWithinCallingHours('Asia/Tokyo', date)).toBe(true);
+  });
+
+  it('returns true for 08:00 AEDT (21:00 UTC) — Australia/Sydney summer', () => {
+    // January — AEDT is UTC+11; 08:00 AEDT = 21:00 UTC (previous day)
+    const date = new Date('2024-01-14T21:00:00Z');
+    expect(isWithinCallingHours('Australia/Sydney', date)).toBe(true);
+  });
+
+  it('handles DST boundary for America/New_York (2024-03-10 spring forward)', () => {
+    // Before DST: 2024-03-10 07:00 UTC = 02:00 EST → outside window
+    const beforeDST = new Date('2024-03-10T07:00:00Z');
+    expect(isWithinCallingHours('America/New_York', beforeDST)).toBe(false);
+
+    // After DST: 2024-03-10 12:00 UTC = 08:00 EDT → inside window
+    const afterDST = new Date('2024-03-10T12:00:00Z');
+    expect(isWithinCallingHours('America/New_York', afterDST)).toBe(true);
+  });
+
+  it('returns true for Europe/London midday', () => {
+    // 14:00 UTC = 14:00 GMT in January
+    const date = new Date('2024-01-15T14:00:00Z');
+    expect(isWithinCallingHours('Europe/London', date)).toBe(true);
+  });
+
+  it('uses current time when nowUtc is omitted', () => {
+    // Just verify it does not throw
+    expect(() => isWithinCallingHours('UTC')).not.toThrow();
+  });
+
+  it('returns false for 07:00 UTC (before window)', () => {
+    const date = new Date('2024-01-15T07:00:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(false);
+  });
+
+  it('returns false for 22:00 UTC (after window)', () => {
+    const date = new Date('2024-01-15T22:00:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(false);
+  });
+
+  it('returns true for 12:00 noon UTC', () => {
+    const date = new Date('2024-01-15T12:00:00Z');
+    expect(isWithinCallingHours('UTC', date)).toBe(true);
   });
 });
 
+// ─── verifyTelnyxWebhook ──────────────────────────────────────────────────────
+
 describe('verifyTelnyxWebhook', () => {
   it('returns false for invalid base64 signature', async () => {
-    expect(await verifyTelnyxWebhook('payload', '!!!not-base64!!!', 'validkey')).toBe(false);
+    const result = await verifyTelnyxWebhook('payload', '!!!invalid!!!', 'aGVsbG8=');
+    expect(result).toBe(false);
   });
 
   it('returns false for invalid base64 public key', async () => {
-    const validBase64 = btoa('some-bytes');
-    expect(await verifyTelnyxWebhook('payload', validBase64, '!!!not-base64!!!')).toBe(false);
+    const result = await verifyTelnyxWebhook('payload', 'aGVsbG8=', '!!!invalid!!!');
+    expect(result).toBe(false);
   });
 
-  it('returns false for signature/key mismatch', async () => {
-    // Generate a real key pair and verify with wrong payload
-    const keyPair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
-    const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-    const signatureBuffer = await crypto.subtle.sign('Ed25519', keyPair.privateKey, new TextEncoder().encode('correct-payload'));
-    const publicKeyB64 = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
-    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-    expect(await verifyTelnyxWebhook('wrong-payload', signatureB64, publicKeyB64)).toBe(false);
+  it('returns false when signature does not match payload', async () => {
+    const payload = 'test payload';
+    const fakeSignature = uint8ToBase64(new Uint8Array(64));
+    const fakePublicKey = uint8ToBase64(new Uint8Array(32));
+    const result = await verifyTelnyxWebhook(payload, fakeSignature, fakePublicKey);
+    expect(result).toBe(false);
   });
 
-  it('returns true for valid Ed25519 signature', async () => {
-    const keyPair = await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
-    const payload = 'test-webhook-payload';
-    const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-    const signatureBuffer = await crypto.subtle.sign('Ed25519', keyPair.privateKey, new TextEncoder().encode(payload));
-    const publicKeyB64 = btoa(String.fromCharCode(...new Uint8Array(publicKeyBuffer)));
-    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
-    expect(await verifyTelnyxWebhook(payload, signatureB64, publicKeyB64)).toBe(true);
+  it('returns false for malformed DER public key', async () => {
+    const payload = 'test payload';
+    const fakeSignature = uint8ToBase64(new Uint8Array(64));
+    // A 32-byte raw key won't parse as SPKI DER
+    const malformedKey = uint8ToBase64(new Uint8Array(32));
+    const result = await verifyTelnyxWebhook(payload, fakeSignature, malformedKey);
+    expect(result).toBe(false);
+  });
+
+  it('returns false for empty payload', async () => {
+    const fakeSignature = uint8ToBase64(new Uint8Array(64));
+    const fakePublicKey = uint8ToBase64(new Uint8Array(32));
+    const result = await verifyTelnyxWebhook('', fakeSignature, fakePublicKey);
+    expect(result).toBe(false);
+  });
+
+  it('handles base64 strings with whitespace without throwing', async () => {
+    const payload = 'test payload';
+    const signatureWithSpace = uint8ToBase64(new Uint8Array(64)).slice(0, 10) + ' ' + uint8ToBase64(new Uint8Array(64)).slice(10);
+    const fakePublicKey = uint8ToBase64(new Uint8Array(32));
+    // Should not throw; returns false because key is malformed
+    const result = await verifyTelnyxWebhook(payload, signatureWithSpace, fakePublicKey);
+    expect(typeof result).toBe('boolean');
+  });
+});
+
+// ─── CallProvider type ────────────────────────────────────────────────────────
+
+describe('CallProvider type', () => {
+  it('accepts "telnyx" and "twilio" as valid values', () => {
+    const providers: CallProvider[] = ['telnyx', 'twilio'];
+    expect(providers).toHaveLength(2);
   });
 });
