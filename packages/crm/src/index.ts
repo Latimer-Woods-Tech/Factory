@@ -1,7 +1,137 @@
-import { sql } from '@latimer-woods-tech/neon';
+import { sql, withTenant } from '@latimer-woods-tech/neon';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
 import { NotFoundError, InternalError, ErrorCodes } from '@latimer-woods-tech/errors';
 import type { Analytics } from '@latimer-woods-tech/analytics';
+
+// ---------------------------------------------------------------------------
+// WB-2: Outreach Types
+// ---------------------------------------------------------------------------
+
+/** Consent status for outreach communications. */
+export type ConsentStatus = 'unknown' | 'opted_in' | 'opted_out' | 'do_not_contact';
+
+/** Campaign lifecycle status. */
+export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed';
+
+/** Call provider identifier. */
+export type CallProvider = 'telnyx' | 'twilio';
+
+/**
+ * A contact record for outreach campaigns.
+ */
+export interface OutreachContact {
+  /** UUID primary key. */
+  id: string;
+  /** Tenant identifier for multi-tenancy. */
+  tenantId: string;
+  /** First name. */
+  firstName: string;
+  /** Last name. */
+  lastName: string;
+  /** Contact phone number. */
+  phone: string;
+  /** Contact email address. */
+  email: string;
+  /** Consent status for outreach. */
+  consentStatus: ConsentStatus;
+  /** Provider-specific call ID (e.g., Telnyx contact ID). */
+  providerCallId?: string;
+  /** Call provider name. */
+  provider?: CallProvider;
+  /** Additional metadata as JSON. */
+  metadata?: Record<string, unknown>;
+  /** When the contact was created. */
+  createdAt: Date;
+  /** When the contact was last updated. */
+  updatedAt: Date;
+}
+
+/**
+ * An outreach campaign.
+ */
+export interface OutreachCampaign {
+  /** UUID primary key. */
+  id: string;
+  /** Tenant identifier for multi-tenancy. */
+  tenantId: string;
+  /** Campaign name. */
+  name: string;
+  /** Campaign description. */
+  description?: string;
+  /** Campaign lifecycle status. */
+  status: CampaignStatus;
+  /** When the campaign was created. */
+  createdAt: Date;
+  /** When the campaign was last updated. */
+  updatedAt: Date;
+}
+
+/**
+ * A call log record for tracking outreach calls.
+ */
+export interface CallLog {
+  /** UUID primary key. */
+  id: string;
+  /** Campaign ID. */
+  campaignId: string;
+  /** Contact ID. */
+  contactId: string;
+  /** Call provider name. */
+  provider: CallProvider;
+  /** Provider-specific call ID. */
+  providerCallId: string;
+  /** Call duration in seconds. */
+  durationSeconds: number;
+  /** Call outcome (e.g., 'completed', 'no-answer', 'voicemail'). */
+  outcome: string;
+  /** Recording URL if available. */
+  recordingUrl?: string;
+  /** Call start timestamp. */
+  callStarted: Date;
+  /** Call end timestamp. */
+  callEnded: Date;
+}
+
+/** Input for creating a new outreach contact. */
+export interface CreateContactInput {
+  tenantId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  consentStatus: ConsentStatus;
+  providerCallId?: string;
+  provider?: CallProvider;
+  metadata?: Record<string, unknown>;
+}
+
+/** Input for creating a new outreach campaign. */
+export interface CreateCampaignInput {
+  tenantId: string;
+  name: string;
+  description?: string;
+}
+
+/** Input for creating a new call log. */
+export interface CreateCallLogInput {
+  campaignId: string;
+  contactId: string;
+  provider: CallProvider;
+  providerCallId: string;
+  durationSeconds: number;
+  outcome: string;
+  recordingUrl?: string;
+  callStarted: Date;
+  callEnded: Date;
+}
+
+/** Filters for listing contacts. */
+export interface ContactFilters {
+  consentStatus?: ConsentStatus;
+  provider?: CallProvider;
+  limit?: number;
+  offset?: number;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,6 +211,104 @@ CREATE TABLE IF NOT EXISTS crm_leads (
 );
 `.trim();
 
+/**
+ * DDL statement that creates the `outreach_contacts` table.
+ * Run once during provisioning / migration.
+ */
+export const CREATE_CONTACTS_TABLE = `
+CREATE TABLE IF NOT EXISTS outreach_contacts (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id        TEXT NOT NULL,
+  first_name       TEXT NOT NULL,
+  last_name        TEXT NOT NULL,
+  phone            TEXT NOT NULL,
+  email            TEXT NOT NULL,
+  consent_status   TEXT NOT NULL DEFAULT 'unknown',
+  provider_call_id TEXT,
+  provider         TEXT,
+  metadata         JSONB,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(tenant_id, phone, email)
+);
+`.trim();
+
+/**
+ * DDL statement that creates the `outreach_campaigns` table.
+ * Run once during provisioning / migration.
+ */
+export const CREATE_CAMPAIGNS_TABLE = `
+CREATE TABLE IF NOT EXISTS outreach_campaigns (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id   TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT,
+  status      TEXT NOT NULL DEFAULT 'draft',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`.trim();
+
+/**
+ * DDL statement that creates the `call_logs` table.
+ * Run once during provisioning / migration.
+ */
+export const CREATE_CALL_LOGS_TABLE = `
+CREATE TABLE IF NOT EXISTS call_logs (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_id      UUID NOT NULL,
+  contact_id       UUID NOT NULL,
+  provider         TEXT NOT NULL,
+  provider_call_id TEXT NOT NULL,
+  duration_seconds INTEGER NOT NULL,
+  outcome          TEXT NOT NULL,
+  recording_url    TEXT,
+  call_started     TIMESTAMPTZ NOT NULL,
+  call_ended       TIMESTAMPTZ NOT NULL,
+  FOREIGN KEY (campaign_id) REFERENCES outreach_campaigns(id),
+  FOREIGN KEY (contact_id) REFERENCES outreach_contacts(id)
+);
+`.trim();
+
+/**
+ * DDL statements that enable Row-Level Security on the three outreach tables
+ * and add a tenant-isolation policy backed by the `app.tenant_id` session
+ * variable.  Run once during provisioning after the tables are created.
+ *
+ * The application must set `SET LOCAL app.tenant_id = '<id>'` inside each
+ * transaction before issuing any CRM query, e.g.:
+ *
+ * ```sql
+ * BEGIN;
+ * SET LOCAL app.tenant_id = 'acme-corp';
+ * SELECT * FROM outreach_contacts; -- only acme-corp rows are visible
+ * COMMIT;
+ * ```
+ *
+ * This provides defence-in-depth: even if the application-layer WHERE clause
+ * is accidentally omitted, Postgres will silently filter to the current tenant.
+ */
+export const ENABLE_OUTREACH_RLS = `
+ALTER TABLE outreach_contacts  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outreach_campaigns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE call_logs          ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY outreach_contacts_tenant_isolation  ON outreach_contacts
+  USING (tenant_id = current_setting('app.tenant_id', TRUE));
+
+CREATE POLICY outreach_campaigns_tenant_isolation ON outreach_campaigns
+  USING (tenant_id = current_setting('app.tenant_id', TRUE));
+
+CREATE POLICY call_logs_tenant_isolation ON call_logs
+  USING (
+    EXISTS (
+      SELECT 1 FROM outreach_campaigns c
+       WHERE c.id = campaign_id
+         AND c.tenant_id = current_setting('app.tenant_id', TRUE)
+    )
+  );
+`.trim();
+
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
@@ -118,6 +346,93 @@ function rowToLead(row: LeadRow): Lead {
     mrr: Number(row.mrr),
     createdAt: new Date(row.created_at as string),
     convertedAt: row.converted_at != null ? new Date(row.converted_at as string) : undefined,
+  };
+}
+
+interface ContactRow extends Record<string, unknown> {
+  id: string;
+  tenant_id: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  email: string;
+  consent_status: string;
+  provider_call_id: string | null;
+  provider: string | null;
+  metadata: string | Record<string, unknown> | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+interface CampaignRow extends Record<string, unknown> {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  created_at: string | Date;
+  updated_at: string | Date;
+}
+
+interface CallLogRow extends Record<string, unknown> {
+  id: string;
+  campaign_id: string;
+  contact_id: string;
+  provider: string;
+  provider_call_id: string;
+  duration_seconds: string | number;
+  outcome: string;
+  recording_url: string | null;
+  call_started: string | Date;
+  call_ended: string | Date;
+}
+
+function rowToContact(row: ContactRow): OutreachContact {
+  let metadata: Record<string, unknown> | undefined;
+  if (row.metadata) {
+    metadata =
+      typeof row.metadata === 'string' ? (JSON.parse(row.metadata) as Record<string, unknown>) : row.metadata;
+  }
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    phone: row.phone,
+    email: row.email,
+    consentStatus: row.consent_status as ConsentStatus,
+    providerCallId: row.provider_call_id ?? undefined,
+    provider: (row.provider as CallProvider) ?? undefined,
+    metadata,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
+  };
+}
+
+function rowToCampaign(row: CampaignRow): OutreachCampaign {
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    name: row.name,
+    description: row.description ?? undefined,
+    status: row.status as CampaignStatus,
+    createdAt: new Date(row.created_at as string),
+    updatedAt: new Date(row.updated_at as string),
+  };
+}
+
+function rowToCallLog(row: CallLogRow): CallLog {
+  return {
+    id: row.id,
+    campaignId: row.campaign_id,
+    contactId: row.contact_id,
+    provider: row.provider as CallProvider,
+    providerCallId: row.provider_call_id,
+    durationSeconds: Number(row.duration_seconds),
+    outcome: row.outcome,
+    recordingUrl: row.recording_url ?? undefined,
+    callStarted: new Date(row.call_started as string),
+    callEnded: new Date(row.call_ended as string),
   };
 }
 
@@ -276,4 +591,431 @@ export async function getCustomerView(db: FactoryDb, userId: string): Promise<Cu
   }
 
   return { lead, subscriptions, events, churnRisk };
+}
+
+// ---------------------------------------------------------------------------
+// WB-2: Outreach Service Classes
+// ---------------------------------------------------------------------------
+
+/**
+ * Service for managing outreach contacts with tenant isolation.
+ *
+ * Security: every method wraps its query in `withTenant(db, tenantId, ...)`, which
+ * opens an explicit transaction and issues `SET LOCAL app.tenant_id = tenantId`
+ * before any DML, enforcing the RLS policies on `outreach_contacts`.
+ *
+ * Injection safety: all user-supplied values are passed as `sql` tagged-template
+ * parameters, which Drizzle/Neon serialize as positional placeholders ($1, $2, …).
+ * No string concatenation reaches the database.
+ */
+export class ContactService {
+  /**
+   * Create a new contact.
+   *
+   * @param db - Database client.
+   * @param tenantId - Tenant identifier.
+   * @param data - Contact data.
+   * @returns The created contact.
+   */
+  async createContact(db: FactoryDb, tenantId: string, data: CreateContactInput): Promise<OutreachContact> {
+    if (!tenantId || !data.firstName || !data.lastName || !data.phone || !data.email) {
+      throw new InternalError('ContactService.createContact: required fields missing', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<ContactRow>(
+        sql`INSERT INTO outreach_contacts (
+            tenant_id, first_name, last_name, phone, email, consent_status,
+            provider_call_id, provider, metadata
+          )
+          VALUES (
+            ${tenantId}, ${data.firstName}, ${data.lastName}, ${data.phone}, ${data.email},
+            ${data.consentStatus}, ${data.providerCallId ?? null}, ${data.provider ?? null},
+            ${data.metadata ? JSON.stringify(data.metadata) : null}
+          )
+          RETURNING *`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new InternalError('ContactService.createContact: no row returned', {
+          code: ErrorCodes.DB_QUERY_FAILED,
+        });
+      }
+      return rowToContact(row);
+    });
+  }
+
+  /**
+   * Get a contact by ID with tenant isolation.
+   *
+   * @param db - Database client.
+   * @param id - Contact ID.
+   * @param tenantId - Tenant identifier.
+   * @returns The contact, or throws NotFoundError.
+   */
+  async getContact(db: FactoryDb, id: string, tenantId: string): Promise<OutreachContact> {
+    if (!id || !tenantId) {
+      throw new InternalError('ContactService.getContact: id and tenantId are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<ContactRow>(
+        sql`SELECT * FROM outreach_contacts WHERE id = ${id} AND tenant_id = ${tenantId} LIMIT 1`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Contact ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToContact(row);
+    });
+  }
+
+  /**
+   * List contacts for a tenant with optional filters.
+   *
+   * @param db - Database client.
+   * @param tenantId - Tenant identifier.
+   * @param filters - Optional filters.
+   * @returns Array of contacts.
+   */
+  async listContacts(db: FactoryDb, tenantId: string, filters: ContactFilters = {}): Promise<OutreachContact[]> {
+    if (!tenantId) {
+      throw new InternalError('ContactService.listContacts: tenantId is required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const limit = filters.limit ?? 100;
+      const offset = filters.offset ?? 0;
+
+      let rows;
+      if (filters.consentStatus && filters.provider) {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+                AND consent_status = ${filters.consentStatus}
+                AND provider = ${filters.provider}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      } else if (filters.consentStatus) {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+                AND consent_status = ${filters.consentStatus}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      } else if (filters.provider) {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+                AND provider = ${filters.provider}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      } else {
+        rows = await db.execute<ContactRow>(
+          sql`SELECT * FROM outreach_contacts
+              WHERE tenant_id = ${tenantId}
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}`,
+        );
+      }
+
+      return rows.rows.map(rowToContact);
+    });
+  }
+
+  /**
+   * Update consent status for a contact with tenant isolation.
+   *
+   * @param db - Database client.
+   * @param id - Contact ID.
+   * @param tenantId - Tenant identifier.
+   * @param status - New consent status.
+   * @returns Updated contact.
+   */
+  async updateConsentStatus(
+    db: FactoryDb,
+    id: string,
+    tenantId: string,
+    status: ConsentStatus,
+  ): Promise<OutreachContact> {
+    if (!id || !tenantId || !status) {
+      throw new InternalError('ContactService.updateConsentStatus: id, tenantId, and status are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<ContactRow>(
+        sql`UPDATE outreach_contacts
+            SET consent_status = ${status}, updated_at = NOW()
+            WHERE id = ${id} AND tenant_id = ${tenantId}
+            RETURNING *`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Contact ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToContact(row);
+    });
+  }
+}
+
+/**
+ * Service for managing outreach campaigns with tenant isolation.
+ *
+ * Security: every method wraps its query in `withTenant(db, tenantId, ...)`, which
+ * opens an explicit transaction and issues `SET LOCAL app.tenant_id = tenantId`
+ * before any DML, enforcing RLS on `outreach_campaigns`.
+ * All parameters use Drizzle's `sql` tagged-template placeholders (no concatenation).
+ */
+export class CampaignService {
+  /**
+   * Create a new campaign.
+   *
+   * @param db - Database client.
+   * @param tenantId - Tenant identifier.
+   * @param data - Campaign data.
+   * @returns The created campaign.
+   */
+  async createCampaign(db: FactoryDb, tenantId: string, data: CreateCampaignInput): Promise<OutreachCampaign> {
+    if (!tenantId || !data.name) {
+      throw new InternalError('CampaignService.createCampaign: tenantId and name are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`INSERT INTO outreach_campaigns (tenant_id, name, description, status)
+            VALUES (${tenantId}, ${data.name}, ${data.description || null}, 'draft')
+            RETURNING *`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new InternalError('CampaignService.createCampaign: no row returned', {
+          code: ErrorCodes.DB_QUERY_FAILED,
+        });
+      }
+      return rowToCampaign(row);
+    });
+  }
+
+  /**
+   * Get a campaign by ID with tenant isolation.
+   *
+   * @param db - Database client.
+   * @param id - Campaign ID.
+   * @param tenantId - Tenant identifier.
+   * @returns The campaign, or throws NotFoundError.
+   */
+  async getCampaign(db: FactoryDb, id: string, tenantId: string): Promise<OutreachCampaign> {
+    if (!id || !tenantId) {
+      throw new InternalError('CampaignService.getCampaign: id and tenantId are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`SELECT * FROM outreach_campaigns WHERE id = ${id} AND tenant_id = ${tenantId} LIMIT 1`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Campaign ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToCampaign(row);
+    });
+  }
+
+  /**
+   * List campaigns for a tenant.
+   *
+   * @param db - Database client.
+   * @param tenantId - Tenant identifier.
+   * @returns Array of campaigns.
+   */
+  async listCampaigns(db: FactoryDb, tenantId: string): Promise<OutreachCampaign[]> {
+    if (!tenantId) {
+      throw new InternalError('CampaignService.listCampaigns: tenantId is required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`SELECT * FROM outreach_campaigns WHERE tenant_id = ${tenantId} ORDER BY created_at DESC`,
+      );
+      return rows.rows.map(rowToCampaign);
+    });
+  }
+
+  /**
+   * Update campaign status.
+   *
+   * @param db - Database client.
+   * @param id - Campaign ID.
+   * @param tenantId - Tenant identifier.
+   * @param status - New campaign status.
+   * @returns Updated campaign.
+   */
+  async updateCampaignStatus(
+    db: FactoryDb,
+    id: string,
+    tenantId: string,
+    status: CampaignStatus,
+  ): Promise<OutreachCampaign> {
+    if (!id || !tenantId || !status) {
+      throw new InternalError('CampaignService.updateCampaignStatus: id, tenantId, and status are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CampaignRow>(
+        sql`UPDATE outreach_campaigns
+            SET status = ${status}, updated_at = NOW()
+            WHERE id = ${id} AND tenant_id = ${tenantId}
+            RETURNING *`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Campaign ${id} not found for tenant ${tenantId}`);
+      }
+      return rowToCampaign(row);
+    });
+  }
+}
+
+/**
+ * Service for managing call logs with tenant isolation.
+ */
+export class CallLogService {
+  /**
+   * Create a new call log.
+   *
+   * Runs inside a transaction where `SET LOCAL app.tenant_id` is set first so
+   * that the RLS policy on `call_logs` (which checks tenant via the
+   * `outreach_campaigns` join) can filter correctly.
+   *
+   * @param db - Database client.
+   * @param tenantId - Tenant identifier for RLS isolation.
+   * @param data - Call log data.
+   * @returns The created call log.
+   */
+  async createCallLog(db: FactoryDb, tenantId: string, data: CreateCallLogInput): Promise<CallLog> {
+    if (!tenantId) {
+      throw new InternalError('CallLogService.createCallLog: tenantId is required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+    if (
+      !data.campaignId ||
+      !data.contactId ||
+      !data.provider ||
+      !data.providerCallId ||
+      data.durationSeconds === undefined ||
+      !data.outcome ||
+      !data.callStarted ||
+      !data.callEnded
+    ) {
+      throw new InternalError('CallLogService.createCallLog: required fields missing', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (txDb) => {
+      const rows = await txDb.execute<CallLogRow>(
+        sql`INSERT INTO call_logs (
+            campaign_id, contact_id, provider, provider_call_id,
+            duration_seconds, outcome, recording_url, call_started, call_ended
+          )
+          VALUES (
+            ${data.campaignId}, ${data.contactId}, ${data.provider}, ${data.providerCallId},
+            ${data.durationSeconds}, ${data.outcome}, ${data.recordingUrl || null},
+            ${data.callStarted.toISOString()}, ${data.callEnded.toISOString()}
+          )
+          RETURNING *`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new InternalError('CallLogService.createCallLog: no row returned', {
+          code: ErrorCodes.DB_QUERY_FAILED,
+        });
+      }
+      return rowToCallLog(row);
+    });
+  }
+
+  /**
+   * Get a call log by ID with tenant isolation.
+   *
+   * Runs inside a transaction where `SET LOCAL app.tenant_id` is set first so
+   * that the RLS policy on `call_logs` restricts access to the specified tenant.
+   *
+   * @param db - Database client.
+   * @param id - Call log ID.
+   * @param tenantId - Tenant identifier for RLS isolation.
+   * @returns The call log, or throws NotFoundError.
+   */
+  async getCallLog(db: FactoryDb, id: string, tenantId: string): Promise<CallLog> {
+    if (!id || !tenantId) {
+      throw new InternalError('CallLogService.getCallLog: id and tenantId are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (txDb) => {
+      const rows = await txDb.execute<CallLogRow>(
+        sql`SELECT * FROM call_logs WHERE id = ${id} LIMIT 1`,
+      );
+
+      const row = rows.rows[0];
+      if (!row) {
+        throw new NotFoundError(`Call log ${id} not found`);
+      }
+      return rowToCallLog(row);
+    });
+  }
+
+  /**
+   * List call logs for a campaign with tenant isolation enforced via campaign join.
+   *
+   * @param db - Database client.
+   * @param campaignId - Campaign ID.
+   * @param tenantId - Tenant identifier for isolation.
+   * @returns Array of call logs.
+   */
+  async listCallLogsByCampaign(db: FactoryDb, campaignId: string, tenantId: string): Promise<CallLog[]> {
+    if (!campaignId || !tenantId) {
+      throw new InternalError('CallLogService.listCallLogsByCampaign: campaignId and tenantId are required', {
+        code: ErrorCodes.VALIDATION_ERROR,
+      });
+    }
+
+    return withTenant(db, tenantId, async (db) => {
+      const rows = await db.execute<CallLogRow>(
+        sql`SELECT cl.* FROM call_logs cl
+            JOIN outreach_campaigns oc ON cl.campaign_id = oc.id
+            WHERE cl.campaign_id = ${campaignId} AND oc.tenant_id = ${tenantId}
+            ORDER BY cl.call_started DESC`,
+      );
+      return rows.rows.map(rowToCallLog);
+    });
+  }
 }
