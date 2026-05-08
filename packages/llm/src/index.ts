@@ -106,8 +106,8 @@ export interface LLMDeps {
 const MODELS = {
   anthropic: {
     fast: 'claude-haiku-4-20250514',
-    balanced: 'claude-sonnet-4-20250514',
-    smart: 'claude-opus-4-20250514',
+    balanced: 'claude-sonnet-4-6',
+    smart: 'claude-opus-4-7',
   },
   gemini: {
     smart: 'gemini-2.5-pro',
@@ -125,7 +125,53 @@ const MODELS = {
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_TEMPERATURE = 0.7;
 const DEFAULT_LONG_CONTEXT_THRESHOLD = 150_000; // tokens
-const MAX_ATTEMPTS = 3;
+
+// ─── Per-provider exponential backoff constants ────────────────────────────
+/** Base delay in ms for the first retry. */
+const BACKOFF_BASE_MS = 500;
+/** Maximum backoff cap in ms. */
+const BACKOFF_CAP_MS = 8_000;
+/** Max random jitter added to each backoff delay, in ms. */
+const BACKOFF_JITTER_MAX_MS = 250;
+/** Maximum number of attempts per provider (1 initial + 2 retries). */
+const PER_PROVIDER_MAX_ATTEMPTS = 3;
+
+// ─── Per-provider cooldown state (module-level) ────────────────────────────
+/**
+ * Tracks when a provider's cooldown period expires.
+ * Keyed by {@link LLMProvider}; value is the `Date.now()` epoch ms at which
+ * the cooldown expires. Absent key means "not cooling down".
+ */
+const providerCooldownUntil: Map<LLMProvider, number> = new Map();
+
+/** Cooldown duration in ms after a provider exhausts all retries. */
+const PROVIDER_COOLDOWN_MS = 30_000;
+
+/**
+ * Returns `true` if the provider is currently in its cooldown window.
+ * Uses the injected `now` function (or `Date.now`) for testability.
+ */
+function isProviderCoolingDown(provider: LLMProvider, now: () => number = Date.now): boolean {
+  const until = providerCooldownUntil.get(provider);
+  if (until === undefined) return false;
+  return now() < until;
+}
+
+/**
+ * Marks a provider as cooling down for {@link PROVIDER_COOLDOWN_MS} milliseconds.
+ */
+function markProviderCoolingDown(provider: LLMProvider, now: () => number = Date.now): void {
+  providerCooldownUntil.set(provider, now() + PROVIDER_COOLDOWN_MS);
+}
+
+/**
+ * Clears the cooldown state for a provider after a successful call.
+ */
+function clearProviderCooldown(provider: LLMProvider): void {
+  providerCooldownUntil.delete(provider);
+}
+
+// ─── Legacy backoff constant (kept for the existing callWithBackoff signature) ─
 const BASE_BACKOFF_MS = 250;
 
 interface ProviderError {
@@ -135,8 +181,12 @@ interface ProviderError {
   message: string;
 }
 
-function isRetryable(status: number): boolean {
-  return status === 408 || status === 425 || status === 429 || status >= 500;
+/**
+ * Returns `true` for status codes that should trigger a retry.
+ * Only 429 and 5xx (transient server errors) qualify; other 4xx are terminal.
+ */
+function isRetryableForBackoff(status: number): boolean {
+  return status === 429 || (status >= 500 && status < 600);
 }
 
 function estimateTokens(messages: LLMMessage[], system?: string): number {
@@ -160,6 +210,19 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+/**
+ * Computes the exponential backoff delay for a given attempt with jitter.
+ *
+ * Formula: `Math.min(base * 2^attempt + jitter, cap)`
+ * where `jitter` is a random value in `[0, BACKOFF_JITTER_MAX_MS)`.
+ *
+ * @param attempt - Zero-based attempt index (0 = first retry after initial failure).
+ */
+function computeBackoffMs(attempt: number): number {
+  const jitter = Math.floor(Math.random() * BACKOFF_JITTER_MAX_MS);
+  return Math.min(BACKOFF_BASE_MS * Math.pow(2, attempt) + jitter, BACKOFF_CAP_MS);
+}
+
 // ─── Provider request builders ─────────────────────────────────────────────
 
 function buildAnthropicRequest(
@@ -167,6 +230,7 @@ function buildAnthropicRequest(
   messages: LLMMessage[],
   opts: LLMOptions,
   env: LLMEnv,
+  streaming = false,
 ): { url: string; headers: Record<string, string>; body: string } {
   const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
   const filtered = messages.filter((m) => m.role !== 'system');
@@ -176,6 +240,9 @@ function buildAnthropicRequest(
     temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
     messages: filtered.map((m) => ({ role: m.role, content: m.content })),
   };
+  if (streaming) {
+    body.stream = true;
+  }
   if (sys) {
     const cache = opts.promptCache ?? sys.length >= 4096;
     body.system = cache
@@ -345,15 +412,41 @@ function parseGroq(json: unknown): { content: string; input: number; output: num
 
 // ─── Core call with backoff ────────────────────────────────────────────────
 
+/**
+ * Calls a provider with per-provider exponential backoff.
+ *
+ * Retries up to {@link PER_PROVIDER_MAX_ATTEMPTS} times on 429 or transient 5xx.
+ * Other 4xx codes are treated as terminal and not retried.
+ * AbortError is never retried — it bubbles immediately.
+ *
+ * @param provider - Provider name, used for error tagging.
+ * @param request - Pre-built HTTP request descriptor.
+ * @param fetchImpl - Fetch implementation (injectable for tests).
+ * @param signal - Optional AbortSignal for cancellation.
+ * @param logger - Optional logger for per-attempt warnings.
+ * @param nowFn - Optional clock injection for testability.
+ * @returns Parsed JSON body, optional AI Gateway request ID, and attempt count.
+ */
 async function callWithBackoff(
   provider: LLMProvider,
   request: { url: string; headers: Record<string, string>; body: string },
   fetchImpl: typeof fetch,
   signal: AbortSignal | undefined,
   logger: Logger | undefined,
+  nowFn?: () => number,
 ): Promise<{ json: unknown; gatewayRequestId?: string; attempts: number }> {
+  /**
+   * Helper: mark provider cooling down and then throw the error.
+   * Called whenever we determine we've exhausted all retries for the provider.
+   * AbortError is never counted as a provider exhaustion — it bypasses this.
+   */
+  function exhaustAndThrow(err: ProviderError): never {
+    markProviderCoolingDown(provider, nowFn ?? Date.now);
+    throw err;
+  }
+
   let lastErr: ProviderError | undefined;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= PER_PROVIDER_MAX_ATTEMPTS; attempt++) {
     try {
       const response = await fetchImpl(request.url, {
         method: 'POST',
@@ -363,24 +456,32 @@ async function callWithBackoff(
       });
       if (!response.ok) {
         const text = await response.text().catch(() => '');
+        const retryable = isRetryableForBackoff(response.status);
         const err: ProviderError = {
           provider,
           status: response.status,
-          retryable: isRetryable(response.status),
+          retryable,
           message: `${provider} ${String(response.status)}: ${text.slice(0, 300)}`,
         };
         logger?.warn?.('llm.provider.error', { provider, status: response.status, attempt });
-        if (!err.retryable || attempt === MAX_ATTEMPTS) throw err;
+        if (!err.retryable || attempt === PER_PROVIDER_MAX_ATTEMPTS) {
+          if (err.retryable) exhaustAndThrow(err); // retryable but exhausted
+          throw err; // terminal non-retryable error — no cooldown
+        }
         lastErr = err;
       } else {
         const gatewayRequestId = response.headers.get('cf-aig-request-id') ?? undefined;
+        clearProviderCooldown(provider);
         return { json: await response.json(), gatewayRequestId, attempts: attempt };
       }
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') throw e;
       if (typeof e === 'object' && e !== null && 'retryable' in e) {
         const err = e as ProviderError;
-        if (!err.retryable || attempt === MAX_ATTEMPTS) throw err;
+        if (!err.retryable || attempt === PER_PROVIDER_MAX_ATTEMPTS) {
+          if (err.retryable) exhaustAndThrow(err); // retryable but exhausted
+          throw err; // terminal — no cooldown
+        }
         lastErr = err;
       } else {
         const err: ProviderError = {
@@ -389,14 +490,17 @@ async function callWithBackoff(
           retryable: true,
           message: e instanceof Error ? e.message : String(e),
         };
-        if (attempt === MAX_ATTEMPTS) throw err;
+        if (attempt === PER_PROVIDER_MAX_ATTEMPTS) exhaustAndThrow(err);
         lastErr = err;
       }
     }
-    const backoff = BASE_BACKOFF_MS * 2 ** (attempt - 1) + Math.floor(Math.random() * 100);
-    await sleep(backoff, signal);
+    // Exponential backoff with jitter: base=500ms, cap=8000ms, jitter up to 250ms
+    const backoffMs = computeBackoffMs(attempt - 1);
+    await sleep(backoffMs, signal);
   }
-  throw lastErr ?? { provider, status: 0, retryable: false, message: 'exhausted' };
+  // Fallthrough — should not be reached, but mark cooling down defensively.
+  markProviderCoolingDown(provider, nowFn ?? Date.now);
+  throw lastErr ?? ({ provider, status: 0, retryable: false, message: 'exhausted' } as ProviderError);
 }
 
 function isProviderError(err: unknown): err is ProviderError {
@@ -462,6 +566,7 @@ async function callOne(
   env: LLMEnv,
   fetchImpl: typeof fetch,
   logger: Logger | undefined,
+  nowFn?: () => number,
 ): Promise<{ parsed: { content: string; input: number; output: number; cacheRead?: number; cacheWrite?: number; model?: string }; gatewayRequestId?: string; attempts: number }> {
   let req: { url: string; headers: Record<string, string>; body: string };
   switch (leg.provider) {
@@ -484,6 +589,7 @@ async function callOne(
     fetchImpl,
     opts.signal,
     logger,
+    nowFn,
   );
   switch (leg.provider) {
     case 'anthropic':
@@ -507,6 +613,11 @@ async function callOne(
  *   - `verifier` → Groq Llama 3.3 70B (no fallback — verifier is inherently cheap/best-effort)
  *
  * All provider traffic flows through Cloudflare AI Gateway at `AI_GATEWAY_BASE_URL`.
+ *
+ * Per-provider reliability guarantees (0.4.0):
+ *   - Exponential backoff with jitter on 429 / 5xx (base 500ms, cap 8s, up to 2 retries).
+ *   - Provider cooldown: after exhausting retries the provider is marked cooling down
+ *     for 30 seconds; subsequent calls skip it and go straight to the fallback leg.
  *
  * @param messages - Ordered chat history.
  * @param env - API key + gateway bindings.
@@ -537,11 +648,17 @@ export async function complete(
   const tokenEstimate = estimateTokens(messages, system);
   const route = plan(tier, opts, tokenEstimate);
 
-  const attempts: Array<{ provider: LLMProvider; status?: number; message: string }> = [];
+  const attemptLog: Array<{ provider: LLMProvider; status?: number; message: string }> = [];
 
   for (const leg of [route.primary, route.fallback].filter(Boolean) as Array<{ provider: LLMProvider; model: string }>) {
+    // Skip providers that are currently in their cooldown window.
+    if (isProviderCoolingDown(leg.provider, now)) {
+      logger?.warn?.('llm.provider.coolingDown', { provider: leg.provider });
+      attemptLog.push({ provider: leg.provider, message: 'skipped: cooling down' });
+      continue;
+    }
     try {
-      const result = await callOne(leg, messages, opts, env, fetchImpl, logger);
+      const result = await callOne(leg, messages, opts, env, fetchImpl, logger, now);
       if (!result.parsed.content) {
         throw { provider: leg.provider, status: 200, retryable: false, message: 'empty content' } satisfies ProviderError;
       }
@@ -580,22 +697,304 @@ export async function complete(
         );
       }
       if (isProviderError(e)) {
-        attempts.push({ provider: e.provider, status: e.status, message: e.message });
+        attemptLog.push({ provider: e.provider, status: e.status, message: e.message });
         if (e.status === 429 && !route.fallback) {
           return toErrorResponse(
-            new RateLimitError(`llm rate limited on ${e.provider}`, { attempts }),
+            new RateLimitError(`llm rate limited on ${e.provider}`, { attempts: attemptLog }),
           );
         }
         logger?.warn?.('llm.leg.failed', { provider: leg.provider, status: e.status });
         continue;
       }
-      attempts.push({ provider: leg.provider, message: e instanceof Error ? e.message : String(e) });
+      attemptLog.push({ provider: leg.provider, message: e instanceof Error ? e.message : String(e) });
     }
   }
 
   return toErrorResponse(
-    new InternalError('LLM_ALL_PROVIDERS_FAILED', { attempts, tier, tokenEstimate }),
+    new InternalError('LLM_ALL_PROVIDERS_FAILED', { attempts: attemptLog, tier, tokenEstimate }),
   );
 }
 
-export { MODELS };
+// ─── Streaming ────────────────────────────────────────────────────────────
+
+/**
+ * Anthropic server-sent event shapes used by the streaming parser.
+ * Only the fields we consume are typed; the rest are ignored.
+ */
+interface AnthropicStreamEvent {
+  type: string;
+  index?: number;
+  delta?: { type?: string; text?: string };
+  message?: {
+    usage?: {
+      input_tokens?: number;
+      output_tokens?: number;
+      cache_read_input_tokens?: number;
+      cache_creation_input_tokens?: number;
+    };
+    model?: string;
+  };
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+  };
+}
+
+/**
+ * Streams a completion from the primary Anthropic provider, yielding text chunks
+ * as they arrive. Falls back to the non-streaming {@link complete} function when
+ * the provider does not support streaming (i.e. a non-Anthropic primary is selected).
+ *
+ * The generator's **return value** (accessible via `gen.return()` or by consuming
+ * the full iteration) is an {@link LLMResult} with the same shape as {@link complete}.
+ *
+ * Usage pattern:
+ * ```ts
+ * const gen = completionStream(messages, env, opts);
+ * for await (const chunk of gen) {
+ *   // stream chunk to client
+ * }
+ * const result = (await gen.return(undefined)).value; // LLMResult
+ * ```
+ *
+ * @param messages - Ordered chat history.
+ * @param env - API key + gateway bindings.
+ * @param opts - Optional tier/model/parameters override. Accepts `deps` as nested field.
+ * @returns An async generator that yields `string` chunks and returns an {@link LLMResult}.
+ */
+export async function* completionStream(
+  messages: LLMMessage[],
+  env: LLMEnv,
+  opts: LLMOptions & { deps?: LLMDeps } = {},
+): AsyncGenerator<string, LLMResult, unknown> {
+  if (messages.length === 0) {
+    throw new ValidationError('messages must not be empty');
+  }
+  if (!env.AI_GATEWAY_BASE_URL) {
+    throw new ValidationError('AI_GATEWAY_BASE_URL is required in 0.3.0');
+  }
+
+  const deps: LLMDeps = opts.deps ?? {};
+  const fetchImpl = deps.fetch ?? fetch;
+  const now = deps.now ?? (() => Date.now());
+  const logger = deps.logger;
+  const startedAt = now();
+
+  const tier: LLMTier = opts.tier ?? 'balanced';
+  const system = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const tokenEstimate = estimateTokens(messages, system);
+  const route = plan(tier, opts, tokenEstimate);
+
+  // Only Anthropic supports streaming in the current implementation.
+  // For all other primaries, fall back to non-streaming complete().
+  if (route.primary.provider !== 'anthropic') {
+    const result = await complete(messages, env, opts, deps);
+    if (result.error !== null || result.data === null) {
+      throw new InternalError('LLM_ALL_PROVIDERS_FAILED', { error: result.error });
+    }
+    yield result.data.content;
+    return result.data;
+  }
+
+  // Check cooldown before attempting the streaming call.
+  if (isProviderCoolingDown(route.primary.provider, now)) {
+    logger?.warn?.('llm.provider.coolingDown', { provider: route.primary.provider });
+    // Fall back to non-streaming complete() which will handle the fallback leg.
+    const result = await complete(messages, env, opts, deps);
+    if (result.error !== null || result.data === null) {
+      throw new InternalError('LLM_ALL_PROVIDERS_FAILED', { error: result.error });
+    }
+    yield result.data.content;
+    return result.data;
+  }
+
+  const req = buildAnthropicRequest(route.primary.model, messages, opts, env, true);
+
+  let response: Response;
+  try {
+    response = await fetchImpl(req.url, {
+      method: 'POST',
+      headers: req.headers,
+      body: req.body,
+      // Fall back to a 60 s default when the caller provides no signal — prevents
+      // a hung provider connection from consuming the Worker's wall-clock budget.
+      signal: opts.signal ?? AbortSignal.timeout(60_000),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new InternalError('llm call aborted', {
+        provider: route.primary.provider,
+        model: route.primary.model,
+      });
+    }
+    throw new InternalError('llm stream fetch failed', {
+      message: e instanceof Error ? e.message : String(e),
+    });
+  }
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const retryable = isRetryableForBackoff(response.status);
+    if (retryable && response.status === 429) {
+      markProviderCoolingDown(route.primary.provider, now);
+    }
+    // Fall back to non-streaming complete() which will try the fallback leg.
+    const result = await complete(messages, env, opts, deps);
+    if (result.error !== null || result.data === null) {
+      throw new InternalError('LLM_ALL_PROVIDERS_FAILED', {
+        streamError: `${route.primary.provider} ${String(response.status)}: ${text.slice(0, 300)}`,
+        error: result.error,
+      });
+    }
+    yield result.data.content;
+    return result.data;
+  }
+
+  if (!response.body) {
+    throw new InternalError('llm stream response body is null', {
+      provider: route.primary.provider,
+    });
+  }
+
+  // Stream SSE events from Anthropic.
+  const decoder = new TextDecoder();
+  let accumulatedText = '';
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let cacheRead = 0;
+  let cacheWrite = 0;
+  let modelName: string | undefined;
+  const gatewayRequestId: string | undefined = response.headers.get('cf-aig-request-id') ?? undefined;
+
+  const reader = response.body.getReader();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE lines are delimited by '\n'. Events are separated by '\n\n'.
+      const lines = buffer.split('\n');
+      // Keep the last (potentially incomplete) line in the buffer.
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        let event: AnthropicStreamEvent;
+        try {
+          event = JSON.parse(data) as AnthropicStreamEvent;
+        } catch {
+          continue; // Skip malformed SSE lines.
+        }
+
+        switch (event.type) {
+          case 'message_start':
+            inputTokens = event.message?.usage?.input_tokens ?? 0;
+            cacheRead = event.message?.usage?.cache_read_input_tokens ?? 0;
+            cacheWrite = event.message?.usage?.cache_creation_input_tokens ?? 0;
+            modelName = event.message?.model;
+            break;
+          case 'content_block_delta':
+            if (event.delta?.type === 'text_delta' && typeof event.delta.text === 'string') {
+              accumulatedText += event.delta.text;
+              yield event.delta.text;
+            }
+            break;
+          case 'message_delta':
+            outputTokens = event.usage?.output_tokens ?? outputTokens;
+            break;
+          default:
+            break;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  clearProviderCooldown(route.primary.provider);
+  logger?.info?.('llm.completionStream', {
+    provider: route.primary.provider,
+    model: route.primary.model,
+    tier,
+    tokenEstimate,
+    runId: opts.runId,
+    project: opts.project,
+    actor: opts.actor,
+  });
+
+  return {
+    content: accumulatedText,
+    provider: route.primary.provider,
+    model: modelName ?? route.primary.model,
+    tier,
+    tokens: { input: inputTokens, output: outputTokens, cacheRead, cacheWrite },
+    latency: now() - startedAt,
+    attempts: 1,
+    gatewayRequestId,
+  };
+}
+
+// ─── Grounding assertion ───────────────────────────────────────────────────
+
+/**
+ * Returns `true` if `response` contains at least one verbatim phrase of at
+ * least 5 consecutive whitespace-delimited tokens that also appears in one of
+ * the `sources` strings.
+ *
+ * Returns `true` unconditionally when `sources` is empty (no grounding
+ * documents means grounding cannot be violated).
+ *
+ * This is a lightweight guard for RAG pipelines — it detects obvious
+ * hallucinations where the model generates content not present in any
+ * retrieved source. It is NOT a semantic similarity check.
+ *
+ * @param response - The LLM-generated text to inspect.
+ * @param sources - Retrieved source documents to check against.
+ * @returns `true` if the response is grounded, `false` if hallucination detected.
+ *
+ * @example
+ * ```ts
+ * const grounded = assertGrounding(llmAnswer, retrievedDocs);
+ * if (!grounded) {
+ *   // flag or re-rank the response
+ * }
+ * ```
+ */
+export function assertGrounding(response: string, sources: string[]): boolean {
+  if (sources.length === 0) return true;
+
+  const WINDOW = 5;
+  const responseTokens = response.split(/\s+/).filter((t) => t.length > 0);
+
+  if (responseTokens.length < WINDOW) return false;
+
+  // Build a set of all 5-token ngrams from each source for O(n) lookup.
+  const sourceNgrams = new Set<string>();
+  for (const source of sources) {
+    const tokens = source.split(/\s+/).filter((t) => t.length > 0);
+    for (let i = 0; i <= tokens.length - WINDOW; i++) {
+      const ngram = tokens.slice(i, i + WINDOW).join(' ');
+      sourceNgrams.add(ngram);
+    }
+  }
+
+  if (sourceNgrams.size === 0) return false;
+
+  // Slide a window of WINDOW tokens over the response and check for a match.
+  for (let i = 0; i <= responseTokens.length - WINDOW; i++) {
+    const ngram = responseTokens.slice(i, i + WINDOW).join(' ');
+    if (sourceNgrams.has(ngram)) return true;
+  }
+
+  return false;
+}
+
+// ─── Exported helpers (kept for existing consumers) ───────────────────────
+
+export { MODELS, isProviderCoolingDown, markProviderCoolingDown, clearProviderCooldown, PROVIDER_COOLDOWN_MS };
+export { BASE_BACKOFF_MS };

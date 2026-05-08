@@ -17,12 +17,17 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@latimer-woods-tech'
       - name: Validate packages in dependency order
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           packages=(
@@ -45,12 +50,12 @@ jobs:
             content
             social
             seo
+            validation
             crm
             compliance
             admin
             video
             schedule
-            validation
             llm-meter
             studio-core
           )

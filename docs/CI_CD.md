@@ -189,11 +189,28 @@ How a deploy authenticates, end to end:
 
 1. **App repo's workflow** is triggered by a push.
 2. **`secrets: inherit`** passes org-level secrets into factory's reusable workflow.
-3. **`actions/create-github-app-token@v2`** mints a short-lived (~1h) GitHub App installation token from `FACTORY_APP_ID` + `FACTORY_APP_PRIVATE_KEY`. This token has scoped access only to the Latimer-Woods-Tech org.
+3. **`actions/create-github-app-token@v3`** mints a short-lived (~1h) GitHub App installation token from `FACTORY_APP_ID` + `FACTORY_APP_PRIVATE_KEY`. This token has scoped access only to the Latimer-Woods-Tech org.
 4. **GitHub Packages** uses that token to authenticate `npm ci` for `@latimer-woods-tech/*` deps.
 5. **Cloudflare** is authenticated via `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` (org-level secrets).
 
 No long-lived PATs in CI. The GitHub App is the source of truth.
+
+### Factory main required checks
+
+The `factory` repo now treats these as merge-gating checks on `main`:
+
+- `CI / validate`
+- `CodeQL Security Analysis / Analyze (javascript)`
+- `Dependency Review / dependency-review`
+
+If you rename or split any of those workflows/jobs, update branch protection and the drift guard in the same change. Otherwise you will create a silent merge blocker.
+
+### Dependency bot ownership
+
+- Renovate owns npm dependency updates in this monorepo.
+- Dependabot is scoped to GitHub Actions updates only.
+
+Do not reintroduce overlapping npm bot coverage unless you also change the policy and PR handling rules.
 
 ---
 

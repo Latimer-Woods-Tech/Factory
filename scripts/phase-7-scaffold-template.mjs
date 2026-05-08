@@ -98,7 +98,8 @@ const STANDARD_PACKAGES = [
   '@latimer-woods-tech/neon@0.2.0',
   '@latimer-woods-tech/stripe@0.2.0',
   '@latimer-woods-tech/analytics@0.2.0',
-  '@latimer-woods-tech/email@0.2.0'
+  '@latimer-woods-tech/email@0.2.0',
+  '@latimer-woods-tech/flags@0.1.0',
 ];
 
 /**
@@ -222,7 +223,7 @@ export const contacts = pgTable('contacts', {
 });
 
 /**
- * consent_log — TCPA/GDPR audit trail
+ * consent_log — consent audit trail (GDPR, outreach opt-in/opt-out)
  */
 export const consent_log = pgTable('consent_log', {
   id: uuid('id').primaryKey().defaultRandom(),
