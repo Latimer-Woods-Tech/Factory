@@ -25,6 +25,9 @@ import repo from './routes/repo.js';
 import manifest from './routes/manifest.js';
 import catalog from './routes/catalog.js';
 import smoke from './routes/smoke.js';
+import slo from './routes/slo.js';
+import synthetic from './routes/synthetic.js';
+import ops from './routes/ops.js';
 import creatorOnboarding from './routes/creator-onboarding.js';
 import creators from './routes/creators.js';
 import payouts from './routes/payouts.js';
@@ -81,6 +84,12 @@ app.use('/repo/*', envContextMiddleware(), auditMiddleware());
 app.use('/catalog/*', envContextMiddleware(), auditMiddleware());
 // Smoke tests are auditable but not critical
 app.use('/smoke/*', envContextMiddleware(), auditMiddleware());
+// SLO panel — reads only, no audit.
+app.use('/slo/*', envContextMiddleware());
+// Synthetic journey monitor — GET is read, POST is audited.
+app.use('/synthetic/*', envContextMiddleware(), auditMiddleware());
+// Ops panel — all writes are audited via requireConfirmation + auditMiddleware.
+app.use('/ops/*', envContextMiddleware(), auditMiddleware());
 app.use('/api/creator/*', envContextMiddleware());
 app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
 app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
@@ -96,6 +105,9 @@ app.route('/observability', observability);
 app.route('/repo', repo);
 app.route('/catalog', catalog);
 app.route('/smoke', smoke);
+app.route('/slo', slo);
+app.route('/synthetic', synthetic);
+app.route('/ops', ops);
 app.route('/api/creator/onboarding', creatorOnboarding);
 app.route('/api/admin/creators', creators);
 app.route('/api/admin/payouts', payouts);

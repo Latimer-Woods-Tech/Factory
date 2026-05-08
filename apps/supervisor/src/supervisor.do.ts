@@ -1,4 +1,4 @@
-import type { Env } from './index';
+﻿import type { Env } from './index';
 import { matchTemplate } from './planner/match';
 import { parameterize } from './planner/parameterize';
 import { loadTemplates } from './planner/load';
@@ -6,15 +6,34 @@ import { readMemory, writeMemory } from './memory/d1';
 import { ToolRegistry } from './tools/registry';
 import { GENERATED_CAPABILITIES } from './capabilities.generated';
 import { getTemplateStats, recordRun } from './stats';
+import {
+  fetchApprovedIssues,
+  postPlanComment,
+  addLabel,
+  getPlanApproval,
+  formatPlanComment,
+} from './tools/github';
+import { sendDigest } from './tools/pushover';
+import { getInstallationToken } from './tools/github-auth';
 
-/**
- * Singleton Durable Object that coordinates the supervisor run loop.
- *
- * Phase 1 (SUP-3.4 scaffold): handles `GET /health`, `GET /state`,
- * `POST /scheduled` (noop log), and `POST /plan` (dry-run matchTemplate +
- * parameterize without execution). No actual tool invocation yet —
- * `POST /run` returns 501 until SUP-3.5 scaffolds the execution leg.
- */
+/** Maximum issues processed in a single scheduled run. */
+const PER_RUN_ISSUE_CAP = 10;
+
+/** Lock key used to prevent concurrent supervisor runs. */
+const LOCK_KEY = 'supervisor-run';
+
+/** TTL for the run lock in milliseconds (10 minutes). */
+const LOCK_TTL_MS = 600_000;
+
+/** Phrase that marks an issue as ineligible for supervisor processing. */
+const LOCKOUT_PHRASE = 'wordis-bond';
+
+interface PlanRecord {
+  commentId: number;
+  templateId: string;
+  postedAt: number;
+}
+
 export class SupervisorDO {
   private state: DurableObjectState;
   private env: Env;
@@ -86,9 +105,176 @@ export class SupervisorDO {
   }
 
   private async handleScheduled(): Promise<Response> {
-    // Phase 1: just log a heartbeat into memory so we can see cron is firing.
-    await writeMemory(this.env.MEMORY, 'last_scheduled_tick', { at: Date.now() });
-    return Response.json({ ok: true, phase: 'heartbeat only' });
+    const runId = `run-${Date.now()}`;
+    const errors: string[] = [];
+    let matched = 0;
+    let noTemplate = 0;
+    let approved = 0;
+
+    let ghToken: string;
+    try {
+      ghToken = await getInstallationToken(
+        this.env.FACTORY_APP_ID,
+        this.env.FACTORY_APP_PRIVATE_KEY,
+        this.env.FACTORY_APP_INSTALLATION_ID,
+      );
+    } catch (err) {
+      const msg = `getInstallationToken failed: ${String(err)}`;
+      console.error('[supervisor]', msg);
+      return Response.json({ ok: false, error: msg }, { status: 500 });
+    }
+
+    const lockAcquired = await this.acquireLock(runId);
+    if (!lockAcquired) {
+      console.log('[supervisor] lock not acquired — another run in flight, skipping');
+      await writeMemory(this.env.MEMORY, 'last_scheduled_tick', {
+        at: Date.now(),
+        skipped: true,
+        reason: 'lock-held',
+      });
+      return Response.json({ ok: true, skipped: true, reason: 'lock-held' });
+    }
+
+    try {
+      const templates = await loadTemplates();
+      await writeMemory(this.env.MEMORY, `receipt:${runId}:templates_loaded`, {
+        count: templates.length,
+        at: Date.now(),
+      });
+
+      let issues: Awaited<ReturnType<typeof fetchApprovedIssues>> = [];
+      try {
+        issues = await fetchApprovedIssues(ghToken);
+        await writeMemory(this.env.MEMORY, `receipt:${runId}:issues_fetched`, {
+          count: issues.length,
+          at: Date.now(),
+        });
+      } catch (err) {
+        const msg = `fetchApprovedIssues failed: ${String(err)}`;
+        errors.push(msg);
+        console.error('[supervisor]', msg);
+      }
+
+      const issuesToProcess = issues.slice(0, PER_RUN_ISSUE_CAP);
+
+      for (const issue of issuesToProcess) {
+        const combined = `${issue.title} ${issue.body}`.toLowerCase();
+        if (combined.includes(LOCKOUT_PHRASE)) {
+          console.log(`[supervisor] issue #${issue.number} contains lockout phrase — skipping`);
+          await writeMemory(this.env.MEMORY, `receipt:${runId}:skip:${issue.number}`, {
+            reason: 'wordis-bond',
+            at: Date.now(),
+          });
+          continue;
+        }
+
+        const searchText = `${issue.title} ${issue.body.slice(0, 500)}`;
+        const template = matchTemplate(searchText, templates);
+
+        if (!template) {
+          noTemplate++;
+          try {
+            await addLabel(ghToken, issue.number, 'supervisor:no-template');
+          } catch (err) {
+            const msg = `addLabel(no-template) #${issue.number}: ${String(err)}`;
+            errors.push(msg);
+            console.error('[supervisor]', msg);
+          }
+          await writeMemory(this.env.MEMORY, `receipt:${runId}:no-template:${issue.number}`, {
+            issueNumber: issue.number,
+            at: Date.now(),
+          });
+          continue;
+        }
+
+        matched++;
+
+        const existingPlan = await readMemory<PlanRecord>(
+          this.env.MEMORY,
+          `plan:${issue.number}`,
+        );
+
+        if (!existingPlan) {
+          const plan = parameterize(template, {
+            description: issue.title,
+            source: `github:issue:${issue.number}`,
+          });
+
+          const planMarkdown = formatPlanComment(
+            template.id,
+            template.description,
+            template.tier,
+            plan.steps,
+          );
+
+          try {
+            const commentId = await postPlanComment(ghToken, issue.number, planMarkdown);
+            const record: PlanRecord = {
+              commentId,
+              templateId: template.id,
+              postedAt: Date.now(),
+            };
+            await writeMemory(this.env.MEMORY, `plan:${issue.number}`, record);
+            await writeMemory(
+              this.env.MEMORY,
+              `receipt:${runId}:plan-posted:${issue.number}`,
+              { ...record, at: Date.now() },
+            );
+          } catch (err) {
+            const msg = `postPlanComment #${issue.number}: ${String(err)}`;
+            errors.push(msg);
+            console.error('[supervisor]', msg);
+          }
+        } else {
+          try {
+            const isApproved = await getPlanApproval(
+              ghToken,
+              issue.number,
+              existingPlan.commentId,
+            );
+            if (isApproved) {
+              approved++;
+              await writeMemory(this.env.MEMORY, `approved:${issue.number}`, {
+                issueNumber: issue.number,
+                templateId: existingPlan.templateId,
+                approvedAt: Date.now(),
+              });
+              await writeMemory(
+                this.env.MEMORY,
+                `receipt:${runId}:approved:${issue.number}`,
+                { at: Date.now() },
+              );
+              console.log(`[supervisor] issue #${issue.number} plan approved — queued for execution`);
+            }
+          } catch (err) {
+            const msg = `getPlanApproval #${issue.number}: ${String(err)}`;
+            errors.push(msg);
+            console.error('[supervisor]', msg);
+          }
+        }
+      }
+
+      const summary = {
+        runId,
+        at: Date.now(),
+        matched,
+        noTemplate,
+        approved,
+        issuesProcessed: issuesToProcess.length,
+        errors,
+      };
+      await writeMemory(this.env.MEMORY, 'last_run', summary);
+
+      return Response.json({ ok: true, ...summary });
+    } finally {
+      await this.releaseLock(runId);
+      await sendDigest(this.env.PUSHOVER_TOKEN, this.env.PUSHOVER_USER_KEY, {
+        matched,
+        noTemplate,
+        approved,
+        errors,
+      });
+    }
   }
 
   private async handlePlan(request: Request): Promise<Response> {
@@ -111,7 +297,6 @@ export class SupervisorDO {
     return Response.json({ matched: true, template: match.id, plan });
   }
 
-  /** SUP-3.5: run a planned template. Records attempt and outcome in template_stats. */
   private async handleRun(request: Request): Promise<Response> {
     const body = (await request.json()) as {
       template_id?: string;
@@ -140,7 +325,6 @@ export class SupervisorDO {
       });
     }
 
-    // Execution engine (tool dispatch) wired in SUP-4.
     return Response.json(
       {
         error: 'EXECUTION_NOT_IMPLEMENTED',
@@ -150,5 +334,41 @@ export class SupervisorDO {
       },
       { status: 501 },
     );
+  }
+
+  private async acquireLock(holder: string): Promise<boolean> {
+    try {
+      const lockId = this.env.LOCK.idFromName(LOCK_KEY);
+      const lockStub = this.env.LOCK.get(lockId);
+      const res = await lockStub.fetch(
+        new Request('https://lock/acquire', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: LOCK_KEY, holder, ttlMs: LOCK_TTL_MS }),
+        }),
+      );
+      if (!res.ok) return false;
+      const data = (await res.json()) as { acquired: boolean };
+      return data.acquired === true;
+    } catch (err) {
+      console.error('[supervisor] acquireLock error:', err);
+      return false;
+    }
+  }
+
+  private async releaseLock(holder: string): Promise<void> {
+    try {
+      const lockId = this.env.LOCK.idFromName(LOCK_KEY);
+      const lockStub = this.env.LOCK.get(lockId);
+      await lockStub.fetch(
+        new Request('https://lock/release', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: LOCK_KEY, holder }),
+        }),
+      );
+    } catch (err) {
+      console.error('[supervisor] releaseLock error:', err);
+    }
   }
 }
