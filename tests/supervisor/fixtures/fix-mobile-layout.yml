@@ -1,0 +1,20 @@
+fixture_for: fix-mobile-layout
+issue:
+  title: "fix(mobile): hero layout breaks at 390px — grey columns beside text"
+  labels: [bug, area:frontend]
+  body: |
+    On a 390px viewport the landing hero renders as a massive grey block.
+    The landing-hero-content grid child is missing min-width:0 which prevents
+    the 1fr column from shrinking correctly.
+
+    Additionally the desktop nav links (Pricing, Practitioners, Get Started)
+    remain reachable via keyboard when the slide-out drawer is off-screen
+    — the drawer only uses right:-100% so links are still in the DOM tab order.
+
+    App: humandesign
+    CSS file: client/public/css/landing.css
+    Breakpoint: 390px
+    Layout issue kind: grid-overflow
+
+    Expected: single column at 390px, text first then video widget.
+    Actual: massive grey ghost columns beside the text column.
