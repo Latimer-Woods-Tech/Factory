@@ -119,6 +119,14 @@ jobs:
       - name: Register job in database
         id: register_job
         run: |
+          # Guard: require SCHEDULE_WORKER_URL and WORKER_API_TOKEN
+          if [ -z "$SCHEDULE_WORKER_URL" ] || [ -z "$WORKER_API_TOKEN" ]; then
+            echo "::error::SCHEDULE_WORKER_URL and WORKER_API_TOKEN secrets are required"
+            echo "SCHEDULE_WORKER_URL: ${SCHEDULE_WORKER_URL:-(empty)}"
+            echo "WORKER_API_TOKEN: ${WORKER_API_TOKEN:+(set)${WORKER_API_TOKEN:-(empty)}}"
+            exit 1
+          fi
+
           # Map composition_id → schedule-worker type string
           case "$COMPOSITION_ID" in
             MarketingVideo)   TYPE="marketing" ;;
@@ -127,7 +135,7 @@ jobs:
             *)                TYPE="marketing" ;;
           esac
 
-          RESPONSE=$(curl -s -X POST "${SCHEDULE_WORKER_URL}/jobs" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${SCHEDULE_WORKER_URL}/jobs" \
             -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{
@@ -138,9 +146,21 @@ jobs:
               \"idempotencyKey\": \"wf-${{ github.event.inputs.job_id }}\"
             }")
 
-          REAL_JOB_ID=$(echo "$RESPONSE" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).data?.id ?? '')")
+          # Extract HTTP status code (last line) and body (everything except last line)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response body: $RESPONSE_BODY"
+
+          if [ "$HTTP_CODE" != "201" ]; then
+            echo "::error::schedule-worker POST /jobs returned $HTTP_CODE (expected 201)"
+            exit 1
+          fi
+
+          REAL_JOB_ID=$(echo "$RESPONSE_BODY" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).data?.id ?? '')")
           if [ -z "$REAL_JOB_ID" ]; then
-            echo "Failed to register job: $RESPONSE"
+            echo "::error::Failed to extract job ID from response"
             exit 1
           fi
           echo "real_job_id=$REAL_JOB_ID" >> "$GITHUB_OUTPUT"
