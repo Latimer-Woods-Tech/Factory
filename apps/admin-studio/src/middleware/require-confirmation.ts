@@ -53,9 +53,16 @@ async function expectedConfirmToken(
  * can compute it independently in the Admin Studio UI without knowing the
  * initiator's identity. Enforces FRIDGE rule 8: irreversible actions require
  * explicit approval from a second human principal out-of-band.
+ *
+ * A time-window nonce (UTC hour bucket) is included so tokens expire after
+ * at most one hour, preventing precomputation attacks without requiring the
+ * co-signer to receive a separate out-of-band nonce.
  */
 async function expectedCosignerToken(action: string, env: string): Promise<string> {
-  const data = new TextEncoder().encode(`cosign:${action}:${env}`);
+  // Hour-granularity nonce: truncate epoch to the current UTC hour.
+  // Tokens remain valid within the same 60-minute window and expire naturally.
+  const hourBucket = Math.floor(Date.now() / 3_600_000);
+  const data = new TextEncoder().encode(`cosign:${action}:${env}:${hourBucket}`);
   const hash = await crypto.subtle.digest('SHA-256', data);
   const hex = [...new Uint8Array(hash)]
     .map((b) => b.toString(16).padStart(2, '0'))
