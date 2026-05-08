@@ -1,0 +1,157 @@
+name: detect-flaky-checks
+
+# Issue: https://github.com/Latimer-Woods-Tech/factory/issues/274
+# Track checks that fail then pass on rerun and publish a weekly issue for remediation.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Monday 09:00 UTC
+  workflow_dispatch: # manual trigger for testing
+
+jobs:
+  detect-and-report:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: read
+
+    steps:
+      - name: Collect workflow runs (past 7 days)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          CUTOFF_EPOCH=$(date -u -d '7 days ago' +%s)
+          > /tmp/all_runs.jsonl
+
+          for page in 1 2 3 4 5; do
+            raw=$(gh api \
+              "repos/$REPO/actions/runs?per_page=100&page=$page" \
+              --jq '.workflow_runs[] | {id: .id, name: .name, head_sha: .head_sha, conclusion: .conclusion, run_attempt: .run_attempt, created_at: .created_at, html_url: .html_url}' \
+              2>/dev/null || true)
+
+            if [ -z "$raw" ]; then
+              break
+            fi
+
+            # Append to accumulator
+            echo "$raw" >> /tmp/all_runs.jsonl
+
+            # Stop paginating once the oldest entry on this page is outside the window
+            oldest_created=$(echo "$raw" | tail -n1 | python3 -c "import json,sys; d=json.loads(sys.stdin.read()); print(d.get('created_at','1970-01-01T00:00:00Z'))")
+            oldest_epoch=$(date -u -d "$oldest_created" +%s 2>/dev/null || echo 0)
+            if [ "$oldest_epoch" -lt "$CUTOFF_EPOCH" ]; then
+              break
+            fi
+          done
+
+          echo "Collected $(wc -l < /tmp/all_runs.jsonl) run entries"
+
+      - name: Detect flaky runs and generate report
+        id: detect
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, sys
+          from collections import defaultdict
+          from datetime import datetime, timezone, timedelta
+
+          cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+
+          groups = defaultdict(list)
+          with open('/tmp/all_runs.jsonl') as f:
+            for line in f:
+              line = line.strip()
+              if not line:
+                continue
+              try:
+                run = json.loads(line)
+              except json.JSONDecodeError:
+                continue
+              created_str = run.get('created_at', '')
+              try:
+                dt = datetime.fromisoformat(created_str.replace('Z', '+00:00'))
+                if dt < cutoff:
+                  continue
+              except ValueError:
+                continue
+
+              # Key: workflow name + head SHA (detects re-runs on the same commit)
+              key = f"{run['name']}::{run['head_sha']}"
+              groups[key].append(run)
+
+          flaky = []
+          for key, runs in groups.items():
+            if len(runs) < 2:
+              continue
+            # Sort by attempt number then creation time so first = earliest attempt
+            runs.sort(key=lambda r: (r.get('run_attempt') or 0, r.get('created_at') or ''))
+            first = runs[0]
+            last = runs[-1]
+            if first.get('conclusion') == 'failure' and last.get('conclusion') == 'success':
+              flaky.append({
+                'name': first['name'],
+                'sha': (first['head_sha'] or '')[:8],
+                'url': last['html_url'],
+                'attempts': len(runs),
+              })
+
+          gha_output = os.environ['GITHUB_OUTPUT']
+
+          if not flaky:
+            print('No flaky checks detected in the past 7 days.', file=sys.stderr)
+            with open(gha_output, 'a') as f:
+              f.write('has_flaky=false\n')
+          else:
+            today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            report = f'## Flaky Check Report\n\n'
+            report += f'**{len(flaky)} flaky workflow run(s)** detected in the past 7 days '
+            report += f'(failed on first attempt, passed on rerun).\n\n'
+            report += '| Workflow | SHA | Attempts | Run |\n'
+            report += '|----------|-----|----------|-----|\n'
+            for item in sorted(flaky, key=lambda x: -x['attempts']):
+              report += f"| `{item['name']}` | `{item['sha']}` | {item['attempts']} | [view]({item['url']}) |\n"
+            report += f'\n---\n_Generated {today} by '
+            report += '[detect-flaky-checks](../../.github/workflows/detect-flaky-checks.yml). '
+            report += 'Parent: #270_\n\n'
+            report += '### Remediation guide\n'
+            report += '- **Flake rate < 5% for 2 weeks**: add to `.github/flaky-allowlist.yml` (once created).\n'
+            report += '- **Flake rate >= 5%**: fix non-deterministic test or infrastructure root cause.\n'
+            report += '- **Network / API timeouts**: add `AbortSignal.timeout()` or retry logic.\n'
+            with open('/tmp/flaky_report.md', 'w') as out:
+              out.write(report)
+            with open(gha_output, 'a') as f:
+              f.write('has_flaky=true\n')
+          PYEOF
+
+      - name: File weekly flaky report issue
+        if: steps.detect.outputs.has_flaky == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          WEEK=$(date -u +'%Y-W%V')
+          TITLE="chore(ci): flaky check report ${WEEK}"
+
+          # Avoid duplicate reports for the same week
+          existing=$(gh issue list \
+            --repo "$REPO" \
+            --label "area:ci" \
+            --json title,number \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" 2>/dev/null | head -1 || true)
+
+          if [ -n "$existing" ]; then
+            echo "Report issue #${existing} already exists for week ${WEEK} — updating with new body"
+            gh issue edit "$existing" \
+              --repo "$REPO" \
+              --body-file /tmp/flaky_report.md
+          else
+            gh issue create \
+              --repo "$REPO" \
+              --title "$TITLE" \
+              --body-file /tmp/flaky_report.md \
+              --label "area:ci,hardening,priority:P2" \
+              --assignee "adrper79-dot"
+            echo "Filed new flaky check report for ${WEEK}"
+          fi

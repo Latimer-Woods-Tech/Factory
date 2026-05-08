@@ -84,8 +84,10 @@ jobs:
         working-directory: apps/supervisor
 
       - name: Confirm CF_API_TOKEN is set
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
-          test -n "${{ secrets.CF_API_TOKEN }}" || \
+          test -n "${CF_API_TOKEN}" || \
             (echo "::error::CF_API_TOKEN secret is not set. Create a token at https://dash.cloudflare.com/profile/api-tokens with Workers Scripts:Edit + D1:Edit permissions." && exit 1)
 
       - name: Provision secrets
@@ -93,8 +95,18 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          SECRET_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SECRET_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          SECRET_JWT_SECRET: ${{ secrets.SUPERVISOR_JWT_SECRET }}
+          SECRET_VERTEX_ACCESS_TOKEN: ${{ secrets.VERTEX_ACCESS_TOKEN }}
+          SECRET_GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          SECRET_FACTORY_APP_ID: ${{ secrets.FACTORY_APP_ID }}
+          SECRET_FACTORY_APP_PRIVATE_KEY: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          SECRET_FACTORY_APP_INSTALLATION_ID: ${{ secrets.FACTORY_APP_INSTALLATION_ID }}
+          SECRET_PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          SECRET_PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
-          TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
           # Only provision secrets that are actually set — skip empties with a warning.
           put_secret() {
             local name="$1" val="$2"
@@ -108,24 +120,24 @@ jobs:
             echo "$val" | npx wrangler secret put "$name" ${ENV_FLAG} 2>&1 | grep -v "^$"
           }
 
-          put_secret ANTHROPIC_API_KEY          "${{ secrets.ANTHROPIC_API_KEY }}"
-          put_secret GROQ_API_KEY               "${{ secrets.GROQ_API_KEY }}"
-          put_secret JWT_SECRET                 "${{ secrets.SUPERVISOR_JWT_SECRET }}"
-          put_secret VERTEX_ACCESS_TOKEN        "${{ secrets.VERTEX_ACCESS_TOKEN }}"
-          put_secret GROK_API_KEY               "${{ secrets.GROK_API_KEY }}"
-          put_secret FACTORY_APP_ID             "${{ secrets.FACTORY_APP_ID }}"
-          put_secret FACTORY_APP_PRIVATE_KEY    "${{ secrets.FACTORY_APP_PRIVATE_KEY }}"
-          put_secret FACTORY_APP_INSTALLATION_ID "${{ secrets.FACTORY_APP_INSTALLATION_ID }}"
-          put_secret PUSHOVER_TOKEN             "${{ secrets.PUSHOVER_TOKEN }}"
-          put_secret PUSHOVER_USER_KEY          "${{ secrets.PUSHOVER_USER_KEY }}"
+          put_secret ANTHROPIC_API_KEY          "${SECRET_ANTHROPIC_API_KEY}"
+          put_secret GROQ_API_KEY               "${SECRET_GROQ_API_KEY}"
+          put_secret JWT_SECRET                 "${SECRET_JWT_SECRET}"
+          put_secret VERTEX_ACCESS_TOKEN        "${SECRET_VERTEX_ACCESS_TOKEN}"
+          put_secret GROK_API_KEY               "${SECRET_GROK_API_KEY}"
+          put_secret FACTORY_APP_ID             "${SECRET_FACTORY_APP_ID}"
+          put_secret FACTORY_APP_PRIVATE_KEY    "${SECRET_FACTORY_APP_PRIVATE_KEY}"
+          put_secret FACTORY_APP_INSTALLATION_ID "${SECRET_FACTORY_APP_INSTALLATION_ID}"
+          put_secret PUSHOVER_TOKEN             "${SECRET_PUSHOVER_TOKEN}"
+          put_secret PUSHOVER_USER_KEY          "${SECRET_PUSHOVER_USER_KEY}"
 
       - name: Deploy
         working-directory: apps/supervisor
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
-          TARGET_ENV="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
           # Staging: deploy top-level config (workers_dev: true, all bindings including DO/D1)
           # Production: deploy --env production (adds custom routes, disables workers_dev)
           if [ "${TARGET_ENV}" = "production" ]; then
