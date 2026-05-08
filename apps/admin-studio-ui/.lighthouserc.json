@@ -43,6 +43,12 @@
             "maxNumericValue": 2500
           }
         ],
+        "interaction-to-next-paint": [
+          "error",
+          {
+            "maxNumericValue": 200
+          }
+        ],
         "max-potential-fid": [
           "error",
           {
