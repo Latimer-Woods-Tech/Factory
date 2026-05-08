@@ -17,7 +17,7 @@
   ],
   "vars": {
     "ENVIRONMENT": "development",
-    "TARGETS_JSON": "[]"
+    "TARGETS_JSON": "[{\"id\":\"admin-studio.production.health\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane-prod\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"}]"
   },
   "env": {
     "production": {
