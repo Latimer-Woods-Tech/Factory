@@ -14,14 +14,14 @@ import { TimelineTab } from './tabs/TimelineTab.js';
 import { FlagsTab } from './tabs/FlagsTab.js';
 
 const TABS = [
-  { to: '/overview',  label: 'Overview' },
-  { to: '/tests',     label: 'Tests' },
-  { to: '/code',      label: 'Code' },
-  { to: '/ai',        label: 'AI Chat' },
-  { to: '/functions', label: 'Functions' },
-  { to: '/timeline',  label: 'Timeline' },
-  { to: '/flags',     label: 'Flags' },
-  { to: '/audit',     label: 'Audit Log' },
+  { to: '/overview',  label: 'Overview', icon: '🏠' },
+  { to: '/tests',     label: 'Tests', icon: '🧪' },
+  { to: '/code',      label: 'Code', icon: '💻' },
+  { to: '/ai',        label: 'AI Chat', icon: '🤖' },
+  { to: '/functions', label: 'Functions', icon: '⚙️' },
+  { to: '/timeline',  label: 'Timeline', icon: '🕒' },
+  { to: '/flags',     label: 'Flags', icon: '🚩' },
+  { to: '/audit',     label: 'Audit Log', icon: '📋' },
 ];
 
 export function Dashboard() {
@@ -75,12 +75,13 @@ export function Dashboard() {
             key={tab.to}
             to={tab.to}
             className={({ isActive }) =>
-              `flex-shrink-0 px-3 py-2 text-xs whitespace-nowrap ${
+              `flex min-h-12 min-w-14 flex-shrink-0 flex-col items-center justify-center gap-1 px-4 py-2 text-[10px] leading-none ${
                 isActive ? 'text-white border-b-2 border-emerald-500' : 'text-slate-400'
               }`
             }
           >
-            {tab.label}
+            <span aria-hidden className="text-base leading-none">{tab.icon}</span>
+            <span>{tab.label}</span>
           </NavLink>
         ))}
       </nav>

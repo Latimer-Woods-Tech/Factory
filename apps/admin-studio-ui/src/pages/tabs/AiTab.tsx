@@ -200,13 +200,13 @@ export function AiTab() {
     <div className="flex h-[calc(100vh-92px)] gap-4">
       <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
         <header className="border-b border-slate-800 px-3 py-2 flex items-center gap-2">
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {MODES.map((m) => (
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
                 title={m.hint}
-                className={`text-xs px-2 py-1 rounded border ${
+                className={`target-min text-xs rounded border ${
                   mode === m.id
                     ? 'bg-emerald-700 border-emerald-600 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -216,13 +216,13 @@ export function AiTab() {
               </button>
             ))}
           </div>
-          <div className="ml-3 flex gap-1">
+          <div className="ml-3 flex gap-1.5">
             {STRATEGIES.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setModelStrategy(s.id)}
                 title={s.hint}
-                className={`text-xs px-2 py-1 rounded border ${
+                className={`target-min text-xs rounded border ${
                   modelStrategy === s.id
                     ? 'bg-indigo-700 border-indigo-600 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -236,14 +236,14 @@ export function AiTab() {
             <button
               onClick={reset}
               disabled={streaming || history.length === 0}
-              className="text-xs px-2 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+              className="target-min text-xs rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
             >
               Clear
             </button>
             {streaming && (
               <button
                 onClick={stop}
-                className="text-xs px-2 py-1 rounded border border-rose-700 bg-rose-900/40 text-rose-200 hover:bg-rose-900/60"
+                className="target-primary text-xs rounded border border-rose-700 bg-rose-900/40 text-rose-200 hover:bg-rose-900/60"
               >
                 Stop
               </button>
@@ -289,14 +289,14 @@ export function AiTab() {
               onClick={() => void requestProposal()}
               disabled={proposalBusy || streaming || !prompt.trim() || !active.path}
               title={!active.path ? 'Open a file in the Code tab first' : 'Generate a code diff'}
-              className="text-xs px-3 py-1.5 rounded bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40"
+              className="target-primary text-xs rounded bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40"
             >
               {proposalBusy ? 'Proposing…' : 'Propose diff'}
             </button>
             <button
               onClick={() => void send()}
               disabled={streaming || !prompt.trim()}
-              className="text-xs px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-40"
+              className="target-primary text-xs rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-40"
             >
               {streaming ? 'Streaming…' : 'Send'}
             </button>

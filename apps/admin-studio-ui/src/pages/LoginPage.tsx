@@ -95,7 +95,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500"
+              className="target-primary w-full rounded bg-emerald-600 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500"
             >
               {submitting ? 'Signing in…' : `Sign in to ${env}`}
             </button>
