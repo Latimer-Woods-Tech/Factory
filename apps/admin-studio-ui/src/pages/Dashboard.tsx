@@ -103,7 +103,7 @@ export function Dashboard() {
         </nav>
 
         {/* Main content — pad bottom on mobile so bottom nav doesn't overlap */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 md:pb-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6 pb-16 md:pb-6">
           <Routes>
             <Route path="/" element={<Navigate to="/overview" replace />} />
             <Route path="/overview" element={<OverviewTab />} />
@@ -144,14 +144,14 @@ export function Dashboard() {
                 moreActive ? 'border-emerald-500 text-white' : 'border-transparent text-slate-400'
               }`}
             >
-              <MobileTabGlyph icon="⋯" label="More" isActive={moreActive} />
+              <MobileTabGlyph icon="···" label="More" isActive={moreActive} />
             </button>
           </Dialog.Trigger>
         </nav>
       </div>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/70 opacity-100 transition-opacity duration-200 data-[state=closed]:opacity-0 motion-reduce:transition-none" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/70 opacity-100 transition-opacity duration-200 data-[state=closed]:opacity-0 motion-reduce:transition-none" />
         <Dialog.Content
           className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border border-slate-800 bg-slate-950 p-4 pb-6 shadow-2xl transition-transform duration-200 data-[state=closed]:translate-y-full data-[state=open]:translate-y-0 motion-reduce:transition-none"
           aria-label="More studio sections"
@@ -216,7 +216,7 @@ function MobileTabGlyph({ icon, label, isActive }: { icon: string; label: string
     <>
       <span
         aria-hidden="true"
-        className={`flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[9px] font-semibold leading-none ${
+        className={`flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-semibold leading-none ${
           isActive ? 'border-emerald-500 bg-emerald-500 text-slate-950' : 'border-slate-600 text-slate-300'
         }`}
       >
