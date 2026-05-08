@@ -96,7 +96,7 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
+          scope: '@latimer-woods-tech'
 
       # Build @latimer-woods-tech/llm and its dep chain from source so the
       # video-studio can import it via the file: reference in package.json.
