@@ -41,3 +41,14 @@ The production custom domain remains the intended production target.
 - **`pages/Dashboard.tsx`** — Tabs shell. Each tab is a Phase A stub that grows over Phases B–H.
 
 See [`docs/admin-studio/00-MASTER-PLAN.md`](../../docs/admin-studio/00-MASTER-PLAN.md).
+
+## Widget container queries
+
+Overview widgets are container-query driven so they adapt to where they are embedded (main layout, drawer, modal), not viewport width.
+
+- Every widget root sets `container-type: inline-size` and a widget-specific `container-name`.
+- Widget tier convention:
+  - **narrow**: `< 320px` (default styles)
+  - **medium**: `>= 320px` (`@[20rem]:...`)
+  - **wide**: `>= 520px` (`@[32.5rem]:...`)
+- Do not use viewport `sm:` / `md:` / `lg:` classes inside these widgets for layout switching.
