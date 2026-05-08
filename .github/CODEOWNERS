@@ -23,6 +23,9 @@ docs/**                                 @adrper79-dot @factory-cross-repo[bot]
 *.md                                    @adrper79-dot @factory-cross-repo[bot]
 session/**                              @adrper79-dot @factory-cross-repo[bot]
 documents/**                            @adrper79-dot @factory-cross-repo[bot]
+# MA-8: memory single-writer — explicit ownership so the branch-protection review
+# gate fires on every memory/*.md edit, enforcing the single-writer invariant.
+memory/**                               @adrper79-dot
 .github/ISSUE_TEMPLATE/**               @adrper79-dot @factory-cross-repo[bot]
 .github/PULL_REQUEST_TEMPLATE.md        @adrper79-dot @factory-cross-repo[bot]
 
