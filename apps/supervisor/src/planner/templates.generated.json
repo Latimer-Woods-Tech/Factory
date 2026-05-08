@@ -1,7 +1,7 @@
 [
   {
     "id": "db-migration-gap-fix",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "bug",
@@ -266,7 +266,7 @@
   },
   {
     "id": "feat-ci-workflow",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "engineering",
@@ -1096,7 +1096,7 @@
   },
   {
     "id": "reusable-workflow-rollout",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "enhancement",
@@ -1634,7 +1634,7 @@
   },
   {
     "id": "wrangler-config-drift-fix",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "bug",
