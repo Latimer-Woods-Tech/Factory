@@ -1,0 +1,127 @@
+id: fix-billing-portal-400
+version: 1
+tier: red
+description: "Billing portal endpoint returns HTTP 400, typically because stripe_customer_id is null for a paid user whose Stripe webhook was missed or raced."
+trigger_keywords: [billing, portal, 400, stripe, customer, subscription, manage]
+triggers:
+  labels_any_of: [bug, area:billing]
+  title_pattern: "(billing.*portal.*400|portal.*400|Manage Subscription.*broken|billing.*400|portal.*error)"
+  body_patterns:
+    - "(billing/portal|handlePortal|stripe_customer_id.*null|portal.*400|Manage Subscription)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+  - capability_exists: sentry.getIssue
+slots:
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city]
+    source: issue_body
+    referential_check: factory_admin.repo.health
+  - name: sentry_issue_id
+    type: string
+    validator: "^[A-Z][A-Z0-9\\-]+-\\d+$"
+    source: issue_body
+    referential_check: sentry.getIssue
+  - name: billing_handler_file
+    type: string
+    validator: "^[a-zA-Z0-9_.\\-/]+\\.(ts|js|mjs)$"
+    source: issue_body
+    default: "workers/src/handlers/billing.js"
+steps:
+  - id: s1
+    tool: sentry.getIssue
+    depends_on: null
+    params:
+      issue_id: "$slots.sentry_issue_id"
+    intent: "Fetch the Sentry issue to confirm the 400 error context, affected user tier, and the null stripe_customer_id stack frame."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      path: "$slots.billing_handler_file"
+      ref: "main"
+    intent: "Read the billing handler to understand the stripe_customer_id lookup path and verify whether a fallback chain exists."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor triage — billing portal 400 in `$slots.affected_app`**
+
+        Sentry: $slots.sentry_issue_id
+        Error: $s1.exception_type — $s1.exception_value
+        Affected user context: $s1.user
+
+        **Root cause (pattern):** `handlePortal` short-circuits with HTTP 400 when `users.stripe_customer_id` is `null`. This happens when:
+        - The Stripe `customer.created` webhook was missed or raced with session creation
+        - The user was created before the webhook backfill logic was deployed (legacy accounts)
+
+        **Fix pattern (from HumanDesign PR #152):**
+        Replace the hard `if (!user.stripe_customer_id) return 400` guard with a three-step fallback:
+        1. `users.stripe_customer_id` (primary)
+        2. `subscriptions.stripe_customer_id` (webhook-written)
+        3. `ensureCustomer()` — create/retrieve from Stripe API and backfill the `users` row
+
+        **Handler state:** see $s2 for current implementation.
+
+        A draft PR implementing the fallback chain will be opened for human review. This is a Red-tier action — Stripe billing code requires CODEOWNER approval before merge.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a structured triage comment with the root cause, fix pattern, and reference to the handler file."
+    requires_human_review: false
+  - id: s4
+    tool: github.addLabel
+    depends_on: s3
+    params:
+      labels: ["status:triaged", "area:billing", "supervisor:human-action-required"]
+    intent: "Mark issue as triaged and flag it for human attention before any code changes land."
+    requires_human_review: false
+  - id: s5
+    tool: github.openPR
+    depends_on: s4
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      base: "main"
+      head: "supervisor/billing-portal-400-$slots.affected_app"
+      title: "fix(billing): resolve portal 400 when stripe_customer_id is null"
+      body: |
+        Closes #$triggers.issue_number
+
+        **Root cause:** `handlePortal` returned HTTP 400 for paid users whose `stripe_customer_id` was `null` in the `users` table — typically caused by a missed or raced Stripe webhook.
+
+        **Fix:** Implements a three-step fallback chain:
+        1. `users.stripe_customer_id`
+        2. `subscriptions.stripe_customer_id` (webhook-written)
+        3. `ensureCustomer()` — create/retrieve from Stripe and backfill
+
+        Pattern source: HumanDesign PR #152.
+        Sentry: $slots.sentry_issue_id
+        Diagnosis: see issue comment $s3.comment_url
+
+        **Red-tier notice:** Touches Stripe billing code. CODEOWNER review required before merge.
+      draft: true
+    intent: "Open a draft PR implementing the fallback chain. Red-tier — requires explicit CODEOWNER approval before merge."
+    requires_human_review: true
+acceptance_gate:
+  description: "Draft PR opened on the target repo with the billing portal fallback fix; issue is labeled status:triaged and area:billing."
+  verifier_query:
+    tool: github.readFile
+    query: "repo=Latimer-Woods-Tech/$slots.affected_app pr=$s5.number state=open draft=true"
+    assert: "pr.state == 'open' and pr.draft == true"
+rollback:
+  - on_step: s5
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      pr_number: "$s5.pr_number"
+      comment: "Supervisor rollback: closing billing portal fix PR. Manual investigation required."
+  - on_step: s4
+    action: github.removeLabel
+    params:
+      labels: ["supervisor:human-action-required"]

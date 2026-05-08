@@ -1,0 +1,105 @@
+id: fix-stripe-price-id
+version: 1
+tier: red
+description: "Stripe checkout fails with 'No such price' or 'No such product' because a price ID env var is missing, set to a placeholder, or points to a test-mode ID in a live-mode context."
+trigger_keywords: [stripe, price, product, checkout, no-such-price, env, secret, placeholder]
+triggers:
+  labels_any_of: [bug, area:billing]
+  title_pattern: "(No such price|No such product|StripeInvalidRequest.*price|STRIPE_PRICE|price.*not.*found|checkout.*price)"
+  body_patterns:
+    - "(No such price|No such product|price_[A-Za-z0-9]{14,}|STRIPE_PRICE_[A-Z_]+|createCheckoutSession)"
+preconditions:
+  - capability_exists: sentry.getIssue
+  - capability_exists: github.readFile
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: sentry_issue_id
+    type: string
+    validator: "^[A-Z][A-Z0-9\\-]+-\\d+$"
+    source: issue_body
+    referential_check: sentry.getIssue
+  - name: affected_app
+    type: enum
+    values: [humandesign, videoking, xico-city, factory-admin]
+    source: issue_body
+    referential_check: factory_admin.repo.health
+  - name: secret_name
+    type: string
+    validator: "^STRIPE_PRICE_[A-Z_]+$"
+    source: issue_body
+    default: "STRIPE_PRICE_ID"
+  - name: environment
+    type: enum
+    values: [production, staging]
+    source: issue_body
+    default: production
+steps:
+  - id: s1
+    tool: sentry.getIssue
+    depends_on: null
+    params:
+      issue_id: "$slots.sentry_issue_id"
+    intent: "Fetch the Sentry issue to confirm the exact price ID that Stripe rejected and which handler method called it."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/$slots.affected_app"
+      path: "wrangler.jsonc"
+      ref: "main"
+      grep: "$slots.secret_name"
+    intent: "Check wrangler.jsonc to confirm the secret name is declared (not hardcoded as a var) and identify where it is consumed."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor triage — Stripe price ID failure in `$slots.affected_app`**
+
+        Sentry: $slots.sentry_issue_id
+        Error: $s1.exception_value
+        Rejected price ID: extracted from $s1.exception_value
+        Secret name: `$slots.secret_name`
+        Environment: `$slots.environment`
+
+        **Root cause (pattern from factory PR #347, HumanDesign):**
+        `createCheckoutSession` received an empty, placeholder (`price_xxxxxxxxxxxxx`), or test-mode price ID when the Worker is running in live mode. This is a **config/secrets gap**, not a deleted Stripe price.
+
+        **Verification steps (human action required):**
+        1. Check the Stripe Dashboard → Products in the correct mode (live vs. test) for the price ID from the error.
+        2. Run: `wrangler secret list --name <worker-name>` and verify `$slots.secret_name` is set.
+        3. If missing or wrong: `wrangler secret put $slots.secret_name` and paste the correct `price_*` ID from Stripe.
+        4. Deploy and verify `/health` returns 200, then retry checkout.
+
+        wrangler.jsonc state: $s2.excerpt
+
+        **Supervisor cannot write Worker secrets** (FRIDGE rule 8). Human action required.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a structured runbook comment explaining the price ID gap and the wrangler secret put fix."
+    requires_human_review: false
+  - id: s4
+    tool: github.addLabel
+    depends_on: s3
+    params:
+      labels: ["status:triaged", "area:billing", "supervisor:human-action-required", "needs-human:secrets"]
+    intent: "Label the issue so on-call can find and apply the secret update."
+    requires_human_review: false
+acceptance_gate:
+  description: "Runbook comment is posted on the issue and labels status:triaged + needs-human:secrets are applied."
+  verifier_query:
+    tool: github.readFile
+    query: "issues/$triggers.issue_number/comments?author=supervisor-bot&body_contains=wrangler+secret+put"
+    assert: "count >= 1"
+rollback:
+  - on_step: s4
+    action: github.removeLabel
+    params:
+      labels: ["supervisor:human-action-required", "needs-human:secrets"]
+  - on_step: s3
+    action: github.comment
+    params:
+      body: "Supervisor rollback: the previous triage comment for Sentry $slots.sentry_issue_id may be incomplete. Disregard and await re-run."
