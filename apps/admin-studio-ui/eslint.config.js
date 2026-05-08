@@ -1,6 +1,11 @@
 import tsParser from '@typescript-eslint/parser';
 import reactHooks from 'eslint-plugin-react-hooks';
 
+const inputOrTextareaSelector = "JSXOpeningElement[name.name=/^(input|textarea)$/]";
+const classNameWithSmallTextSelector =
+  "JSXAttribute[name.name='className'][value.type='Literal'][value.value=/\\btext-(xs|sm)\\b/]:not([value.value=/\\bmd:text-[^\\s\"']+/])";
+const inputTextTooSmallSelector = `${inputOrTextareaSelector} > ${classNameWithSmallTextSelector}`;
+
 export default [
   {
     files: ['src/**/*.{ts,tsx}'],
@@ -24,8 +29,7 @@ export default [
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            "JSXOpeningElement[name.name=/^(input|textarea)$/] > JSXAttribute[name.name='className'][value.type='Literal'][value.value=/\\btext-(xs|sm)\\b/]:not([value.value=/\\bmd:text-[^\\s\"']+/])",
+          selector: inputTextTooSmallSelector,
           message:
             'Inputs and textareas using text-xs/text-sm must include an md: text-size override (for example `text-base md:text-sm`) to prevent iOS focus zoom.',
         },
