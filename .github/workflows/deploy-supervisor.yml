@@ -104,8 +104,9 @@ jobs:
             fi
             # Staging = no --env (top-level config, all bindings available)
             # Production = --env production (routes override)
-            ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
-            echo "$val" | npx wrangler secret put "$name" ${ENV_FLAG} 2>&1 | grep -v "^$"
+            ENV_ARGS=()
+            [ "${TARGET_ENV}" = "production" ] && ENV_ARGS=("--env" "production")
+            echo "$val" | npx wrangler secret put "$name" "${ENV_ARGS[@]}" 2>&1 | grep -v "^$"
           }
 
           put_secret ANTHROPIC_API_KEY   "${{ secrets.ANTHROPIC_API_KEY }}"

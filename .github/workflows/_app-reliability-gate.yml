@@ -96,7 +96,8 @@ jobs:
         run: |
           set -e
           # Query project board for P0 issues on this repo
-          # shellcheck disable=SC2016 — $owner/$name are GraphQL variables, not shell variables
+          # shellcheck disable=SC2016
+          # $owner/$name are GraphQL variables, not shell variables — intentional
           RESULT=$(gh api graphql -f query='
             query($owner: String!, $name: String!) {
               repository(owner: $owner, name: $name) {

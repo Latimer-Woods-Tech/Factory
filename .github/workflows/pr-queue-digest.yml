@@ -86,9 +86,11 @@ jobs:
           Board: https://github.com/orgs/Latimer-Woods-Tech/projects/1
           EOF
           )
-          echo "body<<DIGEST_EOF" >> "$GITHUB_OUTPUT"
-          echo "$BODY" >> "$GITHUB_OUTPUT"
-          echo "DIGEST_EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<DIGEST_EOF"
+            echo "$BODY"
+            echo "DIGEST_EOF"
+          } >> "$GITHUB_OUTPUT"
           echo "---"
           echo "$BODY"
 

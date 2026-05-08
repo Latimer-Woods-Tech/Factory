@@ -57,7 +57,7 @@ jobs:
             echo "count=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          count=$(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | wc -l | tr -d ' ')
+          count=$(find "$MIGRATION_DIR" -maxdepth 1 -name "*.sql" 2>/dev/null | wc -l | tr -d ' ')
           echo "count=$count" >> "$GITHUB_OUTPUT"
 
       - name: Count applied migrations in Neon

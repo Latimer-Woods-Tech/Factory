@@ -45,8 +45,8 @@ jobs:
       - name: Publish audit report to workflow summary
         if: always()
         run: |
-          echo "## 📋 Documentation Freshness Audit" >> $GITHUB_STEP_SUMMARY
-          cat audit-report.md >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Documentation Freshness Audit" >> "$GITHUB_STEP_SUMMARY"
+          cat audit-report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open docs-debt issue if stale docs found
         # steps.audit.outcome is 'failure' when the script exits non-zero,

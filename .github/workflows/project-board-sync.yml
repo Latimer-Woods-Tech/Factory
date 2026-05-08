@@ -63,6 +63,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
         run: |
+          # shellcheck disable=SC2016
           set -euo pipefail
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
@@ -95,6 +96,7 @@ jobs:
           ISSUE_ACTION: ${{ github.event.action }}
           REPO: ${{ github.repository }}
         run: |
+          # shellcheck disable=SC2016
           set -euo pipefail
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
@@ -150,6 +152,7 @@ jobs:
           LABEL_NAME: ${{ github.event.label.name }}
           ACTION: ${{ github.event.action }}
         run: |
+          # shellcheck disable=SC2016
           AGENT_NAME=""
           if [ "$ACTION" = "labeled" ]; then
             AGENT_NAME="${LABEL_NAME#agent:claimed:}"
@@ -178,6 +181,7 @@ jobs:
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
           STATUS_LABEL: ${{ github.event.label.name }}
         run: |
+          # shellcheck disable=SC2016
           STATE="${STATUS_LABEL#status:}"
           case "$STATE" in
             in_progress|wip) PRIMARY_OPT="In Progress"; FALLBACK_OPT="" ;;
@@ -220,6 +224,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
         run: |
+          # shellcheck disable=SC2016
           STATE=$(echo "$COMMENT_BODY" | grep -oE 'state:[[:space:]]*[a-z_]+' | head -1 | sed 's/state:[[:space:]]*//')
           if [ -z "$STATE" ]; then echo "no state in /status comment"; exit 0; fi
           case "$STATE" in
@@ -261,6 +266,7 @@ jobs:
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           REPO: ${{ github.repository }}
         run: |
+          # shellcheck disable=SC2016
           ISSUE_NUMS=$(echo "$PR_BODY" | grep -oiE '(clos(es|ed)|fix(es|ed)|resolv(es|ed))[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u)
           if [ -z "$ISSUE_NUMS" ]; then echo "no linked issues"; exit 0; fi
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
@@ -294,6 +300,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          # shellcheck disable=SC2016
           set -euo pipefail
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
           PROJECT_NUMBER="1"
