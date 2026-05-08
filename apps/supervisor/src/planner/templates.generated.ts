@@ -10,7 +10,7 @@ import type { Template } from './load';
 export const GENERATED_TEMPLATES: Template[] = [
   {
     "id": "db-migration-gap-fix",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "bug",
@@ -207,7 +207,7 @@ export const GENERATED_TEMPLATES: Template[] = [
   },
   {
     "id": "feat-ci-workflow",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "engineering",
@@ -868,7 +868,7 @@ export const GENERATED_TEMPLATES: Template[] = [
   },
   {
     "id": "reusable-workflow-rollout",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "enhancement",
@@ -1294,7 +1294,7 @@ export const GENERATED_TEMPLATES: Template[] = [
   },
   {
     "id": "wrangler-config-drift-fix",
-    "tier": "yellow",
+    "tier": "red",
     "description": "",
     "trigger_keywords": [
       "bug",

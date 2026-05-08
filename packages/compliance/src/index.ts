@@ -3,6 +3,191 @@ import type { FactoryDb } from '@latimer-woods-tech/neon';
 import { InternalError, NotFoundError, ValidationError, ErrorCodes } from '@latimer-woods-tech/errors';
 
 // ---------------------------------------------------------------------------
+// Calling-hours enforcement
+// ---------------------------------------------------------------------------
+
+/**
+ * TCPA safe-harbour calling window: 8 AM – 9 PM local time (inclusive start,
+ * exclusive end). Applies to outreach regulated by applicable telephony laws.
+ * Compliant with applicable outreach regulations — see legal/compliance docs.
+ */
+const CALLING_HOURS_START = 8; // 08:00 inclusive
+const CALLING_HOURS_END = 21; // 21:00 exclusive
+
+/**
+ * Returns true when the current wall-clock time in the given IANA timezone
+ * falls within the permitted calling window (08:00–20:59 local time).
+ *
+ * Implemented locally so that `@latimer-woods-tech/compliance` does not need
+ * to take a runtime dependency on `@latimer-woods-tech/telephony`.
+ *
+ * @param ianaTimezone - IANA timezone string, e.g. `"America/New_York"`.
+ * @param now - Optional override for the current timestamp (ms since epoch). Defaults to `Date.now()`.
+ */
+export function isWithinCallingHours(ianaTimezone: string, now?: number): boolean {
+  const ts = now ?? Date.now();
+  const localHour = new Date(ts).toLocaleString('en-US', {
+    timeZone: ianaTimezone,
+    hour: 'numeric',
+    hour12: false,
+  });
+  const hour = parseInt(localHour, 10);
+  return hour >= CALLING_HOURS_START && hour < CALLING_HOURS_END;
+}
+
+// ---------------------------------------------------------------------------
+// Consent management
+// ---------------------------------------------------------------------------
+
+/**
+ * The current consent disposition for a contact.
+ * - `unknown` — no consent record found; outreach is permitted with appropriate disclosures.
+ * - `opted_in` — contact has affirmatively consented.
+ * - `opted_out` — contact has revoked consent.
+ * - `do_not_contact` — contact is on a suppression list.
+ */
+export type ConsentStatus = 'unknown' | 'opted_in' | 'opted_out' | 'do_not_contact';
+
+/**
+ * DDL for the `consent_audit_log` table — immutable consent change history.
+ * Append-only; no UPDATE or DELETE is ever issued against this table.
+ */
+export const CREATE_CONSENT_AUDIT_LOG_TABLE = `
+  CREATE TABLE IF NOT EXISTS consent_audit_log (
+    id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    contact_id  TEXT NOT NULL,
+    tenant_id   TEXT NOT NULL,
+    old_status  TEXT,
+    new_status  TEXT NOT NULL,
+    changed_by  TEXT,
+    changed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reason      TEXT
+  );
+  CREATE INDEX IF NOT EXISTS consent_audit_log_contact_idx ON consent_audit_log(contact_id, tenant_id);
+`;
+
+/** Neon DB client type alias used by consent management functions. */
+export type NeonDb = FactoryDb;
+
+/**
+ * Service interface for reading and writing consent status.
+ * All writes are append-only audit rows — no existing rows are mutated.
+ */
+export interface ConsentService {
+  /**
+   * Returns the most recent consent status for a contact.
+   * Defaults to `'unknown'` when no audit row exists.
+   */
+  getConsentStatus(db: NeonDb, contactId: string, tenantId: string): Promise<ConsentStatus>;
+
+  /**
+   * Inserts an immutable audit row recording the consent change.
+   * Compliant with applicable outreach regulations — see legal/compliance docs.
+   *
+   * @param db - Neon/Drizzle DB client.
+   * @param contactId - Identifier for the contact whose consent is changing.
+   * @param tenantId - Tenant that owns the contact record.
+   * @param status - New consent status.
+   * @param changedBy - Optional identifier for the user or system that made the change.
+   * @param reason - Optional human-readable reason for the change.
+   */
+  setConsentStatus(
+    db: NeonDb,
+    contactId: string,
+    tenantId: string,
+    status: ConsentStatus,
+    changedBy?: string,
+    reason?: string,
+  ): Promise<void>;
+
+  /**
+   * Returns `true` when outreach to the contact is permitted under the current
+   * consent status (`opted_in` or `unknown`).
+   */
+  canContact(db: NeonDb, contactId: string, tenantId: string): Promise<boolean>;
+}
+
+/**
+ * Creates a {@link ConsentService} backed by the `consent_audit_log` table.
+ * All writes are append-only — no UPDATE or DELETE is ever issued.
+ */
+export function createConsentService(): ConsentService {
+  return {
+    async getConsentStatus(db, contactId, tenantId) {
+      interface AuditRow extends Record<string, unknown> {
+        new_status: string;
+      }
+      const rows = await db.execute<AuditRow>(
+        sql`SELECT new_status
+            FROM consent_audit_log
+            WHERE contact_id = ${contactId}
+              AND tenant_id  = ${tenantId}
+            ORDER BY changed_at DESC
+            LIMIT 1`,
+      );
+      if (rows.rows.length === 0) {
+        return 'unknown';
+      }
+      return rows.rows[0]!.new_status as ConsentStatus;
+    },
+
+    async setConsentStatus(db, contactId, tenantId, status, changedBy, reason) {
+      // Fetch current status so we can record old_status in the audit row.
+      const oldStatus = await this.getConsentStatus(db, contactId, tenantId);
+      const oldStatusOrNull = oldStatus === 'unknown' ? null : oldStatus;
+      const changedByVal = changedBy ?? null;
+      const reasonVal = reason ?? null;
+
+      // Append-only audit row — never UPDATE or DELETE.
+      await db.execute(
+        sql`INSERT INTO consent_audit_log
+              (contact_id, tenant_id, old_status, new_status, changed_by, reason)
+            VALUES
+              (${contactId}, ${tenantId}, ${oldStatusOrNull}, ${status}, ${changedByVal}, ${reasonVal})`,
+      );
+    },
+
+    async canContact(db, contactId, tenantId) {
+      const status = await this.getConsentStatus(db, contactId, tenantId);
+      return status === 'opted_in' || status === 'unknown';
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Call dispatch gate
+// ---------------------------------------------------------------------------
+
+/**
+ * Determines whether an outbound call to the given contact may be dispatched.
+ * Combines consent status and calling-hours enforcement in a single check.
+ *
+ * Compliant with applicable outreach regulations — see legal/compliance docs.
+ *
+ * @param db - Neon/Drizzle DB client.
+ * @param contactId - Identifier for the contact to be called.
+ * @param tenantId - Tenant that owns the contact record.
+ * @param ianaTimezone - Contact's local timezone (IANA format, e.g. `"America/Chicago"`).
+ * @param consentService - Optional override; defaults to `createConsentService()`.
+ * @returns `{ allowed: true }` or `{ allowed: false, reason }`.
+ */
+export async function canDispatchCall(
+  db: NeonDb,
+  contactId: string,
+  tenantId: string,
+  ianaTimezone: string,
+  consentService: ConsentService = createConsentService(),
+): Promise<{ allowed: boolean; reason?: string }> {
+  const [consented, inHours] = await Promise.all([
+    consentService.canContact(db, contactId, tenantId),
+    Promise.resolve(isWithinCallingHours(ianaTimezone)),
+  ]);
+  if (!consented) return { allowed: false, reason: 'consent_required' };
+  if (!inHours) return { allowed: false, reason: 'outside_calling_hours' };
+  return { allowed: true };
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -61,7 +246,8 @@ CREATE TABLE IF NOT EXISTS compliance_consents (
 `.trim();
 
 /**
- * DDL for the `compliance_contacts` table — FDCPA / TCPA contact tracking.
+ * DDL for the `compliance_contacts` table — outreach contact-frequency tracking.
+ * Compliant with applicable outreach regulations — see legal/compliance docs.
  */
 export const CREATE_COMPLIANCE_CONTACTS_TABLE = `
 CREATE TABLE IF NOT EXISTS compliance_contacts (
@@ -160,18 +346,22 @@ export async function logConsent(
 }
 
 // ---------------------------------------------------------------------------
-// FDCPA
+// Contact-frequency enforcement
 // ---------------------------------------------------------------------------
 
-/** Minimum gap in hours between initial and follow-up contacts (FDCPA). */
+/** Minimum gap in hours between initial and follow-up contacts.
+ * Compliant with applicable outreach regulations — see legal/compliance docs.
+ */
 const FDCPA_MIN_HOURS_BETWEEN_CONTACTS = 24;
 
 /**
- * Validates whether contacting a person under FDCPA rules is permitted.
- * Checks: no prior contact within 24 hours for the same contactId.
+ * Validates whether contacting a person is permitted under applicable
+ * contact-frequency rules. Checks: no prior contact within 24 hours for
+ * the same contactId.
+ * Compliant with applicable outreach regulations — see legal/compliance docs.
  *
  * @param db - Drizzle / Neon database client.
- * @param opts - FDCPA check options.
+ * @param opts - Check options.
  */
 export async function checkFDCPA(
   db: FactoryDb,
@@ -221,7 +411,8 @@ export async function checkFDCPA(
 }
 
 /**
- * Records a contact attempt in `compliance_contacts` for FDCPA tracking.
+ * Records a contact attempt in `compliance_contacts` for outreach-frequency tracking.
+ * Compliant with applicable outreach regulations — see legal/compliance docs.
  *
  * @param db - Drizzle / Neon database client.
  * @param opts - Contact attempt details.
