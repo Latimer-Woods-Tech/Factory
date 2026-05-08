@@ -13,6 +13,7 @@ import { auditMiddleware } from './middleware/audit.js';
 
 import auth from './routes/auth.js';
 import { runAnalysisCycle } from './routes/ai.js';
+import { runDigest } from './digest/index.js';
 import me from './routes/me.js';
 import tests from './routes/tests.js';
 import deploy from './routes/deploy.js';
@@ -25,6 +26,9 @@ import repo from './routes/repo.js';
 import manifest from './routes/manifest.js';
 import catalog from './routes/catalog.js';
 import smoke from './routes/smoke.js';
+import slo from './routes/slo.js';
+import synthetic from './routes/synthetic.js';
+import ops from './routes/ops.js';
 import creatorOnboarding from './routes/creator-onboarding.js';
 import creators from './routes/creators.js';
 import payouts from './routes/payouts.js';
@@ -32,6 +36,7 @@ import stripeConnectWebhooks from './routes/webhooks-stripe-connect.js';
 import studioTestsWebhook from './routes/webhooks-studio-tests.js';
 import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.js';
 import dsr from './routes/dsr.js';
+import { flagship } from './routes/flagship.js';
 
 const app = new Hono<AppEnv>();
 
@@ -81,9 +86,16 @@ app.use('/repo/*', envContextMiddleware(), auditMiddleware());
 app.use('/catalog/*', envContextMiddleware(), auditMiddleware());
 // Smoke tests are auditable but not critical
 app.use('/smoke/*', envContextMiddleware(), auditMiddleware());
+// SLO panel � reads only, no audit.
+app.use('/slo/*', envContextMiddleware());
+// Synthetic journey monitor � GET is read, POST is audited.
+app.use('/synthetic/*', envContextMiddleware(), auditMiddleware());
+// Ops panel � all writes are audited via requireConfirmation + auditMiddleware.
+app.use('/ops/*', envContextMiddleware(), auditMiddleware());
 app.use('/api/creator/*', envContextMiddleware());
 app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
 app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
+app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -96,10 +108,14 @@ app.route('/observability', observability);
 app.route('/repo', repo);
 app.route('/catalog', catalog);
 app.route('/smoke', smoke);
+app.route('/slo', slo);
+app.route('/synthetic', synthetic);
+app.route('/ops', ops);
 app.route('/api/creator/onboarding', creatorOnboarding);
 app.route('/api/admin/creators', creators);
 app.route('/api/admin/payouts', payouts);
 app.route('/dsr', dsr);
+app.route('/api/flags', flagship);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
@@ -119,9 +135,18 @@ app.notFound((c) =>
   c.json({ error: 'Not found', path: c.req.path, requestId: c.var.requestId }, 404),
 );
 
+/** Cron expressions that fire the digest (UTC): 06:30 ET and 18:30 ET */
+const DIGEST_CRONS = new Set(['30 10 * * *', '30 22 * * *']);
+
 export default {
   fetch: app.fetch,
-  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+  scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+    // Always run the self-improvement analysis cycle
     ctx.waitUntil(runAnalysisCycle(env));
+
+    // Run the digest only on the 10:30 UTC and 22:30 UTC crons
+    if (DIGEST_CRONS.has(controller.cron)) {
+      ctx.waitUntil(runDigest(env));
+    }
   },
 } satisfies ExportedHandler<Env>;

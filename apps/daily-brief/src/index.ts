@@ -52,6 +52,12 @@ export interface Env {
   ZIP_CODE: string;
   RECIPIENTS: string;
   AUDIO_PUBLIC_BASE_URL: string;
+
+  // Flagship feature flags
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
 }
 
 export default {

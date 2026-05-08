@@ -11,6 +11,19 @@
     "crons": ["0 12 * * 1-5"]
   },
 
+  // Cron: 11:00 UTC = 07:00 AM ET on weekdays (Mon–Fri).
+  // Required secrets (injected by deploy-supervisor.yml from GitHub repo secrets):
+  //   FACTORY_APP_ID              — GitHub App numeric ID
+  //   FACTORY_APP_PRIVATE_KEY     — GitHub App RSA private key PEM
+  //   FACTORY_APP_INSTALLATION_ID — GitHub App installation ID for Latimer-Woods-Tech/factory
+  //   PUSHOVER_TOKEN              — Pushover application token
+  //   PUSHOVER_USER_KEY           — Pushover user/group key
+  //   JWT_SECRET                  — Supervisor JWT signing secret
+  //   GROQ_API_KEY                — Groq API key for LLM fallback
+  "triggers": {
+    "crons": ["0 11 * * 1-5"]
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "SUPERVISOR", "class_name": "SupervisorDO" },
@@ -24,6 +37,7 @@
     }
   ],
 
+  "flagship": { "binding": "FLAGS" },
   "d1_databases": [
     {
       "binding": "MEMORY",
@@ -34,6 +48,11 @@
       "binding": "LLM_LEDGER",
       "database_name": "factory-supervisor-ledger",
       "database_id": "1033b6bf-d38f-4948-8f3b-0de787c87f6b"
+    },
+    {
+      "binding": "FLAG_TELEMETRY",
+      "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4",
+      "database_name": "flag-meter"
     }
   ],
 
