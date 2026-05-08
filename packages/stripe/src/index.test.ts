@@ -10,6 +10,7 @@ import {
   priceToTier,
   stripeWebhookHandler,
   validateWebhook,
+  type StripeKVCache,
   type SubscriptionStatus,
 } from './index';
 
@@ -52,19 +53,35 @@ function buildEvent(
   } as unknown as Stripe.Event;
 }
 
+/** Produces a valid `stripe-signature` header value for the given body and secret. */
+async function signBody(body: string, secret = 'whsec_test'): Promise<string> {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(`${timestamp}.${body}`));
+  const sig = Array.from(new Uint8Array(sigBytes))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `t=${timestamp},v1=${sig}`;
+}
+
 function buildStripeMock(overrides: Record<string, unknown> = {}) {
-  const webhooks = { constructEventAsync: vi.fn() };
   const subscriptionsList = vi.fn();
   const checkoutCreate = vi.fn();
   const portalCreate = vi.fn();
   const client = {
-    webhooks,
     subscriptions: { list: subscriptionsList },
     checkout: { sessions: { create: checkoutCreate } },
     billingPortal: { sessions: { create: portalCreate } },
     ...overrides,
   } as unknown as Stripe;
-  return { client, webhooks, subscriptionsList, checkoutCreate, portalCreate };
+  return { client, subscriptionsList, checkoutCreate, portalCreate };
 }
 
 describe('createStripeClient', () => {
@@ -80,49 +97,87 @@ describe('createStripeClient', () => {
 });
 
 describe('validateWebhook', () => {
-  it('throws when stripe-signature is missing', async () => {
-    const { client } = buildStripeMock();
+  it('throws when stripe-signature header is missing', async () => {
     const request = new Request('https://example.com/webhooks/stripe', {
       method: 'POST',
       body: '{}',
     });
-
-    await expect(validateWebhook(request, 'whsec', client)).rejects.toThrow(
+    await expect(validateWebhook(request, 'whsec_test')).rejects.toThrow(
       'Missing stripe-signature header',
     );
   });
 
-  it('returns the event on success', async () => {
-    const event = buildEvent('customer.subscription.created', buildSubscription());
-    const { client, webhooks } = buildStripeMock();
-    webhooks.constructEventAsync.mockResolvedValue(event);
-
+  it('throws when signature has no timestamp component', async () => {
     const request = new Request('https://example.com/webhooks/stripe', {
       method: 'POST',
-      body: 'raw-body',
-      headers: { 'stripe-signature': 't=1,v1=sig' },
+      body: '{}',
+      headers: { 'stripe-signature': 'v1=abc123' },
     });
-
-    const result = await validateWebhook(request, 'whsec', client);
-    expect(result).toBe(event);
-    expect(webhooks.constructEventAsync).toHaveBeenCalledWith(
-      'raw-body',
-      't=1,v1=sig',
-      'whsec',
+    await expect(validateWebhook(request, 'whsec_test')).rejects.toThrow(
+      'Invalid stripe-signature format',
     );
   });
 
-  it('wraps Stripe verification errors as ValidationError', async () => {
-    const { client, webhooks } = buildStripeMock();
-    webhooks.constructEventAsync.mockRejectedValue(new Error('bad signature'));
-
+  it('throws when signature has no v1 component', async () => {
     const request = new Request('https://example.com/webhooks/stripe', {
       method: 'POST',
-      body: 'x',
-      headers: { 'stripe-signature': 'sig' },
+      body: '{}',
+      headers: { 'stripe-signature': `t=${Math.floor(Date.now() / 1000)}` },
     });
+    await expect(validateWebhook(request, 'whsec_test')).rejects.toThrow(
+      'Invalid stripe-signature format',
+    );
+  });
 
-    await expect(validateWebhook(request, 'whsec', client)).rejects.toThrow('bad signature');
+  it('throws when timestamp is outside the 300-second tolerance window', async () => {
+    const staleTimestamp = Math.floor(Date.now() / 1000) - 400;
+    const request = new Request('https://example.com/webhooks/stripe', {
+      method: 'POST',
+      body: '{}',
+      headers: { 'stripe-signature': `t=${staleTimestamp},v1=abc` },
+    });
+    await expect(validateWebhook(request, 'whsec_test')).rejects.toThrow(
+      'outside tolerance window',
+    );
+  });
+
+  it('throws when the HMAC signature does not match', async () => {
+    const timestamp = Math.floor(Date.now() / 1000);
+    const request = new Request('https://example.com/webhooks/stripe', {
+      method: 'POST',
+      body: '{}',
+      headers: { 'stripe-signature': `t=${timestamp},v1=deadbeefdeadbeef` },
+    });
+    await expect(validateWebhook(request, 'whsec_test')).rejects.toThrow(
+      'Stripe webhook signature mismatch',
+    );
+  });
+
+  it('throws on invalid JSON after a valid signature', async () => {
+    const body = 'not-valid-json';
+    const sig = await signBody(body);
+    const request = new Request('https://example.com/webhooks/stripe', {
+      method: 'POST',
+      body,
+      headers: { 'stripe-signature': sig },
+    });
+    await expect(validateWebhook(request, 'whsec_test')).rejects.toThrow(
+      'Invalid webhook payload JSON',
+    );
+  });
+
+  it('returns the parsed event for a correctly signed request', async () => {
+    const event = buildEvent('customer.subscription.created', buildSubscription());
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
+    const request = new Request('https://example.com/webhooks/stripe', {
+      method: 'POST',
+      body,
+      headers: { 'stripe-signature': sig },
+    });
+    const result = await validateWebhook(request, 'whsec_test');
+    expect(result.type).toBe('customer.subscription.created');
+    expect((result.data.object as Stripe.Subscription).customer).toBe('cus_123');
   });
 });
 
@@ -200,8 +255,9 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
-    ).rejects.toThrow('priceId must be a valid Stripe price ID');
+    ).rejects.toThrow('Stripe price ID is required');
   });
 
   it('throws ValidationError when priceId lacks price_ prefix (factory#343 guard)', async () => {
@@ -213,6 +269,7 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('priceId must be a valid Stripe price ID');
   });
@@ -227,6 +284,7 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
+      idempotencyKey: 'test-idem',
     });
 
     expect(url).toBe('https://checkout.stripe.com/sess_1');
@@ -238,7 +296,7 @@ describe('createCheckoutSession', () => {
         cancel_url: 'https://app/cancel',
         line_items: [{ price: 'price_pro', quantity: 1 }],
       },
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) as string }),
     );
   });
 
@@ -253,8 +311,85 @@ describe('createCheckoutSession', () => {
         successUrl: 'https://app/ok',
         cancelUrl: 'https://app/cancel',
         stripeClient: client,
+        idempotencyKey: 'test-idem',
       }),
     ).rejects.toThrow('Stripe did not return a checkout URL');
+  });
+
+  it('throws when priceId is blank', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+
+    await expect(
+      createCheckoutSession({
+        priceId: '   ',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+        idempotencyKey: 'test-idem',
+      }),
+    ).rejects.toThrow('Stripe price ID is required');
+
+    expect(checkoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('throws before calling Stripe when priceId is an unresolved placeholder', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+
+    await expect(
+      createCheckoutSession({
+        priceId: 'price_xxxxxxxxxxxxx',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+        idempotencyKey: 'test-idem',
+      }),
+    ).rejects.toThrow('Stripe price ID must be configured with a real Stripe price');
+
+    expect(checkoutCreate).not.toHaveBeenCalled();
+  });
+
+  it('wraps Stripe no such price failures as validation errors', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+    checkoutCreate.mockRejectedValue(
+      Object.assign(new Error("No such price: 'price_missing'"), {
+        type: 'StripeInvalidRequestError',
+        code: 'resource_missing',
+      }),
+    );
+
+    await expect(
+      createCheckoutSession({
+        priceId: 'price_missing',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+        idempotencyKey: 'test-idem',
+      }),
+    ).rejects.toThrow('Stripe price ID is not recognized by Stripe');
+  });
+
+  it('rethrows unrelated Stripe resource-missing errors', async () => {
+    const { client, checkoutCreate } = buildStripeMock();
+    checkoutCreate.mockRejectedValue(
+      Object.assign(new Error("No such customer: 'cus_missing'"), {
+        type: 'StripeInvalidRequestError',
+        code: 'resource_missing',
+      }),
+    );
+
+    await expect(
+      createCheckoutSession({
+        priceId: 'price_pro',
+        customerId: 'cus_123',
+        successUrl: 'https://app/ok',
+        cancelUrl: 'https://app/cancel',
+        stripeClient: client,
+        idempotencyKey: 'test-idem',
+      }),
+    ).rejects.toThrow("No such customer: 'cus_missing'");
   });
 
   it('passes mode:"payment" for one-time purchases', async () => {
@@ -268,12 +403,13 @@ describe('createCheckoutSession', () => {
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
       mode: 'payment',
+      idempotencyKey: 'test-idem',
     });
 
     expect(url).toBe('https://checkout.stripe.com/sess_2');
     expect(checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({ mode: 'payment' }),
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) as string }),
     );
   });
 
@@ -296,7 +432,7 @@ describe('createCheckoutSession', () => {
     );
   });
 
-  it('passes paymentMethodTypes when provided', async () => {
+  it('never passes payment_method_types — dynamic payment methods only', async () => {
     const { client, checkoutCreate } = buildStripeMock();
     checkoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/sess_4' });
 
@@ -306,13 +442,11 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
-      paymentMethodTypes: ['card'],
+      idempotencyKey: 'test-idem',
     });
 
-    expect(checkoutCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ payment_method_types: ['card'] }),
-      {},
-    );
+    const callArgs = checkoutCreate.mock.calls as Array<[Record<string, unknown>]>;
+    expect(callArgs[0]?.[0]).not.toHaveProperty('payment_method_types');
   });
 
   it('passes metadata when provided', async () => {
@@ -326,15 +460,16 @@ describe('createCheckoutSession', () => {
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
       metadata: { userId: 'u_42', tier: 'pro' },
+      idempotencyKey: 'test-idem',
     });
 
     expect(checkoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: { userId: 'u_42', tier: 'pro' } }),
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) as string }),
     );
   });
 
-  it('omits payment_method_types and metadata when not provided', async () => {
+  it('omits metadata when not provided', async () => {
     const { client, checkoutCreate } = buildStripeMock();
     checkoutCreate.mockResolvedValue({ url: 'https://checkout.stripe.com/sess_6' });
 
@@ -344,9 +479,9 @@ describe('createCheckoutSession', () => {
       successUrl: 'https://app/ok',
       cancelUrl: 'https://app/cancel',
       stripeClient: client,
+      idempotencyKey: 'test-idem',
     });
 
-    // Exact match confirms neither payment_method_types nor metadata was passed
     expect(checkoutCreate).toHaveBeenCalledWith(
       {
         mode: 'subscription',
@@ -355,7 +490,7 @@ describe('createCheckoutSession', () => {
         cancel_url: 'https://app/cancel',
         line_items: [{ price: 'price_pro', quantity: 1 }],
       },
-      {},
+      expect.objectContaining({ idempotencyKey: expect.any(String) as string }),
     );
   });
 });
@@ -393,30 +528,38 @@ describe('createPortalSession', () => {
 });
 
 describe('stripeWebhookHandler', () => {
-  function buildApp(opts: Parameters<typeof stripeWebhookHandler>[0]) {
+  /** Builds a simple in-memory KV mock. */
+  function buildKVMock(): StripeKVCache & { store: Map<string, string> } {
+    const store = new Map<string, string>();
+    return {
+      store,
+      get(key: string) { return Promise.resolve(store.get(key) ?? null); },
+      put(key: string, value: string) { store.set(key, value); return Promise.resolve(); },
+    };
+  }
+
+  function buildApp(
+    opts: Omit<Parameters<typeof stripeWebhookHandler>[0], 'kvCache'>,
+    kvCache: StripeKVCache = buildKVMock(),
+  ) {
     const app = new Hono();
-    app.post('/webhooks/stripe', stripeWebhookHandler(opts));
+    app.post('/webhooks/stripe', stripeWebhookHandler({ ...opts, kvCache }));
     return app;
   }
 
   it('routes subscription.created to the correct handler', async () => {
-    const { client, webhooks } = buildStripeMock();
     const subscription = buildSubscription();
-    webhooks.constructEventAsync.mockResolvedValue(
-      buildEvent('customer.subscription.created', subscription),
-    );
+    const event = buildEvent('customer.subscription.created', subscription);
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
 
     const created = vi.fn(((status: SubscriptionStatus) => { void status; return Promise.resolve(); }));
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { created },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { created } });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig },
+      body,
     });
 
     expect(response.status).toBe(200);
@@ -426,22 +569,17 @@ describe('stripeWebhookHandler', () => {
   });
 
   it('classifies subscription.deleted as canceled', async () => {
-    const { client, webhooks } = buildStripeMock();
-    webhooks.constructEventAsync.mockResolvedValue(
-      buildEvent('customer.subscription.deleted', buildSubscription({ status: 'canceled' })),
-    );
+    const event = buildEvent('customer.subscription.deleted', buildSubscription({ status: 'canceled' }));
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
 
     const canceled = vi.fn(() => Promise.resolve());
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { canceled },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { canceled } });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig },
+      body,
     });
 
     expect(response.status).toBe(200);
@@ -449,24 +587,20 @@ describe('stripeWebhookHandler', () => {
   });
 
   it('classifies past_due updates correctly', async () => {
-    const { client, webhooks } = buildStripeMock();
-    webhooks.constructEventAsync.mockResolvedValue(
-      buildEvent(
-        'customer.subscription.updated',
-        buildSubscription({ status: 'past_due' }),
-      ),
+    const event = buildEvent(
+      'customer.subscription.updated',
+      buildSubscription({ status: 'past_due' }),
     );
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
+
     const past_due = vi.fn(() => Promise.resolve());
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { past_due },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { past_due } });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig },
+      body,
     });
 
     expect(response.status).toBe(200);
@@ -474,136 +608,178 @@ describe('stripeWebhookHandler', () => {
   });
 
   it('classifies price upgrades and downgrades', async () => {
-    const { client, webhooks } = buildStripeMock();
     const sub = buildSubscription();
     sub.items.data[0]!.price.id = 'price_z';
-    webhooks.constructEventAsync.mockResolvedValueOnce(
-      buildEvent('customer.subscription.updated', sub, {
-        items: { data: [{ price: { id: 'price_a' } }] },
-      }),
-    );
+    // Use distinct event IDs so KV deduplication does not suppress the second delivery.
+    const upgradeEvent = { ...buildEvent('customer.subscription.updated', sub, {
+      items: { data: [{ price: { id: 'price_a' } }] },
+    }), id: 'evt_upgrade' };
+    const body1 = JSON.stringify(upgradeEvent);
+    const sig1 = await signBody(body1);
 
     const upgraded = vi.fn(() => Promise.resolve());
     const downgraded = vi.fn(() => Promise.resolve());
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { upgraded, downgraded },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { upgraded, downgraded } });
 
     let response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig1 },
+      body: body1,
     });
     expect(response.status).toBe(200);
     expect(upgraded).toHaveBeenCalledTimes(1);
 
     const sub2 = buildSubscription();
     sub2.items.data[0]!.price.id = 'price_a';
-    webhooks.constructEventAsync.mockResolvedValueOnce(
-      buildEvent('customer.subscription.updated', sub2, {
-        items: { data: [{ price: { id: 'price_z' } }] },
-      }),
-    );
+    const downgradeEvent = { ...buildEvent('customer.subscription.updated', sub2, {
+      items: { data: [{ price: { id: 'price_z' } }] },
+    }), id: 'evt_downgrade' };
+    const body2 = JSON.stringify(downgradeEvent);
+    const sig2 = await signBody(body2);
 
     response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig2 },
+      body: body2,
     });
     expect(response.status).toBe(200);
     expect(downgraded).toHaveBeenCalledTimes(1);
   });
 
   it('returns 400 when signature validation fails', async () => {
-    const { client, webhooks } = buildStripeMock();
-    webhooks.constructEventAsync.mockRejectedValue(new Error('bad sig'));
-
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: {},
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: {} });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
+      headers: { 'stripe-signature': `t=${Math.floor(Date.now() / 1000)},v1=badhex` },
       body: '{}',
     });
     expect(response.status).toBe(400);
   });
 
   it('ignores unrelated events', async () => {
-    const { client, webhooks } = buildStripeMock();
-    webhooks.constructEventAsync.mockResolvedValue({
-      type: 'invoice.paid',
-      data: { object: {} },
-    } as unknown as Stripe.Event);
+    const event = { type: 'invoice.paid', data: { object: {} } } as unknown as Stripe.Event;
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
 
     const created = vi.fn(((status: SubscriptionStatus) => { void status; return Promise.resolve(); }));
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { created },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { created } });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig },
+      body,
     });
     expect(response.status).toBe(200);
     expect(created).not.toHaveBeenCalled();
   });
 
   it('extracts customerId when customer is an object', async () => {
-    const { client, webhooks } = buildStripeMock();
     const sub = buildSubscription();
     (sub as unknown as Record<string, unknown>).customer = { id: 'cus_obj' };
-    webhooks.constructEventAsync.mockResolvedValue(
-      buildEvent('customer.subscription.created', sub),
-    );
+    const event = buildEvent('customer.subscription.created', sub);
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
 
     const created = vi.fn(((status: SubscriptionStatus) => { void status; return Promise.resolve(); }));
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { created },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { created } });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig },
+      body,
     });
     expect(response.status).toBe(200);
     expect(created.mock.calls[0]?.[0]?.customerId).toBe('cus_obj');
   });
 
   it('returns null classification when updated event has no price change', async () => {
-    const { client, webhooks } = buildStripeMock();
     const sub = buildSubscription();
-    webhooks.constructEventAsync.mockResolvedValue(
-      buildEvent('customer.subscription.updated', sub, {
-        items: { data: [{ price: { id: 'price_pro' } }] },
-      }),
-    );
+    const event = buildEvent('customer.subscription.updated', sub, {
+      items: { data: [{ price: { id: 'price_pro' } }] },
+    });
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
 
     const created = vi.fn(((status: SubscriptionStatus) => { void status; return Promise.resolve(); }));
-    const app = buildApp({
-      webhookSecret: 'whsec',
-      stripeClient: client,
-      handlers: { created },
-    });
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { created } });
 
     const response = await app.request('/webhooks/stripe', {
       method: 'POST',
-      headers: { 'stripe-signature': 'sig' },
-      body: '{}',
+      headers: { 'stripe-signature': sig },
+      body,
     });
     expect(response.status).toBe(200);
     expect(created).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates a repeated event.id — handler called once, second delivery returns deduplicated:true', async () => {
+    const subscription = buildSubscription();
+    const event = buildEvent('customer.subscription.created', subscription);
+    const body = JSON.stringify(event);
+
+    const created = vi.fn(((status: SubscriptionStatus) => { void status; return Promise.resolve(); }));
+    const kv = buildKVMock();
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: { created } }, kv);
+
+    // First delivery — should process normally
+    const sig1 = await signBody(body);
+    const res1 = await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig1 },
+      body,
+    });
+    expect(res1.status).toBe(200);
+    expect(created).toHaveBeenCalledTimes(1);
+    const body1 = await res1.json() as { data: { deduplicated?: boolean } };
+    expect(body1.data.deduplicated).toBeUndefined();
+
+    // Second delivery with the same event.id — must NOT call handler again
+    const sig2 = await signBody(body);
+    const res2 = await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig2 },
+      body,
+    });
+    expect(res2.status).toBe(200);
+    expect(created).toHaveBeenCalledTimes(1); // still 1 — not called again
+    const body2 = await res2.json() as { data: { deduplicated?: boolean } };
+    expect(body2.data.deduplicated).toBe(true);
+  });
+
+  it('stores the event.id in KV after processing', async () => {
+    const subscription = buildSubscription();
+    const event = buildEvent('customer.subscription.created', subscription);
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
+
+    const kv = buildKVMock();
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: {} }, kv);
+
+    await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig },
+      body,
+    });
+
+    expect(kv.store.get(`stripe:event:${event.id}`)).toBe('1');
+  });
+
+  it('stores unclassified event.id in KV to prevent redundant delivery', async () => {
+    const event = { id: 'evt_unrelated', type: 'invoice.paid', data: { object: {} } } as unknown as Stripe.Event;
+    const body = JSON.stringify(event);
+    const sig = await signBody(body);
+
+    const kv = buildKVMock();
+    const app = buildApp({ webhookSecret: 'whsec_test', handlers: {} }, kv);
+
+    const response = await app.request('/webhooks/stripe', {
+      method: 'POST',
+      headers: { 'stripe-signature': sig },
+      body,
+    });
+    expect(response.status).toBe(200);
+    expect(kv.store.get('stripe:event:evt_unrelated')).toBe('1');
   });
 });
 
