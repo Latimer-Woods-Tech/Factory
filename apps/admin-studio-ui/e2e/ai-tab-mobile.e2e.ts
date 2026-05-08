@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const STORAGE_KEY = 'studio.session';
+// Test-only unsigned token payload used to satisfy session hydration in UI E2E.
 const TOKEN = `e2e.eyJ1c2VySWQiOiJlMmUiLCJ1c2VyRW1haWwiOiJlMmVAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4ifQ.sig`;
 const VIEWPORT_TOLERANCE_PX = 1;
 
