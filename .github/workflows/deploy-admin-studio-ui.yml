@@ -55,6 +55,14 @@ jobs:
           # On push to main (no workflow_dispatch input) treat as production.
           # On workflow_dispatch: use the selected env input.
           VITE_API_BASE: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'https://api.apunlimited.com' || 'https://api-staging.apunlimited.com' }}
+          # Multi-environment API bases — resolved by the app at runtime based on the current environment.
+          # VITE_API_BASE_LOCAL is static (local dev convenience); never varies between CI runs.
+          VITE_API_BASE_LOCAL: "http://localhost:8787/api"
+          # Staging and production API bases — injected from GitHub Secrets.
+          # Required: ADMIN_STUDIO_STAGING_URL, ADMIN_STUDIO_PROD_URL (no workers.dev fallbacks).
+          # If a secret is unset the variable is empty and the app falls back to /api (relative).
+          VITE_API_BASE_STAGING: "${{ secrets.ADMIN_STUDIO_STAGING_URL }}/api"
+          VITE_API_BASE_PROD: "${{ secrets.ADMIN_STUDIO_PROD_URL }}/api"
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
