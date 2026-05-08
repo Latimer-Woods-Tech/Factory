@@ -58,6 +58,7 @@ async function gh(token: string, path: string, init: GhRequestInit = {}): Promis
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
     },
     body: init.body,
+    signal: AbortSignal.timeout(10_000),
   });
   return res;
 }
