@@ -26,7 +26,7 @@ const TABS = [
 
 export function Dashboard() {
   return (
-    <div className="flex h-[calc(100dvh-44px)] overflow-hidden">
+    <div className="flex h-[calc(100dvh-44px)] overflow-hidden pt-safe-top md:pt-0">
       {/* Sidebar — desktop only */}
       <nav
         aria-label="Studio sections"
@@ -68,7 +68,7 @@ export function Dashboard() {
       {/* Bottom nav — mobile only */}
       <nav
         aria-label="Studio sections mobile"
-        className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950 border-t border-slate-800 overflow-x-auto pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+        className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950 border-t border-slate-800 overflow-x-auto pb-safe-bottom pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
       >
         {TABS.map((tab) => (
           <NavLink
