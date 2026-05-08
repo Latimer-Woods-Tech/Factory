@@ -66,6 +66,10 @@ export interface Env {
   MONITOR_KV?: KVNamespace;
   /** Service binding to schedule-worker for /diagnostics calls. */
   SCHEDULE_WORKER?: Fetcher;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
 
   // ── T3: Creator onboarding + payout operations ────────────────────────────────────────────────────────
   /** Stripe secret key for Connect OAuth and transfer operations. */
