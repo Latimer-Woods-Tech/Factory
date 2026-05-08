@@ -3,7 +3,7 @@ import type { Entitlement, EntitlementStore } from './index.js';
 import { canAccess, getEntitlements } from './index.js';
 
 function makeStore(entitlements: Entitlement[]): EntitlementStore {
-  return { getForUser: vi.fn(async () => entitlements) };
+  return { getForUser: vi.fn(() => Promise.resolve(entitlements)) };
 }
 
 describe('canAccess', () => {
