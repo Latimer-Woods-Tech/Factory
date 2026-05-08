@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getKeyboardViewportDelta, isChatLogAtBottom, scrollChatLogToBottom } from './AiTab.js';
+import {
+  getKeyboardViewportDelta,
+  isChatLogAtBottom,
+  resolveViewportResizeState,
+  scrollChatLogToBottom,
+} from './AiTab.js';
 
 describe('AiTab keyboard helpers', () => {
   it('computes visual viewport keyboard delta', () => {
@@ -28,5 +33,11 @@ describe('AiTab keyboard helpers', () => {
       top: 777,
       behavior: 'smooth',
     });
+  });
+
+  it('resolves viewport resize scroll behavior', () => {
+    expect(resolveViewportResizeState(20, 120, true)).toEqual({ nextDelta: 120, shouldScroll: true });
+    expect(resolveViewportResizeState(120, 90, true)).toEqual({ nextDelta: 90, shouldScroll: false });
+    expect(resolveViewportResizeState(20, 120, false)).toEqual({ nextDelta: 120, shouldScroll: false });
   });
 });

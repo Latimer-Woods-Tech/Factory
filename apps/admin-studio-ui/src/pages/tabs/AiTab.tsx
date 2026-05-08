@@ -9,7 +9,7 @@
  * editing. Approving a proposal calls `useActiveFile.edit(after)` which marks
  * the file dirty, after which the user commits via CodeTab's commit panel.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   AIChatEvent,
@@ -62,6 +62,21 @@ export function scrollChatLogToBottom(element: HTMLElement | null, smooth: boole
   });
 }
 
+export function resolveViewportResizeState(
+  previousDelta: number,
+  nextDelta: number,
+  wasAtBottom: boolean,
+): { nextDelta: number; shouldScroll: boolean } {
+  return {
+    nextDelta,
+    shouldScroll: nextDelta > previousDelta && wasAtBottom,
+  };
+}
+
+function supportsKeyboardInsetEnv(): boolean {
+  return typeof CSS !== 'undefined' && CSS.supports('bottom: env(keyboard-inset-height)');
+}
+
 export function AiTab() {
   const active = useActiveFile();
   const [history, setHistory] = useState<AIChatTurn[]>([]);
@@ -73,9 +88,9 @@ export function AiTab() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chatLogRef = useRef<HTMLDivElement | null>(null);
-  const wasAtBottomRef = useRef(true);
   const [visualViewportDelta, setVisualViewportDelta] = useState(0);
-  const keyboardInsetSupported = typeof CSS !== 'undefined' && CSS.supports('bottom: env(keyboard-inset-height)');
+  const previousViewportDeltaRef = useRef(0);
+  const keyboardInsetSupported = useMemo(() => supportsKeyboardInsetEnv(), []);
 
   // Proposal state.
   const [proposalBusy, setProposalBusy] = useState(false);
@@ -223,26 +238,24 @@ export function AiTab() {
   }
 
   useEffect(() => {
-    wasAtBottomRef.current = isChatLogAtBottom(chatLogRef.current);
-  }, []);
-
-  useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
 
-    let previousDelta = getKeyboardViewportDelta(window.innerHeight, viewport.height, viewport.offsetTop);
     const handleResize = () => {
       const nextDelta = getKeyboardViewportDelta(window.innerHeight, viewport.height, viewport.offsetTop);
+      const wasAtBottom = isChatLogAtBottom(chatLogRef.current);
+      const resizeState = resolveViewportResizeState(previousViewportDeltaRef.current, nextDelta, wasAtBottom);
       if (!keyboardInsetSupported) {
-        setVisualViewportDelta(nextDelta);
+        setVisualViewportDelta(resizeState.nextDelta);
       }
-      if (nextDelta > previousDelta && wasAtBottomRef.current) {
+      if (resizeState.shouldScroll) {
         scrollChatLogToBottom(chatLogRef.current, true);
       }
-      previousDelta = nextDelta;
+      previousViewportDeltaRef.current = resizeState.nextDelta;
     };
 
     viewport.addEventListener('resize', handleResize);
+    handleResize();
     return () => viewport.removeEventListener('resize', handleResize);
   }, [keyboardInsetSupported]);
 
@@ -303,9 +316,6 @@ export function AiTab() {
 
         <div
           ref={chatLogRef}
-          onScroll={(event) => {
-            wasAtBottomRef.current = isChatLogAtBottom(event.currentTarget);
-          }}
           className="flex-1 overflow-auto p-3 space-y-3 text-sm"
         >
           {history.length === 0 && !partial && (
@@ -326,7 +336,7 @@ export function AiTab() {
         </div>
 
         <footer
-          className="border-t border-slate-800 p-2 bg-slate-900 sticky"
+          className="border-t border-slate-800 p-2 bg-slate-900 sticky bottom-0"
           style={{
             bottom: 'calc(env(keyboard-inset-height, 0px) + env(safe-area-inset-bottom, 0px))',
             transform: !keyboardInsetSupported && visualViewportDelta > 0
@@ -339,7 +349,7 @@ export function AiTab() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onFocus={() => {
-              if (wasAtBottomRef.current) {
+              if (isChatLogAtBottom(chatLogRef.current)) {
                 scrollChatLogToBottom(chatLogRef.current, true);
               }
             }}
