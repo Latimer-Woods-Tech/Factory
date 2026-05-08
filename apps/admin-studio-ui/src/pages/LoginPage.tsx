@@ -44,14 +44,14 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-3xl font-bold text-white">Factory Admin Studio</h1>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-sm mx-auto">
+        <h1 className="text-2xl font-bold text-white">Factory Admin Studio</h1>
         <p className="mt-1 text-sm text-slate-400">
           Step 1 — choose the environment you intend to operate against.
         </p>
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {ENV_CARDS.map((card) => (
             <button
               key={card.env}
@@ -69,7 +69,7 @@ export function LoginPage() {
         </div>
 
         {env && (
-          <form onSubmit={handleSubmit} className="mt-8 space-y-3 max-w-md">
+          <form onSubmit={handleSubmit} className="mt-8 space-y-3">
             <p className="text-sm text-slate-400">
               Step 2 — sign in. You'll be locked to <strong>{env}</strong> until you sign out.
             </p>

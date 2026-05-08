@@ -24,4 +24,8 @@ export interface Env {
   ENVIRONMENT: string;
   /** KV namespace for reading monitor snapshots (written by synthetic-monitor). */
   MONITOR_KV?: KVNamespace;
+  /** Flagship feature-flag binding. */
+  FLAGS?: Fetcher;
+  /** flag-meter D1 database for flag telemetry. */
+  FLAG_TELEMETRY?: D1Database;
 }
