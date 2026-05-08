@@ -106,7 +106,7 @@ function buildEnv(envOverride: EnvOverride = {}): Env {
     STUDIO_ADMIN_PASSWORD_SHA256: passwordHash,
     GITHUB_TOKEN: 'github-token',
     ANTHROPIC_API_KEY: 'anthropic-key',
-    ...envOverride,
+...envOverride,
   };
 }
 
