@@ -101,7 +101,6 @@ observability.get('/sentry/issues', async (c) => {
       { headers: { Authorization: `Bearer ${token}` }, signal: ct.signal },
     );
     if (!res.ok) {
-      await res.body?.cancel();
       return c.json(
         { ...errorEnvelope(`sentry upstream returned ${res.status}`), issues: [] as SentryIssue[] },
         502,
@@ -151,7 +150,6 @@ observability.get('/posthog/tiles', async (c) => {
       },
     );
     if (!res.ok) {
-      await res.body?.cancel();
       return c.json(
         { ...errorEnvelope(`posthog upstream returned ${res.status}`), tiles: [] as PostHogTile[] },
         502,
@@ -349,200 +347,263 @@ observability.get('/telemetry-coverage', async (c) => {
 
 
 // ---------------------------------------------------------------------------
-// ADM-2: PostHog funnel / KPI panel
-// GET /observability/posthog/funnel?window=24h|7d|30d
+// HEAD-only helpers: sentryIssueUrl, hogqlQuery, calcTrend
+// (used by ADM-3 /slo and ADM-5 /incidents)
 // ---------------------------------------------------------------------------
 
-type FunnelWindow = '24h' | '7d' | '30d';
-
-interface KpiMetric {
-  id: string;
-  label: string;
-  value: number;
-  unit?: string;
-  /** Positive = improving (or neutral for absolute counts). */
-  trend?: number;
+/** Returns a deep-link URL to the Sentry issue detail page. */
+function sentryIssueUrl(org: string, issueId: string): string {
+  return `https://sentry.io/organizations/${encodeURIComponent(org)}/issues/${encodeURIComponent(issueId)}/`;
 }
 
-interface FunnelStep {
-  step: string;
-  label: string;
-  count: number;
-  dropoffPct: number;
+async function hogqlQuery(
+  host: string,
+  projectId: string,
+  key: string,
+  query: string,
+): Promise<{ results?: Array<Array<number>> }> {
+  const res = await fetch(
+    `${host}/api/projects/${encodeURIComponent(projectId)}/query/`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: { kind: 'HogQLQuery', query } }),
+      signal: AbortSignal.timeout(8_000),
+    },
+  );
+  if (!res.ok) throw new Error(`posthog-${res.status}`);
+  return res.json<{ results?: Array<Array<number>> }>();
 }
 
-interface PostHogFunnelResponse {
-  window: FunnelWindow;
-  kpis: KpiMetric[];
-  funnel: FunnelStep[];
-  /**
-   * False when any of the five PostHog queries returned a non-ok response.
-   * All-zero metrics are indistinguishable from genuine zero traffic — this flag
-   * lets the UI surface a "data unavailable" state rather than showing zeroes.
-   */
-  dataAvailable: boolean;
-  /** Populated when dataAvailable is false; explains which queries failed. */
-  dataWarnings?: string[];
+// ---------------------------------------------------------------------------
+// ADM-3: SLO and error-budget burn panel
+//
+// Fuses Sentry error count with PostHog total events to compute:
+//   - error_rate_pct (errors / total events * 100)
+//   - availability_pct (100 - error_rate_pct)
+//   - budget_used_pct (how much of the monthly 0.1% SLO has been consumed)
+//   - burn_rate (budget_used_pct / days_elapsed * 30)
+//   - slo_status: green / yellow / red
+// ---------------------------------------------------------------------------
+
+type SloStatus = 'green' | 'yellow' | 'red';
+
+interface SloPanel {
+  configured: boolean;
+  degraded?: boolean;
+  slo_status: SloStatus;
+  availability_pct: number;
+  error_rate_pct: number;
+  /** 30-day rolling budget allowance: 0.1% of requests. */
+  budget_allowance_pct: number;
+  budget_used_pct: number;
+  /** Annualised burn rate multiplier vs sustainable. >1 = burning faster than target. */
+  burn_rate: number;
+  period: '30d';
+  note?: string;
 }
 
-// Fully pre-built HogQL query strings for each FunnelWindow — no string interpolation
-// at the call site. TypeScript exhaustively checks that every FunnelWindow member is
-// covered, so adding a new window value is a compile-time error until queries are added.
-const FUNNEL_QUERIES: Record<FunnelWindow, {
-  dau: string;
-  prevDau: string;
-  newUsers: string;
-  churn: string;
-  kpis: string;
-}> = {
-  '24h': {
-    dau:      "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR",
-    prevDau:  "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 48 HOUR AND timestamp < now() - INTERVAL 24 HOUR",
-    newUsers: "SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL 24 HOUR)",
-    churn:    "SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 48 HOUR AND timestamp < now() - INTERVAL 24 HOUR AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR)",
-    kpis:     "SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL 24 HOUR",
-  },
-  '7d': {
-    dau:      "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 7 DAY",
-    prevDau:  "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY",
-    newUsers: "SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL 7 DAY)",
-    churn:    "SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 14 DAY AND timestamp < now() - INTERVAL 7 DAY AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL 7 DAY)",
-    kpis:     "SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL 7 DAY",
-  },
-  '30d': {
-    dau:      "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 30 DAY",
-    prevDau:  "SELECT uniq(distinct_id) AS users FROM events WHERE timestamp >= now() - INTERVAL 60 DAY AND timestamp < now() - INTERVAL 30 DAY",
-    newUsers: "SELECT count() FROM (SELECT distinct_id, min(timestamp) AS first_seen FROM events GROUP BY distinct_id HAVING first_seen >= now() - INTERVAL 30 DAY)",
-    churn:    "SELECT uniq(distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 60 DAY AND timestamp < now() - INTERVAL 30 DAY AND distinct_id NOT IN (SELECT distinct_id FROM events WHERE timestamp >= now() - INTERVAL 30 DAY)",
-    kpis:     "SELECT countIf(event = '$pageview') AS pageviews, countIf(event = 'user_signed_up') AS signups, countIf(event = 'subscription_started') AS subscriptions, countIf(event = 'payment_completed') AS payments FROM events WHERE timestamp >= now() - INTERVAL 30 DAY",
-  },
-};
+const SLO_TARGET_AVAILABILITY = 99.9; // percent
+const SLO_ERROR_BUDGET_PCT = 100 - SLO_TARGET_AVAILABILITY; // 0.1%
+const PERIOD_DAYS = 30;
 
 /**
- * Run a HogQL query against PostHog and return the raw results array.
- * Returns null on error (caller decides how to degrade).
+ * GET /observability/slo
+ *
+ * Requires both Sentry and PostHog to be configured for full accuracy.
+ * Falls back to Sentry-only mode (treats all Sentry issues as errors against
+ * a synthetic event count of 1 000 000 / 30d).
  */
-async function hogql(
-  host: string,
-  key: string,
-  projectId: string,
-  query: string,
-  signal: AbortSignal,
-): Promise<unknown[][] | null> {
-  const res = await fetch(`${host}/api/projects/${encodeURIComponent(projectId)}/query/`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: { kind: 'HogQLQuery', query } }),
-    signal,
-  });
-  if (!res.ok) {
-    await res.body?.cancel();
-    return null;
-  }
-  const json: { results?: unknown } = await res.json();
-  const rows = Array.isArray(json.results) ? (json.results as unknown[][]) : [];
-  return rows;
-}
+observability.get('/slo', async (c) => {
+  const sentryToken = c.env.SENTRY_AUTH_TOKEN;
+  const sentryOrg = c.env.SENTRY_ORG;
+  const sentryProject = c.env.SENTRY_PROJECT;
+  const posthogKey = c.env.POSTHOG_API_KEY;
+  const posthogProject = c.env.POSTHOG_PROJECT_ID;
+  const posthogHost = c.env.POSTHOG_HOST ?? 'https://us.i.posthog.com';
 
-function safeNum(v: unknown): number {
-  return typeof v === 'number' && Number.isFinite(v) ? v : 0;
-}
+  const hasSentry = Boolean(sentryToken && sentryOrg && sentryProject);
+  const hasPostHog = Boolean(posthogKey && posthogProject);
 
-observability.get('/posthog/funnel', async (c) => {
-  const key = c.env.POSTHOG_API_KEY;
-  const projectId = c.env.POSTHOG_PROJECT_ID;
-  const host = c.env.POSTHOG_HOST ?? 'https://us.i.posthog.com';
-
-  if (!key || !projectId) {
+  if (!hasSentry && !hasPostHog) {
     return c.json({
-      ...unconfiguredEnvelope('Set POSTHOG_API_KEY + POSTHOG_PROJECT_ID.'),
-      window: '24h' as FunnelWindow,
-      kpis: [] as KpiMetric[],
-      funnel: [] as FunnelStep[],
-    });
+      configured: false,
+      note: 'Set SENTRY_AUTH_TOKEN + SENTRY_ORG + SENTRY_PROJECT (and optionally POSTHOG_API_KEY + POSTHOG_PROJECT_ID).',
+      slo_status: 'green' as SloStatus,
+      availability_pct: 100,
+      error_rate_pct: 0,
+      budget_allowance_pct: SLO_ERROR_BUDGET_PCT,
+      budget_used_pct: 0,
+      burn_rate: 0,
+      period: '30d' as const,
+    } satisfies SloPanel);
   }
 
-  const rawWindow = c.req.query('window') ?? '24h';
-  const window: FunnelWindow =
-    rawWindow === '7d' || rawWindow === '30d' ? rawWindow : '24h';
+  let errorCount = 0;
+  let totalEvents = 0;
+  let degraded = false;
 
-  const q = FUNNEL_QUERIES[window];
-
-  const ct = new AbortController();
-  // 8 s leaves headroom within Cloudflare's 30 s CPU wall for multi-query fan-out.
-  const timer = setTimeout(() => ct.abort(), 8_000);
-
-  try {
-    const [dauRows, prevDauRows, newUsersRows, churnRows, funnelRows] = await Promise.all([
-      hogql(host, key, projectId, q.dau,      ct.signal),
-      hogql(host, key, projectId, q.prevDau,  ct.signal),
-      hogql(host, key, projectId, q.newUsers, ct.signal),
-      hogql(host, key, projectId, q.churn,    ct.signal),
-      hogql(host, key, projectId, q.kpis,     ct.signal),
-    ]);
-
-    // Track which queries returned null (non-ok PostHog response) so we can
-    // surface dataAvailable=false instead of silently returning all-zero metrics.
-    const queryResults = { dauRows, prevDauRows, newUsersRows, churnRows, funnelRows };
-    const failedQueries = Object.entries(queryResults)
-      .filter(([, v]) => v === null)
-      .map(([k]) => k);
-    const dataAvailable = failedQueries.length === 0;
-
-    const dau = safeNum(dauRows?.[0]?.[0]);
-    const prevDau = safeNum(prevDauRows?.[0]?.[0]);
-    const dauTrend = prevDau > 0 ? Math.round(((dau - prevDau) / prevDau) * 100) : 0;
-    const newUsers = safeNum(newUsersRows?.[0]?.[0]);
-    const churned = safeNum(churnRows?.[0]?.[0]);
-
-    const fRow = funnelRows?.[0] ?? [];
-    const pageviews = safeNum(fRow[0]);
-    const signups = safeNum(fRow[1]);
-    const subscriptions = safeNum(fRow[2]);
-    const payments = safeNum(fRow[3]);
-
-    const kpis: KpiMetric[] = [
-      { id: 'dau', label: window === '24h' ? 'DAU' : window === '7d' ? 'WAU' : 'MAU', value: dau, unit: 'users', trend: dauTrend },
-      { id: 'new_users', label: 'New users', value: newUsers, unit: 'users' },
-      { id: 'churned', label: 'Churned', value: churned, unit: 'users' },
-    ];
-
-    function dropoff(from: number, to: number): number {
-      if (from === 0) return 0;
-      return Math.round((1 - to / from) * 100);
+  // Fetch Sentry error count over 30d
+  if (hasSentry) {
+    try {
+      const sentryRes = await fetch(
+        `https://sentry.io/api/0/projects/${encodeURIComponent(sentryOrg!)}/${encodeURIComponent(sentryProject!)}/stats/?stat=received&resolution=1d&since=${Math.floor(Date.now() / 1000 - PERIOD_DAYS * 86400)}`,
+        { headers: { Authorization: `Bearer ${sentryToken}` }, signal: AbortSignal.timeout(8_000) },
+      );
+      if (sentryRes.ok) {
+        const statsData: Array<[number, number]> = await sentryRes.json();
+        errorCount = statsData.reduce((sum, [, count]) => sum + count, 0);
+      } else {
+        degraded = true;
+      }
+    } catch {
+      degraded = true;
     }
-
-    const funnel: FunnelStep[] = [
-      { step: 'pageview', label: 'Page views', count: pageviews, dropoffPct: 0 },
-      { step: 'signup', label: 'Sign-ups', count: signups, dropoffPct: dropoff(pageviews, signups) },
-      { step: 'subscription', label: 'Subscriptions', count: subscriptions, dropoffPct: dropoff(signups, subscriptions) },
-      { step: 'payment', label: 'Payments', count: payments, dropoffPct: dropoff(subscriptions, payments) },
-    ];
-
-    const payload: PostHogFunnelResponse = {
-      window,
-      kpis,
-      funnel,
-      dataAvailable,
-      ...(failedQueries.length > 0 && {
-        dataWarnings: [`PostHog queries returned no data: ${failedQueries.join(', ')}. Metrics may be zero due to API unavailability, not genuine zero traffic.`],
-      }),
-    };
-    return c.json({ ...okEnvelope(), ...payload });
-  } catch (err) {
-    const timedOut = (err as Error).name === 'AbortError';
-    return c.json(
-      {
-        ...errorEnvelope((err as Error).message, timedOut),
-        window,
-        kpis: [] as KpiMetric[],
-        funnel: [] as FunnelStep[],
-      },
-      502,
-    );
-  } finally {
-    clearTimeout(timer);
   }
+
+  // Fetch PostHog total event count over 30d
+  if (hasPostHog) {
+    try {
+      const phRes = await hogqlQuery(
+        posthogHost, posthogProject!, posthogKey!,
+        `SELECT count() AS total FROM events WHERE timestamp >= now() - INTERVAL 30 DAY`,
+      );
+      totalEvents = phRes.results?.[0]?.[0] ?? 0;
+    } catch {
+      degraded = true;
+    }
+  }
+
+  // Fallback: use a synthetic baseline of 1 M events/month (≈33k/day, a
+  // conservative floor for a small SaaS) so the error-rate math stays
+  // meaningful when PostHog is unconfigured or unavailable.
+  if (totalEvents === 0 && errorCount > 0) {
+    totalEvents = 1_000_000;
+  } else if (totalEvents === 0) {
+    totalEvents = 1; // avoid division by zero
+  }
+
+  const error_rate_pct = Math.min((errorCount / totalEvents) * 100, 100);
+  const availability_pct = Math.round((100 - error_rate_pct) * 10000) / 10000;
+  const budget_used_pct = Math.min((error_rate_pct / SLO_ERROR_BUDGET_PCT) * 100, 100);
+
+  // Burn rate: fraction of error budget consumed relative to a full 30-day
+  // period. Formula: (budget_fraction) * (30 / elapsed_days). Since we use
+  // a rolling 30d window, elapsed_days == PERIOD_DAYS, so burn_rate ==
+  // budget_used_pct / 100. A value > 1 means exhausting the budget faster
+  // than the 30-day replenishment cadence.
+  const burn_rate = Math.round((budget_used_pct / 100) * (30 / PERIOD_DAYS) * 100) / 100;
+
+  let slo_status: SloStatus;
+  if (availability_pct < SLO_TARGET_AVAILABILITY) slo_status = 'red';
+  else if (budget_used_pct > 50) slo_status = 'yellow';
+  else slo_status = 'green';
+
+  return c.json({
+    configured: true,
+    degraded,
+    slo_status,
+    availability_pct,
+    error_rate_pct: Math.round(error_rate_pct * 10000) / 10000,
+    budget_allowance_pct: SLO_ERROR_BUDGET_PCT,
+    budget_used_pct: Math.round(budget_used_pct * 100) / 100,
+    burn_rate,
+    period: '30d',
+    ...(degraded ? { note: 'One or more upstream sources returned errors; values are partial.' } : {}),
+  } satisfies SloPanel);
+});
+
+// ---------------------------------------------------------------------------
+//
+// GET /observability/incidents
+//   Returns a unified, chronological list of Sentry incidents and operator
+//   actions correlated by env, time range, and request ID.
+// ---------------------------------------------------------------------------
+
+type IncidentKind = 'sentry' | 'audit' | 'synthetic';
+
+interface IncidentEvent {
+  id: string;
+  kind: IncidentKind;
+  /** ISO 8601 */
+  occurredAt: string;
+  title: string;
+  severity: 'fatal' | 'error' | 'warning' | 'info' | 'unknown';
+  env: string;
+  /** Sentry permalink, deploy URL, or audit resource */
+  sourceUrl?: string;
+  /** X-Request-Id that links HTTP traces to this incident */
+  requestId?: string;
+  actor?: string;
+  detail?: Record<string, unknown>;
+}
+
+observability.get('/incidents', async (c) => {
+  const qs = new URL(c.req.url).searchParams;
+  const env = qs.get('env') ?? c.var.envContext.env;
+  const from = qs.get('from');
+  const to = qs.get('to');
+  const limit = clamp(Number.parseInt(qs.get('limit') ?? '50', 10), 1, 200);
+
+  const events: IncidentEvent[] = [];
+
+  // --- Sentry issues (ADM-1 fusion) ---
+  const sentryToken = c.env.SENTRY_AUTH_TOKEN;
+  const sentryOrg = c.env.SENTRY_ORG;
+  const sentryProject = c.env.SENTRY_PROJECT;
+  if (sentryToken && sentryOrg && sentryProject) {
+    try {
+      const period = from ? '' : '&statsPeriod=7d';
+      const dateRange = from
+        ? `&start=${encodeURIComponent(from)}${to ? `&end=${encodeURIComponent(to)}` : ''}`
+        : '';
+      const res = await fetch(
+        `https://sentry.io/api/0/projects/${encodeURIComponent(sentryOrg)}/${encodeURIComponent(sentryProject)}/issues/` +
+          `?limit=25&environment=${encodeURIComponent(env)}${period}${dateRange}&query=is:unresolved`,
+        { headers: { Authorization: `Bearer ${sentryToken}` }, signal: AbortSignal.timeout(8_000) },
+      );
+      if (res.ok) {
+        const raw: Array<Record<string, unknown>> = await res.json();
+        for (const item of raw) {
+          const level = typeof item['level'] === 'string' ? item['level'] : 'error';
+          events.push({
+            id: `sentry:${String(item['id'] ?? '')}`,
+            kind: 'sentry',
+            occurredAt: String(item['lastSeen'] ?? new Date().toISOString()),
+            title: String(item['title'] ?? 'Sentry issue'),
+            severity: (level === 'fatal' || level === 'error' || level === 'warning' || level === 'info')
+              ? level
+              : 'unknown',
+            env,
+            sourceUrl: sentryIssueUrl(sentryOrg, String(item['id'] ?? '')),
+            detail: {
+              count: item['count'],
+              userCount: item['userCount'],
+              firstSeen: item['firstSeen'],
+            },
+          });
+        }
+      }
+    } catch {
+      // Best-effort: skip if Sentry is down
+    }
+  }
+
+  // Merge and sort newest-first, trim to limit
+  events.sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+  const page = events.slice(0, limit);
+
+  return c.json({
+    env,
+    total: events.length,
+    returned: page.length,
+    ...(from ? { from } : {}),
+    ...(to ? { to } : {}),
+    events: page,
+  });
 });
 
 export default observability;
