@@ -106,8 +106,8 @@ export interface LLMDeps {
 const MODELS = {
   anthropic: {
     fast: 'claude-haiku-4-20250514',
-    balanced: 'claude-sonnet-4-20250514',
-    smart: 'claude-opus-4-20250514',
+    balanced: 'claude-sonnet-4-6',
+    smart: 'claude-opus-4-7',
   },
   gemini: {
     smart: 'gemini-2.5-pro',
@@ -816,7 +816,9 @@ export async function* completionStream(
       method: 'POST',
       headers: req.headers,
       body: req.body,
-      signal: opts.signal,
+      // Fall back to a 60 s default when the caller provides no signal — prevents
+      // a hung provider connection from consuming the Worker's wall-clock budget.
+      signal: opts.signal ?? AbortSignal.timeout(60_000),
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
