@@ -101,6 +101,9 @@ jobs:
         working-directory: apps/admin-studio
         run: node scripts/check-service-registry.mjs
 
+      - name: Enforce wrangler name ↔ service-registry drift (FRH-WRNG-01)
+        run: node scripts/check-wrangler-registry-drift.mjs
+
       - name: Lint publish workflow with actionlint (FRH-06)
         run: |
           bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
