@@ -80,7 +80,7 @@ export function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email"
               autoComplete="username"
-              className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"
+              className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-base md:text-sm text-white"
             />
             <input
               type="password"
@@ -89,7 +89,7 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="password"
               autoComplete="current-password"
-              className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"
+              className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-base md:text-sm text-white"
             />
             {error && <p className="text-sm text-red-400">{error}</p>}
             <button

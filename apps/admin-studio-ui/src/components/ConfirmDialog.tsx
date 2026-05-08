@@ -81,7 +81,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
               autoFocus
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              className="mt-1 w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="mt-1 w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-base md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
               placeholder={action}
               autoComplete="off"
               spellCheck={false}

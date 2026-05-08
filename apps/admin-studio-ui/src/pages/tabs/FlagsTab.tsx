@@ -273,7 +273,7 @@ export function FlagsTab() {
             placeholder="Search key or description…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
+            className="rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-base md:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
           />
           <select
             value={typeFilter}
@@ -379,7 +379,7 @@ export function FlagsTab() {
                                 onChange={(e) =>
                                   setRolloutInputs((prev) => ({ ...prev, [flag.key]: e.target.value }))
                                 }
-                                className="w-16 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-xs text-slate-200 focus:outline-none"
+                                className="w-16 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-base md:text-xs text-slate-200 focus:outline-none"
                               />
                               <button
                                 onClick={() => void handleRollout(flag.key)}
