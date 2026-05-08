@@ -63,17 +63,20 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
         run: |
-          # shellcheck disable=SC2016
           set -euo pipefail
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          # shellcheck disable=SC2016
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
           FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
           OPTION_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="In Progress") | .id')
+          # shellcheck disable=SC2016
           ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE_ID" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id")
           if [ -z "$ITEM_ID" ]; then
+            # shellcheck disable=SC2016
             ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE_ID" --jq '.data.addProjectV2ItemById.item.id')
           fi
           if [ -z "$OPTION_ID" ]; then echo "In Progress option not found, skipping"; exit 0; fi
+          # shellcheck disable=SC2016
           gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$OPTION_ID"
           echo "✓ issue moved to In Progress"
 
@@ -96,9 +99,9 @@ jobs:
           ISSUE_ACTION: ${{ github.event.action }}
           REPO: ${{ github.repository }}
         run: |
-          # shellcheck disable=SC2016
           set -euo pipefail
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          # shellcheck disable=SC2016
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
           FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
 
@@ -121,9 +124,11 @@ jobs:
           esac
 
           OPTION_ID=$(echo "$STATUS_FIELD" | jq -r --arg n "$TARGET_STATUS" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$n) | .id')
+          # shellcheck disable=SC2016
           ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE_ID" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id" 2>/dev/null || echo "")
 
           if [ -z "$ITEM_ID" ]; then
+            # shellcheck disable=SC2016
             ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE_ID" --jq '.data.addProjectV2ItemById.item.id')
           fi
           if [ -z "$OPTION_ID" ]; then
@@ -131,6 +136,7 @@ jobs:
             exit 0
           fi
 
+          # shellcheck disable=SC2016
           gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$OPTION_ID"
           echo "✓ issue #$ISSUE_NUMBER → $TARGET_STATUS"
 
@@ -152,17 +158,20 @@ jobs:
           LABEL_NAME: ${{ github.event.label.name }}
           ACTION: ${{ github.event.action }}
         run: |
-          # shellcheck disable=SC2016
           AGENT_NAME=""
           if [ "$ACTION" = "labeled" ]; then
             AGENT_NAME="${LABEL_NAME#agent:claimed:}"
           fi
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          # shellcheck disable=SC2016
           AGENT_FIELD_ID=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { ... on ProjectV2Field { id name } } } } } }' -f id="$PROJECT_ID" --jq '.data.node.fields.nodes[] | select(.name=="Agent") | .id')
+          # shellcheck disable=SC2016
           ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE_ID" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id")
           if [ -z "$ITEM_ID" ]; then
+            # shellcheck disable=SC2016
             ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE_ID" --jq '.data.addProjectV2ItemById.item.id')
           fi
+          # shellcheck disable=SC2016
           gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { text: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$AGENT_FIELD_ID" -f value="$AGENT_NAME"
 
   sync-status-from-label:
@@ -181,7 +190,6 @@ jobs:
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
           STATUS_LABEL: ${{ github.event.label.name }}
         run: |
-          # shellcheck disable=SC2016
           STATE="${STATUS_LABEL#status:}"
           case "$STATE" in
             in_progress|wip) PRIMARY_OPT="In Progress"; FALLBACK_OPT="" ;;
@@ -191,17 +199,21 @@ jobs:
             *) echo "unknown status label $STATUS_LABEL"; exit 0 ;;
           esac
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          # shellcheck disable=SC2016
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
           FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
           OPTION_ID=$(echo "$STATUS_FIELD" | jq -r --arg n "$PRIMARY_OPT" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$n) | .id')
           if [ -z "$OPTION_ID" ] && [ -n "$FALLBACK_OPT" ]; then
             OPTION_ID=$(echo "$STATUS_FIELD" | jq -r --arg n "$FALLBACK_OPT" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$n) | .id')
           fi
+          # shellcheck disable=SC2016
           ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE_ID" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id")
           if [ -z "$ITEM_ID" ]; then
+            # shellcheck disable=SC2016
             ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE_ID" --jq '.data.addProjectV2ItemById.item.id')
           fi
           if [ -z "$OPTION_ID" ]; then echo "status option not found on board, skipping"; exit 0; fi
+          # shellcheck disable=SC2016
           gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$OPTION_ID"
 
   sync-status-from-comment:
@@ -224,7 +236,6 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
         run: |
-          # shellcheck disable=SC2016
           STATE=$(echo "$COMMENT_BODY" | grep -oE 'state:[[:space:]]*[a-z_]+' | head -1 | sed 's/state:[[:space:]]*//')
           if [ -z "$STATE" ]; then echo "no state in /status comment"; exit 0; fi
           case "$STATE" in
@@ -235,17 +246,21 @@ jobs:
             *) echo "unknown state $STATE"; exit 0 ;;
           esac
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          # shellcheck disable=SC2016
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
           FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
           OPTION_ID=$(echo "$STATUS_FIELD" | jq -r --arg n "$PRIMARY_OPT" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$n) | .id')
           if [ -z "$OPTION_ID" ] && [ -n "$FALLBACK_OPT" ]; then
             OPTION_ID=$(echo "$STATUS_FIELD" | jq -r --arg n "$FALLBACK_OPT" '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name==$n) | .id')
           fi
+          # shellcheck disable=SC2016
           ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE_ID" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id")
           if [ -z "$ITEM_ID" ]; then
+            # shellcheck disable=SC2016
             ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE_ID" --jq '.data.addProjectV2ItemById.item.id')
           fi
           if [ -z "$OPTION_ID" ]; then echo "status option not found on board, skipping"; exit 0; fi
+          # shellcheck disable=SC2016
           gh api graphql -f query='mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) { updateProjectV2ItemFieldValue(input: { projectId: $projectId, itemId: $itemId, fieldId: $fieldId, value: { singleSelectOptionId: $value } }) { projectV2Item { id } } }' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f value="$OPTION_ID"
 
   sync-deploy-sha-on-merge:
@@ -266,21 +281,25 @@ jobs:
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           REPO: ${{ github.repository }}
         run: |
-          # shellcheck disable=SC2016
           ISSUE_NUMS=$(echo "$PR_BODY" | grep -oiE '(clos(es|ed)|fix(es|ed)|resolv(es|ed))[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u)
           if [ -z "$ISSUE_NUMS" ]; then echo "no linked issues"; exit 0; fi
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          # shellcheck disable=SC2016
           FIELDS=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2Field { id name } ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
           DEPLOY_FIELD=$(echo "$FIELDS" | jq -r '.data.node.fields.nodes[] | select(.name=="Deploy SHA") | .id')
           STATUS_FIELD=$(echo "$FIELDS" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
           DONE_OPT=$(echo "$FIELDS" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Done") | .id')
           for N in $ISSUE_NUMS; do
             ISSUE_NODE=$(gh api "/repos/$REPO/issues/$N" --jq .node_id)
+            # shellcheck disable=SC2016
             ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id")
             if [ -z "$ITEM_ID" ]; then
+              # shellcheck disable=SC2016
               ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE" --jq '.data.addProjectV2ItemById.item.id')
             fi
+            # shellcheck disable=SC2016
             gh api graphql -f query='mutation($p: ID!, $i: ID!, $f: ID!, $v: String!) { updateProjectV2ItemFieldValue(input: { projectId: $p, itemId: $i, fieldId: $f, value: { text: $v } }) { projectV2Item { id } } }' -f p="$PROJECT_ID" -f i="$ITEM_ID" -f f="$DEPLOY_FIELD" -f v="$MERGE_SHA"
+            # shellcheck disable=SC2016
             gh api graphql -f query='mutation($p: ID!, $i: ID!, $f: ID!, $v: String!) { updateProjectV2ItemFieldValue(input: { projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $v } }) { projectV2Item { id } } }' -f p="$PROJECT_ID" -f i="$ITEM_ID" -f f="$STATUS_FIELD" -f v="$DONE_OPT"
             echo "✓ #$N → Deploy SHA $MERGE_SHA, Status Done"
           done
@@ -300,12 +319,12 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          # shellcheck disable=SC2016
           set -euo pipefail
           PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
           PROJECT_NUMBER="1"
           PROJECT_OWNER="Latimer-Woods-Tech"
           REPO="${{ github.repository }}"
+          # shellcheck disable=SC2016
           STATUS_FIELD=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 30) { nodes { __typename ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
           FIELD_ID=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
           TODO_OPT=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Todo") | .id')
@@ -321,6 +340,7 @@ jobs:
             if echo "$BOARD_ISSUE_NUMBERS" | grep -qx "$ISSUE_NUMBER"; then
               continue
             fi
+            # shellcheck disable=SC2016
             gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE_ID" >/dev/null
             echo "✓ added missing issue card #$ISSUE_NUMBER"
           done <<< "$(echo "$OPEN_ISSUES" | jq -c '.[]')"
