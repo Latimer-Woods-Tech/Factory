@@ -1,4 +1,4 @@
-name: Deploy factory-supervisor (Worker + DO)
+﻿name: Deploy factory-supervisor (Worker + DO)
 
 on:
   push:
@@ -109,11 +109,16 @@ jobs:
             echo "$val" | npx wrangler secret put "$name" "${ENV_ARGS[@]}" 2>&1 | grep -v "^$"
           }
 
-          put_secret ANTHROPIC_API_KEY   "${{ secrets.ANTHROPIC_API_KEY }}"
-          put_secret GROQ_API_KEY        "${{ secrets.GROQ_API_KEY }}"
-          put_secret JWT_SECRET          "${{ secrets.SUPERVISOR_JWT_SECRET }}"
-          put_secret VERTEX_ACCESS_TOKEN "${{ secrets.VERTEX_ACCESS_TOKEN }}"
-          put_secret GROK_API_KEY        "${{ secrets.GROK_API_KEY }}"
+          put_secret ANTHROPIC_API_KEY          "${{ secrets.ANTHROPIC_API_KEY }}"
+          put_secret GROQ_API_KEY               "${{ secrets.GROQ_API_KEY }}"
+          put_secret JWT_SECRET                 "${{ secrets.SUPERVISOR_JWT_SECRET }}"
+          put_secret VERTEX_ACCESS_TOKEN        "${{ secrets.VERTEX_ACCESS_TOKEN }}"
+          put_secret GROK_API_KEY               "${{ secrets.GROK_API_KEY }}"
+          put_secret FACTORY_APP_ID             "${{ secrets.FACTORY_APP_ID }}"
+          put_secret FACTORY_APP_PRIVATE_KEY    "${{ secrets.FACTORY_APP_PRIVATE_KEY }}"
+          put_secret FACTORY_APP_INSTALLATION_ID "${{ secrets.FACTORY_APP_INSTALLATION_ID }}"
+          put_secret PUSHOVER_TOKEN             "${{ secrets.PUSHOVER_TOKEN }}"
+          put_secret PUSHOVER_USER_KEY          "${{ secrets.PUSHOVER_USER_KEY }}"
 
       - name: Deploy
         working-directory: apps/supervisor
@@ -137,7 +142,7 @@ jobs:
           for i in 1 2 3 4 5; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
             if [ "$STATUS" = "200" ]; then
-              echo "✅ /health returned 200"
+              echo "Health check passed"
               exit 0
             fi
             echo "Attempt $i: status=${STATUS}, retrying in 10s..."
@@ -153,7 +158,7 @@ jobs:
           for i in 1 2 3 4 5; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
             if [ "$STATUS" = "200" ]; then
-              echo "✅ /health returned 200 on ${URL}"
+              echo "Health check passed on ${URL}"
               exit 0
             fi
             echo "Attempt $i: status=${STATUS}, retrying in 10s..."
