@@ -1,0 +1,242 @@
+# Flagship Feature Flag Registry
+#
+# Source of truth for all feature flags across Factory apps.
+# The admin-studio ops panel reads this at build time (inlined into flagship.ts).
+# CI enforces consistency between this file and the inlined copy.
+#
+# Key format:  {app}:{tier}:{name}
+# Tiers:       ks (kill switch) | ro (rollout) | ex (experiment) | ops | cfg (config)
+# Owners:      app slug or "factory" for org-wide flags
+
+# ── Global (org-wide) ─────────────────────────────────────────────────────────
+
+- key: "global:ks:supervisor_automerge"
+  type: kill_switch
+  description: "Halt supervisor auto-merge org-wide."
+  apps: ["*"]
+  owner: factory
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "global:ks:maintenance_mode"
+  type: kill_switch
+  description: "Org-wide maintenance banner across all apps."
+  apps: ["*"]
+  owner: factory
+  status: active
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+# ── humandesign ───────────────────────────────────────────────────────────────
+
+- key: "humandesign:ks:profile_generate"
+  type: kill_switch
+  description: "Disable /api/profile/generate instantly."
+  apps: ["humandesign"]
+  owner: humandesign
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "humandesign:ks:billing_portal"
+  type: kill_switch
+  description: "Disable Stripe billing portal if 400s surface."
+  apps: ["humandesign"]
+  owner: humandesign
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "humandesign:ops:llm_tier"
+  type: ops
+  description: "LLM tier for humandesign: balanced | fast | quality"
+  apps: ["humandesign"]
+  owner: humandesign
+  status: active
+  default_value: "balanced"
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "humandesign:ks:maintenance_mode"
+  type: kill_switch
+  description: "Kill switch — enables maintenance mode for humandesign"
+  apps: ["humandesign"]
+  owner: humandesign
+  status: active
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "humandesign:ro:post_purchase_flow_v2"
+  type: rollout
+  description: "New post-purchase flow handling missing chart state."
+  apps: ["humandesign"]
+  owner: humandesign
+  status: draft
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: remove_when_fully_rolled_out
+
+- key: "humandesign:ex:annual_pricing_copy"
+  type: experiment
+  description: "save_percent vs save_dollars. PostHog measures conversion."
+  apps: ["humandesign"]
+  owner: factory
+  status: draft
+  default_value: "save_percent"
+  variations: ["save_percent", "save_dollars"]
+  created_at: "2026-05-07"
+  cleanup_policy: remove_when_winner_declared
+
+# ── videoking ─────────────────────────────────────────────────────────────────
+
+- key: "videoking:ks:stream_ingest"
+  type: kill_switch
+  description: "Kill video ingest pipeline."
+  apps: ["videoking"]
+  owner: videoking
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "videoking:ks:payout_pipeline"
+  type: kill_switch
+  description: "Emergency halt on Stripe payout cron."
+  apps: ["videoking"]
+  owner: videoking
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "videoking:ks:maintenance_mode"
+  type: kill_switch
+  description: "Kill switch — enables maintenance mode for videoking"
+  apps: ["videoking"]
+  owner: videoking
+  status: active
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "videoking:ops:llm_tier"
+  type: ops
+  description: "LLM tier for videoking: balanced | fast | quality"
+  apps: ["videoking"]
+  owner: videoking
+  status: active
+  default_value: "balanced"
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "videoking:cfg:moderation_thresholds"
+  type: config
+  description: "JSON — toxicity/spam/nsfw thresholds for moderation."
+  apps: ["videoking"]
+  owner: videoking
+  status: active
+  default_value: "{}"
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "videoking:ro:dm_inbox"
+  type: rollout
+  description: "DM inbox UI Sprint 2. Roll to % of creators."
+  apps: ["videoking"]
+  owner: videoking
+  status: draft
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: remove_when_fully_rolled_out
+
+# ── xico-city ─────────────────────────────────────────────────────────────────
+
+- key: "xico-city:ks:profile_api"
+  type: kill_switch
+  description: "Kill /api/profile/* if auth issues surface."
+  apps: ["xico-city"]
+  owner: xico-city
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "xico-city:ks:maintenance_mode"
+  type: kill_switch
+  description: "Kill switch — enables maintenance mode for xico-city"
+  apps: ["xico-city"]
+  owner: xico-city
+  status: active
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "xico-city:ops:llm_tier"
+  type: ops
+  description: "LLM tier for xico-city: balanced | fast | quality"
+  apps: ["xico-city"]
+  owner: xico-city
+  status: active
+  default_value: "balanced"
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+# ── factory (supervisor / CI) ────────────────────────────────────────────────
+
+- key: "factory:ks:pr_generation"
+  type: kill_switch
+  description: "Halt supervisor PR generation org-wide."
+  apps: ["factory"]
+  owner: factory
+  status: active
+  default_value: true
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+# ── factory-admin (admin-studio) ──────────────────────────────────────────────
+
+- key: "factory-admin:ro:flagship_ops_panel"
+  type: rollout
+  description: "Flagship management panel in admin console."
+  apps: ["factory-admin"]
+  owner: factory
+  status: draft
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: remove_when_fully_rolled_out
+
+- key: "factory-admin:cfg:trial_overrides"
+  type: config
+  description: "Per-userId trial length overrides. JSON userId->days."
+  apps: ["factory-admin", "humandesign", "videoking"]
+  owner: factory
+  status: active
+  default_value: "{}"
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "factory-admin:ks:maintenance_mode"
+  type: kill_switch
+  description: "Kill switch — enables maintenance mode for factory-admin"
+  apps: ["factory-admin"]
+  owner: factory
+  status: active
+  default_value: false
+  created_at: "2026-05-07"
+  cleanup_policy: permanent
+
+- key: "factory-admin:ops:llm_tier"
+  type: ops
+  description: "LLM tier for factory-admin: balanced | fast | quality"
+  apps: ["factory-admin"]
+  owner: factory
+  status: active
+  default_value: "balanced"
+  created_at: "2026-05-07"
+  cleanup_policy: permanent

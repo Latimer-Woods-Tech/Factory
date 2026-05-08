@@ -15,7 +15,15 @@
       "name": "admin-studio-staging",
       "vars": {
         "STUDIO_ENV": "staging",
-        "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,http://localhost:5173"
+        "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,http://localhost:5173",
+        // Digest non-secret vars
+        "DIGEST_TO_EMAIL": "adrper79@gmail.com",
+        "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
+        "SENTRY_ORG": "latwood-tech",
+        "R2_PUBLIC_DOMAIN": "https://digest-assets.thefactory.dev"
+        // Secrets (wrangler secret put --env staging):
+        //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
+        //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
       },
       "hyperdrive": [
         {
@@ -29,6 +37,13 @@
           "id": "6579dabe32f0444ba29bfb722c1e02b1"
         }
       ],
+      "r2_buckets": [
+        {
+          // Create bucket first: wrangler r2 bucket create factory-digest-audio
+          "binding": "DIGEST_R2",
+          "bucket_name": "factory-digest-audio"
+        }
+      ],
       "services": [
         {
           "binding": "SCHEDULE_WORKER",
@@ -37,7 +52,10 @@
       ],
       "triggers": {
         "crons": [
-          "0 */6 * * *"
+          "0 */6 * * *",
+          // Digest: 06:30 ET (10:30 UTC) and 18:30 ET (22:30 UTC)
+          "30 10 * * *",
+          "30 22 * * *"
         ]
       }
     },
@@ -45,7 +63,15 @@
       "name": "admin-studio-production",
       "vars": {
         "STUDIO_ENV": "production",
-        "ALLOWED_ORIGINS": "https://studio.thefactory.dev,https://apunlimited.com"
+        "ALLOWED_ORIGINS": "https://studio.thefactory.dev,https://apunlimited.com",
+        // Digest non-secret vars
+        "DIGEST_TO_EMAIL": "adrper79@gmail.com",
+        "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
+        "SENTRY_ORG": "latwood-tech",
+        "R2_PUBLIC_DOMAIN": "https://digest-assets.thefactory.dev"
+        // Secrets (wrangler secret put --env production):
+        //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
+        //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
       },
       "hyperdrive": [
         {
@@ -59,6 +85,12 @@
           "id": "6579dabe32f0444ba29bfb722c1e02b1"
         }
       ],
+      "r2_buckets": [
+        {
+          "binding": "DIGEST_R2",
+          "bucket_name": "factory-digest-audio"
+        }
+      ],
       "services": [
         {
           "binding": "SCHEDULE_WORKER",
@@ -67,7 +99,10 @@
       ],
       "triggers": {
         "crons": [
-          "0 */6 * * *"
+          "0 */6 * * *",
+          // Digest: 06:30 ET (10:30 UTC) and 18:30 ET (22:30 UTC)
+          "30 10 * * *",
+          "30 22 * * *"
         ]
       }
     }
