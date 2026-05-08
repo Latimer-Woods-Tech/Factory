@@ -2,15 +2,15 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-07T21:52:08.062Z
-// Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-06T20:10:25.255Z
+// Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
 export const GENERATED_TEMPLATES: Template[] = [
   {
     "id": "db-migration-gap-fix",
-    "tier": "red",
+    "tier": "yellow",
     "description": "",
     "trigger_keywords": [
       "bug",
@@ -207,7 +207,7 @@ export const GENERATED_TEMPLATES: Template[] = [
   },
   {
     "id": "feat-ci-workflow",
-    "tier": "red",
+    "tier": "yellow",
     "description": "",
     "trigger_keywords": [
       "engineering",
@@ -260,411 +260,419 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
-    "id": "feat-flaky-detector",
+    "id": "fix-analytics-event-whitelist",
     "tier": "yellow",
-    "description": "Flaky check detector: tracks CI checks that fail then pass on re-run and publishes a weekly GitHub issue with a remediation report. Implements a new workflow file under .github/workflows/; no production code is changed.\n",
+    "description": "Analytics endpoint returns 400 because a client event name is missing from the server-side PUBLIC_SHELL_EVENT_NAMES whitelist.",
     "trigger_keywords": [
-      "engineering",
-      "hardening",
-      "enhancement",
-      "feat",
-      "flaky",
-      "detector",
-      "check",
-      "tracks",
-      "checks",
-      "that",
-      "fail",
-      "then",
-      "pass"
+      "analytics",
+      "whitelist",
+      "shell-event",
+      "400",
+      "event",
+      "unsupported"
     ],
     "triggers": {
       "labels_any_of": [
-        "engineering",
-        "hardening",
-        "enhancement"
+        "bug"
       ],
-      "title_pattern": "^feat[(]reliability[)]:.*flaky",
+      "title_pattern": "(analytics.*400|shell.event.*400|400.*shell.event|event.*whitelist|whitelist.*event|Unsupported shell event)",
       "body_patterns": [
-        "(?i)(flaky|flak|check.?fail.*re.?run|re.?run.*fail|intermittent.?check|weekly.?report|track.?fail|fail.?pass)"
+        "(PUBLIC_SHELL_EVENT_NAMES|shell.event.*400|Unsupported shell event|analytics.*handler.*400)"
       ]
     },
     "steps": [
       {
         "tool": "github.readFile",
         "slots": {
-          "repo": "factory",
-          "path": ".github/workflows/COORDINATION.md",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": ".github/workflows/flaky-check-detector.yml",
-          "ref": "main",
-          "allow_missing": true
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "$slots.handler_file",
+          "ref": "main"
         },
         "side_effects": "none"
       },
       {
         "tool": "github.comment",
         "slots": {
-          "issue_ref": "$triggers.issue_number",
-          "body": "**Supervisor — flaky check detector plan (YELLOW tier)**\n\nWorkflow name: `$slots.workflow_name`\nReport schedule (cron): `$slots.report_schedule`\n\nThis plan adds a new `.github/workflows/$slots.workflow_name.yml` that:\n1. On `workflow_run` completion events, records checks that failed then passed on re-run.\n2. On a weekly schedule (`$slots.report_schedule` UTC), opens a GitHub issue listing\n   flaky check names, frequency counts, and recommended remediation.\n\nNo production code paths are modified. Will open a draft PR for review.\n\nReact ✅ to proceed, or comment with adjustments needed.\n"
+          "body": "**Supervisor diagnosis — analytics whitelist gap in `$slots.affected_app`**\n\nMissing event name(s): `$slots.missing_event_names`\nHandler file: `$slots.handler_file`\n\nCurrent whitelist excerpt (from $s1):\n```\n$s1.excerpt\n```\n\n**Fix:** Add `$slots.missing_event_names` to the `PUBLIC_SHELL_EVENT_NAMES` set in `$slots.handler_file`. No client changes required — the client payload shape is correct.\n\nA draft PR will be opened to add the missing event names.\n\n_Run ID: $RUN_ID_\n"
         },
         "side_effects": "none"
       },
       {
         "tool": "github.openPR",
         "slots": {
-          "repo": "factory",
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
           "base": "main",
-          "head": "$slots.branch_name",
-          "title": "$slots.commit_message",
-          "draft": true,
-          "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` — flaky check detector.\n\n**Behaviour:**\n- Listens on `workflow_run` events; records check names that fail then pass on re-run.\n- Weekly cron (`$slots.report_schedule`) opens a GitHub issue with the remediation report.\n\nNo runtime code changed. Only `.github/workflows/$slots.workflow_name.yml` added.\n\nYellow-tier: human review required before merge. Draft until approved.\n",
-          "labels": [
-            "engineering",
-            "hardening",
-            "enhancement",
-            "supervisor",
-            "tier-yellow"
-          ]
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "pr": "$s4.number",
-          "body": "Supervisor drafted this flaky-check-detector PR (yellow tier).\n- Only `.github/workflows/$slots.workflow_name.yml` is added; no runtime paths touched.\n- Report cron: `$slots.report_schedule` UTC (Monday 09:00).\n- Source issue: #$triggers.issue_number (parent: #270)\n"
+          "head": "supervisor/analytics-whitelist-$slots.affected_app",
+          "title": "fix(analytics): add missing event names to PUBLIC_SHELL_EVENT_NAMES",
+          "body": "Closes #$triggers.issue_number\n\n**Root cause:** `POST /api/analytics/shell-event` returned HTTP 400 for event name(s) `$slots.missing_event_names` because they are absent from `PUBLIC_SHELL_EVENT_NAMES` in `$slots.handler_file`.\n\n**Fix:** Adds the missing event name(s) to the whitelist. No client changes needed.\n\nDiagnosis: see issue comment $s2.comment_url\n\nThis PR was generated by the supervisor. Human review required before merge.\n",
+          "draft": true
         },
         "side_effects": "none"
       }
     ]
   },
   {
-    "id": "feat-memory-single-writer",
+    "id": "fix-billing-portal-400",
+    "tier": "red",
+    "description": "Billing portal endpoint returns HTTP 400, typically because stripe_customer_id is null for a paid user whose Stripe webhook was missed or raced.",
+    "trigger_keywords": [
+      "billing",
+      "portal",
+      "400",
+      "stripe",
+      "customer",
+      "subscription",
+      "manage"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug",
+        "area:billing"
+      ],
+      "title_pattern": "(billing.*portal.*400|portal.*400|Manage Subscription.*broken|billing.*400|portal.*error)",
+      "body_patterns": [
+        "(billing/portal|handlePortal|stripe_customer_id.*null|portal.*400|Manage Subscription)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "sentry.getIssue",
+        "slots": {
+          "issue_id": "$slots.sentry_issue_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "$slots.billing_handler_file",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor triage — billing portal 400 in `$slots.affected_app`**\n\nSentry: $slots.sentry_issue_id\nError: $s1.exception_type — $s1.exception_value\nAffected user context: $s1.user\n\n**Root cause (pattern):** `handlePortal` short-circuits with HTTP 400 when `users.stripe_customer_id` is `null`. This happens when:\n- The Stripe `customer.created` webhook was missed or raced with session creation\n- The user was created before the webhook backfill logic was deployed (legacy accounts)\n\n**Fix pattern (from HumanDesign PR #152):**\nReplace the hard `if (!user.stripe_customer_id) return 400` guard with a three-step fallback:\n1. `users.stripe_customer_id` (primary)\n2. `subscriptions.stripe_customer_id` (webhook-written)\n3. `ensureCustomer()` — create/retrieve from Stripe API and backfill the `users` row\n\n**Handler state:** see $s2 for current implementation.\n\nA draft PR implementing the fallback chain will be opened for human review. This is a Red-tier action — Stripe billing code requires CODEOWNER approval before merge.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "labels": [
+            "status:triaged",
+            "area:billing",
+            "supervisor:human-action-required"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "base": "main",
+          "head": "supervisor/billing-portal-400-$slots.affected_app",
+          "title": "fix(billing): resolve portal 400 when stripe_customer_id is null",
+          "body": "Closes #$triggers.issue_number\n\n**Root cause:** `handlePortal` returned HTTP 400 for paid users whose `stripe_customer_id` was `null` in the `users` table — typically caused by a missed or raced Stripe webhook.\n\n**Fix:** Implements a three-step fallback chain:\n1. `users.stripe_customer_id`\n2. `subscriptions.stripe_customer_id` (webhook-written)\n3. `ensureCustomer()` — create/retrieve from Stripe and backfill\n\nPattern source: HumanDesign PR #152.\nSentry: $slots.sentry_issue_id\nDiagnosis: see issue comment $s3.comment_url\n\n**Red-tier notice:** Touches Stripe billing code. CODEOWNER review required before merge.\n",
+          "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "fix-ci-package-auth",
     "tier": "yellow",
-    "description": "Memory single-writer policy (MA-8): adds a CI workflow that prevents concurrent memory/*.md edits by enforcing a file-lock check on PRs targeting memory/ paths. Implements the policy as a GitHub Actions workflow; no runtime code is changed.\n",
+    "description": "CI fails during npm ci with E401 Unauthorized for @latimer-woods-tech/* private GitHub Packages because NODE_AUTH_TOKEN or packages:read permission is missing from a workflow.",
     "trigger_keywords": [
-      "engineering",
-      "hardening",
-      "feat",
-      "memory",
-      "single",
-      "writer",
-      "singlewriter",
-      "policy",
-      "adds",
-      "workflow",
-      "that",
-      "prevents"
+      "ci",
+      "npm",
+      "package",
+      "auth",
+      "401",
+      "unauthorized",
+      "PACKAGES_READ_TOKEN",
+      "github-packages"
     ],
     "triggers": {
       "labels_any_of": [
-        "engineering",
-        "hardening"
+        "bug",
+        "area:ci"
       ],
-      "title_pattern": "^MA-8|memory.?single.?writer|concurrent.?memory|memory.*lock",
+      "title_pattern": "(npm.*401|401.*npm|package.*auth|E401.*latimer|@latimer-woods-tech.*unauthorized|PACKAGES_READ_TOKEN|packages:read)",
       "body_patterns": [
-        "(?i)(memory.?single.?writer|memory/.*\\.md|concurrent.*edit|single.?writer|prevent.?concurrent|file.?lock|ma.?8)"
+        "(E401|npm ci.*fail|PACKAGES_READ_TOKEN|NODE_AUTH_TOKEN|@latimer-woods-tech.*Unauthorized|packages: read)"
       ]
     },
     "steps": [
       {
         "tool": "github.readFile",
         "slots": {
-          "repo": "factory",
-          "path": ".github/workflows/COORDINATION.md",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": ".github/workflows/memory-single-writer.yml",
-          "ref": "main",
-          "allow_missing": true
+          "repo": "Latimer-Woods-Tech/$slots.affected_repo",
+          "path": "$slots.failing_workflow_path",
+          "ref": "main"
         },
         "side_effects": "none"
       },
       {
         "tool": "github.comment",
         "slots": {
-          "issue_ref": "$triggers.issue_number",
-          "body": "**Supervisor — memory single-writer policy plan (YELLOW tier)**\n\nMemory path glob: `$slots.memory_path_glob`\nWorkflow name: `$slots.workflow_name`\n\nThis plan adds `.github/workflows/$slots.workflow_name.yml` that:\n1. Triggers on `pull_request` events touching `$slots.memory_path_glob`.\n2. Checks that no other open PR is simultaneously modifying paths matching\n   `$slots.memory_path_glob`.\n3. Fails the check (blocks merge) if a concurrent memory-file edit is detected,\n   linking to the conflicting PR for resolution.\n\nNo runtime code is changed. Only the new CI workflow file is added.\n\nReact ✅ to confirm, or comment with adjustments needed.\n"
+          "body": "**Supervisor diagnosis — CI package auth failure in `$slots.affected_repo`**\n\nFailing workflow: `$slots.failing_workflow_path`\nFailure mode: `$slots.failure_mode`\n\n**Root cause (pattern from HumanDesign PRs #133–#136):**\n`npm ci` on `@latimer-woods-tech/*` private packages fails with E401 when:\n1. `NODE_AUTH_TOKEN` is not set on the install step, OR\n2. The workflow `permissions` block is missing `packages: read`, OR\n3. The token fallback uses `secrets.GITHUB_TOKEN` instead of `github.token` (wrong context)\n\n**Required fix pattern:**\n```yaml\npermissions:\n  packages: read   # ← add this\n\nsteps:\n  - name: Install\n    run: npm ci\n    env:\n      NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN || github.token }}  # ← github.token not secrets.GITHUB_TOKEN\n```\n\nCurrent workflow state: $s1.excerpt\n\nA draft PR will apply the fix to `$slots.failing_workflow_path`.\n\n_Run ID: $RUN_ID_\n"
         },
         "side_effects": "none"
       },
       {
         "tool": "github.openPR",
         "slots": {
-          "repo": "factory",
+          "repo": "Latimer-Woods-Tech/$slots.affected_repo",
           "base": "main",
-          "head": "$slots.branch_name",
-          "title": "$slots.commit_message",
-          "draft": true,
-          "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` — memory single-writer lock.\n\n**Policy enforced:**\n- On any PR touching `$slots.memory_path_glob`, fail CI if another open PR\n  is simultaneously modifying a file matching the same glob.\n- Prevents concurrent memory/*.md edits from diverging or overwriting each other.\n\nNo runtime code touched. Only `.github/workflows/$slots.workflow_name.yml` added.\n\nYellow-tier: human review required before merge. Draft until approved.\n",
-          "labels": [
-            "engineering",
-            "hardening",
-            "supervisor",
-            "tier-yellow"
-          ]
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "pr": "$s4.number",
-          "body": "Supervisor drafted this memory-single-writer PR (yellow tier).\n- Only `.github/workflows/$slots.workflow_name.yml` is added.\n- Memory path glob enforced: `$slots.memory_path_glob`\n- No runtime packages, migrations, or production config modified.\n- Source issue: #$triggers.issue_number (MA-8)\n"
+          "head": "supervisor/ci-package-auth-$slots.affected_repo",
+          "title": "fix(ci): add packages:read and NODE_AUTH_TOKEN to $slots.failing_workflow_path",
+          "body": "Closes #$triggers.issue_number\n\n**Root cause:** `npm ci` fails with E401 for `@latimer-woods-tech/*` packages in `$slots.failing_workflow_path` due to `$slots.failure_mode`.\n\n**Fix:**\n- Adds `packages: read` to workflow/job `permissions`\n- Sets `NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_READ_TOKEN || github.token }}` on the install step\n- Corrects fallback from `secrets.GITHUB_TOKEN` to `github.token` if applicable\n\nPattern source: HumanDesign PRs #133–#136.\nDiagnosis: $s2.comment_url\n",
+          "draft": true
         },
         "side_effects": "none"
       }
     ]
   },
   {
-    "id": "feat-review-hints",
-    "tier": "red",
-    "description": "Auto-request / notify relevant CODEOWNERS and platform/security reviewers when a PR touches sensitive paths. Implements reviewer-class hints via CODEOWNERS updates and/or a path-based labeler workflow. Changes go to a draft PR for human review.\n",
-    "trigger_keywords": [
-      "hardening",
-      "engineering",
-      "enhancement",
-      "feat",
-      "review",
-      "hints",
-      "autorequest",
-      "notify",
-      "relevant",
-      "codeowners",
-      "platformsecurity",
-      "reviewers",
-      "when"
-    ],
-    "triggers": {
-      "labels_any_of": [
-        "hardening",
-        "engineering",
-        "enhancement"
-      ],
-      "title_pattern": "^feat[(]review[)]:.*reviewer",
-      "body_patterns": [
-        "(?i)(codeowner|reviewer.?class|reviewer.?hint|sensitive.?path|auto.?request|platform.?review|security.?review|path.?delta|path.?change)"
-      ]
-    },
-    "steps": [
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": ".github/CODEOWNERS",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": ".github/workflows/labeler.yml",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "issue_ref": "$triggers.issue_number",
-          "body": "**Supervisor — reviewer-class hints plan (RED tier)**\n\nSensitive paths: `$slots.sensitive_paths`\nReviewer class: `$slots.reviewer_class`\nChange target: `$slots.change_target`\n\nThis is a **red-tier** plan because CODEOWNERS and labeler workflows gate all\nsensitive-path PRs. The supervisor will open a **draft PR** adding the reviewer\nhints; no auto-merge is permitted.\n\nExisting CODEOWNERS + labeler captured in steps s1/s2.\n\nReact ✅ to confirm the plan before the PR is drafted.\n"
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.openPR",
-        "slots": {
-          "repo": "factory",
-          "base": "main",
-          "head": "$slots.branch_name",
-          "title": "$slots.commit_message",
-          "draft": true,
-          "body": "Closes #$triggers.issue_number\n\n**Sensitive paths:** $slots.sensitive_paths\n**Reviewer class:** $slots.reviewer_class\n**Change target:** $slots.change_target\n\nDraft PR adding reviewer-class hints for sensitive path deltas.\nTouches only `.github/CODEOWNERS` and/or `.github/workflows/labeler.yml`.\n\nRed-tier: CODEOWNER must review before merge. Do NOT enable auto-merge.\n",
-          "labels": [
-            "hardening",
-            "engineering",
-            "enhancement",
-            "supervisor",
-            "tier-red"
-          ]
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "pr": "$s4.number",
-          "body": "Supervisor drafted this reviewer-hints PR (red tier).\n- Only `.github/CODEOWNERS` and/or `.github/workflows/labeler.yml` are touched.\n- Existing assignments captured in s1/s2 to prevent accidental removals.\n- Source issue: #$triggers.issue_number (parent: #270)\n"
-        },
-        "side_effects": "none"
-      }
-    ]
-  },
-  {
-    "id": "governance-branch-protection",
-    "tier": "red",
-    "description": "Phased branch-protection hardening playbook: promotes checks from warn-only to required based on measured signal quality. Opens a PR to update the branch-protection runbook and/or the corresponding .github/workflows file; never applies rulesets directly.\n",
-    "trigger_keywords": [
-      "hardening",
-      "governance",
-      "engineering",
-      "branch",
-      "protection",
-      "phased",
-      "branchprotection",
-      "playbook",
-      "promotes",
-      "checks",
-      "from",
-      "warnonly",
-      "required"
-    ],
-    "triggers": {
-      "labels_any_of": [
-        "hardening",
-        "governance",
-        "engineering"
-      ],
-      "title_pattern": "^chore[(]governance[)]:.*branch.?protect",
-      "body_patterns": [
-        "(?i)(branch.?protect|required.?check|warn.?only|promote|policy.?promot|signal.?quality|phased|playbook)"
-      ]
-    },
-    "steps": [
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": "docs/runbooks/github-secrets-and-tokens.md",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": ".github/workflows/apply-sec-hardening.yml",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "issue_ref": "$triggers.issue_number",
-          "body": "**Supervisor — branch-protection hardening plan (RED tier)**\n\nPhase: `$slots.phase`\nTarget check: `$slots.target_check`\n\nThis is a **red-tier** plan. The supervisor will open a **draft PR** updating\nthe branch-protection runbook and/or the `apply-sec-hardening.yml` workflow.\nNo ruleset is applied automatically — a CODEOWNER must merge and trigger\nthe promotion manually.\n\nExisting hardening workflow snapshot captured in step s2.\n\nReact ✅ to confirm the plan before the PR is drafted.\n"
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.openPR",
-        "slots": {
-          "repo": "factory",
-          "base": "main",
-          "head": "$slots.branch_name",
-          "title": "$slots.commit_message",
-          "draft": true,
-          "body": "Closes #$triggers.issue_number\n\n**Phase:** $slots.phase\n**Target check:** $slots.target_check\n\nThis draft PR was generated by the supervisor to codify the branch-protection\nhardening step described in the linked issue.\n\nChanges are **docs/runbook only** or **workflow-only**; no ruleset is activated\nautomatically. A CODEOWNER must review the generated content and merge when\nthe signal quality threshold is confirmed.\n\nRed-tier: human approval required before merge. Do NOT use auto-merge.\n",
-          "labels": [
-            "hardening",
-            "governance",
-            "supervisor",
-            "tier-red"
-          ]
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "pr": "$s4.number",
-          "body": "Supervisor drafted this branch-protection hardening PR (red tier).\n- Only `docs/` or `.github/workflows/` files are touched — no rulesets applied.\n- Human CODEOWNER must verify signal quality before approving.\n- Source issue: #$triggers.issue_number (parent: #270)\n"
-        },
-        "side_effects": "none"
-      }
-    ]
-  },
-  {
-    "id": "governance-hardening-tweak",
+    "id": "fix-csp-hash",
     "tier": "green",
-    "description": "",
+    "description": "CSP violation caused by a stale inline-script SHA-256 hash in the Cloudflare Pages _headers file after a FOUC or inline script was changed.",
     "trigger_keywords": [
-      "hardening",
-      "governance",
-      "engineering",
-      "tweak"
+      "csp",
+      "hash",
+      "inline",
+      "script",
+      "headers",
+      "sha256",
+      "violation",
+      "fouc"
     ],
     "triggers": {
       "labels_any_of": [
-        "hardening",
-        "governance",
-        "engineering"
+        "bug",
+        "area:frontend",
+        "area:security"
       ],
-      "title_pattern": "^(chore|feat|docs)[(](governance|triage|review|reliability|docs|security)[)]:",
+      "title_pattern": "(csp.*hash|hash.*csp|CSP.*sha256|inline.script.*violation|FOUC.*hash|_headers.*csp)",
       "body_patterns": [
-        "(?i)(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
+        "(sha256-[A-Za-z0-9+/=]{43}|Content-Security-Policy|inline script.*violates|_headers)"
       ]
     },
     "steps": [
       {
         "tool": "github.readFile",
         "slots": {
-          "path": "$slots.target_path",
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "$slots.headers_file",
           "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.openPR",
-        "slots": {
-          "branch": "$slots.branch_name",
-          "base": "main",
-          "title": "$slots.commit_message",
-          "commit_message": "$slots.commit_message",
-          "files": [
-            {
-              "path": "$slots.target_path",
-              "content": "$slots.file_content"
-            }
-          ],
-          "body": "Auto-drafted by supervisor for cluster `governance-hardening-tweak`.\nChange type: $slots.change_type\nScope: $slots.scope\nTarget: $slots.target_path\nSource issue: see linked issue.\n\nThis is a low-risk governance/hardening artifact. Human review is required before merge.\nThe supervisor has captured the intent from the linked issue; please verify the generated\nfile content matches the desired policy before approving.\n",
-          "labels": [
-            "hardening",
-            "supervisor",
-            "tier-green"
-          ]
+          "grep": "$slots.old_hash"
         },
         "side_effects": "none"
       },
       {
         "tool": "github.comment",
         "slots": {
-          "pr": "$s2.number",
-          "body": "Supervisor drafted this governance PR from the linked issue. Only `.github/`, `docs/`, or root-level `README.md` files are touched; no runtime code paths changed. Pre-existing file content (if any) was captured in step s1."
+          "body": "**Supervisor diagnosis — stale CSP hash in `$slots.affected_app`**\n\nFile: `$slots.headers_file`\nOld hash (stale): `$slots.old_hash`\nNew hash (browser-reported): `$slots.new_hash`\n\n**Root cause:** An inline script was updated (e.g. FOUC theme/density script) but the corresponding `sha256-*` hash in `Content-Security-Policy` was not updated.\n\n**Fix:** Replace `$slots.old_hash` with `$slots.new_hash` in `$slots.headers_file`. Single-line change.\n\nCurrent _headers excerpt:\n```\n$s1.excerpt\n```\n\nOpening a draft PR with the single-line hash swap.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "base": "main",
+          "head": "supervisor/csp-hash-$slots.affected_app",
+          "title": "fix(csp): update inline-script sha256 hash in _headers",
+          "body": "Closes #$triggers.issue_number\n\n**Root cause:** Stale CSP hash after inline-script change (e.g. FOUC script updated in a recent PR but `_headers` not updated).\n\n**Fix:** Replaces `$slots.old_hash` with `$slots.new_hash` in `$slots.headers_file`. Single-line, no logic changes.\n\n**Risk:** Green — static Cloudflare Pages headers file only.\n\nDiagnosis: $s2.comment_url\nPattern source: HumanDesign PR #74.\n",
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "fix-mobile-layout",
+    "tier": "yellow",
+    "description": "Mobile viewport layout regression — typically a CSS grid/flex issue at ≤768px or ≤390px causing elements to overflow, stack incorrectly, or become unreachable by touch.",
+    "trigger_keywords": [
+      "mobile",
+      "viewport",
+      "layout",
+      "responsive",
+      "390px",
+      "768px",
+      "hamburger",
+      "hero",
+      "nav",
+      "css"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug",
+        "area:frontend"
+      ],
+      "title_pattern": "(mobile.*layout|layout.*mobile|mobile.*viewport|viewport.*break|hero.*390|nav.*mobile|hamburger|responsive.*break)",
+      "body_patterns": [
+        "(390px|768px|mobile.*viewport|@media.*max-width|overflow.*hidden|min-width:0|flex-shrink|grid.*1fr)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "$slots.css_file",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor diagnosis — mobile layout regression in `$slots.affected_app`**\n\nBreakpoint: `$slots.breakpoint`\nCSS file: `$slots.css_file`\nIssue kind: `$slots.layout_issue_kind`\n\n**Known fix patterns (from HumanDesign PRs #150, #125, #119, #56):**\n- `grid-overflow`: add `min-width: 0` to the 1fr grid child; add `max-height` cap on media-child wraps at narrow widths\n- `nav-links-reachable-offscreen`: add `visibility: hidden` to the closed off-screen drawer; add `overflow-x: hidden` on the page root at `≤$slots.breakpoint`\n- `hero-column-blowout`: set `order: 2` (not `order: -1`) so video renders below text; add `width: 100%` on the video wrap\n- `tap-target-too-small`: wrap `<input>` in a 44×44px `<span>` overlay (WCAG 2.5.5); see PR #119 pattern\n- `horizontal-scroll`: add `overflow-x: hidden` to the nearest scrollable ancestor\n\nCSS file excerpt (current state):\n```css\n$s1.excerpt\n```\n\nA draft PR will be opened with the minimal targeted fix at `$slots.breakpoint`.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "base": "main",
+          "head": "supervisor/mobile-layout-$slots.affected_app",
+          "title": "fix(mobile): resolve $slots.layout_issue_kind at $slots.breakpoint",
+          "body": "Closes #$triggers.issue_number\n\n**Root cause:** CSS layout regression at `$slots.breakpoint` — `$slots.layout_issue_kind` in `$slots.css_file`.\n\n**Fix:** Targeted CSS-only change at the `@media (max-width: $slots.breakpoint)` breakpoint. No JS or markup changes (unless nav toggle requires it).\n\nPattern source: HumanDesign PRs #150, #125, #119.\nDiagnosis: see issue comment $s2.comment_url\n\n**Test plan:**\n- [ ] Resize browser to `$slots.breakpoint` — verify the layout issue is resolved\n- [ ] Resize to >768px — confirm desktop layout is unaffected\n- [ ] CI green on deploy-frontend workflow\n",
+          "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "fix-stripe-price-id",
+    "tier": "red",
+    "description": "Stripe checkout fails with 'No such price' or 'No such product' because a price ID env var is missing, set to a placeholder, or points to a test-mode ID in a live-mode context.",
+    "trigger_keywords": [
+      "stripe",
+      "price",
+      "product",
+      "checkout",
+      "no-such-price",
+      "env",
+      "secret",
+      "placeholder"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "bug",
+        "area:billing"
+      ],
+      "title_pattern": "(No such price|No such product|StripeInvalidRequest.*price|STRIPE_PRICE|price.*not.*found|checkout.*price)",
+      "body_patterns": [
+        "(No such price|No such product|price_[A-Za-z0-9]{14,}|STRIPE_PRICE_[A-Z_]+|createCheckoutSession)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "sentry.getIssue",
+        "slots": {
+          "issue_id": "$slots.sentry_issue_id"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.affected_app",
+          "path": "wrangler.jsonc",
+          "ref": "main",
+          "grep": "$slots.secret_name"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor triage — Stripe price ID failure in `$slots.affected_app`**\n\nSentry: $slots.sentry_issue_id\nError: $s1.exception_value\nRejected price ID: extracted from $s1.exception_value\nSecret name: `$slots.secret_name`\nEnvironment: `$slots.environment`\n\n**Root cause (pattern from factory PR #347, HumanDesign):**\n`createCheckoutSession` received an empty, placeholder (`price_xxxxxxxxxxxxx`), or test-mode price ID when the Worker is running in live mode. This is a **config/secrets gap**, not a deleted Stripe price.\n\n**Verification steps (human action required):**\n1. Check the Stripe Dashboard → Products in the correct mode (live vs. test) for the price ID from the error.\n2. Run: `wrangler secret list --name <worker-name>` and verify `$slots.secret_name` is set.\n3. If missing or wrong: `wrangler secret put $slots.secret_name` and paste the correct `price_*` ID from Stripe.\n4. Deploy and verify `/health` returns 200, then retry checkout.\n\nwrangler.jsonc state: $s2.excerpt\n\n**Supervisor cannot write Worker secrets** (FRIDGE rule 8). Human action required.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.addLabel",
+        "slots": {
+          "labels": [
+            "status:triaged",
+            "area:billing",
+            "supervisor:human-action-required",
+            "needs-human:secrets"
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "governance-hardening",
+    "tier": "green",
+    "description": "Small governance, process, or hardening change: adding/updating labels, branch-protection tweaks, README/CLAUDE.md edits, workflow permission tightening, or AGENT_PROTOCOL propagation.",
+    "trigger_keywords": [
+      "governance",
+      "hardening",
+      "branch-protection",
+      "label",
+      "readme",
+      "agent-protocol",
+      "process",
+      "chore"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "governance",
+        "chore"
+      ],
+      "title_pattern": "(governance|hardening|branch.protect|agent.protocol|AGENT_PROTOCOL|label.*add|add.*label|README.*update|CLAUDE\\.md)",
+      "body_patterns": [
+        "(branch.protect|label.*config|AGENT_PROTOCOL|CLAUDE\\.md|standing.orders|governance.*playbook)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "factory_admin.repo.health",
+        "slots": {
+          "repo": "$slots.target_repo"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.target_repo",
+          "path": "$slots.target_file",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — governance hardening for `$slots.target_repo`**\n\nHardening kind: `$slots.hardening_kind`\nTarget file: `$slots.target_file`\n\n**Known patterns:**\n- `branch-protection`: add required-status-checks + dismiss-stale-reviews (factory PR #280 playbook)\n- `label-addition`: add label to `.github/labels.yml` and sync via label-sync workflow\n- `readme-update` / `claude-md-update`: propagate canonical standing orders from factory to app repo\n- `agent-protocol-propagation`: copy `.github/AGENT_PROTOCOL.md` + issue template from factory canonical (HumanDesign PR #122 pattern)\n- `workflow-permission`: tighten `permissions:` block on a specific workflow (principle of least privilege)\n\nCurrent file state: $s2.excerpt\n\nA draft PR will implement the change. Green-tier — no destructive mutations, docs/config only.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/$slots.target_repo",
+          "base": "main",
+          "head": "supervisor/governance-$slots.hardening_kind-$slots.target_repo",
+          "title": "chore(governance): $slots.hardening_kind for $slots.target_repo",
+          "body": "Closes #$triggers.issue_number\n\n**Governance hardening:** `$slots.hardening_kind` in `$slots.target_repo`\n\nTarget file: `$slots.target_file`\n\nChanges are documentation/config only. No business logic affected.\nPattern source: factory PRs #280, #277, #276, #275; HumanDesign PR #122.\n\nPlan: see issue comment $s3.comment_url\n",
+          "draft": true
         },
         "side_effects": "none"
       }
@@ -783,92 +791,8 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
-    "id": "repo-governance-audit",
-    "tier": "yellow",
-    "description": "Repo governance audit: reads repository metadata for all Latimer-Woods-Tech repos and produces a structured audit comment listing merge-settings drift, missing descriptions, incorrect visibility, and missing SECURITY.md. Outputs a findings comment and optionally a docs PR with the audit report. No repos are archived or mutated automatically.\n",
-    "trigger_keywords": [
-      "area",
-      "ops",
-      "hardening",
-      "repo",
-      "governance",
-      "audit",
-      "reads",
-      "repository",
-      "metadata",
-      "latimerwoodstech",
-      "repos"
-    ],
-    "triggers": {
-      "labels_any_of": [
-        "area:ops",
-        "hardening"
-      ],
-      "title_pattern": "^OPS-2|repo.?governance|legacy.?cleanup|visibility.?audit",
-      "body_patterns": [
-        "(?i)(legacy.?cleanup|visibility.?audit|merge.?setting|squash.?only|SECURITY\\.md|archive|repo.?governance|pre.?factory)"
-      ]
-    },
-    "steps": [
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": "docs/runbooks/transfer.md",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.readFile",
-        "slots": {
-          "repo": "factory",
-          "path": "docs/service-registry.yml",
-          "ref": "main",
-          "allow_missing": true
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "issue_ref": "$triggers.issue_number",
-          "body": "**Supervisor — repo governance audit (YELLOW tier)**\n\nAudit scope: `$slots.audit_scope`\n\nThe supervisor will produce a structured audit report covering:\n- Merge settings drift (`squashMergeAllowed`, `rebaseMergeAllowed`, `deleteBranchOnMerge`)\n- Repos missing descriptions\n- Public repos without `SECURITY.md`\n- Legacy repos (`coh`, `The_Calling`, `focusbro`) — archive candidates\n\n**No repos will be archived or mutated automatically.**\nAll findings are report-only. Mutations require explicit human action per FRIDGE rule 8.\n\nWill open a draft PR adding `docs/governance/repo-audit-$(date +%Y-%m).md`.\nReact ✅ to proceed.\n"
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.openPR",
-        "slots": {
-          "repo": "factory",
-          "base": "main",
-          "head": "$slots.branch_name",
-          "title": "$slots.commit_message",
-          "draft": true,
-          "body": "Closes #$triggers.issue_number (or enables human to action sub-issues)\n\nAdds `docs/governance/repo-audit.md` — structured findings from the OPS-2\nrepo governance audit.\n\n**Scope:** $slots.audit_scope\n\n**Findings format:**\n| Repo | Issue | Required action |\n|------|-------|----------------|\n| (populated from audit) | ... | ... |\n\n**No repos are archived or mutated by this PR.**\nAll mutations are manual follow-ups per the transfer runbook.\n\nYellow-tier: human review required before merge.\n",
-          "labels": [
-            "area:ops",
-            "hardening",
-            "supervisor",
-            "tier-yellow"
-          ]
-        },
-        "side_effects": "none"
-      },
-      {
-        "tool": "github.comment",
-        "slots": {
-          "pr": "$s4.number",
-          "body": "Supervisor drafted this repo governance audit PR (yellow tier).\n- Only `docs/governance/repo-audit.md` is added (new doc, no existing files modified).\n- No repos archived, no settings changed — findings only.\n- Sub-issues OPS-2.1, OPS-2.2, OPS-2.3 require separate human-initiated actions.\n- Source issue: #$triggers.issue_number\n"
-        },
-        "side_effects": "none"
-      }
-    ]
-  },
-  {
     "id": "reusable-workflow-rollout",
-    "tier": "red",
+    "tier": "yellow",
     "description": "",
     "trigger_keywords": [
       "enhancement",
@@ -1294,7 +1218,7 @@ export const GENERATED_TEMPLATES: Template[] = [
   },
   {
     "id": "wrangler-config-drift-fix",
-    "tier": "red",
+    "tier": "yellow",
     "description": "",
     "trigger_keywords": [
       "bug",
