@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const STORAGE_KEY = 'studio.session';
 const TOKEN = `e2e.eyJ1c2VySWQiOiJlMmUiLCJ1c2VyRW1haWwiOiJlMmVAZXhhbXBsZS5jb20iLCJyb2xlIjoiYWRtaW4ifQ.sig`;
+const VIEWPORT_TOLERANCE_PX = 1;
 
 test('mobile composer stays usable and assistant response scrolls into view', async ({ page }) => {
   await page.addInitScript((args: { storageKey: string; token: string }) => {
@@ -41,11 +42,16 @@ test('mobile composer stays usable and assistant response scrolls into view', as
 
   await expect(page.getByText('Mock assistant reply')).toBeVisible();
 
-  await expect.poll(async () => page.getByTestId('ai-chat-log-end').evaluate((end) => {
-    const parent = end.parentElement;
-    if (!parent) return false;
-    const endRect = end.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-    return endRect.top >= parentRect.top - 1 && endRect.bottom <= parentRect.bottom + 1;
-  })).toBe(true);
+  await expect.poll(async () =>
+    page.getByTestId('ai-chat-log-end').evaluate((end, tolerance) => {
+      const parent = end.parentElement;
+      if (!parent) return false;
+      const endRect = end.getBoundingClientRect();
+      const parentRect = parent.getBoundingClientRect();
+      return (
+        endRect.top >= parentRect.top - tolerance &&
+        endRect.bottom <= parentRect.bottom + tolerance
+      );
+    }, VIEWPORT_TOLERANCE_PX),
+  ).toBe(true);
 });
