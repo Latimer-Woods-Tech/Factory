@@ -1,0 +1,114 @@
+name: PR Size Warning
+
+# Non-blocking warning when a PR is unusually large.
+# Ref: Factory governance issue #273 — phased rollout, warn-only.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  size-check:
+    name: Warn on large PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Check PR size
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ADDITIONS: ${{ github.event.pull_request.additions }}
+          PR_DELETIONS: ${{ github.event.pull_request.deletions }}
+          PR_CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+          REPO: ${{ github.repository }}
+        run: |
+          node - <<'EOF'
+          const { GH_TOKEN, PR_NUMBER, PR_ADDITIONS, PR_DELETIONS, PR_CHANGED_FILES, REPO } = process.env;
+
+          const additions = parseInt(PR_ADDITIONS, 10) || 0;
+          const deletions = parseInt(PR_DELETIONS, 10) || 0;
+          const changedFiles = parseInt(PR_CHANGED_FILES, 10) || 0;
+          const totalLines = additions + deletions;
+
+          // Thresholds (warn-only, non-blocking)
+          const LINE_WARN = 500;
+          const LINE_LARGE = 1000;
+          const FILE_WARN = 20;
+
+          const warnings = [];
+
+          if (totalLines >= LINE_LARGE) {
+            warnings.push(`**${totalLines} lines changed** (>${LINE_LARGE} is very large — consider splitting into smaller PRs)`);
+          } else if (totalLines >= LINE_WARN) {
+            warnings.push(`**${totalLines} lines changed** (>${LINE_WARN} — reviewers appreciate smaller, focused PRs)`);
+          }
+
+          if (changedFiles >= FILE_WARN) {
+            warnings.push(`**${changedFiles} files changed** (>${FILE_WARN} — consider splitting by concern)`);
+          }
+
+          if (warnings.length === 0) {
+            console.log(`PR #${PR_NUMBER}: size OK (${totalLines} lines, ${changedFiles} files)`);
+            process.exit(0);
+          }
+
+          const body = [
+            '### :large_orange_diamond: PR Size Warning',
+            '',
+            'This PR is larger than recommended thresholds:',
+            ...warnings.map(w => `- ${w}`),
+            '',
+            '**This is a non-blocking advisory.** Large PRs slow review cycles and increase merge-conflict risk.',
+            'Where practical, consider splitting by concern (feature vs. tests vs. config).',
+            '',
+            '_Governed by Factory issue [#273](https://github.com/Latimer-Woods-Tech/factory/issues/273) — phased rollout, warn-only._',
+          ].join('\n');
+
+          async function gh(method, path, data) {
+            const url = `https://api.github.com${path}`;
+            const res = await fetch(url, {
+              method,
+              headers: {
+                Accept: 'application/vnd.github+json',
+                Authorization: `Bearer ${GH_TOKEN}`,
+                'X-GitHub-Api-Version': '2022-11-28',
+                ...(data ? { 'Content-Type': 'application/json' } : {}),
+              },
+              body: data ? JSON.stringify(data) : undefined,
+            });
+            if (!res.ok) {
+              const t = await res.text();
+              console.warn(`GH ${method} ${path} → ${res.status}: ${t.slice(0, 200)}`);
+              return null;
+            }
+            return res.status === 204 ? null : res.json();
+          }
+
+          // Find and update existing size-warning comment, or post new one.
+          const comments = await gh('GET', `/repos/${REPO}/issues/${PR_NUMBER}/comments?per_page=100`);
+          const existingComment = comments?.find(c =>
+            c.body?.includes(':large_orange_diamond: PR Size Warning') &&
+            c.user?.type === 'Bot'
+          );
+
+          if (existingComment) {
+            await gh('PATCH', `/repos/${REPO}/issues/comments/${existingComment.id}`, { body });
+            console.log(`Updated size-warning comment on PR #${PR_NUMBER}`);
+          } else {
+            await gh('POST', `/repos/${REPO}/issues/${PR_NUMBER}/comments`, { body });
+            console.log(`Posted size-warning comment on PR #${PR_NUMBER}`);
+          }
+
+          console.log(`PR #${PR_NUMBER}: ${totalLines} lines, ${changedFiles} files — warning posted`);
+          EOF
