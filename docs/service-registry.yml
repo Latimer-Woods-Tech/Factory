@@ -49,7 +49,7 @@ workers:
     url: https://api.selfprime.net                         # canonical public URL (branded custom domain)
     workers_dev_url: https://prime-self.adrper79.workers.dev  # internal/CF fallback; never hardcode in frontend
     custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
-    custom_domain_status: pending_attachment               # set to 'attached' after CF API confirms
+    custom_domain_status: attached                         # CF custom domain confirmed live 2026-05-08
     health_endpoint: /health
     critical_endpoints:
       - /auth/login
@@ -68,8 +68,8 @@ workers:
   - id: schedule-worker
     name: schedule-worker                                  # matches apps/schedule-worker/wrangler.jsonc `name`
     repo: Latimer-Woods-Tech/factory
-    url: https://schedule-worker.adrper79.workers.dev      # canonical workers.dev URL
-    custom_domain: null
+    url: https://schedule.latwoodtech.work                 # canonical custom domain (attached 2026-05-08)
+    custom_domain: schedule.latwoodtech.work
     health_endpoint: /health
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
@@ -133,8 +133,8 @@ workers:
   - id: synthetic-monitor
     name: synthetic-monitor                                # matches apps/synthetic-monitor/wrangler.jsonc `name`
     repo: Latimer-Woods-Tech/factory
-    url: https://synthetic-monitor.adrper79.workers.dev    # canonical workers.dev URL
-    custom_domain: null
+    url: https://monitor.latwoodtech.work                  # canonical custom domain (attached 2026-05-08)
+    custom_domain: monitor.latwoodtech.work
     health_endpoint: /health
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
@@ -187,8 +187,8 @@ workers:
   - id: admin-studio-production
     name: admin-studio-production                          # matches apps/admin-studio/wrangler.jsonc env.production.name
     repo: Latimer-Woods-Tech/factory
-    url: https://admin-studio-production.adrper79.workers.dev
-    custom_domain: null
+    url: https://admin.latwoodtech.work                    # canonical custom domain (attached 2026-05-08)
+    custom_domain: admin.latwoodtech.work
     health_endpoint: /health
     deployment_status: live_health_verified_2026-05-06
     notes: >
@@ -240,6 +240,36 @@ workers:
       Use `fix-videoking-domains.yml` to re-attach the API/assets domains and
       `push-videoking-worker-secrets.yml` plus the reusable app workflows for runtime sync.
       Hyperdrive ID for VideoKing DB: 72697ebbf0d44419850743679390acf1 (videoking-hyperdrive).
+    consumers: []
+
+  - id: capricast-api
+    name: capricast-api                                        # matches wrangler.jsonc name in videoking repo
+    repo: Latimer-Woods-Tech/videoking
+    url: https://api.capricast.com                             # canonical custom domain (branded)
+    workers_dev_url: https://capricast-api.adrper79.workers.dev
+    custom_domain: api.capricast.com
+    custom_domain_status: attached                             # CF custom domain attached 2026-05-08
+    health_endpoint: /health
+    consumers: []
+
+  - id: cypher-healing
+    name: cypher-healing                                       # matches wrangler.jsonc name
+    repo: Latimer-Woods-Tech/cypher-healing
+    url: https://api.cipherofhealing.com                       # canonical custom domain (branded)
+    workers_dev_url: https://cypher-healing.adrper79.workers.dev
+    custom_domain: api.cipherofhealing.com
+    custom_domain_status: attached                             # CF custom domain attached 2026-05-08
+    health_endpoint: /health
+    consumers: []
+
+  - id: factory-supervisor
+    name: factory-supervisor                                   # matches wrangler.jsonc name
+    repo: Latimer-Woods-Tech/factory
+    url: https://supervisor.latwoodtech.work                   # internal infra domain
+    workers_dev_url: https://factory-supervisor.adrper79.workers.dev
+    custom_domain: supervisor.latwoodtech.work
+    custom_domain_status: attached                             # CF custom domain attached 2026-05-08
+    health_endpoint: /health
     consumers: []
 
 pages:
