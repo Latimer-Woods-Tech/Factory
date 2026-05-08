@@ -2,7 +2,7 @@
 /**
  * check-workers-url-policy.mjs
  *
- * Two-part enforcement:
+ * Three-part enforcement:
  *
  * 1. CANONICAL FORMAT CHECK (FRH-03)
  *    docs/templates must use the full `*.adrper79.workers.dev` form — never
@@ -14,6 +14,11 @@
  *    docs/service-registry.yml. Use the `custom_domain` field, never
  *    `workers_dev_url`.
  *
+ * 3. WRANGLER CONFIG CHECK (FRH-WJ)
+ *    wrangler.jsonc/wrangler.json vars must NOT contain hardcoded workers.dev
+ *    URLs. Use Service Bindings for worker-to-worker calls; put local overrides
+ *    in .dev.vars (never committed).
+ *
  * Exit 1 on any violation.
  */
 
@@ -21,6 +26,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const ACCOUNT_SUBDOMAIN = 'adrper79';
+const WORKERS_DEV_RE = /\.workers\.dev/i;
+const CANONICAL_RE = new RegExp(String.raw`\.${ACCOUNT_SUBDOMAIN}\.workers\.dev`, 'i');
 const URL_REGEX = /https?:\/\/[^\s'"`)>,]+/g;
 
 // ---------------------------------------------------------------------------
@@ -181,6 +188,50 @@ for (const root of SCAN_ROOTS) {
 }
 
 // ---------------------------------------------------------------------------
+// Part 3 — Wrangler config must NOT have hardcoded workers.dev in vars (FRH-WJ)
+// ---------------------------------------------------------------------------
+const wranglerSkipDirs = new Set(['node_modules', '.git', 'dist', '.wrangler', '_external_reviews', '.cache']);
+
+function* walkDirForWrangler(dir) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (wranglerSkipDirs.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) yield* walkDirForWrangler(full);
+    else yield full;
+  }
+}
+
+for (const filePath of walkDirForWrangler(path.resolve('.'))) {
+  if (!filePath.endsWith('wrangler.jsonc') && !filePath.endsWith('wrangler.json')) continue;
+  const rel = path.relative(path.resolve('.'), filePath);
+  let parsed;
+  try {
+    const raw = readFileSync(filePath, 'utf8').replace(/\/\/[^\n]*/g, '');
+    parsed = JSON.parse(raw);
+  } catch { continue; }
+
+  function checkWranglerVars(varsObj, envLabel) {
+    if (!varsObj || typeof varsObj !== 'object') return;
+    for (const [key, val] of Object.entries(varsObj)) {
+      if (typeof val === 'string' && WORKERS_DEV_RE.test(val)) {
+        violations.push({
+          check: 'wrangler-hardcoded-workers-dev',
+          file: rel,
+          line: 0,
+          url: val,
+          hint: `FRH-WJ${envLabel}: vars.${key} — use Service Binding or custom domain; local overrides go in .dev.vars`,
+        });
+      }
+    }
+  }
+
+  checkWranglerVars(parsed.vars, '');
+  for (const [envName, envCfg] of Object.entries(parsed.env || {})) {
+    checkWranglerVars(envCfg?.vars, `[${envName}]`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Report
 // ---------------------------------------------------------------------------
 if (violations.length === 0) {
@@ -190,6 +241,7 @@ if (violations.length === 0) {
 
 const canonical = violations.filter((v) => v.check === 'canonical-format');
 const userFacing = violations.filter((v) => v.check === 'user-facing-no-workers-dev');
+const wranglerHardcoded = violations.filter((v) => v.check === 'wrangler-hardcoded-workers-dev');
 
 if (canonical.length > 0) {
   console.error('\n[canonical-format] Non-canonical workers.dev URLs in docs/templates:');
@@ -204,6 +256,14 @@ if (userFacing.length > 0) {
   console.error('\n[user-facing-no-workers-dev] Bare workers.dev URLs in user-facing files:');
   for (const v of userFacing) {
     console.error(`  ${v.file}:${v.line}  ${v.url}`);
+    console.error(`    → ${v.hint}`);
+  }
+}
+
+if (wranglerHardcoded.length > 0) {
+  console.error('\n[wrangler-hardcoded-workers-dev] Hardcoded workers.dev URLs in wrangler vars:');
+  for (const v of wranglerHardcoded) {
+    console.error(`  ${v.file}  ${v.url}`);
     console.error(`    → ${v.hint}`);
   }
 }
