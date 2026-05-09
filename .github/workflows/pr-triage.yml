@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   triage:
+    if: github.event.sender.type != 'Bot'
     name: Label PR by author and changed paths
     runs-on: ubuntu-latest
     timeout-minutes: 5
