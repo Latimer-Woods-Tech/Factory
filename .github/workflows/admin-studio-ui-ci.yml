@@ -95,7 +95,6 @@ jobs:
       - name: Lighthouse CI mobile budget gate
         uses: treosh/lighthouse-ci-action@v12
         with:
-          workingDirectory: apps/admin-studio-ui
           configPath: ./apps/admin-studio-ui/.lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true
