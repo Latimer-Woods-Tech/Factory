@@ -1,0 +1,145 @@
+name: PR Size Warning (Warn-Only)
+
+# Phase 1 — advisory only, never blocks merge.
+# Warns when a PR exceeds line-change or file-count thresholds and suggests
+# how to split it. Promotes to required only after false-positive rate < 5%
+# for 2 weeks.
+#
+# Parent rollout issue: #270   Implementing issue: #273
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-size-warning-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# ── Thresholds ──────────────────────────────────────────────────────────────
+# These mirror the Factory "Definition of Done" guidance.
+env:
+  LINES_WARN: 500      # additions + deletions
+  LINES_SPLIT: 1000    # hard suggest-split threshold
+  FILES_WARN: 30       # distinct file count
+  FILES_SPLIT: 60      # hard suggest-split threshold
+
+jobs:
+  size-check:
+    if: github.event.sender.type != 'Bot'
+    name: PR size check (shadow / warn-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ !github.event.pull_request.draft }}
+
+    steps:
+      - name: Collect PR size metrics
+        id: metrics
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          JSON=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json additions,deletions,files)
+          ADDS=$(echo "$JSON" | jq '.additions')
+          DELS=$(echo "$JSON" | jq '.deletions')
+          TOTAL=$((ADDS + DELS))
+          FILES=$(echo "$JSON" | jq '.files | length')
+
+          echo "additions=$ADDS"   >> "$GITHUB_OUTPUT"
+          echo "deletions=$DELS"   >> "$GITHUB_OUTPUT"
+          echo "total_lines=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "file_count=$FILES"  >> "$GITHUB_OUTPUT"
+
+          # Determine severity level
+          LEVEL="ok"
+          if [[ $TOTAL -ge ${{ env.LINES_SPLIT }} || $FILES -ge ${{ env.FILES_SPLIT }} ]]; then
+            LEVEL="split"
+          elif [[ $TOTAL -ge ${{ env.LINES_WARN }} || $FILES -ge ${{ env.FILES_WARN }} ]]; then
+            LEVEL="warn"
+          fi
+          echo "level=$LEVEL" >> "$GITHUB_OUTPUT"
+
+      - name: Post size warning comment
+        if: ${{ steps.metrics.outputs.level != 'ok' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          LEVEL: ${{ steps.metrics.outputs.level }}
+          TOTAL_LINES: ${{ steps.metrics.outputs.total_lines }}
+          FILE_COUNT: ${{ steps.metrics.outputs.file_count }}
+          ADDS: ${{ steps.metrics.outputs.additions }}
+          DELS: ${{ steps.metrics.outputs.deletions }}
+        run: |
+          set -euo pipefail
+
+          MARKER="<!-- pr-size-warning -->"
+
+          if [[ "$LEVEL" == "split" ]]; then
+            EMOJI="🔴"
+            HEADLINE="This PR is **very large** and strongly recommended to split."
+          else
+            EMOJI="🟡"
+            HEADLINE="This PR is **large**. Consider splitting if possible."
+          fi
+
+          BODY="${MARKER}
+          ## ${EMOJI} PR Size Warning (warn-only)
+
+          ${HEADLINE}
+
+          | Metric | Value | Warn at | Split at |
+          |--------|-------|---------|----------|
+          | Lines changed | +${ADDS} / -${DELS} (${TOTAL_LINES} total) | ${{ env.LINES_WARN }} | ${{ env.LINES_SPLIT }} |
+          | Files changed | ${FILE_COUNT} | ${{ env.FILES_WARN }} | ${{ env.FILES_SPLIT }} |
+
+          **Why split?** Large PRs are harder to review, more likely to introduce regressions, and block faster feedback loops.
+
+          **Suggested split criteria:**
+          - Separate package/app changes from CI/config changes
+          - Isolate database migrations into their own PR
+          - Keep frontend and backend changes in separate PRs when possible
+          - Split unrelated bug fixes from the main feature
+
+          ---
+          _This is a **non-blocking** advisory check (Phase 1 of [#270](https://github.com/${REPO}/issues/270)). It will not prevent merge. False positive? Comment below._"
+
+          EXISTING_ID=$(gh api \
+            "/repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --paginate \
+            --jq "[.[] | select(.body | startswith(\"${MARKER}\")) | .id] | first // empty")
+
+          if [[ -n "$EXISTING_ID" ]]; then
+            gh api --method PATCH \
+              "/repos/${REPO}/issues/comments/${EXISTING_ID}" \
+              -f body="$BODY"
+          else
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
+          fi
+
+      - name: Remove size warning when PR shrinks below thresholds
+        if: ${{ steps.metrics.outputs.level == 'ok' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          MARKER="<!-- pr-size-warning -->"
+
+          EXISTING_ID=$(gh api \
+            "/repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --paginate \
+            --jq "[.[] | select(.body | startswith(\"${MARKER}\")) | .id] | first // empty")
+
+          if [[ -n "$EXISTING_ID" ]]; then
+            gh api --method DELETE "/repos/${REPO}/issues/comments/${EXISTING_ID}"
+            echo "Removed stale size warning (PR is now within thresholds)."
+          fi

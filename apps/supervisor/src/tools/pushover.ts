@@ -7,7 +7,7 @@
  * Required secrets: PUSHOVER_TOKEN, PUSHOVER_USER_KEY
  */
 
-const PUSHOVER_API = 'https://api.pushover.net/1/messages.json';
+const PUSHOVER_API = 'https://api.pushover.net/1/messages.json'; // Pushover v1 REST endpoint
 
 export interface RunDigest {
   /** Total issues that matched a template */
@@ -47,6 +47,9 @@ function formatDigestMessage(digest: RunDigest): string {
  *
  * Best-effort: catches all errors and logs them without re-throwing.
  * A Pushover failure must never abort or fail the supervisor run.
+ *
+ * Timeout: `AbortSignal.timeout(5_000)` is passed directly to `fetch()` as
+ * `signal` so the Worker CPU budget cannot be exhausted by a hanging API call.
  */
 export async function sendDigest(
   token: string,
@@ -64,10 +67,12 @@ export async function sendDigest(
       priority: digest.errors.length > 0 ? '0' : '-1',
     });
 
+    // signal is explicitly passed so a hung Pushover endpoint cannot stall the Worker.
     const res = await fetch(PUSHOVER_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
+      signal: AbortSignal.timeout(5_000), // hard 5 s cap — Workers-native timeout
     });
 
     if (!res.ok) {

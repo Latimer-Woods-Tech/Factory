@@ -379,6 +379,35 @@ supervisor-loop.yml (cron: every 4 hours + workflow_dispatch)
 | **Yellow** | `apps/*/src/**`, `client/**`, `tests/**` | LLM consensus only; auto-merge on 2/2 approve |
 | **Red** | `packages/**`, `.github/workflows/**`, `wrangler.jsonc`, `migrations/**`, `scripts/**`, `skills/**` | Human review required; bot posts immediate notification |
 
+### Reviewer-Class Hints
+
+In addition to tier-based review, the bot detects which **sensitive path classes** a PR touches and auto-requests the relevant reviewers via GitHub review requests. This fires for all tiers, not just red.
+
+| Class | Label | Default paths matched |
+|-------|-------|----------------------|
+| `platform` | 🔧 Platform (CI/CD & shared packages) | `.github/workflows/**`, `.github/scripts/**`, `packages/**`, `scripts/**`, `skills/**` |
+| `security` | 🔒 Security (auth, admin & billing paths) | `handlers/(billing\|admin\|stripe)`, `/admin/`, `stripe*`, `capabilities.yml`, `docs/supervisor/plans/**`, `apps/supervisor/**` |
+| `database` | 🗄️ Database (migrations & schema) | `migrations/**`, `*/src/db/**`, `drizzle.config*` |
+| `config` | ⚙️ Config (wrangler & service registry) | `wrangler.jsonc`, `wrangler.toml`, `docs/service-registry.yml` |
+| `governance` | 📋 Governance (CODEOWNERS & settings) | `.github/CODEOWNERS`, `.github/settings.yml` |
+
+When a reviewer class fires, the bot:
+1. Sends a GitHub review request to the listed reviewers (GitHub notification)
+2. Adds a **Reviewer Hints** table to the review body showing which classes matched and which files triggered them
+
+**Customising the reviewer map:** Set repo variable `REVIEWER_HINTS_MAP` to a JSON array to override or extend the built-in map. Each entry must have:
+```json
+[
+  {
+    "class": "platform",
+    "label": "🔧 Platform",
+    "patterns": ["^\\.github/workflows/"],
+    "reviewers": ["my-platform-handle"]
+  }
+]
+```
+Entries with a matching `class` key replace the built-in entry; new class keys are appended.
+
 ### Required Secrets
 
 | Secret | Purpose |
@@ -387,8 +416,14 @@ supervisor-loop.yml (cron: every 4 hours + workflow_dispatch)
 | `GROK_API_KEY` | Grok first-pass review |
 | `GH_APP_ID` | factory-cross-repo GitHub App identity |
 | `GH_APP_PRIVATE_KEY` | factory-cross-repo auth |
+
+### Configuration Variables
+
+| Variable | Purpose |
+|----------|---------|
 | `MAX_REVIEW_ATTEMPTS` | Retry limit before escalation (default `3`) |
 | `HUMAN_REVIEWER` | GitHub handle to notify on escalation (default `adrper79-dot`) |
+| `REVIEWER_HINTS_MAP` | Optional JSON array to override the reviewer-class map |
 
 ### Escalation
 
