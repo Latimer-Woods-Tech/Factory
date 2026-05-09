@@ -29,7 +29,7 @@ jobs:
             echo "::error::Package directory 'packages/${PACKAGE}' does not exist for tag '${GITHUB_REF_NAME}'."
             exit 1
           fi
-          PKG_NAME=$(node -e "process.stdout.write(require('./packages/'+"placeholder"+'/package.json').name)" PACKAGE="${PACKAGE}")
+          PKG_NAME=$(node -p "require('./packages/' + "placeholder" + '/package.json').name")
           echo "Resolved package: ${PKG_NAME} from packages/${PACKAGE}"
           echo "PACKAGE=${PACKAGE}" >> "$GITHUB_ENV"
       - name: Build local dependencies in order
