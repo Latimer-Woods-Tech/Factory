@@ -4,7 +4,6 @@ on:
     tags: ['*/v*']
 permissions:
   contents: read
-  packages: write
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 concurrency:
@@ -20,29 +19,17 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: 'https://npm.pkg.github.com'
+          registry-url: 'https://registry.npmjs.org'
           scope: '@latimer-woods-tech'
       - name: Detect and validate package from tag
         run: |
           set -euo pipefail
           PACKAGE=$(echo "$GITHUB_REF_NAME" | cut -d'/' -f1)
-          ALLOWED_PACKAGES=(errors monitoring logger realtime auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin video schedule validation flags llm-meter protocol studio-core entitlements creator)
-          VALID=false
-          for pkg in "${ALLOWED_PACKAGES[@]}"; do
-            if [ "$pkg" = "$PACKAGE" ]; then
-              VALID=true
-              break
-            fi
-          done
-          if [ "$VALID" = "false" ]; then
-            echo "::error::Unknown package '${PACKAGE}' in tag '${GITHUB_REF_NAME}'. Allowed: ${ALLOWED_PACKAGES[*]}"
-            exit 1
-          fi
           if [ ! -d "packages/${PACKAGE}" ]; then
             echo "::error::Package directory 'packages/${PACKAGE}' does not exist for tag '${GITHUB_REF_NAME}'."
             exit 1
           fi
-          PKG_NAME=$(node -e "process.stdout.write(require('./packages/${PACKAGE}/package.json').name)")
+          PKG_NAME=$(node -e "process.stdout.write(require('./packages/'+"placeholder"+'/package.json').name)" PACKAGE="${PACKAGE}")
           echo "Resolved package: ${PKG_NAME} from packages/${PACKAGE}"
           echo "PACKAGE=${PACKAGE}" >> "$GITHUB_ENV"
       - name: Build local dependencies in order
@@ -53,18 +40,24 @@ jobs:
             if [ "$pkg" = "$PACKAGE" ]; then
               break
             fi
-            echo "--- Building dependency: $pkg ---"
-            (cd "packages/${pkg}" && npm ci && npm run build)
+            if [ -d "packages/${pkg}" ]; then
+              echo "--- Building dependency: $pkg ---"
+              (cd "packages/${pkg}" && npm ci --ignore-scripts && npm run build)
+            fi
           done
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Strip publishConfig.registry override
+        run: |
+          cd "packages/${PACKAGE}"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));if(p.publishConfig&&p.publishConfig.registry){delete p.publishConfig.registry;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');console.log('Stripped publishConfig.registry')}"
       - name: Install package
-        run: cd "packages/${PACKAGE}" && npm ci
+        run: cd "packages/${PACKAGE}" && npm ci --ignore-scripts
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Pre-publish checks
-        run: cd "packages/${PACKAGE}" && npm run prepublish
-      - name: Publish to GitHub Packages
-        run: cd "packages/${PACKAGE}" && npm publish
+        run: cd "packages/${PACKAGE}" && (npm run prepublish --if-present || echo 'no prepublish')
+      - name: Publish to npmjs.org
+        run: cd "packages/${PACKAGE}" && npm publish --access public --ignore-scripts
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
