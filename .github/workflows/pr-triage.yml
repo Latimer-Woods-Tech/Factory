@@ -2,6 +2,7 @@ name: PR Triage
 
 on:
   pull_request:
+    if: github.event.sender.type != 'Bot'
     types: [opened, reopened]
 
 permissions:
