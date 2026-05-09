@@ -1,8 +1,8 @@
 {
   "ci": {
     "collect": {
-      "numberOfRuns": 1,
-      "startServerCommand": "npm run preview -- --host 127.0.0.1 --port 4173 --strictPort",
+      "numberOfRuns": 3,
+      "startServerCommand": "npm --prefix apps/admin-studio-ui run preview -- --host 127.0.0.1 --port 4173 --strictPort",
       "startServerReadyPattern": "Local:\\s+http://127\\.0\\.0\\.1:4173/",
       "startServerReadyTimeout": 90000,
       "url": [
