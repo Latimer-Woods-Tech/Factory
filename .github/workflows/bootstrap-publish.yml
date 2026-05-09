@@ -78,8 +78,17 @@ jobs:
               fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
             "
 
-            npm install --package-lock-only --legacy-peer-deps --ignore-scripts
-            npm ci --ignore-scripts
+            echo "  --- package.json after rewrite ---"
+            head -25 package.json
+            echo "  --- regenerating lockfile (clean) ---"
+            rm -f package-lock.json
+            npm install --legacy-peer-deps --ignore-scripts --no-fund --no-audit
+            echo "  --- node_modules/@latimer-woods-tech/ ---"
+            ls -la node_modules/@latimer-woods-tech/ 2>&1 || true
+            for dep in node_modules/@latimer-woods-tech/*/; do
+              echo "    $(basename "$dep"): $(node -p "require('./'+'$dep'+'package.json').version" 2>/dev/null || echo '?')"
+            done
+            echo "  --- build ---"
             npm run build --if-present
 
             if [ "${{ inputs.dry_run }}" = "true" ]; then
