@@ -12,6 +12,7 @@
 const REPO = 'Latimer-Woods-Tech/factory';
 const GITHUB_API = 'https://api.github.com';
 const CODEOWNERS = new Set(['adrper79-dot']);
+const GITHUB_TIMEOUT_MS = 10_000;
 
 export interface GitHubIssue {
   number: number;
@@ -38,6 +39,7 @@ export async function fetchApprovedIssues(token: string): Promise<GitHubIssue[]>
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
     },
+    signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -69,6 +71,7 @@ export async function postPlanComment(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ body: planMarkdown }),
+    signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -100,6 +103,7 @@ export async function addLabel(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ labels: [label] }),
+    signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -126,6 +130,7 @@ export async function getPlanApproval(
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
     },
+    signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
   });
 
   if (!res.ok) {
