@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           # Dependency order — leaf packages first
-          PACKAGES=(errors monitoring logger realtime auth neon stripe llm llm-meter telephony analytics deploy testing email copy content social seo crm compliance entitlements protocol creator studio-core design-tokens design-system ui validation video schedule admin)
+          PACKAGES=(errors monitoring logger realtime auth neon stripe llm llm-meter telephony analytics deploy testing email copy content social seo crm compliance entitlements protocol creator studio-core design-tokens design-system ui admin video schedule validation)
 
           for pkg in "${PACKAGES[@]}"; do
             echo ""
