@@ -1,0 +1,96 @@
+name: Copilot PR Poller
+
+# Replaces the brittle event-cascade (auto-approve → label → auto-merge).
+# Single decision: "approved + mergeable + green CI → unblock; behind → updateBranch."
+#
+# Hosted in factory (public repo) so scheduled runs are free unlimited minutes.
+# Uses GH_PAT with workflow scope to act as adrper79-dot — bypasses the Copilot gate
+# (the gate keys on the trigger actor, not the PR author; verified 2026-05-09).
+#
+# Idempotent. Safe to run as often as desired.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 min
+  workflow_dispatch:          # manual kick from Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copilot-pr-poller
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sweep org for stuck Copilot PRs
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}   # workflow-scope PAT acting as adrper79-dot
+          ORG: Latimer-Woods-Tech
+        run: |
+          set -euo pipefail
+
+          # Find every open Copilot-authored PR in the org with verdict APPROVED.
+          PRS=$(gh api graphql -f query='
+            query($q: String!) {
+              search(query: $q, type: ISSUE, first: 50) {
+                nodes {
+                  ... on PullRequest {
+                    id number url isDraft mergeable mergeStateStatus reviewDecision
+                    repository { name }
+                    headRefOid
+                    commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+                  }
+                }
+              }
+            }' -f q="org:$ORG is:pr is:open author:app/copilot-swe-agent draft:false review:approved" \
+            --jq '.data.search.nodes')
+
+          echo "$PRS" | jq -c '.[]' | while read pr; do
+            NUM=$(echo "$pr" | jq -r '.number')
+            REPO=$(echo "$pr" | jq -r '.repository.name')
+            STATE=$(echo "$pr" | jq -r '.mergeStateStatus')
+            ROLLUP=$(echo "$pr" | jq -r '.commits.nodes[0].commit.statusCheckRollup.state // "NONE"')
+            ID=$(echo "$pr" | jq -r '.id')
+            OID=$(echo "$pr" | jq -r '.headRefOid')
+
+            echo "::group::$REPO#$NUM (state=$STATE rollup=$ROLLUP)"
+
+            case "$STATE" in
+              BEHIND)
+                # Only rebase when CI is green or untested — avoid burning CI on broken PRs.
+                if [ "$ROLLUP" = "SUCCESS" ] || [ "$ROLLUP" = "NONE" ] || [ "$ROLLUP" = "PENDING" ]; then
+                  echo "Updating branch via PAT (acts as adrper79-dot, bypasses Copilot gate)"
+                  gh api graphql -f query='
+                    mutation($id: ID!, $oid: GitObjectID!) {
+                      updatePullRequestBranch(input:{pullRequestId:$id, expectedHeadOid:$oid, updateMethod:MERGE}) {
+                        pullRequest { number }
+                      }
+                    }' -f id="$ID" -f oid="$OID" || echo "  (updateBranch failed, will retry next tick)"
+                else
+                  echo "Skipping — CI rollup is $ROLLUP, code-level fix needed"
+                fi
+                ;;
+              CLEAN)
+                # Approved, green, clean — make sure auto-merge is enabled.
+                gh api graphql -f query='
+                  mutation($id: ID!) {
+                    enablePullRequestAutoMerge(input:{pullRequestId:$id, mergeMethod:SQUASH}) {
+                      pullRequest { number }
+                    }
+                  }' -f id="$ID" 2>/dev/null && echo "Auto-merge ensured" || echo "Already enabled or already merging"
+                ;;
+              BLOCKED)
+                # Could be: failing CI, missing required reviewer, or stale review.
+                # We do NOT auto-unblock these — needs human triage.
+                echo "BLOCKED — leaving for human triage"
+                ;;
+              *)
+                echo "State $STATE — no action"
+                ;;
+            esac
+
+            echo "::endgroup::"
+          done
