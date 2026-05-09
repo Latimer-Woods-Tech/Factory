@@ -1,0 +1,104 @@
+name: Copilot PR Poller
+
+# Replaces the brittle event-cascade (auto-approve → label → auto-merge).
+# Single decision: "approved + mergeable + green CI → unblock; behind → updateBranch."
+#
+# Hosted in factory (public repo) so scheduled runs are free unlimited minutes.
+# Uses the factory-cross-repo GitHub App (installed org-wide) to mint a
+# short-lived installation token — no PAT rotation needed.
+#
+# Idempotent. Safe to run as often as desired.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 min
+  workflow_dispatch:          # manual kick from Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copilot-pr-poller
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint installation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Sweep org for stuck Copilot PRs
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          ORG: Latimer-Woods-Tech
+        run: |
+          set -euo pipefail
+
+          # Find every open Copilot-authored PR in the org with verdict APPROVED.
+          PRS=$(gh api graphql -f query='
+            query($q: String!) {
+              search(query: $q, type: ISSUE, first: 50) {
+                nodes {
+                  ... on PullRequest {
+                    id number url isDraft mergeable mergeStateStatus reviewDecision
+                    repository { name }
+                    headRefOid
+                    commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
+                  }
+                }
+              }
+            }' -f q="org:$ORG is:pr is:open author:app/copilot-swe-agent draft:false review:approved" \
+            --jq '.data.search.nodes')
+
+          echo "$PRS" | jq -c '.[]' | while read pr; do
+            NUM=$(echo "$pr" | jq -r '.number')
+            REPO=$(echo "$pr" | jq -r '.repository.name')
+            STATE=$(echo "$pr" | jq -r '.mergeStateStatus')
+            ROLLUP=$(echo "$pr" | jq -r '.commits.nodes[0].commit.statusCheckRollup.state // "NONE"')
+            ID=$(echo "$pr" | jq -r '.id')
+            OID=$(echo "$pr" | jq -r '.headRefOid')
+
+            echo "::group::$REPO#$NUM (state=$STATE rollup=$ROLLUP)"
+
+            case "$STATE" in
+              BEHIND)
+                # Only rebase when CI is green or untested — avoid burning CI on broken PRs.
+                if [ "$ROLLUP" = "SUCCESS" ] || [ "$ROLLUP" = "NONE" ] || [ "$ROLLUP" = "PENDING" ]; then
+                  echo "Updating branch via GitHub App token (acts as factory-cross-repo[bot], bypasses Copilot gate)"
+                  gh api graphql -f query='
+                    mutation($id: ID!, $oid: GitObjectID!) {
+                      updatePullRequestBranch(input:{pullRequestId:$id, expectedHeadOid:$oid, updateMethod:MERGE}) {
+                        pullRequest { number }
+                      }
+                    }' -f id="$ID" -f oid="$OID" || echo "  (updateBranch failed, will retry next tick)"
+                else
+                  echo "Skipping — CI rollup is $ROLLUP, code-level fix needed"
+                fi
+                ;;
+              CLEAN)
+                # Approved, green, clean — make sure auto-merge is enabled.
+                gh api graphql -f query='
+                  mutation($id: ID!) {
+                    enablePullRequestAutoMerge(input:{pullRequestId:$id, mergeMethod:SQUASH}) {
+                      pullRequest { number }
+                    }
+                  }' -f id="$ID" 2>/dev/null && echo "Auto-merge ensured" || echo "Already enabled or already merging"
+                ;;
+              BLOCKED)
+                # Could be: failing CI, missing required reviewer, or stale review.
+                # We do NOT auto-unblock these — needs human triage.
+                echo "BLOCKED — leaving for human triage"
+                ;;
+              *)
+                echo "State $STATE — no action"
+                ;;
+            esac
+
+            echo "::endgroup::"
+          done

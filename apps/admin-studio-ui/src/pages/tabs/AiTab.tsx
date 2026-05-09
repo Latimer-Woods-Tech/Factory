@@ -9,7 +9,7 @@
  * editing. Approving a proposal calls `useActiveFile.edit(after)` which marks
  * the file dirty, after which the user commits via CodeTab's commit panel.
  */
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   AIChatEvent,
@@ -40,6 +40,65 @@ function turn(role: 'user' | 'assistant', content: string): AIChatTurn {
   return { role, content, at: new Date().toISOString() };
 }
 
+interface ScrollMetrics {
+  scrollHeight: number;
+  scrollTop: number;
+  clientHeight: number;
+}
+
+export function isNearBottom(metrics: ScrollMetrics, thresholdPx = 64): boolean {
+  return metrics.scrollHeight - metrics.scrollTop - metrics.clientHeight <= thresholdPx;
+}
+
+export function getLiveRegionFlushDelayMs(
+  lastFlushAt: number,
+  now: number,
+  minIntervalMs = 1000,
+): number {
+  const elapsed = Math.max(0, now - lastFlushAt);
+  return Math.max(0, minIntervalMs - elapsed);
+}
+
+function useStickyBottom(appendSignal: number, thresholdPx = 64) {
+  const logRef = useRef<HTMLDivElement | null>(null);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+
+  useEffect(() => {
+    const node = logRef.current;
+    if (!node) return;
+
+    const sync = () => {
+      setShowJumpToLatest(!isNearBottom(node, thresholdPx));
+    };
+    sync();
+
+    node.addEventListener('scroll', sync, { passive: true });
+    return () => node.removeEventListener('scroll', sync);
+  }, [thresholdPx]);
+
+  useEffect(() => {
+    const node = logRef.current;
+    if (!node) return;
+
+    if (isNearBottom(node, thresholdPx)) {
+      node.scrollTop = node.scrollHeight;
+      setShowJumpToLatest(false);
+      return;
+    }
+
+    setShowJumpToLatest(true);
+  }, [appendSignal, thresholdPx]);
+
+  const jumpToLatest = useCallback(() => {
+    const node = logRef.current;
+    if (!node) return;
+    node.scrollTop = node.scrollHeight;
+    setShowJumpToLatest(false);
+  }, []);
+
+  return { logRef, showJumpToLatest, jumpToLatest };
+}
+
 export function AiTab() {
   const active = useActiveFile();
   const [history, setHistory] = useState<AIChatTurn[]>([]);
@@ -49,12 +108,16 @@ export function AiTab() {
   const [streaming, setStreaming] = useState(false);
   const [partial, setPartial] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [streamStatus, setStreamStatus] = useState('');
   const abortRef = useRef<AbortController | null>(null);
 
   // Proposal state.
   const [proposalBusy, setProposalBusy] = useState(false);
   const [proposal, setProposal] = useState<AIProposal | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
+  // Change-detection signal for sticky-bottom behavior when new chat content appears.
+  const appendSignal = history.length + (partial ? 1 : 0) + (error ? 1 : 0);
+  const { logRef, showJumpToLatest, jumpToLatest } = useStickyBottom(appendSignal);
 
   async function send() {
     if (!prompt.trim() || streaming) return;
@@ -64,6 +127,7 @@ export function AiTab() {
     setPrompt('');
     setPartial('');
     setError(null);
+    setStreamStatus('Streaming…');
     setStreaming(true);
 
     const controller = new AbortController();
@@ -104,6 +168,22 @@ export function AiTab() {
       const decoder = new TextDecoder();
       let buf = '';
       let assistantText = '';
+      let flushTimer: ReturnType<typeof setTimeout> | null = null;
+      let lastFlushAt = 0;
+
+      const flushPartial = () => {
+        setPartial(assistantText);
+        lastFlushAt = Date.now();
+        flushTimer = null;
+      };
+
+      const schedulePartialFlush = () => {
+        if (flushTimer !== null) return;
+        flushTimer = setTimeout(
+          flushPartial,
+          getLiveRegionFlushDelayMs(lastFlushAt, Date.now()),
+        );
+      };
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -126,12 +206,17 @@ export function AiTab() {
           }
           if (evt.type === 'token') {
             assistantText += evt.delta;
-            setPartial(assistantText);
+            schedulePartialFlush();
           } else if (evt.type === 'error') {
             setError(evt.message);
           }
         }
       }
+
+      if (flushTimer !== null) {
+        clearTimeout(flushTimer);
+      }
+      setPartial(assistantText);
 
       if (assistantText) {
         const assistantTurn = turn('assistant', assistantText);
@@ -144,6 +229,7 @@ export function AiTab() {
       }
     } finally {
       setStreaming(false);
+      setStreamStatus('Done');
       abortRef.current = null;
     }
   }
@@ -156,6 +242,7 @@ export function AiTab() {
     setHistory([]);
     setPartial('');
     setError(null);
+    setStreamStatus('');
   }
 
   async function requestProposal() {
@@ -251,22 +338,40 @@ export function AiTab() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-3 space-y-3 text-sm">
-          {history.length === 0 && !partial && (
-            <p className="text-slate-500">
-              Choose a strategy, then ask AI to generate, explain, or refactor Factory code.
-              The system prompt enforces Workers/Hono/Drizzle/Web-Crypto standing orders.
-            </p>
+        <p role="status" aria-live="polite" className="sr-only">{streamStatus}</p>
+        <div className="relative flex-1 min-h-0">
+          <div
+            ref={logRef}
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+            className="h-full overflow-auto p-3 space-y-3 text-sm"
+          >
+            {history.length === 0 && !partial && (
+              <p className="text-slate-500">
+                Choose a strategy, then ask AI to generate, explain, or refactor Factory code.
+                The system prompt enforces Workers/Hono/Drizzle/Web-Crypto standing orders.
+              </p>
+            )}
+            {history.map((t, i) => (
+              <Bubble key={i} role={t.role}>{t.content}</Bubble>
+            ))}
+            {partial && (
+              <Bubble role="assistant" streaming>
+                {partial}
+              </Bubble>
+            )}
+            {error && <p className="text-rose-400 text-xs">⚠ {error}</p>}
+          </div>
+          {showJumpToLatest && (
+            <button
+              onClick={jumpToLatest}
+              aria-label="Jump to latest message"
+              className="absolute right-3 bottom-3 min-h-11 min-w-11 rounded-full border border-emerald-600 bg-emerald-700/95 px-3 text-xs font-medium text-white hover:bg-emerald-600"
+            >
+              ↓ Jump to latest
+            </button>
           )}
-          {history.map((t, i) => (
-            <Bubble key={i} role={t.role}>{t.content}</Bubble>
-          ))}
-          {partial && (
-            <Bubble role="assistant" streaming>
-              {partial}
-            </Bubble>
-          )}
-          {error && <p className="text-rose-400 text-xs">⚠ {error}</p>}
         </div>
 
         <footer className="border-t border-slate-800 p-2">
