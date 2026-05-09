@@ -35,6 +35,10 @@ const {
   TELNYX_API_KEY,
   TELNYX_FROM_NUMBER,
   NOTIFICATION_PHONE,
+  // Optional JSON override for the sensitive-path reviewer-class map.
+  // Shape: Array<{ class: string; label: string; patterns: string[]; reviewers: string[] }>
+  // When set, these entries are merged with (and override) the built-in defaults.
+  REVIEWER_HINTS_MAP,
 } = process.env;
 
 const MAX_ATTEMPTS = parseInt(MAX_REVIEW_ATTEMPTS, 10);
@@ -143,6 +147,153 @@ function detectTier(filenames) {
 
 function hasAdminMutation(filenames) {
   return filenames.some(f => ADMIN_MUTATION_PATTERNS.some(p => p.test(f)));
+}
+
+// ─── Reviewer-class hints (sensitive path → reviewer class mapping) ───────────
+//
+// Each entry maps a reviewer *class* (a logical group of changes that a specific
+// person/team should always see) to:
+//   - `label`:     Human-readable class name surfaced in the review body
+//   - `patterns`:  RegExp patterns — if any changed file matches, the class fires
+//   - `reviewers`: GitHub handles to request review from when the class fires
+//
+// The built-in map covers the Factory CODEOWNERS trust model. Override or extend
+// by setting REVIEWER_HINTS_MAP in repo/org vars as a JSON array of entries with
+// the same shape (entries are merged; same `class` key wins with the override).
+
+/** @type {Array<{class: string; label: string; patterns: RegExp[]; reviewers: string[]}>} */
+const DEFAULT_REVIEWER_CLASS_MAP = [
+  {
+    class: 'platform',
+    label: '🔧 Platform (CI/CD & shared packages)',
+    patterns: [
+      /^\.github\/workflows\//,
+      /^\.github\/scripts\//,
+      /^packages\//,
+      /^scripts\//,
+      /^skills\//,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'security',
+    label: '🔒 Security (auth, admin & billing paths)',
+    patterns: [
+      /handlers\/(billing|admin|stripe)/,
+      /\/admin\//,
+      /stripe/i,
+      /capabilities\.yml$/,
+      /docs\/supervisor\/(plans|FRIDGE)\//,
+      /apps\/supervisor\//,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'database',
+    label: '🗄️ Database (migrations & schema)',
+    patterns: [
+      /migrations\//,
+      /\/src\/db\//,
+      /drizzle\.config/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'config',
+    label: '⚙️ Config (wrangler & service registry)',
+    patterns: [
+      /wrangler\.(jsonc?|toml)$/,
+      /docs\/service-registry\.yml$/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'governance',
+    label: '📋 Governance (CODEOWNERS & settings)',
+    patterns: [
+      /^\.github\/CODEOWNERS$/,
+      /^\.github\/settings\.yml$/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+];
+
+/**
+ * Merge any REVIEWER_HINTS_MAP override into the built-in defaults.
+ * Override entries with a matching `class` key replace the built-in entry;
+ * new class keys are appended.
+ */
+function buildReviewerClassMap() {
+  if (!REVIEWER_HINTS_MAP) return DEFAULT_REVIEWER_CLASS_MAP;
+
+  let overrides;
+  try {
+    overrides = JSON.parse(REVIEWER_HINTS_MAP);
+    if (!Array.isArray(overrides)) throw new Error('Not an array');
+  } catch (err) {
+    console.warn(`[WARN] REVIEWER_HINTS_MAP is not valid JSON — using built-in map. Error: ${err.message}`);
+    return DEFAULT_REVIEWER_CLASS_MAP;
+  }
+
+  const map = DEFAULT_REVIEWER_CLASS_MAP.map(entry => {
+    const override = overrides.find(o => o.class === entry.class);
+    if (!override) return entry;
+    // Convert string patterns to RegExp if the caller passed strings
+    const patterns = [];
+    for (const p of (override.patterns ?? entry.patterns)) {
+      if (p instanceof RegExp) {
+        patterns.push(p);
+        continue;
+      }
+      try {
+        patterns.push(new RegExp(p));
+      } catch {
+        console.warn(`[WARN] REVIEWER_HINTS_MAP: invalid regex pattern "${p}" in class "${entry.class}" — skipping`);
+      }
+    }
+    return { ...entry, ...override, patterns };
+  });
+
+  // Append any new classes from the override
+  for (const o of overrides) {
+    if (!map.find(e => e.class === o.class)) {
+      const patterns = [];
+      for (const p of (o.patterns ?? [])) {
+        if (p instanceof RegExp) {
+          patterns.push(p);
+          continue;
+        }
+        try {
+          patterns.push(new RegExp(p));
+        } catch {
+          console.warn(`[WARN] REVIEWER_HINTS_MAP: invalid regex pattern "${p}" in new class "${o.class}" — skipping`);
+        }
+      }
+      map.push({ ...o, patterns });
+    }
+  }
+
+  return map;
+}
+
+const REVIEWER_CLASS_MAP = buildReviewerClassMap();
+
+/**
+ * Given the list of changed file paths, return the reviewer classes that apply.
+ * Each returned entry includes the matched files for traceability in the review body.
+ *
+ * @param {string[]} filenames
+ * @returns {Array<{class: string; label: string; reviewers: string[]; matchedFiles: string[]}>}
+ */
+function detectSensitivePathReviewers(filenames) {
+  const hits = [];
+  for (const entry of REVIEWER_CLASS_MAP) {
+    const matchedFiles = filenames.filter(f => entry.patterns.some(p => p.test(f)));
+    if (matchedFiles.length > 0) {
+      hits.push({ class: entry.class, label: entry.label, reviewers: entry.reviewers, matchedFiles });
+    }
+  }
+  return hits;
 }
 
 // ─── Deterministic constraint checks (no LLM) ────────────────────────────────
@@ -606,7 +757,7 @@ function tierEmoji(tier) {
   return { red: '🔴', yellow: '🟡', green: '🟢' }[tier] ?? '⚪';
 }
 
-function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTitle, isAdminMutation, truncated }) {
+function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTitle, isAdminMutation, truncated, reviewerHints }) {
   const lines = [];
   const emoji = tierEmoji(tier);
   const decisionLine = decision === 'APPROVE'
@@ -619,6 +770,34 @@ function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTit
   lines.push(`**Decision:** ${decisionLine}`);
   lines.push(`**Reviewers:** 🤖 Grok (party 1) → 🤖 Claude (party 2) — both must approve`);
   lines.push('');
+
+  // Reviewer-class hints ─────────────────────────────────────────────────────
+  // Surface which sensitive path classes were matched and which reviewers were
+  // notified, so human reviewers immediately know why they were pinged.
+  if (reviewerHints && reviewerHints.length > 0) {
+    lines.push('### 👥 Reviewer Hints — Sensitive Path Classes Detected');
+    lines.push('');
+    lines.push('The following reviewer classes were auto-notified because this PR touches sensitive paths:');
+    lines.push('');
+    lines.push('| Class | Notified reviewer(s) | Matched files |');
+    lines.push('|-------|----------------------|---------------|');
+    for (const hint of reviewerHints) {
+      const handles = hint.reviewers.map(r => `@${r}`).join(', ');
+      // Truncate matched file list to keep the table readable
+      const maxFiles = 5;
+      const fileCells = hint.matchedFiles
+        .slice(0, maxFiles)
+        .map(f => `\`${f}\``)
+        .join(', ');
+      const overflow = hint.matchedFiles.length > maxFiles
+        ? ` _(+${hint.matchedFiles.length - maxFiles} more)_`
+        : '';
+      lines.push(`| ${hint.label} | ${handles} | ${fileCells}${overflow} |`);
+    }
+    lines.push('');
+    lines.push('> ℹ️ Review requests have been sent to the handles listed above. They do not need to approve before merge (unless they are also a required CODEOWNER for this path), but their expertise is relevant.');
+    lines.push('');
+  }
 
   if (MISSING_DOCS.length > 0) {
     lines.push(`> ⚠️ **Partial context** — the following canonical docs were not found at review time. The LLM reviewed with reduced context. Add these files and re-run to get a fully-informed review:`);
@@ -880,18 +1059,47 @@ async function main() {
 
   console.log(`[INFO] Tier: ${tier} | Files: ${filenames.length} | Diff: ${totalDiffChars} chars | Admin: ${adminMutation}`);
 
+  // ── Reviewer-class hints: detect sensitive paths & build reviewer list ────
+  // This runs for ALL tiers (not just red), so that yellow-tier PRs that touch
+  // security-adjacent files (e.g., auth handlers in apps/**) still trigger hints.
+  const reviewerHints = detectSensitivePathReviewers(filenames);
+  if (reviewerHints.length > 0) {
+    const classNames = reviewerHints.map(h => h.label).join(', ');
+    console.log(`[INFO] Sensitive path classes detected: ${classNames}`);
+  }
+
   // ── Red-tier: immediately request human review ────────────────────────────
   // This triggers a GitHub notification so @HUMAN_REVIEWER can act fast.
   // The review body will contain both LLM verdicts, so they need only one tap.
-  if (tier === 'red' && HUMAN_REVIEWER) {
-    try {
-      // Requesting review sends a free GitHub notification (email + mobile push).
-      // No SMS here — GitHub notification is sufficient for red-tier PRs since the
-      // LLM verdicts will already be in the review body when you open it.
-      await gh('POST', `/repos/${ORG}/${repo}/pulls/${prNum}/requested_reviewers`, { reviewers: [HUMAN_REVIEWER] });
-      console.log(`[INFO] Red-tier PR — requested review from ${HUMAN_REVIEWER} (GitHub notification sent)`);
-    } catch (err) {
-      console.warn(`[WARN] Could not request red-tier review: ${err.message.slice(0, 80)}`);
+  //
+  // For all tiers with reviewer hints: deduplicate across the hint entries and
+  // request each unique reviewer so they get a GitHub notification. The same
+  // reviewer handle may appear in multiple hint entries (e.g., HUMAN_REVIEWER
+  // is the fallback for every class), so we deduplicate before calling the API.
+  {
+    const handleSet = new Set();
+
+    // Always request HUMAN_REVIEWER for red-tier (pre-existing behaviour)
+    if (tier === 'red' && HUMAN_REVIEWER) {
+      handleSet.add(HUMAN_REVIEWER);
+    }
+
+    // Add class-specific reviewers for any matched sensitive paths
+    for (const hint of reviewerHints) {
+      for (const reviewer of hint.reviewers) {
+        handleSet.add(reviewer);
+      }
+    }
+
+    if (handleSet.size > 0) {
+      const reviewersToRequest = [...handleSet];
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/pulls/${prNum}/requested_reviewers`, { reviewers: reviewersToRequest });
+        const reason = tier === 'red' ? 'red-tier' : 'sensitive paths';
+        console.log(`[INFO] Requested review from [${reviewersToRequest.join(', ')}] (${reason})`);
+      } catch (err) {
+        console.warn(`[WARN] Could not request reviewer(s): ${err.message.slice(0, 80)}`);
+      }
     }
   }
 
@@ -976,6 +1184,7 @@ async function main() {
     prTitle: pr.title,
     isAdminMutation: adminMutation,
     truncated,
+    reviewerHints,
   });
 
   await postReview(decision, body);
