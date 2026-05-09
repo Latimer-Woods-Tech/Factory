@@ -25,7 +25,13 @@ jobs:
         run: |
           set -euo pipefail
           PACKAGE=$(echo "$GITHUB_REF_NAME" | cut -d'/' -f1)
-          if [ ! -d "packages/${PACKAGE}" ]; then
+          case "$PACKAGE" in
+            ''|*[!a-z0-9-]*)
+              echo "::error::Invalid package '${PACKAGE}' in tag '${GITHUB_REF_NAME}'."
+              exit 1
+              ;;
+          esac
+          if [ ! -f "packages/${PACKAGE}/package.json" ]; then
             echo "::error::Package directory 'packages/${PACKAGE}' does not exist for tag '${GITHUB_REF_NAME}'."
             exit 1
           fi
