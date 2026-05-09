@@ -26,12 +26,13 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: copilot-autoapprove-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
+  group: copilot-autoapprove-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   gate:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_run' && github.event.workflow_run.pull_requests[0]) }}
     outputs:
       pr: ${{ steps.eval.outputs.pr }}
       proceed: ${{ steps.eval.outputs.proceed }}
