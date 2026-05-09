@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   review:
+    if: github.event.sender.type != 'Bot'
     name: Factory architecture review
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -49,4 +50,7 @@ jobs:
           TELNYX_API_KEY: ${{ secrets.TELNYX_API_KEY }}
           TELNYX_FROM_NUMBER: ${{ secrets.TELNYX_FROM_NUMBER }}
           NOTIFICATION_PHONE: ${{ secrets.NOTIFICATION_PHONE }}
+          # Optional: JSON array to override/extend the built-in reviewer-class map.
+          # Shape: [{"class":"platform","label":"...","patterns":["regex"],"reviewers":["handle"]}]
+          REVIEWER_HINTS_MAP: ${{ vars.REVIEWER_HINTS_MAP || '' }}
         run: node .github/scripts/pr-review.mjs
