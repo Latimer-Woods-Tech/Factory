@@ -3,7 +3,6 @@
  * fill in over Phases B–G. Phase A renders stub panels with real data
  * from /me and /tests so we can verify the auth + audit chain end-to-end.
  */
-import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '../stores/session.js';
@@ -15,6 +14,8 @@ import { AuditTab } from './tabs/AuditTab.js';
 import { FunctionsTab } from './tabs/FunctionsTab.js';
 import { TimelineTab } from './tabs/TimelineTab.js';
 import { FlagsTab } from './tabs/FlagsTab.js';
+import { Sheet, SheetContent, SheetClose, SheetTrigger } from '../components/ui/sheet.js';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs.js';
 
 interface Tab {
   to: string;
@@ -62,6 +63,7 @@ export function Dashboard() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { env, logout } = useSession();
+  const activeTab = '/' + (pathname.split('/')[1] || 'overview');
 
   function handleSwitchEnvironment() {
     setMoreOpen(false);
@@ -78,33 +80,32 @@ export function Dashboard() {
   const moreActive = moreOpen || isMoreTabPath(pathname);
 
   return (
-    <Dialog.Root open={moreOpen} onOpenChange={setMoreOpen}>
+    <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
       <div className="flex h-[calc(100vh-44px)] overflow-hidden">
         {/* Sidebar — desktop only */}
-        <nav
-          aria-label="Studio sections"
-          className="hidden md:flex flex-col w-56 shrink-0 border-r border-slate-800 bg-slate-950 p-3 overflow-y-auto"
-        >
-          <ul className="space-y-1">
-            {TABS.map((tab) => (
-              <li key={tab.to}>
-                <NavLink
-                  to={tab.to}
-                  className={({ isActive }) =>
-                    `block rounded px-3 py-2 text-sm ${
-                      isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
-                    }`
-                  }
+        <div className="hidden border-r border-border bg-muted/20 p-3 md:flex md:w-56 md:shrink-0">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => navigate(value)}
+            orientation="vertical"
+            className="w-full"
+          >
+            <TabsList className="h-auto w-full flex-col items-stretch bg-transparent p-0">
+              {TABS.map((tab) => (
+                <TabsTrigger
+                  key={tab.to}
+                  value={tab.to}
+                  className="w-full justify-start data-[state=active]:bg-accent"
                 >
                   {tab.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Main content — pad bottom on mobile so bottom nav doesn't overlap */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 pb-16 md:pb-6">
+        <main className="flex-1 overflow-auto p-4 pb-16 md:p-6 md:pb-6">
           <Routes>
             <Route path="/" element={<Navigate to="/overview" replace />} />
             <Route path="/overview" element={<OverviewTab />} />
@@ -121,7 +122,7 @@ export function Dashboard() {
         {/* Bottom nav — mobile only */}
         <nav
           aria-label="Studio sections mobile"
-          className="flex md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-slate-950 border-t border-slate-800"
+          className="fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-border bg-background md:hidden"
         >
           {PRIMARY_MOBILE_TABS.map((tab) => (
             <NavLink
@@ -129,7 +130,7 @@ export function Dashboard() {
               to={tab.to}
               className={({ isActive }) =>
                 `flex min-w-0 flex-1 flex-col items-center justify-center border-t-2 px-1 ${
-                  isActive ? 'border-emerald-500 text-white' : 'border-transparent text-slate-400'
+                  isActive ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'
                 }`
               }
             >
@@ -137,78 +138,83 @@ export function Dashboard() {
             </NavLink>
           ))}
 
-          <Dialog.Trigger asChild>
+          <SheetTrigger asChild>
             <button
               type="button"
               aria-label="Open more sections"
               className={`flex min-w-0 flex-1 flex-col items-center justify-center border-t-2 px-1 ${
-                moreActive ? 'border-emerald-500 text-white' : 'border-transparent text-slate-400'
+                moreActive ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground'
               }`}
             >
               <MobileTabGlyph icon="···" label="More" isActive={moreActive} />
             </button>
-          </Dialog.Trigger>
+          </SheetTrigger>
         </nav>
       </div>
 
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-950/70 opacity-100 transition-opacity duration-200 data-[state=closed]:opacity-0 motion-reduce:transition-none" />
-        <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border border-slate-800 bg-slate-950 p-4 pb-6 shadow-2xl transition-transform duration-200 data-[state=closed]:translate-y-full data-[state=open]:translate-y-0 motion-reduce:transition-none"
-          aria-label="More studio sections"
-        >
-          <div className="mx-auto w-full max-w-md space-y-4">
-            <header className="flex items-center justify-between">
-              <Dialog.Title className="text-sm font-semibold text-white">More</Dialog.Title>
-              <Dialog.Close asChild>
-                <button type="button" className="rounded p-1 text-slate-300 hover:bg-slate-800 hover:text-white" aria-label="Close more sections">
-                  ✕
-                </button>
-              </Dialog.Close>
-            </header>
-
-            <ul className="space-y-1">
-              {MORE_MOBILE_TABS.map((tab) => (
-                <li key={tab.to}>
-                  <NavLink
-                    to={tab.to}
-                    onClick={() => setMoreOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center justify-between rounded px-3 py-2 text-sm ${
-                        isActive ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-900 hover:text-white'
-                      }`
-                    }
-                  >
-                    <span>{tab.label}</span>
-                    <span className="text-xs text-slate-500">{tab.icon}</span>
-                  </NavLink>
-                </li>
-              ))}
-            </ul>
-
-            <section className="rounded border border-slate-800 bg-slate-900 p-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">Environment</h2>
-              <p className="mt-1 text-sm text-white">Current: {env ?? 'unknown'}</p>
+      {/* More drawer — bottom sheet, mobile only */}
+      <SheetContent
+        side="bottom"
+        className="max-h-[70dvh] rounded-t-2xl p-4 pb-6 motion-reduce:transition-none"
+        aria-label="More studio sections"
+      >
+        <div className="mx-auto w-full max-w-md space-y-4">
+          <header className="flex items-center justify-between">
+            <span className="text-sm font-semibold">More</span>
+            <SheetClose asChild>
               <button
                 type="button"
-                onClick={handleSwitchEnvironment}
-                className="mt-2 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 hover:border-slate-600"
+                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                aria-label="Close more sections"
               >
-                Sign out to switch environment
+                ✕
               </button>
-            </section>
+            </SheetClose>
+          </header>
 
+          <ul className="space-y-1">
+            {MORE_MOBILE_TABS.map((tab) => (
+              <li key={tab.to}>
+                <NavLink
+                  to={tab.to}
+                  onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center justify-between rounded px-3 py-2 text-sm ${
+                      isActive
+                        ? 'bg-accent text-accent-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    }`
+                  }
+                >
+                  <span>{tab.label}</span>
+                  <span className="text-xs text-muted-foreground">{tab.icon}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+
+          <section className="rounded border border-border bg-muted/30 p-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Environment</h2>
+            <p className="mt-1 text-sm">Current: {env ?? 'unknown'}</p>
             <button
               type="button"
-              onClick={handleSignOut}
-              className="w-full rounded bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-500"
+              onClick={handleSwitchEnvironment}
+              className="mt-2 w-full rounded border border-border bg-background px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
             >
-              Sign out
+              Sign out to switch environment
             </button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+          </section>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full rounded bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
+          >
+            Sign out
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -218,7 +224,7 @@ function MobileTabGlyph({ icon, label, isActive }: { icon: string; label: string
       <span
         aria-hidden="true"
         className={`flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-semibold leading-none ${
-          isActive ? 'border-emerald-500 bg-emerald-500 text-slate-950' : 'border-slate-600 text-slate-300'
+          isActive ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'
         }`}
       >
         {icon}
