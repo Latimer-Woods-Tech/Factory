@@ -54,7 +54,7 @@ export const PRIMARY_MOBILE_TABS: ReadonlyArray<Tab> = [
 export const MORE_MOBILE_TABS: ReadonlyArray<Tab> = [TESTS_TAB, TIMELINE_TAB, FLAGS_TAB];
 
 export function isMoreTabPath(pathname: string): boolean {
-  return MORE_MOBILE_TABS.some((tab) => pathname.startsWith(tab.to));
+  return MORE_MOBILE_TABS.some((tab) => pathname === tab.to || pathname.startsWith(`${tab.to}/`));
 }
 
 export function Dashboard() {

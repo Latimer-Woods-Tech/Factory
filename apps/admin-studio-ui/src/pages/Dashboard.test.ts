@@ -21,6 +21,9 @@ describe('Dashboard mobile navigation', () => {
     expect(isMoreTabPath('/tests/')).toBe(true);
     expect(isMoreTabPath('/timeline/details')).toBe(true);
     expect(isMoreTabPath('/flags/experiments')).toBe(true);
+    expect(isMoreTabPath('/tests-legacy')).toBe(false);
+    expect(isMoreTabPath('/timeline2')).toBe(false);
+    expect(isMoreTabPath('/flags-old')).toBe(false);
     expect(isMoreTabPath('/overview')).toBe(false);
     expect(isMoreTabPath('/')).toBe(false);
     expect(isMoreTabPath('')).toBe(false);
