@@ -29,17 +29,41 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@latimer-woods-tech'
 
-      - name: Publish all packages in dependency order
+      - name: Verify npm auth before publishing
         run: |
           set -euo pipefail
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::error::NPM_TOKEN secret is empty or unset. Configure it at https://github.com/Latimer-Woods-Tech/Factory/settings/secrets/actions"
+            exit 1
+          fi
+          echo "Authenticated npm user:"
+          if ! npm whoami; then
+            echo "::error::npm whoami failed — token is invalid or expired."
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish all packages in dependency order
+        run: |
+          # NOTE: do NOT use `set -e` for the per-package loop — a failure on
+          # one package (e.g. token lacks publish access for that package name)
+          # must not block the remaining packages. We collect failures and
+          # exit non-zero at the end so the run is still marked failed.
+          set -uo pipefail
           # Dependency order — leaf packages first
           PACKAGES=(errors monitoring logger realtime auth neon stripe llm llm-meter telephony analytics deploy testing email copy content social seo crm compliance entitlements protocol creator studio-core design-tokens design-system ui validation video schedule admin)
+
+          declare -a FAILED=()
+          declare -a PUBLISHED=()
+          declare -a SKIPPED=()
 
           for pkg in "${PACKAGES[@]}"; do
             echo ""
             echo "=== ${pkg} ==="
             if [ ! -d "packages/${pkg}" ]; then
               echo "  packages/${pkg} does not exist — skip"
+              SKIPPED+=("${pkg} (no dir)")
               continue
             fi
             pushd "packages/${pkg}" >/dev/null
@@ -50,6 +74,7 @@ jobs:
             # Skip if already published to npmjs at this version
             if npm view "${NAME}@${VER}" version >/dev/null 2>&1; then
               echo "  already published — skip"
+              SKIPPED+=("${NAME}@${VER}")
               popd >/dev/null
               continue
             fi
@@ -93,12 +118,37 @@ jobs:
 
             if [ "${{ inputs.dry_run }}" = "true" ]; then
               echo "  DRY RUN — would publish ${NAME}@${VER}"
-              npm publish --access public --ignore-scripts --dry-run
+              if ! npm publish --access public --ignore-scripts --dry-run; then
+                echo "::error::dry-run publish failed for ${NAME}@${VER}"
+                FAILED+=("${NAME}@${VER}")
+              fi
             else
-              npm publish --access public --ignore-scripts
-              echo "  ✓ published ${NAME}@${VER}"
+              if npm publish --access public --ignore-scripts; then
+                echo "  published ${NAME}@${VER}"
+                PUBLISHED+=("${NAME}@${VER}")
+              else
+                # 404 on PUT to scoped pkg = token lacks publish permission for that package.
+                # 403 = forbidden (different ownership). Either way: continue with rest.
+                echo "::error::publish failed for ${NAME}@${VER} — likely npm token lacks write access for this package. Check token allowlist on npmjs.com."
+                FAILED+=("${NAME}@${VER}")
+              fi
             fi
             popd >/dev/null
           done
+
+          echo ""
+          echo "================ SUMMARY ================"
+          echo "Published: ${#PUBLISHED[@]}"
+          for p in "${PUBLISHED[@]:-}"; do [ -n "$p" ] && echo "  + $p"; done
+          echo "Skipped:   ${#SKIPPED[@]}"
+          for p in "${SKIPPED[@]:-}"; do [ -n "$p" ] && echo "  = $p"; done
+          echo "Failed:    ${#FAILED[@]}"
+          for p in "${FAILED[@]:-}"; do [ -n "$p" ] && echo "  ! $p"; done
+          echo "========================================="
+
+          if [ "${#FAILED[@]}" -gt 0 ]; then
+            echo "::error::${#FAILED[@]} package(s) failed to publish — see summary above."
+            exit 1
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
