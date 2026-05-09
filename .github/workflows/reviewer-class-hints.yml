@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   hint:
+    if: github.event.sender.type != 'Bot'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
