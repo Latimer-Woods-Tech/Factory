@@ -36,7 +36,9 @@ The production custom domain remains the intended production target.
 - **`stores/session.ts`** — Zustand store; persists JWT + env in `sessionStorage` (cleared on tab close).
 - **`lib/api.ts`** — fetch wrapper. Adds `Authorization`, `X-Request-Id`, `X-Confirmed`, `X-Confirm-Token`, `X-Dry-Run` headers. Forces logout on 401.
 - **`components/EnvironmentBanner.tsx`** — Safeguard #1: persistent color-coded banner.
-- **`components/ConfirmDialog.tsx`** — Safeguard #2: tier-aware confirmation modal (click / type-to-confirm / cooldown).
+- **`components/ConfirmDialog.tsx`** — Safeguard #2 built on Radix AlertDialog (click / type-to-confirm / cooldown).
+- **`components/ui/*`** — shadcn/Radix primitives (`AlertDialog`, `Sheet`, `Drawer`, `Tabs`, `Tooltip`, `DropdownMenu`, `Command`, `Toaster`).
+- **`components/theme.tsx` + `components/ThemeToggle.tsx`** — semantic token + light/dark/system theme control.
 - **`pages/LoginPage.tsx`** — Forces env selection *before* credentials (Safeguard #3).
 - **`pages/Dashboard.tsx`** — Tabs shell. Each tab is a Phase A stub that grows over Phases B–H.
 
