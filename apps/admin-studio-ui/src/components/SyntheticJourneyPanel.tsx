@@ -68,8 +68,8 @@ export function SyntheticJourneyPanel() {
   }, []);
 
   return (
-    <div className="rounded border border-slate-800 bg-slate-900">
-      <header className="flex items-center gap-3 border-b border-slate-800 px-4 py-2">
+    <div className="@container rounded border border-slate-800 bg-slate-900 [container-type:inline-size] [container-name:synthetic-journey-panel]">
+      <header className="flex flex-col items-start gap-2 border-b border-slate-800 px-4 py-2 @[20rem]:flex-row @[20rem]:items-center @[20rem]:gap-3">
         <h2 className="text-sm font-semibold text-slate-200">Synthetic Journey Monitor</h2>
         {data && (
           <span
@@ -79,7 +79,7 @@ export function SyntheticJourneyPanel() {
           </span>
         )}
         {data?.checkedAt && (
-          <span className="ml-auto text-xs text-slate-500">
+          <span className="text-xs text-slate-500 @[20rem]:ml-auto">
             last run {new Date(data.checkedAt).toLocaleTimeString()}
           </span>
         )}
@@ -98,7 +98,10 @@ export function SyntheticJourneyPanel() {
       {data?.probes && data.probes.length > 0 && (
         <ul className="divide-y divide-slate-800">
           {data.probes.map((probe) => (
-            <li key={probe.id} className="flex flex-wrap items-center gap-2 px-4 py-2 text-sm">
+            <li
+              key={probe.id}
+              className="flex flex-col items-start gap-2 px-4 py-2 text-sm @[20rem]:flex-row @[20rem]:flex-wrap @[20rem]:items-center"
+            >
               <span className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${probeDotClass(probe.ok)}`} />
               <span className="font-mono text-xs text-slate-300">{probe.id}</span>
               <span className={`rounded border px-1.5 py-0.5 text-xs ${probe.ok ? 'border-emerald-700 text-emerald-400' : 'border-red-700 text-red-400'}`}>
@@ -115,7 +118,7 @@ export function SyntheticJourneyPanel() {
                   href={probe.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="ml-auto text-xs text-slate-500 hover:text-slate-300"
+                  className="text-xs text-slate-500 hover:text-slate-300 @[20rem]:ml-auto"
                 >
                   evidence ↗
                 </a>
