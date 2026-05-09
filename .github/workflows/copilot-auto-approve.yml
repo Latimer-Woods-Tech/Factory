@@ -1,0 +1,208 @@
+name: Copilot Auto-Approve Loop
+
+# Closes the autonomous loop for Copilot-authored Yellow-tier PRs.
+#
+# Flow:
+#   1. Trigger on PR events / CI completion for PRs by copilot-swe-agent.
+#   2. Gate on label (area:ux | area:a11y | area:perf), no Red-tier files,
+#      and required checks green.
+#   3. JUDGES (Claude + Grok, 2-of-2 must agree). On long diffs (>600KB) the
+#      primary judge swaps from Claude Sonnet to Gemini 2.5 Pro per the
+#      @latimer-woods-tech/llm@0.3.0 long-context routing rule.
+#   4. If both APPROVE → mark ready, post APPROVE via factory-cross-repo[bot]
+#      (CODEOWNER on apps/*/src/**), label automerge:allow-bot-branch.
+#      auto-merge-approved-prs.yml then enables auto-merge.
+#   5. If either dissents → label needs-human, post both verdicts as a comment.
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize, labeled]
+  workflow_run:
+    workflows: ["validate", "CodeQL"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: copilot-autoapprove-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_run' && github.event.workflow_run.pull_requests[0]) }}
+    outputs:
+      pr: ${{ steps.eval.outputs.pr }}
+      proceed: ${{ steps.eval.outputs.proceed }}
+      diff_chars: ${{ steps.eval.outputs.diff_chars }}
+    steps:
+      - name: Resolve PR + gate
+        id: eval
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ toJSON(github.event) }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            PR=${{ github.event.pull_request.number }}
+          else
+            PR=$(echo "$EVENT" | jq -r '.workflow_run.pull_requests[0].number // empty')
+            [ -z "$PR" ] && { echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0; }
+          fi
+          echo "pr=$PR" >> "$GITHUB_OUTPUT"
+
+          v=$(gh pr view "$PR" --repo "$REPO" --json author,labels,files,statusCheckRollup)
+          author=$(echo "$v" | jq -r '.author.login')
+          if [ "$author" != "Copilot" ] && [ "$author" != "copilot-swe-agent" ]; then
+            echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          labels=$(echo "$v" | jq -r '[.labels[].name]|join(",")')
+          case ",$labels," in
+            *,area:ux,*|*,area:a11y,*|*,area:perf,*) ;;
+            *) echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0;;
+          esac
+
+          if echo "$v" | jq -r '.files[].path' | grep -qE '^(\.github/workflows/|packages/|memory/|apps/[^/]+/wrangler\.|apps/[^/]+/capabilities\.yml|apps/[^/]+/workers/src/handlers/(billing|admin|stripe))'; then
+            echo "Red-tier path"; echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          rollup=$(echo "$v" | jq -r '[.statusCheckRollup[]?|select(.name=="validate" or .name=="Analyze (javascript)")|.conclusion]|unique')
+          [ "$rollup" != '["SUCCESS"]' ] && { echo "checks=$rollup"; echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          gh pr diff "$PR" --repo "$REPO" > /tmp/diff.patch
+          echo "diff_chars=$(wc -c < /tmp/diff.patch)" >> "$GITHUB_OUTPUT"
+          echo "proceed=1" >> "$GITHUB_OUTPUT"
+
+  judges:
+    needs: gate
+    if: needs.gate.outputs.proceed == '1'
+    runs-on: ubuntu-latest
+    outputs:
+      primary:        ${{ steps.primary.outputs.verdict }}
+      primary_name:   ${{ steps.primary.outputs.name }}
+      grok:           ${{ steps.grok.outputs.verdict }}
+    steps:
+      - name: Fetch + cap diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ needs.gate.outputs.pr }}
+        run: |
+          set -euo pipefail
+          gh pr view "$PR" --repo "$REPO" --json title,body,files > /tmp/meta.json
+          gh pr diff "$PR" --repo "$REPO" > /tmp/diff.patch
+          if [ "$(wc -c < /tmp/diff.patch)" -gt 600000 ]; then
+            head -c 400000 /tmp/diff.patch > /tmp/d.patch
+            printf '\n\n... [middle truncated] ...\n\n' >> /tmp/d.patch
+            tail -c 200000 /tmp/diff.patch >> /tmp/d.patch
+            mv /tmp/d.patch /tmp/diff.patch
+          fi
+          jq -nc \
+            --rawfile diff /tmp/diff.patch \
+            --slurpfile meta /tmp/meta.json '{
+              system: "You are a strict but fair senior reviewer for the Latimer-Woods-Tech factory monorepo. The PR is Yellow-tier (apps/*/src/**, client/**, tests/**) authored by GitHub Copilot. Decide whether to APPROVE for autonomous merge. REJECT on: type errors, dead code, secrets in source, accessibility regressions, missing test coverage on new logic, breaking API change, anything outside the stated issue scope, or anything Red-tier (workflows, billing/admin/stripe handlers, packages, wrangler, capabilities, migrations, memory). Return STRICT JSON ONLY (no prose, no fences): {\"decision\":\"approve\"|\"reject\",\"risk\":\"low\"|\"med\"|\"high\",\"blockers\":[\"…\"]}",
+              user: ("PR title: " + $meta[0].title + "\n\nPR body:\n" + ($meta[0].body // "(none)") + "\n\nFiles changed: " + ($meta[0].files | length | tostring) + "\n\nDIFF:\n" + $diff)
+            }' > /tmp/prompt.json
+
+      - name: Primary judge (Claude or Gemini long-context)
+        id: primary
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY:    ${{ secrets.GEMINI_API_KEY }}
+          DIFF_CHARS:        ${{ needs.gate.outputs.diff_chars }}
+        run: |
+          set -euo pipefail
+          SYS=$(jq -r .system /tmp/prompt.json)
+          USR=$(jq -r .user   /tmp/prompt.json)
+          if [ "$DIFF_CHARS" -gt 600000 ]; then
+            echo "name=gemini-2.5-pro" >> "$GITHUB_OUTPUT"
+            BODY=$(jq -nc --arg s "$SYS" --arg u "$USR" '{
+              contents:[{role:"user",parts:[{text:$u}]}],
+              systemInstruction:{parts:[{text:$s}]},
+              generationConfig:{temperature:0,responseMimeType:"application/json"}
+            }')
+            R=$(curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=$GEMINI_API_KEY" \
+              -H "content-type: application/json" -d "$BODY")
+            TXT=$(echo "$R" | jq -r '.candidates[0].content.parts[0].text // ""')
+          else
+            echo "name=claude-sonnet-4-5" >> "$GITHUB_OUTPUT"
+            BODY=$(jq -nc --arg s "$SYS" --arg u "$USR" '{
+              model:"claude-sonnet-4-5-20250929",
+              max_tokens:1024,temperature:0,system:$s,
+              messages:[{role:"user",content:$u}]
+            }')
+            R=$(curl -sS https://api.anthropic.com/v1/messages \
+              -H "x-api-key: $ANTHROPIC_API_KEY" \
+              -H "anthropic-version: 2023-06-01" \
+              -H "content-type: application/json" -d "$BODY")
+            TXT=$(echo "$R" | jq -r '.content[0].text // ""')
+          fi
+          V=$(echo "$TXT" | jq -c '.' 2>/dev/null || echo '{"decision":"reject","risk":"high","blockers":["primary judge returned non-JSON"]}')
+          echo "verdict=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Grok judge
+        id: grok
+        env:
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+        run: |
+          set -euo pipefail
+          SYS=$(jq -r .system /tmp/prompt.json)
+          USR=$(jq -r .user   /tmp/prompt.json)
+          BODY=$(jq -nc --arg s "$SYS" --arg u "$USR" '{
+            model:"grok-4",temperature:0,
+            response_format:{type:"json_object"},
+            messages:[{role:"system",content:$s},{role:"user",content:$u}]
+          }')
+          R=$(curl -sS https://api.x.ai/v1/chat/completions \
+            -H "Authorization: Bearer $GROK_API_KEY" \
+            -H "content-type: application/json" -d "$BODY")
+          TXT=$(echo "$R" | jq -r '.choices[0].message.content // ""')
+          V=$(echo "$TXT" | jq -c '.' 2>/dev/null || echo '{"decision":"reject","risk":"high","blockers":["grok returned non-JSON"]}')
+          echo "verdict=$V" >> "$GITHUB_OUTPUT"
+
+  decide:
+    needs: [gate, judges]
+    if: needs.gate.outputs.proceed == '1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint App token
+        id: tok
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Apply verdict
+        env:
+          GH_TOKEN:   ${{ steps.tok.outputs.token }}
+          REPO:       ${{ github.repository }}
+          PR:         ${{ needs.gate.outputs.pr }}
+          PRIMARY:    ${{ needs.judges.outputs.primary }}
+          PRI_NAME:   ${{ needs.judges.outputs.primary_name }}
+          GROK:       ${{ needs.judges.outputs.grok }}
+        run: |
+          set -euo pipefail
+          p_dec=$(echo "$PRIMARY" | jq -r '.decision // "reject"')
+          g_dec=$(echo "$GROK"    | jq -r '.decision // "reject"')
+
+          summary=$(jq -nc \
+            --arg n "$PRI_NAME" \
+            --argjson p "$PRIMARY" \
+            --argjson g "$GROK" \
+            '"### LLM handshake verdict\n\n- **\($n)**: `\($p.decision)` (risk: \($p.risk // "?"))\n  - blockers: \(($p.blockers // []) | tostring)\n- **grok-4**: `\($g.decision)` (risk: \($g.risk // "?"))\n  - blockers: \(($g.blockers // []) | tostring)\n"' | jq -r .)
+
+          if [ "$p_dec" = "approve" ] && [ "$g_dec" = "approve" ]; then
+            gh pr ready "$PR" --repo "$REPO" || true
+            gh pr review "$PR" --repo "$REPO" --approve --body "${summary}
+Auto-approved by Copilot Auto-Approve Loop. CODEOWNER review by factory-cross-repo[bot]. 2-of-2 LLM judges agreed."
+            gh pr edit "$PR" --repo "$REPO" --add-label "automerge:allow-bot-branch"
+          else
+            gh pr edit "$PR" --repo "$REPO" --add-label "needs-human" --remove-label "automerge:allow-bot-branch" || true
+            gh pr comment "$PR" --repo "$REPO" --body "${summary}
+Auto-approval blocked: at least one judge dissented. Human review required."
+          fi
