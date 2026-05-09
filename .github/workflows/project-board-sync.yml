@@ -2,6 +2,7 @@ name: Project Board Sync
 
 on:
   issues:
+    if: github.event.sender.type != 'Bot'
     types: [opened, reopened, assigned, labeled, unlabeled, closed]
   issue_comment:
     types: [created]
