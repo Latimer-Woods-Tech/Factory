@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   review:
+    if: github.event.sender.type != 'Bot'
     name: Factory architecture review
     runs-on: ubuntu-latest
     timeout-minutes: 10
