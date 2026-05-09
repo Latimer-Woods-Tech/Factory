@@ -36,7 +36,7 @@ export function DeployVersionsTable({ env }: Props) {
   }, [env]);
 
   return (
-    <div className="rounded border border-slate-800 bg-slate-900">
+    <div className="@container rounded border border-slate-800 bg-slate-900 [container-type:inline-size] [container-name:deploy-versions-table]">
       <header className="border-b border-slate-800 px-4 py-2">
         <h2 className="text-sm font-semibold text-slate-200">Deploy Versions — {env}</h2>
       </header>
@@ -47,39 +47,80 @@ export function DeployVersionsTable({ env }: Props) {
         </p>
       )}
       {data && data.configured && (
-        <table className="w-full text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-2">Worker</th>
-              <th className="px-4 py-2">Version</th>
-              <th className="px-4 py-2">Deployed</th>
-              <th className="px-4 py-2">Source</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800">
+        <>
+          <ul className="space-y-3 p-4 text-sm @[20rem]:hidden">
             {data.results.map((row) => (
-              <tr key={`${row.workerName}-${row.versionId}`}>
-                <td className="px-4 py-2 font-medium text-white">{row.workerName}</td>
-                <td className="px-4 py-2 font-mono text-xs text-slate-300">
-                  {row.versionId.slice(0, 8)}
-                </td>
-                <td className="px-4 py-2 text-slate-400">
-                  {row.deployedAt === EPOCH_ISO || ERROR_SENTINELS.has(row.versionId)
-                    ? '—'
-                    : new Date(row.deployedAt).toLocaleString()}
-                </td>
-                <td className="px-4 py-2 text-slate-500">{row.source ?? '—'}</td>
-              </tr>
+              <li
+                key={`${row.workerName}-${row.versionId}`}
+                className="rounded border border-slate-800 bg-slate-950/50 p-3"
+              >
+                <dl className="space-y-1">
+                  <div>
+                    <dt className="text-xs uppercase text-slate-500">Worker</dt>
+                    <dd className="font-medium text-white">{row.workerName}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase text-slate-500">Version</dt>
+                    <dd className="font-mono text-xs text-slate-300">{row.versionId.slice(0, 8)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase text-slate-500">Deployed</dt>
+                    <dd className="text-slate-400">
+                      {row.deployedAt === EPOCH_ISO || ERROR_SENTINELS.has(row.versionId)
+                        ? '—'
+                        : new Date(row.deployedAt).toLocaleString()}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase text-slate-500">Source</dt>
+                    <dd className="text-slate-500">{row.source ?? '—'}</dd>
+                  </div>
+                </dl>
+              </li>
             ))}
             {data.results.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
-                  No deployments returned for this env.
-                </td>
-              </tr>
+              <li className="rounded border border-slate-800 bg-slate-950/50 px-4 py-6 text-center text-slate-500">
+                No deployments returned for this env.
+              </li>
             )}
-          </tbody>
-        </table>
+          </ul>
+
+          <div className="hidden overflow-x-auto @[20rem]:block">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="px-4 py-2">Worker</th>
+                  <th className="px-4 py-2">Version</th>
+                  <th className="px-4 py-2">Deployed</th>
+                  <th className="px-4 py-2">Source</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {data.results.map((row) => (
+                  <tr key={`${row.workerName}-${row.versionId}`}>
+                    <td className="px-4 py-2 font-medium text-white">{row.workerName}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-slate-300">
+                      {row.versionId.slice(0, 8)}
+                    </td>
+                    <td className="px-4 py-2 text-slate-400">
+                      {row.deployedAt === EPOCH_ISO || ERROR_SENTINELS.has(row.versionId)
+                        ? '—'
+                        : new Date(row.deployedAt).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-2 text-slate-500">{row.source ?? '—'}</td>
+                  </tr>
+                ))}
+                {data.results.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                      No deployments returned for this env.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       {!data && !err && <p className="px-4 py-3 text-sm text-slate-500">Loading…</p>}
     </div>

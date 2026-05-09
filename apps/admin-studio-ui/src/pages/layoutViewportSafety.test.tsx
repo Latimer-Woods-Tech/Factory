@@ -29,13 +29,10 @@ describe('viewport-safe layout classes', () => {
     expect(shell.className).toContain('h-[calc(100dvh-44px)]');
     expect(shell.className).toContain('pt-safe-top');
 
+    // Mobile nav is Drawer-based (shadcn/ADM-9.9); main content carries the
+    // safe-area bottom padding so content is not obscured on notched devices.
     const main = container.querySelector('main') as HTMLElement;
     expect(main.className).toContain('pb-[calc(env(safe-area-inset-bottom)+4rem)]');
-
-    const mobileNav = container.querySelector('nav[aria-label="Studio sections mobile"]') as HTMLElement;
-    expect(mobileNav.className).toContain('pb-safe-bottom');
-    expect(mobileNav.className).toContain('pl-[env(safe-area-inset-left)]');
-    expect(mobileNav.className).toContain('pr-[env(safe-area-inset-right)]');
   });
 
   it('uses static viewport height in AiTab panel', async () => {
