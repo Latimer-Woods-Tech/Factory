@@ -15,6 +15,8 @@ import type {
 } from '@latimer-woods-tech/studio-core';
 import { apiFetch } from '../../lib/api.js';
 import { useActiveFile, guessLanguage } from '../../stores/activeFile.js';
+import { Button } from '../../components/ui/button.js';
+import { Sheet, SheetContent, SheetTrigger } from '../../components/ui/sheet.js';
 
 const MonacoEditor = lazy(() =>
   import('@monaco-editor/react').then((m) => ({ default: m.default })),
@@ -57,6 +59,7 @@ export function CodeTab() {
   const [branchesTick, setBranchesTick] = useState(0);
   const [ref, setRef] = useState<string>('main');
   const [tree, setTree] = useState<RepoTreeNode[]>([]);
+  const [treeOpen, setTreeOpen] = useState(false);
   const [treeLoading, setTreeLoading] = useState(false);
   const [treeError, setTreeError] = useState<string | null>(null);
   const [fileLoading, setFileLoading] = useState(false);
@@ -100,6 +103,7 @@ export function CodeTab() {
           baseSha: r.file.sha,
           text: r.file.text,
         });
+        setTreeOpen(false);
       }
     } catch (err) {
       setFileMeta({
@@ -119,13 +123,42 @@ export function CodeTab() {
 
   return (
     <div className="flex h-[calc(100vh-92px)] gap-4">
-      <aside className="w-72 shrink-0 flex flex-col rounded border border-slate-800 bg-slate-900">
-        <div className="border-b border-slate-800 p-2">
-          <label className="text-[11px] uppercase tracking-wide text-slate-500">View branch</label>
+      <section className="flex min-w-0 flex-1 flex-col rounded-md border border-border bg-background">
+        <header className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 text-xs text-muted-foreground">
+          <Sheet open={treeOpen} onOpenChange={setTreeOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm">Browse files</Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex w-[min(95vw,28rem)] flex-col p-0">
+              <div className="border-b border-border p-3">
+                <label className="text-[11px] uppercase tracking-wide text-muted-foreground">View branch</label>
+                <select
+                  value={ref}
+                  onChange={(e) => setRef(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs text-foreground"
+                >
+                  {branches.length === 0 && <option value="main">main</option>}
+                  {branches.map((b) => (
+                    <option key={b.name} value={b.name}>
+                      {b.name}{b.isDefault ? ' (default)' : ''}{b.protected ? ' 🔒' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1 overflow-auto p-2 text-xs text-muted-foreground">
+                {treeLoading && <p className="text-muted-foreground">Loading tree…</p>}
+                {treeError && <p className="text-destructive">{treeError}</p>}
+                {!treeLoading && !treeError && (
+                  <FolderNode folder={root} depth={0} onPick={openFile} active={active.path} initialOpen />
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Branch:</span>
           <select
             value={ref}
             onChange={(e) => setRef(e.target.value)}
-            className="mt-1 w-full rounded bg-slate-800 text-white text-xs px-2 py-1.5 border border-slate-700"
+            className="rounded-md border border-input bg-background px-2 py-1.5 text-xs text-foreground"
           >
             {branches.length === 0 && <option value="main">main</option>}
             {branches.map((b) => (
@@ -134,42 +167,34 @@ export function CodeTab() {
               </option>
             ))}
           </select>
-        </div>
-        <div className="flex-1 overflow-auto text-xs text-slate-300 p-2">
-          {treeLoading && <p className="text-slate-500">Loading tree…</p>}
-          {treeError && <p className="text-rose-400">{treeError}</p>}
-          {!treeLoading && !treeError && (
-            <FolderNode folder={root} depth={0} onPick={openFile} active={active.path} initialOpen />
-          )}
-        </div>
-      </aside>
+          {active.path && <span className="ml-auto truncate font-mono text-foreground">{active.path}</span>}
+        </header>
 
-      <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
-        <header className="border-b border-slate-800 px-3 py-2 text-xs text-slate-400 flex items-center gap-2">
+        <header className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs text-muted-foreground">
           {active.path ? (
             <>
-              <span className="font-mono text-slate-200 truncate">{active.path}</span>
+              <span className="font-mono text-foreground truncate">{active.path}</span>
               {active.dirty && (
                 <span className="text-amber-400 text-[10px] uppercase">● dirty</span>
               )}
-              <span className="ml-auto text-slate-500">{active.draftText.length} chars</span>
+              <span className="ml-auto text-muted-foreground">{active.draftText.length} chars</span>
             </>
           ) : fileMeta?.binary ? (
-            <span className="font-mono text-slate-200">{fileMeta.path} — binary file</span>
+            <span className="font-mono text-foreground">{fileMeta.path} — binary file</span>
           ) : (
             <span>Select a file to edit.</span>
           )}
         </header>
 
         <div className="flex-1 min-h-0">
-          {fileLoading && <p className="p-4 text-sm text-slate-500">Loading…</p>}
+          {fileLoading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
           {fileMeta?.binary && (
-            <p className="p-4 text-sm text-slate-400">
+            <p className="p-4 text-sm text-muted-foreground">
               Binary or oversized file — preview disabled.
             </p>
           )}
           {active.path && !fileMeta?.binary && (
-            <Suspense fallback={<p className="p-4 text-sm text-slate-500">Loading editor…</p>}>
+            <Suspense fallback={<p className="p-4 text-sm text-muted-foreground">Loading editor…</p>}>
               <MonacoEditor
                 height="100%"
                 language={active.language}
@@ -187,7 +212,6 @@ export function CodeTab() {
             </Suspense>
           )}
         </div>
-
         {active.path && !fileMeta?.binary && (
           <CommitPanel
             branches={branches}

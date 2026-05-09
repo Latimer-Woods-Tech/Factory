@@ -56,8 +56,8 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
   }, [env, intervalMs]);
 
   return (
-    <div className="rounded border border-slate-800 bg-slate-900">
-      <header className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
+    <div className="@container rounded border border-slate-800 bg-slate-900 [container-type:inline-size] [container-name:app-health-grid]">
+      <header className="flex flex-col gap-1 border-b border-slate-800 px-4 py-2 @[20rem]:flex-row @[20rem]:items-center @[20rem]:justify-between">
         <h2 className="text-sm font-semibold text-slate-200">App Health — {env}</h2>
         <span className="text-xs text-slate-500">
           {loadedAt ? `updated ${new Date(loadedAt).toLocaleTimeString()}` : 'loading…'}
@@ -68,7 +68,10 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
         {data?.map((row) => {
           const drift = row.reportedEnv && row.reportedEnv !== row.env;
           return (
-            <li key={`${row.id}-${row.env}`} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <li
+              key={`${row.id}-${row.env}`}
+              className="flex flex-col items-start gap-2 px-4 py-3 text-sm @[20rem]:flex-row @[20rem]:items-center"
+            >
               <span className={`inline-block h-2 w-2 rounded-full ${statusDotClass(row.status)}`} />
               <span className="font-medium text-white">{row.label}</span>
               <span className={`rounded border px-2 py-0.5 text-xs ${statusBadgeClass(row.status)}`}>
@@ -85,7 +88,7 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
                 href={row.url}
                 target="_blank"
                 rel="noreferrer"
-                className="ml-auto text-xs text-slate-500 hover:text-slate-300"
+                className="text-xs text-slate-500 hover:text-slate-300 @[20rem]:ml-auto"
               >
                 {new URL(row.url).hostname}
               </a>
