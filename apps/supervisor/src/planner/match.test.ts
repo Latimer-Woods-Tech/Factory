@@ -27,6 +27,9 @@ const TEMPLATES: Template[] = [
     description:
       'Small governance/hardening additions: workflow tweaks, label additions, README edits, CODEOWNERS updates, branch-policy docs',
     trigger_keywords: ['governance', 'hardening', 'triage', 'flaky', 'reviewer'],
+    triggers: {
+      labels_any_of: ['hardening', 'governance', 'chore'],
+    },
   },
 ];
 
@@ -106,5 +109,47 @@ describe('matchTemplate', () => {
     // tiebreak: green wins over red
     const m = matchTemplate('governance hardening drift fix', mixedTemplates);
     expect(m?.id).toBe('governance-hardening-tweak');
+  });
+
+  it('matches via labels signal when issue title has no keywords (Signal 3)', () => {
+    // "Triage: Policy Drift Guard 4/10 failures" hits zero keywords,
+    // but the 'hardening' label adds +0.5 ≥ MIN_SCORE → should match governance-hardening-tweak
+    const m = matchTemplate(
+      'Triage: Policy Drift Guard 4/10 failures',
+      TEMPLATES,
+      ['hardening', 'supervisor:approved-source'],
+    );
+    expect(m?.id).toBe('governance-hardening-tweak');
+  });
+
+  it('labels signal stacks with keyword signal for higher confidence', () => {
+    // 'flaky' keyword hits → score 0.2; 'chore' label adds +0.5 → total 0.7
+    const m = matchTemplate(
+      'flaky policy drift guard check',
+      TEMPLATES,
+      ['chore'],
+    );
+    expect(m?.id).toBe('governance-hardening-tweak');
+  });
+
+  it('labels signal is case-insensitive', () => {
+    const m = matchTemplate(
+      'Triage: Policy Drift Guard failures',
+      TEMPLATES,
+      ['Hardening'],
+    );
+    expect(m?.id).toBe('governance-hardening-tweak');
+  });
+
+  it('does not match via labels when no labels_any_of defined on template', () => {
+    // health-check has no triggers.labels_any_of — passing a label does not affect it
+    const m = matchTemplate('something unrelated', [TEMPLATES[0]!], ['health']);
+    expect(m).toBeNull();
+  });
+
+  it('labels signal does not fire when the label is not in labels_any_of', () => {
+    // 'bug' is not in governance-hardening-tweak's labels_any_of → no signal
+    const m = matchTemplate('Triage: Policy Drift Guard failures', TEMPLATES, ['bug']);
+    expect(m).toBeNull();
   });
 });

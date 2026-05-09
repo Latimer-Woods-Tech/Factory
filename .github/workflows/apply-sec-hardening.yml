@@ -1,0 +1,76 @@
+name: Apply Security Hardening
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      # SEC-1.2 — Apply full branch protection to factory/main including
+      # required_status_checks. This is the canonical idempotent restore
+      # procedure. Run this whenever policy-drift-guard reports drift.
+      - name: Apply factory main branch protection (SEC-1.2)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          echo "Applying branch protection to Latimer-Woods-Tech/factory main..."
+          gh api -X PUT \
+            repos/Latimer-Woods-Tech/factory/branches/main/protection \
+            --field enforce_admins=false \
+            --field 'required_status_checks[strict]=true' \
+            --field 'required_status_checks[contexts][]=CI / validate' \
+            --field 'required_status_checks[contexts][]=CodeQL Security Analysis / Analyze (javascript)' \
+            --field 'required_status_checks[contexts][]=Dependency Review / dependency-review' \
+            --field 'required_pull_request_reviews[dismiss_stale_reviews]=true' \
+            --field 'required_pull_request_reviews[require_code_owner_reviews]=true' \
+            --field 'required_pull_request_reviews[required_approving_review_count]=1' \
+            --field 'required_linear_history=true' \
+            --field 'allow_force_pushes=false' \
+            --field 'allow_deletions=false' \
+            --field 'restrictions=null'
+          echo "✅ Branch protection applied."
+
+      - name: Verify applied branch protection (SEC-1.2)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          endpoint="https://api.github.com/repos/Latimer-Woods-Tech/factory/branches/main/protection"
+          body=$(mktemp)
+          code=$(curl -sS -o "$body" -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$endpoint")
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Failed to verify branch protection (HTTP $code)."
+            cat "$body"
+            exit 1
+          fi
+
+          REQUIRED_CONTEXTS='["CI / validate","CodeQL Security Analysis / Analyze (javascript)","Dependency Review / dependency-review"]'
+          missing_contexts=$(jq -rn \
+            --argjson actual "$(jq -c '.required_status_checks.contexts // []' "$body")" \
+            --argjson required "$REQUIRED_CONTEXTS" \
+            '[ $required[] | select(($actual | index(.)) == null) ]')
+
+          echo "required_status_checks=$(jq -c '.required_status_checks' "$body")"
+
+          if [ "$missing_contexts" != "[]" ]; then
+            echo "::error::Branch protection applied but required_status_checks still missing: $missing_contexts"
+            exit 1
+          fi
+          echo "✅ factory main branch protection verified compliant."

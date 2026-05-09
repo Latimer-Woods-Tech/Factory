@@ -208,7 +208,8 @@ export class SupervisorDO {
         }
 
         const searchText = `${issue.title} ${issue.body.slice(0, 500)}`;
-        const template = matchTemplate(searchText, templates);
+        const issueLabels = issue.labels.map((l) => l.name);
+        const template = matchTemplate(searchText, templates, issueLabels);
 
         if (!template) {
           noTemplate++;

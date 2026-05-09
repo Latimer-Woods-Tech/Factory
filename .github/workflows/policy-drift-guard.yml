@@ -132,11 +132,13 @@ jobs:
             fi
 
             # Require the expected status checks
+            actual_rsc=$(jq -c '.required_status_checks // null' "$body")
             missing_contexts=$(jq -rn --argjson actual "$(jq -c '.required_status_checks.contexts // []' "$body")" --argjson required "$REQUIRED_CONTEXTS" '
               [ $required[] | select(($actual | index(.)) == null) ]
             ')
             if [ "$missing_contexts" != "[]" ]; then
               echo "::error::factory main is missing required status checks: $missing_contexts (SEC-1.2)"
+              echo "::error::full required_status_checks payload: $actual_rsc"
               FAILED=1
             fi
 
