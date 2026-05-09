@@ -2,6 +2,7 @@ name: Canonical PR Review
 
 on:
   pull_request:
+    if: github.event.sender.type != 'Bot'
     types: [opened, synchronize, ready_for_review]
   merge_group:
 
