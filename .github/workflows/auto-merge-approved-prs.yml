@@ -45,7 +45,7 @@ jobs:
           echo "PR labels: $PR_LABELS"
 
       - name: Create GitHub App token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}

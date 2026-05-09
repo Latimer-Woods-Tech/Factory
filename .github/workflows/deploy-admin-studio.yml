@@ -22,6 +22,7 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -29,12 +30,28 @@ jobs:
     environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
     permissions:
       contents: read
+    outputs:
+      environment:         ${{ steps.target.outputs.env }}
+      previous_version_id: ${{ steps.capture.outputs.previous_version_id }}
+      new_version_id:      ${{ steps.capture-new.outputs.new_version_id }}
+      has_migrations:      ${{ steps.migrations.outputs.has_migrations }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
 
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+
+      - name: Resolve target environment
+        id: target
+        run: |
+          if [ "${{ github.event.inputs.env }}" = "production" ] || ([ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]); then
+            echo "env=production" >> "$GITHUB_OUTPUT"
+          else
+            echo "env=staging" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build dependency packages
         run: |
@@ -61,35 +78,65 @@ jobs:
 
       - name: Verify health pre-deploy (sanity)
         run: |
-          target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
-          echo "Deploying admin-studio to $target_env"
+          echo "Deploying admin-studio to ${{ steps.target.outputs.env }}"
           test -n "${{ secrets.CF_API_TOKEN }}" || (echo "::error::CF_API_TOKEN missing" && exit 1)
+
+      # ---- NEW: capture previous live version BEFORE deploy ----
+      - name: Capture previous worker version (pre-deploy)
+        id: capture
+        if: steps.target.outputs.env == 'production'
+        working-directory: apps/admin-studio
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          # The currently-deployed prod version IS the rollback target.
+          PREV=$(npx -y wrangler@latest deployments list --env production --json 2>/dev/null \
+            | jq -r '.[0].versions[0].version_id // .[0].version_id // empty')
+          if [ -z "$PREV" ]; then
+            # First-ever prod deploy — no rollback target. Disable canary watch downstream.
+            echo "::warning::No previous prod version found; canary-watch will not auto-rollback"
+            PREV=""
+          fi
+          echo "previous_version_id=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Captured previous prod version: $PREV"
+
+      # ---- NEW: detect migrations in this deploy's diff ----
+      - name: Detect DB migrations in this deploy
+        id: migrations
+        run: |
+          set -euo pipefail
+          # If any migrations/*.sql changed since the previous commit on main, flag it.
+          BASE="${{ github.event.before || 'HEAD~1' }}"
+          if git diff --name-only "$BASE" HEAD -- 'apps/admin-studio/migrations/*.sql' | grep -q .; then
+            echo "has_migrations=true"  >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy contains DB migrations — auto-rollback will be skipped on canary failure"
+          else
+            echo "has_migrations=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Provision webhook secret
         run: |
-          target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
           if [ -z "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" ]; then
             echo "::warning::STRIPE_SUBSCRIPTION_WEBHOOK_SECRET missing; webhook endpoint will return 503 until configured"
             exit 0
           fi
-          echo "Provisioning STRIPE_SUBSCRIPTION_WEBHOOK_SECRET for $target_env"
-          echo "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_SUBSCRIPTION_WEBHOOK_SECRET --env "$target_env"
+          echo "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_SUBSCRIPTION_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-
       - name: Provision studio credentials
         run: |
-          target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
           if [ -z "${{ secrets.FACTORY_USER }}" ] || [ -z "${{ secrets.FACTORY_PW }}" ]; then
             echo "::warning::FACTORY_USER or FACTORY_PW missing; using placeholder credentials"
             exit 0
           fi
           password_hash=$(echo -n "${{ secrets.FACTORY_PW }}" | sha256sum | cut -d' ' -f1)
-          echo "${{ secrets.FACTORY_USER }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "$target_env"
-          echo "$password_hash" | npx wrangler secret put STUDIO_ADMIN_PASSWORD_SHA256 --env "$target_env"
+          echo "${{ secrets.FACTORY_USER }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "${{ steps.target.outputs.env }}"
+          echo "$password_hash" | npx wrangler secret put STUDIO_ADMIN_PASSWORD_SHA256 --env "${{ steps.target.outputs.env }}"
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -97,11 +144,10 @@ jobs:
 
       - name: Push self-improvement secrets
         run: |
-          target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
-          echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "$target_env"
-          echo "${{ secrets.GH_PAT }}" | npx wrangler secret put GITHUB_TOKEN --env "$target_env"
+          echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "${{ steps.target.outputs.env }}"
+          echo "${{ secrets.GH_PAT }}" | npx wrangler secret put GITHUB_TOKEN --env "${{ steps.target.outputs.env }}"
           if [ -n "${{ secrets.WORKER_API_TOKEN }}" ]; then
-            echo "${{ secrets.WORKER_API_TOKEN }}" | npx wrangler secret put WORKER_API_TOKEN --env "$target_env"
+            echo "${{ secrets.WORKER_API_TOKEN }}" | npx wrangler secret put WORKER_API_TOKEN --env "${{ steps.target.outputs.env }}"
           fi
         working-directory: apps/admin-studio
         env:
@@ -110,15 +156,11 @@ jobs:
 
       - name: Apply database migrations
         run: |
-          # Run all migrations against Neon via psql.
-          # All migrations use IF NOT EXISTS, so they are idempotent and safe to re-run.
           if [ -z "${{ secrets.DATABASE_URL }}" ]; then
             echo "::warning::DATABASE_URL not set; skipping migrations — ensure tables exist in the target database"
             exit 0
           fi
-          # Install psql
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
-          # Apply all pending migrations in sequence (sorted by filename)
           for f in $(ls apps/admin-studio/migrations/*.sql | sort); do
             echo "Applying migration: $f"
             psql "${{ secrets.DATABASE_URL }}" -v ON_ERROR_STOP=1 -f "$f"
@@ -129,18 +171,51 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Deploy
-        run: npx wrangler deploy --env ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+        run: npx wrangler deploy --env ${{ steps.target.outputs.env }}
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
+      # ---- NEW: capture the just-deployed version id ----
+      - name: Capture new worker version (post-deploy)
+        id: capture-new
+        if: steps.target.outputs.env == 'production'
+        working-directory: apps/admin-studio
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          NEW=$(npx -y wrangler@latest versions list --name admin-studio-production --json 2>/dev/null \
+            | jq -r '.[0].id // empty')
+          test -n "$NEW" || (echo "::error::Could not capture new version id" && exit 1)
+          echo "new_version_id=$NEW" >> "$GITHUB_OUTPUT"
+          echo "New prod version: $NEW"
+
       - name: Verify post-deploy endpoints
         run: |
-          target_env="${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}"
-          if [ "$target_env" = "production" ]; then
-            base_url="https://api.apunlimited.com"
+          if [ "${{ steps.target.outputs.env }}" = "production" ]; then
+            base_url="https://admin.latwoodtech.work"
           else
-            base_url="https://api-staging.apunlimited.com"
+            base_url="https://admin-studio-staging.adrper79.workers.dev"
           fi
-          node apps/admin-studio/scripts/verify-deployment.mjs "$target_env" --base-url "$base_url"
+          node apps/admin-studio/scripts/verify-deployment.mjs "${{ steps.target.outputs.env }}" --base-url "$base_url"
+
+  # ---- NEW: post-deploy 5-minute canary watcher (prod only) ----
+  canary-watch:
+    needs: deploy
+    if: needs.deploy.outputs.environment == 'production' && needs.deploy.outputs.previous_version_id != ''
+    uses: Latimer-Woods-Tech/factory/.github/workflows/_canary-watch.yml@main
+    with:
+      app_name:            admin-studio
+      worker_name:         admin-studio-production
+      sentry_project:      admin-studio
+      sentry_org:          latimer-woods-tech
+      base_url:            https://admin.latwoodtech.work
+      smoke_path:          /healthz
+      previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
+      new_version_id:      ${{ needs.deploy.outputs.new_version_id }}
+      commit_sha:          ${{ github.sha }}
+      has_migrations:      ${{ needs.deploy.outputs.has_migrations == 'true' }}
+    secrets: inherit
