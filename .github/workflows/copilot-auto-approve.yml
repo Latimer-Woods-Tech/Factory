@@ -198,11 +198,9 @@ jobs:
 
           if [ "$p_dec" = "approve" ] && [ "$g_dec" = "approve" ]; then
             gh pr ready "$PR" --repo "$REPO" || true
-            gh pr review "$PR" --repo "$REPO" --approve --body "${summary}
-Auto-approved by Copilot Auto-Approve Loop. CODEOWNER review by factory-cross-repo[bot]. 2-of-2 LLM judges agreed."
+            gh pr review "$PR" --repo "$REPO" --approve --body "${summary}"$'\n'"Auto-approved by Copilot Auto-Approve Loop. CODEOWNER review by factory-cross-repo[bot]. 2-of-2 LLM judges agreed."
             gh pr edit "$PR" --repo "$REPO" --add-label "automerge:allow-bot-branch"
           else
             gh pr edit "$PR" --repo "$REPO" --add-label "needs-human" --remove-label "automerge:allow-bot-branch" || true
-            gh pr comment "$PR" --repo "$REPO" --body "${summary}
-Auto-approval blocked: at least one judge dissented. Human review required."
+            gh pr comment "$PR" --repo "$REPO" --body "${summary}"$'\n'"Auto-approval blocked: at least one judge dissented. Human review required."
           fi
