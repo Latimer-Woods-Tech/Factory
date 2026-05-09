@@ -2,6 +2,7 @@ name: Sync PR status to project board
 
 on:
   pull_request:
+    if: github.event.sender.type != 'Bot'
     types: [opened, reopened, ready_for_review, synchronize, closed]
 
 permissions:
