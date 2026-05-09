@@ -13,6 +13,7 @@ name: Auto Project Sync
 
 on:
   issues:
+    if: github.event.sender.type != 'Bot'
     types: [opened, reopened]
   pull_request:
     types: [opened, reopened, ready_for_review]
