@@ -2,10 +2,14 @@ name: Bootstrap Publish All Packages
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip actual publish)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
-  packages: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -16,10 +20,9 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -29,51 +32,73 @@ jobs:
       - name: Publish all packages in dependency order
         run: |
           set -euo pipefail
-
-          PACKAGES=(errors monitoring logger auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin)
-          TARGET_VERSION="0.2.0"
+          # Dependency order — leaf packages first
+          PACKAGES=(errors monitoring logger realtime auth neon stripe llm llm-meter telephony analytics deploy testing email copy content social seo crm compliance entitlements protocol creator studio-core design-tokens design-system ui validation video schedule admin)
 
           for pkg in "${PACKAGES[@]}"; do
             echo ""
-            echo "=== Publishing @latimer-woods-tech/${pkg} ==="
-            pushd "packages/${pkg}"
+            echo "=== ${pkg} ==="
+            if [ ! -d "packages/${pkg}" ]; then
+              echo "  packages/${pkg} does not exist — skip"
+              continue
+            fi
+            pushd "packages/${pkg}" >/dev/null
+            VER=$(node -e "process.stdout.write(require('./package.json').version)")
+            NAME=$(node -e "process.stdout.write(require('./package.json').name)")
+            echo "  ${NAME}@${VER}"
 
-            # Replace file: internal deps with real npm version refs and pin version
+            # Skip if already published to npmjs at this version
+            if npm view "${NAME}@${VER}" version >/dev/null 2>&1; then
+              echo "  already published — skip"
+              popd >/dev/null
+              continue
+            fi
+
+            # Rewrite file: internal deps to ^current — match what other packages will publish
             node -e "
-              const fs = require('fs');
-              const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-              const ver = process.env.TARGET_VERSION;
-              const fix = (deps) => {
-                if (!deps) return;
-                for (const [k, v] of Object.entries(deps)) {
-                  if (k.startsWith('@latimer-woods-tech/') && v.startsWith('file:')) {
-                    deps[k] = '^' + ver;
+              const fs=require('fs');
+              const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+              const fix=(deps)=>{
+                if(!deps) return;
+                for(const [k,v] of Object.entries(deps)){
+                  if(k.startsWith('@latimer-woods-tech/') && (v.startsWith('file:')||v.startsWith('workspace:'))){
+                    const n=k.split('/')[1];
+                    try{
+                      const target=JSON.parse(fs.readFileSync('../'+n+'/package.json','utf8')).version;
+                      deps[k]='^'+target;
+                    }catch{}
                   }
                 }
               };
               fix(p.dependencies);
               fix(p.devDependencies);
-              if (p.version !== '0.2.1') p.version = ver;
-              delete p.scripts.prepublish;
-              if (p.publishConfig && p.publishConfig.registry) delete p.publishConfig.registry;
-              fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
-              console.log('package.json updated to v' + p.version);
-            " TARGET_VERSION="${TARGET_VERSION}"
+              fix(p.peerDependencies);
+              if(p.publishConfig && p.publishConfig.registry) delete p.publishConfig.registry;
+              if(p.scripts && p.scripts.prepublish) delete p.scripts.prepublish;
+              fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+            "
 
-            # Regenerate lockfile with production npm refs
-            npm install --package-lock-only --legacy-peer-deps
+            echo "  --- package.json after rewrite ---"
+            head -25 package.json
+            echo "  --- regenerating lockfile (clean) ---"
+            rm -f package-lock.json
+            npm install --legacy-peer-deps --ignore-scripts --no-fund --no-audit
+            echo "  --- node_modules/@latimer-woods-tech/ ---"
+            ls -la node_modules/@latimer-woods-tech/ 2>&1 || true
+            for dep in node_modules/@latimer-woods-tech/*/; do
+              echo "    $(basename "$dep"): $(node -p "require('./'+'$dep'+'package.json').version" 2>/dev/null || echo '?')"
+            done
+            echo "  --- build ---"
+            npm run build --if-present
 
-            # Install deps (no scripts to avoid circular prepublish issues)
-            npm ci --ignore-scripts
-
-            # Build dist
-            npm run build
-
-            # Publish (skip prepublish quality gate — CI has already validated)
-            npm publish --ignore-scripts --access public
-
-            popd
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "  DRY RUN — would publish ${NAME}@${VER}"
+              npm publish --access public --ignore-scripts --dry-run
+            else
+              npm publish --access public --ignore-scripts
+              echo "  ✓ published ${NAME}@${VER}"
+            fi
+            popd >/dev/null
           done
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          TARGET_VERSION: "0.2.0"
