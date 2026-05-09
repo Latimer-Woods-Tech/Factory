@@ -3,15 +3,31 @@
  *
  * Mints a short-lived installation access token from GitHub App credentials.
  * Uses `crypto.subtle` only — no Node.js `crypto` module (Cloudflare Workers
- * compatible). All credentials are passed as function arguments, never via raw env-var access.
+ * compatible). No `process.env`; all credentials are passed as arguments.
  *
  * Flow:
  *   1. Build a JWT signed with RS256 using the app's RSA private key PEM.
  *   2. POST to the GitHub API to exchange the JWT for an installation token.
  *   3. Return the installation token string.
+ *
+ * Security / credential-exposure posture:
+ *   - The private key PEM is accepted as a parameter and used only in memory
+ *     during this call; it is never logged, stored, or included in error messages.
+ *   - Error paths log only the HTTP status code and generic text from GitHub's
+ *     response body — the JWT and the derived installation token are never emitted.
+ *   - The returned installation token is short-lived (≤1 hour per GitHub's contract)
+ *     and must be treated as a secret by the caller.
+ *   - No hardcoded credentials exist in this file; all secrets arrive via Worker
+ *     bindings (`env.FACTORY_APP_PRIVATE_KEY`, etc.) which are injected at runtime
+ *     and never stored in `wrangler.jsonc` vars.
  */
 
 const GITHUB_API = 'https://api.github.com';
+
+// AbortSignal.timeout is used on every fetch call in this module (10 s).
+// All outbound requests must have explicit timeouts in Cloudflare Workers
+// to prevent hanging indefinitely and consuming the CPU budget.
+const GITHUB_API_TIMEOUT_MS = 10_000;
 
 /**
  * Decode a base64 string to a Uint8Array, handling both standard and
@@ -133,6 +149,7 @@ export async function getInstallationToken(
   const url = `${GITHUB_API}/app/installations/${installationId}/access_tokens`;
   const res = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(GITHUB_API_TIMEOUT_MS), // prevents indefinite hang
     headers: {
       Authorization: `Bearer ${jwt}`,
       Accept: 'application/vnd.github+json',
@@ -142,9 +159,13 @@ export async function getInstallationToken(
   });
 
   if (!res.ok) {
+    // Truncate the GitHub response body to 200 chars before including it in the
+    // error message. GitHub error bodies are typically safe (e.g. "Bad credentials"),
+    // but we truncate to bound any unexpected response size and avoid inadvertently
+    // propagating internal details. The JWT and private key are never logged here.
     const text = await res.text().catch(() => '(no body)');
     throw new Error(
-      `getInstallationToken: GitHub API error ${res.status} for installation ${installationId}: ${text}`,
+      `getInstallationToken: GitHub API error ${res.status} for installation ${installationId}: ${text.slice(0, 200)}`,
     );
   }
 

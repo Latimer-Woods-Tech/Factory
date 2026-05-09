@@ -204,7 +204,7 @@ describe('executeSmokeProbes', () => {
   it('appends query string when probe.query is set', async () => {
     let capturedUrl = '';
     const mockFetch = vi.fn<typeof fetch>().mockImplementation((url) => {
-      capturedUrl = url.toString();
+      capturedUrl = url instanceof URL ? url.href : url instanceof Request ? url.url : url;
       return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
     });
     globalThis.fetch = mockFetch;
