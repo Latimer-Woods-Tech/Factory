@@ -4,8 +4,8 @@ name: Copilot PR Poller
 # Single decision: "approved + mergeable + green CI → unblock; behind → updateBranch."
 #
 # Hosted in factory (public repo) so scheduled runs are free unlimited minutes.
-# Uses GH_PAT with workflow scope to act as adrper79-dot — bypasses the Copilot gate
-# (the gate keys on the trigger actor, not the PR author; verified 2026-05-09).
+# Uses the factory-cross-repo GitHub App (installed org-wide) to mint a
+# short-lived installation token — no PAT rotation needed.
 #
 # Idempotent. Safe to run as often as desired.
 
@@ -25,9 +25,17 @@ jobs:
   poll:
     runs-on: ubuntu-latest
     steps:
+      - name: Mint installation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
       - name: Sweep org for stuck Copilot PRs
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}   # workflow-scope PAT acting as adrper79-dot
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           ORG: Latimer-Woods-Tech
         run: |
           set -euo pipefail
@@ -62,7 +70,7 @@ jobs:
               BEHIND)
                 # Only rebase when CI is green or untested — avoid burning CI on broken PRs.
                 if [ "$ROLLUP" = "SUCCESS" ] || [ "$ROLLUP" = "NONE" ] || [ "$ROLLUP" = "PENDING" ]; then
-                  echo "Updating branch via PAT (acts as adrper79-dot, bypasses Copilot gate)"
+                  echo "Updating branch via GitHub App token (acts as factory-cross-repo[bot], bypasses Copilot gate)"
                   gh api graphql -f query='
                     mutation($id: ID!, $oid: GitObjectID!) {
                       updatePullRequestBranch(input:{pullRequestId:$id, expectedHeadOid:$oid, updateMethod:MERGE}) {
