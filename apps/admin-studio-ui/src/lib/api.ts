@@ -15,7 +15,11 @@ const ENV_BASES: Record<Environment, string> = {
 export function getApiBase(env?: Environment | null): string {
   if (env) return ENV_BASES[env];
   const sessionEnv = useSession.getState().env;
-  return sessionEnv ? ENV_BASES[sessionEnv] : '/api';
+  const base = sessionEnv ? ENV_BASES[sessionEnv] : '/api';
+  if (!env && sessionEnv) {
+    console.debug(`[getApiBase] sessionEnv=${sessionEnv}, returning=${base}`);
+  }
+  return base;
 }
 
 export interface ApiError extends Error {

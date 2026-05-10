@@ -27,6 +27,7 @@ export const useSession = create<SessionState>((set, get) => ({
       ? { id: payload.userId, email: payload.userEmail, role: payload.role }
       : null;
     const next = { token, env, user, expiresAt };
+    console.debug(`[session.login] env=${env}, user=${user?.email}`);
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     set(next);
   },
@@ -38,15 +39,21 @@ export const useSession = create<SessionState>((set, get) => ({
 
   hydrate: () => {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) {
+      console.debug('[session.hydrate] No session in storage');
+      return;
+    }
     try {
       const parsed = JSON.parse(raw) as Omit<SessionState, 'login' | 'logout' | 'hydrate' | 'isAuthed'>;
       if (!parsed.expiresAt || parsed.expiresAt < Date.now()) {
+        console.debug('[session.hydrate] Session expired');
         sessionStorage.removeItem(STORAGE_KEY);
         return;
       }
+      console.debug(`[session.hydrate] Restored env=${parsed.env}`);
       set(parsed);
-    } catch {
+    } catch (e) {
+      console.debug('[session.hydrate] Parse error:', e);
       sessionStorage.removeItem(STORAGE_KEY);
     }
   },
