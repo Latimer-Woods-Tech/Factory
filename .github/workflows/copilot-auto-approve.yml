@@ -18,7 +18,7 @@ on:
   pull_request:
     types: [opened, ready_for_review, synchronize, labeled]
   workflow_run:
-    workflows: ["validate", "CodeQL"]
+    workflows: ["CI", "CodeQL Security Analysis"]
     types: [completed]
 
 permissions:
