@@ -216,7 +216,7 @@ jobs:
             echo "::warning::Skipping branch protection check: token lacks admin access (HTTP 403)."
           elif [ "$code" = "200" ]; then
             FAILED=0
-            REQUIRED_CONTEXTS='["CI / validate","CodeQL Security Analysis / Analyze (javascript)","Dependency Review / dependency-review"]'
+            REQUIRED_CONTEXTS='["validate","Analyze (javascript)","dependency-review"]'
 
             # Require pull requests
             require_pr=$(jq -r 'if .required_pull_request_reviews then "true" else "false" end' "$body")
