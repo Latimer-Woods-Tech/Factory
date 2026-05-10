@@ -425,6 +425,27 @@ async function executeGreen(repo, issue, template, slots) {
     changedFiles.push(filePath);
   }
 
+  // Guard: GitHub's POST /pulls endpoint returns
+  //   422 "No commits between main and supervisor/<slug>-<ts>"
+  // when the head branch is identical to base. This happened to ~10 issues per
+  // Supervisor Loop run (ids visible at run 25611174210, 2026-05-09 20:34Z)
+  // because slot extraction returned all-null slots for off-topic template
+  // matches (e.g. issue #500 "entitlements rollout" matched the
+  // docs-naming-convention template) so the file-write loop above committed
+  // nothing. Without this guard the loop would still POST /pulls and fail.
+  if (changedFiles.length === 0) {
+    console.warn(
+      `[SKIP-PR] ${repo}#${issue.number}: template ${template.id} produced 0 file changes ` +
+      `(slots: ${JSON.stringify(slots)}) — deleting empty branch and skipping PR creation`,
+    );
+    try {
+      await gh('DELETE', `/repos/${ORG}/${repo}/git/refs/heads/${branch}`);
+    } catch (e) {
+      console.warn(`[SKIP-PR] could not delete empty branch ${branch}: ${e.message.slice(0, 80)}`);
+    }
+    return { branch, prUrl: null, prNumber: null, skipped: true, reason: 'no-file-changes' };
+  }
+
   const pr = await gh('POST', `/repos/${ORG}/${repo}/pulls`, {
     title: `[Supervisor] ${issue.title}`,
     head: branch,
@@ -852,7 +873,18 @@ async function main() {
       let prInfo = null;
       if (template.prFiles.length > 0) {
         prInfo = await executeGreen(repo, issue, template, slots);
-        execNote = `\n\n✅ PR opened: ${prInfo.prUrl}`;
+        if (prInfo.skipped) {
+          // Slot extraction was incomplete — branch was created and torn back
+          // down without a PR. Tell the human reviewer instead of silently
+          // claiming success.
+          execNote =
+            `\n\n⚠️ Slot extraction did not yield a writable file plan ` +
+            `(reason: ${prInfo.reason}). No PR was opened. ` +
+            `A CODEOWNER must either re-author the issue with the required ` +
+            `slot fields or handle this manually.`;
+        } else {
+          execNote = `\n\n✅ PR opened: ${prInfo.prUrl}`;
+        }
       } else {
         execNote = '\n\n⚠️ Template has no openPR file step — slot extraction complete, manual execution required.';
       }
@@ -860,8 +892,10 @@ async function main() {
       await postComment(repo, issue.number, planComment(ctx, template, 'green', execNote));
       await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
 
-      const url = prInfo?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;
-      outcomes.push(`🟢 ${repo}#${issue.number}: ${template.id}${prInfo ? ` → PR #${prInfo.prNumber}` : ''} ${url}`);
+      const landedPr = prInfo && !prInfo.skipped ? prInfo : null;
+      const url = landedPr?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;
+      const prSuffix = landedPr ? ` → PR #${landedPr.prNumber}` : prInfo?.skipped ? ' (no PR — empty plan)' : '';
+      outcomes.push(`🟢 ${repo}#${issue.number}: ${template.id}${prSuffix} ${url}`);
     } catch (err) {
       console.error(`[ERROR] ${repo}#${issue.number}:`, err.message);
       outcomes.push(`❌ ${repo}#${issue.number}: ${err.message.slice(0, 120)}`);
