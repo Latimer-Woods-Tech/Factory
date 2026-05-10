@@ -109,7 +109,7 @@ export function AiTab() {
   const [streamStatus, setStreamStatus] = useState('');
   const abortRef = useRef<AbortController | null>(null);
 
-  // Proposal state.
+  // Proposal state for CI.
   const [proposalBusy, setProposalBusy] = useState(false);
   const [proposal, setProposal] = useState<AIProposal | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
