@@ -1,60 +1,71 @@
 /**
- * SyntheticJourneyPanel — displays pass/fail trend, failure evidence links,
+ * SyntheticJourneyPanel — displays pass/fail status, failure evidence,
  * and outage classification for the journey probe suite (ADM-4).
  *
- * Data is fetched from /observability/synthetic/journey which reads the latest
- * KV snapshot written by the synthetic-monitor Worker's scheduled handler.
+ * Data is fetched from /synthetic/journeys which probes worker endpoints.
  */
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../lib/api.js';
+import { apiFetch, getApiBase } from '../lib/api.js';
 
-type JourneyOutageClass = 'ok' | 'partial' | 'outage' | 'unknown';
+type OutageClass = 'none' | 'partial' | 'full';
+type JourneyStatus = 'pass' | 'fail' | 'skipped';
 
-interface JourneyProbe {
+interface JourneyResult {
   id: string;
-  ok: boolean;
-  latencyMs: number;
-  url?: string;
-  error?: string;
-}
-
-interface JourneyTrendPoint {
-  ts: string;
-  status: 'ok' | 'degraded';
-  journeyOk: number;
-  journeyFailed: number;
+  label: string;
+  status: JourneyStatus;
+  latencyMs: number | null;
+  failureEvidence: string | null;
+  outageClass: OutageClass;
+  checkedAt: string;
 }
 
 interface JourneyResp {
-  configured: boolean;
+  degraded: boolean;
+  providerStatus: 'ok' | 'error';
+  retryable: boolean;
+  env: string;
+  checkedAt: string;
+  outageClass: OutageClass;
+  journeys: JourneyResult[];
+  trend: Record<string, JourneyStatus[]>;
   note?: string;
-  checkedAt?: string;
-  outageClass: JourneyOutageClass;
-  probes: JourneyProbe[];
-  trend: JourneyTrendPoint[];
+  error?: string;
 }
 
-function outageBadgeClass(cls: JourneyOutageClass): string {
+function outageBadgeClass(cls: OutageClass): string {
   switch (cls) {
-    case 'ok':
+    case 'none':
       return 'bg-emerald-600/20 text-emerald-300 border-emerald-700';
     case 'partial':
       return 'bg-amber-600/20 text-amber-300 border-amber-700';
-    case 'outage':
+    case 'full':
       return 'bg-red-600/20 text-red-300 border-red-700';
     default:
       return 'bg-slate-700/40 text-slate-300 border-slate-600';
   }
 }
 
-function probeDotClass(ok: boolean): string {
-  return ok ? 'bg-emerald-400' : 'bg-red-500';
+function journeyDotClass(status: JourneyStatus): string {
+  switch (status) {
+    case 'pass':
+      return 'bg-emerald-400';
+    case 'fail':
+      return 'bg-red-500';
+    case 'skipped':
+      return 'bg-slate-500';
+  }
 }
 
-function trendDotClass(s: JourneyTrendPoint): string {
-  if (s.journeyFailed === 0) return 'bg-emerald-400';
-  if (s.journeyOk === 0) return 'bg-red-500';
-  return 'bg-amber-400';
+function trendDotClass(status: JourneyStatus): string {
+  switch (status) {
+    case 'pass':
+      return 'bg-emerald-400';
+    case 'fail':
+      return 'bg-red-500';
+    case 'skipped':
+      return 'bg-slate-500';
+  }
 }
 
 export function SyntheticJourneyPanel() {
@@ -62,7 +73,8 @@ export function SyntheticJourneyPanel() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    apiFetch<JourneyResp>('/observability/synthetic/journey')
+    const base = getApiBase();
+    apiFetch<JourneyResp>(`${base}/synthetic/journeys`)
       .then(setData)
       .catch((e) => setErr((e as Error).message));
   }, []);
@@ -87,66 +99,63 @@ export function SyntheticJourneyPanel() {
 
       {err && <p className="px-4 py-3 text-sm text-red-400">{err}</p>}
 
-      {data && !data.configured && (
-        <p className="px-4 py-3 text-xs text-amber-300">{data.note}</p>
+      {data && data.providerStatus === 'error' && data.error && (
+        <p className="px-4 py-3 text-xs text-amber-300">{data.error}</p>
       )}
 
-      {data?.configured && data.note && data.probes.length === 0 && (
-        <p className="px-4 py-3 text-xs text-slate-500">{data.note}</p>
-      )}
-
-      {data?.probes && data.probes.length > 0 && (
+      {data?.journeys && data.journeys.length > 0 && (
         <ul className="divide-y divide-slate-800">
-          {data.probes.map((probe) => (
+          {data.journeys.map((journey) => (
             <li
-              key={probe.id}
+              key={journey.id}
               className="flex flex-col items-start gap-2 px-4 py-2 text-sm @[20rem]:flex-row @[20rem]:flex-wrap @[20rem]:items-center"
             >
-              <span className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${probeDotClass(probe.ok)}`} />
-              <span className="font-mono text-xs text-slate-300">{probe.id}</span>
-              <span className={`rounded border px-1.5 py-0.5 text-xs ${probe.ok ? 'border-emerald-700 text-emerald-400' : 'border-red-700 text-red-400'}`}>
-                {probe.ok ? 'pass' : 'fail'}
+              <span className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${journeyDotClass(journey.status)}`} />
+              <span className="font-mono text-xs text-slate-300">{journey.id}</span>
+              <span className={`rounded border px-1.5 py-0.5 text-xs ${journey.status === 'pass' ? 'border-emerald-700 text-emerald-400' : journey.status === 'fail' ? 'border-red-700 text-red-400' : 'border-slate-700 text-slate-400'}`}>
+                {journey.status}
               </span>
-              <span className="text-xs text-slate-500">{probe.latencyMs}ms</span>
-              {!probe.ok && probe.error && (
-                <span className="ml-1 truncate text-xs text-amber-300" title={probe.error}>
-                  {probe.error.length > 80 ? `${probe.error.slice(0, 80)}…` : probe.error}
-                </span>
+              {journey.latencyMs !== null && (
+                <span className="text-xs text-slate-500">{journey.latencyMs}ms</span>
               )}
-              {probe.url && (
-                <a
-                  href={probe.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-slate-500 hover:text-slate-300 @[20rem]:ml-auto"
-                >
-                  evidence ↗
-                </a>
+              {journey.status === 'fail' && journey.failureEvidence && (
+                <span className="ml-1 truncate text-xs text-amber-300" title={journey.failureEvidence}>
+                  {journey.failureEvidence.length > 80 ? `${journey.failureEvidence.slice(0, 80)}…` : journey.failureEvidence}
+                </span>
               )}
             </li>
           ))}
         </ul>
       )}
 
-      {data?.trend && data.trend.length > 0 && (
+      {data && data.journeys.length === 0 && (
+        <p className="px-4 py-3 text-xs text-slate-500">{data.note || 'No journeys available for this environment.'}</p>
+      )}
+
+      {data?.trend && Object.keys(data.trend).length > 0 && (
         <div className="border-t border-slate-800 px-4 py-3">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Pass / Fail Trend ({data.trend.length} runs)
+            Trend (recent runs)
           </h3>
-          <div className="flex items-end gap-1">
-            {[...data.trend].reverse().map((point) => (
-              <div
-                key={point.ts}
-                className="group relative flex flex-col items-center"
-                title={`${new Date(point.ts).toLocaleTimeString()} — ✓${point.journeyOk} ✗${point.journeyFailed}`}
-              >
-                <span
-                  className={`inline-block h-4 w-3 rounded-sm ${trendDotClass(point)}`}
-                />
+          <div className="space-y-2">
+            {Object.entries(data.trend).map(([journeyId, statuses]) => (
+              <div key={journeyId} className="text-xs">
+                <div className="text-slate-500 mb-1">{journeyId}</div>
+                <div className="flex items-end gap-0.5">
+                  {statuses.map((status, i) => (
+                    <div
+                      key={i}
+                      className="group relative flex flex-col items-center"
+                      title={status}
+                    >
+                      <span className={`inline-block h-4 w-2 rounded-sm ${trendDotClass(status)}`} />
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-600">Each bar = one cron cycle. Green = all probes ok, amber = partial, red = outage.</p>
+          <p className="mt-2 text-xs text-slate-600">Green = pass, red = fail, gray = skipped.</p>
         </div>
       )}
 
