@@ -74,8 +74,16 @@ jobs:
           # must not block the remaining packages. We collect failures and
           # exit non-zero at the end so the run is still marked failed.
           set -uo pipefail
-          # Dependency order — leaf packages first
-          PACKAGES=(errors monitoring logger realtime auth neon stripe llm llm-meter telephony analytics deploy testing email copy content social seo crm compliance entitlements protocol creator studio-core design-tokens design-system ui validation video schedule admin)
+          # Topologically sorted dependency order — every package's internal
+          # @latimer-woods-tech/* deps appear EARLIER in this list, so the
+          # rewrite-deps + npm install step in the loop body always resolves
+          # against already-published versions on npmjs.org. If you add a new
+          # package or change its internal deps, re-derive this order via:
+          #   grep '@latimer-woods-tech/' packages/*/package.json
+          # and topologically sort. Otherwise first-time publishes will 404
+          # when npm tries to install an unpublished sibling dep (eg. crm
+          # depends on validation; validation must be published first).
+          PACKAGES=(errors creator deploy design-system design-tokens entitlements protocol studio-core testing validation monitoring realtime seo video ui logger email social neon auth llm llm-meter analytics stripe compliance content copy telephony schedule crm admin)
 
           declare -a FAILED=()
           declare -a PUBLISHED=()
