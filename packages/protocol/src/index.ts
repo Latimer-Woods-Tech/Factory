@@ -208,10 +208,18 @@ export interface VideoDispatchPayload {
  */
 export function generateId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
-  return Array.from(bytes)
-    .map((b) => chars[b % chars.length] as string)
-    .join('');
+  // Reject samples >= max so byte % chars.length is uniformly distributed
+  // (avoids modulo bias on cryptographically random bytes).
+  const max = Math.floor(256 / chars.length) * chars.length;
+  const result: string[] = [];
+  while (result.length < 8) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+    for (const b of bytes) {
+      if (result.length >= 8) break;
+      if (b < max) result.push(chars[b % chars.length] as string);
+    }
+  }
+  return result.join('');
 }
 
 // ============================================================================
