@@ -195,10 +195,13 @@ jobs:
 
       - name: Verify post-deploy endpoints
         run: |
+          # Probe the canonical custom domain. CF deactivates the .workers.dev URL
+          # for any worker with a Custom Domain attached (HTTP 1042 "Route not active"),
+          # so workers.dev probing here would always fail post-#610.
           if [ "${{ steps.target.outputs.env }}" = "production" ]; then
             base_url="https://admin.latwoodtech.work"
           else
-            base_url="https://admin-studio-staging.adrper79.workers.dev"
+            base_url="https://admin-staging.latwoodtech.work"
           fi
           node apps/admin-studio/scripts/verify-deployment.mjs "${{ steps.target.outputs.env }}" --base-url "$base_url"
 

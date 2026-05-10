@@ -20,9 +20,7 @@ import type {
 } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../../stores/session.js';
 import { useActiveFile } from '../../stores/activeFile.js';
-import { apiFetch } from '../../lib/api.js';
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
+import { apiFetch, getApiBase } from '../../lib/api.js';
 
 const MODES: ReadonlyArray<{ id: AIChatMode; label: string; hint: string }> = [
   { id: 'generate', label: 'Generate', hint: 'New Worker code' },
@@ -149,7 +147,7 @@ export function AiTab() {
     };
 
     try {
-      const res = await fetch(`${API_BASE}/ai/chat`, {
+      const res = await fetch(`${getApiBase()}/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
