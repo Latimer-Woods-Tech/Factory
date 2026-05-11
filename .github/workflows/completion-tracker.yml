@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '30 10 * * *'   # 06:30 ET ≈ 10:30 UTC
   workflow_dispatch:
+    inputs:
+      force_pr:
+        description: 'Open a drift PR even if docs are unchanged (set to "true")'
+        required: false
+        default: 'false'
   repository_dispatch:
     types: [matrix-updated]
 
@@ -83,18 +88,21 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Open drift PR
-        if: steps.drift.outputs.changed == 'true'
+        if: steps.drift.outputs.changed == 'true' || github.event.inputs.force_pr == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           set -e
-          BRANCH="completion-tracker/${{ steps.digest.outputs.date }}"
+          # Append run ID to avoid branch collision when the workflow is triggered
+          # more than once on the same calendar date (schedule + dispatch overlap).
+          BRANCH="completion-tracker/${{ steps.digest.outputs.date }}-${{ github.run_id }}"
           git config user.name  "factory-cross-repo[bot]"
           git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git commit -m "chore(completion-tracker): drift update ${{ steps.digest.outputs.date }} (${{ steps.digest.outputs.pct }}%)"
           git push --set-upstream origin "$BRANCH"
-          cat > /tmp/body.md <<'__BODY__'
+          # Use unquoted heredoc so GitHub Actions expressions are expanded.
+          cat > /tmp/body.md <<__BODY__
 ${{ steps.digest.outputs.body }}
 __BODY__
           gh pr create \

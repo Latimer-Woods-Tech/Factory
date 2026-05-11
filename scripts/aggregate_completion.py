@@ -180,7 +180,7 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
             continue
         rid, feat, ep, manual, auto, status, owner, lv, issue, weight, notes = parts
         if not ID_RE.match(rid):
-            malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"id '{rid}' does not match ^[A-Z]+-[A-Z]+-\\d+$"))
+            malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"id '{rid}' does not match ^[A-Z]+-[A-Z0-9]+-\\d+$"))
             continue
         status_emoji = next((e for e in LEGEND if status.startswith(e)), None)
         if status_emoji is None:

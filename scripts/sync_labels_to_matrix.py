@@ -228,24 +228,33 @@ class IssueState:
     labels: list[str] = field(default_factory=list)
 
 
-def parse_issue_labels(issue: dict[str, Any]) -> IssueState | None:
+def parse_issue_labels(
+    issue: dict[str, Any],
+    *,
+    feature_prefix: str = "feature:",
+    status_prefix: str = "status:",
+    weight_prefix: str = "weight:",
+    owner_prefix: str = "owner:",
+    status_to_emoji: dict[str, str] | None = None,
+) -> IssueState | None:
+    _s2e = status_to_emoji if status_to_emoji is not None else STATUS_TO_EMOJI
     labels = [lbl["name"] for lbl in issue.get("labels", []) if isinstance(lbl, dict)]
     feature_id: str | None = None
     status_emoji: str | None = None
     weight: str | None = None
     owner: str | None = None
     for name in labels:
-        if name.startswith("feature:"):
-            feature_id = name[len("feature:"):].strip()
-        elif name.startswith("status:"):
-            key = name[len("status:"):].strip().lower()
-            status_emoji = STATUS_TO_EMOJI.get(key)
-        elif name.startswith("weight:"):
-            w = name[len("weight:"):].strip()
+        if name.startswith(feature_prefix):
+            feature_id = name[len(feature_prefix):].strip()
+        elif name.startswith(status_prefix):
+            key = name[len(status_prefix):].strip().lower()
+            status_emoji = _s2e.get(key)
+        elif name.startswith(weight_prefix):
+            w = name[len(weight_prefix):].strip()
             if w.isdigit() and 1 <= int(w) <= 5:
                 weight = w
-        elif name.startswith("owner:"):
-            o = name[len("owner:"):].strip()
+        elif name.startswith(owner_prefix):
+            o = name[len(owner_prefix):].strip()
             if o and not o.startswith("@"):
                 o = "@" + o
             owner = o
@@ -262,10 +271,19 @@ def parse_issue_labels(issue: dict[str, Any]) -> IssueState | None:
     )
 
 
-def fetch_feature_issues(repo: str, token: str) -> list[IssueState]:
+def fetch_feature_issues(repo: str, token: str, *, labels_cfg: dict[str, str] | None = None) -> list[IssueState]:
     """Page through open issues with any `feature:*` label. The list endpoint
     supports passing a single label; we list all and filter client-side to
     catch the whole feature:* family without N+1 label calls."""
+    _lcfg = labels_cfg or {}
+    feature_prefix = _lcfg.get("feature_prefix", "feature:")
+    status_prefix = _lcfg.get("status_prefix", "status:")
+    weight_prefix = _lcfg.get("weight_prefix", "weight:")
+    owner_prefix = _lcfg.get("owner_prefix", "owner:")
+    status_map = _lcfg.get("status_map")
+    status_to_emoji: dict[str, str] | None = None
+    if isinstance(status_map, dict):
+        status_to_emoji = {k: v for k, v in status_map.items()}
     out: list[IssueState] = []
     page = 1
     while True:
@@ -284,7 +302,14 @@ def fetch_feature_issues(repo: str, token: str) -> list[IssueState]:
             # list endpoint returns PRs too; skip them
             if "pull_request" in issue:
                 continue
-            st = parse_issue_labels(issue)
+            st = parse_issue_labels(
+                issue,
+                feature_prefix=feature_prefix,
+                status_prefix=status_prefix,
+                weight_prefix=weight_prefix,
+                owner_prefix=owner_prefix,
+                status_to_emoji=status_to_emoji,
+            )
             if st is not None:
                 out.append(st)
         if len(body) < 100:
@@ -359,8 +384,8 @@ def render_row(cells: list[str]) -> str:
 
 # ---------- PR creation via gh CLI ----------
 
-def run(cmd: list[str], *, cwd: str | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
-    proc = subprocess.run(cmd, cwd=cwd, text=True, capture_output=True)
+def run(cmd: list[str], *, cwd: str | None = None, check: bool = True, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    proc = subprocess.run(cmd, cwd=cwd, text=True, capture_output=True, env=env)
     if check and proc.returncode != 0:
         jerr("subprocess_fail", cmd=cmd, rc=proc.returncode,
              stdout=proc.stdout[-400:], stderr=proc.stderr[-400:])
@@ -378,7 +403,8 @@ def open_pr_for_repo(
 ) -> str | None:
     """Clone the repo shallow, commit the edited matrix on a fresh branch,
     push, and open a PR via `gh`. Returns the PR URL or None on failure."""
-    branch = f"auto/label-sync-{now.strftime('%Y%m%d-%H%M')}"
+    branch_prefix = pr_cfg.get("branch_prefix", "matrix-sync/")
+    branch = f"{branch_prefix}{now.strftime('%Y%m%d-%H%M')}"
     commit_msg = "chore(matrix): sync from issue labels"
     base = pr_cfg.get("base", "main")
     labels = pr_cfg.get("labels") or ["automation", "documentation", "auto-merge"]
@@ -398,10 +424,18 @@ def open_pr_for_repo(
     pr_body = "\n".join(body_lines) + "\n"
 
     with TemporaryDirectory(prefix="lsync-") as td:
-        clone_url = f"https://x-access-token:{os.environ['GITHUB_TOKEN']}@github.com/{repo}.git"
+        clone_url = f"https://github.com/{repo}.git"
+        # Pass the token via GIT_CONFIG environment variables instead of
+        # embedding it in the clone URL, to avoid the credential appearing in
+        # logs or error output.
+        token = os.environ.get("GITHUB_TOKEN", "")
+        auth_env = os.environ.copy()
+        auth_env["GIT_CONFIG_COUNT"] = "1"
+        auth_env["GIT_CONFIG_KEY_0"] = "http.https://github.com/.extraHeader"
+        auth_env["GIT_CONFIG_VALUE_0"] = f"Authorization: Bearer {token}"
         try:
-            run(["git", "clone", "--depth", "1", "--branch", base, clone_url, td])
-            run(["git", "-C", td, "checkout", "-b", branch])
+            run(["git", "clone", "--depth", "1", "--branch", base, clone_url, td], env=auth_env)
+            run(["git", "-C", td, "checkout", "-b", branch], env=auth_env)
             target = Path(td) / matrix_path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(new_content, encoding="utf-8")
@@ -415,7 +449,7 @@ def open_pr_for_repo(
                 jlog("pr_noop_after_clone", repo=repo)
                 return None
             run(["git", "-C", td, "commit", "-m", commit_msg])
-            run(["git", "-C", td, "push", "-u", "origin", branch])
+            run(["git", "-C", td, "push", "-u", "origin", branch], env=auth_env)
             pr = run([
                 "gh", "pr", "create",
                 "--repo", repo,
@@ -440,6 +474,7 @@ def reconcile_repo(
     repo_cfg: dict[str, Any],
     token: str,
     pr_cfg: dict[str, Any],
+    labels_cfg: dict[str, Any],
     now: datetime,
     dry_run: bool,
 ) -> dict[str, Any]:
@@ -459,14 +494,23 @@ def reconcile_repo(
             jwarn("matrix_malformed", repo=repo, line=line_no, reason=reason)
     rows_by_id: dict[str, MatrixRow] = {r.id: r for r in rows}
 
-    issues = fetch_feature_issues(repo, token)
+    issues = fetch_feature_issues(repo, token, labels_cfg=labels_cfg)
     issues_by_id: dict[str, IssueState] = {}
+    issues_seen: dict[str, list[int]] = {}  # track duplicates
     issue_orphans: list[str] = []
     for iss in issues:
         if iss.feature_id in rows_by_id:
-            issues_by_id[iss.feature_id] = iss
+            if iss.feature_id in issues_seen:
+                issues_seen[iss.feature_id].append(iss.number)
+            else:
+                issues_seen[iss.feature_id] = [iss.number]
+                issues_by_id[iss.feature_id] = iss
         else:
             issue_orphans.append(iss.feature_id)
+
+    for fid, nums in issues_seen.items():
+        if len(nums) > 1:
+            jwarn("duplicate_feature_label", repo=repo, feature_id=fid, issue_numbers=nums)
 
     matrix_orphans = [rid for rid in rows_by_id if rid not in issues_by_id]
 
@@ -543,13 +587,18 @@ def main() -> int:
 
     repos = cfg.get("repos") or []
     pr_cfg = cfg.get("pr") or {}
+    labels_cfg: dict[str, Any] = {}
+    if isinstance(cfg.get("labels"), dict):
+        labels_cfg.update(cfg["labels"])
+    if isinstance(cfg.get("status_map"), dict):
+        labels_cfg["status_map"] = cfg["status_map"]
     now = datetime.now(timezone.utc)
 
     summary: dict[str, Any] = {}
     for repo_cfg in repos:
         key = repo_cfg.get("key") or repo_cfg["repo"].split("/")[-1]
         try:
-            summary[key] = reconcile_repo(repo_cfg, token, pr_cfg, now, args.dry_run)
+            summary[key] = reconcile_repo(repo_cfg, token, pr_cfg, labels_cfg, now, args.dry_run)
         except Exception as e:
             jerr("reconcile_crash", repo=repo_cfg.get("repo"), err=str(e))
             summary[key] = {

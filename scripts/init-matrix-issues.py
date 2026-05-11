@@ -52,7 +52,13 @@ def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None) -
             if e.code in (429,) or 500 <= e.code < 600:
                 time.sleep(min(2 ** attempt, 30))
                 continue
-            return e.code, json.loads(e.read()) if e.fp else None
+            payload = None
+            if e.fp:
+                try:
+                    payload = json.loads(e.read())
+                except (ValueError, Exception):
+                    payload = None
+            return e.code, payload
     return 599, None
 
 
@@ -83,12 +89,20 @@ def parse_rows(content: str) -> list[dict[str, str]]:
         status_emoji = next((e for e in LEGEND if parts[5].startswith(e)), None)
         if status_emoji is None:
             continue
+        try:
+            w = int(parts[9])
+        except ValueError:
+            print(f"[warn] skipping row {rid}: weight '{parts[9]}' is not an integer", file=sys.stderr)
+            continue
+        if not (1 <= w <= 5):
+            print(f"[warn] skipping row {rid}: weight {w} is outside 1–5 range", file=sys.stderr)
+            continue
         rows.append({
             "section": section,
             "id": rid, "feature": parts[1], "endpoint": parts[2],
             "manual": parts[3], "automated": parts[4],
             "status": status_emoji, "owner": parts[6], "last_verified": parts[7],
-            "issue_pr": parts[8], "weight": parts[9], "notes": parts[10],
+            "issue_pr": parts[8], "weight": str(w), "notes": parts[10],
         })
     return rows
 

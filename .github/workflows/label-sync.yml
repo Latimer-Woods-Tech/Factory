@@ -1,6 +1,10 @@
 name: label-sync
 on:
   issues:
+    # NOTE: `on: issues` only fires for issues in THIS repo (Factory).
+    # Label changes in product repos (HumanDesign, videoking, cypher-healing,
+    # xico-city) are NOT captured here in real time; they are reconciled by
+    # the daily schedule sweep below.
     types: [opened, edited, labeled, unlabeled, closed, reopened]
   schedule:
     - cron: '0 11 * * *'   # 11:00 UTC reconcile sweep

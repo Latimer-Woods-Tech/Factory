@@ -50,13 +50,13 @@ The `factory-cross-repo` App must be installed on **HumanDesign, videoking, Fact
 2. **Manual** — `workflow_dispatch`.
 3. **Reactive** — `repository_dispatch[matrix-updated]`, fired by each product repo's `notify-factory.yml` whenever the matrix file changes on `main`.
 
-`label-sync.yml` runs on every issue event and on a daily 11:00 UTC reconciler sweep.
+`label-sync.yml` runs on issue events **within the Factory repo** and on a daily 11:00 UTC reconciler sweep. Issue events from product repos (HumanDesign, videoking, cypher-healing, xico-city) do **not** directly trigger this workflow — label changes in those repos are picked up by the scheduled sweep. For near-real-time reactivity from a product repo, that repo must emit a `repository_dispatch[matrix-updated]` event to Factory (the same mechanism used by `notify-factory.yml`).
 
 ## Drift-PR flow
 
 The aggregator writes `docs/COMPLETION_TRACKER.md`, `docs/completion-tracker.json`, and appends a line to `docs/completion-tracker-history.jsonl`. If any of those three changed, the workflow:
 
-1. Creates branch `completion-tracker/<DATE>`.
+1. Creates branch `completion-tracker/<DATE>-<RUN_ID>`.
 2. Commits as `factory-cross-repo[bot]`.
 3. Opens a PR titled `completion-tracker drift <DATE> — <PCT>% weighted`.
 4. Adds labels `automation`, `documentation`, `auto-merge` — the existing `auto-merge-approved-prs.yml` flow picks these up.
@@ -134,7 +134,7 @@ Sentry caps issue list at ~100 requests/min per token. The aggregator makes a si
 If `fetch_matrix_fail` shows 404 for a repo the App is installed on, the App probably wasn't granted Contents:read on that specific repo. Reinstall and re-tick repos in the App settings.
 
 ### Drift PR didn't open
-Check `steps.drift.outputs.changed`. If `false` the outputs were byte-identical to the previous run — no PR by design. To force one, add `[force-pr]` to the dispatch input or run `git commit --allow-empty` against the docs in a manual run.
+Check `steps.drift.outputs.changed`. If `false` the outputs were byte-identical to the previous run — no PR by design. To force one, set the `force_pr` input to `"true"` when triggering via `workflow_dispatch`, or run `git commit --allow-empty` against the docs in a manual run.
 
 ### Pushover digest didn't fire
 The aggregator logs `pushover_skipped_no_creds` if either secret is missing. `pushover_fail` with non-200 means Pushover rejected the message — usually a wrong user key or rate cap (10k messages/month per app).
