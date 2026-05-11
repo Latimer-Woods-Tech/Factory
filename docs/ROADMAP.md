@@ -14,6 +14,7 @@ The committed 6-stage sequence. Agents reading this know which milestone is in f
 | **3 — Adoption tools** | queued | M4 `@lwt/eslint-config` + `@lwt/tsconfig-base` + `@lwt/biome-config` · M5 Renovate at org level | Every repo extends shared configs; version drift visible |
 | **4 — Enforcement** | queued | M6 required org rulesets + supervisor templates expanded · M7 Definition of Done PR template | Conformance graduates shadow → required (only after most repos ≥80) |
 | **5 — Sellability** | queued | M8 accessibility (axe) · M9 PII inventory + DSR endpoints · M10 public status pages | Each product survives an enterprise procurement questionnaire |
+| **6 — UI/UX Foundations** | queued (parallel w/ Stages 3–5) | M11 `@lwt/ui-tokens` · M12 `@lwt/design-system` · M13 `@lwt/a11y` + `@lwt/forms` · M14 `@lwt/icons` · M15 PLATFORM_STANDARDS §12 + 11th conformance dim | Three UI-less apps (cypher-healing, xico-city, factory-admin-studio) inherit a coherent visual language by default. WCAG 2.2 AA + Lighthouse budgets enforced. |
 | **Continuous** | queued | Auto-rollback canary, agent observability, prompt versioning, org-level LLM budget, BCP, ICP, pricing experiments | Ongoing |
 
 ## Current milestone (in flight)
@@ -41,6 +42,17 @@ The committed 6-stage sequence. Agents reading this know which milestone is in f
 **Cost ceiling:** $50 Anthropic + $0 GitHub Actions (Factory public)
 
 **Rollback:** delete the new workflows + revert PR. No production impact (shadow mode).
+
+
+## Stage 6 detail (added 2026-05-11 — ADR-0008)
+
+**Apps without UI today:** cypher-healing (API only), xico-city (scaffolding), factory-admin-studio (minimal admin). These three are the adoption targets in priority order. HumanDesign + videoking have UIs already; migration is Stage 7 (post-roadmap).
+
+**Design philosophy (PLATFORM_STANDARDS §13):** every decision passes two filters — "What would Steve Jobs do?" (focus, simplicity, performance IS design) AND "What do people in the 2026 market want / don't want?" (dark default, skeleton states, no popups, no chatbot ambushes, native mobile).
+
+**Cost ceiling:** $5 Anthropic for sub-agent fan-out (M11–M14 packages). $0 GitHub Actions (Factory public).
+
+**Rollback:** unpublish packages + revert per-app adoption. ~30 min. See ADR-0008 §Rollback.
 
 ## Stage 2 preview
 
