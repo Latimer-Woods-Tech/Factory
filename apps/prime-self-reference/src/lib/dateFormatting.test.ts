@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseToUTC } from '../lib/dateFormatting';
+import { parseToUTC } from './dateFormatting';
 
 describe('parseToUTC', () => {
   // ── Happy-path ─────────────────────────────────────────────────────────────

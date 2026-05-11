@@ -56,8 +56,9 @@ export function ChartCreationForm({
     } else {
       // Guard against non-string or malformed birthDate values before they reach
       // the backend's parseToUTC call (prevents "birthDate.split is not a function").
+      // Validate date and time separately so errors are attributed to the correct field.
       try {
-        parseToUTC(formData.birthDate, formData.birthTime || undefined);
+        parseToUTC(formData.birthDate);
       } catch {
         newErrors.birthDate = 'Birth date is invalid — please use the date picker';
       }
@@ -65,6 +66,13 @@ export function ChartCreationForm({
 
     if (!formData.birthTime) {
       newErrors.birthTime = 'Birth time is required';
+    } else if (!newErrors.birthDate) {
+      // Only validate time if date is already valid (parseToUTC needs both).
+      try {
+        parseToUTC(formData.birthDate, formData.birthTime);
+      } catch {
+        newErrors.birthTime = 'Birth time is invalid — please re-select using the dropdowns';
+      }
     }
 
     if (!formData.birthLocation.trim()) {
