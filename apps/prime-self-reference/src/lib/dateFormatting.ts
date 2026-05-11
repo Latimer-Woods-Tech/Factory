@@ -45,10 +45,10 @@ export function parseToUTC(birthDate: string, birthTime?: string): string {
     );
   }
 
-  // Length was verified above (=== 3), so these elements are defined.
-  const year = parseInt(dateParts[0]!, 10);
-  const month = parseInt(dateParts[1]!, 10);
-  const day = parseInt(dateParts[2]!, 10);
+  // dateParts.length === 3, so indices 0–2 are defined (! asserts that to TS).
+  const year  = parseInt(dateParts[0]!, 10); // YYYY
+  const month = parseInt(dateParts[1]!, 10); // MM
+  const day   = parseInt(dateParts[2]!, 10); // DD
 
   if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
     throw new Error(
@@ -85,9 +85,9 @@ export function parseToUTC(birthDate: string, birthTime?: string): string {
       );
     }
 
-    // Length was verified above (=== 2), so these elements are defined.
-    hours = parseInt(timeParts[0]!, 10);
-    minutes = parseInt(timeParts[1]!, 10);
+    // timeParts.length === 2, so indices 0–1 are defined (! asserts that to TS).
+    hours   = parseInt(timeParts[0]!, 10); // HH
+    minutes = parseInt(timeParts[1]!, 10); // MM
 
     if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
       throw new Error(`parseToUTC: non-numeric time parts in "${birthTime}"`);
