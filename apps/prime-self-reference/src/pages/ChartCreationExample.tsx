@@ -59,7 +59,8 @@ export function ChartCreationForm({
       // Validate date and time separately so errors are attributed to the correct field.
       try {
         parseToUTC(formData.birthDate);
-      } catch {
+      } catch (err) {
+        console.error('[ChartCreationForm] birthDate validation failed:', err);
         newErrors.birthDate = 'Birth date is invalid — please use the date picker';
       }
     }
@@ -70,7 +71,8 @@ export function ChartCreationForm({
       // Only validate time if date is already valid (parseToUTC needs both).
       try {
         parseToUTC(formData.birthDate, formData.birthTime);
-      } catch {
+      } catch (err) {
+        console.error('[ChartCreationForm] birthTime validation failed:', err);
         newErrors.birthTime = 'Birth time is invalid — please re-select using the dropdowns';
       }
     }
