@@ -56,9 +56,12 @@ jobs:
 
           v=$(gh pr view "$PR" --repo "$REPO" --json author,labels,files,statusCheckRollup)
           author=$(echo "$v" | jq -r '.author.login')
-          if [ "$author" != "Copilot" ] && [ "$author" != "copilot-swe-agent" ]; then
-            echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0
-          fi
+          # Extended per ADR-0003/0006: also auto-approve PRs from operators in branch-protection bypass list.
+          # adrper79-dot is in bypass_pull_request_allowances; without this, rebase-driven stale-review dismissals require manual re-approval.
+          case "$author" in
+            Copilot|copilot-swe-agent|adrper79-dot) ;;
+            *) echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0;;
+          esac
 
           labels=$(echo "$v" | jq -r '[.labels[].name]|join(",")')
           case ",$labels," in
