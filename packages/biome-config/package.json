@@ -1,0 +1,12 @@
+{
+  "name": "@latimer-woods-tech/biome-config",
+  "version": "0.1.0",
+  "description": "Shared Biome config for Latimer-Woods-Tech.",
+  "license": "UNLICENSED",
+  "publishConfig": { "access": "public" },
+  "type": "module",
+  "exports": {
+    "./biome.json": "./biome.json"
+  },
+  "files": ["biome.json", "README.md"]
+}
