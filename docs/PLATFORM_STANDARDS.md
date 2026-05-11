@@ -135,3 +135,28 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | 10 | Privacy | 5 | PII_INVENTORY present, DSR endpoints present where required, audit log middleware on admin routes |
 
 Each repo's score = weighted average across dimensions. Anything < 70 blocks deploys (after Stage 4 enforcement; advisory before).
+
+
+---
+
+## 11. PR size budget
+
+Every PR has a hard size budget by tier. Bigger work decomposes before opening. Atomic PRs review in seconds; sprawling PRs hide bugs and slow merge throughput.
+
+| Tier | Path scope (per CODEOWNERS) | Max diff lines (added + removed) |
+|---|---|---:|
+| **Green** | `docs/**`, `*.md`, `session/**`, generated docs | ≤ 50 |
+| **Yellow** | `apps/*/src/**`, `client/**`, `tests/**`, non-critical worker routes | ≤ 200 |
+| **Red** | `.github/workflows/**`, `packages/**`, `migrations/**`, billing, wrangler bindings, auth flows | ≤ 500 |
+
+Exceptions require the `size-exception-approved` label, which CODEOWNERS-approval can apply, with a comment explaining why the decomposition isn't worth it.
+
+Decomposition strategies the supervisor and sub-agents use:
+- Split by file (each file → its own atomic PR if independent)
+- Split by concern (test scaffolding PR → implementation PR → docs PR)
+- Stack PRs (open #2 against #1's branch, merge in order)
+- Use `[stack: N of M]` in PR title to declare the sequence
+
+The `pr-size-guard.yml` workflow (Stage 4) enforces this as a required status check. Until then, treat it as advisory + reviewer discretion.
+
+See ADR-0005 for the full decision context.
