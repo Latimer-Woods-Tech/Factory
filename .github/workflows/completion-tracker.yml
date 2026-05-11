@@ -5,9 +5,10 @@ on:
   workflow_dispatch:
     inputs:
       force_pr:
-        description: 'Open a drift PR even if docs are unchanged (set to "true")'
+        description: 'Open a drift PR even if docs are unchanged'
         required: false
-        default: 'false'
+        type: boolean
+        default: false
   repository_dispatch:
     types: [matrix-updated]
 

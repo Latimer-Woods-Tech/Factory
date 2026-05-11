@@ -428,7 +428,7 @@ def open_pr_for_repo(
         # Pass the token via GIT_CONFIG environment variables instead of
         # embedding it in the clone URL, to avoid the credential appearing in
         # logs or error output.
-        token = os.environ.get("GITHUB_TOKEN", "")
+        token = os.environ["GITHUB_TOKEN"]
         auth_env = os.environ.copy()
         auth_env["GIT_CONFIG_COUNT"] = "1"
         auth_env["GIT_CONFIG_KEY_0"] = "http.https://github.com/.extraHeader"

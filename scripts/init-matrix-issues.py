@@ -56,7 +56,7 @@ def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None) -
             if e.fp:
                 try:
                     payload = json.loads(e.read())
-                except (ValueError, Exception):
+                except ValueError:
                     payload = None
             return e.code, payload
     return 599, None
