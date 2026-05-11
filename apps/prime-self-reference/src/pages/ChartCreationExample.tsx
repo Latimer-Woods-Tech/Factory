@@ -1,12 +1,13 @@
 /**
  * Example: Using BirthTimeInput in a Chart Creation Form
- * 
+ *
  * This example demonstrates how to integrate BirthTimeInput with other form fields
  * (birth date, location) and submit the complete birth chart data.
  */
 
 import React, { useState } from 'react';
 import { BirthTimeInput } from './BirthTimeInput';
+import { parseToUTC } from '../lib/dateFormatting';
 import styles from './BirthTimeInput.module.css';
 
 interface ChartFormData {
@@ -24,7 +25,7 @@ interface ChartFormErrors {
 
 /**
  * Example component: Chart creation form with birth time input
- * 
+ *
  * @example
  * ```tsx
  * <ChartCreationForm onSubmit={(data) => console.log(data)} />
@@ -52,6 +53,14 @@ export function ChartCreationForm({
 
     if (!formData.birthDate) {
       newErrors.birthDate = 'Birth date is required';
+    } else {
+      // Guard against non-string or malformed birthDate values before they reach
+      // the backend's parseToUTC call (prevents "birthDate.split is not a function").
+      try {
+        parseToUTC(formData.birthDate, formData.birthTime || undefined);
+      } catch {
+        newErrors.birthDate = 'Birth date is invalid — please use the date picker';
+      }
     }
 
     if (!formData.birthTime) {
