@@ -208,10 +208,17 @@ def main() -> int:
             if args.dry_run:
                 print(f"would create issue for {row['id']}")
                 continue
-            status, _ = gh("POST", f"/repos/{args.repo}/issues", token,
+            initial_state = "closed" if row["status"] == "✅" else "open"
+            if row["status"] == "✅":
+                wants.append("already-built")
+                ensure_labels(args.repo, token, [("already-built", "0E8A16")])
+            status, created_issue = gh("POST", f"/repos/{args.repo}/issues", token,
                            {"title": title, "body": body, "labels": wants})
             if status == 201:
                 created += 1
+                if initial_state == "closed" and isinstance(created_issue, dict):
+                    gh("PATCH", f"/repos/{args.repo}/issues/{created_issue['number']}", token,
+                       {"state": "closed", "state_reason": "completed"})
             else:
                 print(f"[warn] create failed {row['id']} → {status}", file=sys.stderr)
 
