@@ -63,6 +63,13 @@ Source synthesis: `documents/factory/2026-05-11_HOLISTIC_GAP_REVIEW.md` (Sauna-s
 | G29 | HubSpot keep-or-delete pending | open | @adrper79-dot | this week | Decide + ADR if keeping |
 | G30 | Pipedream Gmail (adrper79@gmail.com) reconnect or retire | open | @adrper79-dot | this week | Reconnect via Sauna or retire connection |
 
+| G31 | JWT rotation procedure (auth pkg) — no dual-key window for secret rotation | open | @adrper79-dot + @factory-cross-repo[bot] | stage-4 | Add `JWT_SECRET_NEXT` env + middleware verifies against both during rotation window; doc in `@lwt/auth` README |
+| G32 | Stripe idempotency keys not persisted in DB — retries can double-charge under worker crash | open | @sauna | stage-3 | Add `stripe_idempotency_keys` table to canonical schema; `@lwt/stripe.transferOrIdempotent()` helper checks/inserts before Stripe call |
+| G33 | No PostgreSQL row-level security templates in `@lwt/neon` | open | @sauna | stage-5 | Publish RLS template SQL per common role (viewer/creator/admin/operator); apps adopt via migration |
+| G34 | No PostHog funnel definitions for monetization paths | open | @sauna | stage-2 | Pre-built funnels in `@lwt/analytics`: signup→first-action→paid→renewal→day-30-retention. Configurable per product. |
+| G35 | No transactional email templates in `@lwt/email` (currently raw `sendEmail()` only) | open | @sauna | stage-5 | Add: subscription_confirmed, renewal_failed, payout_completed, account_review_required, magic_link, password_reset. Apps brand via template vars. |
+| G36 | No audit logging for payout/admin mutating operations | open | @sauna | stage-5 | `@lwt/compliance.auditLog()` middleware required on all admin routes (per PLATFORM_STANDARDS §10 Privacy). Reads `actor`+`target`+`action`+`metadata` from request context. |
+
 ## Meta-gaps (the framework can't auto-answer)
 
 | ID | Question | Surface |
