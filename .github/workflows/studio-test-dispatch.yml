@@ -1,0 +1,150 @@
+name: Studio Test Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Studio test run id
+        required: true
+        type: string
+      suites:
+        description: Comma-separated suite ids or *
+        required: true
+        type: string
+      callback_url:
+        description: Admin Studio webhook callback URL
+        required: true
+        type: string
+      filter:
+        description: Optional vitest test name pattern
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Configure GitHub Packages auth
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
+
+      - name: Report running
+        continue-on-error: true
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+          CALLBACK_URL: ${{ inputs.callback_url }}
+          STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
+          GH_RUN_ID: ${{ github.run_id }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node .github/scripts/studio-test-report.mjs running
+
+      - name: Run requested package tests
+        shell: bash
+        env:
+          SUITES: ${{ inputs.suites }}
+          FILTER: ${{ inputs.filter }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p test-output
+
+          map_suite() {
+            case "$1" in
+              studio-core) echo "packages/studio-core" ;;
+              auth) echo "packages/auth" ;;
+              errors) echo "packages/errors" ;;
+              llm) echo "packages/llm" ;;
+              neon) echo "packages/neon" ;;
+              monitoring) echo "packages/monitoring" ;;
+              *) return 1 ;;
+            esac
+          }
+
+          declare -a requested
+          if [ "$SUITES" = "*" ] || [ "$SUITES" = "" ]; then
+            requested=(
+              "packages/studio-core"
+              "packages/auth"
+              "packages/errors"
+              "packages/llm"
+              "packages/neon"
+              "packages/monitoring"
+            )
+          else
+            IFS=',' read -ra suite_ids <<< "$SUITES"
+            for suite_id in "${suite_ids[@]}"; do
+              suite_id="$(echo "$suite_id" | xargs)"
+              mapped="$(map_suite "$suite_id")" || continue
+              requested+=("$mapped")
+            done
+          fi
+
+          if [ ${#requested[@]} -eq 0 ]; then
+            echo '{"testResults":[]}' > test-output/results.json
+            exit 0
+          fi
+
+          for dir in packages/errors packages/monitoring packages/logger packages/neon packages/llm packages/studio-core packages/auth; do
+            if [ -d "$dir" ]; then
+              (cd "$dir" && npm ci --ignore-scripts)
+            fi
+          done
+
+          for dir in "${requested[@]}"; do
+            if [ ! -d "$dir" ]; then
+              continue
+            fi
+            pkg_name="$(basename "$dir")"
+            pushd "$dir" > /dev/null
+            if [ -n "$FILTER" ]; then
+              npm test -- --reporter=json --outputFile="../../test-output/${pkg_name}.json" --testNamePattern="$FILTER"
+            else
+              npm test -- --reporter=json --outputFile="../../test-output/${pkg_name}.json"
+            fi
+            popd > /dev/null
+          done
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const outputDir = path.join(process.cwd(), 'test-output');
+          const files = fs.existsSync(outputDir)
+            ? fs.readdirSync(outputDir).filter((file) => file.endsWith('.json') && file !== 'results.json')
+            : [];
+          const merged = { testResults: [] };
+          for (const file of files) {
+            try {
+              const parsed = JSON.parse(fs.readFileSync(path.join(outputDir, file), 'utf8'));
+              if (Array.isArray(parsed?.testResults)) {
+                merged.testResults.push(...parsed.testResults);
+              }
+            } catch {
+              // Ignore malformed package output and keep reporting what we have.
+            }
+          }
+          fs.writeFileSync(path.join(outputDir, 'results.json'), JSON.stringify(merged));
+          NODE
+
+      - name: Report finished
+        if: always()
+        continue-on-error: true
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+          CALLBACK_URL: ${{ inputs.callback_url }}
+          STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
+          GH_RUN_ID: ${{ github.run_id }}
+          GH_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node .github/scripts/studio-test-report.mjs finished

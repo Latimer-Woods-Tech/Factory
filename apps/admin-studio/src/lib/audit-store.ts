@@ -24,6 +24,7 @@ import {
  * request lifecycle is cheap. We memoise on the binding identity.
  */
 const dbCache = new WeakMap<HyperdriveBinding, FactoryDb>();
+const schemaInitCache = new WeakMap<HyperdriveBinding, Promise<void>>();
 
 function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
   let db = dbCache.get(hyperdrive);
@@ -32,6 +33,43 @@ function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
     dbCache.set(hyperdrive, db);
   }
   return db;
+}
+
+async function ensureAuditSchema(hyperdrive: HyperdriveBinding): Promise<void> {
+  let init = schemaInitCache.get(hyperdrive);
+  if (!init) {
+    const db = getDb(hyperdrive);
+    init = (async () => {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS studio_audit_log (
+          id UUID PRIMARY KEY,
+          occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          user_id TEXT NOT NULL,
+          user_email TEXT NOT NULL,
+          user_role TEXT NOT NULL,
+          session_id TEXT NOT NULL,
+          env TEXT NOT NULL CHECK (env IN ('local','staging','production')),
+          action TEXT NOT NULL,
+          resource TEXT,
+          resource_id TEXT,
+          reversibility TEXT NOT NULL CHECK (reversibility IN ('trivial','reversible','manual-rollback','irreversible')),
+          payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+          result TEXT NOT NULL CHECK (result IN ('success','failure','dry-run')),
+          result_detail JSONB,
+          ip_address TEXT,
+          user_agent TEXT,
+          request_id TEXT NOT NULL
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_occurred_at ON studio_audit_log (occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_user ON studio_audit_log (user_id, occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_action ON studio_audit_log (action, occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_env ON studio_audit_log (env, occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_request ON studio_audit_log (request_id)`);
+    })();
+    schemaInitCache.set(hyperdrive, init);
+  }
+  await init;
 }
 
 /**
@@ -45,6 +83,7 @@ export async function insertAuditEntry(
   entry: AuditEntry,
 ): Promise<boolean> {
   try {
+    await ensureAuditSchema(hyperdrive);
     const db = getDb(hyperdrive);
     await db.execute(sql`
       INSERT INTO studio_audit_log (
@@ -88,6 +127,7 @@ export async function queryAuditEntries(
   hyperdrive: HyperdriveBinding,
   query: AuditQuery,
 ): Promise<AuditPage<AuditEntry>> {
+  await ensureAuditSchema(hyperdrive);
   const db = getDb(hyperdrive);
   const limit = clamp(query.limit ?? 50, 1, 200);
 
