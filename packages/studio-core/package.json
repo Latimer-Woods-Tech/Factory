@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Shared types and helpers between Factory Admin Studio API and UI",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/studio-core"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },

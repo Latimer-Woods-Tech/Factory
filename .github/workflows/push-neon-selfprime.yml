@@ -1,0 +1,36 @@
+name: Push Neon DB Secrets to Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      worker_name:
+        description: 'Cloudflare Worker name'
+        required: true
+        default: 'prime-self-api'
+
+jobs:
+  push-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Push NEON_CONNECTION_STRING
+        run: echo "$HUMANDESIGN_DATABASE_URL" | wrangler secret put NEON_CONNECTION_STRING --name $WORKER_NAME
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HUMANDESIGN_DATABASE_URL: ${{ secrets.HUMANDESIGN_DATABASE_URL }}
+          WORKER_NAME: ${{ github.event.inputs.worker_name }}
+
+      - name: Push NEON_URL
+        run: echo "$HUMANDESIGN_DATABASE_URL" | wrangler secret put NEON_URL --name $WORKER_NAME
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          HUMANDESIGN_DATABASE_URL: ${{ secrets.HUMANDESIGN_DATABASE_URL }}
+          WORKER_NAME: ${{ github.event.inputs.worker_name }}

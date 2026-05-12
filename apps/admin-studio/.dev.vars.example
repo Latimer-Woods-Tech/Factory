@@ -5,6 +5,7 @@ STUDIO_ADMIN_EMAIL=operator@example.com
 STUDIO_ADMIN_PASSWORD_SHA256=replace-me-with-lowercase-sha256-hex
 GITHUB_TOKEN=ghp_replace_me
 ANTHROPIC_API_KEY=sk-ant-replace-me
+STUDIO_WEBHOOK_SECRET=replace-me-with-long-random-shared-secret
 # optional fallbacks
 XAI_API_KEY=
 GROQ_API_KEY=

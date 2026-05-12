@@ -21,7 +21,7 @@
 | Pages/UI deploys | `deploy-admin-studio-ui.yml`, external app workflows | Deploy Pages/static UI | Verify custom domain or Pages URL returns expected HTTP status and expected page marker via `scripts/verify-http-endpoint.mjs` |
 | Video pipeline | `render-video.yml`, `migrate-schedule-worker.yml`, `smoke-video-phase0.yml` | Migrate schedule DB and render/register Stream videos | `render-video.yml` uses `concurrency: render-${{ github.event.inputs.job_id }}`; failed run must update job state or be manually reconciled |
 | Smoke/quality | `smoke-prime-self.yml`, `studio-test-dispatch.yml`, `doc-freshness-audit.yml` | Validate live app/ops surfaces and docs freshness | Failures create dashboard work items, not ad hoc root summaries |
-| Reporting | `track-kpis.yml`, `generate-scorecard.yml`, `videoking-slo-collect.yml` | Produce delivery/SLO/status metrics | Outputs must be linked from dashboard; stale metrics require explicit timestamp |
+| Reporting | `track-kpis.yml`, `generate-scorecard.yml` | Produce delivery/SLO/status metrics | Outputs must be linked from dashboard; stale metrics require explicit timestamp |
 
 ## Pre-deploy health gate pattern
 
