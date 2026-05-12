@@ -157,8 +157,10 @@ workers:
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
     repo: Latimer-Woods-Tech/factory
-    url: https://admin-studio-staging.adrper79.workers.dev
-    custom_domain: null
+    url: https://admin-staging.latwoodtech.work            # canonical staging custom domain — declared in wrangler.jsonc env.staging.routes
+    custom_domain: admin-staging.latwoodtech.work
+    custom_domain_status: pending_attach                   # attaches on next admin-studio staging deploy
+    workers_dev_url: https://admin-studio-staging.adrper79.workers.dev  # CF fallback; never hardcode in user-facing code
     health_endpoint: /health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-04-29
@@ -181,22 +183,29 @@ workers:
     consumers:
       - repo: Latimer-Woods-Tech/factory
         file: .github/workflows/deploy-admin-studio.yml
-        line: ~77
-        pattern: "https://admin-studio-staging.adrper79.workers.dev/health"
+        line: ~201
+        pattern: "https://admin-studio-staging.adrper79.workers.dev"
+        note: deploy-time health verify hits the workers.dev URL directly
       - repo: Latimer-Woods-Tech/factory
         file: .github/workflows/deploy-admin-studio-ui.yml
-        line: ~52
-        pattern: "https://admin-studio-staging.adrper79.workers.dev"
+        line: ~60
+        pattern: "https://admin-staging.latwoodtech.work"
+        note: VITE_API_BASE_STAGING — bundled into the UI for end-user requests
+      - repo: Latimer-Woods-Tech/factory
+        file: apps/admin-studio-ui/.env.example
+        line: ~13
+        pattern: "https://admin-staging.latwoodtech.work"
       - repo: Latimer-Woods-Tech/factory
         file: docs/admin-studio/02-OPERATOR-QUICK-REF.md
-        line: ~10
-        pattern: "https://admin-studio-staging.adrper79.workers.dev"
+        line: ~16
+        pattern: "https://admin-staging.latwoodtech.work"
 
   - id: admin-studio-production
     name: admin-studio-production                          # matches apps/admin-studio/wrangler.jsonc env.production.name
     repo: Latimer-Woods-Tech/factory
-    url: https://admin.latwoodtech.work                    # canonical custom domain (attached 2026-05-08)
-    custom_domain: admin.latwoodtech.work
+    url: https://api.apunlimited.com                       # branded prod API domain — used by admin-studio-ui prod build
+    custom_domain: api.apunlimited.com
+    custom_domain_alternate: admin.latwoodtech.work        # second custom domain on the same worker (attached 2026-05-08)
     health_endpoint: /health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-05-06

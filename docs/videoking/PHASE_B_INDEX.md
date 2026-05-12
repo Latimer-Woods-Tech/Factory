@@ -73,7 +73,7 @@ Establish VideoKing as a **canonical reference implementation** for Factory appl
 - **File:** [scripts/videoking-slo-collect.js](../../scripts/videoking-slo-collect.js)
 - **Scope:** Weekly metric collection from Sentry + Cloudflare, PostHog + Slack posting
 - **Trigger:** Every Monday 9am UTC
-- **Workflow:** [.github/workflows/videoking-slo-collect.yml](../../.github/workflows/videoking-slo-collect.yml)
+- **Workflow:** `Latimer-Woods-Tech/videoking/.github/workflows/slo-collect.yml` _(to be created in the videoking repo — moved out of factory 2026-05-09)_
 - **Status:** Ready for deployment
 
 ### On-Call Incident Response (Apr 28) — **NEW**
@@ -92,7 +92,7 @@ Establish VideoKing as a **canonical reference implementation** for Factory appl
 |----------|---------|------|--------|
 | **SLO Framework** | Tier definitions, error budgets, alert rules | SLO_FRAMEWORK.md | ✅ Published |
 | **Metrics Script** | Automated weekly collection | scripts/videoking-slo-collect.js | ✅ Ready |
-| **GitHub Workflow** | Orchestrates collection + notifications | .github/workflows/videoking-slo-collect.yml | ✅ Ready |
+| **GitHub Workflow** | Orchestrates collection + notifications | `Latimer-Woods-Tech/videoking/.github/workflows/slo-collect.yml` (TBD — moved to videoking 2026-05-09) | ⏳ To create in videoking |
 | **On-Call Runbook** | Incident response procedures | ON_CALL_RUNBOOK.md | ✅ Published |
 | **Kickoff Summary** | T5.1 handoff to team | PHASE_B_T5_1_COMPLETE.md | ✅ Published |
 
