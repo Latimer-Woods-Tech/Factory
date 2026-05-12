@@ -1,0 +1,36 @@
+name: Push Google OAuth Secrets
+
+on:
+  workflow_dispatch:
+    inputs:
+      worker_name:
+        description: 'Cloudflare Worker name to target'
+        required: true
+        default: 'cypher-of-healing-api'
+
+jobs:
+  push-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install wrangler
+        run: npm install -g wrangler@latest
+
+      - name: Push GOOGLE_CLIENT_ID
+        run: echo "$GOOGLE_CLIENT_ID" | wrangler secret put GOOGLE_CLIENT_ID --name $WORKER_NAME
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          WORKER_NAME: ${{ github.event.inputs.worker_name }}
+
+      - name: Push GOOGLE_CLIENT_SECRET
+        run: echo "$GOOGLE_CLIENT_SECRET" | wrangler secret put GOOGLE_CLIENT_SECRET --name $WORKER_NAME
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          WORKER_NAME: ${{ github.event.inputs.worker_name }}

@@ -125,7 +125,17 @@ jobs:
           if (hasCI) labels.add('area:ci');
           if (hasAuth) labels.add('area:auth');
           if (hasMigrations) labels.add('area:migrations');
-          if (isHighRisk) labels.add('risk:high');
+          // Suppress risk:high for Dependabot lockfile-only PRs.
+          // A package-lock.json bump under packages/* technically matches the Red-tier
+          // pattern, but the diff is mechanical and gated by separate CI checks.
+          const isDepBot = String(PR_AUTHOR).startsWith('dependabot');
+          const onlyLockfiles = paths.length > 0 && paths.every(p =>
+            /(^|\/)package(-lock)?\.json$/.test(p) ||
+            /(^|\/)pnpm-lock\.yaml$/.test(p) ||
+            /(^|\/)yarn\.lock$/.test(p) ||
+            /(^|\/)\.npmrc$/.test(p)
+          );
+          if (isHighRisk && !(isDepBot && onlyLockfiles)) labels.add('risk:high');
           if (hasDocs) labels.add('documentation');
           if (!hasCI && !hasDocs && hasPackages) labels.add('engineering');
           if (hasTests && !hasCI) labels.add('hardening');
