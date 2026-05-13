@@ -306,11 +306,11 @@ jobs:
           DONE_OPT=$(echo "$STATUS_FIELD" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Done") | .id')
 
           BOARD_ISSUE_NUMBERS=$(gh project item-list "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --limit 1000 --format json | jq -r '.items[] | select(.content.type=="Issue" and .content.repository=="'"$REPO"'") | .content.number')
-          OPEN_ISSUES=$(gh issue list --repo "$REPO" --state open --limit 500 --json number,nodeId)
+          OPEN_ISSUES=$(gh issue list --repo "$REPO" --state open --limit 500 --json number,id)
           while IFS= read -r issue; do
             [ -z "$issue" ] && continue
             ISSUE_NUMBER=$(echo "$issue" | jq -r '.number')
-            ISSUE_NODE_ID=$(echo "$issue" | jq -r '.nodeId')
+            ISSUE_NODE_ID=$(echo "$issue" | jq -r '.id')
             if echo "$BOARD_ISSUE_NUMBERS" | grep -qx "$ISSUE_NUMBER"; then
               continue
             fi
