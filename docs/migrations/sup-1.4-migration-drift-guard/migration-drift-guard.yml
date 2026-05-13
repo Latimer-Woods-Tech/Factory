@@ -1,0 +1,47 @@
+# Migration Drift Guard — Caller Workflow (HumanDesign)
+#
+# Copy this file verbatim to:
+#   .github/workflows/migration-drift-guard.yml
+# in the HumanDesign (and later xico-city / videoking) repository.
+#
+# Required secrets in the app repo (GitHub → Settings → Secrets → Actions):
+#   HUMANDESIGN_CONNECTION_STRING — Direct Neon connection string for the
+#                                   production branch (NOT the Hyperdrive URL).
+#                                   Format: postgres://user:pass@host/dbname?sslmode=require
+#   PUSHOVER_TOKEN                — Pushover app token (for cron alerts)
+#   PUSHOVER_USER                 — Pushover user/group key (for cron alerts)
+#
+# Pushover connection: conn_iR1TgasqajZH (morning digest channel)
+
+name: Migration Drift Guard
+
+on:
+  pull_request:
+    # Trigger only when migration files change to keep CI fast on unrelated PRs.
+    paths:
+      - 'workers/src/db/migrations/**'
+
+  schedule:
+    # Daily at 08:00 UTC — catches drift introduced without a PR (e.g. a hotfix
+    # applied directly to the DB or a migration file committed without being run).
+    - cron: '0 8 * * *'
+
+  # Allow manual re-runs from the Actions UI during incident response.
+  workflow_dispatch:
+
+concurrency:
+  group: migration-drift-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift-guard:
+    uses: Latimer-Woods-Tech/factory/.github/workflows/_migration-drift-guard.yml@main
+    with:
+      app_name: 'HumanDesign'
+      migrations_path: 'workers/src/db/migrations'
+      # Pass true on scheduled runs so the reusable workflow sends a Pushover alert.
+      is_scheduled: ${{ github.event_name == 'schedule' }}
+    secrets:
+      DATABASE_URL: ${{ secrets.HUMANDESIGN_CONNECTION_STRING }}
+      PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+      PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}

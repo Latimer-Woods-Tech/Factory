@@ -19,8 +19,10 @@ jobs:
     name: PR description quality
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # Skip bot PRs and Dependabot
+    # Skip bot senders, bot PR authors, and Dependabot
+    # (was two duplicate `if:` keys before — invalid YAML)
     if: |
+      github.event.sender.type != 'Bot' &&
       !contains(github.event.pull_request.user.login, '[bot]') &&
       github.event.pull_request.user.login != 'dependabot[bot]'
     steps:

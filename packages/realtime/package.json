@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/realtime",
   "version": "0.1.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/realtime"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
