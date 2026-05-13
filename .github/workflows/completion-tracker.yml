@@ -79,9 +79,9 @@ jobs:
           set -e
           DATE=$(date -u +'%Y-%m-%d')
           PCT=$(python -c "import json;print(json.load(open('docs/completion-tracker.json'))['overall_weighted'])")
-          echo "date=$DATE" >> "$GITHUB_OUTPUT"
-          echo "pct=$PCT"   >> "$GITHUB_OUTPUT"
           {
+            echo "date=$DATE"
+            echo "pct=$PCT"
             echo 'body<<__EOF__'
             head -c 60000 docs/COMPLETION_TRACKER.md
             echo
