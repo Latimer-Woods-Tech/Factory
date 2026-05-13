@@ -1,0 +1,44 @@
+# Label-driven matrix sync — config consumed by label-sync.yml
+# Owners: human = @adrper79-dot, bot = @factory-cross-repo[bot]
+
+# Repos that participate in the loop. Matrix path is where the FUNCTIONS_MATRIX
+# lives in each repo.
+repos:
+  - key: HD
+    repo: Latimer-Woods-Tech/HumanDesign
+    matrix_path: docs/FUNCTIONS_MATRIX.md
+  - key: VK
+    repo: Latimer-Woods-Tech/videoking
+    matrix_path: docs/FUNCTIONS_MATRIX.md
+  - key: FA
+    repo: Latimer-Woods-Tech/Factory
+    matrix_path: apps/admin-studio/docs/FUNCTIONS_MATRIX.md
+  - key: CH
+    repo: Latimer-Woods-Tech/cypher-healing
+    matrix_path: docs/FUNCTIONS_MATRIX.md
+  - key: XC
+    repo: Latimer-Woods-Tech/xico-city
+    matrix_path: docs/FUNCTIONS_MATRIX.md
+
+# Label conventions
+labels:
+  feature_prefix: "feature:"      # feature:HD-AUTH-001
+  status_prefix:  "status:"       # status:passing | issues | fail | unknown
+  weight_prefix:  "weight:"       # weight:5
+  owner_prefix:   "owner:"        # owner:@adrper79-dot (optional)
+
+# Status label → matrix emoji
+status_map:
+  passing: "✅"
+  issues:  "⚠️"
+  fail:    "❌"
+  unknown: "🔍"
+
+# PR settings
+pr:
+  branch_prefix: "matrix-sync/"
+  base: main
+  labels:
+    - automation
+    - documentation
+    - auto-merge
