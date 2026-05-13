@@ -27,6 +27,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+            - name: HYPERDRIVE_FACTORY_CORE
+              id: hyperdrive_id
+            - name: WORKER_API_TOKEN
+              id: worker_token
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -51,22 +72,22 @@ jobs:
       - name: Update wrangler.jsonc with Hyperdrive ID
         run: |
           cd apps/schedule-worker
-          sed -i 's/REPLACE_WITH_HYPERDRIVE_ID/${{ secrets.HYPERDRIVE_FACTORY_CORE }}/g' wrangler.jsonc
+          sed -i 's/REPLACE_WITH_HYPERDRIVE_ID/${{ steps.secrets.outputs.hyperdrive_id }}/g' wrangler.jsonc
           echo "✅ Updated wrangler.jsonc with Hyperdrive ID"
           cat wrangler.jsonc
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ steps.secrets.outputs.cf_token }}
+          accountId: ${{ steps.secrets.outputs.cf_account }}
           workingDirectory: apps/schedule-worker
           command: deploy --env production
           secrets: |
             WORKER_API_TOKEN
           environment: production
         env:
-          WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+          WORKER_API_TOKEN: ${{ steps.secrets.outputs.worker_token }}
 
       - name: Verify deployment
         run: |

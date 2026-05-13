@@ -32,6 +32,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -63,8 +80,8 @@ jobs:
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ steps.secrets.outputs.cf_token }}
+          accountId: ${{ steps.secrets.outputs.cf_account }}
           command: pages deploy apps/admin-studio-ui/dist --project-name=admin-studio-ui --branch=${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'main' || 'staging' }}
 
       - name: Verify Pages deployment

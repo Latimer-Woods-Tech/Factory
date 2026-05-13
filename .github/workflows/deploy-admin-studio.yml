@@ -40,6 +40,39 @@ jobs:
         with:
           fetch-depth: 2
 
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+            - name: STRIPE_SUBSCRIPTION_WEBHOOK_SECRET
+              id: stripe_secret
+            - name: FACTORY_USER
+              id: factory_user
+            - name: FACTORY_PW
+              id: factory_pw
+            - name: ANTHROPIC_API_KEY
+              id: anthropic_key
+            - name: GH_PAT
+              id: gh_pat
+            - name: STUDIO_WEBHOOK_SECRET
+              id: studio_webhook
+            - name: WORKER_API_TOKEN
+              id: worker_token
+            - name: DATABASE_URL
+              id: database_url
+
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -79,7 +112,7 @@ jobs:
       - name: Verify health pre-deploy (sanity)
         run: |
           echo "Deploying admin-studio to ${{ steps.target.outputs.env }}"
-          test -n "${{ secrets.CF_API_TOKEN }}" || (echo "::error::CF_API_TOKEN missing" && exit 1)
+          test -n "${{ steps.secrets.outputs.cf_token }}" || (echo "::error::CF_API_TOKEN missing" && exit 1)
 
       # ---- NEW: capture previous live version BEFORE deploy ----
       - name: Capture previous worker version (pre-deploy)
@@ -87,8 +120,8 @@ jobs:
         if: steps.target.outputs.env == 'production'
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
         run: |
           set -euo pipefail
           # The currently-deployed prod version IS the rollback target.
@@ -118,69 +151,69 @@ jobs:
 
       - name: Provision webhook secret
         run: |
-          if [ -z "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" ]; then
+          if [ -z "${{ steps.secrets.outputs.stripe_secret }}" ]; then
             echo "::warning::STRIPE_SUBSCRIPTION_WEBHOOK_SECRET missing; webhook endpoint will return 503 until configured"
             exit 0
           fi
-          echo "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_SUBSCRIPTION_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
+          echo "${{ steps.secrets.outputs.stripe_secret }}" | npx wrangler secret put STRIPE_SUBSCRIPTION_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
 
       - name: Provision studio credentials
         run: |
-          if [ -z "${{ secrets.FACTORY_USER }}" ] || [ -z "${{ secrets.FACTORY_PW }}" ]; then
+          if [ -z "${{ steps.secrets.outputs.factory_user }}" ] || [ -z "${{ steps.secrets.outputs.factory_pw }}" ]; then
             echo "::warning::FACTORY_USER or FACTORY_PW missing; using placeholder credentials"
             exit 0
           fi
-          password_hash=$(echo -n "${{ secrets.FACTORY_PW }}" | sha256sum | cut -d' ' -f1)
-          echo "${{ secrets.FACTORY_USER }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "${{ steps.target.outputs.env }}"
+          password_hash=$(echo -n "${{ steps.secrets.outputs.factory_pw }}" | sha256sum | cut -d' ' -f1)
+          echo "${{ steps.secrets.outputs.factory_user }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "${{ steps.target.outputs.env }}"
           echo "$password_hash" | npx wrangler secret put STUDIO_ADMIN_PASSWORD_SHA256 --env "${{ steps.target.outputs.env }}"
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
 
       - name: Push self-improvement secrets
         run: |
-          echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "${{ steps.target.outputs.env }}"
-          echo "${{ secrets.GH_PAT }}" | npx wrangler secret put GITHUB_TOKEN --env "${{ steps.target.outputs.env }}"
-          if [ -n "${{ secrets.STUDIO_WEBHOOK_SECRET }}" ]; then
-            echo "${{ secrets.STUDIO_WEBHOOK_SECRET }}" | npx wrangler secret put STUDIO_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
+          echo "${{ steps.secrets.outputs.anthropic_key }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "${{ steps.target.outputs.env }}"
+          echo "${{ steps.secrets.outputs.gh_pat }}" | npx wrangler secret put GITHUB_TOKEN --env "${{ steps.target.outputs.env }}"
+          if [ -n "${{ steps.secrets.outputs.studio_webhook }}" ]; then
+            echo "${{ steps.secrets.outputs.studio_webhook }}" | npx wrangler secret put STUDIO_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
           else
             echo "::warning::STUDIO_WEBHOOK_SECRET missing; /tests/runs and /webhooks/studio-tests will return 503 until configured"
           fi
-          if [ -n "${{ secrets.WORKER_API_TOKEN }}" ]; then
-            echo "${{ secrets.WORKER_API_TOKEN }}" | npx wrangler secret put WORKER_API_TOKEN --env "${{ steps.target.outputs.env }}"
+          if [ -n "${{ steps.secrets.outputs.worker_token }}" ]; then
+            echo "${{ steps.secrets.outputs.worker_token }}" | npx wrangler secret put WORKER_API_TOKEN --env "${{ steps.target.outputs.env }}"
           fi
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
 
       - name: Apply database migrations
         run: |
-          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+          if [ -z "${{ steps.secrets.outputs.database_url }}" ]; then
             echo "::warning::DATABASE_URL not set; skipping migrations — ensure tables exist in the target database"
             exit 0
           fi
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
           for f in $(ls apps/admin-studio/migrations/*.sql | sort); do
             echo "Applying migration: $f"
-            psql "${{ secrets.DATABASE_URL }}" -v ON_ERROR_STOP=1 -f "$f"
+            psql "${{ steps.secrets.outputs.database_url }}" -v ON_ERROR_STOP=1 -f "$f"
           done
           echo "✓ Database migrations applied successfully"
         shell: bash
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ steps.secrets.outputs.database_url }}
 
       - name: Deploy
         run: npx wrangler deploy --env ${{ steps.target.outputs.env }}
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
 
       # ---- NEW: capture the just-deployed version id ----
       - name: Capture new worker version (post-deploy)
@@ -188,8 +221,8 @@ jobs:
         if: steps.target.outputs.env == 'production'
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
         run: |
           set -euo pipefail
           NEW=$(npx -y wrangler@latest versions list --name admin-studio-production --json 2>/dev/null \
