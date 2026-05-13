@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/errors",
   "version": "0.2.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/errors"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -27,7 +32,7 @@
     "prepublish": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
