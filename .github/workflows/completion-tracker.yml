@@ -73,7 +73,7 @@ jobs:
           fi
 
       - name: Compose digest fields
-        if: steps.drift.outputs.changed == 'true'
+        if: steps.drift.outputs.changed == 'true' || inputs.force_pr
         id: digest
         run: |
           set -e
@@ -89,9 +89,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Open drift PR
-        if: steps.drift.outputs.changed == 'true' || github.event.inputs.force_pr == 'true'
+        if: steps.drift.outputs.changed == 'true' || inputs.force_pr
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
+          PR_BODY: ${{ steps.digest.outputs.body }}
         run: |
           set -e
           # Append run ID to avoid branch collision when the workflow is triggered
@@ -100,12 +101,9 @@ jobs:
           git config user.name  "factory-cross-repo[bot]"
           git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git commit -m "chore(completion-tracker): drift update ${{ steps.digest.outputs.date }} (${{ steps.digest.outputs.pct }}%)"
+          git commit --allow-empty -m "chore(completion-tracker): drift update ${{ steps.digest.outputs.date }} (${{ steps.digest.outputs.pct }}%)"
           git push --set-upstream origin "$BRANCH"
-          # Use unquoted heredoc so GitHub Actions expressions are expanded.
-          cat > /tmp/body.md <<__BODY__
-${{ steps.digest.outputs.body }}
-__BODY__
+          printf '%s\n' "$PR_BODY" > /tmp/body.md
           gh pr create \
             --title "completion-tracker drift ${{ steps.digest.outputs.date }} — ${{ steps.digest.outputs.pct }}% weighted" \
             --body-file /tmp/body.md \
