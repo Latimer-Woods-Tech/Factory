@@ -17,9 +17,11 @@
 import { spawn } from 'child_process';
 
 const DEFAULT_ENV = 'staging';
+// Custom domains — workers.dev URLs return 1042 "Route not active" once a
+// Custom Domain is attached, so prefer the branded host.
 const ENVS = {
-  staging: 'admin-studio-staging.adrper79.workers.dev',
-  production: 'admin-studio-production.adrper79.workers.dev',
+  staging: 'admin-staging.latwoodtech.work',
+  production: 'admin.latwoodtech.work',
 };
 
 async function curl(url, options = {}) {

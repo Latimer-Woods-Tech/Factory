@@ -18,6 +18,10 @@
  * formatTo12Hour("12:00") → [12, 0, "PM"]   // Noon
  */
 export function formatTo12Hour(iso: string): [number, number, 'AM' | 'PM'] {
+  if (typeof iso !== 'string') {
+    throw new TypeError(`formatTo12Hour: iso must be a string, got ${typeof iso}`);
+  }
+
   const parts = iso.split(':');
   const hours24 = parseInt(parts[0], 10);
   const minutes = parseInt(parts[1], 10);
@@ -99,6 +103,8 @@ export function convertTo24Hour(
  * isValidTime("15:60") → false
  */
 export function isValidTime(iso: string): boolean {
+  if (typeof iso !== 'string') return false;
+
   const parts = iso.split(':');
   if (parts.length !== 2) return false;
 

@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/testing",
   "version": "0.2.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/testing"
+  },
   "type": "module",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
