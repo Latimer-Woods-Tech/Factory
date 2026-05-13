@@ -12,7 +12,7 @@
     "check:targets": "node ../../scripts/generate-monitor-targets.mjs --check"
   },
   "dependencies": {
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260423.1",

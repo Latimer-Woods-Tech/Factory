@@ -4,10 +4,10 @@
  * (Environment Lock-In) made visible at session start.
  */
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
-import { apiFetch } from '../lib/api.js';
+import { getApiBase } from '../lib/api.js';
 
 const ENV_CARDS: Array<{ env: Environment; title: string; subtitle: string; classes: string }> = [
   { env: 'local',      title: 'Local',      subtitle: 'Your dev box. Sandbox.',                 classes: 'bg-slate-800 hover:ring-slate-400'   },
@@ -22,6 +22,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const login = useSession((s) => s.login);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -30,12 +31,21 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const res = await apiFetch<{ token: string; expiresAt: number }>('/auth/login', {
+      const base = getApiBase(env);
+      const res = await fetch(`${base}/auth/login`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, env }),
       });
-      login(res.token, env, res.expiresAt);
-      navigate('/');
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = `Login failed (${res.status})`;
+        try { msg = (JSON.parse(text) as { error?: string }).error ?? msg; } catch { /* ignore */ }
+        throw new Error(msg);
+      }
+      const data = (await res.json()) as { token: string; expiresAt: number };
+      login(data.token, env, data.expiresAt);
+      navigate(searchParams.get('next') ?? '/');
     } catch (err) {
       setError((err as Error).message);
     } finally {
