@@ -5,23 +5,23 @@ the safety design lives in [01-ENVIRONMENT-SAFETY.md](./01-ENVIRONMENT-SAFETY.md
 
 ## URLs
 
-Observed on 2026-04-29:
+| Surface          | Staging                                                 | Production                                                                       |
+| ---------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| API Worker       | `https://admin-staging.latwoodtech.work`                | `https://api.apunlimited.com` (primary), `https://admin.latwoodtech.work` (alias) |
+| UI (Pages)       | `https://staging.admin-studio-ui.pages.dev`             | `https://apunlimited.com` (primary), `https://studio.thefactory.dev` (alias)     |
+| workers.dev      | `https://admin-studio-staging.adrper79.workers.dev`     | `https://admin-studio-production.adrper79.workers.dev`                           |
+| Health check     | `GET /health` returns `200` with `env: "staging"`       | `GET /health` returns `200` with `env: "production"`                             |
 
-- Staging API Worker is live and `/health` returns `200` with `env: "staging"`.
-- Staging UI is live at `https://staging.admin-studio-ui.pages.dev` and returns the expected `Factory Admin Studio` page marker.
-- Production API Worker URL is configured in Wrangler and workflows, but `https://admin-studio-production.adrper79.workers.dev/health` returned `404` during direct verification, so treat production as configured, not live-verified.
-
-| Surface          | Staging                                                 | Production                                            |
-| ---------------- | ------------------------------------------------------- | ----------------------------------------------------- |
-| API Worker       | `https://admin-studio-staging.adrper79.workers.dev`     | `https://admin-studio-production.adrper79.workers.dev` |
-| UI (Pages)       | `https://staging.admin-studio-ui.pages.dev`             | `https://studio.thefactory.dev` (primary), `https://apunlimited.com` (custom alias) |
-| Health check     | `GET /health` returns `200` with `env: "staging"`     | URL configured, but direct `/health` verification still pending |
+The `workers.dev` URLs are CF infrastructure fallbacks — never link to them from user-facing UI or docs (CLAUDE.md hard constraint). They exist for deploy-verify scripts and direct curl debugging only.
 
 Always confirm env via `curl`:
 
 ```bash
-curl https://admin-studio-staging.adrper79.workers.dev/health
+curl https://admin-staging.latwoodtech.work/health
 # Must return { "env": "staging", ... }
+
+curl https://api.apunlimited.com/health
+# Must return { "env": "production", ... }
 ```
 
 ## Confirmation tier matrix

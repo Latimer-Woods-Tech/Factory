@@ -29,11 +29,11 @@ env:
 
 jobs:
   size-check:
-    if: github.event.sender.type != 'Bot'
     name: PR size check (shadow / warn-only)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: ${{ !github.event.pull_request.draft }}
+    # Skip bot senders and draft PRs (was two duplicate `if:` keys before — invalid YAML)
+    if: ${{ github.event.sender.type != 'Bot' && !github.event.pull_request.draft }}
 
     steps:
       - name: Collect PR size metrics

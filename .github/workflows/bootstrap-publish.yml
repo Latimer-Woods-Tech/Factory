@@ -2,10 +2,14 @@ name: Bootstrap Publish All Packages
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip actual publish)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
-  packages: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -16,64 +20,171 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    # OIDC trusted-publisher requires id-token: write so GitHub mints the
+    # OIDC token that npm verifies against the configured trusted publisher.
+    # contents: read is enough for checkout.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
           scope: '@latimer-woods-tech'
 
-      - name: Publish all packages in dependency order
+      - name: Upgrade npm to >= 11.5.1 (required for OIDC trusted publishers)
         run: |
           set -euo pipefail
+          echo "npm before: $(npm --version)"
+          npm install -g npm@latest
+          echo "npm after:  $(npm --version)"
+          # Hard-fail if we somehow ended up on a pre-OIDC npm
+          node -e "
+            const v = require('child_process').execSync('npm --version').toString().trim();
+            const [maj, min, patch] = v.split('.').map(Number);
+            const ok = maj > 11 || (maj === 11 && (min > 5 || (min === 5 && patch >= 1)));
+            if (!ok) { console.error('npm ' + v + ' < 11.5.1 — OIDC trusted publishers unavailable'); process.exit(1); }
+          "
 
-          PACKAGES=(errors monitoring logger auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin)
-          TARGET_VERSION="0.2.0"
+      - name: Verify publish auth (OIDC preferred, NPM_TOKEN fallback)
+        run: |
+          set -euo pipefail
+          # OIDC env vars are injected automatically by GitHub when permissions.id-token: write is set.
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "OIDC id-token endpoint present — npm will attempt trusted-publisher auth."
+          else
+            echo "::warning::ACTIONS_ID_TOKEN_REQUEST_URL is not set — OIDC will not be attempted."
+          fi
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN fallback present. npm whoami via token:"
+            npm whoami || echo "::warning::npm whoami via token failed — token may be invalid or expired. OIDC will be required."
+          else
+            echo "No NPM_TOKEN configured — relying entirely on OIDC trusted publishers."
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish all packages in dependency order
+        run: |
+          # NOTE: do NOT use `set -e` for the per-package loop — a failure on
+          # one package (e.g. token lacks publish access for that package name)
+          # must not block the remaining packages. We collect failures and
+          # exit non-zero at the end so the run is still marked failed.
+          set -uo pipefail
+          # Topologically sorted dependency order — every package's internal
+          # @latimer-woods-tech/* deps appear EARLIER in this list, so the
+          # rewrite-deps + npm install step in the loop body always resolves
+          # against already-published versions on npmjs.org. If you add a new
+          # package or change its internal deps, re-derive this order via:
+          #   grep '@latimer-woods-tech/' packages/*/package.json
+          # and topologically sort. Otherwise first-time publishes will 404
+          # when npm tries to install an unpublished sibling dep (eg. crm
+          # depends on validation; validation must be published first).
+          PACKAGES=(errors creator deploy design-system design-tokens entitlements protocol studio-core testing validation monitoring realtime seo video ui logger email social neon auth llm llm-meter analytics stripe compliance content copy telephony schedule crm admin)
+
+          declare -a FAILED=()
+          declare -a PUBLISHED=()
+          declare -a SKIPPED=()
 
           for pkg in "${PACKAGES[@]}"; do
             echo ""
-            echo "=== Publishing @latimer-woods-tech/${pkg} ==="
-            pushd "packages/${pkg}"
+            echo "=== ${pkg} ==="
+            if [ ! -d "packages/${pkg}" ]; then
+              echo "  packages/${pkg} does not exist — skip"
+              SKIPPED+=("${pkg} (no dir)")
+              continue
+            fi
+            pushd "packages/${pkg}" >/dev/null
+            VER=$(node -e "process.stdout.write(require('./package.json').version)")
+            NAME=$(node -e "process.stdout.write(require('./package.json').name)")
+            echo "  ${NAME}@${VER}"
 
-            # Replace file: internal deps with real npm version refs and pin version
+            # Skip if already published to npmjs at this version
+            if npm view "${NAME}@${VER}" version >/dev/null 2>&1; then
+              echo "  already published — skip"
+              SKIPPED+=("${NAME}@${VER}")
+              popd >/dev/null
+              continue
+            fi
+
+            # Rewrite file: internal deps to ^current — match what other packages will publish
             node -e "
-              const fs = require('fs');
-              const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-              const ver = process.env.TARGET_VERSION;
-              const fix = (deps) => {
-                if (!deps) return;
-                for (const [k, v] of Object.entries(deps)) {
-                  if (k.startsWith('@latimer-woods-tech/') && v.startsWith('file:')) {
-                    deps[k] = '^' + ver;
+              const fs=require('fs');
+              const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+              const fix=(deps)=>{
+                if(!deps) return;
+                for(const [k,v] of Object.entries(deps)){
+                  if(k.startsWith('@latimer-woods-tech/') && (v.startsWith('file:')||v.startsWith('workspace:'))){
+                    const n=k.split('/')[1];
+                    try{
+                      const target=JSON.parse(fs.readFileSync('../'+n+'/package.json','utf8')).version;
+                      deps[k]='^'+target;
+                    }catch{}
                   }
                 }
               };
               fix(p.dependencies);
               fix(p.devDependencies);
-              if (p.version !== '0.2.1') p.version = ver;
-              delete p.scripts.prepublish;
-              if (p.publishConfig && p.publishConfig.registry) delete p.publishConfig.registry;
-              fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
-              console.log('package.json updated to v' + p.version);
-            " TARGET_VERSION="${TARGET_VERSION}"
+              fix(p.peerDependencies);
+              if(p.publishConfig && p.publishConfig.registry) delete p.publishConfig.registry;
+              if(p.scripts && p.scripts.prepublish) delete p.scripts.prepublish;
+              fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+            "
 
-            # Regenerate lockfile with production npm refs
-            npm install --package-lock-only --legacy-peer-deps
+            echo "  --- package.json after rewrite ---"
+            head -25 package.json
+            echo "  --- regenerating lockfile (clean) ---"
+            rm -f package-lock.json
+            npm install --legacy-peer-deps --ignore-scripts --no-fund --no-audit
+            echo "  --- node_modules/@latimer-woods-tech/ ---"
+            ls -la node_modules/@latimer-woods-tech/ 2>&1 || true
+            for dep in node_modules/@latimer-woods-tech/*/; do
+              echo "    $(basename "$dep"): $(node -p "require('./'+'$dep'+'package.json').version" 2>/dev/null || echo '?')"
+            done
+            echo "  --- build ---"
+            npm run build --if-present
 
-            # Install deps (no scripts to avoid circular prepublish issues)
-            npm ci --ignore-scripts
-
-            # Build dist
-            npm run build
-
-            # Publish (skip prepublish quality gate — CI has already validated)
-            npm publish --ignore-scripts --access public
-
-            popd
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "  DRY RUN — would publish ${NAME}@${VER}"
+              # --provenance is also valid in dry-run; npm validates the OIDC env without minting metadata.
+              if ! npm publish --access public --ignore-scripts --provenance --dry-run; then
+                echo "::error::dry-run publish failed for ${NAME}@${VER}"
+                FAILED+=("${NAME}@${VER}")
+              fi
+            else
+              # --provenance attaches GitHub Actions build provenance metadata.
+              # Requires permissions.id-token: write (set above) and registry.npmjs.org.
+              # npm 11.5.1+ auto-detects ACTIONS_ID_TOKEN_REQUEST_URL/_TOKEN for OIDC trusted-publisher auth.
+              if npm publish --access public --ignore-scripts --provenance; then
+                echo "  published ${NAME}@${VER}"
+                PUBLISHED+=("${NAME}@${VER}")
+              else
+                # OIDC failures: package has no trusted publisher configured on npmjs.com,
+                #   or repo full_name / workflow filename / org name don't match (case-sensitive).
+                # Token failures: 404 = token lacks publish permission, 403 = different ownership.
+                echo "::error::publish failed for ${NAME}@${VER} — verify (a) trusted publisher configured on npmjs.com for this package, OR (b) NPM_TOKEN fallback has write access. See docs/runbooks/npm-oidc-publishing.md."
+                FAILED+=("${NAME}@${VER}")
+              fi
+            fi
+            popd >/dev/null
           done
+
+          echo ""
+          echo "================ SUMMARY ================"
+          echo "Published: ${#PUBLISHED[@]}"
+          for p in "${PUBLISHED[@]:-}"; do [ -n "$p" ] && echo "  + $p"; done
+          echo "Skipped:   ${#SKIPPED[@]}"
+          for p in "${SKIPPED[@]:-}"; do [ -n "$p" ] && echo "  = $p"; done
+          echo "Failed:    ${#FAILED[@]}"
+          for p in "${FAILED[@]:-}"; do [ -n "$p" ] && echo "  ! $p"; done
+          echo "========================================="
+
+          if [ "${#FAILED[@]}" -gt 0 ]; then
+            echo "::error::${#FAILED[@]} package(s) failed to publish — see summary above."
+            exit 1
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          TARGET_VERSION: "0.2.0"
