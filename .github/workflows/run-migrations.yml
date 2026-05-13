@@ -49,13 +49,51 @@ jobs:
           - app: the-calling
             conn_secret: THECALLING_CONNECTION_STRING
     steps:
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: WORDISBOND_CONNECTION_STRING
+              id: wordisbond_conn
+            - name: CYPHEROFHEALING_CONNECTION_STRING
+              id: cypher_conn
+            - name: SELFPRIME_CONNECTION_STRING
+              id: prime_conn
+            - name: KAIROSCOUNCIL_CONNECTION_STRING
+              id: ijustus_conn
+            - name: THECALLING_CONNECTION_STRING
+              id: calling_conn
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
+      - name: Resolve connection string for app
+        id: conn
+        run: |
+          case "${{ matrix.app }}" in
+            wordis-bond) echo "url=${{ steps.secrets.outputs.wordisbond_conn }}" >> "$GITHUB_OUTPUT" ;;
+            cypher-healing) echo "url=${{ steps.secrets.outputs.cypher_conn }}" >> "$GITHUB_OUTPUT" ;;
+            prime-self) echo "url=${{ steps.secrets.outputs.prime_conn }}" >> "$GITHUB_OUTPUT" ;;
+            ijustus) echo "url=${{ steps.secrets.outputs.ijustus_conn }}" >> "$GITHUB_OUTPUT" ;;
+            the-calling) echo "url=${{ steps.secrets.outputs.calling_conn }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
       - name: Skip if filter set and app doesn't match
         if: ${{ github.event.inputs.app != '' && github.event.inputs.app != matrix.app }}
         run: echo "Skipping ${{ matrix.app }} — filter is '${{ github.event.inputs.app }}'"
@@ -86,7 +124,7 @@ jobs:
       - name: Generate migration SQL
         if: ${{ github.event.inputs.app == '' || github.event.inputs.app == matrix.app }}
         env:
-          DATABASE_URL: ${{ secrets[matrix.conn_secret] }}
+          DATABASE_URL: ${{ steps.conn.outputs.url }}
         run: |
           # Run drizzle-kit from the isolated runner but point to the app schema
           cp app/drizzle.config.ts migration-runner/drizzle.config.ts
@@ -99,7 +137,7 @@ jobs:
       - name: Apply migration to Neon
         if: ${{ github.event.inputs.app == '' || github.event.inputs.app == matrix.app }}
         env:
-          DATABASE_URL: ${{ secrets[matrix.conn_secret] }}
+          DATABASE_URL: ${{ steps.conn.outputs.url }}
         run: |
           cd migration-runner
           node_modules/.bin/drizzle-kit migrate

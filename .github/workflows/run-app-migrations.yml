@@ -22,12 +22,39 @@ jobs:
         app: [wordis-bond, cypher-healing, ijustus, the-calling]
 
     steps:
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: WORDISBOND_CONNECTION_STRING
+              id: wordisbond_conn
+            - name: CYPHEROFHEALING_CONNECTION_STRING
+              id: cypher_conn
+            - name: SELFPRIME_CONNECTION_STRING
+              id: prime_conn
+            - name: KAIROSCOUNCIL_CONNECTION_STRING
+              id: ijustus_conn
+            - name: THECALLING_CONNECTION_STRING
+              id: calling_conn
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
       - name: Checkout app repo
         uses: actions/checkout@v6
@@ -59,11 +86,11 @@ jobs:
       - name: Apply migration to Neon
         run: |
           case "${{ matrix.app }}" in
-            wordis-bond)    export DATABASE_URL="${{ secrets.WORDISBOND_CONNECTION_STRING }}" ;;
-            cypher-healing) export DATABASE_URL="${{ secrets.CYPHEROFHEALING_CONNECTION_STRING }}" ;;
-            prime-self)     export DATABASE_URL="${{ secrets.SELFPRIME_CONNECTION_STRING }}" ;;
-            ijustus)        export DATABASE_URL="${{ secrets.KAIROSCOUNCIL_CONNECTION_STRING }}" ;;
-            the-calling)    export DATABASE_URL="${{ secrets.THECALLING_CONNECTION_STRING }}" ;;
+            wordis-bond)    export DATABASE_URL="${{ steps.secrets.outputs.wordisbond_conn }}" ;;
+            cypher-healing) export DATABASE_URL="${{ steps.secrets.outputs.cypher_conn }}" ;;
+            prime-self)     export DATABASE_URL="${{ steps.secrets.outputs.prime_conn }}" ;;
+            ijustus)        export DATABASE_URL="${{ steps.secrets.outputs.ijustus_conn }}" ;;
+            the-calling)    export DATABASE_URL="${{ steps.secrets.outputs.calling_conn }}" ;;
           esac
           npx drizzle-kit migrate
         working-directory: app
