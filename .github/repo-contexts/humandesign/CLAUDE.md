@@ -45,9 +45,9 @@ Verification anchors AP and 0921 (see README) must match on every release.
 |---------|-----|
 | Production frontend | https://selfprime.net |
 | Worker API | https://prime-self-api.adrper79.workers.dev |
-| Health check | https://prime-self-api.adrper79.workers.dev/api/health |
+| Health check | https://api.selfprime.net/health |
 
-A fix is done when `curl https://prime-self-api.adrper79.workers.dev/api/health` returns `200`.
+A fix is done when `curl https://api.selfprime.net/health` returns `200`.
 CI green is not the same as working.
 
 ## Deploy

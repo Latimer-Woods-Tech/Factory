@@ -139,8 +139,8 @@ test.describe('Chart flow entry', () => {
 // ---------------------------------------------------------------------------
 
 test.describe('API health', () => {
-  test('api.selfprime.net/api/health returns ok', async ({ request }) => {
-    const response = await request.get(`${API_BASE}/api/health`);
+  test('api.selfprime.net/health returns ok', async ({ request }) => {
+    const response = await request.get(`${API_BASE}/health`);
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body.status).toBe('ok');
@@ -153,6 +153,25 @@ test.describe('API health', () => {
     const body = await response.json();
     expect(body.status).toBe('ok');
     expect(body.env).toBe('production');
+  });
+
+  test('profile generation never returns an opaque 500', async ({ request }) => {
+    const response = await request.post(`${API_BASE}/api/profile/generate`, {
+      data: {},
+    });
+
+    if (response.status() >= 500) {
+      const responseBody = await response.json();
+      expect(responseBody).toEqual(
+        expect.objectContaining({
+          error: expect.anything(),
+          requestId: expect.any(String),
+        }),
+      );
+      return;
+    }
+
+    expect(response.status()).toBeLessThan(500);
   });
 });
 
