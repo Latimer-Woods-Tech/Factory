@@ -11,6 +11,7 @@ import { createDb, sql, type FactoryDb, type HyperdriveBinding } from '@latimer-
 import type { TestResult, TestRun, TestRunStatus } from '@latimer-woods-tech/studio-core';
 
 const dbCache = new WeakMap<HyperdriveBinding, FactoryDb>();
+const schemaInitCache = new WeakMap<HyperdriveBinding, Promise<void>>();
 
 function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
   let db = dbCache.get(hyperdrive);
@@ -19,6 +20,56 @@ function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
     dbCache.set(hyperdrive, db);
   }
   return db;
+}
+
+async function ensureTestSchema(hyperdrive: HyperdriveBinding): Promise<void> {
+  let init = schemaInitCache.get(hyperdrive);
+  if (!init) {
+    const db = getDb(hyperdrive);
+    init = (async () => {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS studio_test_runs (
+          id UUID PRIMARY KEY,
+          dispatched_from_env TEXT NOT NULL,
+          gh_run_id TEXT,
+          gh_run_url TEXT,
+          suites JSONB NOT NULL DEFAULT '[]'::jsonb,
+          filter TEXT,
+          status TEXT NOT NULL DEFAULT 'queued',
+          started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          finished_at TIMESTAMPTZ,
+          totals JSONB NOT NULL DEFAULT '{"total":0,"passed":0,"failed":0,"skipped":0}'::jsonb,
+          dispatched_by TEXT NOT NULL,
+          CONSTRAINT studio_test_runs_status_chk
+            CHECK (status IN ('queued','dispatched','running','passed','failed','cancelled','timed-out'))
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_test_runs_started ON studio_test_runs (started_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_test_runs_user ON studio_test_runs (dispatched_by, started_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_test_runs_gh ON studio_test_runs (gh_run_id)`);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS studio_test_results (
+          run_id UUID NOT NULL REFERENCES studio_test_runs(id) ON DELETE CASCADE,
+          test_id TEXT NOT NULL,
+          suite TEXT NOT NULL,
+          name TEXT NOT NULL,
+          outcome TEXT NOT NULL,
+          duration_ms INTEGER NOT NULL DEFAULT 0,
+          failure JSONB,
+          recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          PRIMARY KEY (run_id, test_id),
+          CONSTRAINT studio_test_results_outcome_chk
+            CHECK (outcome IN ('passed','failed','skipped','todo'))
+        )
+      `);
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS idx_studio_test_results_failed ON studio_test_results (run_id, outcome)
+        WHERE outcome = 'failed'
+      `);
+    })();
+    schemaInitCache.set(hyperdrive, init);
+  }
+  await init;
 }
 
 interface RunRow {
@@ -94,6 +145,7 @@ export async function insertTestRun(
   hyperdrive: HyperdriveBinding,
   run: TestRun,
 ): Promise<void> {
+  await ensureTestSchema(hyperdrive);
   const db = getDb(hyperdrive);
   await db.execute(sql`
     INSERT INTO studio_test_runs (
@@ -115,6 +167,7 @@ export async function getTestRun(
   hyperdrive: HyperdriveBinding,
   runId: string,
 ): Promise<TestRun | null> {
+  await ensureTestSchema(hyperdrive);
   const db = getDb(hyperdrive);
   const result = await db.execute(sql`
     SELECT id, dispatched_from_env, gh_run_id, gh_run_url, suites, filter,
@@ -131,6 +184,7 @@ export async function listTestRuns(
   hyperdrive: HyperdriveBinding,
   opts: { dispatchedBy?: string; limit?: number },
 ): Promise<TestRun[]> {
+  await ensureTestSchema(hyperdrive);
   const db = getDb(hyperdrive);
   const limit = Math.max(1, Math.min(200, opts.limit ?? 50));
   const result = opts.dispatchedBy
@@ -164,6 +218,7 @@ export async function updateTestRunStatus(
     finishedAt?: string;
   },
 ): Promise<void> {
+  await ensureTestSchema(hyperdrive);
   const db = getDb(hyperdrive);
   // We use one statement per non-undefined field to avoid building dynamic SQL.
   // Each is short and runs against an indexed PK, so the cost is negligible.
@@ -217,6 +272,7 @@ export async function upsertTestResults(
   results: readonly TestResult[],
 ): Promise<void> {
   if (results.length === 0) return;
+  await ensureTestSchema(hyperdrive);
   const db = getDb(hyperdrive);
   for (const r of results) {
     await db.execute(sql`
@@ -243,6 +299,7 @@ export async function listTestResults(
   hyperdrive: HyperdriveBinding,
   runId: string,
 ): Promise<TestResult[]> {
+  await ensureTestSchema(hyperdrive);
   const db = getDb(hyperdrive);
   const result = await db.execute(sql`
     SELECT test_id, suite, name, outcome, duration_ms, failure
