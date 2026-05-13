@@ -120,7 +120,7 @@ export function OverviewTab() {
           <SyntheticJourneyPanel />
 
           {/* PostHog */}
-          <div className="rounded border border-slate-800 bg-slate-900 p-4">
+          <div className="@container rounded border border-slate-800 bg-slate-900 p-4 [container-type:inline-size] [container-name:posthog-widget]">
             <h2 className="text-sm font-semibold text-slate-200">PostHog</h2>
             {posthogErr ? (
               <p className="mt-1 text-xs text-red-400">Error: {posthogErr}</p>
@@ -129,14 +129,14 @@ export function OverviewTab() {
             ) : !posthog.configured ? (
               <p className="mt-1 text-xs text-amber-300">{posthog.note}</p>
             ) : (
-              <ul className="mt-2 grid grid-cols-3 gap-3">
+              <ul className="mt-2 grid grid-cols-1 gap-3 @[20rem]:grid-cols-2 @[32.5rem]:grid-cols-3">
                 {posthog.tiles.map((t) => (
                   <li
                     key={t.id}
                     className="rounded border border-slate-800 bg-slate-950 p-3 text-center"
                   >
                     <div className="text-xs uppercase text-slate-500">{t.label}</div>
-                    <div className="mt-1 text-2xl font-semibold text-white">
+                    <div className="mt-1 text-xl font-semibold text-white @[20rem]:text-2xl">
                       {t.value.toLocaleString()}
                       {t.unit ? <span className="text-sm text-slate-400 ml-1">{t.unit}</span> : null}
                     </div>

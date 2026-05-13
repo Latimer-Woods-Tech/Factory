@@ -1,0 +1,149 @@
+name: reviewer-class-hints
+
+# Issue: https://github.com/Latimer-Woods-Tech/factory/issues/277
+# Post informational review hints on PRs that touch sensitive (Red/Yellow) paths.
+# Non-blocking — never prevents merge.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  hint:
+    # Run for humans and for Dependabot — dependency PRs deserve the same
+    # sensitive-path hint comment as human PRs. Other bots are still excluded.
+    if: ${{ github.event.sender.type != 'Bot' || github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed paths
+        id: classify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          # Get list of changed files in this PR
+          changed=$(git diff --name-only "$BASE_SHA" HEAD 2>/dev/null || true)
+
+          if [ -z "$changed" ]; then
+            echo "No changed files detected."
+            echo "tier=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          RED=()
+          YELLOW=()
+          # Patterns aligned with .github/CODEOWNERS red/yellow tiers
+          while IFS= read -r file; do
+            case "$file" in
+              .github/workflows/*|.github/CODEOWNERS|.github/settings.yml)
+                RED+=("$file") ;;
+              packages/*)
+                RED+=("$file") ;;
+              migrations/*|workers/src/db/migrations/*)
+                RED+=("$file") ;;
+              */handlers/billing*|*/handlers/admin*|*/handlers/stripe*)
+                RED+=("$file") ;;
+              wrangler.jsonc|wrangler.toml|apps/*/wrangler.jsonc)
+                RED+=("$file") ;;
+              capabilities.yml|apps/*/capabilities.yml|docs/service-registry.yml)
+                RED+=("$file") ;;
+              apps/supervisor/*|docs/supervisor/plans/*|docs/supervisor/FRIDGE.md)
+                RED+=("$file") ;;
+              apps/*/src/*|client/*|tests/*)
+                YELLOW+=("$file") ;;
+            esac
+          done <<< "$changed"
+
+          echo "Red-tier files: ${#RED[@]}"
+          echo "Yellow-tier files: ${#YELLOW[@]}"
+
+          # Write counts for the comment step
+          printf '%s\n' "${RED[@]+"${RED[@]}"}" > /tmp/red_files.txt
+          printf '%s\n' "${YELLOW[@]+"${YELLOW[@]}"}" > /tmp/yellow_files.txt
+
+          if [ ${#RED[@]} -gt 0 ]; then
+            echo "tier=red" >> "$GITHUB_OUTPUT"
+          elif [ ${#YELLOW[@]} -gt 0 ]; then
+            echo "tier=yellow" >> "$GITHUB_OUTPUT"
+          else
+            echo "tier=green" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post reviewer hint comment
+        if: steps.classify.outputs.tier == 'red' || steps.classify.outputs.tier == 'yellow'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.number }}
+          TIER: ${{ steps.classify.outputs.tier }}
+        run: |
+          set -euo pipefail
+
+          RED_FILES=$(cat /tmp/red_files.txt 2>/dev/null || true)
+          YELLOW_FILES=$(cat /tmp/yellow_files.txt 2>/dev/null || true)
+
+          # Build comment body
+          if [ "$TIER" = "red" ]; then
+            HEADER="## 🔴 Red-tier paths detected"
+            GUIDANCE="This PR touches **Red-tier** paths that require:
+          - ✅ **2-party LLM consensus** from \`factory-cross-repo[bot]\` (Grok → Claude)
+          - ✅ **CODEOWNER approval** from \`@adrper79-dot\` before merge
+          - ❌ Never auto-merge; human must confirm after bot approval
+
+          **Red-tier checks (hardcoded):**
+          - Actions injection safety (no \`\${{ github.event.*.body }}\` in \`run:\` steps)
+          - Migration reversibility
+          - Billing idempotency
+          - CODEOWNERS self-modification guard"
+
+          else
+            HEADER="## 🟡 Yellow-tier paths detected"
+            GUIDANCE="This PR touches **Yellow-tier** paths (app source, client, tests).
+          - ✅ 2-party LLM review via \`factory-cross-repo[bot]\` satisfies the code-owner gate
+          - ✅ Auto-merge on green CI + plan-approval is allowed"
+          fi
+
+          RED_LIST=""
+          if [ -n "$RED_FILES" ]; then
+            RED_LIST="\n\n**Red-tier changed files:**\n\`\`\`\n${RED_FILES}\n\`\`\`"
+          fi
+
+          YELLOW_LIST=""
+          if [ -n "$YELLOW_FILES" ]; then
+            YELLOW_LIST="\n\n**Yellow-tier changed files:**\n\`\`\`\n${YELLOW_FILES}\n\`\`\`"
+          fi
+
+          BODY="${HEADER}
+
+          ${GUIDANCE}${RED_LIST}${YELLOW_LIST}
+
+          ---
+          _Informational only — non-blocking. Posted by [reviewer-class-hints](../../.github/workflows/reviewer-class-hints.yml). Closes #277 scope._"
+
+          # Check if this bot already posted a hint on this PR (avoid spam on each push)
+          existing=$(gh api "repos/$REPO/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | startswith("## 🔴 Red-tier") or startswith("## 🟡 Yellow-tier")) | .id' \
+            2>/dev/null | head -1 || true)
+
+          if [ -n "$existing" ]; then
+            # Update existing comment rather than creating a new one
+            gh api --method PATCH "repos/$REPO/issues/comments/${existing}" \
+              --field body="$BODY"
+            echo "Updated existing reviewer hint comment #${existing}"
+          else
+            gh issue comment "$PR_NUMBER" \
+              --repo "$REPO" \
+              --body "$BODY"
+            echo "Posted new reviewer hint comment"
+          fi
