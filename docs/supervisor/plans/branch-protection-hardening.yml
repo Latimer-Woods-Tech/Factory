@@ -1,0 +1,160 @@
+id: branch-protection-hardening
+version: 1
+tier: yellow
+
+# Trigger: issues requesting promotion of a CI check from warn-only to required.
+# Labels from the gradual-hardening rollout (parent issue #270).
+triggers:
+  labels_any_of: [hardening, "hardening:promote"]
+  title_pattern: "(?i)(branch.?protect|required.?check|promote.?check|hardening.?playbook|warn.?only)"
+  body_patterns:
+    - "(?i)(promote|graduate|require).*(check|status)"
+
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.getBranchProtection
+  - capability_exists: github.listCheckRuns
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+
+slots:
+  - name: check_name
+    type: string
+    validator: "^[A-Za-z0-9 _/().-]{2,80}$"
+    source: issue_body
+
+  - name: observation_days
+    type: integer
+    source: issue_body
+    default: 14
+
+  - name: target_repo
+    type: enum
+    values: [factory, HumanDesign, videoking, xico-city, factory-admin]
+    source: issue_body
+    default: factory
+
+  - name: target_branch
+    type: string
+    validator: "^[A-Za-z0-9._/-]{1,100}$"
+    source: issue_body
+    default: main
+
+steps:
+  # ── s1: Read current branch-protection state ──────────────────────────────
+  - id: s1
+    tool: github.getBranchProtection
+    depends_on: null
+    params:
+      repo: "$slots.target_repo"
+      branch: "$slots.target_branch"
+    intent: "Read the current required_status_checks list so we know where we are before proposing a change."
+    requires_human_review: false
+
+  # ── s2: Collect check-run history for the observation window ──────────────
+  # Expected response fields from github.listCheckRuns:
+  #   total_runs   (integer) — total executions in the window
+  #   failed_runs  (integer) — runs with conclusion != success
+  #   fp_rate      (float)   — (failed_runs / total_runs) * 100, rounded to 1dp
+  #   days_elapsed (integer) — calendar days since the check was first seen
+  - id: s2
+    tool: github.listCheckRuns
+    depends_on: s1
+    params:
+      repo: "$slots.target_repo"
+      check_name: "$slots.check_name"
+      days: "$slots.observation_days"
+    intent: "Gather pass/fail counts for the candidate check over the configured observation window. Returns total_runs, failed_runs, fp_rate (percent), and days_elapsed."
+    requires_human_review: false
+
+  # ── s3: Post a signal-quality summary on the issue ────────────────────────
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      issue: "$slots.issue_number"
+      body: |
+        ## Branch-protection promotion: signal quality report
+
+        **Check:** `$slots.check_name`
+        **Repo / branch:** `$slots.target_repo` / `$slots.target_branch`
+        **Observation window:** $slots.observation_days days
+
+        | Metric | Value | Threshold | Pass? |
+        |---|---|---|---|
+        | Total runs | $s2.total_runs | > 0 | $s2.total_runs > 0 |
+        | False-positive rate | $s2.fp_rate% | < 5% | $s2.fp_rate < 5 |
+        | Observation days elapsed | $s2.days_elapsed | ≥ $slots.observation_days | $s2.days_elapsed >= $slots.observation_days |
+
+        Current required checks: `$s1.required_contexts`
+
+        Supervisor will open a promotion PR only when all three conditions are met and a CODEOWNER reacts ✅ on this comment.
+    intent: "Surface the signal-quality data on the issue so a CODEOWNER can make an informed promotion decision."
+    requires_human_review: true
+
+  # ── s4: Open promotion PR ─────────────────────────────────────────────────
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: "$slots.target_repo"
+      branch: "supervisor/hardening/promote-$slots.check_name"
+      base: "$slots.target_branch"
+      title: "chore(governance): promote `$slots.check_name` to required status check"
+      body: |
+        Promotes `$slots.check_name` from warn-only to a **required** status check
+        on `$slots.target_repo`:`$slots.target_branch`.
+
+        ## Signal quality (from supervisor s2)
+        - Total runs in observation window: $s2.total_runs
+        - False-positive rate: $s2.fp_rate%
+        - Days observed: $s2.days_elapsed / $slots.observation_days required
+
+        ## What this PR changes
+        Adds `$slots.check_name` to `required_status_checks.contexts` via the
+        branch-protection API.  No workflow files are modified.
+
+        ## Rollback
+        Remove `$slots.check_name` from `required_status_checks` and re-open a
+        `hardening:fp` issue to restart the 14-day observation window.
+
+        Closes #$slots.issue_number
+        Parent rollout: #270
+
+        Playbook: `docs/supervisor/playbooks/branch-protection-hardening.md`
+      labels: ["hardening:promote", hardening, supervisor]
+      changes:
+        # branch_protection_add_required_check is a supervisor-level abstraction
+        # implemented in apps/supervisor/src/tools/github.ts.  It reads the
+        # current required_status_checks list from s1.required_contexts, appends
+        # check_name, and issues a PUT to
+        # /repos/{owner}/{repo}/branches/{branch}/protection.
+        - op: branch_protection_add_required_check
+          repo: "$slots.target_repo"
+          branch: "$slots.target_branch"
+          check_name: "$slots.check_name"
+          current_contexts: "$s1.required_contexts"
+    intent: "Open a PR that adds the candidate check to required_status_checks after CODEOWNER approval."
+    requires_human_review: true
+
+acceptance_gate:
+  description: "PR is open, the candidate check name appears in required_status_checks on the target branch, and CI on the promotion PR head is green."
+  # Assertion syntax: supervisor evaluates the JSON response from getBranchProtection
+  # and checks whether the string value of check_name is present in the
+  # required_status_checks.contexts array.  Expressed using supervisor predicate
+  # language: "array_contains(field, value)" (see TEMPLATE_SPEC.md §verifier_query).
+  verifier_query:
+    tool: github.getBranchProtection
+    query: "repo=$slots.target_repo branch=$slots.target_branch"
+    assert: "array_contains(required_status_checks.contexts, '$slots.check_name')"
+
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: "$slots.target_repo"
+      pr: "$s4.number"
+      comment: |
+        Supervisor rollback: closing promotion PR — acceptance gate failed for
+        branch-protection-hardening.  Check the signal-quality report on the
+        linked issue and re-run after addressing any false positives.
