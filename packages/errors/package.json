@@ -32,7 +32,7 @@
     "prepublish": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

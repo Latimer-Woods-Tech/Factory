@@ -6,20 +6,25 @@ Use this runbook when onboarding a brand-new Factory app that is **not** one of 
 
 Each app gets a **unique** Cloudflare rate limiter namespace ID. IDs are integers; never reuse one.
 
-| App | Rate Limiter ID |
-|-----|----------------|
-| wordis-bond | 1001 |
-| prime-self | 1002 |
-| cypher-healing | 1003 |
-| ijustus | 1004 |
-| the-calling | 1005 |
-| neighbor-aid | 1006 |
-| xpelevator | 1007 |
-| xico-city | 1008 |
+| App | Binding | Namespace ID | Limit | Notes |
+|-----|---------|--------------|-------|-------|
+| wordis-bond | (auth) | 1001 | per-app | |
+| prime-self | (auth) | 1002 | per-app | |
+| cypher-healing | (auth) | 1003 | per-app | |
+| ijustus | (auth) | 1004 | per-app | |
+| the-calling | (auth) | 1005 | per-app | |
+| neighbor-aid | (auth) | 1006 | per-app | |
+| xpelevator | (auth) | 1007 | per-app | |
+| xico-city (prod) | `AUTH_RATE_LIMITER` | 1008 | 60/m/IP | Auth routes |
+| xico-city (prod) | `API_RATE_LIMITER` | 1009 | 600/m/user | `/v1/*` authed routes — closes BUILD_PLAN_v2 D-007 |
+| xico-city (staging) | `AUTH_RATE_LIMITER` | 1010 | 60/m/IP | Staging auth (separated from prod) |
+| xico-city (staging) | `API_RATE_LIMITER` | 1011 | 600/m/user | Staging `/v1/*` |
 
-**Next available ID: 1009**
+**Next available ID: 1012**
 
-Update this table every time a new app is added.
+Allocate **separate ids per environment** so a misconfigured staging worker
+cannot exhaust the prod rate-limit budget. Update this table every time a new
+app or environment is added.
 
 ---
 
@@ -185,7 +190,7 @@ Add the new app and its rate limiter ID to the registry table at the top of this
 
 ## Checklist Summary
 
-- [ ] Rate limiter ID reserved (next available: 1009+)
+- [ ] Rate limiter ID reserved (next available: 1012+)
 - [ ] Neon connection string in Factory Secrets as `{APP_UPPER}_CONNECTION_STRING`
 - [ ] GitHub repo created: `Latimer-Woods-Tech/{app}`
 - [ ] `create-hyperdrive.mjs` updated
