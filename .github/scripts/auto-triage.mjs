@@ -148,5 +148,37 @@ if (toApply.length === 0) {
   process.exit(0);
 }
 
+// ─── Mutually-exclusive label groups ──────────────────────────────────────
+// Some label families must hold AT MOST ONE value per issue. Without this
+// guard the POST /labels call ADDS labels (it does not replace them), so
+// re-runs of auto-triage stamp `priority:P2` on top of an existing
+// `priority:P0`, leaving issues with two priority labels at once. That
+// breaks supervisor pickup and priority-based filtering downstream.
+//
+// History: bug observed in May 2026 — ~20 open issues had multiple
+// priority:* labels and ~6 had both status:blocked + status:in_progress.
+// Cleanup was performed manually; this guard prevents regression.
+//
+// Rule: for each prefix below, if the proposed set names ONE value, remove
+// every OTHER value in that group from the issue first. We never strip a
+// group we aren't actively setting (so manual `status:*` curation by humans
+// stays intact when triage isn't proposing a status change).
+const MUTEX_PREFIXES = ['priority:', 'status:'];
+for (const prefix of MUTEX_PREFIXES) {
+  const proposedInGroup = toApply.filter(l => l.startsWith(prefix));
+  if (proposedInGroup.length === 0) continue;
+  const keep = new Set(proposedInGroup);
+  const stale = alreadyLabeled.filter(l => l.startsWith(prefix) && !keep.has(l));
+  for (const lbl of stale) {
+    try {
+      // DELETE /repos/:owner/:repo/issues/:issue_number/labels/:name
+      await gh('DELETE', `/repos/${ORG}/${repo}/issues/${num}/labels/${encodeURIComponent(lbl)}`);
+      console.log(`  − removed stale ${prefix} label: ${lbl}`);
+    } catch (err) {
+      console.warn(`  ! failed to remove ${lbl}: ${err.message}`);
+    }
+  }
+}
+
 await gh('POST', `/repos/${ORG}/${repo}/issues/${num}/labels`, { labels: toApply });
 console.log(`✓ ${repo}#${num} labeled: [${toApply.join(', ')}]`);
