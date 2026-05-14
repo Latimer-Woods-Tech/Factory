@@ -2,12 +2,85 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-06T20:10:25.255Z
-// Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-14T18:34:10.726Z
+// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
 export const GENERATED_TEMPLATES: Template[] = [
+  {
+    "id": "branch-protection-hardening",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "hardening",
+      "promote",
+      "branch",
+      "protection"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "hardening:promote"
+      ],
+      "title_pattern": "(branch.?protect|required.?check|promote.?check|hardening.?playbook|warn.?only)",
+      "body_patterns": [
+        "(promote|graduate|require).*(check|status)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.getBranchProtection",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "branch": "$slots.target_branch"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.listCheckRuns",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "check_name": "$slots.check_name",
+          "days": "$slots.observation_days"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue": "$slots.issue_number",
+          "body": "## Branch-protection promotion: signal quality report\n\n**Check:** `$slots.check_name`\n**Repo / branch:** `$slots.target_repo` / `$slots.target_branch`\n**Observation window:** $slots.observation_days days\n\n| Metric | Value | Threshold | Pass? |\n|---|---|---|---|\n| Total runs | $s2.total_runs | > 0 | $s2.total_runs > 0 |\n| False-positive rate | $s2.fp_rate% | < 5% | $s2.fp_rate < 5 |\n| Observation days elapsed | $s2.days_elapsed | ≥ $slots.observation_days | $s2.days_elapsed >= $slots.observation_days |\n\nCurrent required checks: `$s1.required_contexts`\n\nSupervisor will open a promotion PR only when all three conditions are met and a CODEOWNER reacts ✅ on this comment.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "branch": "supervisor/hardening/promote-$slots.check_name",
+          "base": "$slots.target_branch",
+          "title": "chore(governance): promote `$slots.check_name` to required status check",
+          "body": "Promotes `$slots.check_name` from warn-only to a **required** status check\non `$slots.target_repo`:`$slots.target_branch`.\n\n## Signal quality (from supervisor s2)\n- Total runs in observation window: $s2.total_runs\n- False-positive rate: $s2.fp_rate%\n- Days observed: $s2.days_elapsed / $slots.observation_days required\n\n## What this PR changes\nAdds `$slots.check_name` to `required_status_checks.contexts` via the\nbranch-protection API.  No workflow files are modified.\n\n## Rollback\nRemove `$slots.check_name` from `required_status_checks` and re-open a\n`hardening:fp` issue to restart the 14-day observation window.\n\nCloses #$slots.issue_number\nParent rollout: #270\n\nPlaybook: `docs/supervisor/playbooks/branch-protection-hardening.md`\n",
+          "labels": [
+            "hardening:promote",
+            "hardening",
+            "supervisor"
+          ],
+          "changes": [
+            {
+              "op": "branch_protection_add_required_check",
+              "repo": "$slots.target_repo",
+              "branch": "$slots.target_branch",
+              "check_name": "$slots.check_name",
+              "current_contexts": "$s1.required_contexts"
+            }
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
   {
     "id": "db-migration-gap-fix",
     "tier": "yellow",
@@ -254,6 +327,267 @@ export const GENERATED_TEMPLATES: Template[] = [
           "title": "feat(ci): add $slots.workflow_name workflow",
           "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` implementing: $slots.description\n\nFollows Factory App token pattern and COORDINATION.md conventions.\n\nGenerated by supervisor. Human review required before merge.",
           "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-flaky-detector",
+    "tier": "yellow",
+    "description": "Flaky check detector: tracks CI checks that fail then pass on re-run and publishes a weekly GitHub issue with a remediation report. Implements a new workflow file under .github/workflows/; no production code is changed.\n",
+    "trigger_keywords": [
+      "engineering",
+      "hardening",
+      "enhancement",
+      "feat",
+      "flaky",
+      "detector",
+      "check",
+      "tracks",
+      "checks",
+      "that",
+      "fail",
+      "then",
+      "pass"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "engineering",
+        "hardening",
+        "enhancement"
+      ],
+      "title_pattern": "^feat[(]reliability[)]:.*flaky",
+      "body_patterns": [
+        "(?i)(flaky|flak|check.?fail.*re.?run|re.?run.*fail|intermittent.?check|weekly.?report|track.?fail|fail.?pass)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/COORDINATION.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/flaky-check-detector.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — flaky check detector plan (YELLOW tier)**\n\nWorkflow name: `$slots.workflow_name`\nReport schedule (cron): `$slots.report_schedule`\n\nThis plan adds a new `.github/workflows/$slots.workflow_name.yml` that:\n1. On `workflow_run` completion events, records checks that failed then passed on re-run.\n2. On a weekly schedule (`$slots.report_schedule` UTC), opens a GitHub issue listing\n   flaky check names, frequency counts, and recommended remediation.\n\nNo production code paths are modified. Will open a draft PR for review.\n\nReact ✅ to proceed, or comment with adjustments needed.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` — flaky check detector.\n\n**Behaviour:**\n- Listens on `workflow_run` events; records check names that fail then pass on re-run.\n- Weekly cron (`$slots.report_schedule`) opens a GitHub issue with the remediation report.\n\nNo runtime code changed. Only `.github/workflows/$slots.workflow_name.yml` added.\n\nYellow-tier: human review required before merge. Draft until approved.\n",
+          "labels": [
+            "engineering",
+            "hardening",
+            "enhancement",
+            "supervisor",
+            "tier-yellow"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this flaky-check-detector PR (yellow tier).\n- Only `.github/workflows/$slots.workflow_name.yml` is added; no runtime paths touched.\n- Report cron: `$slots.report_schedule` UTC (Monday 09:00).\n- Source issue: #$triggers.issue_number (parent: #270)\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-memory-single-writer",
+    "tier": "yellow",
+    "description": "Memory single-writer policy (MA-8): adds a CI workflow that prevents concurrent memory/*.md edits by enforcing a file-lock check on PRs targeting memory/ paths. Implements the policy as a GitHub Actions workflow; no runtime code is changed.\n",
+    "trigger_keywords": [
+      "engineering",
+      "hardening",
+      "feat",
+      "memory",
+      "single",
+      "writer",
+      "singlewriter",
+      "policy",
+      "adds",
+      "workflow",
+      "that",
+      "prevents"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "engineering",
+        "hardening"
+      ],
+      "title_pattern": "^MA-8|memory.?single.?writer|concurrent.?memory|memory.*lock",
+      "body_patterns": [
+        "(?i)(memory.?single.?writer|memory/.*\\.md|concurrent.*edit|single.?writer|prevent.?concurrent|file.?lock|ma.?8)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/COORDINATION.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/memory-single-writer.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — memory single-writer policy plan (YELLOW tier)**\n\nMemory path glob: `$slots.memory_path_glob`\nWorkflow name: `$slots.workflow_name`\n\nThis plan adds `.github/workflows/$slots.workflow_name.yml` that:\n1. Triggers on `pull_request` events touching `$slots.memory_path_glob`.\n2. Checks that no other open PR is simultaneously modifying paths matching\n   `$slots.memory_path_glob`.\n3. Fails the check (blocks merge) if a concurrent memory-file edit is detected,\n   linking to the conflicting PR for resolution.\n\nNo runtime code is changed. Only the new CI workflow file is added.\n\nReact ✅ to confirm, or comment with adjustments needed.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` — memory single-writer lock.\n\n**Policy enforced:**\n- On any PR touching `$slots.memory_path_glob`, fail CI if another open PR\n  is simultaneously modifying a file matching the same glob.\n- Prevents concurrent memory/*.md edits from diverging or overwriting each other.\n\nNo runtime code touched. Only `.github/workflows/$slots.workflow_name.yml` added.\n\nYellow-tier: human review required before merge. Draft until approved.\n",
+          "labels": [
+            "engineering",
+            "hardening",
+            "supervisor",
+            "tier-yellow"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this memory-single-writer PR (yellow tier).\n- Only `.github/workflows/$slots.workflow_name.yml` is added.\n- Memory path glob enforced: `$slots.memory_path_glob`\n- No runtime packages, migrations, or production config modified.\n- Source issue: #$triggers.issue_number (MA-8)\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-review-hints",
+    "tier": "red",
+    "description": "Auto-request / notify relevant CODEOWNERS and platform/security reviewers when a PR touches sensitive paths. Implements reviewer-class hints via CODEOWNERS updates and/or a path-based labeler workflow. Changes go to a draft PR for human review.\n",
+    "trigger_keywords": [
+      "hardening",
+      "engineering",
+      "enhancement",
+      "feat",
+      "review",
+      "hints",
+      "autorequest",
+      "notify",
+      "relevant",
+      "codeowners",
+      "platformsecurity",
+      "reviewers",
+      "when"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "engineering",
+        "enhancement"
+      ],
+      "title_pattern": "^feat[(]review[)]:.*reviewer",
+      "body_patterns": [
+        "(?i)(codeowner|reviewer.?class|reviewer.?hint|sensitive.?path|auto.?request|platform.?review|security.?review|path.?delta|path.?change)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/CODEOWNERS",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/labeler.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — reviewer-class hints plan (RED tier)**\n\nSensitive paths: `$slots.sensitive_paths`\nReviewer class: `$slots.reviewer_class`\nChange target: `$slots.change_target`\n\nThis is a **red-tier** plan because CODEOWNERS and labeler workflows gate all\nsensitive-path PRs. The supervisor will open a **draft PR** adding the reviewer\nhints; no auto-merge is permitted.\n\nExisting CODEOWNERS + labeler captured in steps s1/s2.\n\nReact ✅ to confirm the plan before the PR is drafted.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\n**Sensitive paths:** $slots.sensitive_paths\n**Reviewer class:** $slots.reviewer_class\n**Change target:** $slots.change_target\n\nDraft PR adding reviewer-class hints for sensitive path deltas.\nTouches only `.github/CODEOWNERS` and/or `.github/workflows/labeler.yml`.\n\nRed-tier: CODEOWNER must review before merge. Do NOT enable auto-merge.\n",
+          "labels": [
+            "hardening",
+            "engineering",
+            "enhancement",
+            "supervisor",
+            "tier-red"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this reviewer-hints PR (red tier).\n- Only `.github/CODEOWNERS` and/or `.github/workflows/labeler.yml` are touched.\n- Existing assignments captured in s1/s2 to prevent accidental removals.\n- Source issue: #$triggers.issue_number (parent: #270)\n"
         },
         "side_effects": "none"
       }
@@ -616,6 +950,156 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "governance-branch-protection",
+    "tier": "red",
+    "description": "Phased branch-protection hardening playbook: promotes checks from warn-only to required based on measured signal quality. Opens a PR to update the branch-protection runbook and/or the corresponding .github/workflows file; never applies rulesets directly.\n",
+    "trigger_keywords": [
+      "hardening",
+      "governance",
+      "engineering",
+      "branch",
+      "protection",
+      "phased",
+      "branchprotection",
+      "playbook",
+      "promotes",
+      "checks",
+      "from",
+      "warnonly",
+      "required"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "governance",
+        "engineering"
+      ],
+      "title_pattern": "^chore[(]governance[)]:.*branch.?protect",
+      "body_patterns": [
+        "(?i)(branch.?protect|required.?check|warn.?only|promote|policy.?promot|signal.?quality|phased|playbook)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/runbooks/github-secrets-and-tokens.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/apply-sec-hardening.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — branch-protection hardening plan (RED tier)**\n\nPhase: `$slots.phase`\nTarget check: `$slots.target_check`\n\nThis is a **red-tier** plan. The supervisor will open a **draft PR** updating\nthe branch-protection runbook and/or the `apply-sec-hardening.yml` workflow.\nNo ruleset is applied automatically — a CODEOWNER must merge and trigger\nthe promotion manually.\n\nExisting hardening workflow snapshot captured in step s2.\n\nReact ✅ to confirm the plan before the PR is drafted.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\n**Phase:** $slots.phase\n**Target check:** $slots.target_check\n\nThis draft PR was generated by the supervisor to codify the branch-protection\nhardening step described in the linked issue.\n\nChanges are **docs/runbook only** or **workflow-only**; no ruleset is activated\nautomatically. A CODEOWNER must review the generated content and merge when\nthe signal quality threshold is confirmed.\n\nRed-tier: human approval required before merge. Do NOT use auto-merge.\n",
+          "labels": [
+            "hardening",
+            "governance",
+            "supervisor",
+            "tier-red"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this branch-protection hardening PR (red tier).\n- Only `docs/` or `.github/workflows/` files are touched — no rulesets applied.\n- Human CODEOWNER must verify signal quality before approving.\n- Source issue: #$triggers.issue_number (parent: #270)\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "governance-hardening-tweak",
+    "tier": "green",
+    "description": "",
+    "trigger_keywords": [
+      "hardening",
+      "governance",
+      "engineering",
+      "tweak"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "governance",
+        "engineering"
+      ],
+      "title_pattern": "^(chore|feat|docs)[(](governance|triage|review|reliability|docs|security)[)]:",
+      "body_patterns": [
+        "(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "path": "$slots.target_path",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.target_path",
+              "content": "$slots.file_content"
+            }
+          ],
+          "body": "Auto-drafted by supervisor for cluster `governance-hardening-tweak`.\nChange type: $slots.change_type\nScope: $slots.scope\nTarget: $slots.target_path\nSource issue: see linked issue.\n\nThis is a low-risk governance/hardening artifact. Human review is required before merge.\nThe supervisor has captured the intent from the linked issue; please verify the generated\nfile content matches the desired policy before approving.\n",
+          "labels": [
+            "hardening",
+            "supervisor",
+            "tier-green"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s2.number",
+          "body": "Supervisor drafted this governance PR from the linked issue. Only `.github/`, `docs/`, or root-level `README.md` files are touched; no runtime code paths changed. Pre-existing file content (if any) was captured in step s1."
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "governance-hardening",
     "tier": "green",
     "description": "Small governance, process, or hardening change: adding/updating labels, branch-protection tweaks, README/CLAUDE.md edits, workflow permission tightening, or AGENT_PROTOCOL propagation.",
@@ -787,6 +1271,90 @@ export const GENERATED_TEMPLATES: Template[] = [
       {
         "tool": "github.openPR",
         "side_effects": "write-app"
+      }
+    ]
+  },
+  {
+    "id": "repo-governance-audit",
+    "tier": "yellow",
+    "description": "Repo governance audit: reads repository metadata for all Latimer-Woods-Tech repos and produces a structured audit comment listing merge-settings drift, missing descriptions, incorrect visibility, and missing SECURITY.md. Outputs a findings comment and optionally a docs PR with the audit report. No repos are archived or mutated automatically.\n",
+    "trigger_keywords": [
+      "area",
+      "ops",
+      "hardening",
+      "repo",
+      "governance",
+      "audit",
+      "reads",
+      "repository",
+      "metadata",
+      "latimerwoodstech",
+      "repos"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "area:ops",
+        "hardening"
+      ],
+      "title_pattern": "^OPS-2|repo.?governance|legacy.?cleanup|visibility.?audit",
+      "body_patterns": [
+        "(?i)(legacy.?cleanup|visibility.?audit|merge.?setting|squash.?only|SECURITY\\.md|archive|repo.?governance|pre.?factory)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/runbooks/transfer.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/service-registry.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — repo governance audit (YELLOW tier)**\n\nAudit scope: `$slots.audit_scope`\n\nThe supervisor will produce a structured audit report covering:\n- Merge settings drift (`squashMergeAllowed`, `rebaseMergeAllowed`, `deleteBranchOnMerge`)\n- Repos missing descriptions\n- Public repos without `SECURITY.md`\n- Legacy repos (`coh`, `The_Calling`, `focusbro`) — archive candidates\n\n**No repos will be archived or mutated automatically.**\nAll findings are report-only. Mutations require explicit human action per FRIDGE rule 8.\n\nWill open a draft PR adding `docs/governance/repo-audit-$(date +%Y-%m).md`.\nReact ✅ to proceed.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number (or enables human to action sub-issues)\n\nAdds `docs/governance/repo-audit.md` — structured findings from the OPS-2\nrepo governance audit.\n\n**Scope:** $slots.audit_scope\n\n**Findings format:**\n| Repo | Issue | Required action |\n|------|-------|----------------|\n| (populated from audit) | ... | ... |\n\n**No repos are archived or mutated by this PR.**\nAll mutations are manual follow-ups per the transfer runbook.\n\nYellow-tier: human review required before merge.\n",
+          "labels": [
+            "area:ops",
+            "hardening",
+            "supervisor",
+            "tier-yellow"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this repo governance audit PR (yellow tier).\n- Only `docs/governance/repo-audit.md` is added (new doc, no existing files modified).\n- No repos archived, no settings changed — findings only.\n- Sub-issues OPS-2.1, OPS-2.2, OPS-2.3 require separate human-initiated actions.\n- Source issue: #$triggers.issue_number\n"
+        },
+        "side_effects": "none"
       }
     ]
   },
