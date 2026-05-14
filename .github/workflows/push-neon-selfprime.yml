@@ -11,6 +11,8 @@ on:
 jobs:
   push-secrets:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/setup-node@v4
         with:
