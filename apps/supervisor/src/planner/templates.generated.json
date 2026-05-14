@@ -200,7 +200,7 @@
       "parent_dir": "^(docs|documents)(/.+)?$",
       "commit_message": "^(docs|chore)[(:]",
       "doc_body": "^[\\s\\S]{1,200000}$",
-      "branch_name": "^supervisor/docs/[a-z0-9][a-z0-9-]{0,60}$"
+      "branch_name": "^(supervisor/docs|docs)/[a-z0-9][a-z0-9-]{0,60}$"
     },
     "step_intents": [
       "Verify the parent directory exists before writing a new doc into it.",
