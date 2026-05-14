@@ -107,4 +107,48 @@ describe('matchTemplate', () => {
     const m = matchTemplate('governance hardening drift fix', mixedTemplates);
     expect(m?.id).toBe('governance-hardening-tweak');
   });
+
+
+  it('matches via labels_any_of when issue label overlaps', () => {
+    const labelTemplate: Template[] = [
+      {
+        id: 'governance-hardening',
+        tier: 'green',
+        description: 'Governance hardening',
+        trigger_keywords: [],
+        triggers: { labels_any_of: ['hardening', 'governance', 'chore'] },
+      },
+    ];
+    const m = matchTemplate('some unrelated description', labelTemplate, { labels: ['hardening', 'priority:P1'] });
+    expect(m?.id).toBe('governance-hardening');
+  });
+
+  it('returns null when labels_any_of present but no label overlap', () => {
+    const labelTemplate: Template[] = [
+      {
+        id: 'governance-hardening',
+        tier: 'green',
+        description: 'Governance hardening',
+        trigger_keywords: [],
+        triggers: { labels_any_of: ['hardening', 'governance'] },
+      },
+    ];
+    const m = matchTemplate('some unrelated description', labelTemplate, { labels: ['bug', 'priority:P2'] });
+    expect(m).toBeNull();
+  });
+
+  it('labels_any_of boosts score above MIN_SCORE even without keyword match', () => {
+    const mixed: Template[] = [
+      {
+        id: 'security-fix',
+        tier: 'yellow',
+        description: 'Security fix',
+        trigger_keywords: ['security', 'cve', 'vuln'],
+        triggers: { labels_any_of: ['security'] },
+      },
+    ];
+    // No keywords hit, but label hit adds 0.5 ≥ MIN_SCORE
+    const m = matchTemplate('random issue text', mixed, { labels: ['security'] });
+    expect(m?.id).toBe('security-fix');
+  });
 });
