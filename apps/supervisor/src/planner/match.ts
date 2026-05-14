@@ -72,7 +72,8 @@ export function matchTemplate(
             requiredTriggerMiss = true;
           }
         } catch {
-          // malformed regex in template — skip this signal
+          // malformed regex in template — treat as required trigger miss
+          requiredTriggerMiss = true;
         }
       }
       let bodyMatched = false;

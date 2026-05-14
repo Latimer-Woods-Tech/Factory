@@ -122,7 +122,8 @@ function matchTemplate(issue, templates) {
         if (new RegExp(tmpl.titlePattern, 'i').test(title)) score += 0.5;
         else requiredTriggerMiss = true;
       } catch {
-        // ignore malformed regex
+        // malformed regex should not be treated as a successful declared trigger
+        requiredTriggerMiss = true;
       }
     }
 
@@ -398,7 +399,10 @@ async function countMatchingSupervisorBranches(repo, slug) {
   try {
     const refs = await gh('GET', `/repos/${ORG}/${repo}/git/matching-refs/heads/supervisor/${slug}-`);
     return Array.isArray(refs) ? refs.length : 0;
-  } catch {
+  } catch (e) {
+    if (!String(e?.message ?? e).includes('→ 404:')) {
+      console.warn(`[WARN] countMatchingSupervisorBranches ${repo}/${slug}: ${e.message}`);
+    }
     return 0;
   }
 }
