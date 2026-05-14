@@ -4,11 +4,13 @@ import type { Template } from './load';
  * Deterministic template matcher. Scores each template against a user
  * description, returns the best match above the threshold, or null.
  *
- * Scoring combines two signals:
+ * Scoring combines three signals:
  *   1. Keyword-hit ratio from `trigger_keywords` (for free-form /plan descriptions)
  *   2. Structured `triggers` regex patterns from the YAML schema (title_pattern,
  *      body_patterns) — each match adds 0.5 to ensure structured templates
  *      beat keyword-only guesses.
+ *   3. Label intersection from `triggers.labels_any_of` — any matching label
+ *      adds 0.5 (mirrors the supervisor-core.mjs implementation).
  *
  * Phase 2 (SUP-3.5): replace keyword scoring with embedding similarity once
  * `@latimer-woods-tech/llm` supports embeddings (0.4.x).
@@ -21,11 +23,18 @@ export interface MatchScore {
 
 const MIN_SCORE = 1 / 3;
 
+export interface MatchOptions {
+  /** GitHub label names on the issue being matched. */
+  labels?: string[];
+}
+
 export function matchTemplate(
   description: string,
   templates: Template[],
+  options: MatchOptions = {},
 ): Template | null {
   const normalized = description.toLowerCase();
+  const issueLabels = options.labels ?? [];
   const scores: MatchScore[] = [];
 
   for (const t of templates) {
@@ -60,6 +69,15 @@ export function matchTemplate(
         } catch {
           // malformed regex — skip
         }
+      }
+
+      // Signal 3: label intersection — mirrors supervisor-core.mjs L106
+      if (
+        t.triggers.labels_any_of?.length &&
+        issueLabels.length > 0 &&
+        t.triggers.labels_any_of.some((l) => issueLabels.includes(l))
+      ) {
+        score += 0.5;
       }
     }
 
