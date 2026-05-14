@@ -45,13 +45,13 @@ The production custom domain remains the intended production target.
 ## Build environment contract
 
 The UI is built once but targets different backends by reading Vite env vars at build time.
-All three vars are required in CI — set via GitHub Secrets:
+All three vars are hardcoded as public worker URLs — no GitHub Secrets required for the build:
 
-| Var | Purpose | Secret |
-|-----|---------|--------|
-| `VITE_API_BASE_LOCAL` | Local dev backend | Hard-coded `http://localhost:8787/api` |
-| `VITE_API_BASE_STAGING` | Staging backend API base | `ADMIN_STUDIO_STAGING_URL` |
-| `VITE_API_BASE_PROD` | Production backend API base | `ADMIN_STUDIO_PROD_URL` |
+| Var | Value | Purpose |
+|-----|-------|---------|
+| `VITE_API_BASE_LOCAL` | `http://localhost:8787` | Local dev backend |
+| `VITE_API_BASE_STAGING` | `https://admin-staging.latwoodtech.work` | Staging backend |
+| `VITE_API_BASE_PROD` | `https://api.apunlimited.com` | Production backend |
 
 At runtime, `lib/api.ts::getApiBase()` selects the correct base from the active session environment.
 All three bases are baked into the bundle at build time — no runtime config injection needed.

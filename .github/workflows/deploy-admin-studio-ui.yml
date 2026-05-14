@@ -52,14 +52,13 @@ jobs:
         run: npm run build
         working-directory: apps/admin-studio-ui
         env:
-          # Multi-environment API bases — resolved by the app at runtime based on the current environment.
-          # VITE_API_BASE_LOCAL is static (local dev convenience); never varies between CI runs.
-          VITE_API_BASE_LOCAL: "http://localhost:8787/api"
-          # Staging and production API bases — injected from GitHub Secrets.
-          # Required: ADMIN_STUDIO_STAGING_URL, ADMIN_STUDIO_PROD_URL (no workers.dev fallbacks).
-          # If a secret is unset the variable is empty and the app falls back to /api (relative).
-          VITE_API_BASE_STAGING: "${{ secrets.ADMIN_STUDIO_STAGING_URL }}/api"
-          VITE_API_BASE_PROD: "${{ secrets.ADMIN_STUDIO_PROD_URL }}/api"
+          # Multi-environment API bases — resolved by the app at runtime based on the active session env.
+          # These are public worker URLs (no secrets); hardcoded so deploys don't depend on workflow secret config.
+          # Worker mounts routes at /auth, /synthetic, /ai, etc. — no /api prefix, so do NOT append one here.
+          # Staging custom domain attached via apps/admin-studio/wrangler.jsonc env.staging.routes.
+          VITE_API_BASE_LOCAL: "http://localhost:8787"
+          VITE_API_BASE_STAGING: "https://admin-staging.latwoodtech.work"
+          VITE_API_BASE_PROD: "https://api.apunlimited.com"
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

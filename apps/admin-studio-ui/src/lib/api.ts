@@ -1,10 +1,22 @@
 /**
  * Thin fetch wrapper. Adds JWT, request id, and forces logout for invalid session responses.
  */
+import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
 
-// Strip any trailing slash from the base so `${API_BASE}/path` never produces `//path`.
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/$/, '');
+// Per-environment API base URLs — set at build time via Vite env vars.
+const ENV_BASES: Record<Environment, string> = {
+  local:      (import.meta.env.VITE_API_BASE_LOCAL      ?? '/api').replace(/\/$/, ''),
+  staging:    (import.meta.env.VITE_API_BASE_STAGING    ?? '/api').replace(/\/$/, ''),
+  production: (import.meta.env.VITE_API_BASE_PROD       ?? '/api').replace(/\/$/, ''),
+};
+
+/** Returns the base URL for the given or active session environment. */
+export function getApiBase(env?: Environment | null): string {
+  if (env) return ENV_BASES[env];
+  const sessionEnv = useSession.getState().env;
+  return sessionEnv ? ENV_BASES[sessionEnv] : '/api';
+}
 
 export interface ApiError extends Error {
   status: number;
@@ -25,7 +37,7 @@ export async function apiFetch<T = unknown>(
   if (init.dryRun) headers.set('X-Dry-Run', 'true');
   headers.set('X-Request-Id', crypto.randomUUID());
 
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  const res = await fetch(`${getApiBase()}${path}`, { ...init, headers });
 
   const text = await res.text();
   const body = text ? safeJson(text) : null;

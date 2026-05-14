@@ -146,6 +146,11 @@ jobs:
         run: |
           echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "${{ steps.target.outputs.env }}"
           echo "${{ secrets.GH_PAT }}" | npx wrangler secret put GITHUB_TOKEN --env "${{ steps.target.outputs.env }}"
+          if [ -n "${{ secrets.STUDIO_WEBHOOK_SECRET }}" ]; then
+            echo "${{ secrets.STUDIO_WEBHOOK_SECRET }}" | npx wrangler secret put STUDIO_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
+          else
+            echo "::warning::STUDIO_WEBHOOK_SECRET missing; /tests/runs and /webhooks/studio-tests will return 503 until configured"
+          fi
           if [ -n "${{ secrets.WORKER_API_TOKEN }}" ]; then
             echo "${{ secrets.WORKER_API_TOKEN }}" | npx wrangler secret put WORKER_API_TOKEN --env "${{ steps.target.outputs.env }}"
           fi
@@ -195,10 +200,13 @@ jobs:
 
       - name: Verify post-deploy endpoints
         run: |
+          # Probe the canonical custom domain. CF deactivates the .workers.dev URL
+          # for any worker with a Custom Domain attached (HTTP 1042 "Route not active"),
+          # so workers.dev probing here would always fail post-#610.
           if [ "${{ steps.target.outputs.env }}" = "production" ]; then
             base_url="https://admin.latwoodtech.work"
           else
-            base_url="https://admin-studio-staging.adrper79.workers.dev"
+            base_url="https://admin-staging.latwoodtech.work"
           fi
           node apps/admin-studio/scripts/verify-deployment.mjs "${{ steps.target.outputs.env }}" --base-url "$base_url"
 
