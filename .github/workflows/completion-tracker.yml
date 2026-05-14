@@ -40,7 +40,7 @@ jobs:
             HumanDesign
             videoking
             Factory
-            cypher-healing
+            coh
             xico-city
 
       - name: Set up Python 3.12

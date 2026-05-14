@@ -24,14 +24,14 @@ jobs:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
-          repositories: cypher-healing,xico-city
+          repositories: coh,xico-city
 
-      - name: Rollout to cypher-healing
+      - name: Rollout to coh
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
         run: |
           set -e
-          REPO=Latimer-Woods-Tech/cypher-healing
+          REPO=Latimer-Woods-Tech/coh
           BR=completion-tracker/matrix-and-notify
           if gh api "repos/$REPO/git/refs/heads/$BR" >/dev/null 2>&1; then
             echo "branch exists, skipping create"
