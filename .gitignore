@@ -5,6 +5,7 @@ packages/*/node_modules/
 apps/*/coverage/
 apps/*/dist/
 apps/*/node_modules/
+apps/*/storybook-static/
 apps/*/*.tsbuildinfo
 .env.sentry
 .env.*.local
