@@ -1,0 +1,55 @@
+app: webhook-fanout
+base_url: https://webhooks.latwoodtech.com
+auth: none
+supervisor_access: read-only
+tiers_allowed: [green]
+
+description: >
+  Cloudflare Worker that ingests Stripe webhook events, verifies HMAC-SHA256
+  signatures, deduplicates via KV (7-day TTL), filters synthetic customers,
+  and fans out to ChartMogul (subscription analytics) and Loops (lifecycle emails).
+
+routed_events:
+  - stripe: customer.created
+    loops_event: stripe.customer.created
+    chartmogul: false
+  - stripe: customer.updated
+    loops_event: stripe.customer.updated
+    chartmogul: false
+  - stripe: customer.subscription.created
+    loops_event: stripe.customer.subscription.created
+    chartmogul: upsert-customer
+  - stripe: customer.subscription.updated
+    loops_event: stripe.customer.subscription.updated
+    chartmogul: upsert-customer
+  - stripe: customer.subscription.deleted
+    loops_event: stripe.customer.subscription.deleted
+    chartmogul: upsert-customer
+  - stripe: customer.subscription.trial_will_end
+    loops_event: stripe.customer.subscription.trial_will_end
+    chartmogul: upsert-customer
+  - stripe: invoice.paid
+    loops_event: stripe.invoice.paid
+    chartmogul: false
+  - stripe: invoice.payment_failed
+    loops_event: stripe.invoice.payment_failed
+    chartmogul: false
+
+capabilities:
+  - id: health.check
+    desc: "Worker liveness check."
+    route: GET /health
+    side_effects: none
+    required_scope: supervisor.readonly
+
+  - id: stripe.webhook.receive
+    desc: >
+      Receive and process a Stripe webhook event. Verifies HMAC signature,
+      deduplicates, filters synthetic customers, and fans out to ChartMogul + Loops.
+    route: POST /stripe
+    side_effects: write-external
+    reversibility: idempotent
+    required_scope: none
+    notes: >
+      Called exclusively by Stripe. Not for direct invocation by the Supervisor.
+      Returns 200 immediately; fan-out continues in waitUntil().
