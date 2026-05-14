@@ -4,6 +4,7 @@ on:
     tags: ['*/v*']
 permissions:
   contents: read
+  id-token: write
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 concurrency:
@@ -58,6 +59,6 @@ jobs:
       - name: Pre-publish checks
         run: cd "packages/${PACKAGE}" && (npm run prepublish --if-present || echo 'no prepublish')
       - name: Publish to npmjs.org
-        run: cd "packages/${PACKAGE}" && npm publish --access public --ignore-scripts
+        run: cd "packages/${PACKAGE}" && npm publish --access public --ignore-scripts --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

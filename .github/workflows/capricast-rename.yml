@@ -46,11 +46,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
 
       - name: Audit endpoints
@@ -70,8 +91,8 @@ jobs:
 
       - name: Re-attach api.itsjusus.com via Cloudflare API
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CF_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
         run: |
           # Ensure custom domain route exists for nichestream-api worker
           curl -s -X PUT "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/scripts/nichestream-api/domains" \
@@ -112,11 +133,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
 
       - name: Rename repo via GitHub API
@@ -154,17 +192,42 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+            - name: R2_ACCESS_KEY_ID
+              id: r2_access_key
+            - name: R2_SECRET_ACCESS_KEY
+              id: r2_secret_key
+
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
 
       - name: Create capricast-r2 bucket
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CF_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
         run: |
           curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/r2/buckets" \
             -H "Authorization: Bearer ${CF_API_TOKEN}" \
@@ -174,10 +237,10 @@ jobs:
 
       - name: Sync content from videoking-r2 (via wrangler r2 object list + copy)
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CF_API_TOKEN: ${{ steps.secrets.outputs.cf_token }}
+          CF_ACCOUNT_ID: ${{ steps.secrets.outputs.cf_account }}
+          R2_ACCESS_KEY_ID: ${{ steps.secrets.outputs.r2_access_key }}
+          R2_SECRET_ACCESS_KEY: ${{ steps.secrets.outputs.r2_secret_key }}
         run: |
           # Use aws-cli with Cloudflare R2 S3-compatible endpoint
           pip install awscli -q

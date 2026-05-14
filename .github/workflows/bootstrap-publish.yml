@@ -7,9 +7,14 @@ on:
         description: 'Dry run (skip actual publish)'
         required: false
         default: 'false'
+      start_from:
+        description: 'Resume from this package name (skip all earlier). Leave blank to publish all.'
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  id-token: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -20,13 +25,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # OIDC trusted-publisher requires id-token: write so GitHub mints the
-    # OIDC token that npm verifies against the configured trusted publisher.
-    # contents: read is enough for checkout.
-    permissions:
-      id-token: write
-      contents: read
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -85,11 +84,24 @@ jobs:
           # depends on validation; validation must be published first).
           PACKAGES=(errors creator deploy design-system design-tokens entitlements protocol studio-core testing validation monitoring realtime seo video ui logger email social neon auth llm llm-meter analytics stripe compliance content copy telephony schedule crm admin)
 
+          START_FROM="${{ inputs.start_from }}"
+          SKIPPING=false
+          if [ -n "$START_FROM" ]; then SKIPPING=true; fi
+
           declare -a FAILED=()
           declare -a PUBLISHED=()
           declare -a SKIPPED=()
 
           for pkg in "${PACKAGES[@]}"; do
+            if [ "$SKIPPING" = "true" ]; then
+              if [ "$pkg" = "$START_FROM" ]; then
+                SKIPPING=false
+              else
+                echo "⏭️  Skipping $pkg (before start_from)"
+                SKIPPED+=("${pkg} (skipped)")
+                continue
+              fi
+            fi
             echo ""
             echo "=== ${pkg} ==="
             if [ ! -d "packages/${pkg}" ]; then

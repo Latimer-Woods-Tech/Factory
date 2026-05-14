@@ -23,14 +23,39 @@ jobs:
     timeout-minutes: 20
     name: Deploy video-cron to Cloudflare
     environment: production
-    
+
     steps:
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+            - name: HYPERDRIVE_FACTORY_CORE
+              id: hyperdrive_id
+            - name: WORKER_API_TOKEN
+              id: worker_api_token
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
       - name: Checkout
         uses: actions/checkout@v6
@@ -59,15 +84,15 @@ jobs:
       - name: Update wrangler.jsonc with Hyperdrive ID
         run: |
           cd apps/video-cron
-          sed -i 's/REPLACE_WITH_HYPERDRIVE_ID/${{ secrets.HYPERDRIVE_FACTORY_CORE }}/g' wrangler.jsonc
+          sed -i 's/REPLACE_WITH_HYPERDRIVE_ID/${{ steps.secrets.outputs.hyperdrive_id }}/g' wrangler.jsonc
           echo "✅ Updated wrangler.jsonc with Hyperdrive ID"
           cat wrangler.jsonc
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ steps.secrets.outputs.cf_token }}
+          accountId: ${{ steps.secrets.outputs.cf_account }}
           workingDirectory: apps/video-cron
           command: deploy --env production
           secrets: |
@@ -75,7 +100,7 @@ jobs:
             WORKER_API_TOKEN
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+          WORKER_API_TOKEN: ${{ steps.secrets.outputs.worker_api_token }}
 
       - name: Verify deployment
         run: |

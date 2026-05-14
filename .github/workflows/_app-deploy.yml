@@ -88,12 +88,34 @@ jobs:
         working-directory: ${{ inputs.working_directory }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: CF_API_TOKEN
+              id: cf_token
+            - name: CF_ACCOUNT_ID
+              id: cf_account
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: ${{ github.repository_owner }}
       - uses: actions/setup-node@v6
         with:
@@ -108,8 +130,8 @@ jobs:
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ steps.secrets.outputs.cf_token }}
+          accountId: ${{ steps.secrets.outputs.cf_account }}
           command: ${{ inputs.wrangler_command }}
       - name: Post-deploy health check
         if: ${{ inputs.health_url != '' }}

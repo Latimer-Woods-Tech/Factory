@@ -44,11 +44,32 @@ jobs:
           echo "Label: $ISSUE_LABEL"
 
       - uses: actions/checkout@v6
+      - name: Authenticate to Google Cloud (OIDC)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+      - name: Get secrets from Secret Manager
+        id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
+        with:
+          secrets:
+            - name: FACTORY_APP_ID
+              id: factory_app_id
+            - name: FACTORY_APP_PRIVATE_KEY
+              id: factory_app_private_key
+            - name: ANTHROPIC_API_KEY
+              id: anthropic_key
+            - name: PUSHOVER_TOKEN
+              id: pushover_token
+            - name: PUSHOVER_USER
+              id: pushover_user
       - uses: actions/create-github-app-token@v3
         id: app-token
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
-          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          app-id: ${{ steps.secrets.outputs.factory_app_id }}
+          private-key: ${{ steps.secrets.outputs.factory_app_private_key }}
           owner: Latimer-Woods-Tech
       - uses: actions/setup-node@v6
         with:
@@ -57,8 +78,8 @@ jobs:
         run: node .github/scripts/supervisor-core.mjs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.anthropic_key }}
           ANTHROPIC_MODEL: claude-haiku-4-5-20251001
-          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
-          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+          PUSHOVER_TOKEN: ${{ steps.secrets.outputs.pushover_token }}
+          PUSHOVER_USER: ${{ steps.secrets.outputs.pushover_user }}
           TRIGGER_ISSUE: ${{ github.event.issue.number || inputs.issue_number || '' }}

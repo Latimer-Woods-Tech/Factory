@@ -9,7 +9,7 @@ import type { Env } from '../env.js';
 import type { RenderedDigest } from './render.js';
 
 const RESEND_API = 'https://api.resend.com/emails';
-const FROM_ADDRESS = 'Factory Digest <digest@thefactory.dev>';
+const FROM_ADDRESS = 'Factory Digest <digest@latwoodtech.com>';
 const SEND_TIMEOUT_MS = 15_000;
 
 export interface SendResult {

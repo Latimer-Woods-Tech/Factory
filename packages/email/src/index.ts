@@ -7,7 +7,7 @@ const RESEND_SEND_URL = 'https://api.resend.com/emails';
  */
 export interface EmailConfig {
   resendApiKey: string;
-  /** Sender address, e.g. `'noreply@thefactory.dev'`. */
+  /** Sender address, e.g. `'noreply@latwoodtech.com'`. */
   fromAddress: string;
   /** Display name shown alongside the sender address. */
   fromName: string;
@@ -99,7 +99,7 @@ async function resendRequest(
  * ```ts
  * const email = createEmailClient({
  *   resendApiKey: env.RESEND_API_KEY,
- *   fromAddress: 'noreply@thefactory.dev',
+ *   fromAddress: 'noreply@latwoodtech.com',
  *   fromName: 'Factory',
  * });
  * await email.sendTransactional({ to: 'user@example.com', subject: 'Welcome!', html: '<p>Hi</p>' });
