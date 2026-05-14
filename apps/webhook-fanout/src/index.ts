@@ -9,6 +9,17 @@ import type { Env } from './env.js';
 
 const SYNTHETIC_EMAIL_RE = /(?:gatecheck_|test_|smoke_|@example\.com)/i;
 const KV_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const FETCH_TIMEOUT_MS = 10_000;
+
+async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Stripe signature verification — Web Crypto (no Node crypto), constant-time
@@ -96,14 +107,14 @@ async function loopsUpsertContact(
   };
 
   // Try update first; fall back to create on 404
-  let res = await fetch('https://app.loops.so/api/v1/contacts/update', {
+  let res = await fetchWithTimeout('https://app.loops.so/api/v1/contacts/update', {
     method: 'PUT',
     headers,
     body,
   });
 
   if (res.status === 404) {
-    res = await fetch('https://app.loops.so/api/v1/contacts/create', {
+    res = await fetchWithTimeout('https://app.loops.so/api/v1/contacts/create', {
       method: 'POST',
       headers,
       body,
@@ -124,7 +135,7 @@ async function loopsSendEvent(
   eventName: string,
   eventProperties: Record<string, unknown>,
 ): Promise<void> {
-  const res = await fetch('https://app.loops.so/api/v1/events/send', {
+  const res = await fetchWithTimeout('https://app.loops.so/api/v1/events/send', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -155,7 +166,7 @@ async function chartMogulUpsertCustomer(
   const authHeader = `Basic ${btoa(`${apiKey}:`)}`;
 
   // Search for existing customer by external_id
-  const searchRes = await fetch(
+  const searchRes = await fetchWithTimeout(
     `https://api.chartmogul.com/v1/customers?external_id=${encodeURIComponent(externalId)}&data_source_uuid=${encodeURIComponent(dataSourceUuid)}`,
     { headers: { Authorization: authHeader } },
   );
@@ -164,7 +175,7 @@ async function chartMogulUpsertCustomer(
     const data = await searchRes.json() as { entries?: Array<{ uuid: string }> };
     if (data.entries && data.entries.length > 0) {
       const uuid = data.entries[0]!.uuid;
-      await fetch(`https://api.chartmogul.com/v1/customers/${uuid}`, {
+      await fetchWithTimeout(`https://api.chartmogul.com/v1/customers/${uuid}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: authHeader },
         body: JSON.stringify({ name, email }),
@@ -173,7 +184,7 @@ async function chartMogulUpsertCustomer(
     }
   }
 
-  const createRes = await fetch('https://api.chartmogul.com/v1/customers', {
+  const createRes = await fetchWithTimeout('https://api.chartmogul.com/v1/customers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: authHeader },
     body: JSON.stringify({ data_source_uuid: dataSourceUuid, external_id: externalId, name, email }),
@@ -312,11 +323,12 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
   tasks.push(
     loopsUpsertContact(env.LOOPS_API_KEY, email, contactProps)
       .then(() => loopsSendEvent(env.LOOPS_API_KEY, email!, `stripe.${event.type}`, eventProps))
-      .catch(err =>
+      .catch(err => {
         console.error(
           JSON.stringify({ level: 'error', msg: '[loops] fan-out error', error: err instanceof Error ? err.message : String(err) }),
-        ),
-      ),
+        );
+        throw err;
+      }),
   );
 
   // ChartMogul: subscription events only
@@ -332,15 +344,29 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
         .then(uuid => {
           if (uuid) return upsertChartMogulSubscription(env.CHARTMOGUL_API_KEY, uuid, obj);
         })
-        .catch(err =>
+        .catch(err => {
           console.error(
             JSON.stringify({ level: 'error', msg: '[chartmogul] fan-out error', error: err instanceof Error ? err.message : String(err) }),
-          ),
-        ),
+          );
+          throw err;
+        }),
     );
   }
 
-  await Promise.allSettled(tasks);
+  const results = await Promise.allSettled(tasks);
+  const failed = results.filter(r => r.status === 'rejected');
+  if (failed.length > 0) {
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        msg: '[webhook-fanout] fan-out partial failure',
+        failedCount: failed.length,
+        totalCount: results.length,
+        eventId: event.id,
+        eventType: event.type,
+      }),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
