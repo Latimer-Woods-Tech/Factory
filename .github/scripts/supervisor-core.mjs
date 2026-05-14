@@ -95,40 +95,56 @@ async function loadTemplates() {
 // ─── Deterministic template matching ─────────────────────────────────────────
 // Derives match score from each template's `triggers` block (labels_any_of,
 // title_pattern, body_patterns) — no per-template hardcoded rules.
+// Declared trigger signals use AND semantics: if a template declares a signal,
+// that signal must match for the template to be eligible.
 
 function matchTemplate(issue, templates) {
   const { title, labels, body = '' } = issue;
+  const normalizedLabels = new Set((labels ?? []).map((label) => String(label).toLowerCase()));
   const scores = [];
 
   for (const tmpl of templates) {
     let score = 0;
+    let requiredTriggerMiss = false;
 
     // Signal 1: label overlap
-    if (tmpl.labels?.some((l) => labels.includes(l))) score += 0.5;
+    if (tmpl.labels?.length) {
+      const hasLabelHit = tmpl.labels.some((label) =>
+        normalizedLabels.has(String(label).toLowerCase()),
+      );
+      if (hasLabelHit) score += 0.5;
+      else requiredTriggerMiss = true;
+    }
 
     // Signal 2: title pattern
     if (tmpl.titlePattern) {
       try {
         if (new RegExp(tmpl.titlePattern, 'i').test(title)) score += 0.5;
+        else requiredTriggerMiss = true;
       } catch {
         // ignore malformed regex
       }
     }
 
     // Signal 3: body patterns (strip PCRE inline flags — JS uses flag args)
+    let bodyMatched = false;
     for (const p of tmpl.bodyPatterns ?? []) {
       const jsPattern = p.replace(/^\(\?[is]+\)/, '');
       try {
         if (new RegExp(jsPattern, 'is').test(body)) {
           score += 0.25;
+          bodyMatched = true;
           break; // body counts once
         }
       } catch {
         // ignore malformed regex
       }
     }
+    if ((tmpl.bodyPatterns?.length ?? 0) > 0 && !bodyMatched) {
+      requiredTriggerMiss = true;
+    }
 
-    if (score >= 0.35) {
+    if (!requiredTriggerMiss && score >= 0.35) {
       scores.push({ tmpl, score });
     }
   }
@@ -378,6 +394,15 @@ async function findExistingPR(repo, issueNumber) {
   }
 }
 
+async function countMatchingSupervisorBranches(repo, slug) {
+  try {
+    const refs = await gh('GET', `/repos/${ORG}/${repo}/git/matching-refs/heads/supervisor/${slug}-`);
+    return Array.isArray(refs) ? refs.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function executeGreen(repo, issue, template, slots) {
   // Dedup guard: if a supervisor PR already exists for this issue, return it
   // without creating a branch or committing files. This prevents the race
@@ -394,6 +419,13 @@ async function executeGreen(repo, issue, template, slots) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+$/, '');
+  const priorBranchCount = await countMatchingSupervisorBranches(repo, slug);
+  if (priorBranchCount >= 3) {
+    console.log(
+      `[LOOP_KILL] ${repo}#${issue.number} slug="${slug}" has ${priorBranchCount} existing supervisor branches — skipping`,
+    );
+    return { blocked: true, reason: 'loop-killswitch', slug, priorBranchCount };
+  }
   const branch = `supervisor/${slug}-${Date.now()}`;
 
   const ref = await gh('GET', `/repos/${ORG}/${repo}/git/ref/heads/main`);
@@ -852,6 +884,27 @@ async function main() {
       let prInfo = null;
       if (template.prFiles.length > 0) {
         prInfo = await executeGreen(repo, issue, template, slots);
+        if (prInfo?.blocked) {
+          await addLabels(repo, issue.number, ['supervisor:no-template']);
+          await postComment(
+            repo,
+            issue.number,
+            [
+              '🔴 **Supervisor loop killswitch activated.**',
+              '',
+              `Detected \`${prInfo.priorBranchCount}\` existing branches matching \`supervisor/${prInfo.slug}-*\`.`,
+              'To prevent infinite regeneration loops, this issue is now tagged `supervisor:no-template` and will be skipped by future runs.',
+              '',
+              '_A CODEOWNER should resolve or close stale supervisor branches/PRs, then remove `supervisor:no-template` only if safe to retry._',
+              '',
+              `_Run ID: ${RUN_ID}_`,
+            ].join('\n'),
+          );
+          outcomes.push(
+            `🔴 ${repo}#${issue.number}: loop killswitch triggered (${prInfo.priorBranchCount} existing supervisor/${prInfo.slug}-* branches)`,
+          );
+          continue;
+        }
         execNote = `\n\n✅ PR opened: ${prInfo.prUrl}`;
       } else {
         execNote = '\n\n⚠️ Template has no openPR file step — slot extraction complete, manual execution required.';

@@ -107,4 +107,70 @@ describe('matchTemplate', () => {
     const m = matchTemplate('governance hardening drift fix', mixedTemplates);
     expect(m?.id).toBe('governance-hardening-tweak');
   });
+
+  it('matches template with labels_any_of only when label matches', () => {
+    const labelOnly: Template[] = [
+      {
+        id: 'label-only',
+        tier: 'green',
+        description: '',
+        trigger_keywords: [],
+        triggers: { labels_any_of: ['hardening'] },
+      },
+    ];
+    const m = matchTemplate('unrelated description', labelOnly, { labels: ['hardening'] });
+    expect(m?.id).toBe('label-only');
+  });
+
+  it('does not penalize matching keyword signal when labels_any_of is non-matching but optional to template', () => {
+    const templates: Template[] = [
+      {
+        id: 'keyword-only',
+        tier: 'green',
+        description: '',
+        trigger_keywords: ['governance'],
+      },
+      {
+        id: 'label-and-keyword',
+        tier: 'green',
+        description: '',
+        trigger_keywords: ['governance'],
+        triggers: { labels_any_of: ['hardening'] },
+      },
+    ];
+
+    const m = matchTemplate('governance update', templates, { labels: ['bug'] });
+    expect(m?.id).toBe('keyword-only');
+  });
+
+  it('matches labels_any_of case-insensitively', () => {
+    const templates: Template[] = [
+      {
+        id: 'case-insensitive-label',
+        tier: 'green',
+        description: '',
+        trigger_keywords: [],
+        triggers: { labels_any_of: ['Hardening'] },
+      },
+    ];
+    const m = matchTemplate('something', templates, { labels: ['hardening'] });
+    expect(m?.id).toBe('case-insensitive-label');
+  });
+
+  it('requires all declared trigger signals to match', () => {
+    const templates: Template[] = [
+      {
+        id: 'strict-triggers',
+        tier: 'green',
+        description: '',
+        trigger_keywords: ['governance'],
+        triggers: {
+          labels_any_of: ['hardening'],
+          title_pattern: 'branch protection',
+        },
+      },
+    ];
+    const m = matchTemplate('governance update without title match', templates, { labels: ['hardening'] });
+    expect(m).toBeNull();
+  });
 });

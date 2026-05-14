@@ -208,7 +208,9 @@ export class SupervisorDO {
         }
 
         const searchText = `${issue.title} ${issue.body.slice(0, 500)}`;
-        const template = matchTemplate(searchText, templates);
+        const template = matchTemplate(searchText, templates, {
+          labels: issue.labels.map((label) => label.name),
+        });
 
         if (!template) {
           noTemplate++;
@@ -341,13 +343,13 @@ export class SupervisorDO {
   }
 
   private async handlePlan(request: Request): Promise<Response> {
-    const body = (await request.json()) as { description?: string; source?: string };
+    const body = (await request.json()) as { description?: string; source?: string; labels?: string[] };
     if (!body.description) {
       return Response.json({ error: 'description required' }, { status: 422 });
     }
 
     const templates = await loadTemplates();
-    const match = matchTemplate(body.description, templates);
+    const match = matchTemplate(body.description, templates, { labels: body.labels });
     if (!match) {
       return Response.json({
         matched: false,
