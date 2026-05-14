@@ -108,3 +108,65 @@ describe('matchTemplate', () => {
     expect(m?.id).toBe('governance-hardening-tweak');
   });
 });
+
+describe('matchTemplate — labels_any_of (AND-semantics)', () => {
+  const labelTemplate: Template = {
+    id: 'label-only',
+    tier: 'green',
+    description: 'Fires on hardening label',
+    triggers: { labels_any_of: ['hardening', 'governance'] },
+  };
+
+  const fullTemplate: Template = {
+    id: 'full-triggers',
+    tier: 'yellow',
+    description: 'Fires only when label + title both match',
+    triggers: {
+      labels_any_of: ['bug'],
+      title_pattern: 'wrangler|binding',
+      body_patterns: ['wrangler\\.jsonc'],
+    },
+  };
+
+  it('matches when a declared label is present', () => {
+    const m = matchTemplate('fix governance drift', [labelTemplate], { labels: ['hardening'] });
+    expect(m?.id).toBe('label-only');
+  });
+
+  it('matches case-insensitively on labels', () => {
+    const m = matchTemplate('fix governance drift', [labelTemplate], { labels: ['HARDENING'] });
+    expect(m?.id).toBe('label-only');
+  });
+
+  it('does not match when no declared label is present', () => {
+    const m = matchTemplate('fix governance drift', [labelTemplate], { labels: ['unrelated'] });
+    expect(m).toBeNull();
+  });
+
+  it('does not match when labels option is omitted and template declares labels_any_of', () => {
+    const m = matchTemplate('fix governance drift', [labelTemplate]);
+    expect(m).toBeNull();
+  });
+
+  it('AND-semantics: label hit alone is not enough when title_pattern is also declared', () => {
+    // label matches 'bug' but title does NOT match 'wrangler|binding'
+    const m = matchTemplate('unrelated title text', [fullTemplate], { labels: ['bug'] });
+    expect(m).toBeNull();
+  });
+
+  it('AND-semantics: all declared signals must fire for full-triggers template', () => {
+    const m = matchTemplate(
+      'fix wrangler binding in wrangler.jsonc',
+      [fullTemplate],
+      { labels: ['bug'] },
+    );
+    expect(m?.id).toBe('full-triggers');
+  });
+
+  it('AND-semantics: title match without required label does not match', () => {
+    const m = matchTemplate('fix wrangler binding in wrangler.jsonc', [fullTemplate], {
+      labels: ['enhancement'], // 'bug' not present
+    });
+    expect(m).toBeNull();
+  });
+});

@@ -99,38 +99,46 @@ async function loadTemplates() {
 function matchTemplate(issue, templates) {
   const { title, labels, body = '' } = issue;
   const scores = [];
+  const labelsLower = labels.map((l) => l.toLowerCase());
 
   for (const tmpl of templates) {
     let score = 0;
+    const hasLabels = tmpl.labels?.length > 0;
+    const hasTitle = !!tmpl.titlePattern;
+    const hasBody = tmpl.bodyPatterns?.length > 0;
 
-    // Signal 1: label overlap
-    if (tmpl.labels?.some((l) => labels.includes(l))) score += 0.5;
+    // Templates with no declared trigger signals are skipped (safety)
+    if (!hasLabels && !hasTitle && !hasBody) continue;
 
-    // Signal 2: title pattern
-    if (tmpl.titlePattern) {
-      try {
-        if (new RegExp(tmpl.titlePattern, 'i').test(title)) score += 0.5;
-      } catch {
-        // ignore malformed regex
+    // Signal 1: label match — if declared, REQUIRED
+    if (hasLabels) {
+      const labelHit = tmpl.labels.some((l) => labelsLower.includes(l.toLowerCase()));
+      if (!labelHit) continue;
+      score += 0.5;
+    }
+
+    // Signal 2: title pattern — if declared, REQUIRED
+    if (hasTitle) {
+      let hit = false;
+      try { hit = new RegExp(tmpl.titlePattern, 'i').test(title); } catch { /* ignore malformed regex */ }
+      if (!hit) continue;
+      score += 0.5;
+    }
+
+    // Signal 3: body patterns — if declared, at least one REQUIRED
+    if (hasBody) {
+      let hit = false;
+      for (const p of tmpl.bodyPatterns) {
+        const jsPattern = p.replace(/^\(\?[is]+\)/, '');
+        try {
+          if (new RegExp(jsPattern, 'is').test(body)) { hit = true; break; }
+        } catch { /* ignore malformed regex */ }
       }
+      if (!hit) continue;
+      score += 0.25;
     }
 
-    // Signal 3: body patterns (strip PCRE inline flags — JS uses flag args)
-    for (const p of tmpl.bodyPatterns ?? []) {
-      const jsPattern = p.replace(/^\(\?[is]+\)/, '');
-      try {
-        if (new RegExp(jsPattern, 'is').test(body)) {
-          score += 0.25;
-          break; // body counts once
-        }
-      } catch {
-        // ignore malformed regex
-      }
-    }
-
-    if (score >= 0.35) {
-      scores.push({ tmpl, score });
-    }
+    scores.push({ tmpl, score });
   }
 
   if (scores.length === 0) return null;
@@ -354,6 +362,23 @@ async function extractSlots(slotNames, issue, factoryContext = '', slotValidator
   }
   // Guard 2: enforce schema — strip hallucinated keys, null missing ones, validate formats
   return enforceSlotSchema(parsed, slotNames, slotValidators);
+}
+
+// ─── Loop killswitch ──────────────────────────────────────────────────────────
+// If the supervisor has already opened ≥3 unmerged PRs for the same issue
+// (using wrong template over and over), permanently skip and label
+// supervisor:no-template so the loop doesn't repeat indefinitely.
+
+async function countOpenSupervisorPRs(repo, issueNumber) {
+  try {
+    const prs = await gh('GET', `/repos/${ORG}/${repo}/pulls?state=open&per_page=100`);
+    const marker = `**Source issue:** #${issueNumber}`;
+    return prs.filter(
+      (pr) => pr.title.startsWith('[Supervisor]') && (pr.body ?? '').includes(marker),
+    ).length;
+  } catch {
+    return 0; // non-fatal — let the run proceed
+  }
 }
 
 // ─── Green execution (create branch + files + PR) ────────────────────────────
@@ -841,6 +866,29 @@ async function main() {
         outcomes.push(
           `🟡 ${repo}#${issue.number}: ${template.id} — waiting ✅. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
+        continue;
+      }
+
+      // Green — loop killswitch: bail if ≥3 open supervisor PRs already exist for this issue
+      const openPRCount = await countOpenSupervisorPRs(repo, issue.number);
+      if (openPRCount >= 3) {
+        console.log(`[KILL] ${repo}#${issue.number}: loop killswitch — ${openPRCount} open supervisor PRs, permanently skipping`);
+        await addLabels(repo, issue.number, ['supervisor:no-template']);
+        await postComment(
+          repo,
+          issue.number,
+          [
+            `⛔ **Supervisor: loop killswitch fired.** ${openPRCount} unmerged supervisor PRs already open for this issue.`,
+            '',
+            'The supervisor will no longer attempt to match this issue. To re-enable:',
+            '1. Close the stale supervisor PRs above.',
+            '2. Remove the `supervisor:no-template` label.',
+            '3. Verify a correct template exists in `docs/supervisor/plans/`.',
+            '',
+            `_Run ID: ${RUN_ID}_`,
+          ].join('\n'),
+        );
+        outcomes.push(`⛔ ${repo}#${issue.number}: loop killswitch (≥3 open PRs) → supervisor:no-template`);
         continue;
       }
 
