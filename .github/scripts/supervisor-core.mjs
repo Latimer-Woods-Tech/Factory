@@ -425,6 +425,12 @@ async function executeGreen(repo, issue, template, slots) {
     changedFiles.push(filePath);
   }
 
+  // Guard: if no files were extracted/committed, skip PR creation to avoid GitHub 422 error
+  if (changedFiles.length === 0) {
+    console.log(`[SKIP] ${repo}#${issue.number}: no files extracted from template slots — branch ${branch} has no commits`);
+    return { branch, prUrl: null, prNumber: null, skipped: 'no files extracted' };
+  }
+
   const pr = await gh('POST', `/repos/${ORG}/${repo}/pulls`, {
     title: `[Supervisor] ${issue.title}`,
     head: branch,
