@@ -1,4 +1,5 @@
 import { serve } from '@hono/node-server';
 import app from './index.js';
 
-serve({ fetch: app.fetch, port: 8080 });
+const port = Number(process.env['PORT']) || 8080;
+serve({ fetch: app.fetch, port });
