@@ -65,6 +65,7 @@ interface GoogleTokenResponse {
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_TOKEN_URI = 'https://oauth2.googleapis.com/token';
 const TOKEN_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
+const BASE64_CHUNK_SIZE = 0x8000;
 const encoder = new TextEncoder();
 
 function normalizeUrl(value: string, field: string): string {
@@ -93,8 +94,11 @@ function parseServiceAccountKey(value: string | BrowserAgentServiceAccountKey): 
 }
 
 function toBase64UrlBytes(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const chunks: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...bytes.slice(offset, offset + BASE64_CHUNK_SIZE)));
+  }
+  const binary = chunks.join('');
   return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll(/=+$/gu, '');
 }
 

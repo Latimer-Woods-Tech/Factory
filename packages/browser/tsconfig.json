@@ -7,7 +7,6 @@
     "lib": ["ES2022", "ESNext", "WebWorker"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["node"],
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,

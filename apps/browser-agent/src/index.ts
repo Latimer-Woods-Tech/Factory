@@ -4,6 +4,8 @@ import { chromium, type Browser } from 'playwright';
 /** Selector map keyed by caller-defined field names. */
 export type BrowserSelectors = Record<string, string>;
 
+const BASE64_CHUNK_SIZE = 0x8000;
+
 /** Scrape request body. */
 export interface ScrapeRequest {
   url: string;
@@ -60,9 +62,11 @@ function parseSelectors(value: unknown): BrowserSelectors {
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
+  const chunks: string[] = [];
+  for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_SIZE) {
+    chunks.push(String.fromCharCode(...bytes.slice(offset, offset + BASE64_CHUNK_SIZE)));
+  }
+  return btoa(chunks.join(''));
 }
 
 function createPlaywrightAutomation(): BrowserAutomation {

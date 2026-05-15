@@ -3,9 +3,7 @@ import { ValidationError } from '@latimer-woods-tech/errors';
 import { createBrowserClient, mintBrowserAgentIdToken } from './index.js';
 
 function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
+  return btoa(String.fromCharCode(...bytes));
 }
 
 async function createServiceAccountKey(): Promise<{ client_email: string; private_key: string }> {
