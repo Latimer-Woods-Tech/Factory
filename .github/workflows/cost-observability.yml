@@ -93,12 +93,15 @@ jobs:
       - name: Commit cost snapshots
         run: |
           set -euo pipefail
-          if git diff --quiet docs/cost/; then
+          # Stage first, then diff. `git diff --quiet` only inspects the
+          # working tree against HEAD for tracked paths — it does NOT see
+          # new untracked files, which is the steady-state case here.
+          git add docs/cost/ 2>/dev/null || true
+          if git diff --quiet --cached docs/cost/; then
             echo "No cost changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/cost/
           git commit -m "chore(cost): daily digest snapshot"
           git push
