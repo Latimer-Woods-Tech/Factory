@@ -1,6 +1,6 @@
 # Cost Digest — Rolling 30 days
 
-*Generated: 2026-05-15T05:08:02.650333+00:00*
+*Generated: 2026-05-15T09:34:49.618535+00:00*
 
 ## Provider totals (window)
 
