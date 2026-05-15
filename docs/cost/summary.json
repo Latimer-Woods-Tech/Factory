@@ -1,17 +1,17 @@
 {
-  "generated": "2026-05-15T04:52:41.153771+00:00",
+  "generated": "2026-05-15T05:08:02.650333+00:00",
   "window_days": 1,
   "totals_by_provider": {
     "cloudflare": 0,
-    "anthropic": 0,
+    "anthropic": 25.46,
     "sentry": 0,
-    "stripe": 0,
+    "stripe": 0.0,
     "gcp": 0
   },
   "daily_totals": [
     {
       "date": "2026-05-14",
-      "total_usd": 0
+      "total_usd": 25.46
     }
   ]
 }
