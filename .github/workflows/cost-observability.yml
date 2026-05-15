@@ -1,0 +1,79 @@
+name: Cost Observability
+
+# Stage 1 M2 — Daily cost digest. Shadow mode: observe + warn, no enforcement.
+on:
+  schedule:
+    - cron: '37 6 * * *' # daily 06:37 UTC (covers prior UTC day)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD UTC). Empty = yesterday.'
+        required: false
+      provider:
+        description: 'Single provider (cloudflare|anthropic|sentry|stripe|gcp). Empty = all.'
+        required: false
+      pushover:
+        description: 'Send Pushover digest (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write # commit docs/cost/ snapshots back to main
+
+concurrency:
+  group: cost-observability
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Run cost digest
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          ANTHROPIC_ADMIN_KEY: ${{ secrets.ANTHROPIC_ADMIN_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'latwood-tech' }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY_READONLY || secrets.STRIPE_API_KEY }}
+          GCP_BILLING_TOKEN: ${{ secrets.GCP_BILLING_TOKEN }}
+          GCP_BILLING_ACCOUNT_ID: ${{ secrets.GCP_BILLING_ACCOUNT_ID }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            args="$args --date ${{ github.event.inputs.date }}"
+          fi
+          if [ -n "${{ github.event.inputs.provider }}" ]; then
+            args="$args --provider ${{ github.event.inputs.provider }}"
+          fi
+          if [ "${{ github.event.inputs.pushover || 'true' }}" = "true" ]; then
+            args="$args --pushover"
+          fi
+          python scripts/cost_digest.py $args
+
+      - name: Commit cost snapshots
+        run: |
+          set -euo pipefail
+          if git diff --quiet docs/cost/; then
+            echo "No cost changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/cost/
+          git commit -m "chore(cost): daily digest snapshot"
+          git push
