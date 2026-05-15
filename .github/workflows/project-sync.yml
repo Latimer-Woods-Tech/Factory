@@ -1,4 +1,4 @@
-name: Project Board Sync
+name: Project Sync
 
 on:
   issues:
@@ -6,15 +6,285 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [closed]
+    types: [opened, reopened, ready_for_review, synchronize, closed]
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * *"
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
+  add-to-project:
+    if: >
+      (github.event_name == 'issues' || github.event_name == 'pull_request') &&
+      github.event.sender.type != 'Bot'
+    name: Add to project
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/add-to-project@v2.0.0
+        with:
+          project-url: https://github.com/orgs/Latimer-Woods-Tech/projects/1
+          github-token: ${{ steps.app-token.outputs.token }}
+
+  pr-triage:
+    if: >
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' || github.event.action == 'reopened') &&
+      (
+        github.event.sender.type != 'Bot' ||
+        github.event.pull_request.user.login == 'app/copilot-swe-agent' ||
+        github.event.pull_request.user.login == 'copilot-swe-agent'
+      )
+    name: Label PR by author and changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - uses: actions/checkout@v6
+
+      - name: Triage PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: |
+          node - <<'EOF'
+          const { GH_TOKEN, PR_NUMBER, PR_AUTHOR, HEAD_REF, REPO } = process.env;
+          const num = parseInt(PR_NUMBER, 10);
+
+          async function gh(method, path, data) {
+            const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
+            const res = await fetch(url, {
+              method,
+              headers: {
+                Accept: 'application/vnd.github+json',
+                Authorization: `Bearer ${GH_TOKEN}`,
+                'X-GitHub-Api-Version': '2022-11-28',
+                ...(data ? { 'Content-Type': 'application/json' } : {}),
+              },
+              body: data ? JSON.stringify(data) : undefined,
+            });
+            if (!res.ok) {
+              const t = await res.text();
+              throw new Error(`GH ${method} ${path} → ${res.status}: ${t.slice(0, 300)}`);
+            }
+            return res.status === 204 ? null : res.json();
+          }
+
+          const labels = new Set(['source:human']);
+
+          // ── Author-based priority ─────────────────────────────────────
+          if (PR_AUTHOR === 'app/copilot-swe-agent' || PR_AUTHOR === 'copilot-swe-agent') {
+            labels.add('priority:P2');
+            labels.add('agent:claimed:copilot');
+          } else if (PR_AUTHOR === 'adrper79-dot') {
+            labels.add('priority:P1');
+            labels.add('agent:claimed:human');
+          } else if (PR_AUTHOR.endsWith('[bot]') || PR_AUTHOR === 'renovate[bot]' || PR_AUTHOR === 'dependabot[bot]') {
+            labels.add('priority:P3');
+            labels.add('dependencies');
+          } else {
+            // Any other human contributor
+            labels.add('priority:P2');
+            labels.add('agent:claimed:human');
+          }
+
+          // ── Branch-name → app: label ──────────────────────────────────
+          const branch = HEAD_REF || '';
+          const appMatch = branch.match(/\bapp[s]?\/([\w-]+)/);
+          if (appMatch) {
+            const appName = appMatch[1];
+            // Only add the label if it exists in the known taxonomy
+            if (appName === 'selfprime') labels.add('app:selfprime');
+          }
+          if (/selfprime/i.test(branch)) labels.add('app:selfprime');
+
+          // ── Changed-path → area: label ────────────────────────────────
+          // Fetch the list of changed files for this PR
+          let files = [];
+          try {
+            files = await gh('GET', `/repos/${REPO}/pulls/${num}/files?per_page=100`);
+          } catch (e) {
+            console.warn('Could not fetch PR files:', e.message);
+          }
+          const paths = files.map(f => f.filename);
+          const hasCI = paths.some(p => p.startsWith('.github/'));
+          const hasPackages = paths.some(p => p.startsWith('packages/'));
+          const hasDocs = paths.some(p => p.startsWith('docs/'));
+          const hasApps = paths.some(p => p.startsWith('apps/'));
+          const hasTests = paths.some(p => p.startsWith('tests/'));
+
+          const hasAuth = paths.some(p =>
+            /^packages\/auth\//.test(p) ||
+            /\/auth\//.test(p) ||
+            /auth\.(ts|js|mjs)$/.test(p) ||
+            /jwt\.(ts|js|mjs)$/.test(p)
+          );
+          const hasMigrations = paths.some(p =>
+            /^migrations\//.test(p) ||
+            /\/migrations\//.test(p) ||
+            /\.sql$/.test(p)
+          );
+          // risk:high mirrors the Red-tier paths from pr-review.mjs
+          const isHighRisk = paths.some(p =>
+            /^\.github\/workflows\//.test(p) ||
+            /^\.github\/scripts\//.test(p) ||
+            /^packages\//.test(p) ||
+            /^migrations\//.test(p) ||
+            /\/migrations\//.test(p) ||
+            /wrangler\.(jsonc?|toml)$/.test(p) ||
+            /^scripts\//.test(p) ||
+            /handlers\/(billing|admin|stripe)/.test(p) ||
+            /docs\/service-registry\.yml$/.test(p)
+          );
+
+          if (hasCI) labels.add('area:ci');
+          if (hasAuth) labels.add('area:auth');
+          if (hasMigrations) labels.add('area:migrations');
+          // Suppress risk:high for Dependabot lockfile-only PRs.
+          // A package-lock.json bump under packages/* technically matches the Red-tier
+          // pattern, but the diff is mechanical and gated by separate CI checks.
+          const isDepBot = String(PR_AUTHOR).startsWith('dependabot');
+          const onlyLockfiles = paths.length > 0 && paths.every(p =>
+            /(^|\/)package(-lock)?\.json$/.test(p) ||
+            /(^|\/)pnpm-lock\.yaml$/.test(p) ||
+            /(^|\/)yarn\.lock$/.test(p) ||
+            /(^|\/)\.npmrc$/.test(p)
+          );
+          if (isHighRisk && !(isDepBot && onlyLockfiles)) labels.add('risk:high');
+          if (hasDocs) labels.add('documentation');
+          if (!hasCI && !hasDocs && hasPackages) labels.add('engineering');
+          if (hasTests && !hasCI) labels.add('hardening');
+
+          console.log(`PR #${num} by ${PR_AUTHOR} (${branch}) → labels: ${[...labels].join(', ')}`);
+
+          await gh('POST', `/repos/${REPO}/issues/${num}/labels`, { labels: [...labels] });
+          console.log('Labels applied successfully.');
+          EOF
+
+  issue-triage:
+    if: github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'reopened')
+    name: Classify and label
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@v6
+      - name: Run auto-triage
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/auto-triage.mjs
+
+  sync-pr-status:
+    if: github.event_name == 'pull_request' && github.event.sender.type != 'Bot'
+    name: Sync PR status
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - name: Compute target status
+        id: target
+        run: |
+          if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            echo "status=Done" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.action }}" = "closed" ]; then
+            echo "status=Done" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=In Progress" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Move PR card on project board
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+          TARGET_STATUS: ${{ steps.target.outputs.status }}
+        run: |
+          set -euo pipefail
+          PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          STATUS_FIELD_ID=$(gh api graphql -f query='query{ node(id:"'"$PROJECT_ID"'"){ ... on ProjectV2 { fields(first:20){ nodes{ ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -q '.data.node.fields.nodes[] | select(.name=="Status") | .id')
+          OPTION_ID=$(gh api graphql -f query='query{ node(id:"'"$PROJECT_ID"'"){ ... on ProjectV2 { fields(first:20){ nodes{ ... on ProjectV2SingleSelectField { name options { id name } } } } } } }' -q '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="'"$TARGET_STATUS"'") | .id')
+          if [ -z "$OPTION_ID" ]; then echo "Status option '$TARGET_STATUS' not found on board — skipping"; exit 0; fi
+          ITEM_ID=$(gh api graphql -f query='query{ node(id:"'"$PR_NODE_ID"'"){ ... on PullRequest { projectItems(first:10){ nodes{ id project { id } } } } } }' -q '.data.node.projectItems.nodes[] | select(.project.id=="'"$PROJECT_ID"'") | .id')
+          if [ -z "$ITEM_ID" ]; then
+            ITEM_ID=$(gh api graphql -f query='mutation{ addProjectV2ItemById(input:{projectId:"'"$PROJECT_ID"'", contentId:"'"$PR_NODE_ID"'"}){ item { id } } }' -q '.data.addProjectV2ItemById.item.id')
+          fi
+          gh api graphql -f query='mutation{ updateProjectV2ItemFieldValue(input:{projectId:"'"$PROJECT_ID"'", itemId:"'"$ITEM_ID"'", fieldId:"'"$STATUS_FIELD_ID"'", value:{singleSelectOptionId:"'"$OPTION_ID"'"}}){ projectV2Item { id } } }'
+          echo "✓ PR → $TARGET_STATUS"
+
+  # SUP-1.5: When a PR is opened/reopened, move linked issues to In Progress
+
+  sync-linked-issues:
+    name: Move linked issues to In Progress
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.action == 'opened' ||
+      github.event.action == 'reopened' ||
+      github.event.action == 'ready_for_review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - name: Move linked issues to In Progress
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          REPO: ${{ github.repository }}
+        run: |
+          ISSUE_NUMS=$(echo "$PR_BODY" | grep -oiE '(clos(es|ed)|fix(es|ed)|resolv(es|ed))[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u)
+          if [ -z "$ISSUE_NUMS" ]; then echo "no linked issues found"; exit 0; fi
+          PROJECT_ID="PVT_kwDOEL0sNc4BWWtg"
+          STATUS_FIELD_DATA=$(gh api graphql -f query='query($id: ID!) { node(id: $id) { ... on ProjectV2 { fields(first: 20) { nodes { ... on ProjectV2SingleSelectField { id name options { id name } } } } } } }' -f id="$PROJECT_ID")
+          FIELD_ID=$(echo "$STATUS_FIELD_DATA" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .id')
+          IN_PROGRESS_OPT=$(echo "$STATUS_FIELD_DATA" | jq -r '.data.node.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="In Progress") | .id')
+          for N in $ISSUE_NUMS; do
+            ISSUE_NODE=$(gh api "/repos/$REPO/issues/$N" --jq .node_id 2>/dev/null || echo "")
+            if [ -z "$ISSUE_NODE" ]; then echo "#$N not found, skipping"; continue; fi
+            ITEM_ID=$(gh api graphql -f query='query($issueId: ID!) { node(id: $issueId) { ... on Issue { projectItems(first: 10) { nodes { id project { id } } } } } }' -f issueId="$ISSUE_NODE" --jq ".data.node.projectItems.nodes[] | select(.project.id==\"$PROJECT_ID\") | .id" 2>/dev/null || echo "")
+            if [ -z "$ITEM_ID" ]; then
+              ITEM_ID=$(gh api graphql -f query='mutation($projectId: ID!, $contentId: ID!) { addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) { item { id } } }' -f projectId="$PROJECT_ID" -f contentId="$ISSUE_NODE" --jq '.data.addProjectV2ItemById.item.id' 2>/dev/null || echo "")
+            fi
+            if [ -z "$ITEM_ID" ]; then echo "#$N could not be added to board, skipping"; continue; fi
+            gh api graphql -f query='mutation($p: ID!, $i: ID!, $f: ID!, $v: String!) { updateProjectV2ItemFieldValue(input: { projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $v } }) { projectV2Item { id } } }' -f p="$PROJECT_ID" -f i="$ITEM_ID" -f f="$FIELD_ID" -f v="$IN_PROGRESS_OPT"
+            echo "✓ #$N → In Progress"
+          done
+
   auto-assign-copilot:
     if: (github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'reopened')) && github.event.sender.type != 'Bot'
     runs-on: ubuntu-latest
