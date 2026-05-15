@@ -31,7 +31,7 @@ slots:
     source: issue_body
   - name: branch_name
     type: string
-    validator: "^supervisor/docs/[a-z0-9][a-z0-9-]{0,60}$"
+    validator: "^(supervisor/docs|docs)/[a-z0-9][a-z0-9-]{0,60}$"
     source: issue_title
   - name: scope
     type: enum
