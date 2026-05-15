@@ -83,15 +83,13 @@ async function getFileContents(repo, filePath) {
   return res.json();
 }
 
-async function putFile(repo, filePath, message, content, sha) {
+async function putFile(repo, filePath, message, content) {
   const payload = {
     message,
     content: Buffer.from(content).toString('base64'),
-    ...(sha ? { sha } : {}),
   };
   if (DRY_RUN) {
-    const action = sha ? 'update' : 'create';
-    console.log(`  [dry-run] PUT /repos/${ORG}/${repo}/contents/${filePath} (${action})`);
+    console.log(`  [dry-run] PUT /repos/${ORG}/${repo}/contents/${filePath} (create)`);
     return;
   }
   const res = await ghFetch(`/repos/${ORG}/${repo}/contents/${filePath}`, {
