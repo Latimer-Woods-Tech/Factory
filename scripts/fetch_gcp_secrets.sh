@@ -33,18 +33,24 @@ GCP_PROJECT_DEFAULT="factory-495015"
 GCP_PROJECT="${GCP_PROJECT:-${GOOGLE_CLOUD_PROJECT:-${CLOUDSDK_CORE_PROJECT:-$GCP_PROJECT_DEFAULT}}}"
 echo "ℹ️  fetch_gcp_secrets.sh: project=$GCP_PROJECT"
 
+# Diagnostic: report the active identity so 'not found' errors can be traced
+# to (a) wrong service account, (b) missing IAM, or (c) genuinely-absent secret.
+ACTIVE_ACCOUNT="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || echo unknown)"
+echo "ℹ️  fetch_gcp_secrets.sh: active_account=$ACTIVE_ACCOUNT"
+
 fetch_to_env() {
   local target_env="$1"
   shift
-  local name
+  local name first_err=""
   for name in "$@"; do
+    # Capture stderr so a real error (permission, not-found, network) is
+    # surfaced on the first attempt — but only LOG it; still iterate to the
+    # next candidate name in case it's just the wrong key.
     if value=$(gcloud secrets versions access latest \
                   --secret="$name" \
                   --project="$GCP_PROJECT" \
-                  --quiet 2>/dev/null); then
-      # Mask the value in workflow logs.
+                  --quiet 2>/tmp/.fetch_err); then
       echo "::add-mask::$value"
-      # Emit to $GITHUB_ENV (heredoc-safe for multi-line values).
       {
         printf '%s<<__LWT_SECRET_EOF__\n' "$target_env"
         printf '%s\n' "$value"
@@ -53,7 +59,12 @@ fetch_to_env() {
       echo "✅ $target_env ← $name"
       return 0
     fi
+    # Save the FIRST error encountered for diagnostic output below.
+    if [ -z "$first_err" ] && [ -s /tmp/.fetch_err ]; then
+      first_err="$(head -c 200 /tmp/.fetch_err | tr '\n' ' ')"
+    fi
   done
   echo "⚠️  $target_env not found in GCP Secret Manager project=$GCP_PROJECT (tried: $*)"
+  [ -n "$first_err" ] && echo "    first_err: $first_err"
   return 0  # never fail the workflow on a missing secret; let the script decide
 }
