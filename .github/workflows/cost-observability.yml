@@ -1,0 +1,117 @@
+name: Cost Observability
+
+# Stage 1 M2 — Daily cost digest. Shadow mode: observe + warn, no enforcement.
+on:
+  schedule:
+    - cron: '37 6 * * *' # daily 06:37 UTC (covers prior UTC day)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD UTC). Empty = yesterday.'
+        required: false
+      provider:
+        description: 'Single provider (cloudflare|anthropic|sentry|stripe|gcp). Empty = all.'
+        required: false
+      pushover:
+        description: 'Send Pushover digest (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+  pull-requests: write # open auto-merge PR (direct push to main is blocked by branch protection)
+
+concurrency:
+  group: cost-observability
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        # Verified 2026-05-15: all candidates below tested against the live
+        # factory-495015 Secret Manager. First name in each list is the
+        # confirmed-present canonical; later names are forward-compat.
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env CF_API_TOKEN           CF_API_TOKEN CLOUDFLARE_API_TOKEN CLOUDFLARE_API cloudflare-api-token
+          fetch_to_env CF_ACCOUNT_ID          CF_ACCOUNT_ID cloudflare-account-id
+          # ANTHROPIC_API_KEY is a regular API key, not an admin key — usage_report
+          # endpoint requires an admin key. Script will skip Anthropic line if the
+          # endpoint returns 401; provision an admin key separately when ready.
+          fetch_to_env ANTHROPIC_ADMIN_KEY    ANTHROPIC_ADMIN_KEY LATIMER_ANTHROPIC_API ANTHROPIC_API_KEY
+          fetch_to_env SENTRY_AUTH_TOKEN      LATIMERWOODS_SENTRY_AUTH FACTORY_SENTRY_API SENTRY_AUTH_TOKEN
+          fetch_to_env STRIPE_API_KEY         STRIPE_SECRET_KEY stripe-api-key-readonly STRIPE_API_KEY
+          # GCP billing — placeholder; needs BQ billing export setup.
+          fetch_to_env GCP_BILLING_TOKEN      gcp-billing-token GCP_BILLING_TOKEN
+          fetch_to_env GCP_BILLING_ACCOUNT_ID gcp-billing-account-id GCP_BILLING_ACCOUNT_ID
+          fetch_to_env PUSHOVER_USER          FACTORY_PUSHOVER_USER PUSHOVER_USER pushover-user
+          fetch_to_env PUSHOVER_TOKEN         FACTORY_PUSHOVER_API PUSHOVER_TOKEN pushover-token
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Run cost digest
+        env:
+          # GCP-fetched secrets are exported to $GITHUB_ENV already.
+          # Repo-level fallback if Secret Manager lookup didn't populate them.
+          CF_API_TOKEN: ${{ env.CF_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+          # SENTRY_ORG is a literal config, not a secret. cost_digest.py defaults to 'latwood-tech'.
+          SENTRY_ORG: latwood-tech
+        run: |
+          set -euo pipefail
+          args=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            args="$args --date ${{ github.event.inputs.date }}"
+          fi
+          if [ -n "${{ github.event.inputs.provider }}" ]; then
+            args="$args --provider ${{ github.event.inputs.provider }}"
+          fi
+          if [ "${{ github.event.inputs.pushover || 'true' }}" = "true" ]; then
+            args="$args --pushover"
+          fi
+          python scripts/cost_digest.py $args
+
+      - name: Open auto-merge PR for cost snapshots
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Stage first; git diff against HEAD doesn't see new untracked files.
+          git add docs/cost/ 2>/dev/null || true
+          if git diff --quiet --cached docs/cost/; then
+            echo "No cost changes to commit."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/cost-snapshot-$DATE-$(date -u +%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(cost): daily digest snapshot ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(cost): daily cost digest ($DATE)" \
+            --body "Automated daily cost snapshot from \`cost-observability.yml\`. Providers: Cloudflare, Anthropic, Sentry, Stripe, GCP." \
+            --label automation \
+            --label documentation \
+            --label auto-merge
