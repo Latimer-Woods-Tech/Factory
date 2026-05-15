@@ -1,13 +1,18 @@
 name: Dead Man's Switch
 
 # G3 — Heartbeat alert. Fires Pushover if the aggregator hasn't written a
-# fresh completion-tracker snapshot in 26 hours. The aggregator runs daily
-# at 04:11 UTC; a 26-hour budget covers normal runtime + GH Actions queue
-# slack without false-positives.
+# fresh completion-tracker snapshot in 26 hours.
+#
+# Aggregator schedule: `30 10 * * *` (10:30 UTC daily). Snapshot lands on
+# main 5–15 min later (via auto-merging drift PR). This switch runs at
+# 11:11 UTC — well after the aggregator has had time to commit, but before
+# the next aggregator run would mask a real outage.
+#
+# A 26-hour age budget covers normal cadence (24h) + queue/PR-merge slack.
 
 on:
   schedule:
-    - cron: '7 7 * * *' # daily 07:07 UTC, after aggregator + cost digest land
+    - cron: '11 11 * * *' # daily 11:11 UTC, after aggregator + drift PR merge
   workflow_dispatch: {}
 
 permissions:
@@ -47,9 +52,24 @@ jobs:
           set -euo pipefail
           TRACKER="docs/completion-tracker.json"
 
+          # Cold-start tolerance: if the tracker file has NEVER been committed
+          # to this branch, treat it as "warming up" — log a warning but
+          # don't fire P1 (the aggregator may not have completed its first
+          # run yet, e.g., when this workflow lands on main before the
+          # aggregator's 10:30 UTC cron fires).
+          FIRST_COMMIT=$(git log --diff-filter=A --format=%ct -- "$TRACKER" 2>/dev/null | tail -1)
+          if [ -z "$FIRST_COMMIT" ]; then
+            echo "::warning::Tracker has never been committed — aggregator cold start. Not paging."
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "reason=cold_start" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # File should exist now (since git log found it). If it doesn't on
+          # disk, the file was deleted — treat as stale.
           if [ ! -f "$TRACKER" ]; then
             echo "stale=true" >> "$GITHUB_OUTPUT"
-            echo "reason=tracker_missing" >> "$GITHUB_OUTPUT"
+            echo "reason=tracker_deleted" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
