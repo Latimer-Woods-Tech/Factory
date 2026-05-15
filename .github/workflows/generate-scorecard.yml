@@ -8,7 +8,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   scorecard:
@@ -20,7 +20,7 @@ jobs:
         run: node scripts/generate-scorecard.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_SCORECARD }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_SCORECARD || secrets.SLACK_WEBHOOK_OPS }}
           SCORECARD_REPO_OWNER: adrper79-dot
           SCORECARD_REPO_NAME: factory
       - name: Commit generated scorecard

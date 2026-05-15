@@ -2,8 +2,8 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-14T18:34:10.726Z
-// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-15T03:35:40.486Z
+// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-ci-workflow.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
@@ -273,6 +273,64 @@ export const GENERATED_TEMPLATES: Template[] = [
         "slots": {
           "pr": "$s3.number",
           "body": "Supervisor opened this docs PR from the linked issue. CI runs docs-lint + credential-scrub only; no code paths touched."
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "extract-from-wordis-bond",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "enhancement",
+      "engineering",
+      "epic",
+      "wordis-bond-engine",
+      "extract",
+      "from",
+      "wordis",
+      "bond"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "engineering",
+        "epic:wordis-bond-engine"
+      ],
+      "title_pattern": "^WB-\\d+:\\s*\\[Extract\\]",
+      "body_patterns": [
+        "wordis-bond/(src/(handlers|workers|lib)|engine)",
+        "packages/[a-z\\-]+/src/"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/supervisor/FRIDGE.md",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "Supervisor plan for **$slots.wb_ticket**\n\n**Source (wordis-bond engine):** `$slots.source_file`\n**Target (Factory package):** `$slots.target_file`\n**Contract:** `$slots.export_contract`\n**Package:** `@latimer-woods-tech/$slots.target_package`\n\nPlanned execution (after CODEOWNER ✅):\n1. Audit source file for TCPA/FDCPA/PII compliance code — abort and re-classify Red if any found.\n2. Copy clean code to target path; rewrite imports to use `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`.\n3. Verify no `process.env`, no Node.js built-ins, no `Buffer`, no `require()` (Hard Constraints).\n4. Write unit tests (≥5 cases) and one integration test fixture.\n5. Run `npm run typecheck && npm test && npm run lint`.\n6. Open draft PR targeting `main` with scope `($slots.target_package)`; tag CODEOWNER.\n\n@adrper79-dot — React ✅ to proceed, or comment with changes needed.\n\n_FRIDGE rule 1: this template never touches wordis-bond UI/frontend files. Only `wordis-bond/src/{handlers,workers,lib}/**` is in scope._"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "supervisor/wb-extract-$slots.wb_ticket",
+          "title": "feat($slots.target_package): extract `$slots.source_file` into Factory ($slots.wb_ticket)",
+          "body": "Closes #$triggers.issue_number\n\nExtracts engine handler from wordis-bond into `$slots.target_file`.\n\n**Contract:** `$slots.export_contract`\n**Source:** wordis-bond engine — `$slots.source_file`\n**FRIDGE rule 1:** wordis-bond UI layer untouched. Engine-only extraction.\n\n## Acceptance gate\n- TypeScript strict passes\n- ≥5 unit tests + 1 integration test\n- No `process.env`, no Node built-ins, no `Buffer`, no `require()`\n- Uses `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`\n\nDraft for CODEOWNER review per Yellow-tier policy.",
+          "draft": true
         },
         "side_effects": "none"
       }
