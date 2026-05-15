@@ -1,0 +1,54 @@
+{
+  "date": "2026-05-14",
+  "generated": "2026-05-15T04:52:40.816580+00:00",
+  "lines": [
+    {
+      "provider": "cloudflare",
+      "label": "Workers + R2 + KV + D1",
+      "amount_usd": 0.0,
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "API status 403"
+    },
+    {
+      "provider": "anthropic",
+      "label": "LLM tokens",
+      "amount_usd": 0.0,
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "missing ANTHROPIC_ADMIN_KEY"
+    },
+    {
+      "provider": "sentry",
+      "label": "Event ingestion",
+      "amount_usd": 0.0,
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "missing SENTRY_AUTH_TOKEN"
+    },
+    {
+      "provider": "stripe",
+      "label": "Gross revenue (GAINS)",
+      "amount_usd": 0.0,
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "missing STRIPE_API_KEY"
+    },
+    {
+      "provider": "stripe",
+      "label": "Stripe fees",
+      "amount_usd": 0.0,
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "missing STRIPE_API_KEY"
+    },
+    {
+      "provider": "gcp",
+      "label": "Cloud Run + Logging",
+      "amount_usd": 0.0,
+      "detail": {},
+      "skipped": true,
+      "skip_reason": "missing GCP_BILLING_TOKEN or GCP_BILLING_ACCOUNT_ID"
+    }
+  ]
+}
