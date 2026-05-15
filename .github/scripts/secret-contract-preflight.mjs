@@ -234,7 +234,7 @@ async function upsertComment(owner, repoName, body) {
   // Scan existing comments for the marker (handles pagination).
   let existingId = null;
   let page = 1;
-  while (!existingId) {
+  while (true) {
     const comments = await gh(
       'GET',
       `/repos/${owner}/${repoName}/issues/${prNum}/comments?per_page=100&page=${page}`,
