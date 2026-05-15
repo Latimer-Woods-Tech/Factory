@@ -50,6 +50,12 @@ fetch_to_env() {
                   --secret="$name" \
                   --project="$GCP_PROJECT" \
                   --quiet 2>/tmp/.fetch_err); then
+      # Strip leading UTF-8 BOM (\xEF\xBB\xBF) and trim trailing whitespace.
+      # Several secrets in factory-495015 were stored from Windows editors
+      # that prepended a BOM; the byte is invisible in most UIs but breaks
+      # Python's latin-1/ascii encoding for HTTP headers
+      # ('latin-1 codec can't encode character ﻿ in position 7').
+      value="$(printf '%s' "$value" | sed $'1s/^\xEF\xBB\xBF//' | sed -E 's/[[:space:]]+$//')"
       echo "::add-mask::$value"
       {
         printf '%s<<__LWT_SECRET_EOF__\n' "$target_env"
