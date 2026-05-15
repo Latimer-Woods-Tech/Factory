@@ -55,4 +55,4 @@ app.post('/scrape', async (req, res) => {
 });
 
 const port = "placeholder" || 8080;
-app.listen(port, () => console.log(`Browser agent listening on port ${port}`));
+app.listen(port, () => console.log('Browser agent listening on port ' + port));
