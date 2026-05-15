@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-15T05:08:24.963156+00:00",
+  "generated": "2026-05-15T08:20:18.582635+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,7 +7,7 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-05-15T05:08:09.620084+00:00",
+      "timestamp": "2026-05-15T08:19:39.898901+00:00",
       "cohesion": 41,
       "dimensions": [
         {
@@ -297,7 +297,7 @@
       "repo_key": "VK",
       "repo_name": "videoking",
       "repo_path": "Latimer-Woods-Tech/videoking",
-      "timestamp": "2026-05-15T05:08:13.934504+00:00",
+      "timestamp": "2026-05-15T08:19:49.690675+00:00",
       "cohesion": 24,
       "dimensions": [
         {
@@ -587,7 +587,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-05-15T05:08:17.853725+00:00",
+      "timestamp": "2026-05-15T08:19:58.900820+00:00",
       "cohesion": 29,
       "dimensions": [
         {
@@ -877,7 +877,7 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-05-15T05:08:21.444066+00:00",
+      "timestamp": "2026-05-15T08:20:08.596158+00:00",
       "cohesion": 25,
       "dimensions": [
         {
@@ -1167,7 +1167,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-05-15T05:08:24.962439+00:00",
+      "timestamp": "2026-05-15T08:20:18.581970+00:00",
       "cohesion": 52,
       "dimensions": [
         {
