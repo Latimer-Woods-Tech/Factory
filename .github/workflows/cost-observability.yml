@@ -34,6 +34,34 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          # Cloudflare — repo secrets are canonical here; GCP fallback if missing.
+          fetch_to_env CF_API_TOKEN              cloudflare-api-token cf-api-token CF_API_TOKEN
+          fetch_to_env CF_ACCOUNT_ID             cloudflare-account-id cf-account-id CF_ACCOUNT_ID
+          # Anthropic admin (org-level usage API)
+          fetch_to_env ANTHROPIC_ADMIN_KEY       anthropic-admin-key anthropic-admin ANTHROPIC_ADMIN_KEY
+          # Sentry — prefer canonical name, fall back to FACTORY_SENTRY_API legacy.
+          fetch_to_env SENTRY_AUTH_TOKEN         sentry-auth-token SENTRY_AUTH_TOKEN factory-sentry-api FACTORY_SENTRY_API
+          # Stripe — prefer read-only key.
+          fetch_to_env STRIPE_API_KEY            stripe-api-key-readonly stripe-readonly stripe-api-key STRIPE_API_KEY
+          # GCP billing (still requires BQ export wiring — placeholder)
+          fetch_to_env GCP_BILLING_TOKEN         gcp-billing-token GCP_BILLING_TOKEN
+          fetch_to_env GCP_BILLING_ACCOUNT_ID    gcp-billing-account-id GCP_BILLING_ACCOUNT_ID
+          # Pushover digest delivery
+          fetch_to_env PUSHOVER_USER             pushover-user PUSHOVER_USER pushover_user
+          fetch_to_env PUSHOVER_TOKEN            pushover-token PUSHOVER_TOKEN pushover_token
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -41,18 +69,12 @@ jobs:
 
       - name: Run cost digest
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          ANTHROPIC_ADMIN_KEY: ${{ secrets.ANTHROPIC_ADMIN_KEY }}
-          # Existing repo secret is named FACTORY_SENTRY_API; fall back if
-          # the canonical SENTRY_AUTH_TOKEN name is added later.
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN || secrets.FACTORY_SENTRY_API }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'latwood-tech' }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY_READONLY || secrets.STRIPE_API_KEY }}
-          GCP_BILLING_TOKEN: ${{ secrets.GCP_BILLING_TOKEN }}
-          GCP_BILLING_ACCOUNT_ID: ${{ secrets.GCP_BILLING_ACCOUNT_ID }}
-          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
-          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          # GCP-fetched secrets are exported to $GITHUB_ENV already.
+          # Repo-level fallback if Secret Manager lookup didn't populate them.
+          CF_API_TOKEN: ${{ env.CF_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+          # SENTRY_ORG is a literal config, not a secret. cost_digest.py defaults to 'latwood-tech'.
+          SENTRY_ORG: latwood-tech
         run: |
           set -euo pipefail
           args=""
