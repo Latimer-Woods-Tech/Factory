@@ -29,7 +29,23 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Mint a Factory App token with read access across all 5 app repos.
+      # Mirrors the proven pattern in completion-tracker.yml — avoids a
+      # separate long-lived PAT.
+      - name: Mint Factory App token (5 repos)
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: |
+            HumanDesign
+            videoking
+            Factory
+            coh
+            xico-city
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -38,10 +54,7 @@ jobs:
 
       - name: Run conformance scan
         env:
-          # Needs read access to other org repos (HumanDesign, videoking, etc.)
-          # Default GITHUB_TOKEN only sees the calling repo — use the org-wide
-          # PAT or GitHub App token configured for cross-repo Factory work.
-          GITHUB_TOKEN: ${{ secrets.FACTORY_CROSS_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
           PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
           PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
         run: |
