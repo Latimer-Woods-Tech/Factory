@@ -30,7 +30,6 @@ const {
   REPO,
   ISSUE_NUMBER,
   ISSUE_NODE_ID,
-  PR_NUMBER,
   PR_NODE_ID,
   PR_BODY,
   PR_MERGED,
@@ -368,8 +367,9 @@ async function main() {
 }
 
 async function reconcile() {
-  const { execSync } = await import('node:child_process');
-  const exec = (cmd) => execSync(cmd, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
+  const { execFileSync } = await import('node:child_process');
+  const exec = (args) =>
+    execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
 
   const repo = REPO;
   const status = await getStatusField();
@@ -378,9 +378,17 @@ async function reconcile() {
   const inProgressOpt = await getOptionId('In Progress');
   const doneOpt = await getOptionId('Done');
 
-  const boardJson = exec(
-    `gh project item-list ${PROJECT_NUMBER} --owner ${PROJECT_OWNER} --limit 1000 --format json`
-  );
+  const boardJson = exec([
+    'project',
+    'item-list',
+    PROJECT_NUMBER,
+    '--owner',
+    PROJECT_OWNER,
+    '--limit',
+    '1000',
+    '--format',
+    'json',
+  ]);
   const boardItems = JSON.parse(boardJson).items ?? [];
   const boardNumbers = new Set(
     boardItems
@@ -388,9 +396,18 @@ async function reconcile() {
       .map(i => i.content.number)
   );
 
-  const openJson = exec(
-    `gh issue list --repo ${repo} --state open --limit 500 --json number,nodeId`
-  );
+  const openJson = exec([
+    'issue',
+    'list',
+    '--repo',
+    repo,
+    '--state',
+    'open',
+    '--limit',
+    '500',
+    '--json',
+    'number,nodeId',
+  ]);
   const open = JSON.parse(openJson);
 
   let added = 0;
@@ -414,9 +431,15 @@ async function reconcile() {
 
     let issueState, assigneeCount, labels = [];
     try {
-      const j = exec(
-        `gh issue view ${num} --repo ${issueRepo} --json state,assignees,labels`
-      );
+      const j = exec([
+        'issue',
+        'view',
+        String(num),
+        '--repo',
+        issueRepo,
+        '--json',
+        'state,assignees,labels',
+      ]);
       const data = JSON.parse(j);
       issueState = data.state;
       assigneeCount = (data.assignees ?? []).length;
