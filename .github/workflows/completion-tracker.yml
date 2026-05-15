@@ -23,6 +23,7 @@ jobs:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       PUSHOVER_USER:    ${{ secrets.PUSHOVER_USER }}
       PUSHOVER_TOKEN:   ${{ secrets.PUSHOVER_TOKEN }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
