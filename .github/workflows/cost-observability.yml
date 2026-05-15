@@ -18,7 +18,8 @@ on:
         default: 'true'
 
 permissions:
-  contents: write # commit docs/cost/ snapshots back to main
+  contents: write
+  pull-requests: write # open auto-merge PR (direct push to main is blocked by branch protection)
 
 concurrency:
   group: cost-observability
@@ -90,18 +91,27 @@ jobs:
           fi
           python scripts/cost_digest.py $args
 
-      - name: Commit cost snapshots
+      - name: Open auto-merge PR for cost snapshots
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # Stage first, then diff. `git diff --quiet` only inspects the
-          # working tree against HEAD for tracked paths — it does NOT see
-          # new untracked files, which is the steady-state case here.
+          # Stage first; git diff against HEAD doesn't see new untracked files.
           git add docs/cost/ 2>/dev/null || true
           if git diff --quiet --cached docs/cost/; then
             echo "No cost changes to commit."
             exit 0
           fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/cost-snapshot-$DATE-$(date -u +%H%M)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore(cost): daily digest snapshot"
-          git push
+          git checkout -b "$BRANCH"
+          git commit -m "chore(cost): daily digest snapshot ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(cost): daily cost digest ($DATE)" \
+            --body "Automated daily cost snapshot from \`cost-observability.yml\`. Providers: Cloudflare, Anthropic, Sentry, Stripe, GCP." \
+            --label automation \
+            --label documentation \
+            --label auto-merge

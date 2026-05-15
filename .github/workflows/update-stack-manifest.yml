@@ -12,9 +12,12 @@ on:
   schedule:
     - cron: '17 4 * * *' # daily 04:17 UTC
 
-# Need write access to commit STACK.md updates back to main.
+# Need write access for branch+commit and pull-requests:write for PR creation.
+# Direct push to main is blocked by branch protection — must go through a PR
+# that hits the existing auto-merge path.
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: update-stack-manifest
@@ -43,15 +46,26 @@ jobs:
       - name: Run update-stack-manifest.js
         run: node scripts/update-stack-manifest.js
 
-      - name: Commit and push if STACK.md changed
+      - name: Open auto-merge PR if STACK.md changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if git diff --quiet docs/STACK.md; then
+          git add docs/STACK.md
+          if git diff --quiet --cached docs/STACK.md; then
             echo "STACK.md is already up to date — nothing to commit."
             exit 0
           fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/stack-manifest-$DATE-$(date -u +%H%M)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/STACK.md
-          git commit -m "chore(stack): auto-update STACK.md package versions"
-          git push
+          git checkout -b "$BRANCH"
+          git commit -m "chore(stack): auto-update STACK.md package versions ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(stack): auto-update STACK.md ($DATE)" \
+            --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`)." \
+            --label automation \
+            --label documentation \
+            --label auto-merge
