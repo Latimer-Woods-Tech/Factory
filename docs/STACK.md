@@ -16,6 +16,7 @@
 | `@latimer-woods-tech/admin` | `0.3.0` | stable |
 | `@latimer-woods-tech/analytics` | `0.2.0` | stable |
 | `@latimer-woods-tech/auth` | `0.2.0` | stable |
+| `@latimer-woods-tech/browser` | `0.1.0` | scaffold |
 | `@latimer-woods-tech/compliance` | `0.2.0` | stable |
 | `@latimer-woods-tech/content` | `0.2.0` | stable |
 | `@latimer-woods-tech/copy` | `0.2.0` | stable |

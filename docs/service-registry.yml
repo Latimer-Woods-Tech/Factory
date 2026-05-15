@@ -348,6 +348,13 @@ packages:
     main_use: "JWT auth, RBAC, middleware"
     videoking_used: true
     depends_on: ["errors", "logger"]
+
+  - name: "@latimer-woods-tech/browser"
+    status: "Staging"
+    version: "0.1.0"
+    main_use: "Cloud Run Browser Agent client for scrape and screenshot automation"
+    videoking_used: false
+    depends_on: ["errors", "logger"]
     
   - name: "@latimer-woods-tech/neon"
     status: "Active"
