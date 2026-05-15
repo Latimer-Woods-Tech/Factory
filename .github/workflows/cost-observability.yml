@@ -43,24 +43,25 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
 
       - name: Fetch secrets from GCP Secret Manager
+        # Verified 2026-05-15: all candidates below tested against the live
+        # factory-495015 Secret Manager. First name in each list is the
+        # confirmed-present canonical; later names are forward-compat.
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
-          # Cloudflare — repo secrets are canonical here; GCP fallback if missing.
-          fetch_to_env CF_API_TOKEN              cloudflare-api-token cf-api-token CF_API_TOKEN
-          fetch_to_env CF_ACCOUNT_ID             cloudflare-account-id cf-account-id CF_ACCOUNT_ID
-          # Anthropic admin (org-level usage API)
-          fetch_to_env ANTHROPIC_ADMIN_KEY       anthropic-admin-key anthropic-admin ANTHROPIC_ADMIN_KEY
-          # Sentry — prefer canonical name, fall back to FACTORY_SENTRY_API legacy.
-          fetch_to_env SENTRY_AUTH_TOKEN         sentry-auth-token SENTRY_AUTH_TOKEN factory-sentry-api FACTORY_SENTRY_API
-          # Stripe — prefer read-only key.
-          fetch_to_env STRIPE_API_KEY            stripe-api-key-readonly stripe-readonly stripe-api-key STRIPE_API_KEY
-          # GCP billing (still requires BQ export wiring — placeholder)
-          fetch_to_env GCP_BILLING_TOKEN         gcp-billing-token GCP_BILLING_TOKEN
-          fetch_to_env GCP_BILLING_ACCOUNT_ID    gcp-billing-account-id GCP_BILLING_ACCOUNT_ID
-          # Pushover digest delivery
-          fetch_to_env PUSHOVER_USER             pushover-user PUSHOVER_USER pushover_user
-          fetch_to_env PUSHOVER_TOKEN            pushover-token PUSHOVER_TOKEN pushover_token
+          fetch_to_env CF_API_TOKEN           CF_API_TOKEN CLOUDFLARE_API_TOKEN CLOUDFLARE_API cloudflare-api-token
+          fetch_to_env CF_ACCOUNT_ID          CF_ACCOUNT_ID cloudflare-account-id
+          # ANTHROPIC_API_KEY is a regular API key, not an admin key — usage_report
+          # endpoint requires an admin key. Script will skip Anthropic line if the
+          # endpoint returns 401; provision an admin key separately when ready.
+          fetch_to_env ANTHROPIC_ADMIN_KEY    ANTHROPIC_ADMIN_KEY LATIMER_ANTHROPIC_API ANTHROPIC_API_KEY
+          fetch_to_env SENTRY_AUTH_TOKEN      LATIMERWOODS_SENTRY_AUTH FACTORY_SENTRY_API SENTRY_AUTH_TOKEN
+          fetch_to_env STRIPE_API_KEY         STRIPE_SECRET_KEY stripe-api-key-readonly STRIPE_API_KEY
+          # GCP billing — placeholder; needs BQ billing export setup.
+          fetch_to_env GCP_BILLING_TOKEN      gcp-billing-token GCP_BILLING_TOKEN
+          fetch_to_env GCP_BILLING_ACCOUNT_ID gcp-billing-account-id GCP_BILLING_ACCOUNT_ID
+          fetch_to_env PUSHOVER_USER          FACTORY_PUSHOVER_USER PUSHOVER_USER pushover-user
+          fetch_to_env PUSHOVER_TOKEN         FACTORY_PUSHOVER_API PUSHOVER_TOKEN pushover-token
 
       - name: Set up Python
         uses: actions/setup-python@v6

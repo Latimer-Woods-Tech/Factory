@@ -38,8 +38,8 @@ jobs:
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
-          fetch_to_env PUSHOVER_USER  pushover-user PUSHOVER_USER pushover_user
-          fetch_to_env PUSHOVER_TOKEN pushover-token PUSHOVER_TOKEN pushover_token
+          fetch_to_env PUSHOVER_USER  FACTORY_PUSHOVER_USER PUSHOVER_USER pushover-user
+          fetch_to_env PUSHOVER_TOKEN FACTORY_PUSHOVER_API  PUSHOVER_TOKEN pushover-token
 
       - name: Check completion-tracker freshness
         id: check

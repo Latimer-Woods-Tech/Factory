@@ -138,19 +138,26 @@ The 4 packages are already complete code. Sprint 2 is version bumps, README scop
 - ⏸️ Calibrate conformance scorer weights based on shadow data
 - ⏸️ Review LLM cost cap thresholds before deploying to llm-meter
 
-**Secret-name conventions (Secret Manager looks for first match in each list):**
+**Verified GCP Secret Manager names (project `factory-495015`, verified live 2026-05-15):**
 
-| Env var the script expects | GCP Secret Manager candidate names (first wins) |
-|---|---|
-| `PUSHOVER_USER` | `pushover-user`, `PUSHOVER_USER`, `pushover_user` |
-| `PUSHOVER_TOKEN` | `pushover-token`, `PUSHOVER_TOKEN`, `pushover_token` |
-| `ANTHROPIC_ADMIN_KEY` | `anthropic-admin-key`, `anthropic-admin`, `ANTHROPIC_ADMIN_KEY` |
-| `SENTRY_AUTH_TOKEN` | `sentry-auth-token`, `SENTRY_AUTH_TOKEN`, `factory-sentry-api`, `FACTORY_SENTRY_API` |
-| `STRIPE_API_KEY` | `stripe-api-key-readonly`, `stripe-readonly`, `stripe-api-key`, `STRIPE_API_KEY` |
-| `CF_API_TOKEN` | `cloudflare-api-token`, `cf-api-token`, `CF_API_TOKEN` (plus GitHub repo-secret fallback) |
-| `CF_ACCOUNT_ID` | `cloudflare-account-id`, `cf-account-id`, `CF_ACCOUNT_ID` (plus GitHub repo-secret fallback) |
-| `GCP_BILLING_TOKEN` | `gcp-billing-token`, `GCP_BILLING_TOKEN` |
-| `GCP_BILLING_ACCOUNT_ID` | `gcp-billing-account-id`, `GCP_BILLING_ACCOUNT_ID` |
+| Env var the script expects | First-match canonical (live) | Fallbacks tried |
+|---|---|---|
+| `PUSHOVER_USER` | ✅ `FACTORY_PUSHOVER_USER` | `PUSHOVER_USER`, `pushover-user` |
+| `PUSHOVER_TOKEN` | ✅ `FACTORY_PUSHOVER_API` | `PUSHOVER_TOKEN`, `pushover-token` |
+| `ANTHROPIC_ADMIN_KEY` | ⚠️ `ANTHROPIC_ADMIN_KEY` (not present — falls back to regular API key) | `LATIMER_ANTHROPIC_API`, `ANTHROPIC_API_KEY` |
+| `SENTRY_AUTH_TOKEN` | ✅ `LATIMERWOODS_SENTRY_AUTH` | `FACTORY_SENTRY_API`, `SENTRY_AUTH_TOKEN` |
+| `STRIPE_API_KEY` | ✅ `STRIPE_SECRET_KEY` (⚠️ **LIVE key** — only used for read-only `balance_transactions`) | `stripe-api-key-readonly`, `STRIPE_API_KEY` |
+| `CF_API_TOKEN` | ✅ `CF_API_TOKEN` | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_API`, `cloudflare-api-token` |
+| `CF_ACCOUNT_ID` | ✅ `CF_ACCOUNT_ID` | `cloudflare-account-id` |
+| `GCP_BILLING_TOKEN` | ❌ not present (needs BQ billing export setup) | `gcp-billing-token` |
+| `GCP_BILLING_ACCOUNT_ID` | ❌ not present (same) | `gcp-billing-account-id` |
+
+**IAM grant applied 2026-05-15:** `supervisor-sa@factory-495015.iam.gserviceaccount.com` now has `roles/secretmanager.secretAccessor` at project level. Verified by reading 7 of 7 target secrets successfully.
+
+**Caveats to surface to humans:**
+- The Stripe key is `sk_live_*` — only the read-only `balance_transactions` endpoint is hit, but if a `STRIPE_TEST_SECRET_KEY` exists later, prefer it for cost reporting safety.
+- `ANTHROPIC_API_KEY` and `LATIMER_ANTHROPIC_API` are regular API keys, not admin keys. The Anthropic Admin API endpoint (`v1/organizations/usage_report`) requires an admin key. Cost digest will report `skipped` on Anthropic with HTTP 401 until an admin key lands in Secret Manager as `ANTHROPIC_ADMIN_KEY`.
+- GCP billing requires a BigQuery billing export to be configured before `cost_digest.py` can report real GCP costs; current line is a placeholder.
 
 I surface each human-action moment as a clear "🛑 NEXT: human runs X" callout in commits.
 
