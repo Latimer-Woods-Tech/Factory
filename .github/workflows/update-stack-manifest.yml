@@ -1,0 +1,57 @@
+name: Update STACK Manifest
+
+# Triggers:
+# - Every successful publish (workflow_run of Publish Package)
+# - Manual dispatch
+# - Daily safety net (catches missed updates if workflow_run fires before main is updated)
+on:
+  workflow_run:
+    workflows: ['Publish Package']
+    types: [completed]
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17 4 * * *' # daily 04:17 UTC
+
+# Need write access to commit STACK.md updates back to main.
+permissions:
+  contents: write
+
+concurrency:
+  group: update-stack-manifest
+  cancel-in-progress: false
+
+jobs:
+  update:
+    # Only run on successful publish (or manual / scheduled).
+    if: |
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Need full history for git diff + commit back.
+          fetch-depth: 0
+          # Use a PAT or default token with contents:write.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Run update-stack-manifest.js
+        run: node scripts/update-stack-manifest.js
+
+      - name: Commit and push if STACK.md changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet docs/STACK.md; then
+            echo "STACK.md is already up to date — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/STACK.md
+          git commit -m "chore(stack): auto-update STACK.md package versions"
+          git push
