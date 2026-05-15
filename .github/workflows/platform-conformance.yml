@@ -86,12 +86,16 @@ jobs:
       - name: Commit conformance snapshots
         run: |
           set -euo pipefail
-          if git diff --quiet docs/conformance/; then
+          # Stage first, then diff. `git diff --quiet` only inspects the
+          # working tree against HEAD for tracked paths — it does NOT see
+          # new untracked files, which is the steady-state case for
+          # docs/conformance/ on a cold-start run.
+          git add docs/conformance/ 2>/dev/null || true
+          if git diff --quiet --cached docs/conformance/; then
             echo "No conformance changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/conformance/
           git commit -m "chore(conformance): auto-update shadow scores"
           git push
