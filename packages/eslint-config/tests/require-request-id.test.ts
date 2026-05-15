@@ -11,6 +11,11 @@ describe('lwt/require-request-id', () => {
       ],
       invalid: [
         { code: "const app = new Hono(); app.get('/', (c) => c.text('hi'))", errors: 1 },
+        {
+          // requestId registered on a different object should not count
+          code: "const app = new Hono(); const other = {}; other.use(requestId()); app.get('/', (c) => c.text('hi'))",
+          errors: 1,
+        },
       ],
     });
   });

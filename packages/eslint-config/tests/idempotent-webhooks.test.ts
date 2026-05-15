@@ -11,6 +11,11 @@ describe('lwt/idempotent-webhooks', () => {
       ],
       invalid: [
         { code: "app.post('/webhook/stripe', async (c) => c.text('ok'))", errors: 1 },
+        {
+          // withIdempotency called inside handler body, not wrapping the handler
+          code: "app.post('/webhook/stripe', async (c) => { withIdempotency(c); return c.text('ok'); })",
+          errors: 1,
+        },
       ],
     });
   });

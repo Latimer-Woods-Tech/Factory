@@ -1,7 +1,35 @@
 const isHonoApp = (node) =>
   node?.init?.type === 'NewExpression' && node.init.callee?.name === 'Hono';
 
+const isRequestIdArg = (arg) => {
+  if (arg.type === 'CallExpression') {
+    const name =
+      arg.callee?.type === 'Identifier'
+        ? arg.callee.name
+        : arg.callee?.type === 'MemberExpression'
+          ? arg.callee.property?.name
+          : '';
+    return /requestId|request-id/i.test(name ?? '');
+  }
+  if (arg.type === 'Identifier') {
+    return /requestId|request-id/i.test(arg.name ?? '');
+  }
+  return false;
+};
+
+const BUILTIN_ERRORS = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'URIError',
+  'EvalError',
+]);
+
 const meta = (description) => ({ type: 'problem', docs: { description }, schema: [] });
+
+const STRIPE_PRICE_RE = /price_[A-Za-z0-9]{6,}/;
 
 const rules = {
   'no-console': {
@@ -9,7 +37,19 @@ const rules = {
     create(ctx) {
       return {
         MemberExpression(node) {
+          // console.log, console.warn, etc.
           if (node.object.type === 'Identifier' && node.object.name === 'console') {
+            ctx.report({ node, message: 'Use @latimer-woods-tech/logger instead of console.*.' });
+            return;
+          }
+          // globalThis.console.log, etc.
+          if (
+            node.object.type === 'MemberExpression' &&
+            node.object.object.type === 'Identifier' &&
+            node.object.object.name === 'globalThis' &&
+            node.object.property.type === 'Identifier' &&
+            node.object.property.name === 'console'
+          ) {
             ctx.report({ node, message: 'Use @latimer-woods-tech/logger instead of console.*.' });
           }
         },
@@ -18,15 +58,17 @@ const rules = {
   },
 
   'no-raw-error-throw': {
-    meta: meta('Disallow throw new Error(...) — use @latimer-woods-tech/errors.'),
+    meta: meta('Disallow throwing built-in errors — use @latimer-woods-tech/errors.'),
     create(ctx) {
       return {
         ThrowStatement(node) {
           const arg = node.argument;
+          const isNew = arg?.type === 'NewExpression';
+          const isCall = arg?.type === 'CallExpression';
           if (
-            arg?.type === 'NewExpression' &&
+            (isNew || isCall) &&
             arg.callee?.type === 'Identifier' &&
-            arg.callee.name === 'Error'
+            BUILTIN_ERRORS.has(arg.callee.name)
           ) {
             ctx.report({
               node,
@@ -51,8 +93,13 @@ const rules = {
           const firstArg = node.arguments[0];
           const path = firstArg?.type === 'Literal' ? String(firstArg.value) : '';
           if (!/webhook|hook/i.test(path)) return;
-          const src = ctx.sourceCode.getText(node);
-          if (!/withIdempotency\s*\(/.test(src)) {
+          const hasIdempotency = node.arguments.slice(1).some(
+            (a) =>
+              a.type === 'CallExpression' &&
+              a.callee?.type === 'Identifier' &&
+              a.callee.name === 'withIdempotency',
+          );
+          if (!hasIdempotency) {
             ctx.report({ node, message: 'Webhook handler missing withIdempotency() wrapper.' });
           }
         },
@@ -63,13 +110,13 @@ const rules = {
   'require-request-id': {
     meta: meta('Hono apps must register request-id middleware.'),
     create(ctx) {
-      let foundHono = false;
+      let honoVarName = null;
       let foundRequestId = false;
       let honoNode = null;
       return {
         VariableDeclarator(node) {
           if (isHonoApp(node)) {
-            foundHono = true;
+            honoVarName = node.id?.name ?? null;
             honoNode = node;
           }
         },
@@ -78,13 +125,15 @@ const rules = {
           if (
             c?.type === 'MemberExpression' &&
             c.property?.name === 'use' &&
-            /requestId|request-id/i.test(ctx.sourceCode.getText(node))
+            c.object?.type === 'Identifier' &&
+            c.object.name === honoVarName &&
+            node.arguments.some(isRequestIdArg)
           ) {
             foundRequestId = true;
           }
         },
         'Program:exit'() {
-          if (foundHono && !foundRequestId && honoNode) {
+          if (honoNode && !foundRequestId) {
             ctx.report({
               node: honoNode,
               message: 'Hono app is missing request-id middleware (app.use(requestId())).',
@@ -100,7 +149,15 @@ const rules = {
     create(ctx) {
       return {
         Literal(node) {
-          if (typeof node.value === 'string' && /^price_[A-Za-z0-9]{6,}/.test(node.value)) {
+          if (typeof node.value === 'string' && STRIPE_PRICE_RE.test(node.value)) {
+            ctx.report({
+              node,
+              message: 'Hardcoded Stripe price ID. Inject via env / config instead.',
+            });
+          }
+        },
+        TemplateLiteral(node) {
+          if (node.quasis.some((q) => STRIPE_PRICE_RE.test(q.value.raw))) {
             ctx.report({
               node,
               message: 'Hardcoded Stripe price ID. Inject via env / config instead.',
