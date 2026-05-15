@@ -1,5 +1,12 @@
 > 📘 **Canonical architecture:** [`docs/architecture/FACTORY_V1.md`](./docs/architecture/FACTORY_V1.md). Read it to understand the system. [`docs/supervisor/FRIDGE.md`](./docs/supervisor/FRIDGE.md) overrides these Standing Orders.
 
+> 🗺️ **Where to look first** (in order):
+> 1. [`docs/STATE.md`](./docs/STATE.md) — auto-generated daily; current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding.
+> 2. This file (CLAUDE.md) — norms + hard constraints
+> 3. [`docs/architecture/PATTERNS.md`](./docs/architecture/PATTERNS.md) — operational know-how (gcloud auth, workflow patterns, merge escape hatches) captured from production debugging
+> 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — what we build (the 10 conformance dimensions)
+> 5. [`docs/GAP_REGISTER.md`](./docs/GAP_REGISTER.md) — known debt with severity tiers
+
 # Factory Core — Standing Orders
 
 ## Mission
