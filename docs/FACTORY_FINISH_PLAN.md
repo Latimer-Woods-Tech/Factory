@@ -132,14 +132,27 @@ The 4 packages are already complete code. Sprint 2 is version bumps, README scop
 - ✅ Commit everything as ordered atomic PRs
 
 **Human action required:**
-- ⏸️ Set GitHub secrets for cost APIs (`CF_API_TOKEN`, `ANTHROPIC_BILLING_TOKEN`, `STRIPE_API_KEY`, `SENTRY_AUTH_TOKEN`, `GCP_BILLING_TOKEN`)
-- ⏸️ Set `PUSHOVER_USER` + `PUSHOVER_TOKEN` if not already configured
-- ⏸️ Tag releases (`git tag {package}/v1.0.0 && git push --tags`) — requires NPM_TOKEN-enabled actor
-- ⏸️ Run conformance shadow against real repos (requires GITHUB_TOKEN with read access to 4 app repos)
+- ⏸️ Confirm `supervisor-sa` (the service account behind `VERTEX_SA_KEY`) has `roles/secretmanager.secretAccessor` on the GCP Secret Manager entries the Stage 1 workflows pull (Pushover, Anthropic, Stripe, Sentry, GCP billing). Workflows authenticate via `google-github-actions/auth@v3` with the existing `VERTEX_SA_KEY` GitHub secret; missing IAM binding → `PERMISSION_DENIED` → graceful degradation (env var stays unset, downstream script skips that provider).
+- ⏸️ Tag releases (`git tag {package}/v1.0.0 && git push --tags`) — requires `NPM_TOKEN`-enabled actor
+- ⏸️ Run conformance shadow against real repos (uses Factory App token, no extra secret needed)
 - ⏸️ Calibrate conformance scorer weights based on shadow data
 - ⏸️ Review LLM cost cap thresholds before deploying to llm-meter
 
-I'll surface each human-action moment as a clear "🛑 NEXT: human runs X" callout in commits.
+**Secret-name conventions (Secret Manager looks for first match in each list):**
+
+| Env var the script expects | GCP Secret Manager candidate names (first wins) |
+|---|---|
+| `PUSHOVER_USER` | `pushover-user`, `PUSHOVER_USER`, `pushover_user` |
+| `PUSHOVER_TOKEN` | `pushover-token`, `PUSHOVER_TOKEN`, `pushover_token` |
+| `ANTHROPIC_ADMIN_KEY` | `anthropic-admin-key`, `anthropic-admin`, `ANTHROPIC_ADMIN_KEY` |
+| `SENTRY_AUTH_TOKEN` | `sentry-auth-token`, `SENTRY_AUTH_TOKEN`, `factory-sentry-api`, `FACTORY_SENTRY_API` |
+| `STRIPE_API_KEY` | `stripe-api-key-readonly`, `stripe-readonly`, `stripe-api-key`, `STRIPE_API_KEY` |
+| `CF_API_TOKEN` | `cloudflare-api-token`, `cf-api-token`, `CF_API_TOKEN` (plus GitHub repo-secret fallback) |
+| `CF_ACCOUNT_ID` | `cloudflare-account-id`, `cf-account-id`, `CF_ACCOUNT_ID` (plus GitHub repo-secret fallback) |
+| `GCP_BILLING_TOKEN` | `gcp-billing-token`, `GCP_BILLING_TOKEN` |
+| `GCP_BILLING_ACCOUNT_ID` | `gcp-billing-account-id`, `GCP_BILLING_ACCOUNT_ID` |
+
+I surface each human-action moment as a clear "🛑 NEXT: human runs X" callout in commits.
 
 ---
 
