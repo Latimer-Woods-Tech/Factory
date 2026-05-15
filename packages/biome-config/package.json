@@ -8,5 +8,5 @@
   "exports": {
     "./biome.json": "./biome.json"
   },
-  "files": ["biome.json", "README.md"]
+  "files": ["biome.json", "README.md", "CHANGELOG.md"]
 }
