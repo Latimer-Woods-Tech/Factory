@@ -1,0 +1,69 @@
+name: Platform Conformance
+
+# Stage 1 M1 — Shadow mode. Scores are advisory; no merge gating until Stage 4.
+on:
+  schedule:
+    - cron: '23 5 * * *' # daily 05:23 UTC
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: 'Single repo key (HD, VK, FA, CH, XC). Leave empty for all.'
+        required: false
+      pushover:
+        description: 'Send Pushover digest (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write # to commit docs/conformance/ snapshots back to main
+
+concurrency:
+  group: platform-conformance
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Run conformance scan
+        env:
+          # Needs read access to other org repos (HumanDesign, videoking, etc.)
+          # Default GITHUB_TOKEN only sees the calling repo — use the org-wide
+          # PAT or GitHub App token configured for cross-repo Factory work.
+          GITHUB_TOKEN: ${{ secrets.FACTORY_CROSS_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=""
+          if [ -n "${{ github.event.inputs.repo }}" ]; then
+            args="$args --repo ${{ github.event.inputs.repo }}"
+          fi
+          if [ "${{ github.event.inputs.pushover || 'true' }}" = "true" ]; then
+            args="$args --pushover"
+          fi
+          python scripts/platform_conformance.py $args
+
+      - name: Commit conformance snapshots
+        run: |
+          set -euo pipefail
+          if git diff --quiet docs/conformance/; then
+            echo "No conformance changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/conformance/
+          git commit -m "chore(conformance): auto-update shadow scores"
+          git push
