@@ -95,9 +95,7 @@ jobs:
           git checkout -b "$BRANCH"
           git commit -m "chore(completion-tracker): drift update ${{ steps.digest.outputs.date }} (${{ steps.digest.outputs.pct }}%)"
           git push --set-upstream origin "$BRANCH"
-          cat > /tmp/body.md <<'__BODY__'
-${{ steps.digest.outputs.body }}
-__BODY__
+          printf '%s' "${{ steps.digest.outputs.body }}" > /tmp/body.md
           gh pr create \
             --title "completion-tracker drift ${{ steps.digest.outputs.date }} — ${{ steps.digest.outputs.pct }}% weighted" \
             --body-file /tmp/body.md \
