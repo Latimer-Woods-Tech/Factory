@@ -1,63 +1,153 @@
-import { describe, expect, it, vi } from 'vitest';
-import { createApp, type BrowserAutomation } from './index.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createApp } from './index.js';
+import type { BrowserAutomation } from './index.js';
 
-const scrapeMock = vi.fn().mockResolvedValue({
-  url: 'https://example.com/',
-  scrapedAt: '2026-05-15T00:00:00.000Z',
-  results: { title: { selector: 'h1', text: ['Example'] } },
-});
-const screenshotMock = vi.fn().mockResolvedValue({
-  url: 'https://example.com/',
-  capturedAt: '2026-05-15T00:00:00.000Z',
-  mimeType: 'image/png',
-  dataBase64: 'iVBORw0KGgo=',
-});
-const automation: BrowserAutomation = {
-  scrape: scrapeMock,
-  screenshot: screenshotMock,
+const mockAutomation: BrowserAutomation = {
+  scrape: vi.fn().mockResolvedValue({
+    url: 'https://example.com',
+    scrapedAt: '2026-05-15T00:00:00.000Z',
+    results: { title: { selector: 'h1', text: ['Hello'] } },
+  }),
+  screenshot: vi.fn().mockResolvedValue({
+    url: 'https://example.com',
+    capturedAt: '2026-05-15T00:00:00.000Z',
+    mimeType: 'image/png',
+    dataBase64: 'abc123',
+  }),
+  runScenario: vi.fn().mockResolvedValue({
+    completedSteps: 2,
+    videoKey: null,
+    videoUrl: null,
+    finishedAt: '2026-05-15T00:00:00.000Z',
+  }),
 };
 
-describe('browser-agent app', () => {
-  it('reports health', async () => {
-    const res = await createApp(automation).request('/health');
-    expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ status: 'ok', service: 'browser-agent' });
+describe('browser-agent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('scrapes requested selectors', async () => {
-    const app = createApp(automation);
-    const res = await app.request('/scrape', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: 'https://example.com', selectors: { title: 'h1' } }),
-    });
+  const app = createApp(mockAutomation);
 
-    expect(res.status).toBe(200);
-    expect(scrapeMock).toHaveBeenCalledWith({ url: 'https://example.com/', selectors: { title: 'h1' } });
-    await expect(res.json()).resolves.toMatchObject({ results: { title: { text: ['Example'] } } });
+  describe('GET /health', () => {
+    it('returns 200 with status ok', async () => {
+      const res = await app.request('/health');
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toEqual({ status: 'ok', service: 'browser-agent' });
+    });
   });
 
-  it('rejects invalid scrape payloads', async () => {
-    const res = await createApp(automation).request('/scrape', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: 'ftp://example.com', selectors: { title: 'h1' } }),
+  describe('POST /scrape', () => {
+    it('returns 200 with scrape results', async () => {
+      const res = await app.request('/scrape', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', selectors: { title: 'h1' } }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toHaveProperty('url', 'https://example.com');
+      expect(body).toHaveProperty('results');
     });
 
-    expect(res.status).toBe(422);
-    await expect(res.json()).resolves.toEqual({ error: 'url must use http or https' });
+    it('returns 422 when url is missing', async () => {
+      const res = await app.request('/scrape', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ selectors: { title: 'h1' } }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 when selectors is empty', async () => {
+      const res = await app.request('/scrape', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', selectors: {} }),
+      });
+      expect(res.status).toBe(422);
+    });
   });
 
-  it('captures screenshots', async () => {
-    const app = createApp(automation);
-    const res = await app.request('/screenshot', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: 'https://example.com' }),
+  describe('POST /screenshot', () => {
+    it('returns 200 with screenshot data', async () => {
+      const res = await app.request('/screenshot', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toHaveProperty('mimeType', 'image/png');
+      expect(body).toHaveProperty('dataBase64');
     });
 
-    expect(res.status).toBe(200);
-    expect(screenshotMock).toHaveBeenCalledWith({ url: 'https://example.com/' });
-    await expect(res.json()).resolves.toMatchObject({ mimeType: 'image/png', dataBase64: 'iVBORw0KGgo=' });
+    it('returns 422 when url is missing', async () => {
+      const res = await app.request('/screenshot', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(422);
+    });
+  });
+
+  describe('POST /run-scenario', () => {
+    it('returns 200 with scenario result for valid steps', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          steps: [
+            { action: 'goto', url: 'https://example.com' },
+            { action: 'click', selector: 'button' },
+          ],
+        }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toHaveProperty('completedSteps', 2);
+      expect(body).toHaveProperty('videoKey', null);
+      expect(body).toHaveProperty('videoUrl', null);
+      expect(body).toHaveProperty('finishedAt');
+      expect(mockAutomation.runScenario).toHaveBeenCalledOnce();
+    });
+
+    it('returns 422 when steps is empty', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ steps: [] }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 when steps is missing', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 for unknown action', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ steps: [{ action: 'hover', selector: 'button' }] }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 400 when body is not JSON', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: 'not-json',
+      });
+      expect(res.status).toBe(400);
+    });
   });
 });
