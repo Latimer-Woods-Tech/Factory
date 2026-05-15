@@ -1,0 +1,83 @@
+name: Dead Man's Switch
+
+# G3 — Heartbeat alert. Fires Pushover if the aggregator hasn't written a
+# fresh completion-tracker snapshot in 26 hours. The aggregator runs daily
+# at 04:11 UTC; a 26-hour budget covers normal runtime + GH Actions queue
+# slack without false-positives.
+
+on:
+  schedule:
+    - cron: '7 7 * * *' # daily 07:07 UTC, after aggregator + cost digest land
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dead-mans-switch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check completion-tracker freshness
+        id: check
+        run: |
+          set -euo pipefail
+          TRACKER="docs/completion-tracker.json"
+
+          if [ ! -f "$TRACKER" ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "reason=tracker_missing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Last modified time on the file (UNIX seconds, from git log).
+          LAST_TOUCH=$(git log -1 --format=%ct -- "$TRACKER" 2>/dev/null || echo 0)
+          NOW=$(date +%s)
+          AGE_SECONDS=$(( NOW - LAST_TOUCH ))
+          AGE_HOURS=$(( AGE_SECONDS / 3600 ))
+
+          echo "Last touch: $LAST_TOUCH ($(date -d @$LAST_TOUCH -u))"
+          echo "Now:        $NOW ($(date -d @$NOW -u))"
+          echo "Age:        $AGE_HOURS hours"
+
+          if [ $AGE_HOURS -gt 26 ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "reason=age_${AGE_HOURS}h" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "reason=fresh_${AGE_HOURS}h" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fire Pushover alert if stale
+        if: steps.check.outputs.stale == 'true'
+        env:
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PUSHOVER_USER:-}" ] || [ -z "${PUSHOVER_TOKEN:-}" ]; then
+            echo "::warning::Pushover credentials missing — alert NOT sent."
+            exit 0
+          fi
+          REASON='${{ steps.check.outputs.reason }}'
+          curl -s --max-time 30 \
+            --form-string "token=${PUSHOVER_TOKEN}" \
+            --form-string "user=${PUSHOVER_USER}" \
+            --form-string "title=🚨 Dead Man's Switch — aggregator stale" \
+            --form-string "message=docs/completion-tracker.json: ${REASON}. Check aggregate_completion.yml runs." \
+            --form-string "priority=1" \
+            https://api.pushover.net/1/messages.json
+
+      - name: Fail workflow if stale (visible in Actions UI)
+        if: steps.check.outputs.stale == 'true'
+        run: |
+          echo "::error::Dead man's switch tripped: ${{ steps.check.outputs.reason }}"
+          exit 1
