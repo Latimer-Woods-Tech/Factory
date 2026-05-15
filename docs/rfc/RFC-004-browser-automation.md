@@ -4,15 +4,61 @@
 
 ```
 RFC Number:     RFC-004
-Title:          Native Browser Automation Service (GCP Cloud Run + @latimer-woods-tech/browser)
+Title:          Native Browser Automation Service (Cloudflare Browser Run + @latimer-woods-tech/browser)
 Author:         adrper79-dot
 Date Filed:     2026-05-14
-Status:         draft
+Status:         revising
 Target Ship:    Q3 2026
-Updated:        2026-05-14 — initial draft from #680
+Updated:        2026-05-15 — Browser Run amendment (§2.3-B revisit, Phase 1 pivot)
 ```
 
 Tracks: [#680](https://github.com/Latimer-Woods-Tech/Factory/issues/680)
+
+---
+
+## 0. Amendment Log
+
+### 2026-05-15 — Cloudflare Browser Run pivot
+
+**Trigger:** Cloudflare Agents Week 2026 (May 12–16) launched **Browser Run** (formerly Browser Rendering, now rebranded with major upgrades). All three rejection reasons cited in the original §2.3-B are now obsolete:
+
+| Original §2.3-B rejection | 2026 Browser Run reality |
+|---|---|
+| "~6 pps account cap" | 120 concurrent browsers (Workers Paid), 10 req/s Quick Actions, case-by-case higher limits |
+| "No long-running session support" | No fixed lifetime while session active; `keep_alive` configurable to 10 min |
+| "No Playwright (just a subset API)" | Full Puppeteer, Playwright, Stagehand, plus raw CDP endpoint |
+
+Additionally Browser Run ships **Live View + Human-in-the-Loop** (login wall / captcha handoff) and session recordings — capabilities the GCP Cloud Run path could not offer without bespoke work.
+
+**Effect on this RFC:**
+
+- **§2.1 Core Approach** — Phase 1 infrastructure pivots from `apps/browser-agent` on GCP Cloud Run to a thin `@latimer-woods-tech/browser` Worker package bound to `env.BROWSER`. No new app. No GCP service account. No Cloud Run cost line.
+- **§2.2 Implementation Strategy / Phase 1** — superseded. New Phase 1: add `BROWSER` binding to Workers that need it (lead-scraper, smoke), publish `@latimer-woods-tech/browser` as a thin wrapper around the binding's Puppeteer/Playwright interface.
+- **§2.2 / Phase 2** — package surface narrows. OIDC-token-minting code (the supervisor-sa reuse) is no longer required for this RFC. Drop it.
+- **§2.3 Alternatives Considered** — alternative B becomes the *recommended* path; the original §2.3 winner (GCP Cloud Run) drops to alternative-F-style fallback if compliance review or feature gap surfaces.
+- **§3.3 Compliance & Legal** — **unchanged**. Scraping ToS / PII / opt-out review still hard-blocks Phase 4. Cloudflare doesn't make TCPA or GDPR Art. 14 go away.
+- **§3 Cost Analysis** — needs re-price. Browser Run is billed per browser-minute under the Workers Paid plan; estimate at the same 50k pages/mo Q3 volume to confirm cost crossover assumption from §2.3-A still holds.
+- **§4 Timeline** — Phase 1 effort drops from ~2 weeks to ~2 days (no Dockerfile, no Cloud Run deploy, no IAM). Phases 3 and 4 unchanged.
+- **§5.1 SLO** — uptime target rises from 99.5% to match Worker SLO (99.9%) since the dependency is now Cloudflare-internal.
+
+**Effect on in-flight PRs:**
+
+- **PR #685** (Adrian) — closed. Multiple constraint violations (Express, CommonJS, `any`) + obsoleted premise.
+- **PR #682** (Copilot) — held. The `packages/browser` Worker client design is mostly reusable; rewrite the transport layer from "POST to Cloud Run with OIDC" to "call `env.BROWSER` binding". The CLAUDE.md slot-#5 placement is wrong and must revert to #24.
+
+**Status flip:** `draft` → `revising`. PRs #682 and any future scaffold are blocked until this amendment lands and status flips to `accepted`.
+
+**Open questions added (§6):**
+- Q: Browser Run actual per-page cost vs SaaS at our projected 50k pages/mo? Need real numbers before final commit.
+- Q: Does Browser Run's Human-in-the-Loop integrate with our existing supervisor / operator-studio flows, or is it a separate UI?
+- Q: Are there target sites where Browser Run's IP egress pattern triggers more aggressive blocking than dedicated infra would? (Edge IPs vs datacenter IPs.)
+
+Sources cited:
+- [Browser Run: give your agents a browser](https://blog.cloudflare.com/browser-run-for-ai-agents/)
+- [Browser Run: Live View, Human in the Loop, Session Recordings](https://developers.cloudflare.com/changelog/post/2026-04-15-br-observability/)
+- [Browser Run docs: Human in the Loop](https://developers.cloudflare.com/browser-run/features/human-in-the-loop/)
+- [Browser Rendering platform limits](https://developers.cloudflare.com/browser-rendering/platform/limits/)
+- [Cloudflare Agents Week 2026 updates](https://www.cloudflare.com/agents-week/updates/)
 
 ---
 
