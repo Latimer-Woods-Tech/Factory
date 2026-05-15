@@ -1,46 +1,45 @@
 {
   "date": "2026-05-14",
-  "generated": "2026-05-15T04:52:40.816580+00:00",
+  "generated": "2026-05-15T05:05:05.255158+00:00",
   "lines": [
     {
       "provider": "cloudflare",
-      "label": "Workers + R2 + KV + D1",
+      "label": "error",
       "amount_usd": 0.0,
       "detail": {},
       "skipped": true,
-      "skip_reason": "API status 403"
+      "skip_reason": "'ascii' codec can't encode character '\\ufeff' in position 24: ordinal not in range(128)"
     },
     {
       "provider": "anthropic",
       "label": "LLM tokens",
-      "amount_usd": 0.0,
-      "detail": {},
-      "skipped": true,
-      "skip_reason": "missing ANTHROPIC_ADMIN_KEY"
+      "amount_usd": 25.46,
+      "detail": {
+        "daily_cap_usd": 50,
+        "window": [
+          "2026-05-14T00:00:00+00:00",
+          "2026-05-15T00:00:00+00:00"
+        ],
+        "pages_fetched": 1
+      },
+      "skipped": false,
+      "skip_reason": ""
     },
     {
       "provider": "sentry",
-      "label": "Event ingestion",
+      "label": "error",
       "amount_usd": 0.0,
       "detail": {},
       "skipped": true,
-      "skip_reason": "missing SENTRY_AUTH_TOKEN"
+      "skip_reason": "'latin-1' codec can't encode character '\\ufeff' in position 7: ordinal not in range(256)"
     },
     {
       "provider": "stripe",
-      "label": "Gross revenue (GAINS)",
+      "label": "error",
       "amount_usd": 0.0,
       "detail": {},
       "skipped": true,
-      "skip_reason": "missing STRIPE_API_KEY"
-    },
-    {
-      "provider": "stripe",
-      "label": "Stripe fees",
-      "amount_usd": 0.0,
-      "detail": {},
-      "skipped": true,
-      "skip_reason": "missing STRIPE_API_KEY"
+      "skip_reason": "'latin-1' codec can't encode character '\\ufeff' in position 7: ordinal not in range(256)"
     },
     {
       "provider": "gcp",
