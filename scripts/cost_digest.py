@@ -178,34 +178,76 @@ def collect_cloudflare(target_day: str) -> list[CostLine]:
 
 
 def collect_anthropic(target_day: str) -> list[CostLine]:
+    """Anthropic Admin API: GET /v1/organizations/cost_report.
+
+    Verified live against the real endpoint 2026-05-15. Response shape:
+      {
+        "data": [
+          {
+            "starting_at": "2026-05-13T00:00:00Z",
+            "ending_at":   "2026-05-14T00:00:00Z",
+            "results": [
+              { "currency": "USD", "amount": "65.5071",
+                "workspace_id": null, "model": null, ... },
+              ...
+            ]
+          }
+        ],
+        "has_more": false,
+        "next_page": null
+      }
+
+    `amount` is a STRING; sum across all results in the target day's bucket.
+    Requires an admin/service API key (sk-ant-admin01-* or svac_*) — regular
+    sk-ant-api* keys are rejected with 401 "invalid x-api-key".
+    """
     key = os.environ.get("ANTHROPIC_ADMIN_KEY")
     if not key:
         return [CostLine("anthropic", "LLM tokens", 0.0, skipped=True,
                          skip_reason="missing ANTHROPIC_ADMIN_KEY")]
-    # Anthropic Admin API: GET /v1/organizations/usage_report
-    # Filter by date range. Returns aggregated cost per model. As of 2026-05
-    # the schema includes `cost_usd` per workspace per day.
     start, end = date_range_for(target_day)
-    url = (
-        "https://api.anthropic.com/v1/organizations/usage_report"
-        f"?starting_at={start}&ending_at={end}"
-    )
-    status, body = http_request(url, headers={
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
-        "Accept": "application/json",
+    # Anthropic accepts ISO 8601 with `Z`. Python's isoformat emits `+00:00`
+    # which becomes a space when interpreted as a URL query plus-sign,
+    # producing HTTP 400. Normalise to `Z` and URL-encode safely.
+    qs = urlencode({
+        "starting_at": start.replace("+00:00", "Z"),
+        "ending_at":   end.replace("+00:00", "Z"),
     })
-    if status != 200:
-        return [CostLine("anthropic", "LLM tokens", 0.0, skipped=True,
-                         skip_reason=f"API status {status}")]
-    try:
-        data = json.loads(body)
-        total = float(data.get("total_cost_usd", 0.0))
-    except (json.JSONDecodeError, ValueError):
-        return [CostLine("anthropic", "LLM tokens", 0.0, skipped=True,
-                         skip_reason="unexpected response shape")]
+    url = f"https://api.anthropic.com/v1/organizations/cost_report?{qs}"
+    total = 0.0
+    pages = 0
+    while True:
+        status, body = http_request(url, headers={
+            "x-api-key": key,
+            "anthropic-version": "2023-06-01",
+            "Accept": "application/json",
+        })
+        if status != 200:
+            reason = f"API status {status}"
+            if status == 401:
+                reason += " (admin key required — sk-ant-api* won't work)"
+            return [CostLine("anthropic", "LLM tokens", 0.0, skipped=True,
+                             skip_reason=reason)]
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            return [CostLine("anthropic", "LLM tokens", 0.0, skipped=True,
+                             skip_reason="unexpected response shape")]
+        for bucket in data.get("data") or []:
+            for row in bucket.get("results") or []:
+                try:
+                    total += float(row.get("amount", 0) or 0)
+                except (TypeError, ValueError):
+                    continue
+        pages += 1
+        next_url = data.get("next_page")
+        if not data.get("has_more") or not next_url or pages >= 50:
+            break
+        url = next_url  # Anthropic returns absolute URL for next page
+
     return [CostLine("anthropic", "LLM tokens", round(total, 2),
-                     detail={"daily_cap_usd": ANTHROPIC_DAILY_CAP_USD, "window": [start, end]})]
+                     detail={"daily_cap_usd": ANTHROPIC_DAILY_CAP_USD,
+                             "window": [start, end], "pages_fetched": pages})]
 
 
 def collect_sentry(target_day: str) -> list[CostLine]:
