@@ -78,37 +78,51 @@ So the comparison was against a forward-looking announcement, not a shipping pro
 
 ---
 
-## 4. Pilot Anthropic "Dreaming" on Factory's Claude-driven autofix loop — DO IT
+## 4. Pilot Anthropic "Dreaming" on Factory autofix loop — INTENT CONFIRMED; first step is an RFC, not a config flag
 
-**Decision:** Enable Anthropic Dreaming on the Factory supervisor/autofix loop. Exact mechanism pending agent research (config flag vs SDK parameter vs separate endpoint).
+**Decision:** Adopt Dreaming for the supervisor/autofix loop, but the path is heavier than a toggle. First action: open an RFC titled "Pilot Anthropic Dreaming via Claude Managed Agents migration for supervisor autofix" and request research-preview access from Anthropic. No code change until research-preview access is granted.
 
-**Context:** Anthropic shipped Dreaming as a way to let Claude run autonomously on background tasks. Factory's autofix loop (likely `apps/supervisor/` + `.github/scripts/supervisor-core.mjs`) is the obvious pilot target.
+**Context:** "Do it" was given on the assumption Dreaming is a config flag. Verification: Dreaming is a scheduled inter-session memory-consolidation process (replays past sessions, extracts patterns, writes new memory entries — modeled on hippocampal consolidation). It is **exclusive to Claude Managed Agents** (Anthropic's hosted agents research preview), NOT a parameter on the raw `/v1/messages` API that Factory's autofix uses today (`supervisor-core.mjs`, `pr-review.mjs`).
 
-**Why:** Factory autofix is already an autonomous loop; the only question is whether Dreaming improves its reasoning depth or just adds cost. Worth a controlled pilot.
+**Why:** Migrating the autofix loop from raw fetch → Claude Managed Agents SDK is a real port, not a tweak. The right governance path is the same one every other multi-week change uses: RFC → research-preview gate → design → implementation.
 
 **Consequences:**
-- Implementation detail: see the follow-up commit/PR that lands the actual config change.
-- Risk: cost increase — needs to be metered through `llm-meter` from day one.
-- Budget cap: $5/run (FRIDGE rule 5) still applies; Dreaming runs must respect it.
+- An RFC gets filed (target: this week, while research-preview access is being requested).
+- Until research-preview is granted, no code change. Don't speculatively scaffold against an SDK we can't call.
+- The cost-metering concern (`llm-meter` ledger, $5/run FRIDGE rule 5 cap) carries into the RFC as a non-negotiable.
 
-**Revisit when:** First-week cost shows ≥30% delta vs baseline, OR fix-quality regression observed.
+**Revisit when:** Research-preview access lands from Anthropic OR Anthropic ships Dreaming as a parameter on the standard API.
+
+Sources for the verification:
+- [Anthropic introduces "dreaming" — VentureBeat](https://venturebeat.com/technology/anthropic-introduces-dreaming-a-system-that-lets-ai-agents-learn-from-their-own-mistakes)
+- [Anthropic Managed Agents dreaming outcomes — The New Stack](https://thenewstack.io/anthropic-managed-agents-dreaming-outcomes/)
 
 ---
 
-## 5. Enable GitHub-managed Copilot code review on Factory — DO IT
+## 5. Enable GitHub-managed Copilot code review on Factory — DO IT (UI-only, 60 seconds)
 
-**Decision:** Turn on Copilot's automatic code review on Factory before the 2026-06-01 AI Credits pricing change.
+**Decision:** Turn on Copilot's automatic code review on Factory before the 2026-06-01 AI Credits pricing change. Configuration is via a **branch ruleset**, UI-only — no REST API exists for this toggle.
 
-**Context:** GitHub Copilot can review PRs automatically. Pricing change on 2026-06-01 may affect the cost; enabling now potentially locks in better terms.
+**Context:** Factory is private; after 2026-06-01 each Copilot review consumes GitHub Actions minutes. Enabling now sets the policy before the meter starts.
 
 **Why:** Adds a second pair of eyes (alongside the existing Grok→Claude consensus bot) without human cost. If signal quality is low, can be disabled.
 
+**Click path (the actual procedure since there's no API):**
+1. `https://github.com/Latimer-Woods-Tech/Factory` → Settings
+2. Rules → Rulesets → New ruleset → New branch ruleset
+3. Name: `copilot-auto-review`; Enforcement Status: **Active**
+4. Target branches → Include default branch (`main`)
+5. Check **"Automatically request Copilot code review"**
+6. Create
+
 **Consequences:**
 - Both Copilot AND `factory-cross-repo[bot]` review every non-trivial PR. Could be noisy; expect to filter.
+- After 2026-06-01: Actions minutes spend goes up; track via existing cost-digest workflow.
 - Branch protection ruleset `15843812` does NOT require Copilot review — it's advisory.
-- If Copilot review becomes a required check, that's a separate decision.
 
-**Revisit when:** A week of dual-review data is in; if Copilot review duplicates >80% of Grok→Claude findings, drop one.
+**Revisit when:** A week of dual-review data is in; if Copilot duplicates >80% of Grok→Claude findings, drop one.
+
+Source: [Configuring automatic code review by GitHub Copilot — GitHub Docs](https://docs.github.com/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-automatic-review), [Copilot review Actions-minute change 2026-06-01](https://github.blog/changelog/2026-04-27-github-copilot-code-review-will-start-consuming-github-actions-minutes-on-june-1-2026/)
 
 ---
 
@@ -129,19 +143,31 @@ So the comparison was against a forward-looking announcement, not a shipping pro
 
 ---
 
-## 7. Cursor GitHub App permissions — grant the pending request
+## 7. Cursor GitHub App permissions — INTENT CONFIRMED; UI-only, with hard refusals on specific scopes
 
-**Decision:** Approve the pending Cursor GitHub App permission request on the Latimer-Woods-Tech org. Specific permissions and approval path pending agent investigation.
+**Decision:** Approve the pending Cursor request, but only after confirming the requested scopes don't include the three FRIDGE-disallowed write surfaces (`secrets:*`, `workflows:write`, `administration:*`). Refuse those and accept the minimum-viable set.
 
-**Context:** Cursor (Anysphere) GitHub App has requested expanded permissions. Approval was pending.
+**Context:** Verification: **Cursor is not currently installed on the Latimer-Woods-Tech org** (only `factory-cross-repo` is, id `128523115`). The pending prompt the user saw is therefore either (a) on a personal install under `adrper79-dot` (user-scope, not org-scope) or (b) a fresh org install request waiting at the org-settings installation page. GitHub does not expose a REST endpoint for approving pending app installs or permission requests — `gh` CLI / MCP cannot do this; UI is the only path.
 
-**Why:** Cursor needs the requested scopes to function as intended on Factory. Risk is bounded — if the requested perms include `actions:write` or `secrets:write`, escalate.
+**Click path:**
+1. `https://github.com/organizations/Latimer-Woods-Tech/settings/installations`
+2. Open the **Pending requests** tab (or **Installed GitHub Apps** if Cursor partially installed)
+3. Click Cursor → **Review request**
+4. Grant per-permission, applying the rules below
+
+**Permission policy (FRIDGE rule 8 derived):**
+- ✅ Acceptable: `contents:write`, `pull_requests:write`, `issues:write`, `metadata:read` — on selected repos only, not the whole org.
+- ❌ Refuse: `secrets:*` (Factory secrets live in GCP Secret Manager + GH repo secrets; no third-party app reads them).
+- ❌ Refuse: `workflows:write` (the supervisor autofix loop owns workflow files; a third-party write here is supply-chain risk).
+- ❌ Refuse: `administration:*` at org level (only `factory-cross-repo` should hold that).
+
+**If Cursor refuses to install without one of the refused scopes:** don't install. Use Cursor with its non-GitHub features only; revisit when they offer a granular scope.
 
 **Consequences:**
-- Cursor App can act with the granted scopes across all repos in the org.
-- If FRIDGE rule 8 concerns surface in the agent report (write access to workflows, secrets, or admin), this decision is reversed and the permissions are NOT granted.
+- Cursor App can act with the granted scopes on the repos you select — not org-wide unless that's a Cursor install constraint.
+- Screenshot the granted permission set and attach to this decision file (or a comment on the audit issue) for the quarterly review.
 
-**Revisit when:** Quarterly app-access audit, or Cursor pushes another permission expansion.
+**Revisit when:** Quarterly app-access audit, OR Cursor pushes another permission expansion (will fire a fresh request).
 
 ---
 
