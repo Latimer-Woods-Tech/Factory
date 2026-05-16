@@ -309,18 +309,12 @@ def has_typed_env_bindings(repo: str) -> bool:
     1) An `Env` declaration (`interface Env` or `type Env =`), and
     2) Hono bindings usage wired to that Env (`Bindings: Env` in app/type wiring).
     """
-    env_declaration_queries = [
-        'path:src/ "interface Env"',
-        'path:src/ "type Env ="',
-        'path:apps/ "interface Env"',
-        'path:apps/ "type Env ="',
-    ]
-    typed_binding_queries = [
-        'path:src/ "new Hono<{ Bindings: Env"',
-        'path:src/ "Bindings: Env"',
-        'path:apps/ "new Hono<{ Bindings: Env"',
-        'path:apps/ "Bindings: Env"',
-    ]
+    search_roots = ("src", "apps")
+    env_declaration_patterns = ('"interface Env"', '"type Env ="')
+    typed_binding_patterns = ('"new Hono<{ Bindings: Env"', '"Bindings: Env"')
+
+    env_declaration_queries = [f"path:{root}/ {pattern}" for root in search_roots for pattern in env_declaration_patterns]
+    typed_binding_queries = [f"path:{root}/ {pattern}" for root in search_roots for pattern in typed_binding_patterns]
     has_env_declaration = any_search_hit(repo, env_declaration_queries)
     has_typed_bindings = any_search_hit(repo, typed_binding_queries)
     return has_env_declaration and has_typed_bindings
