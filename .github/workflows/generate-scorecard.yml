@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
       - name: Run scorecard generator
@@ -24,12 +25,29 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_SCORECARD || secrets.SLACK_WEBHOOK_OPS }}
           SCORECARD_REPO_OWNER: adrper79-dot
           SCORECARD_REPO_NAME: factory
-      - name: Commit generated scorecard
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add docs/IMPLEMENTATION_SCORECARD_AUTO.md
-          git diff --quiet --cached || git commit -m 'chore: update implementation scorecard'
-          git push
+      - name: Open auto-merge PR for scorecard snapshot
+        # Direct push to main is rejected by branch protection (GH013).
+        # Match the cost-observability.yml + platform-conformance.yml pattern:
+        # commit to a fresh branch, open a labelled PR, let auto-merge land it.
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add docs/IMPLEMENTATION_SCORECARD_AUTO.md 2>/dev/null || true
+          if git diff --quiet --cached docs/IMPLEMENTATION_SCORECARD_AUTO.md; then
+            echo "No scorecard changes to commit."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/scorecard-snapshot-$DATE-$(date -u +%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(scorecard): weekly implementation scorecard ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(scorecard): weekly implementation scorecard ($DATE)" \
+            --body "Automated scorecard snapshot from \`generate-scorecard.yml\`. Source: \`scripts/generate-scorecard.mjs\`." \
+            --label automation \
+            --label documentation \
+            --label auto-merge
