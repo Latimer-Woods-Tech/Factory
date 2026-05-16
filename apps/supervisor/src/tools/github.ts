@@ -157,13 +157,14 @@ export function formatPlanComment(
   templateDescription: string,
   tier: 'green' | 'yellow' | 'red',
   steps: Array<{ tool: string; slots?: Record<string, unknown> }>,
+  patternCheck?: number[],
 ): string {
   const tierEmoji = { green: '🟢', yellow: '🟡', red: '🔴' }[tier];
   const stepLines = steps
     .map((s, i) => `${i + 1}. **${s.tool}**`)
     .join('\n');
 
-  return [
+  const sections: string[] = [
     `## Supervisor Plan — \`${templateId}\``,
     '',
     `**Tier:** ${tierEmoji} ${tier}  `,
@@ -171,10 +172,29 @@ export function formatPlanComment(
     '',
     '### Steps',
     stepLines,
+  ];
+
+  // Tier-3 gap 2 — render the template's declared PATTERNS.md cross-references
+  // so the human approving the plan AND the executing LLM both see exactly
+  // which operational patterns this run must satisfy.
+  if (patternCheck && patternCheck.length > 0) {
+    sections.push(
+      '',
+      '### Patterns this template must satisfy',
+      ...patternCheck.map(
+        (n) =>
+          `- [\`docs/architecture/PATTERNS.md\` §${n}](https://github.com/Latimer-Woods-Tech/factory/blob/main/docs/architecture/PATTERNS.md)`,
+      ),
+    );
+  }
+
+  sections.push(
     '',
     '---',
     '_React 👍 to approve this plan. The supervisor will execute on the next scheduled run._',
     '',
     '> ⚠️ This plan was generated automatically. Review each step before approving.',
-  ].join('\n');
+  );
+
+  return sections.join('\n');
 }

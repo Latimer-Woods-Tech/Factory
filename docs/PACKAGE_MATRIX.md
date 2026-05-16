@@ -224,3 +224,7 @@ For posterity. If you wonder why the doc says different things than the prior ve
 6. **`@lwt/auth` vs `better-auth`:** documented as an open decision needing ADR-0008
 7. **The 6 gaps:** moved into formal GAP_REGISTER entries (G31–G36)
 8. **T4.1 exit criteria:** the open item "scaffold new app using matrix as guide" remains open. **xico-city is now flagged as the live-validation target** — it has the most rigorous build spec (`CANONICAL_DJMEXXICO_FeatureRegistry_v3.xlsx` + the matrix tonight) and would prove the adoption pattern under real constraints.
+
+---
+
+> **Consolidation note (2026-05-14):** `docs/FACTORY_PACKAGE_MATRIX.md` (April 2026 draft) has been deleted. This file is the only canonical package matrix. Stale packages.yml references should point here.
