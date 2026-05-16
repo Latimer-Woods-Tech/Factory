@@ -77,7 +77,7 @@ Tier routing lives in `@latimer-woods-tech/llm` (`fast | balanced | smart | veri
 | **smart** | Anthropic — Claude Opus 4.7 | Managed Agents GA; primary for complex reasoning |
 | **balanced** | Anthropic — Claude Sonnet | Default for most tasks |
 | **fast** | Groq — `llama-3.3-70b-versatile` | Low-latency; streaming |
-| **verifier** | Groq | Output validation and scoring |
+| **verifier** | Groq — `llama-4-maverick` | Output validation and grounding check; replaces `llama-3.3-70b-versatile` (verifier role) |
 | **long-context (>150k tokens)** | Gemini 2.5 Pro | Auto-fallback in `@latimer-woods-tech/llm` |
 | **xAI / Grok** | Grok 3 | Active — check `@latimer-woods-tech/llm` for current tier assignment |
 | **gateway** | Cloudflare AI Gateway | All tiers route through this; no exceptions |
