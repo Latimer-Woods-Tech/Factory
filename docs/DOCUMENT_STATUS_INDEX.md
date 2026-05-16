@@ -31,6 +31,7 @@
 | `prompts/ADMIN_STUDIO_COMMAND_PLANE_PROMPT.md` | Canonical | Admin Studio safe command-plane prompt |
 | `docs/revenue/PRACTITIONER_VIDEO_STUDIO_READY_STATE_PLAN.md` | Canonical | Practitioner Video Studio paid self-serve build plan |
 | `docs/revenue/XICO_CITY_TRANCHE_REVIEW.md` | Canonical | Xico City fit, risk, and World Class 360 completion framing |
+| `docs/architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md` | Canonical | Xico City low-level requirements, architecture, and ecosystem integration map |
 | `docs/operations/WORLD_CLASS_360_SCOPE_GAP_REVIEW.md` | Canonical | Full-scope gap review covering apps, templates, standards, configs, and process maturity |
 | `docs/operations/WORLD_CLASS_360_DISCIPLINE_BREAKDOWN.md` | Canonical | Discipline taxonomy and routing layer for W360 ownership/review gates |
 
