@@ -409,15 +409,32 @@ def dim_performance(repo: str) -> DimensionScore:
 
 
 def dim_privacy(repo: str) -> DimensionScore:
-    pii = gh_get_file(repo, "docs/PII_INVENTORY.md")
-    retention = gh_get_file(repo, "docs/RETENTION.md") or gh_get_file(repo, "docs/runbooks/compliance.md")
+    pii = (
+        gh_get_file(repo, "docs/PII_INVENTORY.md")
+        or gh_get_file(repo, "docs/pii_inventory.md")
+        or gh_get_file(repo, "docs/privacy/PII_INVENTORY.md")
+    )
+    retention = (
+        gh_get_file(repo, "docs/RETENTION.md")
+        or gh_get_file(repo, "docs/retention.md")
+        or gh_get_file(repo, "docs/privacy/RETENTION.md")
+        or gh_get_file(repo, "docs/runbooks/compliance.md")
+    )
+    export_hint = (
+        gh_search_code(repo, "data-export") > 0
+        or gh_search_code(repo, "/api/me/export") > 0
+        or gh_search_code(repo, "/v1/me/data-export") > 0
+        or gh_search_code(repo, "/privacy/export") > 0
+    )
+    delete_hint = (
+        gh_search_code(repo, "DELETE /api/me") > 0
+        or gh_search_code(repo, "/privacy/delete") > 0
+    )
 
     checks = [
         check("PII_INVENTORY.md present",      pii is not None),
         check("Retention policy doc present",  retention is not None),
-        check("DSR export endpoint hint",      gh_search_code(repo, '"data-export"') > 0
-                                              or gh_search_code(repo, '"/api/me/export"') > 0
-                                              or gh_search_code(repo, '"/v1/me/data-export"') > 0),
+        check("DSR endpoint hints (export + delete)", export_hint and delete_hint),
     ]
     return DimensionScore("privacy", "Privacy", 5, score_from_checks(checks), checks)
 
