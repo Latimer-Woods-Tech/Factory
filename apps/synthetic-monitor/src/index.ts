@@ -1,3 +1,4 @@
+import puppeteer from '@cloudflare/puppeteer';
 import { Hono } from 'hono';
 import type { Env } from './env.js';
 import { GENERATED_TARGETS } from './targets.generated.js';
@@ -163,7 +164,7 @@ async function readBodyForAssertion(response: Response, method: CheckMethod): Pr
  * @param target - Endpoint definition to check.
  * @param fetchImpl - Fetch implementation, injectable for tests.
  */
-export async function checkTarget(target: MonitorTarget, fetchImpl: FetchLike = fetch): Promise<MonitorResult> {
+export async function checkTarget(target: MonitorTarget, env: Env, fetchImpl: FetchLike = fetch): Promise<MonitorResult> {
   const method = target.method ?? 'GET';
   const expectedStatus = target.expectedStatus ?? DEFAULT_EXPECTED_STATUS;
   const timeoutMs = target.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -191,6 +192,32 @@ export async function checkTarget(target: MonitorTarget, fetchImpl: FetchLike = 
     const detail = [mismatchDetail, containsDetail, !ok && bodySnippet ? `Body snippet: ${bodySnippet}` : undefined]
       .filter((value): value is string => Boolean(value))
       .join(' | ');
+    
+    if (!ok && env.BROWSER && env.AUDIT_LOGS && env.SLACK_WEBHOOK_OPS) {
+      try {
+        const browser = await puppeteer.launch(env.BROWSER);
+        const page = await browser.newPage();
+        await page.goto(target.url, { waitUntil: 'networkidle2', timeout: 15000 });
+        const screenshot = await page.screenshot();
+        await browser.close();
+        
+        const key = `smoke-failures/${target.id}-${new Date().toISOString()}.png`;
+        await env.AUDIT_LOGS.put(key, screenshot, { httpMetadata: { contentType: 'image/png' } });
+        
+        // In a real implementation, we'd generate a pre-signed URL here.
+        // For now, we just alert Slack that it's in R2.
+        await fetch(env.SLACK_WEBHOOK_OPS, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: `🚨 Synthetic monitor failed: ${target.id}\nURL: ${target.url}\nError: ${detail}\nScreenshot saved to R2: ${key}`
+          })
+        });
+      } catch (e) {
+        console.error('Failed to capture screenshot:', e);
+      }
+    }
+
     return {
       id: target.id,
       url: target.url,
@@ -251,7 +278,7 @@ function resolveFetchForTarget(target: MonitorTarget, env: Env, fetchImpl: Fetch
 export async function runSyntheticChecks(env: Env, fetchImpl: FetchLike = fetch): Promise<MonitorRunResult> {
   const targets = parseTargets(env.TARGETS_JSON);
   const results = await Promise.all(
-    targets.map((target) => checkTarget(target, resolveFetchForTarget(target, env, fetchImpl))),
+    targets.map((target) => checkTarget(target, env, resolveFetchForTarget(target, env, fetchImpl))),
   );
   const status = results.every((result) => result.ok) ? 'ok' : 'degraded';
   return {
