@@ -7,7 +7,7 @@
  *
  * This catches stale or conflicting endpoint narratives, e.g. a doc
  * claiming "videoking.adrper79.workers.dev" when the registry says
- * the deployed name is "nichestream-api".
+ * the deployed name is "capricast-api".
  *
  * Usage:
  *   node scripts/check-docs-registry-consistency.mjs
