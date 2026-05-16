@@ -1,5 +1,6 @@
 export { SupervisorDO } from './supervisor.do';
 export { LockDO } from './lock.do';
+import { handleSlackEvents } from './tools/slack.js';
 
 export interface Env {
   SUPERVISOR: DurableObjectNamespace;
@@ -25,6 +26,10 @@ export interface Env {
   PUSHOVER_TOKEN: string;
   /** Pushover user key. Set via `wrangler secret put PUSHOVER_USER_KEY`. */
   PUSHOVER_USER_KEY: string;
+  /** Slack signing secret for /slack/events verification. Set via `wrangler secret put SLACK_SIGNING_SECRET`. */
+  SLACK_SIGNING_SECRET: string;
+  /** Slack user ID of the workspace owner — only DMs from this user create GitHub issues. */
+  SLACK_OWNER_USER_ID: string;
 }
 
 /**
@@ -39,6 +44,10 @@ export interface Env {
  */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === '/slack/events' && request.method === 'POST') {
+      return handleSlackEvents(request, env);
+    }
     const id = env.SUPERVISOR.idFromName('singleton');
     const stub = env.SUPERVISOR.get(id);
     return stub.fetch(request);

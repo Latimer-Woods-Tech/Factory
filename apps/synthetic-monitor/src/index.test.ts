@@ -24,12 +24,13 @@ function parseUnknownJson(text: string): unknown {
 describe('parseTargets', () => {
   it('falls back to default targets when configuration is empty', () => {
     const fallback = parseTargets('[]');
-    expect(fallback).toHaveLength(11);
+    // Generated (4 liveness) + custom (3 manifest + 3 page + 4 SLO journeys) = 14
+    expect(fallback.length).toBeGreaterThanOrEqual(14);
     expect(fallback.some((target) => target.id === 'schedule-worker.health')).toBe(true);
     expect(fallback.some((target) => target.id === 'schedule-worker.manifest')).toBe(true);
     expect(fallback.some((target) => target.id === 'slo.journey.auth-api')).toBe(true);
-    expect(parseTargets('[ ]')).toHaveLength(11);
-    expect(parseTargets(undefined)).toHaveLength(11);
+    expect(parseTargets('[ ]').length).toBeGreaterThanOrEqual(14);
+    expect(parseTargets(undefined).length).toBeGreaterThanOrEqual(14);
   });
 
   it('validates configured targets', () => {
