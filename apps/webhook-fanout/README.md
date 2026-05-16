@@ -1,6 +1,6 @@
 # webhook-fanout
 
-Cloudflare Worker that receives Stripe webhooks, verifies HMAC-SHA256 signatures, deduplicates via KV (7-day TTL), filters synthetic test customers at source, and fans out to **ChartMogul** (subscription analytics) and **Loops** (lifecycle emails).
+Cloudflare Worker that receives Stripe webhooks, verifies HMAC-SHA256 signatures, deduplicates via KV (7-day TTL), filters synthetic test customers at source, and fans out to STACK.md-approved **PostHog + factory_events** (analytics) and **Resend** (lifecycle emails).
 
 - **Endpoint:** `https://webhooks.latwoodtech.com/stripe`
 - **Handles:** `POST /stripe` (Stripe webhook receiver), `GET /health`
@@ -17,8 +17,9 @@ Stripe → POST /stripe
          ├─ 2. Idempotency check (KV, 7-day TTL keyed on event.id)
          ├─ 3. Synthetic customer filter (metadata + email regex)
          └─ 4. waitUntil() fan-out
-                ├─ Loops: PUT /contacts/update → POST /events/send
-                └─ ChartMogul: upsert customer (subscription events only)
+               ├─ PostHog: capture `stripe.*` analytics events
+               ├─ factory_events: insert first-party `stripe.*` rows
+               └─ Resend: send lifecycle email updates
 ```
 
 Fan-out runs inside `waitUntil()` — Stripe gets a 200 response immediately while work continues in the background, well within the 5 s acknowledgement window.
@@ -27,16 +28,16 @@ Fan-out runs inside `waitUntil()` — Stripe gets a 200 response immediately whi
 
 ## Handled Stripe events
 
-| Event | Loops event name | ChartMogul |
+| Event | Analytics event | Lifecycle email |
 |---|---|---|
-| `customer.created` | `stripe.customer.created` | — |
-| `customer.updated` | `stripe.customer.updated` | — |
-| `customer.subscription.created` | `stripe.customer.subscription.created` | upsert customer |
-| `customer.subscription.updated` | `stripe.customer.subscription.updated` | upsert customer |
-| `customer.subscription.deleted` | `stripe.customer.subscription.deleted` | upsert customer |
-| `customer.subscription.trial_will_end` | `stripe.customer.subscription.trial_will_end` | upsert customer |
-| `invoice.paid` | `stripe.invoice.paid` | — |
-| `invoice.payment_failed` | `stripe.invoice.payment_failed` | — |
+| `customer.created` | `stripe.customer.created` | Resend |
+| `customer.updated` | `stripe.customer.updated` | Resend |
+| `customer.subscription.created` | `stripe.customer.subscription.created` | Resend |
+| `customer.subscription.updated` | `stripe.customer.subscription.updated` | Resend |
+| `customer.subscription.deleted` | `stripe.customer.subscription.deleted` | Resend |
+| `customer.subscription.trial_will_end` | `stripe.customer.subscription.trial_will_end` | Resend |
+| `invoice.paid` | `stripe.invoice.paid` | Resend |
+| `invoice.payment_failed` | `stripe.invoice.payment_failed` | Resend |
 
 ---
 
@@ -47,8 +48,8 @@ Set these via `wrangler secret put <NAME>` or add to org-level GitHub Actions se
 | Secret | Description |
 |---|---|
 | `STRIPE_WEBHOOK_SECRET` | Signing secret from Stripe dashboard (after endpoint registration) |
-| `CHARTMOGUL_API_KEY` | ChartMogul API key — see issue #641 dependencies |
-| `LOOPS_API_KEY` | Loops API key — injected directly (not via proxy) |
+| `POSTHOG_API_KEY` | PostHog project API key |
+| `RESEND_API_KEY` | Resend API key |
 
 ---
 
@@ -63,12 +64,14 @@ wrangler kv namespace create webhook-fanout-idempotency --preview
 
 Copy the IDs into `wrangler.jsonc`, replacing `REPLACE_WITH_KV_NAMESPACE_ID` and `REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID`.
 
+Provision the `factory_events` D1 database and replace `REPLACE_WITH_D1_DATABASE_ID` in `wrangler.jsonc`.
+
 ### 2. Set secrets
 
 ```bash
 wrangler secret put STRIPE_WEBHOOK_SECRET --env production
-wrangler secret put CHARTMOGUL_API_KEY --env production
-wrangler secret put LOOPS_API_KEY --env production
+wrangler secret put POSTHOG_API_KEY --env production
+wrangler secret put RESEND_API_KEY --env production
 ```
 
 ### 3. Deploy
@@ -108,14 +111,8 @@ This is a belt-and-suspenders check alongside the `metadata.synthetic` flag set 
 
 ---
 
-## ChartMogul data source
+## Analytics store
 
-All subscription data is written to data source `ds_036fc9e8-4e03-11f1-ae13-0f418c0c0aca` ("Stripe (direct sync)").
+All handled Stripe events are captured in PostHog and inserted into the first-party `factory_events` D1 database using the `stripe.*` event names above.
 
-> **Do not** enable ChartMogul's or Loops's built-in Stripe integration — this Worker is the authoritative sync path and enabling their native integrations will double-count data.
-
----
-
-## Follow-up
-
-Full `upsertChartMogulSubscription` (invoice/transaction reflection) is stubbed and will be completed in the `@latimer-woods-tech/webhooks` package extraction (follow-up issue).
+> **Do not** enable ChartMogul's or Loops's built-in Stripe integrations — this Worker intentionally avoids unratified vendors and keeps analytics/email on the canonical Factory stack.

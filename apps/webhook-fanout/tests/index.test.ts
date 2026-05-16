@@ -28,6 +28,7 @@ async function signPayload(payload: string, secret: string, timestamp: number): 
 
 type KVGetOptions = Parameters<KVNamespace['get']>[1];
 type KVPutOptions = Parameters<KVNamespace['put']>[2];
+type D1BindValue = string | number | null;
 
 function makeKV(store: Map<string, string> = new Map()): KVNamespace {
   return {
@@ -41,20 +42,39 @@ function makeKV(store: Map<string, string> = new Map()): KVNamespace {
   } as unknown as KVNamespace;
 }
 
-function makeEnv(kv: KVNamespace = makeKV()): Record<string, unknown> {
+function makeD1(): { db: D1Database; binds: D1BindValue[][] } {
+  const binds: D1BindValue[][] = [];
+  const db = {
+    prepare: vi.fn((_sql: string) => ({
+      bind: vi.fn((...values: D1BindValue[]) => {
+        binds.push(values);
+        return {
+          run: vi.fn(async () => ({ success: true })),
+        };
+      }),
+    })),
+  } as unknown as D1Database;
+  return { db, binds };
+}
+
+function makeEnv(kv: KVNamespace = makeKV(), db: D1Database = makeD1().db): Record<string, unknown> {
   return {
     STRIPE_WEBHOOK_SECRET: TEST_SECRET,
-    CHARTMOGUL_API_KEY: 'test-chartmogul-key',
-    LOOPS_API_KEY: 'test-loops-key',
-    CHARTMOGUL_DATA_SOURCE_UUID: 'ds_test-uuid',
+    POSTHOG_API_KEY: 'test-posthog-key',
+    RESEND_API_KEY: 'test-resend-key',
+    RESEND_FROM: 'Factory <noreply@latwoodtech.com>',
+    FACTORY_EVENTS_DB: db,
     IDEMPOTENCY_KV: kv,
     ENVIRONMENT: 'test',
   };
 }
 
-function makeCtx(): ExecutionContext {
+function makeCtx(waitUntilPromises: Promise<unknown>[] = []): ExecutionContext {
   return {
-    waitUntil: vi.fn((p: Promise<unknown>) => { p.catch(() => {}); }),
+    waitUntil: vi.fn((p: Promise<unknown>) => {
+      waitUntilPromises.push(p);
+      p.catch(() => {});
+    }),
     passThroughOnException: vi.fn(),
   } as unknown as ExecutionContext;
 }
@@ -78,6 +98,7 @@ async function postStripe(
   payload: string,
   sigHeader: string,
   env: Record<string, unknown>,
+  ctx: ExecutionContext = makeCtx(),
 ): Promise<Response> {
   const req = new Request('https://webhooks.latwoodtech.com/stripe', {
     method: 'POST',
@@ -87,7 +108,7 @@ async function postStripe(
     },
     body: payload,
   });
-  return app.fetch(req, env, makeCtx());
+  return app.fetch(req, env, ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +147,40 @@ describe('webhook-fanout Worker', () => {
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
     expect(body['ok']).toBe(true);
+  });
+
+  it('fans out to PostHog, factory_events, and Resend only', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'sent_test' }), { status: 200 }),
+    );
+    const { db, binds } = makeD1();
+    const waitUntilPromises: Promise<unknown>[] = [];
+
+    const event = makeStripeEvent('customer.subscription.updated', {
+      customer: 'cus_real123',
+      customer_email: 'subscriber@realcustomer.com',
+      status: 'active',
+      items: { data: [{ plan: { nickname: 'Pro' } }] },
+    });
+    const payload = JSON.stringify(event);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigHeader = await signPayload(payload, TEST_SECRET, ts);
+
+    const res = await postStripe(payload, sigHeader, makeEnv(makeKV(), db), makeCtx(waitUntilPromises));
+    expect(res.status).toBe(200);
+
+    await Promise.all(waitUntilPromises);
+
+    const urls = fetchSpy.mock.calls.map(([url]) => String(url));
+    expect(urls).toEqual([
+      'https://app.posthog.com/capture/',
+      'https://api.resend.com/emails',
+    ]);
+    expect(urls.some(url => url.includes('chartmogul.com') || url.includes('loops.so'))).toBe(false);
+    expect(binds).toHaveLength(1);
+    expect(binds[0]?.[0]).toBe('webhook-fanout');
+    expect(binds[0]?.[1]).toBe('stripe.customer.subscription.updated');
+    expect(binds[0]?.[3]).toBe('cus_real123');
   });
 
   it('returns 401 for an invalid Stripe signature', async () => {
