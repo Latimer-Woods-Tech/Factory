@@ -77,6 +77,12 @@ const APPS = [
     envKey: 'VIDEOKING',
     extraSecrets: ['STRIPE_SECRET_KEY', 'BETTER_AUTH_SECRET', 'STRIPE_WEBHOOK_SECRET', 'EMAIL_API_KEY'],
   },
+  {
+    name: 'xico-city',
+    workerName: 'xico-city',
+    envKey: 'XICO_CITY',
+    extraSecrets: ['STRIPE_SECRET_KEY'],
+  },
 ];
 
 // ─── CLI Args ─────────────────────────────────────────────────────────────────
