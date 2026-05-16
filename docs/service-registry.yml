@@ -234,7 +234,7 @@ workers:
         line: ~10
         pattern: "https://admin-studio-production.adrper79.workers.dev"
 
-- id: capricast-api-staging
+  - id: capricast-api-staging
     name: capricast-api-staging
     repo: Latimer-Woods-Tech/videoking
     url: https://capricast-api-staging.adrper79.workers.dev
