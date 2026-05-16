@@ -5,7 +5,7 @@ triggers:
   labels_any_of: [hardening, governance, engineering]
   title_pattern: "^(chore|feat|docs)[(](governance|triage|review|reliability|docs|security)[)]:"
   body_patterns:
-    - "(?i)(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
+    - "(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
 preconditions:
   - capability_exists: github.readFile
   - capability_exists: github.openPR
@@ -26,7 +26,7 @@ slots:
     source: issue_body
   - name: file_content
     type: string
-    validator: "(?s)^.{1,50000}$"
+    validator: "^[\\s\\S]{1,50000}$"
     source: issue_body
   - name: commit_message
     type: string

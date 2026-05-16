@@ -1,0 +1,18 @@
+[run]
+# scripts/ files are hyphen-named and loaded via importlib in conftest.py.
+# Coverage by file path is more reliable than by module name.
+source_pkgs =
+include =
+    ../init-matrix-issues.py
+    ../aggregate_completion.py
+    ../sync_labels_to_matrix.py
+branch = True
+
+[report]
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+show_missing = True
+skip_covered = False

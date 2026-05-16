@@ -6,9 +6,9 @@ tier: yellow
 # Labels from the gradual-hardening rollout (parent issue #270).
 triggers:
   labels_any_of: [hardening, "hardening:promote"]
-  title_pattern: "(?i)(branch.?protect|required.?check|promote.?check|hardening.?playbook|warn.?only)"
+  title_pattern: "(branch.?protect|required.?check|promote.?check|hardening.?playbook|warn.?only)"
   body_patterns:
-    - "(?i)(promote|graduate|require).*(check|status)"
+    - "(promote|graduate|require).*(check|status)"
 
 preconditions:
   - capability_exists: github.readFile

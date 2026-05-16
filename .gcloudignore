@@ -1,0 +1,16 @@
+# Exclude files that are not needed by Cloud Build submissions.
+# This file is used when gcloud builds submit is run from the repo root.
+.git
+node_modules
+**/node_modules
+dist
+**/dist
+.next
+**/.next
+coverage
+**/coverage
+*.log
+.env
+**/.env
+.cache
+**/.cache

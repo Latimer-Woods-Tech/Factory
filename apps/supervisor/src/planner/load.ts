@@ -32,6 +32,13 @@ export interface Template {
     slots?: Record<string, unknown>;
     side_effects?: 'none' | 'read-external' | 'write-app' | 'write-external';
   }>;
+  /**
+   * Optional list of `docs/architecture/PATTERNS.md` section numbers that
+   * THIS template must satisfy when executed. Surfaced in the plan comment
+   * so the human approving the plan AND the supervisor's own LLM (which has
+   * PATTERNS.md in context via T3.B) explicitly cross-reference them.
+   */
+  pattern_check?: number[];
 }
 
 import { GENERATED_TEMPLATES } from './templates.generated';

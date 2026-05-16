@@ -433,6 +433,9 @@ async function executeGreen(repo, issue, template, slots) {
   // matches (e.g. issue #500 "entitlements rollout" matched the
   // docs-naming-convention template) so the file-write loop above committed
   // nothing. Without this guard the loop would still POST /pulls and fail.
+  // Supersedes the simpler interim guard that landed on main; keeps the
+  // branch-deletion + structured return so callers in main() can post a
+  // "no writable file plan" note instead of falsely claiming a PR was opened.
   if (changedFiles.length === 0) {
     console.warn(
       `[SKIP-PR] ${repo}#${issue.number}: template ${template.id} produced 0 file changes ` +
@@ -747,15 +750,32 @@ async function main() {
   const templates = await loadTemplates();
   console.log(`[INFO] Loaded ${templates.length} templates: ${templates.map((t) => t.id).join(', ')}`);
 
-  // Fetch CONTEXT.md to use as system prompt prefix for all LLM calls
+  // Fetch CONTEXT.md, PATTERNS.md, and LESSONS.md as the system prompt
+  // prefix for all LLM calls. Concatenation order: governance (CONTEXT) →
+  // durable how-to (PATTERNS) → supervisor-specific learnings (LESSONS).
+  // Each is independently optional — missing files log a warning, don't fail.
+  //
+  // RFC-005 (Dreaming pilot, Q3 2026) will later write consolidated session
+  // memories to LESSONS.md automatically. Until then the file is hand-
+  // maintained: append on every CODEOWNER rejection that surfaces a
+  // generalizable pattern.
   let factoryContext = '';
-  try {
-    const ctxFile = await gh('GET', '/repos/Latimer-Woods-Tech/factory/contents/docs/supervisor/CONTEXT.md');
-    factoryContext = Buffer.from(ctxFile.content, 'base64').toString('utf8');
-    console.log('[INFO] Loaded docs/supervisor/CONTEXT.md for system prompt prefix');
-  } catch (e) {
-    console.warn('[WARN] Could not load CONTEXT.md:', e.message);
+  const ctxSources = [
+    { path: 'docs/supervisor/CONTEXT.md', label: 'CONTEXT.md — Factory governance' },
+    { path: 'docs/architecture/PATTERNS.md', label: 'PATTERNS.md — Operational patterns (symptom → cause → fix)' },
+    { path: 'docs/supervisor/LESSONS.md', label: 'LESSONS.md — Supervisor learnings (hand-maintained until Dreaming)' },
+  ];
+  for (const src of ctxSources) {
+    try {
+      const file = await gh('GET', `/repos/Latimer-Woods-Tech/factory/contents/${src.path}`);
+      const body = Buffer.from(file.content, 'base64').toString('utf8');
+      factoryContext += `\n\n## ${src.label}\n\n${body}`;
+      console.log(`[INFO] Loaded ${src.path} into system prompt prefix (${body.length} chars)`);
+    } catch (e) {
+      console.warn(`[WARN] Could not load ${src.path}: ${e.message}`);
+    }
   }
+  factoryContext = factoryContext.trim();
 
   // Collect candidate issues
   let candidates = [];

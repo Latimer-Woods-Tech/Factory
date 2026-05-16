@@ -107,7 +107,7 @@ Wherever instructions apply to only one audience, the section header says so.
 | App | Product | Domain | Repo | Maturity | Supervisor access | Strategic role |
 |---|---|---|---|---|---|---|
 | **HumanDesign** | selfprime.net — practitioner synthesis platform | selfprime.net, api.selfprime.net | `Latimer-Woods-Tech/HumanDesign` | Production, revenue-live (Individual + Practitioner + Agency tiers) | **Approved** — read + limited mutations via `/admin` | Revenue anchor; primary LLM consumer; template source for supervisor |
-| **videoking** | capricast.com — short-form creator monetization (NicheStream brand) | capricast.com, api.itsjusus.com | `Latimer-Woods-Tech/videoking` | Beta, deployed; Stripe products live | Approved (Yellow) | Video pipeline reference; template source |
+| **videoking** | capricast.com — short-form creator monetization (NicheStream brand) | capricast.com, api.capricast.com | `Latimer-Woods-Tech/capricast` | Beta, deployed; Stripe products live | Approved (Yellow) | Video pipeline reference; template source |
 | **xico-city** | xicocity.com — DJMEXXICO artist platform | xicocity.com | `Latimer-Woods-Tech/xico-city` | Foundation + GCP Cloud Run processor live | Approved (Yellow) | GCP + Cloud Run pattern; artist onboarding template |
 | **factory** | apunlimited.com — the platform itself | apunlimited.com | `Latimer-Woods-Tech/factory` | Phase 5 complete, Phase 6+ in flight | Approved (Green + Yellow) | Shared packages, reusable workflows, supervisor runtime |
 | **factory-admin** | Internal read-only dashboard + supervisor control surface | (internal) | `Latimer-Woods-Tech/factory-admin` | Scaffold | Approved (Green) | Supervisor console; `/admin` root across apps |
