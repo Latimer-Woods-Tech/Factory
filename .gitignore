@@ -31,3 +31,6 @@ package-lock.json
 
 # Storybook
 storybook-static
+
+# Python bytecode
+scripts/__pycache__/
