@@ -7,7 +7,7 @@
 | Repo | Cohesion | Stack (10) | Code patterns (15) | Tests (15) | Observability (10) | Security (15) | Schema (5) | Workflows (10) | Release (5) | Performance (10) | Privacy (5) |
 |------|---------:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
 | HumanDesign | **41** | 40 | 0 | 60 | 60 | 60 | 33 | 33 | 67 | 33 | 33 |
-| videoking | **24** | 40 | 20 | 40 | 0 | 40 | 0 | 33 | 33 | 0 | 0 |
+| capricast | **24** | 40 | 20 | 40 | 0 | 40 | 0 | 33 | 33 | 0 | 0 |
 | factory-admin-studio | **29** | 20 | 20 | 20 | 0 | 40 | 67 | 33 | 33 | 67 | 0 |
 | cypher-healing | **25** | 60 | 20 | 40 | 0 | 20 | 33 | 33 | 33 | 0 | 0 |
 | xico-city | **52** | 80 | 80 | 60 | 0 | 40 | 67 | 33 | 33 | 67 | 33 |
@@ -76,7 +76,7 @@
 - ❌ Retention policy doc present
 - ✅ DSR export endpoint hint
 
-## videoking — 24/100
+## capricast — 24/100
 
 ### Stack — 40/100 (weight 10)
 - ❌ wrangler.jsonc present
