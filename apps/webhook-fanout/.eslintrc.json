@@ -1,0 +1,29 @@
+{
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "parserOptions": { "project": "./tsconfig.json" },
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "no-restricted-globals": [
+      "error",
+      { "name": "process", "message": "Use Cloudflare Worker bindings (env.VAR), not process.env" },
+      { "name": "Buffer", "message": "Use Uint8Array or TextEncoder/TextDecoder instead" }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["fs", "path", "crypto", "os", "child_process"],
+            "message": "Node.js built-ins are not available in Cloudflare Workers"
+          }
+        ]
+      }
+    ]
+  }
+}

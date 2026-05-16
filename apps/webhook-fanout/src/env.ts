@@ -14,3 +14,9 @@ export interface Env extends Record<string, unknown> {
   ENVIRONMENT?: string;
   SENTRY_DSN?: string;
 }
+
+declare module 'hono' {
+  interface ContextVariableMap {
+    requestId: string;
+  }
+}
