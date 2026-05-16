@@ -124,6 +124,7 @@ Factory package publishing uses npm Trusted Publishers (GitHub Actions OIDC), so
 Before revoking the legacy npm token, validate OIDC publish works:
 
 - Trigger publish workflow once and confirm logs show npm publishing via GitHub Actions OIDC trusted publisher.
+- Expected log indicators include `via GitHub Actions OIDC trusted publisher` and a provenance line (`npm notice Provenance statement`).
 - Confirm the published package version has GitHub provenance in npmjs.com package details.
 
 After OIDC validation, revoke the legacy npm token:
