@@ -23,7 +23,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
 
 concurrency:
   group: morning-digest
@@ -34,10 +34,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Mint Factory App token
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app.outputs.token }}
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
@@ -61,7 +70,10 @@ jobs:
 
       - name: Run morning digest
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # App-minted token so the snapshot PR's labels can trigger
+          # downstream workflows (auto-merge, project-sync). GITHUB_TOKEN
+          # would suppress those cascades.
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           set -euo pipefail
           args=""
@@ -75,7 +87,10 @@ jobs:
 
       - name: Open auto-merge PR for digest snapshot
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # App-minted token so the snapshot PR's labels can trigger
+          # downstream workflows (auto-merge, project-sync). GITHUB_TOKEN
+          # would suppress those cascades.
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           set -euo pipefail
           git add docs/digest/ 2>/dev/null || true

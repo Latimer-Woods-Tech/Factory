@@ -98,13 +98,15 @@ def _http_get_json(url: str, *, headers: dict[str, str] | None = None,
         return None
 
 
-def _open_pr_asks() -> list[dict[str, Any]]:
-    """Pull open PRs in the Factory repo: title + age + needs-attention flag.
-    Uses GH_TOKEN if present, falls back to unauthenticated public read.
+def _open_pr_asks() -> tuple[int, list[dict[str, Any]]]:
+    """Pull open non-draft PRs in the Factory repo.
 
-    A PR "needs the user" when:
-      - reviewDecision == APPROVED  (CODEOWNER ready, waiting on merge button)
-      - OR: has 'risk:high' label AND no failing checks
+    Returns (total_open_non_draft, oldest_first_list). Uses GitHub Search
+    API's `total_count` for the true count and sorts by `created` ascending
+    so the result starts with the oldest PRs — the ones most likely to
+    need user attention.
+
+    Uses GH_TOKEN if present, falls back to unauthenticated public read.
     """
     token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
     headers = {
@@ -113,17 +115,17 @@ def _open_pr_asks() -> list[dict[str, Any]]:
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    # Use search API to filter open + not-draft
-    q = "repo:Latimer-Woods-Tech/Factory is:pr is:open"
-    url = ("https://api.github.com/search/issues?per_page=30&sort=updated"
-           f"&q={urlencode({'': q})[1:]}")
+    # Search API: total_count is authoritative; `draft:false` excludes drafts
+    # so we don't have to paginate just to filter them.
+    q = "repo:Latimer-Woods-Tech/Factory is:pr is:open draft:false"
+    url = ("https://api.github.com/search/issues?per_page=30&sort=created&order=asc"
+           f"&q={urlencode({'q': q})[2:]}")
     payload = _http_get_json(url, headers=headers)
     if not payload:
-        return []
+        return 0, []
+    total = int(payload.get("total_count") or 0)
     asks: list[dict[str, Any]] = []
-    for item in payload.get("items", [])[:30]:
-        if item.get("draft"):
-            continue
+    for item in payload.get("items", []):
         labels = [l.get("name") for l in item.get("labels", [])]
         age_days = max(0, int((datetime.now(timezone.utc)
                                - datetime.fromisoformat(item["created_at"]
@@ -134,7 +136,7 @@ def _open_pr_asks() -> list[dict[str, Any]]:
             "age_days": age_days,
             "is_high_risk": "risk:high" in labels,
         })
-    return asks
+    return total, asks
 
 
 def _fmt_money(usd: float) -> str:
@@ -183,11 +185,11 @@ def render(today: str) -> tuple[str, int, str]:
     top = apps_sorted[0] if apps_sorted else {}
     bot = apps_sorted[-1] if apps_sorted else {}
 
-    # Open PR asks
-    asks = _open_pr_asks()
-    approved_awaiting: list[dict[str, Any]] = []  # not easily fetched here
+    # Open PR asks — total comes from Search total_count; list is already
+    # sorted oldest-first by the API.
+    total_open, asks = _open_pr_asks()
     high_risk_awaiting = [a for a in asks if a["is_high_risk"]]
-    oldest = sorted(asks, key=lambda a: -a["age_days"])[:3]
+    oldest = asks[:3]
 
     # Body
     lines = [
@@ -201,15 +203,15 @@ def render(today: str) -> tuple[str, int, str]:
         lines.append(f"Top: {top.get('repo_name','?')} {float(top.get('composite') or 0):.0f}"
                      f"  ·  Bot: {bot.get('repo_name','?')} {float(bot.get('composite') or 0):.0f}")
     lines.append("")
-    if asks:
-        lines.append(f"Open PRs: {len(asks)} (oldest:")
+    if total_open > 0 and oldest:
+        lines.append(f"Open PRs: {total_open} (oldest:")
         for a in oldest:
             tag = " [risk:high]" if a["is_high_risk"] else ""
             title = (a["title"][:50] + "…") if len(a["title"]) > 50 else a["title"]
             lines.append(f"  #{a['number']} {a['age_days']}d{tag}: {title}")
         lines.append(")")
     else:
-        lines.append("Open PRs: 0")
+        lines.append(f"Open PRs: {total_open}")
 
     # Markdown copy
     md = [
@@ -236,12 +238,14 @@ def render(today: str) -> tuple[str, int, str]:
         "## Open PRs",
         "",
     ])
-    if asks:
+    if total_open > 0 and asks:
+        md.insert(-1, f"_{total_open} total open · showing oldest {min(15, len(asks))}_")
+        md.insert(-1, "")
         for a in asks[:15]:
             tag = " 🔴" if a["is_high_risk"] else ""
             md.append(f"- #{a['number']} ({a['age_days']}d){tag} — {a['title']}")
     else:
-        md.append("- None")
+        md.append(f"- {total_open} open")
 
     return "\n".join(lines), priority, "\n".join(md) + "\n"
 
