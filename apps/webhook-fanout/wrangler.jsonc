@@ -25,6 +25,23 @@
     }
   ],
 
+  "queues": {
+    "producers": [
+      {
+        "queue": "factory-events-queue",
+        "binding": "EVENTS_QUEUE"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "factory-events-queue",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "dead_letter_queue": "factory-events-dlq"
+      }
+    ]
+  },
   "vars": {
     "ENVIRONMENT": "development",
     "CHARTMOGUL_DATA_SOURCE_UUID": "ds_036fc9e8-4e03-11f1-ae13-0f418c0c0aca"

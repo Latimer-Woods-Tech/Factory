@@ -1,4 +1,6 @@
 export interface Env {
+  /** Queue for async event processing */
+  EVENTS_QUEUE: Queue<any>;
   /** Stripe webhook signing secret — wrangler secret STRIPE_WEBHOOK_SECRET */
   STRIPE_WEBHOOK_SECRET: string;
   /** ChartMogul API key — wrangler secret CHARTMOGUL_API_KEY */
