@@ -5,6 +5,12 @@
  * be added with `wrangler secret put`, never as `wrangler.jsonc` vars.
  */
 export interface Env {
+  /** Browser Rendering binding */
+  BROWSER: any;
+  /** R2 Bucket for audit logs */
+  AUDIT_LOGS: R2Bucket;
+  /** Slack webhook for ops alerts */
+  SLACK_WEBHOOK_OPS?: string;
   /** Runtime environment label. */
   ENVIRONMENT: string;
   /** Optional JSON array of monitor targets. Empty or invalid values fall back to defaults. */
