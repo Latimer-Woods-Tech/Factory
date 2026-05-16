@@ -234,6 +234,16 @@ workers:
         line: ~10
         pattern: "https://admin-studio-production.adrper79.workers.dev"
 
+- id: capricast-api-staging
+    name: capricast-api-staging
+    repo: Latimer-Woods-Tech/videoking
+    url: https://capricast-api-staging.adrper79.workers.dev
+    workers_dev_url: https://capricast-api-staging.adrper79.workers.dev
+    custom_domain: null
+    health_endpoint: /health
+    telemetry_required: false
+    consumers: []
+
   - id: capricast-api
     name: capricast-api                                        # matches wrangler.jsonc name in capricast repo
     legacy_names: [videoking, nichestream-api]                 # historical names before 2026-05-15 rename
