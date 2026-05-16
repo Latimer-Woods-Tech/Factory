@@ -42,14 +42,17 @@ function makeKV(store: Map<string, string> = new Map()): KVNamespace {
   } as unknown as KVNamespace;
 }
 
-function makeD1(): { db: D1Database; binds: D1BindValue[][] } {
+function makeD1(shouldFail = false): { db: D1Database; binds: D1BindValue[][] } {
   const binds: D1BindValue[][] = [];
   const db = {
     prepare: vi.fn((_sql: string) => ({
       bind: vi.fn((...values: D1BindValue[]) => {
         binds.push(values);
         return {
-          run: vi.fn(async () => ({ success: true })),
+          run: vi.fn(async () => {
+            if (shouldFail) throw new Error('D1 unavailable');
+            return { success: true };
+          }),
         };
       }),
     })),
@@ -176,11 +179,39 @@ describe('webhook-fanout Worker', () => {
       'https://app.posthog.com/capture/',
       'https://api.resend.com/emails',
     ]);
-    expect(urls.some(url => url.includes('chartmogul.com') || url.includes('loops.so'))).toBe(false);
+    const hosts = urls.map(url => new URL(url).hostname);
+    expect(hosts).not.toContain('api.chartmogul.com');
+    expect(hosts).not.toContain('app.loops.so');
     expect(binds).toHaveLength(1);
     expect(binds[0]?.[0]).toBe('webhook-fanout');
     expect(binds[0]?.[1]).toBe('stripe.customer.subscription.updated');
     expect(binds[0]?.[3]).toBe('cus_real123');
+  });
+
+  it('logs factory_events failures without blocking PostHog or Resend fan-out', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'sent_test' }), { status: 200 }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { db } = makeD1(true);
+    const waitUntilPromises: Promise<unknown>[] = [];
+
+    const event = makeStripeEvent('invoice.payment_failed', {
+      customer: 'cus_real123',
+      customer_email: 'subscriber@realcustomer.com',
+      next_payment_attempt: 1_776_000_000,
+    });
+    const payload = JSON.stringify(event);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigHeader = await signPayload(payload, TEST_SECRET, ts);
+
+    const res = await postStripe(payload, sigHeader, makeEnv(makeKV(), db), makeCtx(waitUntilPromises));
+    expect(res.status).toBe(200);
+
+    await Promise.all(waitUntilPromises);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy.mock.calls.some(([msg]) => String(msg).includes('[factory_events] fan-out error'))).toBe(true);
   });
 
   it('returns 401 for an invalid Stripe signature', async () => {

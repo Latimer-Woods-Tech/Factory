@@ -126,12 +126,49 @@ async function insertFactoryEvent(
   userId: string | undefined,
   properties: Record<string, unknown>,
 ): Promise<void> {
+  // Mirrors the @latimer-woods-tech/analytics factory_events insert contract.
   await db.prepare(
     `INSERT INTO factory_events (app_id, event, properties, user_id, occurred_at)
      VALUES (?, ?, ?, ?, ?)`,
   )
     .bind('webhook-fanout', eventName, JSON.stringify(properties), userId ?? null, new Date().toISOString())
     .run();
+}
+
+function lifecycleEmailContent(eventName: string): { subject: string; html: string; text: string } {
+  if (eventName === 'stripe.invoice.payment_failed') {
+    return {
+      subject: 'Factory payment needs attention',
+      html: '<p>Your Factory payment could not be completed. Please update your billing details to keep your subscription active.</p>',
+      text: 'Your Factory payment could not be completed. Please update your billing details to keep your subscription active.',
+    };
+  }
+  if (eventName === 'stripe.customer.subscription.trial_will_end') {
+    return {
+      subject: 'Your Factory trial is ending soon',
+      html: '<p>Your Factory trial is ending soon. Review your account to choose the subscription that fits your work.</p>',
+      text: 'Your Factory trial is ending soon. Review your account to choose the subscription that fits your work.',
+    };
+  }
+  if (eventName === 'stripe.customer.subscription.deleted') {
+    return {
+      subject: 'Factory subscription ended',
+      html: '<p>Your Factory subscription has ended. You can reactivate from your account when you are ready.</p>',
+      text: 'Your Factory subscription has ended. You can reactivate from your account when you are ready.',
+    };
+  }
+  if (eventName === 'stripe.customer.subscription.created') {
+    return {
+      subject: 'Factory subscription started',
+      html: '<p>Your Factory subscription is active. Thanks for building with Factory.</p>',
+      text: 'Your Factory subscription is active. Thanks for building with Factory.',
+    };
+  }
+  return {
+    subject: 'Factory account update',
+    html: '<p>Your Factory account has a new lifecycle update.</p>',
+    text: 'Your Factory account has a new lifecycle update.',
+  };
 }
 
 async function sendResendLifecycleEmail(
@@ -141,6 +178,7 @@ async function sendResendLifecycleEmail(
   eventName: string,
   eventProperties: Record<string, unknown>,
 ): Promise<void> {
+  const content = lifecycleEmailContent(eventName);
   const res = await fetchWithTimeout('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -150,9 +188,9 @@ async function sendResendLifecycleEmail(
     body: JSON.stringify({
       from,
       to: email,
-      subject: `Factory account update: ${eventName}`,
-      html: `<p>Your Factory account received a <strong>${eventName}</strong> lifecycle update.</p>`,
-      text: `Your Factory account received a ${eventName} lifecycle update.`,
+      subject: content.subject,
+      html: content.html,
+      text: content.text,
       tags: [{ name: 'stripe_event', value: eventName }],
       metadata: eventProperties,
     }),

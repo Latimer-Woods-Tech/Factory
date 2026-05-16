@@ -64,7 +64,10 @@ wrangler kv namespace create webhook-fanout-idempotency --preview
 
 Copy the IDs into `wrangler.jsonc`, replacing `REPLACE_WITH_KV_NAMESPACE_ID` and `REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID`.
 
-Provision the `factory_events` D1 database and replace `REPLACE_WITH_D1_DATABASE_ID` in `wrangler.jsonc`.
+Provision the `factory_events` D1 database and replace both `REPLACE_WITH_D1_DATABASE_ID` placeholders in `wrangler.jsonc`:
+
+- top-level `d1_databases[0].database_id` for local/preview development
+- `env.production.d1_databases[0].database_id` for production deploys
 
 ### 2. Set secrets
 
