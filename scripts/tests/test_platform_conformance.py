@@ -38,6 +38,27 @@ def test_dim_privacy_accepts_new_stub_routes(monkeypatch):
     assert all(check.passed for check in dim.checks)
 
 
+def test_dim_privacy_accepts_quoted_stub_routes(monkeypatch):
+    conformance = _load_platform_conformance()
+
+    def fake_get_file(_repo: str, path: str, _ref: str = "main"):
+        if path in {"docs/PII_INVENTORY.md", "docs/RETENTION.md"}:
+            return "present"
+        return None
+
+    def fake_search_code(_repo: str, query: str) -> int:
+        if query in {'"/privacy/export"', '"/privacy/delete"'}:
+            return 1
+        return 0
+
+    monkeypatch.setattr(conformance, "gh_get_file", fake_get_file)
+    monkeypatch.setattr(conformance, "gh_search_code", fake_search_code)
+
+    dim = conformance.dim_privacy("Latimer-Woods-Tech/example")
+    assert dim.score == 100
+    assert all(check.passed for check in dim.checks)
+
+
 def test_dim_privacy_requires_delete_endpoint_hint(monkeypatch):
     conformance = _load_platform_conformance()
 
