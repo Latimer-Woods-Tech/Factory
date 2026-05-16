@@ -48,6 +48,7 @@ const PROJECTS = [
   { name: 'ijustus-worker',         slug: 'ijustus-worker',         envKey: 'IJUSTUS' },
   { name: 'the-calling-worker',     slug: 'the-calling-worker',     envKey: 'THE_CALLING' },
   { name: 'neighbor-aid-worker',    slug: 'neighbor-aid-worker',    envKey: 'NEIGHBOR_AID' },
+  { name: 'xico-city-worker',       slug: 'xico-city-worker',       envKey: 'XICO_CITY' },
   { name: 'videoking',              slug: 'videoking',              envKey: 'VIDEOKING' },
   { name: 'factory-admin-worker',   slug: 'factory-admin-worker',   envKey: 'FACTORY_ADMIN' },
 ];
