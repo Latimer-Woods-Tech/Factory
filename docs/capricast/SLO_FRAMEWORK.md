@@ -142,7 +142,7 @@ await collectSLOMetrics({
 });
 ```
 
-**GitHub Actions Workflow:** `Latimer-Woods-Tech/videoking/.github/workflows/slo-collect.yml` _(to be created in the videoking repo — moved out of factory 2026-05-09 as part of orphaned-workflow cleanup; see chore/delete-orphaned-workflows)_
+**GitHub Actions Workflow:** `Latimer-Woods-Tech/capricast/.github/workflows/slo-collect.yml` _(to be created in the videoking repo — moved out of factory 2026-05-09 as part of orphaned-workflow cleanup; see chore/delete-orphaned-workflows)_
 - Trigger: Every Monday 9am UTC
 - Script: `scripts/videoking-slo-collect.js` _(also needs to move to videoking)_
 - Outputs: PostHog events + Slack notification

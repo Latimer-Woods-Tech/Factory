@@ -26,7 +26,7 @@
 
 ### 🟡 VideoKing / capricast · [capricast.com](https://capricast.com)
 
-**Repo:** `Latimer-Woods-Tech/videoking`
+**Repo:** `Latimer-Woods-Tech/capricast`
 
 | Item | State |
 |---|---|

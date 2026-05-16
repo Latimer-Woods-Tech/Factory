@@ -195,7 +195,7 @@ Common failure causes:
 **Logs:** Check GitHub Actions run output
 ```bash
 # Find the run:
-gh run list --repo Latimer-Woods-Tech/videoking --workflow render-video.yml --limit 20
+gh run list --repo Latimer-Woods-Tech/capricast --workflow render-video.yml --limit 20
 
 # Tail logs:
 gh run view <RUN_ID> --log
@@ -263,7 +263,7 @@ Error: Unknown encoder 'h264'
 - Action: Redeploy transcoder container
   ```bash
   # Force redeployment
-  gh workflow run redeploy-transcoders.yml --repo Latimer-Woods-Tech/videoking
+  gh workflow run redeploy-transcoders.yml --repo Latimer-Woods-Tech/capricast
   
   # Wait for 3–5 new runners to spin up (~3 min)
   # Cron automatically redistributes queued jobs

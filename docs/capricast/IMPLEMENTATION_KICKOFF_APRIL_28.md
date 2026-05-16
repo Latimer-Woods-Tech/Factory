@@ -27,7 +27,7 @@ Implemented a **production-grade SLO framework** with 4 key artifacts:
    - Sends Slack #ops summary with trend analysis
    - Runs every Monday 9am UTC via GitHub Actions
 
-3. **slo-collect.yml in videoking repo** — GitHub Actions workflow _(TBD — to be created in `Latimer-Woods-Tech/videoking`; moved out of factory 2026-05-09)_
+3. **slo-collect.yml in videoking repo** — GitHub Actions workflow _(TBD — to be created in `Latimer-Woods-Tech/capricast`; moved out of factory 2026-05-09)_
    - Automated trigger (cron schedule) + manual trigger option
    - Authenticates to Sentry, Cloudflare, PostHog
    - Saves artifact for CI/CD visibility
@@ -154,7 +154,7 @@ Implemented a **production-grade SLO framework** with 4 key artifacts:
 | **T5.1 Kickoff** | Comprehensive handoff to team | [PHASE_B_T5_1_COMPLETE.md](docs/videoking/PHASE_B_T5_1_COMPLETE.md) |
 | **Phase B Index** | Full 3-month roadmap + dependencies | [PHASE_B_INDEX.md](docs/videoking/PHASE_B_INDEX.md) |
 | **Metrics Script** | Weekly collection automation | [scripts/videoking-slo-collect.js](scripts/videoking-slo-collect.js) |
-| **GitHub Workflow** | Automated trigger + notifications | `Latimer-Woods-Tech/videoking/.github/workflows/slo-collect.yml` (to create — moved out of factory 2026-05-09) |
+| **GitHub Workflow** | Automated trigger + notifications | `Latimer-Woods-Tech/capricast/.github/workflows/slo-collect.yml` (to create — moved out of factory 2026-05-09) |
 | **Engineering Baseline** | Phase 4 architecture + risks | [videoking-engineering-baseline.mdx](docs/packages/videoking-engineering-baseline.mdx) |
 
 ---

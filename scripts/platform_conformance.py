@@ -60,7 +60,7 @@ import urllib.request
 
 REPOS: list[dict[str, str]] = [
     {"key": "HD", "name": "HumanDesign",          "repo": "Latimer-Woods-Tech/HumanDesign"},
-    {"key": "VK", "name": "videoking",            "repo": "Latimer-Woods-Tech/videoking"},
+    {"key": "VK", "name": "videoking",            "repo": "Latimer-Woods-Tech/capricast"},
     {"key": "FA", "name": "factory-admin-studio", "repo": "Latimer-Woods-Tech/Factory"},
     {"key": "CH", "name": "cypher-healing",       "repo": "Latimer-Woods-Tech/coh"},
     {"key": "XC", "name": "xico-city",            "repo": "Latimer-Woods-Tech/xico-city"},

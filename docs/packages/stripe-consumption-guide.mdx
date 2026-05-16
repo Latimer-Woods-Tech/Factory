@@ -378,8 +378,8 @@ const session = await stripe.checkout.sessions.create({
     price: 'price_vip_monthly_usd', // $9.99/month
     quantity: 1,
   }],
-  success_url: 'https://itsjusus.com/checkout/success',
-  cancel_url: 'https://itsjusus.com/checkout/cancel',
+  success_url: 'https://capricast.com/checkout/success',
+  cancel_url: 'https://capricast.com/checkout/cancel',
 });
 
 // Frontend stores sessionId and redirects to Stripe Checkout
