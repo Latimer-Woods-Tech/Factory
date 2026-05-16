@@ -274,6 +274,11 @@ workers:
     custom_domain: api.capricast.com
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     consumers: []
 
   - id: cypher-healing
@@ -284,6 +289,7 @@ workers:
     custom_domain: api.cipherofhealing.com
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    telemetry_required: false
     consumers: []
 
   - id: factory-supervisor
@@ -294,6 +300,7 @@ workers:
     custom_domain: supervisor.latwoodtech.work
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    telemetry_required: false
     consumers: []
 
 pages:
