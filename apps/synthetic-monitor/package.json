@@ -7,7 +7,9 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "generate:targets": "node ../../scripts/generate-monitor-targets.mjs",
+    "check:targets": "node ../../scripts/generate-monitor-targets.mjs --check"
   },
   "dependencies": {
     "hono": "^4.12.18",
