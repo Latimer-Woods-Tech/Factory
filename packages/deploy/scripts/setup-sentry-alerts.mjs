@@ -41,6 +41,7 @@ const PROJECTS = [
   'ijustus-worker',
   'the-calling-worker',
   'neighbor-aid-worker',
+  'xico-city-worker',
   'videoking',
   'factory-admin-worker',
 ];
