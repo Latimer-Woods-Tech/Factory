@@ -66,7 +66,7 @@ describe('createLogger', () => {
   });
 
   it('emits error without calling captureError when err is undefined', () => {
-    vi.mocked(captureError).mockClear();
+    (captureError as unknown as { mockClear(): void }).mockClear();
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const logger = createLogger({ workerId: 'w1', requestId: 'r1' });
     logger.error('Something broke');
