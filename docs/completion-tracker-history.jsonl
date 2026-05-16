@@ -1,0 +1,1 @@
+{"ts": "2026-05-15T11:32:15.089891+00:00", "overall_weighted": 26.5, "overall_known": 43.2, "repo_weighted": {"HD": 74.9, "VK": 0.0, "FA": 0.0, "CH": 0.0, "XC": 0.0}, "ci_red": ["HD", "XC"], "smoke_red": ["FA", "XC"], "malformed_count": 0}

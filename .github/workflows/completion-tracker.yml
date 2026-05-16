@@ -1,0 +1,117 @@
+name: completion-tracker
+on:
+  schedule:
+    - cron: '30 10 * * *'   # 06:30 ET ≈ 10:30 UTC
+  workflow_dispatch:
+  repository_dispatch:
+    types: [matrix-updated]
+
+concurrency:
+  group: completion-tracker
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  actions: read
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      PUSHOVER_USER:    ${{ secrets.PUSHOVER_USER }}
+      PUSHOVER_TOKEN:   ${{ secrets.PUSHOVER_TOKEN }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mint Factory App token (all 5 repos)
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: |
+            HumanDesign
+            videoking
+            Factory
+            coh
+            xico-city
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run aggregator
+        env:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+          OUTPUT_DIR: docs
+        run: |
+          python scripts/aggregate_completion.py
+
+      - name: Detect drift
+        id: drift
+        run: |
+          set -e
+          git add docs/COMPLETION_TRACKER.md docs/completion-tracker.json docs/completion-tracker-history.jsonl
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compose digest fields
+        if: steps.drift.outputs.changed == 'true'
+        id: digest
+        run: |
+          set -e
+          DATE=$(date -u +'%Y-%m-%d')
+          PCT=$(python -c "import json;print(json.load(open('docs/completion-tracker.json'))['overall_weighted'])")
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+          echo "pct=$PCT"   >> "$GITHUB_OUTPUT"
+          {
+            echo 'body<<__EOF__'
+            head -c 60000 docs/COMPLETION_TRACKER.md
+            echo
+            echo '__EOF__'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Open drift PR
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -e
+          BRANCH="completion-tracker/${{ steps.digest.outputs.date }}"
+          git config user.name  "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+
+          # Guard: if an open PR already exists for this branch, the workflow
+          # was re-triggered today (e.g. repository_dispatch or manual run
+          # after the scheduled run already succeeded). Skip to avoid a
+          # non-fast-forward push error on the already-existing branch.
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already open for $BRANCH — skipping duplicate push."
+            exit 0
+          fi
+
+          # Branch may exist from a prior failed run that didn't open a PR.
+          # Force-push is safe: this bot is the sole writer of tracker branches.
+          git checkout -b "$BRANCH" 2>/dev/null || git checkout "$BRANCH"
+          git commit -m "chore(completion-tracker): drift update ${{ steps.digest.outputs.date }} (${{ steps.digest.outputs.pct }}%)"
+          git push --force-with-lease --set-upstream origin "$BRANCH"
+          printf '%s' "${{ steps.digest.outputs.body }}" > /tmp/body.md
+          gh pr create \
+            --title "completion-tracker drift ${{ steps.digest.outputs.date }} — ${{ steps.digest.outputs.pct }}% weighted" \
+            --body-file /tmp/body.md \
+            --label automation \
+            --label documentation \
+            --label auto-merge

@@ -45,16 +45,19 @@ The production custom domain remains the intended production target.
 ## Build environment contract
 
 The UI is built once but targets different backends by reading Vite env vars at build time.
-All three vars are required in CI — set via GitHub Secrets:
+All three bases are baked into the bundle at build time — no runtime config injection.
+The worker mounts its routes at `/auth`, `/synthetic`, `/ai`, etc., so the base URLs do **not**
+include an `/api` prefix.
 
-| Var | Purpose | Secret |
-|-----|---------|--------|
-| `VITE_API_BASE_LOCAL` | Local dev backend | Hard-coded `http://localhost:8787/api` |
-| `VITE_API_BASE_STAGING` | Staging backend API base | `ADMIN_STUDIO_STAGING_URL` |
-| `VITE_API_BASE_PROD` | Production backend API base | `ADMIN_STUDIO_PROD_URL` |
+| Var | Purpose | Value (hardcoded in `deploy-admin-studio-ui.yml`) |
+|-----|---------|---------------------------------------------------|
+| `VITE_API_BASE_LOCAL` | Local dev backend | `http://localhost:8787` |
+| `VITE_API_BASE_STAGING` | Staging backend (custom domain) | `https://admin-staging.latwoodtech.work` |
+| `VITE_API_BASE_PROD` | Production backend | `https://api.apunlimited.com` |
 
-At runtime, `lib/api.ts::getApiBase()` selects the correct base from the active session environment.
-All three bases are baked into the bundle at build time — no runtime config injection needed.
+At runtime, `lib/api.ts::getApiBase()` selects the correct base from the active session
+environment. The hardcoded values keep deploys deterministic and decoupled from workflow
+secret config — both worker URLs are non-sensitive (worker enforces auth on every route).
 
 See [`docs/admin-studio/00-MASTER-PLAN.md`](../../docs/admin-studio/00-MASTER-PLAN.md).
 

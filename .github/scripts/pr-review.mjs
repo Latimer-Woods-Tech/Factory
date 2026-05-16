@@ -431,6 +431,30 @@ function buildConstraintBlock(repoName) {
     console.warn('[WARN] docs/supervisor/FRIDGE.md not found on disk');
   }
 
+  // Tier 3 context injection — current operating state + operational patterns.
+  // CLAUDE.md's reading order tells the reviewer to consult these files; this
+  // concat lets the reviewer actually see them in the same prompt rather than
+  // just being told they exist. Soft-warn (not MISSING_DOCS) because both are
+  // genuinely optional: STATE.md is auto-generated, PATTERNS.md is operator-
+  // maintained, neither blocks a review.
+  //
+  // Budgets matched to actual file sizes at 2026-05-15: STATE.md ≈ 4.3k,
+  // PATTERNS.md ≈ 7.6k. The 8000-char ceiling gives both room to grow ~5%
+  // before truncation; raise here when adding new top-level sections.
+  const state = loadDoc('docs/STATE.md', 8000);
+  if (state) {
+    sections.push(`## docs/STATE.md — Current Operating State (auto-generated)\n\n${state}`);
+  } else {
+    console.warn('[WARN] docs/STATE.md not found — review proceeds without current-state context');
+  }
+
+  const patterns = loadDoc('docs/architecture/PATTERNS.md', 10000);
+  if (patterns) {
+    sections.push(`## docs/architecture/PATTERNS.md — Operational Patterns (symptom → cause → fix)\n\n${patterns}`);
+  } else {
+    console.warn('[WARN] docs/architecture/PATTERNS.md not found — review proceeds without operational-patterns context');
+  }
+
   // Per-repo standing orders for cross-repo reviews (.github/repo-contexts/{repo}/CLAUDE.md)
   if (repoName && repoName !== 'factory') {
     const perRepo = loadDoc(`.github/repo-contexts/${repoName}/CLAUDE.md`, 4000);
@@ -481,6 +505,7 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - Type safety holes (unsafe casts, untyped generics)
 - Package dependency order violations in packages/**
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
+- **Violation of any pattern in \`docs/architecture/PATTERNS.md\`** (loaded into your context above). Match the diff against patterns by file type — workflows that commit to main, scripts that fetch secrets, scripts that diff dirs against HEAD without staging, gcloud calls without \`--project\`, etc. **Cite the pattern number in the flag** (e.g., "violates PATTERNS.md #3: direct push to main is blocked by branch protection"). This is how the institutional memory becomes enforceable, not just documented.
 
 ### Security — flag as architectural_concern (blocks merge)
 - SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input
@@ -1013,6 +1038,25 @@ async function main() {
     return;
   }
 
+  // ── Dependabot detection ──────────────────────────────────────────────────
+  // Dependabot PRs are mechanical version bumps. We still review them (so the
+  // factory architecture-review check turns green for the merge gate), but if
+  // the diff is purely package.json + lockfile we short-circuit to a narrow
+  // "version-bump sanity" approval rather than burning Grok+Claude tokens on
+  // an architectural review of a one-line semver bump. CI (validate,
+  // dependency-review, package-integration) covers the substantive risk.
+  //
+  // If a Dependabot PR ever ships non-lockfile code (e.g. a config-file
+  // migration that ships with a major version bump), the diff is no longer
+  // "lockfile-only" and the script falls through to the standard pipeline.
+  const isDependabotAuthor =
+    pr.user?.login === 'dependabot[bot]' ||
+    pr.user?.login === 'app/dependabot' ||
+    (pr.user?.type === 'Bot' && /dependabot/i.test(pr.user?.login ?? ''));
+  if (isDependabotAuthor) {
+    console.log('[INFO] Dependabot PR detected — will check for lockfile-only diff after fetching files');
+  }
+
   // Don't re-review if we already have an active (non-dismissed) review on this exact commit.
   // Dismissed reviews don't count — dismiss_stale_reviews_on_push invalidates old approvals
   // when new commits land, so the bot must re-approve on the new SHA.
@@ -1051,6 +1095,53 @@ async function main() {
   // Fetch changed files
   const files = await gh('GET', `/repos/${ORG}/${repo}/pulls/${prNum}/files`);
   const filenames = files.map(f => f.filename);
+
+  // ── Dependabot fast-path: lockfile-only diffs get a narrow approval ──────
+  // A "lockfile-only" diff touches only package.json, package-lock.json,
+  // pnpm-lock.yaml, yarn.lock, or .npmrc. Anything else (a vendored config,
+  // a generated typescript file, etc.) falls through to the full pipeline.
+  if (isDependabotAuthor) {
+    const LOCKFILE_PATTERNS = [
+      /(^|\/)package\.json$/,
+      /(^|\/)package-lock\.json$/,
+      /(^|\/)pnpm-lock\.yaml$/,
+      /(^|\/)yarn\.lock$/,
+      /(^|\/)\.npmrc$/,
+    ];
+    const lockfileOnly = filenames.length > 0 && filenames.every(
+      f => LOCKFILE_PATTERNS.some(p => p.test(f)),
+    );
+    if (lockfileOnly) {
+      console.log(`[INFO] Dependabot lockfile-only diff (${filenames.length} files) — short-circuiting to APPROVE`);
+      const body = [
+        '## Factory Canonical Review — Dependabot fast-path',
+        '',
+        `**Decision:** APPROVED — lockfile-only dependency bump`,
+        `**Reviewer:** Dependabot fast-path (skips Grok+Claude consensus)`,
+        '',
+        `This PR touches only \`package.json\` / lockfile / \`.npmrc\` files (${filenames.length} file${filenames.length === 1 ? '' : 's'}). The architectural review pipeline is short-circuited because:`,
+        '',
+        '- The diff is mechanical (semver bump + lockfile churn)',
+        '- CI (`validate`, `dependency-review`, `package-integration`) already gates the substantive risk',
+        '- Burning Grok+Claude tokens on a one-line version bump adds no safety',
+        '',
+        'If CI is green and CODEOWNERS approve, this PR is safe to auto-merge.',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Dependabot fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+        console.log('[OK] Added automerge:allow-bot-branch label');
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge:allow-bot-branch: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (dependabot fast-path)`);
+      return;
+    }
+    console.log('[INFO] Dependabot PR includes non-lockfile changes — falling through to full review');
+  }
 
   const tier = detectTier(filenames);
   const adminMutation = hasAdminMutation(filenames);

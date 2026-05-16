@@ -21,6 +21,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # OIDC trusted-publisher requires id-token: write so GitHub mints the
+    # OIDC token that npm verifies against the configured trusted publisher.
+    # contents: read is enough for checkout.
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -29,17 +35,34 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@latimer-woods-tech'
 
-      - name: Verify npm auth before publishing
+      - name: Upgrade npm to >= 11.5.1 (required for OIDC trusted publishers)
         run: |
           set -euo pipefail
-          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "::error::NPM_TOKEN secret is empty or unset. Configure it at https://github.com/Latimer-Woods-Tech/Factory/settings/secrets/actions"
-            exit 1
+          echo "npm before: $(npm --version)"
+          npm install -g npm@latest
+          echo "npm after:  $(npm --version)"
+          # Hard-fail if we somehow ended up on a pre-OIDC npm
+          node -e "
+            const v = require('child_process').execSync('npm --version').toString().trim();
+            const [maj, min, patch] = v.split('.').map(Number);
+            const ok = maj > 11 || (maj === 11 && (min > 5 || (min === 5 && patch >= 1)));
+            if (!ok) { console.error('npm ' + v + ' < 11.5.1 — OIDC trusted publishers unavailable'); process.exit(1); }
+          "
+
+      - name: Verify publish auth (OIDC preferred, NPM_TOKEN fallback)
+        run: |
+          set -euo pipefail
+          # OIDC env vars are injected automatically by GitHub when permissions.id-token: write is set.
+          if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+            echo "OIDC id-token endpoint present — npm will attempt trusted-publisher auth."
+          else
+            echo "::warning::ACTIONS_ID_TOKEN_REQUEST_URL is not set — OIDC will not be attempted."
           fi
-          echo "Authenticated npm user:"
-          if ! npm whoami; then
-            echo "::error::npm whoami failed — token is invalid or expired."
-            exit 1
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN fallback present. npm whoami via token:"
+            npm whoami || echo "::warning::npm whoami via token failed — token may be invalid or expired. OIDC will be required."
+          else
+            echo "No NPM_TOKEN configured — relying entirely on OIDC trusted publishers."
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -51,8 +74,16 @@ jobs:
           # must not block the remaining packages. We collect failures and
           # exit non-zero at the end so the run is still marked failed.
           set -uo pipefail
-          # Dependency order — leaf packages first
-          PACKAGES=(errors monitoring logger realtime auth neon stripe llm llm-meter telephony analytics deploy testing email copy content social seo crm compliance entitlements protocol creator studio-core design-tokens design-system ui validation video schedule admin)
+          # Topologically sorted dependency order — every package's internal
+          # @latimer-woods-tech/* deps appear EARLIER in this list, so the
+          # rewrite-deps + npm install step in the loop body always resolves
+          # against already-published versions on npmjs.org. If you add a new
+          # package or change its internal deps, re-derive this order via:
+          #   grep '@latimer-woods-tech/' packages/*/package.json
+          # and topologically sort. Otherwise first-time publishes will 404
+          # when npm tries to install an unpublished sibling dep (eg. crm
+          # depends on validation; validation must be published first).
+          PACKAGES=(errors creator deploy design-system design-tokens entitlements protocol studio-core testing validation monitoring realtime seo video ui logger email social neon auth llm llm-meter analytics stripe compliance content copy telephony schedule crm admin)
 
           declare -a FAILED=()
           declare -a PUBLISHED=()
@@ -118,18 +149,23 @@ jobs:
 
             if [ "${{ inputs.dry_run }}" = "true" ]; then
               echo "  DRY RUN — would publish ${NAME}@${VER}"
-              if ! npm publish --access public --ignore-scripts --dry-run; then
+              # --provenance is also valid in dry-run; npm validates the OIDC env without minting metadata.
+              if ! npm publish --access public --ignore-scripts --provenance --dry-run; then
                 echo "::error::dry-run publish failed for ${NAME}@${VER}"
                 FAILED+=("${NAME}@${VER}")
               fi
             else
-              if npm publish --access public --ignore-scripts; then
+              # --provenance attaches GitHub Actions build provenance metadata.
+              # Requires permissions.id-token: write (set above) and registry.npmjs.org.
+              # npm 11.5.1+ auto-detects ACTIONS_ID_TOKEN_REQUEST_URL/_TOKEN for OIDC trusted-publisher auth.
+              if npm publish --access public --ignore-scripts --provenance; then
                 echo "  published ${NAME}@${VER}"
                 PUBLISHED+=("${NAME}@${VER}")
               else
-                # 404 on PUT to scoped pkg = token lacks publish permission for that package.
-                # 403 = forbidden (different ownership). Either way: continue with rest.
-                echo "::error::publish failed for ${NAME}@${VER} — likely npm token lacks write access for this package. Check token allowlist on npmjs.com."
+                # OIDC failures: package has no trusted publisher configured on npmjs.com,
+                #   or repo full_name / workflow filename / org name don't match (case-sensitive).
+                # Token failures: 404 = token lacks publish permission, 403 = different ownership.
+                echo "::error::publish failed for ${NAME}@${VER} — verify (a) trusted publisher configured on npmjs.com for this package, OR (b) NPM_TOKEN fallback has write access. See docs/runbooks/npm-oidc-publishing.md."
                 FAILED+=("${NAME}@${VER}")
               fi
             fi

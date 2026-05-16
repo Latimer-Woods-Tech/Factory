@@ -15,6 +15,7 @@ YAML templates that drive autonomous execution. See `../TEMPLATE_SPEC.md` for sc
 | `sentry-stripe-error-triage` | yellow | Stripe-related Sentry errors; triages webhook/API response failures |
 | `wrangler-config-drift-fix` | yellow | Stale wrangler.jsonc bindings — validates against Cloudflare then opens fix PR |
 | `reusable-workflow-rollout` | yellow | Replace bespoke app workflow with factory reusable caller |
+| `branch-protection-hardening` | yellow | Promote a CI check from warn-only to required after 14-day signal-quality gate |
 | `feat-ci-workflow` | yellow | New GitHub Actions workflow proposal; generates from template + validates syntax |
 | `security-codeql-fix` | red | CodeQL findings — proposes fixes for SQL injection / XSS / auth bypass |
 | `package-version-migration` | yellow | Package version bump automation; updates all consumers in lockstep |
@@ -22,6 +23,7 @@ YAML templates that drive autonomous execution. See `../TEMPLATE_SPEC.md` for sc
 | `user-account-suspend` | red | User account suspension (bot/spam/terms); locks sessions + notifies audit system |
 | `ux-regression-triage` | yellow | Visual regression detection; compares Playwright baseline snapshots + files PR if diff >5% |
 | `worker-health-degraded` | red | Worker health check failure; dispatches to PagerDuty + posts triage dashboard link |
+| `extract-from-wordis-bond` | yellow | Extract engine/backend handler from `wordis-bond` repo into a Factory package (WB-N series). Never touches wordis-bond UI per FRIDGE rule 1. |
 
 Fixtures live at `tests/supervisor/fixtures/<slug>.yml`. `template-suite.yml` workflow will match + parameterize + gate each template against its fixture on every PR (ships separately).
 

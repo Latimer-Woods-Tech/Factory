@@ -1,0 +1,79 @@
+name: bootstrap-completion-tracker-private
+
+# One-shot rollout. Opens FUNCTIONS_MATRIX + notify-factory PRs in the
+# private repos (cypher-healing, xico-city) that the maintainer PAT
+# cannot reach. Uses the Factory GitHub App, which is installed on all
+# 5 repos. Safe to re-run; idempotent against existing branches/PRs.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  rollout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mint Factory App token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: coh,xico-city
+
+      - name: Rollout to coh
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -e
+          REPO=Latimer-Woods-Tech/coh
+          BR=completion-tracker/matrix-and-notify
+          if gh api "repos/$REPO/git/refs/heads/$BR" >/dev/null 2>&1; then
+            echo "branch exists, skipping create"
+          else
+            SHA=$(gh api "repos/$REPO/git/refs/heads/main" -q .object.sha)
+            gh api "repos/$REPO/git/refs" -f ref="refs/heads/$BR" -f sha="$SHA"
+          fi
+          gh api "repos/$REPO/contents/docs/FUNCTIONS_MATRIX.md" \
+            -f message="docs(matrix): introduce FUNCTIONS_MATRIX.md (v2 schema, full router scan)" \
+            -f branch="$BR" \
+            -f content="$(base64 -w0 < .bootstrap/cypher-healing/FUNCTIONS_MATRIX.md)" || true
+          gh api "repos/$REPO/contents/.github/workflows/notify-factory.yml" \
+            -f message="ci: notify factory on matrix change" \
+            -f branch="$BR" \
+            -f content="$(base64 -w0 < .bootstrap/notify-factory.yml)" || true
+          gh pr create --repo "$REPO" --base main --head "$BR" \
+            --title "docs(matrix): introduce FUNCTIONS_MATRIX.md (v2 schema, full router scan) + notify-factory" \
+            --body-file .bootstrap/cypher-healing/PR_BODY.md \
+            --label "automation,documentation,auto-merge" || echo "PR may already exist"
+
+      - name: Rollout to xico-city
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -e
+          REPO=Latimer-Woods-Tech/xico-city
+          BR=completion-tracker/matrix-and-notify
+          if gh api "repos/$REPO/git/refs/heads/$BR" >/dev/null 2>&1; then
+            echo "branch exists, skipping create"
+          else
+            SHA=$(gh api "repos/$REPO/git/refs/heads/main" -q .object.sha)
+            gh api "repos/$REPO/git/refs" -f ref="refs/heads/$BR" -f sha="$SHA"
+          fi
+          gh api "repos/$REPO/contents/docs/FUNCTIONS_MATRIX.md" \
+            -f message="docs(matrix): migrate FeatureRegistry v3 to FUNCTIONS_MATRIX.md (v2 schema)" \
+            -f branch="$BR" \
+            -f content="$(base64 -w0 < .bootstrap/xico-city/FUNCTIONS_MATRIX.md)" || true
+          gh api "repos/$REPO/contents/.github/workflows/notify-factory.yml" \
+            -f message="ci: notify factory on matrix change" \
+            -f branch="$BR" \
+            -f content="$(base64 -w0 < .bootstrap/notify-factory.yml)" || true
+          gh pr create --repo "$REPO" --base main --head "$BR" \
+            --title "docs(matrix): migrate FeatureRegistry v3 to FUNCTIONS_MATRIX.md (v2 schema) + notify-factory" \
+            --body-file .bootstrap/xico-city/PR_BODY.md \
+            --label "automation,documentation,auto-merge" || echo "PR may already exist"
