@@ -185,7 +185,43 @@ describe('webhook-fanout Worker', () => {
     expect(binds).toHaveLength(1);
     expect(binds[0]?.[0]).toBe('webhook-fanout');
     expect(binds[0]?.[1]).toBe('stripe.customer.subscription.updated');
+    expect(JSON.parse(String(binds[0]?.[2]))).toMatchObject({
+      stripeEventId: event.id,
+      stripeEventType: 'customer.subscription.updated',
+      subscriptionPlan: 'Pro',
+      subscriptionStatus: 'active',
+    });
     expect(binds[0]?.[3]).toBe('cus_real123');
+    expect(new Date(String(binds[0]?.[4])).toISOString()).toBe(binds[0]?.[4]);
+  });
+
+  it.each([
+    ['invoice.payment_failed', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Factory payment needs attention'],
+    ['customer.subscription.trial_will_end', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Your Factory trial is ending soon'],
+    ['customer.subscription.deleted', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Factory subscription ended'],
+    ['customer.subscription.created', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Factory subscription started'],
+    ['customer.updated', {}, 'Factory account update'],
+  ])('uses the expected Resend subject for %s', async (eventType, extra, expectedSubject) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'sent_test' }), { status: 200 }),
+    );
+    const waitUntilPromises: Promise<unknown>[] = [];
+
+    const event = makeStripeEvent(eventType, extra);
+    const payload = JSON.stringify(event);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigHeader = await signPayload(payload, TEST_SECRET, ts);
+
+    const res = await postStripe(payload, sigHeader, makeEnv(), makeCtx(waitUntilPromises));
+    expect(res.status).toBe(200);
+
+    await Promise.all(waitUntilPromises);
+
+    const resendCall = fetchSpy.mock.calls.find(([url]) => String(url) === 'https://api.resend.com/emails');
+    const body = JSON.parse(String(resendCall?.[1]?.body)) as { subject: string; html: string; text: string };
+    expect(body.subject).toBe(expectedSubject);
+    expect(body.html).toContain('<p>');
+    expect(body.text.length).toBeGreaterThan(0);
   });
 
   it('logs factory_events failures without blocking PostHog or Resend fan-out', async () => {
