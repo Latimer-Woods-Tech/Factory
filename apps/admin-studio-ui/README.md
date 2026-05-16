@@ -34,13 +34,30 @@ The production custom domain remains the intended production target.
 ## Architecture summary
 
 - **`stores/session.ts`** — Zustand store; persists JWT + env in `sessionStorage` (cleared on tab close).
-- **`lib/api.ts`** — fetch wrapper. Adds `Authorization`, `X-Request-Id`, `X-Confirmed`, `X-Confirm-Token`, `X-Dry-Run` headers. Forces logout on 401.
-- **`components/EnvironmentBanner.tsx`** — Safeguard #1: persistent color-coded banner.
-- **`components/ConfirmDialog.tsx`** — Safeguard #2 built on Radix AlertDialog (click / type-to-confirm / cooldown).
+- **`lib/api.ts`** — fetch wrapper. Resolves backend URL from the active session env via `getApiBase()`. Adds `Authorization`, `X-Request-Id`, `X-Confirmed`, `X-Confirm-Token`, `X-Dry-Run` headers. Forces logout on 401.
+- **`components/EnvironmentBanner.tsx`** — Safeguard #1: persistent color-coded banner. "Switch env" forces re-auth into the new environment.
+- **`components/ConfirmDialog.tsx`** — Safeguard #2: tier-aware confirmation modal built on Radix AlertDialog (click / type-to-confirm / cooldown).
 - **`components/ui/*`** — shadcn/Radix primitives (`AlertDialog`, `Sheet`, `Drawer`, `Tabs`, `Tooltip`, `DropdownMenu`, `Command`, `Toaster`).
 - **`components/theme.tsx` + `components/ThemeToggle.tsx`** — semantic token + light/dark/system theme control.
-- **`pages/LoginPage.tsx`** — Forces env selection *before* credentials (Safeguard #3).
+- **`pages/LoginPage.tsx`** — Forces env selection *before* credentials (Safeguard #3). Redirects to `?next=` path after login.
 - **`pages/Dashboard.tsx`** — Tabs shell. Each tab is a Phase A stub that grows over Phases B–H.
+
+## Build environment contract
+
+The UI is built once but targets different backends by reading Vite env vars at build time.
+All three bases are baked into the bundle at build time — no runtime config injection.
+The worker mounts its routes at `/auth`, `/synthetic`, `/ai`, etc., so the base URLs do **not**
+include an `/api` prefix.
+
+| Var | Purpose | Value (hardcoded in `deploy-admin-studio-ui.yml`) |
+|-----|---------|---------------------------------------------------|
+| `VITE_API_BASE_LOCAL` | Local dev backend | `http://localhost:8787` |
+| `VITE_API_BASE_STAGING` | Staging backend (custom domain) | `https://admin-staging.latwoodtech.work` |
+| `VITE_API_BASE_PROD` | Production backend | `https://api.apunlimited.com` |
+
+At runtime, `lib/api.ts::getApiBase()` selects the correct base from the active session
+environment. The hardcoded values keep deploys deterministic and decoupled from workflow
+secret config — both worker URLs are non-sensitive (worker enforces auth on every route).
 
 See [`docs/admin-studio/00-MASTER-PLAN.md`](../../docs/admin-studio/00-MASTER-PLAN.md).
 
