@@ -176,11 +176,39 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Deploy
-        run: npx wrangler deploy --env ${{ steps.target.outputs.env }}
+        run: npx wrangler deploy --env ${{ steps.target.outputs.env }} --outdir dist
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+
+      # Upload sourcemaps to Sentry so stack traces resolve to TypeScript
+      # source lines. The release tag must match the BUILD_SHA exposed to the
+      # worker via @latimer-woods-tech/monitoring. Skips gracefully when the
+      # SENTRY_AUTH_TOKEN secret is not configured.
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/admin-studio
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: latwood-tech
+          SENTRY_PROJECT: admin-studio
+          SENTRY_RELEASE: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "::warning::SENTRY_AUTH_TOKEN missing; sourcemaps upload skipped"
+            exit 0
+          fi
+          if [ ! -d dist ]; then
+            echo "::warning::No dist/ directory after deploy; sourcemaps upload skipped"
+            exit 0
+          fi
+          npx -y @sentry/cli@latest releases new "$SENTRY_RELEASE"
+          npx -y @sentry/cli@latest sourcemaps upload \
+            --release "$SENTRY_RELEASE" \
+            --url-prefix '~/' \
+            dist
+          npx -y @sentry/cli@latest releases finalize "$SENTRY_RELEASE"
 
       # ---- NEW: capture the just-deployed version id ----
       - name: Capture new worker version (post-deploy)

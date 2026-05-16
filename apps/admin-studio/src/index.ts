@@ -2,8 +2,21 @@
  * Factory Admin Studio — Worker entrypoint.
  *
  * @see docs/admin-studio/00-MASTER-PLAN.md
+ *
+ * Observability is provided by `@latimer-woods-tech/monitoring` (Sentry init
+ * via `initMonitoring` + per-error reporting via `captureError`) and
+ * `@latimer-woods-tech/logger` (`createLogger` produces the structured JSON
+ * lines tagged with `request_id`). Sentry initialisation is lazy on the first
+ * request that exposes `SENTRY_DSN`, so the worker still boots locally when
+ * the secret is not configured. Stack-trace symbolication relies on the
+ * sourcemaps step in `.github/workflows/deploy-admin-studio.yml`.
  */
 import { Hono } from 'hono';
+import {
+  captureError,
+  initMonitoring,
+} from '@latimer-woods-tech/monitoring';
+import { createLogger } from '@latimer-woods-tech/logger';
 import type { AppEnv } from './types.js';
 import type { Env } from './env.js';
 import { corsMiddleware } from './middleware/cors.js';
@@ -42,6 +55,26 @@ const app = new Hono<AppEnv>();
 
 // ── Global middleware (order matters) ─────────────────────────────────────────────────────
 app.use('*', requestIdMiddleware());
+// Initialise Sentry on the first request that has SENTRY_DSN available, then
+// every subsequent request runs inside the configured Sentry scope. This is
+// the @latimer-woods-tech/monitoring contract — initMonitoring is idempotent
+// and ties the worker's request_id into Sentry tags via captureError below.
+// We don't use the higher-level sentryMiddleware/withSentry wrappers here
+// because they alter the default-export shape that the existing test suite
+// (apps/admin-studio/src/routes/*.test.ts) imports directly via `worker.fetch`.
+let _sentryInit = false;
+app.use('*', async (c, next) => {
+  if (c.env.SENTRY_DSN && !_sentryInit) {
+    initMonitoring({
+      dsn: c.env.SENTRY_DSN,
+      environment: c.env.STUDIO_ENV === 'production' ? 'production' : 'staging',
+      release: c.env.BUILD_SHA,
+      tracesSampleRate: 0.1,
+    });
+    _sentryInit = true;
+  }
+  await next();
+});
 app.use('*', corsMiddleware());
 
 // ── Public routes ────────────────────────────────────────────────────────────────────────────────────
@@ -86,11 +119,11 @@ app.use('/repo/*', envContextMiddleware(), auditMiddleware());
 app.use('/catalog/*', envContextMiddleware(), auditMiddleware());
 // Smoke tests are auditable but not critical
 app.use('/smoke/*', envContextMiddleware(), auditMiddleware());
-// SLO panel � reads only, no audit.
+// SLO panel � reads only, no audit.
 app.use('/slo/*', envContextMiddleware());
-// Synthetic journey monitor � GET is read, POST is audited.
+// Synthetic journey monitor � GET is read, POST is audited.
 app.use('/synthetic/*', envContextMiddleware(), auditMiddleware());
-// Ops panel � all writes are audited via requireConfirmation + auditMiddleware.
+// Ops panel � all writes are audited via requireConfirmation + auditMiddleware.
 app.use('/ops/*', envContextMiddleware(), auditMiddleware());
 app.use('/api/creator/*', envContextMiddleware());
 app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
@@ -119,11 +152,24 @@ app.route('/api/flags', flagship);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
-  console.error('[admin-studio] error:', err);
+  const requestId = c.var.requestId;
+  // Structured JSON log via @latimer-woods-tech/logger (no raw console.*).
+  const logger = createLogger({
+    workerId: 'admin-studio',
+    requestId: requestId ?? 'unknown',
+    environment: c.env.STUDIO_ENV === 'production' ? 'production' : 'staging',
+  });
+  logger.error('admin-studio.error', err, { path: c.req.path, method: c.req.method });
+  // Belt-and-braces Sentry capture — sentryMiddleware also catches via c.error
+  // but explicit capture here keeps the trace tagged with request_id even if
+  // SENTRY_DSN was added between middleware init and the error.
+  if (c.env.SENTRY_DSN) {
+    captureError(err, { requestId });
+  }
   return c.json(
     {
       error: 'Internal server error',
-      requestId: c.var.requestId,
+      requestId,
       // Only echo error message in non-prod to avoid leaking internals.
       ...(c.env.STUDIO_ENV !== 'production' ? { detail: err.message } : {}),
     },
