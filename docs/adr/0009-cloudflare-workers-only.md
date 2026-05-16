@@ -1,4 +1,4 @@
-# 0001: Cloudflare Workers as the only runtime
+# 0009: Cloudflare Workers as the only runtime
 
 **Date:** 2026-01-01  **Status:** Accepted
 
