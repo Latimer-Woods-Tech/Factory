@@ -14,7 +14,7 @@ Writes docs/COMPLETION_TRACKER.md (human), docs/completion-tracker.json
 digest. Production-grade: typed, retries on 5xx, structured stderr logging.
 
 Requires env:
-  GITHUB_TOKEN, SENTRY_AUTH_TOKEN, PUSHOVER_USER, PUSHOVER_TOKEN.
+  GITHUB_TOKEN, SENTRY_AUTH_TOKEN, PUSHOVER_USER, PUSHOVER_TOKEN, STRIPE_SECRET_KEY.
 """
 from __future__ import annotations
 
@@ -32,12 +32,13 @@ from urllib.parse import urlencode
 
 import urllib.error
 import urllib.request
+import base64 as _b64
 
 # ---------- config ----------
 
 REPOS: list[dict[str, str]] = [
     {"key": "HD", "name": "HumanDesign",          "repo": "Latimer-Woods-Tech/HumanDesign",          "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
-    {"key": "VK", "name": "videoking",            "repo": "Latimer-Woods-Tech/videoking",            "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
+    {"key": "CC", "name": "capricast",            "repo": "Latimer-Woods-Tech/capricast",            "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
     {"key": "FA", "name": "factory-admin-studio", "repo": "Latimer-Woods-Tech/Factory",              "matrix_path": "apps/admin-studio/docs/FUNCTIONS_MATRIX.md"},
     {"key": "CH", "name": "cypher-healing",       "repo": "Latimer-Woods-Tech/coh",       "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
     {"key": "XC", "name": "xico-city",            "repo": "Latimer-Woods-Tech/xico-city",            "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
@@ -53,7 +54,7 @@ DECAY_DAYS = 30
 # inference — edit this list intentionally.
 SMOKE_AFFECTED: list[tuple[str, str]] = [
     ("HD", "auth"), ("HD", "billing"), ("HD", "chart"), ("HD", "health"),
-    ("VK", "auth"), ("VK", "billing"),
+    ("CC", "auth"), ("CC", "billing"),
     ("FA", "auth"), ("FA", "health"),
     ("CH", "auth"), ("CH", "platform"),
     ("XC", "auth"),
@@ -264,6 +265,63 @@ def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
 
 
 # ---------- sentry ----------
+
+
+
+# ---------- extra signals ----------
+
+def fetch_stripe_data(stripe_key: str) -> dict[str, Any]:
+    if not stripe_key:
+        jwarn("stripe_skipped_no_key")
+        return {"mrr": 0.0, "trials": 0, "new_charges_24h": 0}
+    creds = _b64.b64encode(f"{stripe_key}:".encode()).decode()
+    hdrs = {"Authorization": f"Basic {creds}", "User-Agent": "latwood-completion-aggregator"}
+
+    def sg(path: str) -> dict[str, Any]:
+        st, body, _ = http_request(f"https://api.stripe.com/v1{path}", headers=hdrs)
+        if st != 200:
+            jerr("stripe_fail", path=path, status=st)
+            return {}
+        try:
+            return json.loads(body)
+        except json.JSONDecodeError:
+            return {}
+
+    active = sg("/subscriptions?status=active&limit=100")
+    mrr = sum(
+        (s.get("plan") or {}).get("amount", 0) / 100
+        for s in active.get("data", [])
+        if (s.get("plan") or {}).get("interval") == "month"
+    )
+    trials = len(sg("/subscriptions?status=trialing&limit=100").get("data", []))
+    cutoff = int((datetime.now(timezone.utc) - timedelta(hours=24)).timestamp())
+    charges = sg(f"/charges?created[gte]={cutoff}&limit=25")
+    new_24h = sum(1 for c in charges.get("data", []) if c.get("paid"))
+    return {"mrr": mrr, "trials": trials, "new_charges_24h": new_24h}
+
+
+def count_open_prs(token: str) -> int:
+    st, body = github_get(
+        "/search/issues?" + urlencode({"q": "is:open is:pr org:Latimer-Woods-Tech", "per_page": 1}),
+        token,
+    )
+    if st == 200:
+        try:
+            return json.loads(body).get("total_count", 0)
+        except json.JSONDecodeError:
+            pass
+    return 0
+
+
+def count_gap_p0_p1() -> tuple[int, int]:
+    gap_path = Path("docs/GAP_REGISTER.md")
+    if not gap_path.exists():
+        return 0, 0
+    content = gap_path.read_text()
+    p0 = len(re.findall(r"[|][^|]*P0[^|]*[|]", content, re.IGNORECASE))
+    p1 = len(re.findall(r"[|][^|]*P1[^|]*[|]", content, re.IGNORECASE))
+    return p0, p1
+
 
 def fetch_sentry_unresolved(token: str) -> list[dict[str, Any]]:
     if not token:
@@ -498,33 +556,86 @@ def send_pushover(text: str, user: str, token: str) -> None:
         jerr("pushover_fail", status=status, body=resp[:200].decode("utf-8", "replace"))
 
 
-def render_pushover(rows: list[Row], prev: dict[str, Any], red_repos: set[str]) -> str:
+def render_pushover(
+    rows: list[Row],
+    prev: dict[str, Any],
+    red_ci: set[str],
+    red_smoke: set[str],
+    sentry_issues: list[dict[str, Any]],
+    extra: dict[str, Any],
+    now: datetime,
+) -> str:
+    """Rich morning digest: completion, velocity, CI, Sentry, revenue, PRs."""
+    try:
+        et = now.astimezone(timezone(timedelta(hours=-4)))
+        day_str = et.strftime("%a %b %-d · %-I:%M %p ET")
+    except Exception:
+        day_str = now.strftime("%Y-%m-%d %H:%M UTC")
+
     overall = pass_pct(rows)
+    prev_overall = prev.get("overall_weighted") or 0.0
+    delta = overall[2] - prev_overall
+    sign = "+" if delta >= 0 else ""
+
     by_repo: dict[str, list[Row]] = {}
     for r in rows:
         by_repo.setdefault(r.repo_key, []).append(r)
-    prev_overall = prev.get("overall_weighted") or 0.0
-    delta = overall[2] - prev_overall
-    parts = [f"Completion: {overall[2]:.1f}% (Δ{delta:+.1f}) | known: {overall[1]:.1f}%"]
-    chunks = []
     prev_repo = prev.get("repo_weighted") or {}
+    repo_chunks: list[str] = []
     for repo in REPOS:
         k = repo["key"]
         rs = by_repo.get(k, [])
         if not rs:
-            chunks.append(f"{k}: n/a")
+            repo_chunks.append(k + "—")
             continue
         _, _, pw = pass_pct(rs)
         d = pw - (prev_repo.get(k) or 0.0)
-        chunks.append(f"{k}: {pw:.0f}% (Δ{d:+.0f})")
-    parts.append(" • ".join(chunks))
+        arrow = "↑" if d > 0.5 else ("↓" if d < -0.5 else "=")
+        badge = "🔴" if k in red_ci else ("🟠" if k in red_smoke else "")
+        repo_chunks.append(k + " " + str(int(pw)) + arrow + badge)
 
     regressions, wins = diff_rows(prev, rows)
-    parts.append("↑ wins: " + (", ".join(w.id for w in wins[:3]) or "none"))
-    parts.append("↓ regressions: " + (", ".join(r.id for r in regressions[:3]) or "none"))
-    parts.append("🚨 CI red: " + (", ".join(sorted(red_repos)) or "none"))
-    return "\n".join(parts)
+    win_str = " · ".join(w.feature for w in wins[:3]) or "none today"
+    reg_str = " · ".join(r.feature for r in regressions[:3]) or "none today"
 
+    ci_parts: list[str] = []
+    if red_ci:
+        ci_parts.append("🔴 CI: " + ", ".join(sorted(red_ci)))
+    if red_smoke:
+        ci_parts.append("🟠 Smoke: " + ", ".join(sorted(red_smoke)))
+    ci_line = " · ".join(ci_parts) if ci_parts else "✅ CI clean"
+
+    sc = len(sentry_issues)
+    sentry_line = "🐛 Sentry: " + (str(sc) + " open" if sc else "clean")
+
+    mrr = extra.get("mrr", 0.0)
+    trials = extra.get("trials", 0)
+    new_24h = extra.get("new_charges_24h", 0)
+    rev = "💰 MRR $" + str(int(mrr))
+    if trials:
+        rev += " · " + str(trials) + " trialing"
+    if new_24h:
+        rev += " · " + str(new_24h) + " new today 🎉"
+    elif not mrr and not trials:
+        rev += " · no revenue yet"
+
+    prs = extra.get("open_prs", "?")
+    p0 = extra.get("p0_gaps", "?")
+    p1 = extra.get("p1_gaps", "?")
+    pr_line = "📋 " + str(prs) + " PRs · P0: " + str(p0) + " · P1: " + str(p1)
+
+    parts = [
+        "LatWood · " + day_str,
+        "📊 " + str(round(overall[2], 1)) + "% (" + sign + str(round(delta, 1)) + ") · known " + str(round(overall[1], 1)) + "%",
+        "  ".join(repo_chunks),
+        "↑ " + win_str,
+        "↓ " + reg_str,
+        ci_line,
+        sentry_line,
+        rev,
+        pr_line,
+    ]
+    return "\n".join(parts)
 
 # ---------- main ----------
 
@@ -613,8 +724,26 @@ def main() -> int:
             "malformed_count": len(all_malformed),
         }) + "\n")
 
+    # extra signals for the rich digest
+    stripe_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    stripe_data = fetch_stripe_data(stripe_key)
+    open_prs = count_open_prs(token)
+    p0_gaps, p1_gaps = count_gap_p0_p1()
+    extra = {
+        "mrr": stripe_data.get("mrr", 0.0),
+        "trials": stripe_data.get("trials", 0),
+        "new_charges_24h": stripe_data.get("new_charges_24h", 0),
+        "open_prs": open_prs,
+        "p0_gaps": p0_gaps,
+        "p1_gaps": p1_gaps,
+    }
+
     # pushover
-    send_pushover(render_pushover(all_rows, prev, red_ci), pushover_user, pushover_token)
+    send_pushover(
+        render_pushover(all_rows, prev, red_ci, red_smoke, issues, extra, now),
+        pushover_user,
+        pushover_token,
+    )
 
     jlog("done", overall=overall[2], rows=len(all_rows), malformed=len(all_malformed))
     return 0

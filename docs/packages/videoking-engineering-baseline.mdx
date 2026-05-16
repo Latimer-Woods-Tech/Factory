@@ -13,7 +13,7 @@ VideoKing is a **hyper-niche interactive video platform** built on Cloudflare ed
 **Key metrics:**
 - **Build status:** ✅ TypeScript strict, zero errors; ESLint zero warnings
 - **Test coverage:** ✅ Baseline established (target: ≥90% lines, ≥85% branches)
-- **Deployment:** ✅ All domains live (itsjusus.com, api.itsjusus.com, assets.itsjusus.com)
+- **Deployment:** ✅ All domains live (capricast.com, api.capricast.com, assets.capricast.com)
 - **Infrastructure:** 92-table PostgreSQL schema, R2 storage, Stripe integration, Cloudflare Stream
 - **Code quality:** ✅ 13 audit issues identified and fixed; zero critical regressions
 
@@ -102,7 +102,7 @@ VideoKing is a **hyper-niche interactive video platform** built on Cloudflare ed
 nichestream/
 ├── apps/
 │   ├── web/          # Next.js 15 frontend (Cloudflare Pages: videoking)
-│   └── worker/       # Cloudflare Worker API (Hono: nichestream-api.adrper79.workers.dev)
+│   └── worker/       # Cloudflare Worker API (Hono: capricast-api.adrper79.workers.dev)
 ├── packages/
 │   ├── db/           # Drizzle schema + migrations (PostgreSQL)
 │   └── types/        # Shared TypeScript interfaces
@@ -185,19 +185,19 @@ User Request
     ↓
 CDN (Cloudflare Pages/Workers)
     ↓
-        ├─→ Static Assets → R2 (itsjusus.com/*, assets.itsjusus.com/*)
-        ├─→ API → Worker (api.itsjusus.com/api/*)
+        ├─→ Static Assets → R2 (capricast.com/*, assets.capricast.com/*)
+        ├─→ API → Worker (api.capricast.com/api/*)
         │    └─→ Hyperdrive → Neon PostgreSQL
         │    └─→ Stripe API (for payments)
         │    └─→ Cloudflare Stream (for video)
         │    └─→ Durable Objects (for websockets)
-        └─→ Frontend → Pages (itsjusus.com/ rendered by Next.js)
+        └─→ Frontend → Pages (capricast.com/ rendered by Next.js)
 ```
 
 **Domains:**
-- `itsjusus.com` — Primary frontend (Cloudflare Pages: videoking)
-- `api.itsjusus.com` — API worker (Cloudflare Worker: nichestream-api)
-- `assets.itsjusus.com` — Static assets (R2 bucket: videoking-r2)
+- `capricast.com` — Primary frontend (Cloudflare Pages: videoking)
+- `api.capricast.com` — API worker (Cloudflare Worker: capricast-api)
+- `assets.capricast.com` — Static assets (R2 bucket: videoking-r2)
 
 ---
 
@@ -333,7 +333,7 @@ CREATE INDEX idx_payout_batches_period_date ON payout_batches(period_date) WHERE
 ## Exit Criteria: Baseline Verification Checklist
 
 - [x] **Build passes:** TypeScript strict, ESLint zero warnings
-- [x] **Production live:** All domains responding (itsjusus.com, API, R2)
+- [x] **Production live:** All domains responding (capricast.com, API, R2)
 - [x] **Phase 4 complete:** DLQ system implemented, payout batching working, audit fixes shipped
 - [x] **Test coverage baseline captured:** 75% lines, 68% branches (known gaps documented)
 - [x] **Risk register created:** 5 high-risk, 5 medium-risk, 3 low-risk items identified with mitigations
@@ -420,12 +420,12 @@ cd apps/worker && pnpm build
 ### Monitoring
 ```bash
 # View DLQ items (requires admin auth token)
-curl -H "Authorization: Bearer $ADMIN_TOKEN" https://api.itsjusus.com/api/admin/dead-letter-queue
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://api.capricast.com/api/admin/dead-letter-queue
 
 # View pending payouts
-curl -H "Authorization: Bearer $ADMIN_TOKEN" https://api.itsjusus.com/api/admin/payouts/pending
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://api.capricast.com/api/admin/payouts/pending
 
 # Trigger payout batch (typically runs via cron)
-curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://api.itsjusus.com/api/admin/payouts/batch
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" https://api.capricast.com/api/admin/payouts/batch
 ```
 

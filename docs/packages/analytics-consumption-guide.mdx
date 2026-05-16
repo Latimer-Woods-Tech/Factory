@@ -225,7 +225,7 @@ import { useEffect } from 'react';
 export default function CreatorProfile({ creator }) {
   useEffect(() => {
     // Track page view (called from browser)
-    fetch('http://api.itsjusus.com/api/events/page', {
+    fetch('http://api.capricast.com/api/events/page', {
       method: 'POST',
       body: JSON.stringify({
         name: 'creator.profile_viewed',

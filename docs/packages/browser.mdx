@@ -1,0 +1,22 @@
+# @latimer-woods-tech/browser
+
+Workers-compatible client for the Browser Agent Cloud Run sidecar.
+
+## Configuration
+
+- `BROWSER_AGENT_URL` — Cloud Run service URL.
+- `BROWSER_AGENT_AUDIENCE` — Cloud Run IAM audience, normally the service URL.
+- `BROWSER_AGENT_SA_KEY` — JSON key for `browser-agent-sa@factory-495015.iam.gserviceaccount.com`.
+
+## Usage
+
+```ts
+const browser = createBrowserClient({
+  agentUrl: env.BROWSER_AGENT_URL,
+  audience: env.BROWSER_AGENT_AUDIENCE,
+  serviceAccountKey: env.BROWSER_AGENT_SA_KEY,
+});
+
+await browser.scrape('https://example.com', { title: 'h1' });
+await browser.screenshot('https://example.com');
+```
