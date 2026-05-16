@@ -258,6 +258,36 @@ def score_from_checks(checks: list[CheckResult]) -> int:
     return round(passed / len(checks) * 100)
 
 
+def any_search_hit(repo: str, queries: list[str]) -> bool:
+    """True when at least one GitHub code-search query returns a positive hit."""
+    return any(gh_search_code(repo, q) > 0 for q in queries)
+
+
+def has_typed_env_bindings(repo: str) -> bool:
+    """
+    Detect typed Worker env wiring with flexible patterns used across portfolio repos.
+
+    A repo passes when it has:
+    1) An `Env` declaration (`interface Env` or `type Env =`), and
+    2) Hono bindings usage wired to that Env (`Bindings: Env` in app/type wiring).
+    """
+    env_declaration_queries = [
+        'path:src/ "interface Env"',
+        'path:src/ "type Env ="',
+        'path:apps/ "interface Env"',
+        'path:apps/ "type Env ="',
+    ]
+    typed_binding_queries = [
+        'path:src/ "new Hono<{ Bindings: Env"',
+        'path:src/ "Bindings: Env"',
+        'path:apps/ "new Hono<{ Bindings: Env"',
+        'path:apps/ "Bindings: Env"',
+    ]
+    has_env_declaration = any_search_hit(repo, env_declaration_queries)
+    has_typed_bindings = any_search_hit(repo, typed_binding_queries)
+    return has_env_declaration and has_typed_bindings
+
+
 # ───────────── dimensions ─────────────
 
 def dim_stack(repo: str) -> DimensionScore:
@@ -292,7 +322,7 @@ def dim_code_patterns(repo: str) -> DimensionScore:
         check("@latimer-woods-tech/errors in deps",     "@latimer-woods-tech/errors" in deps),
         check("@latimer-woods-tech/monitoring in deps", "@latimer-woods-tech/monitoring" in deps),
         check("No console.log in src/",                 gh_search_code(repo, 'path:src/ "console.log"') in (0, -1)),
-        check("Typed Env interface",                    gh_search_code(repo, 'path:src/ "interface Env"') > 0),
+        check("Typed Env interface",                    has_typed_env_bindings(repo)),
     ]
     return DimensionScore("code_patterns", "Code patterns", 15, score_from_checks(checks), checks)
 
