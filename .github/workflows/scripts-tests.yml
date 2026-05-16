@@ -1,0 +1,57 @@
+name: Scripts Tests
+
+# Runs the pytest suite for scripts/ helpers (G2 deliverable per ROADMAP.md):
+# - aggregate_completion.py
+# - init-matrix-issues.py
+# - sync_labels_to_matrix.py
+#
+# Triggered on any PR that touches scripts/ or the test files themselves.
+# Daily scheduled run catches drift from refactors elsewhere in the repo.
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/aggregate_completion.py'
+      - 'scripts/init-matrix-issues.py'
+      - 'scripts/sync_labels_to_matrix.py'
+      - 'scripts/tests/**'
+      - '.github/workflows/scripts-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/aggregate_completion.py'
+      - 'scripts/init-matrix-issues.py'
+      - 'scripts/sync_labels_to_matrix.py'
+      - 'scripts/tests/**'
+  schedule:
+    - cron: '47 3 * * *' # daily 03:47 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scripts-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest + script deps
+        run: pip install --quiet pytest pytest-cov pyyaml
+
+      - name: Run tests
+        working-directory: scripts/tests
+        run: python -m pytest -v --cov --cov-report=term
+
+      - name: Coverage summary
+        if: always()
+        working-directory: scripts/tests
+        run: |
+          python -m pytest --cov --cov-report=term-missing -q 2>&1 | tail -10 || true

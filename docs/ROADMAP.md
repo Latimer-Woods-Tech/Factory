@@ -4,13 +4,13 @@
 
 The committed 6-stage sequence. Agents reading this know which milestone is in flight, what's next, and what's deferred.
 
-## Status as of 2026-05-11
+## Status as of 2026-05-15
 
 | Stage | Status | Milestones | Exit criteria |
 |---|---|---|---|
 | **0 — Foundation** | ✅ shipped (PR #623, #624 merged) | M0 framework + standards + ADRs | All 5 governance docs on main, supervisor loads them |
-| **1 — Visibility** | next | M1 conformance shadow + cohesion score · M2 cost digest | Daily digest shows Completion + Cohesion + Cost; nothing blocks |
-| **2 — Revenue + Customer** | queued | M3 Launch Readiness + Stripe MRR + PostHog funnel + Sentry user-facing error rate | Digest answers all 5 questions: shipping / shipping-right / buying / staying / affordable |
+| **1 — Visibility** | ✅ shipped (PRs #684, #687, #688, #689, #692, #696) | M1 conformance shadow + cohesion score · M2 cost digest | Daily digest shows Completion + Cohesion + Cost; nothing blocks |
+| **2 — Revenue + Customer** | next | M3 Launch Readiness + Stripe MRR + PostHog funnel + Sentry user-facing error rate | Digest answers all 5 questions: shipping / shipping-right / buying / staying / affordable |
 | **3 — Adoption tools** | queued | M4 `@lwt/eslint-config` + `@lwt/tsconfig-base` + `@lwt/biome-config` · M5 Renovate at org level | Every repo extends shared configs; version drift visible |
 | **4 — Enforcement** | queued | M6 required org rulesets + supervisor templates expanded · M7 Definition of Done PR template | Conformance graduates shadow → required (only after most repos ≥80) |
 | **5 — Sellability** | queued | M8 accessibility (axe) · M9 PII inventory + DSR endpoints · M10 public status pages | Each product survives an enterprise procurement questionnaire |
@@ -19,29 +19,45 @@ The committed 6-stage sequence. Agents reading this know which milestone is in f
 
 ## Current milestone (in flight)
 
-**Stage 1 — Visibility.** Started: pending PR #622 merge. Exit target: end of week 2026-05-18.
+**Stage 2 — Revenue + Customer.** Starts now (2026-05-15). Headline deliverable: the daily Pushover digest answers all 5 questions (shipping / shipping-right / buying / staying / affordable). Composite Launch Readiness Scorecard per product.
 
-**M1 sub-tasks** (sub-agent fan-out per ADR-0004):
-- A — `platform-conformance.yml` workflow (nightly + on-PR, shadow mode only)
-- B — `scripts/platform_conformance.py` parser + scorer (10 dimensions per PLATFORM_STANDARDS)
-- C — Extend `scripts/aggregate_completion.py` with cohesion-score column + per-dimension display
-- D — Conformance fixture data + first-pass calibration against HD (already 70%+) and the 4 newer repos
+## Stage 1 — Visibility (shipped 2026-05-15)
 
-**M2 sub-tasks**:
-- A — `cost-observability.yml` workflow + `scripts/cost_digest.py` (CF + Anthropic + Sentry + Stripe + GCP)
-- B — Org-level LLM cap in `@lwt/llm-meter` (closes G8)
-- C — Pushover digest format update (incorporates cost line)
+Closed in a single push: 6 fix PRs + 2 auto-generated snapshot PRs landed on main. Live infrastructure provisioned in parallel (GCP Secret Manager IAM grant, supervisor-sa key rotation, ANTHROPIC_ADMIN_KEY).
 
-**P0/P1 gap fixes folded into Stage 1** (per GAP_REGISTER):
-- G2 — unit tests for `aggregate_completion.py`, `init-matrix-issues.py`, `sync_labels_to_matrix.py` (coverage ≥80%)
-- G3 — `dead-mans-switch.yml` heartbeat
-- G5 — Claude reviewer calibration shadow run on last 50 PRs
-- G8 — LLM cost cap at org level (above)
-- G10 — `sentry_project` field added to FUNCTIONS_MATRIX schema; aggregator queries per-project
+**M1 — Conformance shadow** (✅ shipped via PRs #684, #687, #688, #689, #696)
+- `.github/workflows/platform-conformance.yml` + `scripts/platform_conformance.py` (10-dimension scorer)
+- First-pass cohesion scores live in `docs/conformance/` on main:
+  HumanDesign 41 · videoking 24 · factory-admin-studio 29 · cypher-healing 25 · xico-city 52
+- Cross-repo access via Factory App token (mirrors `completion-tracker.yml`)
+- Shadow mode — scores advisory, not enforced until Stage 4
 
-**Cost ceiling:** $50 Anthropic + $0 GitHub Actions (Factory public)
+**M2 — Cost digest** (✅ shipped via same PRs)
+- `.github/workflows/cost-observability.yml` + `scripts/cost_digest.py` (CF + Anthropic + Sentry + Stripe + GCP)
+- Real Anthropic data flowing: $25.46 yesterday (verified live; cap at $50/day)
+- Stripe Connect + balance_transactions working (no revenue yesterday)
+- CF/Sentry tokens lack billing/stats scopes — separate token-permission follow-up
+- GCP line is a placeholder pending BigQuery billing export
 
-**Rollback:** delete the new workflows + revert PR. No production impact (shadow mode).
+**Stage 1 infrastructure landed during close-out (not in any PR — direct config):**
+- `roles/secretmanager.secretAccessor` granted to `supervisor-sa@factory-495015.iam.gserviceaccount.com`
+- `ANTHROPIC_ADMIN_KEY` provisioned in GCP Secret Manager (110-char admin key, `sk-ant-admin01-*`)
+- `VERTEX_SA_KEY` rotated (previous user-managed key had invalid JWT signature; new key `edd9ab3f...`)
+- `scripts/fetch_gcp_secrets.sh` (new): pulls from Secret Manager, strips BOM, first-match-wins on candidate names
+
+**P0/P1 gaps closed:**
+- ✅ G3 — `dead-mans-switch.yml` heartbeat (with cold-start tolerance + post-aggregator schedule)
+- ⏳ G2 — helper script unit tests (`aggregate_completion.py` etc.) — deferred to Stage 2
+- ⏳ G5 — Claude reviewer calibration shadow run — deferred to Stage 2
+- ⏳ G8 — LLM cost cap at org level (now visible via `total_usd` in cost digest; enforcement deferred)
+- ⏳ G10 — `sentry_project` field — deferred to Stage 2
+
+**Lessons captured** (folded into the workflows for future stages):
+- `google-github-actions/auth@v3` does not set gcloud default project — every call needs `--project`
+- Direct push to main is branch-protected — workflows must use PR-per-snapshot pattern with `auto-merge` label
+- `git diff --quiet` doesn't see new untracked files — stage first, then `diff --cached`
+- Stale service account keys fail with `invalid_grant: Invalid JWT Signature` — rotate when GCP says token is invalid despite IAM being correct
+- Secret values stored from Windows editors often have a leading UTF-8 BOM — strip in the fetch helper
 
 
 ## Stage 6 detail (added 2026-05-11 — ADR-0008)

@@ -89,7 +89,7 @@ All three foundational tasks for world-class videoking implementation have been 
 - **Project Structure:** Monorepo with web (Pages), worker (API), db (schema), types packages
 - **92-Table PostgreSQL Schema:** Fully documented (viewers, creators, content, monetization, operations, analytics, moderation tables)
 - **Core API Endpoints:** 20+ endpoints documented (public, authenticated, creator dashboard, admin/operator)
-- **Deployment Architecture:** Pages (itsjusus.com), Worker (api.itsjusus.com), R2 (assets.itsjusus.com)
+- **Deployment Architecture:** Pages (capricast.com), Worker (api.capricast.com), R2 (assets.capricast.com)
 
 #### 3. Test Coverage Baseline
 - **Overall:** 75% lines, 68% branches (below 90%/85% target)
