@@ -21,6 +21,7 @@ jobs:
           - neighbor-aid
           - cypher-healing
           - ijustus
+          - xico-city
       fail-fast: false
     steps:
       - name: Generate GitHub App token
