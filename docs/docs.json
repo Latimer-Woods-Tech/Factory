@@ -35,6 +35,7 @@
         "group": "Architecture",
         "pages": [
           "architecture/FACTORY_V1",
+          "architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE",
           "supervisor/ARCHITECTURE",
           "supervisor/FRIDGE"
         ]
