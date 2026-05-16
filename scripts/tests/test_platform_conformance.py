@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-def test_has_typed_env_bindings_accepts_interface_env_with_hono_bindings(platform_conformance):
+def test_typed_env_accepts_interface_with_hono_bindings(platform_conformance):
     def fake_search(_repo: str, query: str) -> int:
         if query == 'path:src/ "interface Env"':
             return 1
@@ -13,7 +13,7 @@ def test_has_typed_env_bindings_accepts_interface_env_with_hono_bindings(platfor
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_has_typed_env_bindings_accepts_type_env_alias_with_bindings_type(platform_conformance):
+def test_typed_env_accepts_type_alias_with_bindings(platform_conformance):
     def fake_search(_repo: str, query: str) -> int:
         if query == 'path:src/ "type Env ="':
             return 1
@@ -25,7 +25,7 @@ def test_has_typed_env_bindings_accepts_type_env_alias_with_bindings_type(platfo
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_has_typed_env_bindings_accepts_apps_worker_layout(platform_conformance):
+def test_typed_env_accepts_apps_layout(platform_conformance):
     def fake_search(_repo: str, query: str) -> int:
         if query == 'path:apps/ "interface Env"':
             return 1
@@ -37,7 +37,7 @@ def test_has_typed_env_bindings_accepts_apps_worker_layout(platform_conformance)
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_has_typed_env_bindings_rejects_missing_env_declaration(platform_conformance):
+def test_typed_env_rejects_missing_env_declaration(platform_conformance):
     def fake_search(_repo: str, query: str) -> int:
         if 'Bindings: Env' in query:
             return 1
@@ -47,7 +47,7 @@ def test_has_typed_env_bindings_rejects_missing_env_declaration(platform_conform
     assert not platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_has_typed_env_bindings_rejects_missing_bindings_usage(platform_conformance):
+def test_typed_env_rejects_missing_bindings_usage(platform_conformance):
     def fake_search(_repo: str, query: str) -> int:
         if "interface Env" in query or "type Env =" in query:
             return 1
