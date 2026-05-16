@@ -38,8 +38,8 @@ steps:
     args:
       - build
       - --tag
-      - \-docker.pkg.dev/\/\/\:      - --tag
-      - \-docker.pkg.dev/\/\/\:latest
+      - us-central1-docker.pkg.dev/\/\/\:      - --tag
+      - us-central1-docker.pkg.dev/\/\/\:latest
       - .
 
   - id: push
@@ -47,7 +47,7 @@ steps:
     args:
       - push
       - --all-tags
-      - \-docker.pkg.dev/\/\/
+      - us-central1-docker.pkg.dev/\/\/
   - id: deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk
     secretEnv:
@@ -57,7 +57,7 @@ steps:
     args:
       - run
       - deploy
-      -       - --image=\-docker.pkg.dev/\/\/\:      - --region=      - --platform=managed
+      -       - --image=us-central1-docker.pkg.dev/\/\/\:      - --region=      - --platform=managed
       - --memory=2Gi
       - --cpu=1
       - --min-instances=0
@@ -69,4 +69,4 @@ steps:
       - --set-env-vars=R2_ACCOUNT_ID=\,R2_BUCKET_NAME=      - --set-secrets=R2_ACCESS_KEY_ID=browser-agent-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=browser-agent-r2-secret-access-key:latest
 
 images:
-  - \-docker.pkg.dev/\/\/\:  - \-docker.pkg.dev/\/\/\:latest
+  - us-central1-docker.pkg.dev/\/\/\:  - us-central1-docker.pkg.dev/\/\/\:latest
