@@ -32,7 +32,7 @@ You're joining a system that just finished a significant hardening sprint. The b
 | `xico-city` (private) | Mexico City experiences platform — first verticalized app | API | S-00 done, S-01–S-11 in progress |
 | `factory-admin` (private) | Operator/control plane | API + UI | Phase 8 active |
 | `xpelevator` (public) | Factory app | API | Phase 7 ready |
-| `videoking` (public) | NicheStream — interactive video platform live at itsjusus.com | API + Pages | Production live, Phase 4 monetization shipped |
+| `videoking` (public) | NicheStream — interactive video platform live at capricast.com | API + Pages | Production live, Phase 4 monetization shipped |
 | `HumanDesign` (public) | Prime Self — practitioner B2B2C platform live at selfprime.net | API + Pages | Production live |
 
 ## How to log in
@@ -88,7 +88,7 @@ factory/
 
 ### Cloudflare resources (under account `a1c8a33cbe8a3c9e260480433a0dbb06`)
 
-- **19 Workers** — one per Phase 7 app + factory-admin + admin-studio + schedule-worker + synthetic-monitor + video-cron + nichestream-api + prime-self-api{,-staging,-production} + prime-self-discord. Pre-cleanup the count was 31; 12 stale Workers were deleted Apr 30.
+- **19 Workers** — one per Phase 7 app + factory-admin + admin-studio + schedule-worker + synthetic-monitor + video-cron + capricast-api + prime-self-api{,-staging,-production} + prime-self-discord. Pre-cleanup the count was 31; 12 stale Workers were deleted Apr 30.
 - **6 R2 buckets** — `cache`, `cypher-healing-media`, `factory-videos`, `prime-self-exports{,-staging}`, `videoking-r2`
 - **10 Hyperdrive configs** — one per Phase 7 app + xico-city + xpelevator + videoking + factory-core
 - **7 KV namespaces** — rate limiting + caching for live products

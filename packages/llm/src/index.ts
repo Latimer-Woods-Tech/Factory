@@ -113,7 +113,7 @@ const MODELS = {
     smart: 'gemini-2.5-pro',
   },
   groq: {
-    verifier: 'llama-3.3-70b-versatile',
+    verifier: 'llama-4-maverick',
   },
   grok: {
     /** Opt-in only via `{ model: 'grok-*' }`. Not in default tier routing. */

@@ -9,10 +9,10 @@
 #         needs: deploy
 #         uses: Latimer-Woods-Tech/factory/.github/workflows/_app-prod-canary.yml@main
 #         with:
-#           base_url: https://api.itsjusus.com
+#           base_url: https://api.capricast.com
 #           canary_script: scripts/canary.mjs
 #           rollback_on_failure: true
-#           worker_name: nichestream-api
+#           worker_name: capricast-api
 #         secrets: inherit
 #
 #   scheduled:

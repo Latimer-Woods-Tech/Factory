@@ -21,6 +21,15 @@
       "database_name": "flag-meter"
     }
   ],
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "r2_buckets": [
+    {
+      "binding": "AUDIT_LOGS",
+      "bucket_name": "factory-audit-logs"
+    }
+  ],
   "vars": {
     "ENVIRONMENT": "development",
     "TARGETS_JSON": "[{\"id\":\"admin-studio.production.health\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane-prod\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"}]"
