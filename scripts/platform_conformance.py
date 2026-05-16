@@ -421,6 +421,8 @@ def dim_privacy(repo: str) -> DimensionScore:
         or gh_get_file(repo, "docs/runbooks/compliance.md")
     )
     def has_search_hit(*queries: str) -> bool:
+        # Query both quoted and unquoted forms: GitHub code search behavior can
+        # vary between exact string-literal matches and tokenized path matches.
         return any(gh_search_code(repo, q) > 0 for q in queries)
 
     export_hint = has_search_hit(

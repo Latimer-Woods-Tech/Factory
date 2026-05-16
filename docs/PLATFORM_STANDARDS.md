@@ -94,7 +94,7 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 ## 10. Privacy
 
 - **PII inventory:** every Worker that stores PII maintains `docs/PII_INVENTORY.md` listing fields, location (table/column or KV/R2), retention period.
-- **DSR endpoints:** `GET /privacy/export` and `POST /privacy/delete` (legacy equivalents `GET /api/me/export` and `DELETE /api/me` also accepted) required on every Worker that stores per-user PII. Verified by conformance.
+- **DSR endpoints:** `GET /privacy/export` and `POST /privacy/delete` (legacy equivalents `GET /api/me/export` and `DELETE /api/me` also accepted) required on every Worker that stores per-user PII. New stubs use `POST /privacy/delete` for auth-gated handler parity; conformance accepts both patterns during migration. Verified by conformance.
 - **Audit log:** `@lwt/compliance.auditLog(action, actor, target, metadata)` on every mutating admin route. Retention 1 year minimum.
 - **Data retention policy:** per Worker, in `docs/RETENTION.md`. Default: 7 years for billing records, 30 days for soft-deleted user data, 90 days for logs.
 - **Encryption:** at rest (Cloudflare default), in transit (TLS 1.3 only). No plain-text PII in logs.
