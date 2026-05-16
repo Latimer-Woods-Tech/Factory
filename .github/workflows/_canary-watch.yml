@@ -97,7 +97,7 @@ on:
       # of these concurrently, treat as upstream and skip rollback.
       sibling_sentry_projects:
         type: string
-        default: 'admin-studio,nichestream-api,itsjusus-api,factory-web'
+        default: 'admin-studio,capricast-api,itsjusus-api,factory-web'
 
 permissions:
   contents: read
