@@ -425,10 +425,28 @@ async function executeGreen(repo, issue, template, slots) {
     changedFiles.push(filePath);
   }
 
-  // Guard: if no files were extracted/committed, skip PR creation to avoid GitHub 422 error
+  // Guard: GitHub's POST /pulls endpoint returns
+  //   422 "No commits between main and supervisor/<slug>-<ts>"
+  // when the head branch is identical to base. This happened to ~10 issues per
+  // Supervisor Loop run (ids visible at run 25611174210, 2026-05-09 20:34Z)
+  // because slot extraction returned all-null slots for off-topic template
+  // matches (e.g. issue #500 "entitlements rollout" matched the
+  // docs-naming-convention template) so the file-write loop above committed
+  // nothing. Without this guard the loop would still POST /pulls and fail.
+  // Supersedes the simpler interim guard that landed on main; keeps the
+  // branch-deletion + structured return so callers in main() can post a
+  // "no writable file plan" note instead of falsely claiming a PR was opened.
   if (changedFiles.length === 0) {
-    console.log(`[SKIP] ${repo}#${issue.number}: no files extracted from template slots — branch ${branch} has no commits`);
-    return { branch, prUrl: null, prNumber: null, skipped: 'no files extracted' };
+    console.warn(
+      `[SKIP-PR] ${repo}#${issue.number}: template ${template.id} produced 0 file changes ` +
+      `(slots: ${JSON.stringify(slots)}) — deleting empty branch and skipping PR creation`,
+    );
+    try {
+      await gh('DELETE', `/repos/${ORG}/${repo}/git/refs/heads/${branch}`);
+    } catch (e) {
+      console.warn(`[SKIP-PR] could not delete empty branch ${branch}: ${e.message.slice(0, 80)}`);
+    }
+    return { branch, prUrl: null, prNumber: null, skipped: true, reason: 'no-file-changes' };
   }
 
   const pr = await gh('POST', `/repos/${ORG}/${repo}/pulls`, {
@@ -732,15 +750,32 @@ async function main() {
   const templates = await loadTemplates();
   console.log(`[INFO] Loaded ${templates.length} templates: ${templates.map((t) => t.id).join(', ')}`);
 
-  // Fetch CONTEXT.md to use as system prompt prefix for all LLM calls
+  // Fetch CONTEXT.md, PATTERNS.md, and LESSONS.md as the system prompt
+  // prefix for all LLM calls. Concatenation order: governance (CONTEXT) →
+  // durable how-to (PATTERNS) → supervisor-specific learnings (LESSONS).
+  // Each is independently optional — missing files log a warning, don't fail.
+  //
+  // RFC-005 (Dreaming pilot, Q3 2026) will later write consolidated session
+  // memories to LESSONS.md automatically. Until then the file is hand-
+  // maintained: append on every CODEOWNER rejection that surfaces a
+  // generalizable pattern.
   let factoryContext = '';
-  try {
-    const ctxFile = await gh('GET', '/repos/Latimer-Woods-Tech/factory/contents/docs/supervisor/CONTEXT.md');
-    factoryContext = Buffer.from(ctxFile.content, 'base64').toString('utf8');
-    console.log('[INFO] Loaded docs/supervisor/CONTEXT.md for system prompt prefix');
-  } catch (e) {
-    console.warn('[WARN] Could not load CONTEXT.md:', e.message);
+  const ctxSources = [
+    { path: 'docs/supervisor/CONTEXT.md', label: 'CONTEXT.md — Factory governance' },
+    { path: 'docs/architecture/PATTERNS.md', label: 'PATTERNS.md — Operational patterns (symptom → cause → fix)' },
+    { path: 'docs/supervisor/LESSONS.md', label: 'LESSONS.md — Supervisor learnings (hand-maintained until Dreaming)' },
+  ];
+  for (const src of ctxSources) {
+    try {
+      const file = await gh('GET', `/repos/Latimer-Woods-Tech/factory/contents/${src.path}`);
+      const body = Buffer.from(file.content, 'base64').toString('utf8');
+      factoryContext += `\n\n## ${src.label}\n\n${body}`;
+      console.log(`[INFO] Loaded ${src.path} into system prompt prefix (${body.length} chars)`);
+    } catch (e) {
+      console.warn(`[WARN] Could not load ${src.path}: ${e.message}`);
+    }
   }
+  factoryContext = factoryContext.trim();
 
   // Collect candidate issues
   let candidates = [];
@@ -858,7 +893,18 @@ async function main() {
       let prInfo = null;
       if (template.prFiles.length > 0) {
         prInfo = await executeGreen(repo, issue, template, slots);
-        execNote = `\n\n✅ PR opened: ${prInfo.prUrl}`;
+        if (prInfo.skipped) {
+          // Slot extraction was incomplete — branch was created and torn back
+          // down without a PR. Tell the human reviewer instead of silently
+          // claiming success.
+          execNote =
+            `\n\n⚠️ Slot extraction did not yield a writable file plan ` +
+            `(reason: ${prInfo.reason}). No PR was opened. ` +
+            `A CODEOWNER must either re-author the issue with the required ` +
+            `slot fields or handle this manually.`;
+        } else {
+          execNote = `\n\n✅ PR opened: ${prInfo.prUrl}`;
+        }
       } else {
         execNote = '\n\n⚠️ Template has no openPR file step — slot extraction complete, manual execution required.';
       }
@@ -866,8 +912,10 @@ async function main() {
       await postComment(repo, issue.number, planComment(ctx, template, 'green', execNote));
       await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
 
-      const url = prInfo?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;
-      outcomes.push(`🟢 ${repo}#${issue.number}: ${template.id}${prInfo ? ` → PR #${prInfo.prNumber}` : ''} ${url}`);
+      const landedPr = prInfo && !prInfo.skipped ? prInfo : null;
+      const url = landedPr?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;
+      const prSuffix = landedPr ? ` → PR #${landedPr.prNumber}` : prInfo?.skipped ? ' (no PR — empty plan)' : '';
+      outcomes.push(`🟢 ${repo}#${issue.number}: ${template.id}${prSuffix} ${url}`);
     } catch (err) {
       console.error(`[ERROR] ${repo}#${issue.number}:`, err.message);
       outcomes.push(`❌ ${repo}#${issue.number}: ${err.message.slice(0, 120)}`);

@@ -60,6 +60,21 @@ function validate(parsed, file) {
       }
     }
   }
+  // pattern_check: optional array of PATTERNS.md section numbers that THIS
+  // template must satisfy when executed. Surfaced in the plan comment so
+  // the human approving the plan AND the supervisor's own LLM (which has
+  // PATTERNS.md in context via T3.B) explicitly cross-reference them.
+  if (parsed.pattern_check !== undefined) {
+    if (!Array.isArray(parsed.pattern_check)) {
+      errors.push('pattern_check must be an array of integers (PATTERNS.md section numbers)');
+    } else {
+      for (const n of parsed.pattern_check) {
+        if (!Number.isInteger(n) || n < 1) {
+          errors.push(`pattern_check entry "${n}" must be a positive integer`);
+        }
+      }
+    }
+  }
   if (errors.length > 0) {
     throw new Error(`[${file}] validation failed:\n  - ${errors.join('\n  - ')}`);
   }
@@ -117,6 +132,7 @@ function buildTemplate(parsed) {
     tier: parsed.tier,
     description: parsed.description ?? '',
     trigger_keywords: keywords.map(String),
+    ...(parsed.pattern_check ? { pattern_check: parsed.pattern_check } : {}),
     triggers: {
       ...(parsed.triggers.labels_any_of ? { labels_any_of: parsed.triggers.labels_any_of } : {}),
       ...(parsed.triggers.title_pattern ? { title_pattern: parsed.triggers.title_pattern } : {}),

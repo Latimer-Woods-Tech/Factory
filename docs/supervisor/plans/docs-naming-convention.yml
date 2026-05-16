@@ -1,6 +1,14 @@
 id: docs-naming-convention
 version: 1
 tier: green
+# T3 gap 2 — declare which docs/architecture/PATTERNS.md sections this
+# template must satisfy when executed. Surfaced in the plan comment so the
+# approving human + the executing LLM (which has PATTERNS.md in its system
+# prompt via T3.B) explicitly cross-reference them. This template opens a
+# PR against main, so pattern #3 (PR-per-snapshot — direct push to main is
+# branch-protected) applies. Pattern #4 (`git add` before `diff --cached`)
+# applies if the PR contains generated content.
+pattern_check: [3, 4]
 triggers:
   labels_any_of: [docs, documentation, hardening]
   title_pattern: "^docs[(:]"

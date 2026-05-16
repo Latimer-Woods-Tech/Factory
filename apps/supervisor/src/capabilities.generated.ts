@@ -284,8 +284,8 @@ export const GENERATED_CAPABILITIES: AppCapabilities[] = [
   },
   {
     "app": "videoking",
-    "repo": "Latimer-Woods-Tech/videoking",
-    "base_url": "https://api.itsjusus.com",
+    "repo": "Latimer-Woods-Tech/capricast",
+    "base_url": "https://api.capricast.com",
     "auth": "admin_jwt",
     "supervisor_access": "approved",
     "tiers_allowed": [
