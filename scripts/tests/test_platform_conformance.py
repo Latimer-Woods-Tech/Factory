@@ -1,39 +1,34 @@
 from __future__ import annotations
 
 
-def test_typed_env_accepts_interface_with_hono_bindings(platform_conformance):
+def _fake_search_with_hits(*hits: str):
     def fake_search(_repo: str, query: str) -> int:
-        if query == 'path:src/ "interface Env"':
-            return 1
-        if query == 'path:src/ "new Hono<{ Bindings: Env"':
-            return 1
-        return 0
+        return 1 if query in hits else 0
 
-    platform_conformance.gh_search_code = fake_search
+    return fake_search
+
+
+def test_typed_env_accepts_interface_with_hono_bindings(platform_conformance):
+    platform_conformance.gh_search_code = _fake_search_with_hits(
+        'path:src/ "interface Env"',
+        'path:src/ "new Hono<{ Bindings: Env"',
+    )
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
 def test_typed_env_accepts_type_alias_with_bindings(platform_conformance):
-    def fake_search(_repo: str, query: str) -> int:
-        if query == 'path:src/ "type Env ="':
-            return 1
-        if query == 'path:src/ "Bindings: Env"':
-            return 1
-        return 0
-
-    platform_conformance.gh_search_code = fake_search
+    platform_conformance.gh_search_code = _fake_search_with_hits(
+        'path:src/ "type Env ="',
+        'path:src/ "Bindings: Env"',
+    )
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
 def test_typed_env_accepts_apps_layout(platform_conformance):
-    def fake_search(_repo: str, query: str) -> int:
-        if query == 'path:apps/ "interface Env"':
-            return 1
-        if query == 'path:apps/ "Bindings: Env"':
-            return 1
-        return 0
-
-    platform_conformance.gh_search_code = fake_search
+    platform_conformance.gh_search_code = _fake_search_with_hits(
+        'path:apps/ "interface Env"',
+        'path:apps/ "Bindings: Env"',
+    )
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
