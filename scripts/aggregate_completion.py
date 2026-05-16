@@ -635,8 +635,7 @@ def render_pushover(
         rev,
         pr_line,
     ]
-    return "
-".join(parts)
+    return "\n".join(parts)
 
 # ---------- main ----------
 

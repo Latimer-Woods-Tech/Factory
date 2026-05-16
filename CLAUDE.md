@@ -1,5 +1,12 @@
 > 📘 **Canonical architecture:** [`docs/architecture/FACTORY_V1.md`](./docs/architecture/FACTORY_V1.md). Read it to understand the system. [`docs/supervisor/FRIDGE.md`](./docs/supervisor/FRIDGE.md) overrides these Standing Orders.
 
+> 🗺️ **Where to look first** (in order):
+> 1. [`docs/STATE.md`](./docs/STATE.md) — auto-generated daily; current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding.
+> 2. This file (CLAUDE.md) — norms + hard constraints
+> 3. [`docs/architecture/PATTERNS.md`](./docs/architecture/PATTERNS.md) — operational know-how (gcloud auth, workflow patterns, merge escape hatches) captured from production debugging
+> 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — what we build (the 10 conformance dimensions)
+> 5. [`docs/GAP_REGISTER.md`](./docs/GAP_REGISTER.md) — known debt with severity tiers
+
 # Factory Core — Standing Orders
 
 ## Mission
@@ -60,26 +67,26 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 2. `@latimer-woods-tech/monitoring` (deps: errors)
 3. `@latimer-woods-tech/logger` (deps: errors, monitoring)
 4. `@latimer-woods-tech/realtime` (deps: errors) — Cloudflare Durable Object WebSocket Hibernation API base class
-5. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible client for the GCP Cloud Run Browser Agent sidecar
-6. `@latimer-woods-tech/auth` (deps: errors, logger)
-7. `@latimer-woods-tech/neon` (deps: errors, logger)
-8. `@latimer-woods-tech/stripe` (deps: errors, logger, neon)
-9. `@latimer-woods-tech/llm` (deps: errors, logger)
-10. `@latimer-woods-tech/telephony` (deps: errors, logger, llm)
-11. `@latimer-woods-tech/analytics` (deps: errors, neon)
-12. `@latimer-woods-tech/deploy` (no deps; scripts only)
-13. `@latimer-woods-tech/testing` (no deps; mock factories)
-14. `@latimer-woods-tech/email` (deps: errors, logger)
-15. `@latimer-woods-tech/copy` (deps: llm)
-16. `@latimer-woods-tech/content` (deps: neon, copy)
-17. `@latimer-woods-tech/social` (deps: content)
-18. `@latimer-woods-tech/seo` (no deps)
-19. `@latimer-woods-tech/crm` (deps: neon, analytics)
-20. `@latimer-woods-tech/compliance` (deps: neon)
-21. `@latimer-woods-tech/admin` (deps: auth, analytics)
-22. `@latimer-woods-tech/video` (deps: errors) — Cloudflare Stream + R2 wrappers
-23. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
-24. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
+5. `@latimer-woods-tech/auth` (deps: errors, logger)
+6. `@latimer-woods-tech/neon` (deps: errors, logger)
+7. `@latimer-woods-tech/stripe` (deps: errors, logger, neon)
+8. `@latimer-woods-tech/llm` (deps: errors, logger)
+9. `@latimer-woods-tech/telephony` (deps: errors, logger, llm)
+10. `@latimer-woods-tech/analytics` (deps: errors, neon)
+11. `@latimer-woods-tech/deploy` (no deps; scripts only)
+12. `@latimer-woods-tech/testing` (no deps; mock factories)
+13. `@latimer-woods-tech/email` (deps: errors, logger)
+14. `@latimer-woods-tech/copy` (deps: llm)
+15. `@latimer-woods-tech/content` (deps: neon, copy)
+16. `@latimer-woods-tech/social` (deps: content)
+17. `@latimer-woods-tech/seo` (no deps)
+18. `@latimer-woods-tech/crm` (deps: neon, analytics)
+19. `@latimer-woods-tech/compliance` (deps: neon)
+20. `@latimer-woods-tech/admin` (deps: auth, analytics)
+21. `@latimer-woods-tech/video` (deps: errors) — Cloudflare Stream + R2 wrappers
+22. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
+23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
+24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
 
 ## Video Production Pipeline
 The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg):
