@@ -188,8 +188,10 @@ def compute(target_day: str) -> Scorecard:
 
     # Per-app scores
     apps: list[AppScore] = []
-    conf_repos = conformance.get("repos") if conformance else []
-    repo_weighted: dict[str, float] = completion.get("repo_weighted") if completion else {} or {}
+    conf_repos = (conformance.get("repos") if conformance else []) or []
+    repo_weighted: dict[str, float] = (
+        (completion.get("repo_weighted") if completion else None) or {}
+    )
     completion_by_key = {_norm_key(k): v for k, v in repo_weighted.items()}
 
     for r in conf_repos or []:
