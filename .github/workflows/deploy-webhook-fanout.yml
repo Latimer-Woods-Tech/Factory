@@ -32,6 +32,24 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env CF_API_TOKEN           CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          fetch_to_env CF_ACCOUNT_ID          CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env STRIPE_WEBHOOK_SECRET  STRIPE_WEBHOOK_SECRET
+          fetch_to_env CHARTMOGUL_API_KEY     CHARTMOGUL_API_KEY
+          fetch_to_env LOOPS_API_KEY          LOOPS_API_KEY
+
       - name: Build local package dependencies
         run: |
           set -euo pipefail
@@ -51,8 +69,8 @@ jobs:
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
           workingDirectory: apps/webhook-fanout
           command: deploy --env production
           secrets: |
@@ -61,9 +79,9 @@ jobs:
             LOOPS_API_KEY
           environment: production
         env:
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-          CHARTMOGUL_API_KEY: ${{ secrets.CHARTMOGUL_API_KEY }}
-          LOOPS_API_KEY: ${{ secrets.LOOPS_API_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ env.STRIPE_WEBHOOK_SECRET }}
+          CHARTMOGUL_API_KEY: ${{ env.CHARTMOGUL_API_KEY }}
+          LOOPS_API_KEY: ${{ env.LOOPS_API_KEY }}
 
       - name: Verify deployment
         run: |
