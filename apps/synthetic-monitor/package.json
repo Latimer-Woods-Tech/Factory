@@ -10,7 +10,8 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "hono": "^4.12.18"
+    "hono": "^4.12.18",
+    "@cloudflare/puppeteer": "^0.0.13"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260423.1",
