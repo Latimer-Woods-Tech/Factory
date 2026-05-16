@@ -1,0 +1,28 @@
+{
+  "name": "@latimer-woods-tech/eslint-config",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Shared ESLint 9 flat config for Latimer-Woods-Tech Cloudflare Workers monorepo.",
+  "license": "UNLICENSED",
+  "publishConfig": { "access": "public" },
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./worker": "./index.js",
+    "./node": "./index.js",
+    "./plugin": "./plugins/lwt.js"
+  },
+  "files": ["index.js", "plugins", "README.md"],
+  "peerDependencies": {
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "eslint": "^9.13.0",
+    "typescript-eslint": "^8.10.0",
+    "vitest": "^2.1.0"
+  }
+}

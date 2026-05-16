@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    # NOTE: no `paths:` filter — branch protection requires "Analyze (javascript)"
+    # on every PR. With path filtering, PRs touching only non-source files
+    # (eg. version bumps in package.json) silently skip CodeQL and become
+    # permanently unmergeable since the required check never reports.
+    # CodeQL runs ~30s on small diffs; the always-on cost is acceptable
+    # for the merge-flow predictability it buys.
   merge_group:
   schedule:
     # Weekly on Sunday 3am ET

@@ -35,6 +35,10 @@ const {
   TELNYX_API_KEY,
   TELNYX_FROM_NUMBER,
   NOTIFICATION_PHONE,
+  // Optional JSON override for the sensitive-path reviewer-class map.
+  // Shape: Array<{ class: string; label: string; patterns: string[]; reviewers: string[] }>
+  // When set, these entries are merged with (and override) the built-in defaults.
+  REVIEWER_HINTS_MAP,
 } = process.env;
 
 const MAX_ATTEMPTS = parseInt(MAX_REVIEW_ATTEMPTS, 10);
@@ -143,6 +147,153 @@ function detectTier(filenames) {
 
 function hasAdminMutation(filenames) {
   return filenames.some(f => ADMIN_MUTATION_PATTERNS.some(p => p.test(f)));
+}
+
+// ─── Reviewer-class hints (sensitive path → reviewer class mapping) ───────────
+//
+// Each entry maps a reviewer *class* (a logical group of changes that a specific
+// person/team should always see) to:
+//   - `label`:     Human-readable class name surfaced in the review body
+//   - `patterns`:  RegExp patterns — if any changed file matches, the class fires
+//   - `reviewers`: GitHub handles to request review from when the class fires
+//
+// The built-in map covers the Factory CODEOWNERS trust model. Override or extend
+// by setting REVIEWER_HINTS_MAP in repo/org vars as a JSON array of entries with
+// the same shape (entries are merged; same `class` key wins with the override).
+
+/** @type {Array<{class: string; label: string; patterns: RegExp[]; reviewers: string[]}>} */
+const DEFAULT_REVIEWER_CLASS_MAP = [
+  {
+    class: 'platform',
+    label: '🔧 Platform (CI/CD & shared packages)',
+    patterns: [
+      /^\.github\/workflows\//,
+      /^\.github\/scripts\//,
+      /^packages\//,
+      /^scripts\//,
+      /^skills\//,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'security',
+    label: '🔒 Security (auth, admin & billing paths)',
+    patterns: [
+      /handlers\/(billing|admin|stripe)/,
+      /\/admin\//,
+      /stripe/i,
+      /capabilities\.yml$/,
+      /docs\/supervisor\/(plans|FRIDGE)\//,
+      /apps\/supervisor\//,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'database',
+    label: '🗄️ Database (migrations & schema)',
+    patterns: [
+      /migrations\//,
+      /\/src\/db\//,
+      /drizzle\.config/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'config',
+    label: '⚙️ Config (wrangler & service registry)',
+    patterns: [
+      /wrangler\.(jsonc?|toml)$/,
+      /docs\/service-registry\.yml$/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'governance',
+    label: '📋 Governance (CODEOWNERS & settings)',
+    patterns: [
+      /^\.github\/CODEOWNERS$/,
+      /^\.github\/settings\.yml$/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+];
+
+/**
+ * Merge any REVIEWER_HINTS_MAP override into the built-in defaults.
+ * Override entries with a matching `class` key replace the built-in entry;
+ * new class keys are appended.
+ */
+function buildReviewerClassMap() {
+  if (!REVIEWER_HINTS_MAP) return DEFAULT_REVIEWER_CLASS_MAP;
+
+  let overrides;
+  try {
+    overrides = JSON.parse(REVIEWER_HINTS_MAP);
+    if (!Array.isArray(overrides)) throw new Error('Not an array');
+  } catch (err) {
+    console.warn(`[WARN] REVIEWER_HINTS_MAP is not valid JSON — using built-in map. Error: ${err.message}`);
+    return DEFAULT_REVIEWER_CLASS_MAP;
+  }
+
+  const map = DEFAULT_REVIEWER_CLASS_MAP.map(entry => {
+    const override = overrides.find(o => o.class === entry.class);
+    if (!override) return entry;
+    // Convert string patterns to RegExp if the caller passed strings
+    const patterns = [];
+    for (const p of (override.patterns ?? entry.patterns)) {
+      if (p instanceof RegExp) {
+        patterns.push(p);
+        continue;
+      }
+      try {
+        patterns.push(new RegExp(p));
+      } catch {
+        console.warn(`[WARN] REVIEWER_HINTS_MAP: invalid regex pattern "${p}" in class "${entry.class}" — skipping`);
+      }
+    }
+    return { ...entry, ...override, patterns };
+  });
+
+  // Append any new classes from the override
+  for (const o of overrides) {
+    if (!map.find(e => e.class === o.class)) {
+      const patterns = [];
+      for (const p of (o.patterns ?? [])) {
+        if (p instanceof RegExp) {
+          patterns.push(p);
+          continue;
+        }
+        try {
+          patterns.push(new RegExp(p));
+        } catch {
+          console.warn(`[WARN] REVIEWER_HINTS_MAP: invalid regex pattern "${p}" in new class "${o.class}" — skipping`);
+        }
+      }
+      map.push({ ...o, patterns });
+    }
+  }
+
+  return map;
+}
+
+const REVIEWER_CLASS_MAP = buildReviewerClassMap();
+
+/**
+ * Given the list of changed file paths, return the reviewer classes that apply.
+ * Each returned entry includes the matched files for traceability in the review body.
+ *
+ * @param {string[]} filenames
+ * @returns {Array<{class: string; label: string; reviewers: string[]; matchedFiles: string[]}>}
+ */
+function detectSensitivePathReviewers(filenames) {
+  const hits = [];
+  for (const entry of REVIEWER_CLASS_MAP) {
+    const matchedFiles = filenames.filter(f => entry.patterns.some(p => p.test(f)));
+    if (matchedFiles.length > 0) {
+      hits.push({ class: entry.class, label: entry.label, reviewers: entry.reviewers, matchedFiles });
+    }
+  }
+  return hits;
 }
 
 // ─── Deterministic constraint checks (no LLM) ────────────────────────────────
@@ -280,6 +431,30 @@ function buildConstraintBlock(repoName) {
     console.warn('[WARN] docs/supervisor/FRIDGE.md not found on disk');
   }
 
+  // Tier 3 context injection — current operating state + operational patterns.
+  // CLAUDE.md's reading order tells the reviewer to consult these files; this
+  // concat lets the reviewer actually see them in the same prompt rather than
+  // just being told they exist. Soft-warn (not MISSING_DOCS) because both are
+  // genuinely optional: STATE.md is auto-generated, PATTERNS.md is operator-
+  // maintained, neither blocks a review.
+  //
+  // Budgets matched to actual file sizes at 2026-05-15: STATE.md ≈ 4.3k,
+  // PATTERNS.md ≈ 7.6k. The 8000-char ceiling gives both room to grow ~5%
+  // before truncation; raise here when adding new top-level sections.
+  const state = loadDoc('docs/STATE.md', 8000);
+  if (state) {
+    sections.push(`## docs/STATE.md — Current Operating State (auto-generated)\n\n${state}`);
+  } else {
+    console.warn('[WARN] docs/STATE.md not found — review proceeds without current-state context');
+  }
+
+  const patterns = loadDoc('docs/architecture/PATTERNS.md', 10000);
+  if (patterns) {
+    sections.push(`## docs/architecture/PATTERNS.md — Operational Patterns (symptom → cause → fix)\n\n${patterns}`);
+  } else {
+    console.warn('[WARN] docs/architecture/PATTERNS.md not found — review proceeds without operational-patterns context');
+  }
+
   // Per-repo standing orders for cross-repo reviews (.github/repo-contexts/{repo}/CLAUDE.md)
   if (repoName && repoName !== 'factory') {
     const perRepo = loadDoc(`.github/repo-contexts/${repoName}/CLAUDE.md`, 4000);
@@ -330,6 +505,7 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - Type safety holes (unsafe casts, untyped generics)
 - Package dependency order violations in packages/**
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
+- **Violation of any pattern in \`docs/architecture/PATTERNS.md\`** (loaded into your context above). Match the diff against patterns by file type — workflows that commit to main, scripts that fetch secrets, scripts that diff dirs against HEAD without staging, gcloud calls without \`--project\`, etc. **Cite the pattern number in the flag** (e.g., "violates PATTERNS.md #3: direct push to main is blocked by branch protection"). This is how the institutional memory becomes enforceable, not just documented.
 
 ### Security — flag as architectural_concern (blocks merge)
 - SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input
@@ -606,7 +782,7 @@ function tierEmoji(tier) {
   return { red: '🔴', yellow: '🟡', green: '🟢' }[tier] ?? '⚪';
 }
 
-function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTitle, isAdminMutation, truncated }) {
+function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTitle, isAdminMutation, truncated, reviewerHints }) {
   const lines = [];
   const emoji = tierEmoji(tier);
   const decisionLine = decision === 'APPROVE'
@@ -619,6 +795,34 @@ function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTit
   lines.push(`**Decision:** ${decisionLine}`);
   lines.push(`**Reviewers:** 🤖 Grok (party 1) → 🤖 Claude (party 2) — both must approve`);
   lines.push('');
+
+  // Reviewer-class hints ─────────────────────────────────────────────────────
+  // Surface which sensitive path classes were matched and which reviewers were
+  // notified, so human reviewers immediately know why they were pinged.
+  if (reviewerHints && reviewerHints.length > 0) {
+    lines.push('### 👥 Reviewer Hints — Sensitive Path Classes Detected');
+    lines.push('');
+    lines.push('The following reviewer classes were auto-notified because this PR touches sensitive paths:');
+    lines.push('');
+    lines.push('| Class | Notified reviewer(s) | Matched files |');
+    lines.push('|-------|----------------------|---------------|');
+    for (const hint of reviewerHints) {
+      const handles = hint.reviewers.map(r => `@${r}`).join(', ');
+      // Truncate matched file list to keep the table readable
+      const maxFiles = 5;
+      const fileCells = hint.matchedFiles
+        .slice(0, maxFiles)
+        .map(f => `\`${f}\``)
+        .join(', ');
+      const overflow = hint.matchedFiles.length > maxFiles
+        ? ` _(+${hint.matchedFiles.length - maxFiles} more)_`
+        : '';
+      lines.push(`| ${hint.label} | ${handles} | ${fileCells}${overflow} |`);
+    }
+    lines.push('');
+    lines.push('> ℹ️ Review requests have been sent to the handles listed above. They do not need to approve before merge (unless they are also a required CODEOWNER for this path), but their expertise is relevant.');
+    lines.push('');
+  }
 
   if (MISSING_DOCS.length > 0) {
     lines.push(`> ⚠️ **Partial context** — the following canonical docs were not found at review time. The LLM reviewed with reduced context. Add these files and re-run to get a fully-informed review:`);
@@ -834,6 +1038,25 @@ async function main() {
     return;
   }
 
+  // ── Dependabot detection ──────────────────────────────────────────────────
+  // Dependabot PRs are mechanical version bumps. We still review them (so the
+  // factory architecture-review check turns green for the merge gate), but if
+  // the diff is purely package.json + lockfile we short-circuit to a narrow
+  // "version-bump sanity" approval rather than burning Grok+Claude tokens on
+  // an architectural review of a one-line semver bump. CI (validate,
+  // dependency-review, package-integration) covers the substantive risk.
+  //
+  // If a Dependabot PR ever ships non-lockfile code (e.g. a config-file
+  // migration that ships with a major version bump), the diff is no longer
+  // "lockfile-only" and the script falls through to the standard pipeline.
+  const isDependabotAuthor =
+    pr.user?.login === 'dependabot[bot]' ||
+    pr.user?.login === 'app/dependabot' ||
+    (pr.user?.type === 'Bot' && /dependabot/i.test(pr.user?.login ?? ''));
+  if (isDependabotAuthor) {
+    console.log('[INFO] Dependabot PR detected — will check for lockfile-only diff after fetching files');
+  }
+
   // Don't re-review if we already have an active (non-dismissed) review on this exact commit.
   // Dismissed reviews don't count — dismiss_stale_reviews_on_push invalidates old approvals
   // when new commits land, so the bot must re-approve on the new SHA.
@@ -873,6 +1096,53 @@ async function main() {
   const files = await gh('GET', `/repos/${ORG}/${repo}/pulls/${prNum}/files`);
   const filenames = files.map(f => f.filename);
 
+  // ── Dependabot fast-path: lockfile-only diffs get a narrow approval ──────
+  // A "lockfile-only" diff touches only package.json, package-lock.json,
+  // pnpm-lock.yaml, yarn.lock, or .npmrc. Anything else (a vendored config,
+  // a generated typescript file, etc.) falls through to the full pipeline.
+  if (isDependabotAuthor) {
+    const LOCKFILE_PATTERNS = [
+      /(^|\/)package\.json$/,
+      /(^|\/)package-lock\.json$/,
+      /(^|\/)pnpm-lock\.yaml$/,
+      /(^|\/)yarn\.lock$/,
+      /(^|\/)\.npmrc$/,
+    ];
+    const lockfileOnly = filenames.length > 0 && filenames.every(
+      f => LOCKFILE_PATTERNS.some(p => p.test(f)),
+    );
+    if (lockfileOnly) {
+      console.log(`[INFO] Dependabot lockfile-only diff (${filenames.length} files) — short-circuiting to APPROVE`);
+      const body = [
+        '## Factory Canonical Review — Dependabot fast-path',
+        '',
+        `**Decision:** APPROVED — lockfile-only dependency bump`,
+        `**Reviewer:** Dependabot fast-path (skips Grok+Claude consensus)`,
+        '',
+        `This PR touches only \`package.json\` / lockfile / \`.npmrc\` files (${filenames.length} file${filenames.length === 1 ? '' : 's'}). The architectural review pipeline is short-circuited because:`,
+        '',
+        '- The diff is mechanical (semver bump + lockfile churn)',
+        '- CI (`validate`, `dependency-review`, `package-integration`) already gates the substantive risk',
+        '- Burning Grok+Claude tokens on a one-line version bump adds no safety',
+        '',
+        'If CI is green and CODEOWNERS approve, this PR is safe to auto-merge.',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Dependabot fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+        console.log('[OK] Added automerge:allow-bot-branch label');
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge:allow-bot-branch: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (dependabot fast-path)`);
+      return;
+    }
+    console.log('[INFO] Dependabot PR includes non-lockfile changes — falling through to full review');
+  }
+
   const tier = detectTier(filenames);
   const adminMutation = hasAdminMutation(filenames);
   const totalDiffChars = files.reduce((n, f) => n + (f.patch?.length ?? 0), 0);
@@ -880,18 +1150,47 @@ async function main() {
 
   console.log(`[INFO] Tier: ${tier} | Files: ${filenames.length} | Diff: ${totalDiffChars} chars | Admin: ${adminMutation}`);
 
+  // ── Reviewer-class hints: detect sensitive paths & build reviewer list ────
+  // This runs for ALL tiers (not just red), so that yellow-tier PRs that touch
+  // security-adjacent files (e.g., auth handlers in apps/**) still trigger hints.
+  const reviewerHints = detectSensitivePathReviewers(filenames);
+  if (reviewerHints.length > 0) {
+    const classNames = reviewerHints.map(h => h.label).join(', ');
+    console.log(`[INFO] Sensitive path classes detected: ${classNames}`);
+  }
+
   // ── Red-tier: immediately request human review ────────────────────────────
   // This triggers a GitHub notification so @HUMAN_REVIEWER can act fast.
   // The review body will contain both LLM verdicts, so they need only one tap.
-  if (tier === 'red' && HUMAN_REVIEWER) {
-    try {
-      // Requesting review sends a free GitHub notification (email + mobile push).
-      // No SMS here — GitHub notification is sufficient for red-tier PRs since the
-      // LLM verdicts will already be in the review body when you open it.
-      await gh('POST', `/repos/${ORG}/${repo}/pulls/${prNum}/requested_reviewers`, { reviewers: [HUMAN_REVIEWER] });
-      console.log(`[INFO] Red-tier PR — requested review from ${HUMAN_REVIEWER} (GitHub notification sent)`);
-    } catch (err) {
-      console.warn(`[WARN] Could not request red-tier review: ${err.message.slice(0, 80)}`);
+  //
+  // For all tiers with reviewer hints: deduplicate across the hint entries and
+  // request each unique reviewer so they get a GitHub notification. The same
+  // reviewer handle may appear in multiple hint entries (e.g., HUMAN_REVIEWER
+  // is the fallback for every class), so we deduplicate before calling the API.
+  {
+    const handleSet = new Set();
+
+    // Always request HUMAN_REVIEWER for red-tier (pre-existing behaviour)
+    if (tier === 'red' && HUMAN_REVIEWER) {
+      handleSet.add(HUMAN_REVIEWER);
+    }
+
+    // Add class-specific reviewers for any matched sensitive paths
+    for (const hint of reviewerHints) {
+      for (const reviewer of hint.reviewers) {
+        handleSet.add(reviewer);
+      }
+    }
+
+    if (handleSet.size > 0) {
+      const reviewersToRequest = [...handleSet];
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/pulls/${prNum}/requested_reviewers`, { reviewers: reviewersToRequest });
+        const reason = tier === 'red' ? 'red-tier' : 'sensitive paths';
+        console.log(`[INFO] Requested review from [${reviewersToRequest.join(', ')}] (${reason})`);
+      } catch (err) {
+        console.warn(`[WARN] Could not request reviewer(s): ${err.message.slice(0, 80)}`);
+      }
     }
   }
 
@@ -976,6 +1275,7 @@ async function main() {
     prTitle: pr.title,
     isAdminMutation: adminMutation,
     truncated,
+    reviewerHints,
   });
 
   await postReview(decision, body);

@@ -6,6 +6,10 @@ import { readMemory, writeMemory } from './memory/d1';
 import { ToolRegistry } from './tools/registry';
 import { GENERATED_CAPABILITIES } from './capabilities.generated';
 import { getTemplateStats, recordRun } from './stats';
+// All GitHub API helpers (fetchApprovedIssues, postPlanComment, addLabel,
+// getPlanApproval) use AbortSignal.timeout(10_000) — see tools/github.ts.
+// sendDigest uses AbortSignal.timeout(5_000) — see tools/pushover.ts.
+// getInstallationToken uses AbortSignal.timeout(10_000) — see tools/github-auth.ts.
 import {
   fetchApprovedIssues,
   postPlanComment,
@@ -17,7 +21,18 @@ import { sendDigest } from './tools/pushover';
 import { getInstallationToken } from './tools/github-auth';
 
 /** Maximum issues processed in a single scheduled run. */
-const PER_RUN_ISSUE_CAP = 10;
+const PER_RUN_ISSUE_CAP = 5;
+
+/**
+ * Wall-clock deadline for a single handleScheduled execution (ms).
+ * Durable Object alarm handlers in the Workers Paid plan are not subject to
+ * the 30 s CPU limit that applies to regular Worker requests. The alarm
+ * handler can run for up to 15 minutes. However, a per-run deadline is still
+ * enforced here as a defensive bound: the loop checks elapsed time before
+ * each issue and exits early if the deadline is approached, rather than
+ * relying solely on PER_RUN_ISSUE_CAP or individual AbortSignal timeouts.
+ */
+const ALARM_SOFT_DEADLINE_MS = 25_000;
 
 /** Lock key used to prevent concurrent supervisor runs. */
 const LOCK_KEY = 'supervisor-run';
@@ -65,7 +80,10 @@ export class SupervisorDO {
           return new Response('not found', { status: 404 });
       }
     } catch (e) {
-      console.error('[supervisor.do] unhandled error:', e instanceof Error ? e.message : String(e));
+      // Log-only: message is truncated and never sent to the client.
+      // Response body is a generic sentinel — no internal details exposed.
+      const logMsg = (e instanceof Error ? e.message : String(e)).slice(0, 200);
+      console.error('[supervisor.do] unhandled error (logged, not returned):', logMsg);
       return new Response(
         JSON.stringify({ error: 'internal error' }),
         { status: 500, headers: { 'content-type': 'application/json' } },
@@ -150,14 +168,35 @@ export class SupervisorDO {
           at: Date.now(),
         });
       } catch (err) {
-        const msg = `fetchApprovedIssues failed: ${String(err)}`;
-        errors.push(msg);
-        console.error('[supervisor]', msg);
+        // Explicitly surface AbortError (from AbortSignal.timeout) as a distinct
+        // timeout log entry — prevents it from being silently swallowed as a
+        // generic failure.
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.warn('[supervisor] github_api_timeout', { op: 'fetchApprovedIssues', limit: 10_000 });
+          errors.push('fetchApprovedIssues timed out after 10 000 ms');
+        } else {
+          const msg = `fetchApprovedIssues failed: ${(err as Error).message?.slice(0, 200) ?? String(err)}`;
+          errors.push(msg);
+          console.error('[supervisor]', msg);
+        }
       }
 
+      // Bound execution time: PER_RUN_ISSUE_CAP limits iterations; ALARM_SOFT_DEADLINE_MS
+      // provides a wall-clock backstop checked before each issue. Each GitHub API call
+      // carries its own AbortSignal.timeout(10_000) so no individual call can hang.
+      const runStart = Date.now();
       const issuesToProcess = issues.slice(0, PER_RUN_ISSUE_CAP);
 
       for (const issue of issuesToProcess) {
+        // Soft deadline check — exit before the next issue if the run is approaching
+        // the time budget. This is defensive: slow API calls should already abort via
+        // their individual AbortSignal.timeout(10_000), but the deadline prevents
+        // accumulation if the clock is close to the cap.
+        if (Date.now() - runStart > ALARM_SOFT_DEADLINE_MS) {
+          console.warn('[supervisor] soft deadline reached — stopping issue processing early');
+          errors.push(`run_soft_deadline: stopped after ${Date.now() - runStart} ms`);
+          break;
+        }
         const combined = `${issue.title} ${issue.body}`.toLowerCase();
         if (combined.includes(LOCKOUT_PHRASE)) {
           console.log(`[supervisor] issue #${issue.number} contains lockout phrase — skipping`);
@@ -169,16 +208,25 @@ export class SupervisorDO {
         }
 
         const searchText = `${issue.title} ${issue.body.slice(0, 500)}`;
-        const template = matchTemplate(searchText, templates);
+        const issueLabels = ((issue as unknown as { labels?: Array<{ name: string }> }).labels ?? []).map((l) => l.name);
+        const template = matchTemplate(searchText, templates, { labels: issueLabels });
 
         if (!template) {
           noTemplate++;
           try {
             await addLabel(ghToken, issue.number, 'supervisor:no-template');
           } catch (err) {
-            const msg = `addLabel(no-template) #${issue.number}: ${String(err)}`;
-            errors.push(msg);
-            console.error('[supervisor]', msg);
+            // Explicitly surface AbortError (from AbortSignal.timeout) as a distinct
+            // timeout log entry — prevents it from being silently swallowed as a
+            // generic failure.
+            if (err instanceof Error && err.name === 'AbortError') {
+              console.warn('[supervisor] github_api_timeout', { op: 'addLabel', limit: 10_000 });
+              errors.push(`addLabel(no-template) #${issue.number}: timed out after 10 000 ms`);
+            } else {
+              const msg = `addLabel(no-template) #${issue.number}: ${(err as Error).message?.slice(0, 200) ?? String(err)}`;
+              errors.push(msg);
+              console.error('[supervisor]', msg);
+            }
           }
           await writeMemory(this.env.MEMORY, `receipt:${runId}:no-template:${issue.number}`, {
             issueNumber: issue.number,
@@ -205,6 +253,7 @@ export class SupervisorDO {
             template.description,
             template.tier,
             plan.steps,
+            template.pattern_check,
           );
 
           try {
@@ -221,9 +270,17 @@ export class SupervisorDO {
               { ...record, at: Date.now() },
             );
           } catch (err) {
-            const msg = `postPlanComment #${issue.number}: ${String(err)}`;
-            errors.push(msg);
-            console.error('[supervisor]', msg);
+            // Explicitly surface AbortError (from AbortSignal.timeout) as a distinct
+            // timeout log entry — prevents it from being silently swallowed as a
+            // generic failure.
+            if (err instanceof Error && err.name === 'AbortError') {
+              console.warn('[supervisor] github_api_timeout', { op: 'postPlanComment', limit: 10_000 });
+              errors.push(`postPlanComment #${issue.number}: timed out after 10 000 ms`);
+            } else {
+              const msg = `postPlanComment #${issue.number}: ${(err as Error).message?.slice(0, 200) ?? String(err)}`;
+              errors.push(msg);
+              console.error('[supervisor]', msg);
+            }
           }
         } else {
           try {
@@ -247,9 +304,17 @@ export class SupervisorDO {
               console.log(`[supervisor] issue #${issue.number} plan approved — queued for execution`);
             }
           } catch (err) {
-            const msg = `getPlanApproval #${issue.number}: ${String(err)}`;
-            errors.push(msg);
-            console.error('[supervisor]', msg);
+            // Explicitly surface AbortError (from AbortSignal.timeout) as a distinct
+            // timeout log entry — prevents it from being silently swallowed as a
+            // generic failure.
+            if (err instanceof Error && err.name === 'AbortError') {
+              console.warn('[supervisor] github_api_timeout', { op: 'getPlanApproval', limit: 10_000 });
+              errors.push(`getPlanApproval #${issue.number}: timed out after 10 000 ms`);
+            } else {
+              const msg = `getPlanApproval #${issue.number}: ${(err as Error).message?.slice(0, 200) ?? String(err)}`;
+              errors.push(msg);
+              console.error('[supervisor]', msg);
+            }
           }
         }
       }

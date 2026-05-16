@@ -1,0 +1,60 @@
+name: Off-Platform Mirror
+
+# Nightly mirror to Codeberg/GitLab so we survive a GitHub outage or account loss.
+# This is BCP plumbing: if you can't pull and you can't push, your business is offline.
+
+on:
+  schedule:
+    - cron: '17 5 * * *'  # 05:17 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offsite-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout (full mirror)
+        run: |
+          git clone --mirror "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" repo.git
+
+      - name: Push mirror to Codeberg
+        if: ${{ vars.CODEBERG_MIRROR_URL != '' }}
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+          CODEBERG_URL: ${{ vars.CODEBERG_MIRROR_URL }}
+        run: |
+          set -euo pipefail
+          cd repo.git
+          authed_url=$(echo "$CODEBERG_URL" | sed "s|https://|https://x-access-token:$CODEBERG_TOKEN@|")
+          git push --mirror "$authed_url"
+
+      - name: Push mirror to GitLab
+        if: ${{ vars.GITLAB_MIRROR_URL != '' }}
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          GITLAB_URL: ${{ vars.GITLAB_MIRROR_URL }}
+        run: |
+          set -euo pipefail
+          cd repo.git
+          authed_url=$(echo "$GITLAB_URL" | sed "s|https://|https://oauth2:$GITLAB_TOKEN@|")
+          git push --mirror "$authed_url"
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+        run: |
+          curl -s --form-string "token=$PUSHOVER_TOKEN" \
+               --form-string "user=$PUSHOVER_USER" \
+               --form-string "title=Factory mirror failed" \
+               --form-string "message=Off-platform mirror to Codeberg/GitLab failed at $(date -u). BCP risk." \
+               --form-string "priority=1" \
+               https://api.pushover.net/1/messages.json

@@ -41,6 +41,12 @@ export function EnvironmentBanner() {
         <span className="hidden sm:inline opacity-75">role: {user?.role}</span>
         <span className="hidden sm:inline opacity-75">session: {remainingLabel}</span>
         <button
+          onClick={() => { logout(); window.location.replace('/login'); }}
+          className="rounded bg-white/15 hover:bg-white/25 px-2 py-1 text-xs font-medium whitespace-nowrap"
+        >
+          Switch env
+        </button>
+        <button
           onClick={logout}
           className="rounded bg-white/15 hover:bg-white/25 px-2 py-1 text-xs font-medium whitespace-nowrap"
         >

@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/design-tokens",
   "version": "0.2.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/design-tokens"
+  },
   "description": "Design system tokens (colors, spacing, typography, motion) for Factory apps",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
