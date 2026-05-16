@@ -43,8 +43,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install pytest
-        run: pip install --quiet pytest pytest-cov
+      - name: Install pytest + script deps
+        run: pip install --quiet pytest pytest-cov pyyaml
 
       - name: Run tests
         working-directory: scripts/tests

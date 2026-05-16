@@ -83,7 +83,7 @@ Inherits the W360 task dashboard convention.
 | **POM-23** | Add Sentry release tracking to every deploy (currently DSN is wired but releases aren't tagged) | 2 hrs | Sentry shows release-tagged events for every deploy of every app |
 | **POM-24** | Stand up cost dashboard: Cloudflare + Neon + GitHub Actions monthly burn, broken down by app | 3 hrs | One markdown report regenerated weekly via scheduled workflow |
 | **POM-25** | Onboard `videoking` and `HumanDesign` to the same release-train discipline as the 6 Phase 7 apps (currently they have their own ad-hoc deploy patterns) | 4 hrs | Both repos use `_app-ci.yml` + `_app-deploy.yml` with environments |
-| **POM-26** | Deprecate the legacy `_external_reviews/videoking` reference in `WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md` now that videoking lives in the org as a first-class peer | 15 min | Dashboard mentions `Latimer-Woods-Tech/videoking` directly |
+| **POM-26** | Deprecate the legacy `_external_reviews/videoking` reference in `WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md` now that videoking lives in the org as a first-class peer | 15 min | Dashboard mentions `Latimer-Woods-Tech/capricast` directly |
 
 ### P3 — future leverage
 

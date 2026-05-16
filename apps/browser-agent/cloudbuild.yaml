@@ -24,13 +24,6 @@ substitutions:
 options:
   logging: CLOUD_LOGGING_ONLY
 
-availableSecrets:
-  secretManager:
-    - versionName: projects/${_PROJECT_ID}/secrets/browser-agent-r2-access-key-id/versions/latest
-      env: R2_ACCESS_KEY_ID
-    - versionName: projects/${_PROJECT_ID}/secrets/browser-agent-r2-secret-access-key/versions/latest
-      env: R2_SECRET_ACCESS_KEY
-
 steps:
   - id: build
     name: gcr.io/cloud-builders/docker
@@ -52,9 +45,6 @@ steps:
 
   - id: deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    secretEnv:
-      - R2_ACCESS_KEY_ID
-      - R2_SECRET_ACCESS_KEY
     entrypoint: gcloud
     args:
       - run
