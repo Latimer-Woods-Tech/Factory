@@ -6,12 +6,20 @@ const RESTRICTED_MODULES = [
   'node:fs',
   'node:path',
   'node:buffer',
+  'node:os',
+  'node:child_process',
+  'fs',
+  'path',
+  'crypto',
+  'buffer',
+  'os',
+  'child_process',
   'express',
   'fastify',
   'next',
 ];
 
-const RESTRICTED_GLOBALS = ['Buffer', '__dirname', '__filename', 'require'];
+const RESTRICTED_GLOBALS = ['Buffer', '__dirname', '__filename', 'require', 'process'];
 
 export default [
   ...tseslint.configs.recommended,
