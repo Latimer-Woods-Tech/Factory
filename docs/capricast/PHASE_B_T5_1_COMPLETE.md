@@ -48,7 +48,7 @@
 ---
 
 ### 3. ✅ GitHub Actions Workflow
-**File:** `Latimer-Woods-Tech/videoking/.github/workflows/slo-collect.yml` _(to be created in the videoking repo — moved out of factory 2026-05-09 as part of orphaned-workflow cleanup)_
+**File:** `Latimer-Woods-Tech/capricast/.github/workflows/slo-collect.yml` _(to be created in the videoking repo — moved out of factory 2026-05-09 as part of orphaned-workflow cleanup)_
 
 **Trigger:** Cron schedule (Monday 9am UTC) + manual workflow_dispatch
 
@@ -253,7 +253,7 @@
 ## Escalation & Support
 
 **If metrics collection fails:**
-1. Check GitHub Actions logs: `Latimer-Woods-Tech/videoking/.github/workflows/slo-collect.yml` _(workflow lives in videoking repo, not factory)_
+1. Check GitHub Actions logs: `Latimer-Woods-Tech/capricast/.github/workflows/slo-collect.yml` _(workflow lives in videoking repo, not factory)_
 2. Verify secrets are set correctly (see pre-deployment checklist)
 3. Test manual collection: `node scripts/videoking-slo-collect.js`
 4. Post to #ops if unresolved after 2 attempts

@@ -36,7 +36,7 @@ Three planes, clean separation:
 | Project | Domain | Repo | State | Finishing gate |
 |---|---|---|---|---|
 | **HumanDesign / selfprime** | selfprime.net | `Latimer-Woods-Tech/HumanDesign` | Mobile rebuild in main. Stripe funnel broken (12 portal / 0 checkouts / 24h). 2 Sentry migration gaps. Canary green. | Walk funnel with real test card, ship `psn.shared_at` + param-count migration fixes, confirm one real conversion. **This weekend, human-led.** |
-| **VideoKing / capricast** | capricast.com | `Latimer-Woods-Tech/videoking` | VK-1..VK-6 done. VK-7, VK-11 pending. | Ship VK-7 → call factory `_app-deploy.yml`. VK-8/9/10/11 via supervisor once Yellow opens (week 5+). |
+| **VideoKing / capricast** | capricast.com | `Latimer-Woods-Tech/capricast` | VK-1..VK-6 done. VK-7, VK-11 pending. | Ship VK-7 → call factory `_app-deploy.yml`. VK-8/9/10/11 via supervisor once Yellow opens (week 5+). |
 | **xico-city / DJMEXXICO** | xicocity.com | `Latimer-Woods-Tech/xico-city` | CI green, Cloud Run processor live, canonical docs v1+v3. | Real artist onboarding loop. Human-led; supervisor monitors. |
 | **focusbro** | focusbro.com | (separate account) | Mainly complete; AdWords acceptance outstanding. | Not a factory migration candidate until AdWords clears. Standby. |
 | **wordis-bond** | wordis-bond.com | `Latimer-Woods-Tech/wordis-bond` | Engine ready, on hold. FDCPA/TCPA risk. | Decide: de-risk, license, or shelve. **Mechanically locked from supervisor (§10).** |

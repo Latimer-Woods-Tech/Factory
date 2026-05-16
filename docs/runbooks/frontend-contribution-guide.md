@@ -16,7 +16,7 @@ export const metadata = {
 ### 1. Clone the repo and install dependencies
 
 ```bash
-git clone https://github.com/Latimer-Woods-Tech/videoking.git
+git clone https://github.com/Latimer-Woods-Tech/capricast.git
 cd apps/web
 
 # Install pnpm if needed
@@ -440,7 +440,7 @@ Once PR is approved and checks pass:
 
 Once staging tests pass, click "Squash and merge" in GitHub.
 
-Auto-deploys to production (itsjusus.com) after 5 min.
+Auto-deploys to production (capricast.com) after 5 min.
 
 ---
 
