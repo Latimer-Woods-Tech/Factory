@@ -1,0 +1,140 @@
+# =============================================================================
+# Reusable migration drift guard for Latimer-Woods-Tech apps.
+#
+# WHAT IT DOES
+#   1. Checks out the calling app repo (to read migration files).
+#   2. Fetches scripts/check-migration-drift.mjs from factory.
+#   3. Installs the postgres driver (no save) and runs the drift check.
+#   4. On cron-triggered runs (is_scheduled=true) sends a Pushover alert when
+#      drift is detected.
+#   5. Fails the job (exit 1) when the repo is ahead of production.
+#
+# WHO CALLS IT
+#   Each app repo's `.github/workflows/migration-drift-guard.yml` on PR
+#   (paths: migrations/**) and on schedule (daily cron).
+#
+# HOW TO CALL
+#   jobs:
+#     drift-guard:
+#       uses: Latimer-Woods-Tech/factory/.github/workflows/_migration-drift-guard.yml@main
+#       with:
+#         app_name: 'HumanDesign'
+#         migrations_path: 'workers/src/db/migrations'
+#         is_scheduled: ${{ github.event_name == 'schedule' }}
+#       secrets:
+#         DATABASE_URL: ${{ secrets.HUMANDESIGN_CONNECTION_STRING }}
+#         PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+#         PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+#
+# REQUIRED INPUTS
+#   app_name         — Human-readable name for alert messages (e.g. "HumanDesign")
+#   migrations_path  — Relative path to the Drizzle migrations folder
+#                      (default: "workers/src/db/migrations")
+#
+# REQUIRED SECRETS
+#   DATABASE_URL     — Direct PostgreSQL connection string for the production
+#                      Neon branch (NOT the Hyperdrive URL). Store in the app
+#                      repo's GitHub secrets as <APP>_CONNECTION_STRING.
+#
+# OPTIONAL SECRETS
+#   PUSHOVER_TOKEN   — Pushover app token; only needed when is_scheduled=true
+#   PUSHOVER_USER    — Pushover user/group key; only needed when is_scheduled=true
+#
+# RELATED
+#   scripts/check-migration-drift.mjs   — Drift detection logic
+#   docs/migrations/sup-1.4-migration-drift-guard/  — HumanDesign caller template
+# =============================================================================
+
+name: _migration-drift-guard
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        type: string
+        required: true
+        description: 'Human-readable app name for alert messages (e.g. HumanDesign)'
+      migrations_path:
+        type: string
+        required: false
+        default: 'workers/src/db/migrations'
+        description: 'Relative path to the Drizzle migrations directory'
+      is_scheduled:
+        type: boolean
+        required: false
+        default: false
+        description: 'Set to true on schedule-triggered runs to enable Pushover alerts'
+    secrets:
+      DATABASE_URL:
+        required: true
+        description: 'Direct Neon connection string for the production branch'
+      PUSHOVER_TOKEN:
+        required: false
+        description: 'Pushover app token (only needed when is_scheduled=true)'
+      PUSHOVER_USER:
+        required: false
+        description: 'Pushover user/group key (only needed when is_scheduled=true)'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  drift-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Check out the calling app repo so migration files are available.
+      - name: Checkout app repo
+        uses: actions/checkout@v6
+
+      # Resolve the exact factory ref that invoked this reusable workflow so
+      # the drift-check script version stays pinned to the same commit.
+      - name: Resolve factory workflow ref
+        id: factory-ref
+        run: |
+          case "$GITHUB_WORKFLOW_REF" in
+            *@*)
+              echo "ref=${GITHUB_WORKFLOW_REF##*@}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unexpected GITHUB_WORKFLOW_REF: $GITHUB_WORKFLOW_REF" >&2
+              exit 1
+              ;;
+          esac
+        env:
+          GITHUB_WORKFLOW_REF: ${{ github.workflow_ref }}
+
+      # Sparse-checkout only the drift detection script — avoids cloning the
+      # entire factory repo.
+      - name: Checkout factory drift script
+        uses: actions/checkout@v6
+        with:
+          repository: Latimer-Woods-Tech/factory
+          ref: ${{ steps.factory-ref.outputs.ref }}
+          path: .factory-scripts
+          sparse-checkout: |
+            scripts/check-migration-drift.mjs
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      # Install the postgres driver into the workspace so the script can import
+      # it via Node's standard module resolution. --no-save keeps this transient.
+      - name: Install postgres driver
+        run: npm install --no-save postgres
+
+      - name: Check migration drift
+        run: node .factory-scripts/scripts/check-migration-drift.mjs
+        env:
+          MIGRATIONS_DIR: ${{ inputs.migrations_path }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          APP_NAME: ${{ inputs.app_name }}
+          SEND_PUSHOVER: ${{ inputs.is_scheduled && '1' || '0' }}
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
