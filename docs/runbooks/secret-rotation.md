@@ -121,7 +121,12 @@ Or via GitHub web: **Repo → Settings → Secrets and variables → Actions**.
 
 Factory package publishing uses npm Trusted Publishers (GitHub Actions OIDC), so `NPM_TOKEN` is no longer required for publish workflows.
 
-After validating OIDC publish succeeds, revoke the legacy npm token:
+Before revoking the legacy npm token, validate OIDC publish works:
+
+- Trigger publish workflow once and confirm logs show npm publishing via GitHub Actions OIDC trusted publisher.
+- Confirm the published package version has GitHub provenance in npmjs.com package details.
+
+After OIDC validation, revoke the legacy npm token:
 
 1. npmjs.com → **Access Tokens** → revoke the old automation token.
 2. Remove `NPM_TOKEN` from GitHub Actions secrets in this repo (and app repos using OIDC publish).
