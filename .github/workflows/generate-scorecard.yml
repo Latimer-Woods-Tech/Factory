@@ -7,20 +7,21 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   scorecard:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - name: Run scorecard generator
         run: node scripts/generate-scorecard.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_SCORECARD }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_SCORECARD || secrets.SLACK_WEBHOOK_OPS }}
           SCORECARD_REPO_OWNER: adrper79-dot
           SCORECARD_REPO_NAME: factory
       - name: Commit generated scorecard

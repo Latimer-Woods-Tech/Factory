@@ -234,31 +234,22 @@ workers:
         line: ~10
         pattern: "https://admin-studio-production.adrper79.workers.dev"
 
-  - id: videoking
-    name: nichestream-api                                  # Cloudflare Worker serving VideoKing API
-    legacy_names: [videoking]                              # historical worker name used in docs; CF name is nichestream-api
-    repo: Latimer-Woods-Tech/videoking
-    url: https://api.itsjusus.com
-    custom_domain: api.itsjusus.com
-    health_endpoint: /health
-    deployment_status: custom_domain_outage_1016_reported_2026-05-02
-    notes: >
-      VideoKing production traffic is split across `itsjusus.com` (Pages),
-      `api.itsjusus.com` (Worker), and `assets.itsjusus.com` (R2 custom domain).
-      Factory owns the domain-attachment and CI/CD migration workflows for this app.
-      Use `fix-videoking-domains.yml` to re-attach the API/assets domains and
-      `push-videoking-worker-secrets.yml` plus the reusable app workflows for runtime sync.
-      Hyperdrive ID for VideoKing DB: 72697ebbf0d44419850743679390acf1 (videoking-hyperdrive).
-    consumers: []
-
   - id: capricast-api
-    name: capricast-api                                        # matches wrangler.jsonc name in videoking repo
-    repo: Latimer-Woods-Tech/videoking
+    name: capricast-api                                        # matches wrangler.jsonc name in capricast repo
+    legacy_names: [videoking, nichestream-api]                 # historical names before 2026-05-15 rename
+    repo: Latimer-Woods-Tech/capricast
     url: https://api.capricast.com                             # canonical custom domain (branded)
     workers_dev_url: https://capricast-api.adrper79.workers.dev
     custom_domain: api.capricast.com
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    deployment_status: live
+    notes: >
+      Capricast production traffic is split across `capricast.com` (Pages),
+      `api.capricast.com` (Worker), and `assets.capricast.com` (R2 custom domain).
+      Factory owns the domain-attachment and CI/CD migration workflows for this app.
+      Hyperdrive ID for Capricast DB: 72697ebbf0d44419850743679390acf1 (videoking-hyperdrive — name not yet rotated).
+      Legacy `*.itsjusus.com` domains still attached pending DNS cutover (assets.capricast.com awaits R2 public domain attach).
     consumers: []
 
   - id: cypher-healing
@@ -422,6 +413,13 @@ packages:
     version: "1.0.0"
     main_use: "JWT auth, RBAC, middleware"
     videoking_used: true
+    depends_on: ["errors", "logger"]
+
+  - name: "@latimer-woods-tech/browser"
+    status: "Staging"
+    version: "0.1.0"
+    main_use: "Cloud Run Browser Agent client for scrape and screenshot automation"
+    videoking_used: false
     depends_on: ["errors", "logger"]
     
   - name: "@latimer-woods-tech/neon"
