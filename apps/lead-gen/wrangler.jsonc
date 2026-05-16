@@ -9,6 +9,9 @@
   "vars": {
     "ENVIRONMENT": "production"
   },
+  "triggers": {
+    "crons": ["0 10 * * *"]
+  },
   "queues": {
     "producers": [
       {
