@@ -28,6 +28,7 @@ async function signPayload(payload: string, secret: string, timestamp: number): 
 
 type KVGetOptions = Parameters<KVNamespace['get']>[1];
 type KVPutOptions = Parameters<KVNamespace['put']>[2];
+type D1BindValue = string | number | null;
 
 function makeKV(store: Map<string, string> = new Map()): KVNamespace {
   return {
@@ -41,20 +42,42 @@ function makeKV(store: Map<string, string> = new Map()): KVNamespace {
   } as unknown as KVNamespace;
 }
 
-function makeEnv(kv: KVNamespace = makeKV()): Record<string, unknown> {
+function makeD1(shouldFail = false): { db: D1Database; binds: D1BindValue[][] } {
+  const binds: D1BindValue[][] = [];
+  const db = {
+    prepare: vi.fn((_sql: string) => ({
+      bind: vi.fn((...values: D1BindValue[]) => {
+        binds.push(values);
+        return {
+          run: vi.fn(async () => {
+            if (shouldFail) throw new Error('D1 unavailable');
+            return { success: true };
+          }),
+        };
+      }),
+    })),
+  } as unknown as D1Database;
+  return { db, binds };
+}
+
+function makeEnv(kv: KVNamespace = makeKV(), db: D1Database = makeD1().db): Record<string, unknown> {
   return {
     STRIPE_WEBHOOK_SECRET: TEST_SECRET,
-    CHARTMOGUL_API_KEY: 'test-chartmogul-key',
-    LOOPS_API_KEY: 'test-loops-key',
-    CHARTMOGUL_DATA_SOURCE_UUID: 'ds_test-uuid',
+    POSTHOG_API_KEY: 'test-posthog-key',
+    RESEND_API_KEY: 'test-resend-key',
+    RESEND_FROM: 'Factory <noreply@latwoodtech.com>',
+    FACTORY_EVENTS_DB: db,
     IDEMPOTENCY_KV: kv,
     ENVIRONMENT: 'test',
   };
 }
 
-function makeCtx(): ExecutionContext {
+function makeCtx(waitUntilPromises: Promise<unknown>[] = []): ExecutionContext {
   return {
-    waitUntil: vi.fn((p: Promise<unknown>) => { p.catch(() => {}); }),
+    waitUntil: vi.fn((p: Promise<unknown>) => {
+      waitUntilPromises.push(p);
+      p.catch(() => {});
+    }),
     passThroughOnException: vi.fn(),
   } as unknown as ExecutionContext;
 }
@@ -78,6 +101,7 @@ async function postStripe(
   payload: string,
   sigHeader: string,
   env: Record<string, unknown>,
+  ctx: ExecutionContext = makeCtx(),
 ): Promise<Response> {
   const req = new Request('https://webhooks.latwoodtech.com/stripe', {
     method: 'POST',
@@ -87,7 +111,7 @@ async function postStripe(
     },
     body: payload,
   });
-  return app.fetch(req, env, makeCtx());
+  return app.fetch(req, env, ctx);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +150,104 @@ describe('webhook-fanout Worker', () => {
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;
     expect(body['ok']).toBe(true);
+  });
+
+  it('fans out to PostHog, factory_events, and Resend only', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'sent_test' }), { status: 200 }),
+    );
+    const { db, binds } = makeD1();
+    const waitUntilPromises: Promise<unknown>[] = [];
+
+    const event = makeStripeEvent('customer.subscription.updated', {
+      customer: 'cus_real123',
+      customer_email: 'subscriber@realcustomer.com',
+      status: 'active',
+      items: { data: [{ plan: { nickname: 'Pro' } }] },
+    });
+    const payload = JSON.stringify(event);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigHeader = await signPayload(payload, TEST_SECRET, ts);
+
+    const res = await postStripe(payload, sigHeader, makeEnv(makeKV(), db), makeCtx(waitUntilPromises));
+    expect(res.status).toBe(200);
+
+    await Promise.all(waitUntilPromises);
+
+    const urls = fetchSpy.mock.calls.map(([url]) => String(url));
+    expect(urls).toEqual([
+      'https://app.posthog.com/capture/',
+      'https://api.resend.com/emails',
+    ]);
+    const hosts = urls.map(url => new URL(url).hostname);
+    expect(hosts).not.toContain('api.chartmogul.com');
+    expect(hosts).not.toContain('app.loops.so');
+    expect(binds).toHaveLength(1);
+    expect(binds[0]?.[0]).toBe('webhook-fanout');
+    expect(binds[0]?.[1]).toBe('stripe.customer.subscription.updated');
+    expect(JSON.parse(String(binds[0]?.[2]))).toMatchObject({
+      stripeEventId: event.id,
+      stripeEventType: 'customer.subscription.updated',
+      subscriptionPlan: 'Pro',
+      subscriptionStatus: 'active',
+    });
+    expect(binds[0]?.[3]).toBe('cus_real123');
+    expect(new Date(String(binds[0]?.[4])).toISOString()).toBe(binds[0]?.[4]);
+  });
+
+  it.each([
+    ['invoice.payment_failed', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Factory payment needs attention'],
+    ['customer.subscription.trial_will_end', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Your Factory trial is ending soon'],
+    ['customer.subscription.deleted', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Factory subscription ended'],
+    ['customer.subscription.created', { customer: 'cus_real123', customer_email: 'subscriber@realcustomer.com' }, 'Factory subscription started'],
+    ['customer.updated', {}, 'Factory account update'],
+  ])('uses the expected Resend subject for %s', async (eventType, extra, expectedSubject) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'sent_test' }), { status: 200 }),
+    );
+    const waitUntilPromises: Promise<unknown>[] = [];
+
+    const event = makeStripeEvent(eventType, extra);
+    const payload = JSON.stringify(event);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigHeader = await signPayload(payload, TEST_SECRET, ts);
+
+    const res = await postStripe(payload, sigHeader, makeEnv(), makeCtx(waitUntilPromises));
+    expect(res.status).toBe(200);
+
+    await Promise.all(waitUntilPromises);
+
+    const resendCall = fetchSpy.mock.calls.find(([url]) => String(url) === 'https://api.resend.com/emails');
+    const body = JSON.parse(String(resendCall?.[1]?.body)) as { subject: string; html: string; text: string };
+    expect(body.subject).toBe(expectedSubject);
+    expect(body.html).toContain('<p>');
+    expect(body.text.length).toBeGreaterThan(0);
+  });
+
+  it('logs factory_events failures without blocking PostHog or Resend fan-out', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ id: 'sent_test' }), { status: 200 }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { db } = makeD1(true);
+    const waitUntilPromises: Promise<unknown>[] = [];
+
+    const event = makeStripeEvent('invoice.payment_failed', {
+      customer: 'cus_real123',
+      customer_email: 'subscriber@realcustomer.com',
+      next_payment_attempt: 1_776_000_000,
+    });
+    const payload = JSON.stringify(event);
+    const ts = Math.floor(Date.now() / 1000);
+    const sigHeader = await signPayload(payload, TEST_SECRET, ts);
+
+    const res = await postStripe(payload, sigHeader, makeEnv(makeKV(), db), makeCtx(waitUntilPromises));
+    expect(res.status).toBe(200);
+
+    await Promise.all(waitUntilPromises);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(errorSpy.mock.calls.some(([msg]) => String(msg).includes('[factory_events] fan-out error'))).toBe(true);
   });
 
   it('returns 401 for an invalid Stripe signature', async () => {
