@@ -19,3 +19,6 @@ package-lock.json
 !apps/supervisor/package-lock.json
 !apps/browser-agent/package-lock.json
 !packages/browser/package-lock.json
+
+# Storybook
+storybook-static
