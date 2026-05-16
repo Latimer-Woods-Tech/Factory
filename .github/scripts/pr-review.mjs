@@ -437,14 +437,18 @@ function buildConstraintBlock(repoName) {
   // just being told they exist. Soft-warn (not MISSING_DOCS) because both are
   // genuinely optional: STATE.md is auto-generated, PATTERNS.md is operator-
   // maintained, neither blocks a review.
-  const state = loadDoc('docs/STATE.md', 5000);
+  //
+  // Budgets matched to actual file sizes at 2026-05-15: STATE.md ≈ 4.3k,
+  // PATTERNS.md ≈ 7.6k. The 8000-char ceiling gives both room to grow ~5%
+  // before truncation; raise here when adding new top-level sections.
+  const state = loadDoc('docs/STATE.md', 8000);
   if (state) {
     sections.push(`## docs/STATE.md — Current Operating State (auto-generated)\n\n${state}`);
   } else {
     console.warn('[WARN] docs/STATE.md not found — review proceeds without current-state context');
   }
 
-  const patterns = loadDoc('docs/architecture/PATTERNS.md', 5000);
+  const patterns = loadDoc('docs/architecture/PATTERNS.md', 10000);
   if (patterns) {
     sections.push(`## docs/architecture/PATTERNS.md — Operational Patterns (symptom → cause → fix)\n\n${patterns}`);
   } else {
