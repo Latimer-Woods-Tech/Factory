@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 import { toErrorResponse } from '@latimer-woods-tech/errors';
 import {
   createLogger,
@@ -92,134 +93,113 @@ function isSynthetic(obj: Record<string, unknown>): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Loops helpers — use LOOPS_API_KEY directly (proxy has known issues)
+// STACK.md-approved fan-out helpers: PostHog + factory_events, Resend
 // ---------------------------------------------------------------------------
 
-async function loopsUpsertContact(
+async function capturePostHogEvent(
   apiKey: string,
-  email: string,
-  props: Record<string, unknown>,
+  distinctId: string,
+  eventName: string,
+  properties: Record<string, unknown>,
 ): Promise<void> {
-  const body = JSON.stringify({ email, ...props });
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${apiKey}`,
-  };
-
-  // Try update first; fall back to create on 404
-  let res = await fetchWithTimeout('https://app.loops.so/api/v1/contacts/update', {
-    method: 'PUT',
-    headers,
-    body,
+  const res = await fetchWithTimeout('https://app.posthog.com/capture/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      api_key: apiKey,
+      event: eventName,
+      distinct_id: distinctId,
+      properties,
+      timestamp: new Date().toISOString(),
+    }),
   });
-
-  if (res.status === 404) {
-    res = await fetchWithTimeout('https://app.loops.so/api/v1/contacts/create', {
-      method: 'POST',
-      headers,
-      body,
-    });
-  }
 
   if (!res.ok) {
     const text = await res.text();
-    console.error(
-      JSON.stringify({ level: 'error', msg: '[loops] upsertContact failed', status: res.status, responseBody: text }),
-    );
+    throw new Error(`PostHog capture failed (${String(res.status)}): ${text}`);
   }
 }
 
-async function loopsSendEvent(
+async function insertFactoryEvent(
+  db: D1Database,
+  eventName: string,
+  userId: string | undefined,
+  properties: Record<string, unknown>,
+): Promise<void> {
+  // Mirrors the @latimer-woods-tech/analytics factory_events insert contract.
+  await db.prepare(
+    `INSERT INTO factory_events (app_id, event, properties, user_id, occurred_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  )
+    .bind('webhook-fanout', eventName, JSON.stringify(properties), userId ?? null, new Date().toISOString())
+    .run();
+}
+
+function lifecycleEmailContent(eventName: string): { subject: string; html: string; text: string } {
+  if (eventName === 'stripe.invoice.payment_failed') {
+    return {
+      subject: 'Factory payment needs attention',
+      html: '<p>Your Factory payment could not be completed. Please update your billing details to keep your subscription active.</p>',
+      text: 'Your Factory payment could not be completed. Please update your billing details to keep your subscription active.',
+    };
+  }
+  if (eventName === 'stripe.customer.subscription.trial_will_end') {
+    return {
+      subject: 'Your Factory trial is ending soon',
+      html: '<p>Your Factory trial is ending soon. Review your account to choose the subscription that fits your work.</p>',
+      text: 'Your Factory trial is ending soon. Review your account to choose the subscription that fits your work.',
+    };
+  }
+  if (eventName === 'stripe.customer.subscription.deleted') {
+    return {
+      subject: 'Factory subscription ended',
+      html: '<p>Your Factory subscription has ended. You can reactivate from your account when you are ready.</p>',
+      text: 'Your Factory subscription has ended. You can reactivate from your account when you are ready.',
+    };
+  }
+  if (eventName === 'stripe.customer.subscription.created') {
+    return {
+      subject: 'Factory subscription started',
+      html: '<p>Your Factory subscription is active. Thanks for building with Factory.</p>',
+      text: 'Your Factory subscription is active. Thanks for building with Factory.',
+    };
+  }
+  return {
+    subject: 'Factory account update',
+    html: '<p>Your Factory account has a new lifecycle update.</p>',
+    text: 'Your Factory account has a new lifecycle update.',
+  };
+}
+
+async function sendResendLifecycleEmail(
   apiKey: string,
+  from: string,
   email: string,
   eventName: string,
   eventProperties: Record<string, unknown>,
 ): Promise<void> {
-  const res = await fetchWithTimeout('https://app.loops.so/api/v1/events/send', {
+  const content = lifecycleEmailContent(eventName);
+  const res = await fetchWithTimeout('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ email, eventName, eventProperties }),
+    body: JSON.stringify({
+      from,
+      to: email,
+      subject: content.subject,
+      html: content.html,
+      text: content.text,
+      tags: [{ name: 'stripe_event', value: eventName }],
+      metadata: eventProperties,
+    }),
   });
 
   if (!res.ok) {
     const text = await res.text();
-    console.error(
-      JSON.stringify({ level: 'error', msg: `[loops] sendEvent ${eventName} failed`, status: res.status, responseBody: text }),
-    );
+    throw new Error(`Resend lifecycle email failed (${String(res.status)}): ${text}`);
   }
-}
-
-// ---------------------------------------------------------------------------
-// ChartMogul helpers
-// ---------------------------------------------------------------------------
-
-async function chartMogulUpsertCustomer(
-  apiKey: string,
-  dataSourceUuid: string,
-  externalId: string,
-  email: string,
-  name: string,
-): Promise<string | null> {
-  const authHeader = `Basic ${btoa(`${apiKey}:`)}`;
-
-  // Search for existing customer by external_id
-  const searchRes = await fetchWithTimeout(
-    `https://api.chartmogul.com/v1/customers?external_id=${encodeURIComponent(externalId)}&data_source_uuid=${encodeURIComponent(dataSourceUuid)}`,
-    { headers: { Authorization: authHeader } },
-  );
-
-  if (searchRes.ok) {
-    const data = await searchRes.json() as { entries?: Array<{ uuid: string }> };
-    if (data.entries && data.entries.length > 0) {
-      const uuid = data.entries[0]!.uuid;
-      await fetchWithTimeout(`https://api.chartmogul.com/v1/customers/${uuid}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
-        body: JSON.stringify({ name, email }),
-      });
-      return uuid;
-    }
-  }
-
-  const createRes = await fetchWithTimeout('https://api.chartmogul.com/v1/customers', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: authHeader },
-    body: JSON.stringify({ data_source_uuid: dataSourceUuid, external_id: externalId, name, email }),
-  });
-
-  if (!createRes.ok) {
-    const text = await createRes.text();
-    console.error(
-      JSON.stringify({ level: 'error', msg: '[chartmogul] create customer failed', status: createRes.status, responseBody: text }),
-    );
-    return null;
-  }
-
-  const created = await createRes.json() as { uuid: string };
-  return created.uuid;
-}
-
-/**
- * Stub: full subscription sync is a follow-up per issue #641 notes.
- * Will be completed in the @latimer-woods-tech/webhooks package extraction.
- */
-async function upsertChartMogulSubscription(
-  _apiKey: string,
-  customerUuid: string,
-  subscription: Record<string, unknown>,
-): Promise<void> {
-  console.log(
-    JSON.stringify({
-      level: 'info',
-      msg: '[chartmogul] subscription upsert stub — follow-up issue',
-      customerUuid,
-      subscriptionId: subscription['id'],
-      subscriptionStatus: subscription['status'],
-    }),
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -251,7 +231,7 @@ interface StripeEvent {
   data: { object: Record<string, unknown> };
 }
 
-function extractLoopsEventProps(event: StripeEvent): Record<string, unknown> {
+function extractEventProps(event: StripeEvent): Record<string, unknown> {
   const obj = event.data.object;
   const props: Record<string, unknown> = {};
 
@@ -314,44 +294,45 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
 
   const tasks: Promise<void>[] = [];
 
-  // Loops: upsert contact then fire named event
-  const contactProps: Record<string, unknown> = {};
-  if (customerName) contactProps['firstName'] = customerName;
-  if (customerId) contactProps['userId'] = customerId;
-  const eventProps = extractLoopsEventProps(event);
+  const eventName = `stripe.${event.type}`;
+  const eventProps = {
+    ...extractEventProps(event),
+    stripeEventId: event.id,
+    stripeEventType: event.type,
+    customerId,
+    customerName,
+  };
+  const distinctId = customerId ?? email;
 
   tasks.push(
-    loopsUpsertContact(env.LOOPS_API_KEY, email, contactProps)
-      .then(() => loopsSendEvent(env.LOOPS_API_KEY, email!, `stripe.${event.type}`, eventProps))
+    capturePostHogEvent(env.POSTHOG_API_KEY, distinctId, eventName, eventProps)
       .catch(err => {
         console.error(
-          JSON.stringify({ level: 'error', msg: '[loops] fan-out error', error: err instanceof Error ? err.message : String(err) }),
+          JSON.stringify({ level: 'error', msg: '[posthog] fan-out error', error: err instanceof Error ? err.message : String(err) }),
         );
         throw err;
       }),
   );
 
-  // ChartMogul: subscription events only
-  if (SUBSCRIPTION_EVENTS.has(event.type) && customerId) {
-    tasks.push(
-      chartMogulUpsertCustomer(
-        env.CHARTMOGUL_API_KEY,
-        env.CHARTMOGUL_DATA_SOURCE_UUID,
-        customerId,
-        email,
-        customerName ?? email,
-      )
-        .then(uuid => {
-          if (uuid) return upsertChartMogulSubscription(env.CHARTMOGUL_API_KEY, uuid, obj);
-        })
-        .catch(err => {
-          console.error(
-            JSON.stringify({ level: 'error', msg: '[chartmogul] fan-out error', error: err instanceof Error ? err.message : String(err) }),
-          );
-          throw err;
-        }),
-    );
-  }
+  tasks.push(
+    insertFactoryEvent(env.FACTORY_EVENTS_DB, eventName, customerId, eventProps)
+      .catch(err => {
+        console.error(
+          JSON.stringify({ level: 'error', msg: '[factory_events] fan-out error', error: err instanceof Error ? err.message : String(err) }),
+        );
+        throw err;
+      }),
+  );
+
+  tasks.push(
+    sendResendLifecycleEmail(env.RESEND_API_KEY, env.RESEND_FROM, email, eventName, eventProps)
+      .catch(err => {
+        console.error(
+          JSON.stringify({ level: 'error', msg: '[resend] fan-out error', error: err instanceof Error ? err.message : String(err) }),
+        );
+        throw err;
+      }),
+  );
 
   const results = await Promise.allSettled(tasks);
   const failed = results.filter(r => r.status === 'rejected');
@@ -375,7 +356,8 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
 
 const app = new Hono<{ Bindings: Env }>();
 
-app.use('*', requestTracingMiddleware());
+const requestTracing = requestTracingMiddleware() as unknown as MiddlewareHandler<{ Bindings: Env }>;
+app.use('*', requestTracing);
 
 app.get('/health', c =>
   c.json({
