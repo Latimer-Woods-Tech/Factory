@@ -505,6 +505,7 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - Type safety holes (unsafe casts, untyped generics)
 - Package dependency order violations in packages/**
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
+- **Violation of any pattern in \`docs/architecture/PATTERNS.md\`** (loaded into your context above). Match the diff against patterns by file type — workflows that commit to main, scripts that fetch secrets, scripts that diff dirs against HEAD without staging, gcloud calls without \`--project\`, etc. **Cite the pattern number in the flag** (e.g., "violates PATTERNS.md #3: direct push to main is blocked by branch protection"). This is how the institutional memory becomes enforceable, not just documented.
 
 ### Security — flag as architectural_concern (blocks merge)
 - SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input

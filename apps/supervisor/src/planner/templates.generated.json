@@ -265,6 +265,10 @@
       "naming",
       "convention"
     ],
+    "pattern_check": [
+      3,
+      4
+    ],
     "triggers": {
       "labels_any_of": [
         "docs",
