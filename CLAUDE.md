@@ -86,6 +86,7 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 21. `@latimer-woods-tech/video` (deps: errors) — Cloudflare Stream + R2 wrappers
 22. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
 23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
+24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
 
 ## Video Production Pipeline
 The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg):
