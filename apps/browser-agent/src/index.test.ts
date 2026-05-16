@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createApp } from './index.js';
 import type { BrowserAutomation } from './index.js';
 
+const runScenarioMock = vi.fn().mockResolvedValue({
+  completedSteps: 2,
+  videoKey: null,
+  videoUrl: null,
+  finishedAt: '2026-05-15T00:00:00.000Z',
+});
+
 const mockAutomation: BrowserAutomation = {
   scrape: vi.fn().mockResolvedValue({
     url: 'https://example.com',
@@ -14,12 +21,7 @@ const mockAutomation: BrowserAutomation = {
     mimeType: 'image/png',
     dataBase64: 'abc123',
   }),
-  runScenario: vi.fn().mockResolvedValue({
-    completedSteps: 2,
-    videoKey: null,
-    videoUrl: null,
-    finishedAt: '2026-05-15T00:00:00.000Z',
-  }),
+  runScenario: runScenarioMock,
 };
 
 describe('browser-agent', () => {
@@ -33,7 +35,7 @@ describe('browser-agent', () => {
     it('returns 200 with status ok', async () => {
       const res = await app.request('/health');
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body: unknown = await res.json();
       expect(body).toEqual({ status: 'ok', service: 'browser-agent' });
     });
   });
@@ -46,7 +48,7 @@ describe('browser-agent', () => {
         body: JSON.stringify({ url: 'https://example.com', selectors: { title: 'h1' } }),
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body: unknown = await res.json();
       expect(body).toHaveProperty('url', 'https://example.com');
       expect(body).toHaveProperty('results');
     });
@@ -78,7 +80,7 @@ describe('browser-agent', () => {
         body: JSON.stringify({ url: 'https://example.com' }),
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body: unknown = await res.json();
       expect(body).toHaveProperty('mimeType', 'image/png');
       expect(body).toHaveProperty('dataBase64');
     });
@@ -106,12 +108,12 @@ describe('browser-agent', () => {
         }),
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body: unknown = await res.json();
       expect(body).toHaveProperty('completedSteps', 2);
       expect(body).toHaveProperty('videoKey', null);
       expect(body).toHaveProperty('videoUrl', null);
       expect(body).toHaveProperty('finishedAt');
-      expect(mockAutomation.runScenario).toHaveBeenCalledOnce();
+      expect(runScenarioMock).toHaveBeenCalledOnce();
     });
 
     it('returns 422 when steps is empty', async () => {
