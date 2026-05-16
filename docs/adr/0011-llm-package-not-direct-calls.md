@@ -1,4 +1,4 @@
-# 0003: LLM calls via @latimer-woods-tech/llm, not direct provider APIs
+# 0011: LLM calls via @latimer-woods-tech/llm, not direct provider APIs
 
 **Date:** 2026-04-30  **Status:** Accepted
 
