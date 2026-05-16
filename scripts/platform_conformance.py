@@ -313,10 +313,10 @@ def has_typed_env_bindings(repo: str) -> bool:
     env_declaration_patterns = ('"interface Env"', '"type Env ="')
     typed_binding_patterns = ('"new Hono<{ Bindings: Env"', '"Bindings: Env"')
 
-    env_declaration_queries = [f"path:{root}/ {pattern}" for root in search_roots for pattern in env_declaration_patterns]
-    typed_binding_queries = [f"path:{root}/ {pattern}" for root in search_roots for pattern in typed_binding_patterns]
-    has_env_declaration = any_search_hit(repo, env_declaration_queries)
-    has_typed_bindings = any_search_hit(repo, typed_binding_queries)
+    env_queries = [f"path:{root}/ {pattern}" for root in search_roots for pattern in env_declaration_patterns]
+    binding_queries = [f"path:{root}/ {pattern}" for root in search_roots for pattern in typed_binding_patterns]
+    has_env_declaration = any_search_hit(repo, env_queries)
+    has_typed_bindings = any_search_hit(repo, binding_queries)
     return has_env_declaration and has_typed_bindings
 
 
