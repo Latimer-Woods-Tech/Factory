@@ -1,4 +1,4 @@
-# ADR-0004 — Dependency Version Policy
+# ADR-0012 — Dependency Version Policy
 
 **Status**: Accepted  
 **Date**: 2026-05-05  
