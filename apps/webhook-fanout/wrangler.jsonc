@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
-  // webhook-fanout — Stripe → ChartMogul + Loops fan-out Worker
+  // webhook-fanout — Stripe → PostHog/factory_events + Resend fan-out Worker
   // Deployed at: https://webhooks.latwoodtech.com/stripe
   // Issue: Latimer-Woods-Tech/factory#641
   "name": "webhook-fanout",
@@ -27,13 +27,21 @@
 
   "vars": {
     "ENVIRONMENT": "development",
-    "CHARTMOGUL_DATA_SOURCE_UUID": "ds_036fc9e8-4e03-11f1-ae13-0f418c0c0aca"
+    "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
   },
+
+  "d1_databases": [
+    {
+      "binding": "FACTORY_EVENTS_DB",
+      "database_name": "factory-events",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
 
   // Required secrets (set via `wrangler secret put <NAME>` or org-level GitHub secrets):
   //   STRIPE_WEBHOOK_SECRET   — from Stripe dashboard after endpoint registration
-  //   CHARTMOGUL_API_KEY      — see issue #641 Dependencies section
-  //   LOOPS_API_KEY           — see issue #641 Dependencies section
+  //   POSTHOG_API_KEY         — PostHog project API key
+  //   RESEND_API_KEY          — Resend API key
 
   "env": {
     "production": {
@@ -52,8 +60,15 @@
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "CHARTMOGUL_DATA_SOURCE_UUID": "ds_036fc9e8-4e03-11f1-ae13-0f418c0c0aca"
-      }
+        "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+      },
+      "d1_databases": [
+        {
+          "binding": "FACTORY_EVENTS_DB",
+          "database_name": "factory-events",
+          "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+        }
+      ]
     }
   }
 }
