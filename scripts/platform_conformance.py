@@ -473,15 +473,24 @@ def dim_privacy(repo: str) -> DimensionScore:
         or gh_get_file(repo, "docs/privacy/RETENTION.md")
         or gh_get_file(repo, "docs/runbooks/compliance.md")
     )
-    export_hint = (
-        gh_search_code(repo, "data-export") > 0
-        or gh_search_code(repo, "/api/me/export") > 0
-        or gh_search_code(repo, "/v1/me/data-export") > 0
-        or gh_search_code(repo, "/privacy/export") > 0
+    def has_search_hit(*queries: str) -> bool:
+        return any(gh_search_code(repo, q) > 0 for q in queries)
+
+    export_hint = has_search_hit(
+        '"data-export"',
+        "data-export",
+        '"/api/me/export"',
+        "/api/me/export",
+        '"/v1/me/data-export"',
+        "/v1/me/data-export",
+        '"/privacy/export"',
+        "/privacy/export",
     )
-    delete_hint = (
-        gh_search_code(repo, "DELETE /api/me") > 0
-        or gh_search_code(repo, "/privacy/delete") > 0
+    delete_hint = has_search_hit(
+        '"DELETE /api/me"',
+        "DELETE /api/me",
+        '"/privacy/delete"',
+        "/privacy/delete",
     )
 
     checks = [
