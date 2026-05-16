@@ -431,6 +431,30 @@ function buildConstraintBlock(repoName) {
     console.warn('[WARN] docs/supervisor/FRIDGE.md not found on disk');
   }
 
+  // Tier 3 context injection — current operating state + operational patterns.
+  // CLAUDE.md's reading order tells the reviewer to consult these files; this
+  // concat lets the reviewer actually see them in the same prompt rather than
+  // just being told they exist. Soft-warn (not MISSING_DOCS) because both are
+  // genuinely optional: STATE.md is auto-generated, PATTERNS.md is operator-
+  // maintained, neither blocks a review.
+  //
+  // Budgets matched to actual file sizes at 2026-05-15: STATE.md ≈ 4.3k,
+  // PATTERNS.md ≈ 7.6k. The 8000-char ceiling gives both room to grow ~5%
+  // before truncation; raise here when adding new top-level sections.
+  const state = loadDoc('docs/STATE.md', 8000);
+  if (state) {
+    sections.push(`## docs/STATE.md — Current Operating State (auto-generated)\n\n${state}`);
+  } else {
+    console.warn('[WARN] docs/STATE.md not found — review proceeds without current-state context');
+  }
+
+  const patterns = loadDoc('docs/architecture/PATTERNS.md', 10000);
+  if (patterns) {
+    sections.push(`## docs/architecture/PATTERNS.md — Operational Patterns (symptom → cause → fix)\n\n${patterns}`);
+  } else {
+    console.warn('[WARN] docs/architecture/PATTERNS.md not found — review proceeds without operational-patterns context');
+  }
+
   // Per-repo standing orders for cross-repo reviews (.github/repo-contexts/{repo}/CLAUDE.md)
   if (repoName && repoName !== 'factory') {
     const perRepo = loadDoc(`.github/repo-contexts/${repoName}/CLAUDE.md`, 4000);
@@ -481,6 +505,7 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - Type safety holes (unsafe casts, untyped generics)
 - Package dependency order violations in packages/**
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
+- **Violation of any pattern in \`docs/architecture/PATTERNS.md\`** (loaded into your context above). Match the diff against patterns by file type — workflows that commit to main, scripts that fetch secrets, scripts that diff dirs against HEAD without staging, gcloud calls without \`--project\`, etc. **Cite the pattern number in the flag** (e.g., "violates PATTERNS.md #3: direct push to main is blocked by branch protection"). This is how the institutional memory becomes enforceable, not just documented.
 
 ### Security — flag as architectural_concern (blocks merge)
 - SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input
