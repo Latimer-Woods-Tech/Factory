@@ -69,7 +69,7 @@ def test_dim_observability_uses_admin_studio_overrides_for_factory(platform_conf
 def test_dim_privacy_accepts_new_stub_routes(monkeypatch):
     conformance = _load_platform_conformance()
 
-    def fake_get_file(_repo: str, path: str, ref: str = "main"):
+    def fake_get_file(_repo: str, path: str, _ref: str = "main"):
         if path in {"docs/PII_INVENTORY.md", "docs/RETENTION.md"}:
             return "present"
         return None
@@ -90,7 +90,7 @@ def test_dim_privacy_accepts_new_stub_routes(monkeypatch):
 def test_dim_privacy_requires_delete_endpoint_hint(monkeypatch):
     conformance = _load_platform_conformance()
 
-    def fake_get_file(_repo: str, path: str, ref: str = "main"):
+    def fake_get_file(_repo: str, path: str, _ref: str = "main"):
         if path in {"docs/PII_INVENTORY.md", "docs/RETENTION.md"}:
             return "present"
         return None
