@@ -1,4 +1,4 @@
-# 0002: Hono as the HTTP router
+# 0010: Hono as the HTTP router
 
 **Date:** 2026-01-01  **Status:** Accepted
 
