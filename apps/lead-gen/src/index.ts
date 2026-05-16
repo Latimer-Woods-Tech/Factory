@@ -90,4 +90,43 @@ app.onError((err, c) => {
   return c.json(res, (res.error?.status as any) || 500);
 });
 
-export default app;
+
+export default {
+  fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    const logger = createLogger({ workerId: 'lead-gen-cron' });
+    logger.info('Running scheduled lead discovery', { cron: event.cron });
+
+    // Keywords to cycle through
+    const keywords = ['Human Design', 'Astrology', 'Gene Keys'];
+    const keyword = keywords[new Date(event.scheduledTime).getDay() % keywords.length];
+
+    try {
+      const res = await fetch(`https://api.scrapecreators.com/v1/tiktok/search/users?query=${encodeURIComponent(keyword)}`, {
+        headers: { 'x-api-key': env.SCRAPE_CREATORS_API_KEY }
+      });
+
+      if (!res.ok) {
+        logger.error('Failed to search TikTok users', await res.text());
+        return;
+      }
+
+      const data = await res.json() as any;
+      const users = data.data || data.users || [];
+      
+      logger.info(`Found ${users.length} users for keyword: ${keyword}`);
+
+      // Fan out to queue
+      const messages = users.slice(0, 20).map((u: any) => ({
+        body: { handle: u.unique_id || u.handle || u.username }
+      })).filter((m: any) => m.body.handle);
+
+      if (messages.length > 0) {
+        await env.LEAD_GEN_QUEUE.sendBatch(messages);
+        logger.info(`Queued ${messages.length} handles for qualification`);
+      }
+    } catch (err) {
+      logger.error('Scheduled discovery failed', err instanceof Error ? err.message : String(err));
+    }
+  }
+};
