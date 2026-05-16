@@ -175,8 +175,27 @@ def collect_stripe_mrr(_target_day: str) -> list[RevenueLine]:
                 by_product[product] = by_product.get(product, 0) + contrib_cents
 
         pages += 1
-        if not data.get("has_more") or pages >= 50 or not subs:
+        if not data.get("has_more") or not subs:
             break
+        if pages >= 50:
+            # Safety cap. 50 pages × 100 subs/page = 5,000 active subs. Above
+            # that the number is incomplete; surface it loudly rather than
+            # silently undercount MRR.
+            jwarn("stripe_mrr_truncated", pages=pages, last_id=subs[-1].get("id"))
+            mrr_usd = round(mrr_cents / 100.0, 2)
+            return [RevenueLine(
+                "stripe_mrr", "Active subscription MRR", "usd", mrr_usd,
+                detail={
+                    "subscription_count": sub_count,
+                    "pages_fetched": pages,
+                    "by_product_cents": by_product,
+                    "arr_estimate_usd": round(mrr_usd * 12, 2),
+                    "truncated": True,
+                    "next_starting_after": subs[-1].get("id"),
+                },
+                skipped=True,
+                skip_reason="pagination cap hit (>5,000 active subs) — value incomplete",
+            )]
         starting_after = subs[-1].get("id")
 
     mrr_usd = round(mrr_cents / 100.0, 2)
@@ -187,6 +206,7 @@ def collect_stripe_mrr(_target_day: str) -> list[RevenueLine]:
             "pages_fetched": pages,
             "by_product_cents": by_product,
             "arr_estimate_usd": round(mrr_usd * 12, 2),
+            "truncated": False,
         },
     )]
 
@@ -209,11 +229,20 @@ def collect_sentry_user_errors(target_day: str) -> list[RevenueLine]:
         return [RevenueLine("sentry_users", "User-facing errors (24h)", "count", 0.0,
                             skipped=True, skip_reason="missing SENTRY_AUTH_TOKEN")]
 
-    # Total errors
-    total_url = (
-        f"https://sentry.io/api/0/organizations/{org}/stats_v2/"
-        "?statsPeriod=1d&interval=1d&field=sum(quantity)&category=error"
-    )
+    # Total errors — explicit window so the result is deterministic for a
+    # given --date and matches the user-filtered query below. Sentry expects
+    # ISO 8601 with `Z`; URL-encode safely.
+    day = datetime.strptime(target_day, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    start_iso = day.isoformat().replace("+00:00", "Z")
+    end_iso = (day + timedelta(days=1)).isoformat().replace("+00:00", "Z")
+    stats_qs = urlencode({
+        "start": start_iso,
+        "end": end_iso,
+        "interval": "1d",
+        "field": "sum(quantity)",
+        "category": "error",
+    })
+    total_url = f"https://sentry.io/api/0/organizations/{org}/stats_v2/?{stats_qs}"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     status, body = http_request(total_url, headers=headers)
     if status != 200:
@@ -228,13 +257,15 @@ def collect_sentry_user_errors(target_day: str) -> list[RevenueLine]:
                             skipped=True, skip_reason="unexpected stats_v2 shape")]
 
     # Errors with user.id — events search via the discover-like endpoint.
-    # Query: `event.type:error has:user.id` in last 24h.
-    day = datetime.strptime(target_day, "%Y-%m-%d").replace(tzinfo=timezone.utc)
-    user_url = (
-        f"https://sentry.io/api/0/organizations/{org}/events/"
-        "?field=count()&query=event.type%3Aerror+has%3Auser.id"
-        f"&start={day.isoformat()}&end={(day + timedelta(days=1)).isoformat()}"
-    )
+    # urlencode handles +00:00 in ISO timestamps (a literal `+` in a query
+    # string would be parsed as a space by Sentry's URL parser).
+    user_qs = urlencode({
+        "field": "count()",
+        "query": "event.type:error has:user.id",
+        "start": start_iso,
+        "end": end_iso,
+    })
+    user_url = f"https://sentry.io/api/0/organizations/{org}/events/?{user_qs}"
     status2, body2 = http_request(user_url, headers=headers)
     user_errors = 0
     if status2 == 200:
