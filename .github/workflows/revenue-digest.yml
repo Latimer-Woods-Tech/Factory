@@ -1,0 +1,108 @@
+name: Revenue + Reliability Digest
+
+# Stage 2 M3 — Daily revenue + reliability digest. Shadow mode.
+# Answers the 4 Stage 2 questions the cost digest doesn't cover:
+#   • staying  (MRR from active Stripe subscriptions)
+#   • shipping right (Sentry user-facing error rate)
+#   • buying durably (funnel conversion via PostHog)
+# Runs ~30 min after cost-observability so the daily Pushover sequence is:
+# completion → cost → revenue.
+on:
+  schedule:
+    - cron: '7 7 * * *' # daily 07:07 UTC (after cost digest at 06:37)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD UTC). Empty = today.'
+        required: false
+      provider:
+        description: 'Single provider (stripe_mrr|sentry_users|posthog_funnel). Empty = all.'
+        required: false
+      pushover:
+        description: 'Send Pushover digest (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: revenue-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env STRIPE_API_KEY      STRIPE_SECRET_KEY stripe-api-key-readonly STRIPE_API_KEY
+          fetch_to_env SENTRY_AUTH_TOKEN   LATIMERWOODS_SENTRY_AUTH FACTORY_SENTRY_API SENTRY_AUTH_TOKEN
+          fetch_to_env POSTHOG_API_KEY     posthog-api-key POSTHOG_API_KEY
+          fetch_to_env POSTHOG_PROJECT_ID  posthog-project-id POSTHOG_PROJECT_ID
+          fetch_to_env POSTHOG_FUNNEL_ID   posthog-funnel-id POSTHOG_FUNNEL_ID
+          fetch_to_env PUSHOVER_USER       FACTORY_PUSHOVER_USER PUSHOVER_USER pushover-user
+          fetch_to_env PUSHOVER_TOKEN      FACTORY_PUSHOVER_API PUSHOVER_TOKEN pushover-token
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Run revenue digest
+        env:
+          SENTRY_ORG: latwood-tech
+        run: |
+          set -euo pipefail
+          args=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            args="$args --date ${{ github.event.inputs.date }}"
+          fi
+          if [ -n "${{ github.event.inputs.provider }}" ]; then
+            args="$args --provider ${{ github.event.inputs.provider }}"
+          fi
+          if [ "${{ github.event.inputs.pushover || 'true' }}" = "true" ]; then
+            args="$args --pushover"
+          fi
+          python scripts/revenue_digest.py $args
+
+      - name: Open auto-merge PR for revenue snapshots
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add docs/revenue/ 2>/dev/null || true
+          if git diff --quiet --cached docs/revenue/; then
+            echo "No revenue changes to commit."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/revenue-snapshot-$DATE-$(date -u +%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(revenue): daily digest snapshot ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(revenue): daily revenue + reliability digest ($DATE)" \
+            --body "Automated daily revenue snapshot from \`revenue-digest.yml\`. Sources: Stripe MRR, Sentry user-facing errors, PostHog funnel." \
+            --label automation \
+            --label documentation \
+            --label auto-merge
