@@ -38,7 +38,7 @@ import base64 as _b64
 
 REPOS: list[dict[str, str]] = [
     {"key": "HD", "name": "HumanDesign",          "repo": "Latimer-Woods-Tech/HumanDesign",          "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
-    {"key": "VK", "name": "videoking",            "repo": "Latimer-Woods-Tech/capricast",            "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
+    {"key": "CC", "name": "capricast",            "repo": "Latimer-Woods-Tech/capricast",            "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
     {"key": "FA", "name": "factory-admin-studio", "repo": "Latimer-Woods-Tech/Factory",              "matrix_path": "apps/admin-studio/docs/FUNCTIONS_MATRIX.md"},
     {"key": "CH", "name": "cypher-healing",       "repo": "Latimer-Woods-Tech/coh",       "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
     {"key": "XC", "name": "xico-city",            "repo": "Latimer-Woods-Tech/xico-city",            "matrix_path": "docs/FUNCTIONS_MATRIX.md"},
@@ -54,7 +54,7 @@ DECAY_DAYS = 30
 # inference — edit this list intentionally.
 SMOKE_AFFECTED: list[tuple[str, str]] = [
     ("HD", "auth"), ("HD", "billing"), ("HD", "chart"), ("HD", "health"),
-    ("VK", "auth"), ("VK", "billing"),
+    ("CC", "auth"), ("CC", "billing"),
     ("FA", "auth"), ("FA", "health"),
     ("CH", "auth"), ("CH", "platform"),
     ("XC", "auth"),
