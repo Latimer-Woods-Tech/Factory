@@ -431,6 +431,26 @@ function buildConstraintBlock(repoName) {
     console.warn('[WARN] docs/supervisor/FRIDGE.md not found on disk');
   }
 
+  // Tier 3 context injection — current operating state + operational patterns.
+  // CLAUDE.md's reading order tells the reviewer to consult these files; this
+  // concat lets the reviewer actually see them in the same prompt rather than
+  // just being told they exist. Soft-warn (not MISSING_DOCS) because both are
+  // genuinely optional: STATE.md is auto-generated, PATTERNS.md is operator-
+  // maintained, neither blocks a review.
+  const state = loadDoc('docs/STATE.md', 5000);
+  if (state) {
+    sections.push(`## docs/STATE.md — Current Operating State (auto-generated)\n\n${state}`);
+  } else {
+    console.warn('[WARN] docs/STATE.md not found — review proceeds without current-state context');
+  }
+
+  const patterns = loadDoc('docs/architecture/PATTERNS.md', 5000);
+  if (patterns) {
+    sections.push(`## docs/architecture/PATTERNS.md — Operational Patterns (symptom → cause → fix)\n\n${patterns}`);
+  } else {
+    console.warn('[WARN] docs/architecture/PATTERNS.md not found — review proceeds without operational-patterns context');
+  }
+
   // Per-repo standing orders for cross-repo reviews (.github/repo-contexts/{repo}/CLAUDE.md)
   if (repoName && repoName !== 'factory') {
     const perRepo = loadDoc(`.github/repo-contexts/${repoName}/CLAUDE.md`, 4000);
