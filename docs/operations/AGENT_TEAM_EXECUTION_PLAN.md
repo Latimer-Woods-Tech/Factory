@@ -41,7 +41,7 @@
 
 **Exit criteria**
 
-- `https://api.itsjusus.com/health` returns `200`.
+- `https://api.capricast.com/health` returns `200`.
 - Runtime no longer fails closed on required environment validation.
 - Deploy workflow captures live health evidence.
 
@@ -221,4 +221,4 @@ This schedule operationalizes Lane 4 into a recurring improvement loop with expl
 
 - HumanDesign execution anchors already claimed by Copilot: #120, #121, #63, #64, #67.
 - Factory execution anchors already claimed or active with Copilot involvement: #108, #109, #278, #279, #285, #286, #298.
-- VideoKing production recovery remains anchored on issue #11 and should stay the top-priority runtime lane until `api.itsjusus.com` is healthy.
+- VideoKing production recovery remains anchored on issue #11 and should stay the top-priority runtime lane until `api.capricast.com` is healthy.
