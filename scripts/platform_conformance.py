@@ -476,7 +476,10 @@ def dim_privacy(repo: str) -> DimensionScore:
     def has_search_hit(*queries: str) -> bool:
         # Query both quoted and unquoted forms: GitHub code search behavior can
         # vary between exact string-literal matches and tokenized path matches.
-        return any(gh_search_code(repo, q) > 0 for q in queries)
+        for query in queries:
+            if gh_search_code(repo, query) > 0:
+                return True
+        return False
 
     export_hint = has_search_hit(
         '"data-export"',
