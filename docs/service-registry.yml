@@ -234,7 +234,7 @@ workers:
         line: ~10
         pattern: "https://admin-studio-production.adrper79.workers.dev"
 
-  - id: capricast-api-staging
+- id: capricast-api-staging
     name: capricast-api-staging
     repo: Latimer-Woods-Tech/videoking
     url: https://capricast-api-staging.adrper79.workers.dev
@@ -280,7 +280,82 @@ workers:
     custom_domain: supervisor.latwoodtech.work
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
-    consumers: []
+
+  - id: xico-city
+    name: xico-city
+    repo: Latimer-Woods-Tech/xico-city
+    url: https://xicocity.com                                   # canonical custom domain (branded)
+    workers_dev_url: https://xico-city.adrper79.workers.dev
+    custom_domain: xicocity.com
+    custom_domain_status: attached                             # verified 2026-05-06
+    health_endpoint: /health
+    deployment_status: custom_domain_live_verified_2026-05-06
+    notes: >
+      Product: DJMEXXICO — creative economy OS for artists (11 roles). NOT a
+      Mexico City experiences marketplace (see BUILD_PLAN_v2.md §1.2).
+      Deployed 2026-05-06: workers.dev /health 200, /ready 200.
+      xicocity.com custom domain confirmed live 2026-05-06 — curl 200,
+      A/AAAA records resolve to Cloudflare IPs.
+    critical_endpoints:
+      - /health
+      - /ready
+      - /factory/compat
+      - /api/me
+    required_bindings:
+      - DB
+      - AUTH_RATE_LIMITER
+    required_secrets:
+      - JWT_SECRET
+      - SENTRY_DSN
+      - POSTHOG_KEY
+      - PROCESSOR_API_TOKEN
+    required_vars:
+      - ENVIRONMENT
+      - WORKER_NAME
+      - RELEASE
+      - PROCESSOR_URL
+      - GCP_PROJECT_ID
+      - GCP_REGION
+    consumers:
+      - repo: Latimer-Woods-Tech/factory
+        file: docs/operations/USER_JOURNEY_SLOS.md
+        line: ~102
+        pattern: "https://xico-city.adrper79.workers.dev/v1/bookings/health"
+
+  - id: xico-city-staging
+    name: xico-city-staging
+    repo: Latimer-Woods-Tech/xico-city
+    url: https://xico-city-staging.adrper79.workers.dev
+    custom_domain: staging.xicocity.com
+    custom_domain_status: pending_dns                          # DNS record not yet created (2026-05-06)
+    health_endpoint: /health
+    deployment_status: live_health_verified_2026-05-06
+    notes: >
+      Deployed 2026-05-06: /health 200, /ready 200. AUTH_RATE_LIMITER binding
+      NOT present (namespace 1008 is production-only; provision namespace_id
+      1009 for staging — next available per docs/runbooks/add-new-app.md).
+      staging.xicocity.com custom domain registered in wrangler but DNS record
+      not yet created.
+    critical_endpoints:
+      - /health
+      - /ready
+      - /factory/compat
+      - /api/me
+    required_bindings:
+      - DB
+      - AUTH_RATE_LIMITER
+    required_secrets:
+      - JWT_SECRET
+      - SENTRY_DSN
+      - POSTHOG_KEY
+      - PROCESSOR_API_TOKEN
+    required_vars:
+      - ENVIRONMENT
+      - WORKER_NAME
+      - RELEASE
+      - PROCESSOR_URL
+      - GCP_PROJECT_ID
+      - GCP_REGION    consumers: []
 
 pages:
   - id: prime-self-ui
