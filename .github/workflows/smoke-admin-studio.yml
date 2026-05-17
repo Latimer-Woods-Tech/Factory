@@ -1,0 +1,57 @@
+name: smoke admin-studio
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Override BASE_URL
+        required: false
+        default: https://apunlimited.com
+  schedule:
+    # Every 2 hours. Quiet enough to not spam Sentry, busy enough to
+    # surface deploy drift between releases.
+    - cron: '17 */2 * * *'
+
+concurrency:
+  group: smoke-admin-studio
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install
+        run: npm install --legacy-peer-deps
+        working-directory: apps/prime-self-smoke
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/prime-self-smoke
+
+      - name: Probe
+        id: probe
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://apunlimited.com' }}
+          STUDIO_EMAIL: ${{ secrets.STUDIO_EMAIL }}
+          STUDIO_PASSWORD: ${{ secrets.STUDIO_PASSWORD }}
+          STUDIO_ENV: production
+          OUT_DIR: probe-output
+        run: node scripts/probe-factory-admin.mjs
+        working-directory: apps/prime-self-smoke
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: probe-output-${{ github.run_id }}
+          path: apps/prime-self-smoke/probe-output/
+          retention-days: 14
