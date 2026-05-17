@@ -208,7 +208,8 @@ export class SupervisorDO {
         }
 
         const searchText = `${issue.title} ${issue.body.slice(0, 500)}`;
-        const template = matchTemplate(searchText, templates);
+        const issueLabels = ((issue as unknown as { labels?: Array<{ name: string }> }).labels ?? []).map((l) => l.name);
+        const template = matchTemplate(searchText, templates, { labels: issueLabels });
 
         if (!template) {
           noTemplate++;
@@ -252,6 +253,7 @@ export class SupervisorDO {
             template.description,
             template.tier,
             plan.steps,
+            template.pattern_check,
           );
 
           try {

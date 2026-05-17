@@ -1,0 +1,74 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // webhook-fanout — Stripe → PostHog/factory_events + Resend fan-out Worker
+  // Deployed at: https://webhooks.latwoodtech.com/stripe
+  // Issue: Latimer-Woods-Tech/factory#641
+  "name": "webhook-fanout",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": {
+    "enabled": true
+  },
+
+  // NOTE: Provision the KV namespace before first deploy:
+  //   wrangler kv namespace create webhook-fanout-idempotency
+  //   wrangler kv namespace create webhook-fanout-idempotency --preview
+  // Then replace the placeholder IDs below with the real namespace IDs.
+  "kv_namespaces": [
+    {
+      "binding": "IDEMPOTENCY_KV",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID",
+      "preview_id": "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development",
+    "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "FACTORY_EVENTS_DB",
+      "database_name": "factory-events",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ],
+
+  // Required secrets (set via `wrangler secret put <NAME>` or org-level GitHub secrets):
+  //   STRIPE_WEBHOOK_SECRET   — from Stripe dashboard after endpoint registration
+  //   POSTHOG_API_KEY         — PostHog project API key
+  //   RESEND_API_KEY          — Resend API key
+
+  "env": {
+    "production": {
+      "name": "webhook-fanout",
+      "routes": [
+        {
+          "pattern": "webhooks.latwoodtech.com/stripe",
+          "custom_domain": true
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY_KV",
+          "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+      },
+      "d1_databases": [
+        {
+          "binding": "FACTORY_EVENTS_DB",
+          "database_name": "factory-events",
+          "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+        }
+      ]
+    }
+  }
+}

@@ -389,7 +389,7 @@ async function reconcile() {
   );
 
   const openJson = exec(
-    `gh issue list --repo ${repo} --state open --limit 500 --json number,nodeId`
+    `gh issue list --repo ${repo} --state open --limit 500 --json number,id`
   );
   const open = JSON.parse(openJson);
 
@@ -397,7 +397,7 @@ async function reconcile() {
   for (const issue of open) {
     if (boardNumbers.has(issue.number)) continue;
     try {
-      await getOrCreateItemForContent(issue.nodeId);
+      await getOrCreateItemForContent(issue.id);
       added++;
       console.log(`[ok] added missing card #${issue.number}`);
     } catch (e) {
