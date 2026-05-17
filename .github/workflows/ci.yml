@@ -101,6 +101,9 @@ jobs:
       - name: Enforce smoke secret contract
         run: node scripts/check-smoke-secret-contract.mjs
 
+      - name: Enforce telemetry contract coverage
+        run: node scripts/check-telemetry-contract.mjs
+
       - name: Enforce service registry / app-registry drift check (FRH-01)
         working-directory: apps/admin-studio
         run: node scripts/check-service-registry.mjs
