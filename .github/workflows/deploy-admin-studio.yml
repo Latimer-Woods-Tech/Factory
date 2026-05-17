@@ -20,9 +20,6 @@ concurrency:
   group: admin-studio-${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
   cancel-in-progress: false
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -42,7 +39,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '22'
 
       - name: Resolve target environment
         id: target
@@ -187,6 +184,12 @@ jobs:
       # worker via @latimer-woods-tech/monitoring. Skips gracefully when the
       # SENTRY_AUTH_TOKEN secret is not configured.
       - name: Upload sourcemaps to Sentry
+        # Sourcemap upload is nice-to-have (stack-trace symbolication) — it must
+        # never gate a deploy. Today's Sentry project slug "admin-studio" under
+        # org "latwood-tech" returns 400 "Invalid project ids or slugs"; the
+        # canary-watch reusable workflow uses org slug "latimer-woods-tech",
+        # so one of these is stale. Tracked separately; for now, soft-fail.
+        continue-on-error: true
         working-directory: apps/admin-studio
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
