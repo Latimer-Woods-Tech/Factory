@@ -173,7 +173,7 @@ def append_history(record, file_sha, existing):
     actual_sha = r.get("sha", file_sha)
     gh(f"/repos/Latimer-Woods-Tech/Factory/contents/{HISTORY_PATH}",
        method="PUT",
-       body={"message": f"chore(courtesy-check): {record[chr(39)]ts{chr(39)}}",
+       body={"message": f"chore(courtesy-check): {record['ts']}",
              "content": b64.b64encode(new_content.encode()).decode(),
              "sha": actual_sha})
 
@@ -181,7 +181,7 @@ def append_history(record, file_sha, existing):
 def main():
     print(f"[check] {RUN_TS}")
     prs = pr_sweep()
-    print(f"[prs] open={prs[chr(39)]open{chr(39)}} rebased={len(prs[chr(39)]behind_rebased{chr(39)])} dirty={len(prs[chr(39)]dirty{chr(39)])} blocked={len(prs[chr(39)]blocked{chr(39)])}")
+    print(f"[prs] open={prs['open']} rebased={len(prs['behind_rebased'])} dirty={len(prs['dirty'])} blocked={len(prs['blocked'])}")
     wh = workflow_health()
     sen = sentry_sweep()
     stripe_r = stripe_heartbeat()
@@ -190,10 +190,10 @@ def main():
     dirty_am = [d for d in prs["dirty"] if d["am"]]
     notify_reasons = []
     if dirty_am: notify_reasons.append(f"{len(dirty_am)} dirty+AM: " + ", ".join(d["ref"] for d in dirty_am[:3]))
-    if wh["ct_failures_24h"] >= 3: notify_reasons.append(f"CT failed {wh[chr(39)]ct_failures_24h{chr(39)]}x in 24h")
-    if wh["ct_dead"]: notify_reasons.append(f"CT DEAD ({wh[chr(39)]ct_last_run_hrs{chr(39)]}h since last run)")
-    if sen["new_p0"] > 0: notify_reasons.append(f"{sen[chr(39)]new_p0{chr(39)]} new Sentry P0")
-    if stripe_r["new_charges"] or stripe_r["new_subs"]: notify_reasons.append(f"Stripe: {stripe_r[chr(39)]new_charges{chr(39)]} charges {stripe_r[chr(39)]new_subs{chr(39)]} subs")
+    if wh["ct_failures_24h"] >= 3: notify_reasons.append(f"CT failed {wh['ct_failures_24h']}x in 24h")
+    if wh["ct_dead"]: notify_reasons.append(f"CT DEAD ({wh['ct_last_run_hrs']}h since last run)")
+    if sen["new_p0"] > 0: notify_reasons.append(f"{sen['new_p0']} new Sentry P0")
+    if stripe_r["new_charges"] or stripe_r["new_subs"]: notify_reasons.append(f"Stripe: {stripe_r['new_charges']} charges {stripe_r['new_subs']} subs")
     record = {"ts": RUN_TS, "open_prs": prs["open"], "dirty": len(prs["dirty"]),
               "dirty_am": len(dirty_am), "behind_rebased": prs["behind_rebased"],
               "ct_failures_24h": wh["ct_failures_24h"], "ct_dead": wh["ct_dead"],
