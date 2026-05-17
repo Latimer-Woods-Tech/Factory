@@ -4,7 +4,7 @@
 > External tooling versions are hand-maintained here.
 > Downstream repos: pointer to this file in `CLAUDE.md` — do NOT copy-paste; copies drift.
 
-*Last updated: 2026-05-16 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
+*Last updated: 2026-05-17 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
 
 ---
 
@@ -30,6 +30,7 @@
 | `@latimer-woods-tech/entitlements` | `0.1.0` | stable |
 | `@latimer-woods-tech/errors` | `0.2.0` | stable |
 | `@latimer-woods-tech/eslint-config` | `0.1.0` | stable |
+| `@latimer-woods-tech/flags` | `0.1.0` | stable |
 | `@latimer-woods-tech/llm` | `0.3.1` | stable |
 | `@latimer-woods-tech/llm-meter` | `0.2.0` | stable |
 | `@latimer-woods-tech/logger` | `0.3.0` | stable |
