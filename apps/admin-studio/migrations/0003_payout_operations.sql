@@ -116,7 +116,7 @@ COMMENT ON TABLE payouts IS 'Individual payouts within a batch. Many-to-one rela
 COMMENT ON TABLE payout_dlq IS 'Failed payouts awaiting operator intervention. Linked to both payout and batch for traceability.';
 COMMENT ON TABLE payout_audit_log IS 'Complete audit trail of all payout operations for compliance and finance review.';
 
-COMMENT ON COLUMN payout_batches.execution_status IS 'Current status of the batch: pending (ready to execute), processing (executing), completed (all succeeded), partially_completed (some failed), failed (batch operation itself failed)';
+COMMENT ON COLUMN payout_batches.status IS 'Current status of the batch: pending (ready to execute), processing (executing), completed (all succeeded), partially_completed (some failed), failed (batch operation itself failed)';
 COMMENT ON COLUMN payout_batches.creator_count IS 'Total creators in this batch (snapshot at creation time)';
 COMMENT ON COLUMN payouts.retry_count IS 'Number of retry attempts made so far';
 COMMENT ON COLUMN payouts.max_retries IS 'Maximum number of retries before escalation to DLQ';
