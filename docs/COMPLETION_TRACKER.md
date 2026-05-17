@@ -1,138 +1,138 @@
 # Completion Tracker
-_Generated 2026-05-15T11:32:15+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: HD, XC
+## 🚨 CI red on main: XC
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **HD** HumanDesign 🚨 | 64 | 1 | 18 | 6 | 89 | 71.9% | 77.1% | **74.9%** |
-| **VK** videoking | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** |
-| **FA** factory-admin-studio 🟧smoke | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** |
-| **CH** cypher-healing | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** |
-| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** |
+| **HD** HumanDesign | 64 | 1 | 18 | 6 | 89 | 71.9% | 77.1% | **74.9%** (Δ+0.0) |
+| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** |
+| **FA** factory-admin-studio 🟧smoke | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 26.5%** · known: 43.2% · raw: 23.7%
+**Overall weighted pass: 26.5% (Δ+0.0)** · known: 43.2% · raw: 23.7%
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 91.5% weighted (11✅ 1⚠️ 0❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-AUTH-001` | Sign Up | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-002` | Sign In | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-003` | Sign Out | ✅ | 5 | CI-RED | — |
+| `HD-AUTH-001` | Sign Up | ✅ | 5 | — | — |
+| `HD-AUTH-002` | Sign In | ✅ | 5 | — | — |
+| `HD-AUTH-003` | Sign Out | ✅ | 5 | — | — |
 | `HD-AUTH-004` | Session Persistence | ⚠️ | 5 | — | — |
-| `HD-AUTH-005` | Password Reset Request | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-006` | Password Reset Confirm | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-007` | 2FA Setup | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-008` | 2FA Verification | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-009` | OAuth - Google | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-010` | OAuth - Apple | ✅ | 5 | CI-RED | — |
-| `HD-AUTH-011` | Middleware Redirect | ✅ | 4 | CI-RED | — |
-| `HD-AUTH-012` | JWT Validation | ✅ | 5 | CI-RED | — |
+| `HD-AUTH-005` | Password Reset Request | ✅ | 5 | — | — |
+| `HD-AUTH-006` | Password Reset Confirm | ✅ | 5 | — | — |
+| `HD-AUTH-007` | 2FA Setup | ✅ | 5 | — | — |
+| `HD-AUTH-008` | 2FA Verification | ✅ | 5 | — | — |
+| `HD-AUTH-009` | OAuth - Google | ✅ | 5 | — | — |
+| `HD-AUTH-010` | OAuth - Apple | ✅ | 5 | — | — |
+| `HD-AUTH-011` | Middleware Redirect | ✅ | 4 | — | — |
+| `HD-AUTH-012` | JWT Validation | ✅ | 5 | — | — |
 
 ### Chart Generation — 67.5% weighted (7✅ 0⚠️ 3❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-CHART-001` | Birth Data Input | ✅ | 4 | CI-RED | — |
-| `HD-CHART-002` | Chart Generation | ✅ | 4 | CI-RED | — |
-| `HD-CHART-003` | Chart Retrieval | ✅ | 4 | CI-RED | — |
+| `HD-CHART-001` | Birth Data Input | ✅ | 4 | — | — |
+| `HD-CHART-002` | Chart Generation | ✅ | 4 | — | — |
+| `HD-CHART-003` | Chart Retrieval | ✅ | 4 | — | — |
 | `HD-CHART-004` | Chart Update | ❌ | 4 | — | — |
 | `HD-CHART-005` | Chart Delete | ❌ | 5 | — | — |
-| `HD-CHART-006` | Today's Hint | ✅ | 3 | CI-RED | — |
-| `HD-CHART-007` | Human Design Types | ✅ | 4 | CI-RED | — |
-| `HD-CHART-008` | Gene Keys | ✅ | 4 | CI-RED | — |
-| `HD-CHART-009` | Astrology Natal Chart | ✅ | 4 | CI-RED | — |
+| `HD-CHART-006` | Today's Hint | ✅ | 3 | — | — |
+| `HD-CHART-007` | Human Design Types | ✅ | 4 | — | — |
+| `HD-CHART-008` | Gene Keys | ✅ | 4 | — | — |
+| `HD-CHART-009` | Astrology Natal Chart | ✅ | 4 | — | — |
 | `HD-CHART-010` | Cross-Synthesis | ❌ | 4 | — | — |
 
 ### Profile & Blueprint — 75.0% weighted (6✅ 0⚠️ 2❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-PROF-001` | Personal Dashboard | ✅ | 4 | CI-RED | — |
-| `HD-PROF-002` | My Blueprint Page | ✅ | 4 | CI-RED | — |
-| `HD-PROF-003` | My Charts Page | ✅ | 4 | CI-RED | — |
-| `HD-PROF-004` | Profile Settings | ✅ | 3 | CI-RED | — |
-| `HD-PROF-005` | Profile Update API | ✅ | 3 | CI-RED | — |
+| `HD-PROF-001` | Personal Dashboard | ✅ | 4 | — | — |
+| `HD-PROF-002` | My Blueprint Page | ✅ | 4 | — | — |
+| `HD-PROF-003` | My Charts Page | ✅ | 4 | — | — |
+| `HD-PROF-004` | Profile Settings | ✅ | 3 | — | — |
+| `HD-PROF-005` | Profile Update API | ✅ | 3 | — | — |
 | `HD-PROF-006` | Profile Photo Upload | ❌ | 3 | — | — |
 | `HD-PROF-007` | Timezone Management | ❌ | 4 | — | — |
-| `HD-PROF-008` | Locale/Language | ✅ | 3 | CI-RED | — |
+| `HD-PROF-008` | Locale/Language | ✅ | 3 | — | — |
 
 ### Billing & Subscriptions — 100.0% weighted (12✅ 0⚠️ 0❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-BILL-001` | View Pricing Page | ✅ | 3 | CI-RED | — |
-| `HD-BILL-002` | Select Plan | ✅ | 5 | CI-RED | — |
-| `HD-BILL-003` | Stripe Checkout | ✅ | 5 | CI-RED | — |
-| `HD-BILL-004` | Webhook - Payment Success | ✅ | 5 | CI-RED | — |
-| `HD-BILL-005` | Webhook - Payment Failed | ✅ | 5 | CI-RED | — |
-| `HD-BILL-006` | Upgrade Plan | ✅ | 5 | CI-RED | — |
-| `HD-BILL-007` | Downgrade Plan | ✅ | 5 | CI-RED | — |
-| `HD-BILL-008` | Cancel Subscription | ✅ | 5 | CI-RED | — |
-| `HD-BILL-009` | Reactivate Subscription | ✅ | 5 | CI-RED | — |
-| `HD-BILL-010` | View Invoices | ✅ | 4 | CI-RED | — |
-| `HD-BILL-011` | Update Payment Method | ✅ | 5 | CI-RED | — |
-| `HD-BILL-012` | Retention Flow | ✅ | 4 | CI-RED | — |
+| `HD-BILL-001` | View Pricing Page | ✅ | 3 | — | — |
+| `HD-BILL-002` | Select Plan | ✅ | 5 | — | — |
+| `HD-BILL-003` | Stripe Checkout | ✅ | 5 | — | — |
+| `HD-BILL-004` | Webhook - Payment Success | ✅ | 5 | — | — |
+| `HD-BILL-005` | Webhook - Payment Failed | ✅ | 5 | — | — |
+| `HD-BILL-006` | Upgrade Plan | ✅ | 5 | — | — |
+| `HD-BILL-007` | Downgrade Plan | ✅ | 5 | — | — |
+| `HD-BILL-008` | Cancel Subscription | ✅ | 5 | — | — |
+| `HD-BILL-009` | Reactivate Subscription | ✅ | 5 | — | — |
+| `HD-BILL-010` | View Invoices | ✅ | 4 | — | — |
+| `HD-BILL-011` | Update Payment Method | ✅ | 5 | — | — |
+| `HD-BILL-012` | Retention Flow | ✅ | 4 | — | — |
 
 ### Practitioner Features — 61.3% weighted (5✅ 0⚠️ 3❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-PRAC-001` | Practitioner Dashboard | ✅ | 4 | CI-RED | — |
-| `HD-PRAC-002` | Client Management | ✅ | 4 | CI-RED | — |
-| `HD-PRAC-003` | Add Client | ✅ | 4 | CI-RED | — |
-| `HD-PRAC-004` | Generate Client Chart | ✅ | 4 | CI-RED | — |
+| `HD-PRAC-001` | Practitioner Dashboard | ✅ | 4 | — | — |
+| `HD-PRAC-002` | Client Management | ✅ | 4 | — | — |
+| `HD-PRAC-003` | Add Client | ✅ | 4 | — | — |
+| `HD-PRAC-004` | Generate Client Chart | ✅ | 4 | — | — |
 | `HD-PRAC-005` | Client Session Notes | ❌ | 4 | — | — |
-| `HD-PRAC-006` | Practitioner Profile | ✅ | 3 | CI-RED | — |
+| `HD-PRAC-006` | Practitioner Profile | ✅ | 3 | — | — |
 | `HD-PRAC-007` | Public Practitioner Page | ❌ | 4 | — | — |
 | `HD-PRAC-008` | Booking Integration | ❌ | 4 | — | — |
 
 ### UI/UX Components — 60.0% weighted (7✅ 0⚠️ 4❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-UI-001` | Shell Bootstrap | ✅ | 1 | CI-RED | — |
-| `HD-UI-002` | Authentication Overlay | ✅ | 4 | CI-RED | — |
-| `HD-UI-003` | Router | ✅ | 1 | CI-RED | — |
-| `HD-UI-004` | Sidebar Navigation | ✅ | 3 | CI-RED | — |
+| `HD-UI-001` | Shell Bootstrap | ✅ | 1 | — | — |
+| `HD-UI-002` | Authentication Overlay | ✅ | 4 | — | — |
+| `HD-UI-003` | Router | ✅ | 1 | — | — |
+| `HD-UI-004` | Sidebar Navigation | ✅ | 3 | — | — |
 | `HD-UI-005` | Modal System | ❌ | 3 | — | — |
-| `HD-UI-006` | Form Validation | ✅ | 3 | CI-RED | — |
+| `HD-UI-006` | Form Validation | ✅ | 3 | — | — |
 | `HD-UI-007` | Error Handling | ❌ | 3 | — | — |
 | `HD-UI-008` | Loading States | ❌ | 3 | — | — |
-| `HD-UI-009` | Internationalization | ✅ | 3 | CI-RED | — |
+| `HD-UI-009` | Internationalization | ✅ | 3 | — | — |
 | `HD-UI-010` | Responsive Design | ❌ | 3 | — | — |
-| `HD-UI-011` | Accessibility | ✅ | 3 | CI-RED | — |
+| `HD-UI-011` | Accessibility | ✅ | 3 | — | — |
 
 ### Marketing Pages — 57.7% weighted (5✅ 0⚠️ 3❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-MKT-001` | Homepage | ✅ | 4 | CI-RED | — |
-| `HD-MKT-002` | Marketing Page | ✅ | 4 | CI-RED | — |
+| `HD-MKT-001` | Homepage | ✅ | 4 | — | — |
+| `HD-MKT-002` | Marketing Page | ✅ | 4 | — | — |
 | `HD-MKT-003` | Pricing Page | ❌ | 4 | — | — |
 | `HD-MKT-004` | Practitioners Page | ❌ | 4 | — | — |
 | `HD-MKT-005` | FAQ/Help | ❌ | 3 | — | — |
-| `HD-MKT-006` | Legal - Privacy | ✅ | 3 | CI-RED | — |
-| `HD-MKT-007` | Legal - Terms | ✅ | 3 | CI-RED | — |
-| `HD-MKT-008` | 404 Page | ✅ | 1 | CI-RED | — |
+| `HD-MKT-006` | Legal - Privacy | ✅ | 3 | — | — |
+| `HD-MKT-007` | Legal - Terms | ✅ | 3 | — | — |
+| `HD-MKT-008` | 404 Page | ✅ | 1 | — | — |
 
 ### API Health & Monitoring — 57.1% weighted (4✅ 0⚠️ 3❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-HEALTH-001` | Health Endpoint | ✅ | 1 | CI-RED | — |
-| `HD-HEALTH-002` | Version Info | ✅ | 1 | CI-RED | — |
+| `HD-HEALTH-001` | Health Endpoint | ✅ | 1 | — | — |
+| `HD-HEALTH-002` | Version Info | ✅ | 1 | — | — |
 | `HD-HEALTH-003` | Database Health | ❌ | 2 | — | — |
 | `HD-HEALTH-004` | Sentry Error Tracking | ❌ | 2 | — | — |
 | `HD-HEALTH-005` | PostHog Analytics | ❌ | 2 | — | — |
-| `HD-HEALTH-006` | Rate Limiting | ✅ | 5 | CI-RED | — |
-| `HD-HEALTH-007` | CORS Configuration | ✅ | 1 | CI-RED | — |
+| `HD-HEALTH-006` | Rate Limiting | ✅ | 5 | — | — |
+| `HD-HEALTH-007` | CORS Configuration | ✅ | 1 | — | — |
 
 ### Data Integrity & Security — 100.0% weighted (7✅ 0⚠️ 0❌ 0🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-SEC-001` | SQL Injection Protection | ✅ | 5 | CI-RED | — |
-| `HD-SEC-002` | XSS Protection | ✅ | 5 | CI-RED | — |
-| `HD-SEC-003` | CSRF Token | ✅ | 5 | CI-RED | — |
-| `HD-SEC-004` | Password Hashing | ✅ | 5 | CI-RED | — |
-| `HD-SEC-005` | JWT Expiration | ✅ | 5 | CI-RED | — |
-| `HD-SEC-006` | Input Validation | ✅ | 5 | CI-RED | — |
-| `HD-SEC-007` | Output Sanitization | ✅ | 5 | CI-RED | — |
+| `HD-SEC-001` | SQL Injection Protection | ✅ | 5 | — | — |
+| `HD-SEC-002` | XSS Protection | ✅ | 5 | — | — |
+| `HD-SEC-003` | CSRF Token | ✅ | 5 | — | — |
+| `HD-SEC-004` | Password Hashing | ✅ | 5 | — | — |
+| `HD-SEC-005` | JWT Expiration | ✅ | 5 | — | — |
+| `HD-SEC-006` | Input Validation | ✅ | 5 | — | — |
+| `HD-SEC-007` | Output Sanitization | ✅ | 5 | — | — |
 
 ### Performance — 0.0% weighted (0✅ 0⚠️ 0❌ 6🔍)
 | ID | Feature | Status | W | Tags | Overlays |
@@ -144,7 +144,7 @@ _Generated 2026-05-15T11:32:15+00:00 by `scripts/aggregate_completion.py`._
 | `HD-PERF-005` | Time to Interactive | 🔍 | 3 | — | — |
 | `HD-PERF-006` | Database Query Time | 🔍 | 3 | — | — |
 
-## VK — videoking
+## CC — capricast
 ### Authentication & Accounts — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
