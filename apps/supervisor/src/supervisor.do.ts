@@ -253,6 +253,7 @@ export class SupervisorDO {
             template.description,
             template.tier,
             plan.steps,
+            template.pattern_check,
           );
 
           try {

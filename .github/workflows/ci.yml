@@ -111,6 +111,9 @@ jobs:
       - name: Enforce wrangler name ↔ service-registry drift (FRH-WRNG-01)
         run: node scripts/check-wrangler-registry-drift.mjs
 
+      - name: Enforce monitor target generation is up-to-date (FRH-05)
+        run: node scripts/generate-monitor-targets.mjs --check
+
       - name: Lint publish workflow with actionlint (FRH-06)
         run: |
           bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)

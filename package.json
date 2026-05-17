@@ -1,7 +1,14 @@
 {
   "name": "factory-monorepo",
   "private": true,
+  "type": "module",
   "description": "Factory Core monorepo root — shared tooling and base configurations",
+  "dependencies": {
+    "@latimer-woods-tech/errors": "file:packages/errors",
+    "@latimer-woods-tech/logger": "file:packages/logger",
+    "@latimer-woods-tech/monitoring": "file:packages/monitoring",
+    "hono": "^4.12.14"
+  },
   "devDependencies": {
     "typescript": "^5.4.0"
   }

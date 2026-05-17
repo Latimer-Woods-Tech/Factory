@@ -1,0 +1,117 @@
+name: Dead Man's Switch
+
+# G3 — Heartbeat alert. Fires Pushover if the aggregator hasn't written a
+# fresh completion-tracker snapshot in 26 hours.
+#
+# Aggregator schedule: `30 10 * * *` (10:30 UTC daily). Snapshot lands on
+# main 5–15 min later (via auto-merging drift PR). This switch runs at
+# 11:11 UTC — well after the aggregator has had time to commit, but before
+# the next aggregator run would mask a real outage.
+#
+# A 26-hour age budget covers normal cadence (24h) + queue/PR-merge slack.
+
+on:
+  schedule:
+    - cron: '11 11 * * *' # daily 11:11 UTC, after aggregator + drift PR merge
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dead-mans-switch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch Pushover credentials from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env PUSHOVER_USER  FACTORY_PUSHOVER_USER PUSHOVER_USER pushover-user
+          fetch_to_env PUSHOVER_TOKEN FACTORY_PUSHOVER_API  PUSHOVER_TOKEN pushover-token
+
+      - name: Check completion-tracker freshness
+        id: check
+        run: |
+          set -euo pipefail
+          TRACKER="docs/completion-tracker.json"
+
+          # Cold-start tolerance: if the tracker file has NEVER been committed
+          # to this branch, treat it as "warming up" — log a warning but
+          # don't fire P1 (the aggregator may not have completed its first
+          # run yet, e.g., when this workflow lands on main before the
+          # aggregator's 10:30 UTC cron fires).
+          FIRST_COMMIT=$(git log --diff-filter=A --format=%ct -- "$TRACKER" 2>/dev/null | tail -1)
+          if [ -z "$FIRST_COMMIT" ]; then
+            echo "::warning::Tracker has never been committed — aggregator cold start. Not paging."
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "reason=cold_start" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # File should exist now (since git log found it). If it doesn't on
+          # disk, the file was deleted — treat as stale.
+          if [ ! -f "$TRACKER" ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "reason=tracker_deleted" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Last modified time on the file (UNIX seconds, from git log).
+          LAST_TOUCH=$(git log -1 --format=%ct -- "$TRACKER" 2>/dev/null || echo 0)
+          NOW=$(date +%s)
+          AGE_SECONDS=$(( NOW - LAST_TOUCH ))
+          AGE_HOURS=$(( AGE_SECONDS / 3600 ))
+
+          echo "Last touch: $LAST_TOUCH ($(date -d @$LAST_TOUCH -u))"
+          echo "Now:        $NOW ($(date -d @$NOW -u))"
+          echo "Age:        $AGE_HOURS hours"
+
+          if [ $AGE_HOURS -gt 26 ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "reason=age_${AGE_HOURS}h" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "reason=fresh_${AGE_HOURS}h" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fire Pushover alert if stale
+        if: steps.check.outputs.stale == 'true'
+        # PUSHOVER_USER and PUSHOVER_TOKEN are already in $GITHUB_ENV from
+        # the GCP Secret Manager fetch step above.
+        run: |
+          set -euo pipefail
+          if [ -z "${PUSHOVER_USER:-}" ] || [ -z "${PUSHOVER_TOKEN:-}" ]; then
+            echo "::warning::Pushover credentials missing — alert NOT sent."
+            exit 0
+          fi
+          REASON='${{ steps.check.outputs.reason }}'
+          curl -s --max-time 30 \
+            --form-string "token=${PUSHOVER_TOKEN}" \
+            --form-string "user=${PUSHOVER_USER}" \
+            --form-string "title=🚨 Dead Man's Switch — aggregator stale" \
+            --form-string "message=docs/completion-tracker.json: ${REASON}. Check aggregate_completion.yml runs." \
+            --form-string "priority=1" \
+            https://api.pushover.net/1/messages.json
+
+      - name: Fail workflow if stale (visible in Actions UI)
+        if: steps.check.outputs.stale == 'true'
+        run: |
+          echo "::error::Dead man's switch tripped: ${{ steps.check.outputs.reason }}"
+          exit 1
