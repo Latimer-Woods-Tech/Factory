@@ -80,6 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     if: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+    env:
+      CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
     steps:
       - uses: actions/checkout@v6
 
@@ -98,14 +100,12 @@ jobs:
         run: npm run build-storybook
 
       - name: Publish to Chromatic (blocking)
-        if: ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' }}
+        if: env.CHROMATIC_PROJECT_TOKEN != ''
         working-directory: apps/admin-studio-ui
-        env:
-          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
         run: npx chromatic --project-token="$CHROMATIC_PROJECT_TOKEN" --storybook-build-dir=storybook-static --exit-zero-on-changes=false
 
       - name: Fail when Chromatic token is missing
-        if: ${{ secrets.CHROMATIC_PROJECT_TOKEN == '' }}
+        if: env.CHROMATIC_PROJECT_TOKEN == ''
         run: |
           echo "CHROMATIC_PROJECT_TOKEN is required for visual-regression gating."
           exit 1
