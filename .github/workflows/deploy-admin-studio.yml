@@ -184,6 +184,12 @@ jobs:
       # worker via @latimer-woods-tech/monitoring. Skips gracefully when the
       # SENTRY_AUTH_TOKEN secret is not configured.
       - name: Upload sourcemaps to Sentry
+        # Sourcemap upload is nice-to-have (stack-trace symbolication) — it must
+        # never gate a deploy. Today's Sentry project slug "admin-studio" under
+        # org "latwood-tech" returns 400 "Invalid project ids or slugs"; the
+        # canary-watch reusable workflow uses org slug "latimer-woods-tech",
+        # so one of these is stale. Tracked separately; for now, soft-fail.
+        continue-on-error: true
         working-directory: apps/admin-studio
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
