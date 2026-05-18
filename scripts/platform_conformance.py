@@ -194,6 +194,44 @@ def gh_list_dir(repo: str, path: str, ref: str = "main") -> list[dict[str, Any]]
     return items if isinstance(items, list) else []
 
 
+def gh_get_first_file(repo: str, paths: list[str]) -> str | None:
+    """Return the first existing file content from a list of candidate paths."""
+    for path in paths:
+        content = gh_get_file(repo, path)
+        if content is not None:
+            return content
+    return None
+
+
+def gh_get_deploy_workflow_text(repo: str, extra_paths: list[str] | None = None) -> str:
+    """Best-effort concatenation of deploy workflow file contents."""
+    candidates = list(extra_paths or [])
+    candidates.extend([
+        ".github/workflows/deploy.yml",
+        ".github/workflows/_app-deploy.yml",
+        ".github/workflows/deploy-workers.yml",
+        ".github/workflows/deploy-worker.yml",
+        ".github/workflows/deploy-worker-only.yml",
+    ])
+    # Include any workflow whose filename contains "deploy".
+    for item in gh_list_dir(repo, ".github/workflows"):
+        name = item.get("name", "").lower()
+        path = item.get("path", "")
+        if "deploy" in name and path:
+            candidates.append(path)
+
+    seen: set[str] = set()
+    contents: list[str] = []
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        text = gh_get_file(repo, path)
+        if text:
+            contents.append(text)
+    return "\n".join(contents)
+
+
 def gh_search_code(repo: str, query: str) -> int:
     """Count code search hits. Returns -1 on error."""
     full_q = f"{query} repo:{repo}"
@@ -304,7 +342,13 @@ def dim_stack(repo: str) -> DimensionScore:
 
 
 def dim_code_patterns(repo: str) -> DimensionScore:
-    pkg_json = gh_get_file(repo, "package.json") or "{}"
+    pkg_json_path = "package.json"
+    src_path = "src/"
+    if repo == "Latimer-Woods-Tech/Factory":
+        pkg_json_path = "apps/admin-studio/package.json"
+        src_path = "apps/admin-studio/src/"
+
+    pkg_json = gh_get_file(repo, pkg_json_path) or "{}"
     try:
         deps = {**json.loads(pkg_json).get("dependencies", {}),
                 **json.loads(pkg_json).get("devDependencies", {})}
@@ -315,7 +359,7 @@ def dim_code_patterns(repo: str) -> DimensionScore:
         check("@latimer-woods-tech/logger in deps",     "@latimer-woods-tech/logger" in deps),
         check("@latimer-woods-tech/errors in deps",     "@latimer-woods-tech/errors" in deps),
         check("@latimer-woods-tech/monitoring in deps", "@latimer-woods-tech/monitoring" in deps),
-        check("No console.log in src/",                 gh_search_code(repo, 'path:src/ "console.log"') in (0, -1)),
+        check("No console.log in src/",                 gh_search_code(repo, f'path:{src_path} "console.log"') in (0, -1)),
         check("Typed Env interface",                    has_typed_env_bindings(repo)),
     ]
     return DimensionScore("code_patterns", "Code patterns", 15, score_from_checks(checks), checks)
@@ -337,16 +381,25 @@ def dim_tests(repo: str) -> DimensionScore:
 
 
 def dim_observability(repo: str) -> DimensionScore:
-    deploy_yml = gh_get_file(repo, ".github/workflows/deploy.yml") or \
-                 gh_get_file(repo, ".github/workflows/_app-deploy.yml")
-    slo_doc = gh_get_file(repo, "docs/SLO.md") or gh_get_file(repo, "docs/slo.md")
+    deploy_yml = gh_get_deploy_workflow_text(repo)
+    slo_paths = ["docs/SLO.md", "docs/slo.md"]
+    sentry_query = '"@sentry/"'
+    monitoring_query = '"@latimer-woods-tech/monitoring"'
+    structured_log_query = '"request_id"'
+    if repo == "Latimer-Woods-Tech/Factory":
+        deploy_yml = gh_get_deploy_workflow_text(repo, extra_paths=[".github/workflows/deploy-admin-studio.yml"])
+        slo_paths = ["apps/admin-studio/docs/SLO.md", "apps/admin-studio/docs/slo.md", *slo_paths]
+        sentry_query = 'path:apps/admin-studio/src/ "@sentry/"'
+        monitoring_query = 'path:apps/admin-studio/src/ "@latimer-woods-tech/monitoring"'
+        structured_log_query = 'path:apps/admin-studio/src/ "request_id"'
+    slo_doc = gh_get_first_file(repo, slo_paths)
 
     checks = [
-        check("Sentry import",                 gh_search_code(repo, '"@sentry/"') > 0),
-        check("@lwt/monitoring consumed",      gh_search_code(repo, '"@latimer-woods-tech/monitoring"') > 0),
-        check("Sourcemap upload step",         text_contains(deploy_yml, "sourcemaps")),
+        check("Sentry import",                 gh_search_code(repo, sentry_query) > 0),
+        check("@lwt/monitoring consumed",      gh_search_code(repo, monitoring_query) > 0),
+        check("Sourcemap upload step",         text_contains(deploy_yml, re.compile(r"sourcemaps?", re.IGNORECASE))),
         check("SLO doc present",               slo_doc is not None),
-        check("Structured log fields",         gh_search_code(repo, '"request_id"') > 0),
+        check("Structured log fields",         gh_search_code(repo, structured_log_query) > 0),
     ]
     return DimensionScore("observability", "Observability", 10, score_from_checks(checks), checks)
 
