@@ -2,7 +2,7 @@
 
 **Product:** Factory (the platform layer) · **Audience archetype:** Practitioner-of-1 (operator + engineer running a Latimer-Woods-Tech-stack product) · **Readiness state:** 🟡 `discovery` · **Priority:** #3 — *internal customer; serves the other 4 products*
 
-> Parent: this is the platform; portfolio "customers" are [`selfprime-practitioner`](./selfprime-practitioner.md), [`selfprime-consumer`](./selfprime-consumer.md), [`cypher-seeker`](./cypher-seeker.md), [`xicocity-creator`](./xicocity-creator.md), and capricast (queued) · Matrix cell: row "Factory" × col "Practitioner-of-1" · Voice: `factory_internal`
+> Parent: this is the platform; portfolio "customers" are [`selfprime-practitioner`](./selfprime-practitioner.md), [`selfprime-consumer`](./selfprime-consumer.md), `cypher-seeker` (ICP file pending), `xicocity-creator` (ICP file pending), and [`capricast-creator`](./capricast-creator.md) · Matrix cell: row "Factory" × col "Practitioner-of-1" · Voice: `factory_internal`
 
 > Internal product. Not sold externally in 2026 per [`ICP_MATRIX.md`](../ICP_MATRIX.md). "Adoption" replaces MRR; "engineering hours saved" replaces ARPU. Read this file as the contract between Factory-the-platform and the app teams that consume it.
 

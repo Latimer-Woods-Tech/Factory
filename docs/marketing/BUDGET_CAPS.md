@@ -6,6 +6,8 @@
 
 > Conflicts: [`docs/supervisor/FRIDGE.md`](../supervisor/FRIDGE.md) wins. Org-wide LLM cap in [`GAP_REGISTER.md` G8](../GAP_REGISTER.md) supersedes the LLM line items in this file when stricter.
 
+> ⚠️ **2026-05-18 — Revision pending.** [`COST_PROJECTION.md`](./COST_PROJECTION.md) bottoms-up math shows v1 numbers below sit at the *conservative-projection ceiling* — supervisor goes live and the daily cap fires under normal operation, not under failure. Worst case ~$50-80/day breaches G8 by itself. **Treat v1 numbers as lower-bounds until the three load-bearing controls ship (tier demotion, prompt caching, idempotency + circuit breaker); recommended revised numbers in COST_PROJECTION §7.**
+
 ---
 
 ## 1. Purpose

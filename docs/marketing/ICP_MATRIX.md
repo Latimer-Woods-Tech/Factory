@@ -23,10 +23,10 @@ Readiness state legend (per [`CONSTITUTION.md §5`](./CONSTITUTION.md)):
 
 | | **Chart-curious consumer** | **Power user / enthusiast** | **Practitioner-of-1** | **Practitioner team / studio** | **Channel partner / aggregator** |
 |---|---|---|---|---|---|
-| **Selfprime** (selfprime.net) | 🟡 [`selfprime-consumer`](./icp/selfprime-consumer.md) | ⏳ [`selfprime-power`](./icp/selfprime-power.md) | 🟡 [`selfprime-practitioner`](./icp/selfprime-practitioner.md) ← *first domino* | ⏳ [`selfprime-studio`](./icp/selfprime-studio.md) | ⏳ [`selfprime-partner`](./icp/selfprime-partner.md) |
-| **Capricast** | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| **Cypher of Healing** (cipherofhealing.com) | 🟡 [`cypher-seeker`](./icp/cypher-seeker.md) | 🚫 (not differentiated from seeker tier 12mo) | ⏳ [`cypher-practitioner`](./icp/cypher-practitioner.md) | ⏳ [`cypher-clinic`](./icp/cypher-clinic.md) | 🚫 (regulated vertical, not 2026) |
-| **Xico City** (xicocity.com) | ⏳ creator-curious | ⏳ DJMEXXICO super-fan | 🟡 [`xicocity-creator`](./icp/xicocity-creator.md) | ⏳ [`xicocity-collective`](./icp/xicocity-collective.md) | ⏳ cultural institution / festival |
+| **Selfprime** (selfprime.net) | 🟡 [`selfprime-consumer`](./icp/selfprime-consumer.md) | ⏳ power | 🟡 [`selfprime-practitioner`](./icp/selfprime-practitioner.md) ← *first domino* | ⏳ studio | ⏳ partner |
+| **Capricast** (capricast.com) | ⏳ | ⏳ | 🟡 [`capricast-creator`](./icp/capricast-creator.md) | ⏳ collective | ⏳ |
+| **Cypher of Healing** (cipherofhealing.com) | ⏳ seeker *(positioning landed in [`packages/copy/`](../../packages/copy/src/index.ts) `cypher_healing` voice; ICP file pending)* | 🚫 (not differentiated from seeker tier 12mo) | ⏳ [`cypher-practitioner`](./icp/cypher-practitioner.md) | ⏳ clinic | 🚫 (regulated vertical, not 2026) |
+| **Xico City** (xicocity.com) | ⏳ creator-curious | ⏳ DJMEXXICO super-fan | ⏳ creator *(positioning landed in [`VOICES.md`](./VOICES.md) `xicocity_creator`; ICP file pending)* | ⏳ collective | ⏳ cultural institution / festival |
 | **Factory** (internal) | 🚫 N/A — not a consumer product | 🚫 N/A | 🟡 [`factory-internal`](./icp/factory-internal.md) (operators using LWT packages) | ⏳ portfolio teams | 🚫 (not selling Factory externally 2026) |
 
 ---
@@ -36,7 +36,7 @@ Readiness state legend (per [`CONSTITUTION.md §5`](./CONSTITUTION.md)):
 **One row at a time:** "Which audiences does this product currently *play* to?"
 - Selfprime plays to 2 cells today (consumer + practitioner); 3 are queued.
 - Cypher of Healing plays to 1; clinic/team is queued, channel-partner is forbidden until regulatory work is done.
-- Capricast is queued in all cells — needs a positioning pass first.
+- Capricast plays to 1 cell as of 2026-05-18 (creator-of-1; positioning landed in [`icp/capricast.md`](./icp/capricast.md)); 4 other cells queued.
 
 **One column at a time:** "Which products compete for the same audience?"
 - The "practitioner-of-1" column has 3 active or queued plays (Selfprime, Cypher, Xico City) — same operating motion (B2B-of-1), reuse the playbook.
@@ -71,6 +71,33 @@ Every filled cell has an `icp/{slug}.md` file matching this template (cross-link
 
 This is the *contract*. New cells without this structure can't progress past `discovery`.
 
+### Cell capabilities (T2-12)
+
+In addition to the file structure, every cell declares **capability flags** that drive system enforcement. Capabilities live in a per-cell YAML stub at `docs/marketing/cells/{cell-key}.yaml` (created in the same PR that fills the cell) and are read by the marketing supervisor at every action.
+
+| Capability | Default | When to enable |
+|---|---|---|
+| `publishes_user_content` | `false` | Cell surfaces accept content from users/practitioners that gets public exposure (e.g. `selfprime.net/r/*`). Forces synchronous vision-gate at publish time; enables `ugc_brand_safety` tripwire |
+| `accepts_paid_spend` | `false` | Cell has reached `paid_active` readiness state. Required for any paid-channel campaign |
+| `regulated_vertical` | `false` | Cell touches regulated content (health, finance). Activates universal regulated-terms denylist + FDA-aware language gate; forbids efficacy claims; requires consent audit on every send |
+| `b2b_outreach_active` | `false` | Cell runs outbound to practitioners with consent on file. Enforces warm-only outreach; cold-mass-outbound denied |
+| `cross_product_flywheel_source` | `false` | Cell publishes content that drives signups in OTHER cells (e.g. `selfprime:practitioner` shareables → `selfprime:consumer` signups). Enables `referral_chain` tracking on downstream cells |
+| `localized` | `false` | Cell has registered voices for non-English locales. Determines whether i18n routing applies |
+
+Capabilities map per current matrix:
+
+| Cell | Capabilities |
+|---|---|
+| `selfprime:practitioner` | `b2b_outreach_active=true`, `publishes_user_content=true` (via shareables), `cross_product_flywheel_source=true` |
+| `selfprime:consumer` | (none enabled until validation completes) |
+| `cypher:seeker` | `regulated_vertical=true` |
+| `cypher:practitioner` | `regulated_vertical=true`, `b2b_outreach_active=true` (when promoted) |
+| `xicocity:creator` | `publishes_user_content=true` |
+| `capricast:creator` | `publishes_user_content=true` |
+| `factory:internal` | (none) |
+
+The autonomous supervisor reads these flags at every action gate. A cell without `accepts_paid_spend=true` cannot run paid campaigns even if the operator authorizes — the supervisor refuses. This is the **code-enforced layer** that the consistency audit identified as missing.
+
 ---
 
 ## Priority order (rolling)
@@ -82,8 +109,8 @@ Set 2026-05-18; revised quarterly. Honor the [portfolio priority memory](../../.
 | 1 | `selfprime-practitioner` | First domino. 5 design partners unlock the autonomous loop's bootstrap data. |
 | 2 | `selfprime-consumer` | Larger TAM, same engine, complementary distribution surface. |
 | 3 | `factory-internal` | Internal "customer"; serves the other 4 products. |
-| 4 | `cypher-seeker` | Cypher voice + audience already differentiated; second-easiest start. |
-| 5 | `xicocity-creator` | Creator-economy audience has clear positioning per [`project_xicocity_canonical.md`](../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_xicocity_canonical.md). |
+| 4 | `cypher-seeker` | Cypher voice + audience already differentiated; second-easiest start (ICP file pending). |
+| 5 | `xicocity-creator` | Creator-economy audience has clear positioning (DJMEXXICO creative-economy OS); ICP file pending. |
 | 6+ | Remaining cells | After data from #1-5 informs priority |
 
 ---
