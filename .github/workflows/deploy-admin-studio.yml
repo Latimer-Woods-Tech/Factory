@@ -24,7 +24,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    # Use workflow-scoped environment keys to avoid the shared production/staging
+    # environment scheduler wedge (0-job pending runs) seen in May 2026.
+    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'admin-studio-production' || 'admin-studio-staging' }}
     permissions:
       contents: read
     outputs:
