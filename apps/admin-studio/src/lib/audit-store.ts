@@ -169,8 +169,10 @@ export async function queryAuditEntries(
     LIMIT ${limit + 1}
   `);
 
-  // drizzle/neon-http returns an array directly for SELECT.
-  const rows = (result as unknown as AuditRow[]) ?? [];
+  // FactoryDb.execute (from @latimer-woods-tech/neon) returns
+  // { rows, rowCount }. The previous comment + cast pre-dated that
+  // package change and was the root cause of /audit 500s in production.
+  const rows = result.rows as unknown as AuditRow[];
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
   const last = page[page.length - 1];

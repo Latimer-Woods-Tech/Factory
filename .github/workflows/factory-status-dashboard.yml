@@ -44,7 +44,7 @@ jobs:
             echo "| Repo | Latest CI | Last commit | Open PRs |"
             echo "|---|---|---|---|"
           } > "$OUT"
-          for repo in factory wordis-bond cypher-healing ijustus the-calling neighbor-aid xico-city factory-admin xpelevator videoking HumanDesign; do
+          for repo in factory wordis-bond cypher-healing ijustus the-calling neighbor-aid xico-city factory-admin xpelevator capricast HumanDesign; do
             CI=$(gh api "/repos/Latimer-Woods-Tech/$repo/actions/runs?per_page=1" --jq '.workflow_runs[0] | "\(.status) \(.conclusion // "-")"' 2>/dev/null || echo "-")
             ICON="❔"
             case "$CI" in

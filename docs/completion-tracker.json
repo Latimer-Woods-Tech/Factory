@@ -1,17 +1,16 @@
 {
-  "generated_at": "2026-05-15T11:32:15.089891+00:00",
+  "generated_at": "2026-05-17T19:07:57.484975+00:00",
   "overall_weighted": 26.5,
   "overall_known": 43.2,
   "overall_raw": 23.7,
   "repo_weighted": {
     "HD": 74.9,
-    "VK": 0.0,
+    "CC": 0.0,
     "FA": 0.0,
     "CH": 0.0,
     "XC": 0.0
   },
   "ci_red": [
-    "HD",
     "XC"
   ],
   "smoke_red": [
@@ -36,9 +35,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated from legacy row",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -58,9 +55,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -80,9 +75,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -122,9 +115,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "7 tests inc. enumeration safety",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -144,9 +135,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "10 tests inc. atomic transaction",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -166,9 +155,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -188,9 +175,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -210,9 +195,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -232,9 +215,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -254,9 +235,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Marketing page redirect",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -276,9 +255,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -298,9 +275,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -320,9 +295,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -342,9 +315,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -404,9 +375,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -426,9 +395,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Manifestor/Generator/MG/Projector/Reflector",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -448,9 +415,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -470,9 +435,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -512,9 +475,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -534,9 +495,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -556,9 +515,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -578,9 +535,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -600,9 +555,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -662,9 +615,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "i18n integration",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -684,9 +635,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Legal/static pages browser gate",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -706,9 +655,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -728,9 +675,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Auth gate + unit",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -750,9 +695,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -772,9 +715,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -794,9 +735,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -816,9 +755,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -838,9 +775,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -860,9 +795,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -882,9 +815,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Auth enforcement verified",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -904,9 +835,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Portal auth gate",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -926,9 +855,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -948,9 +875,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -970,9 +895,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -992,9 +915,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1014,9 +935,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1056,9 +975,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1118,9 +1035,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "10-step sequence",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1140,9 +1055,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Shows on `?start=1`",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1162,9 +1075,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "SPA navigation",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1184,9 +1095,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1226,9 +1135,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Birth data form",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1288,9 +1195,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Locale loading",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1330,9 +1235,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "axe-core scans",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1352,9 +1255,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Marketing redirect",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1374,9 +1275,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "Via middleware",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1456,9 +1355,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Loads 200",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1478,9 +1375,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "Loads 200",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1500,9 +1395,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "Non-5xx for unknown paths",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1522,9 +1415,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "Returns `{\"status\":\"ok\"}`",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1544,9 +1435,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "Version in response",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1626,9 +1515,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "DB-backed atomic counter",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1648,9 +1535,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "OPTIONS preflight",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1670,9 +1555,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Zod + parameterized queries",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1692,9 +1575,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Zod blocks script injection",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1714,9 +1595,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "JSON-only API; SameSite cookies",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1736,9 +1615,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "PBKDF2 via Web Crypto",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1758,9 +1635,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1780,9 +1655,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "48 tests",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1802,9 +1675,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "JSON-only responses",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -1928,8 +1799,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 17,
       "raw": "| VK-AUTH-001 | Sign Up (Next.js) | `apps/web/src/app/(auth)/sign-up/page.tsx` + `SignUpForm.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Better-Auth client |",
@@ -1948,8 +1819,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 18,
       "raw": "| VK-AUTH-002 | Sign In (Next.js) | `apps/web/src/app/(auth)/sign-in/page.tsx` + `SignInForm.tsx` | 🔍 TODO | `e2e/01-viewer-signup-subscribe.spec.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -1968,8 +1839,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 19,
       "raw": "| VK-AUTH-003 | Auth catch-all (Better-Auth) | `apps/web/src/app/api/auth/[...all]/route.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Delegates to better-auth |",
@@ -1988,8 +1859,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 20,
       "raw": "| VK-AUTH-004 | Worker auth routes | `apps/worker/src/routes/auth.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | `GET /entitlements`, `POST /trial/activate` |",
@@ -2008,8 +1879,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 21,
       "raw": "| VK-AUTH-005 | Session middleware | `apps/worker/src/middleware/session.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Used on `/api/*` |",
@@ -2028,8 +1899,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 22,
       "raw": "| VK-AUTH-006 | Admin middleware | `apps/worker/src/middleware/admin.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Gate for `/api/admin/*` |",
@@ -2048,8 +1919,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Authentication & Accounts",
       "line_no": 23,
       "raw": "| VK-AUTH-007 | Account routes | `/api/users` → `routes/account.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2068,8 +1939,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 28,
       "raw": "| VK-VID-001 | Video list/detail API | `/api/videos` → `routes/videos.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2088,8 +1959,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 29,
       "raw": "| VK-VID-002 | Watch page | `apps/web/src/app/watch/[videoId]/page.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2108,8 +1979,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 30,
       "raw": "| VK-VID-003 | Video player component | `components/VideoPlayer.tsx` + `useVideoPlayer.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2128,8 +1999,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 31,
       "raw": "| VK-VID-004 | Video feed / discovery | `components/VideoFeed.tsx`, `DiscoveryFilters.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2148,8 +2019,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 32,
       "raw": "| VK-VID-005 | Home page | `apps/web/src/app/page.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2168,8 +2039,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 33,
       "raw": "| VK-VID-006 | Search | `/api/search` → `routes/search.ts` + `/search` page | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2188,8 +2059,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 34,
       "raw": "| VK-VID-007 | Upload flow | `/dashboard/upload` + `UploadForm.tsx` + `/api/assets` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | R2-backed; data-loss risk |",
@@ -2208,8 +2079,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 35,
       "raw": "| VK-VID-008 | Playlists | `/api/playlists` → `routes/playlists.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2228,8 +2099,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Video Catalog & Playback",
       "line_no": 36,
       "raw": "| VK-VID-009 | Channels | `/api/channels` → `routes/channels.ts` + `/channel/[username]` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2248,8 +2119,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 41,
       "raw": "| VK-RT-001 | Conference API | `/api/conference` → `routes/conference.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2268,8 +2139,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 42,
       "raw": "| VK-RT-002 | Conference room DO | `durable-objects/ConferenceRoom.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2288,8 +2159,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 43,
       "raw": "| VK-RT-003 | Conference WebSocket | `GET /api/conference/rooms/:sessionId/ws` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | DO upgrade |",
@@ -2308,8 +2179,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 44,
       "raw": "| VK-RT-004 | Video room DO | `durable-objects/VideoRoom.ts` + `GET /api/ws/:videoId` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2328,8 +2199,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 45,
       "raw": "| VK-RT-005 | Creator notifications DO | `durable-objects/CreatorNotifications.ts` + `GET /api/creator-notifications/:creatorId/ws` | 🔍 TODO | `lib/creator-notifications.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | Unit covers lib only |",
@@ -2348,8 +2219,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 46,
       "raw": "| VK-RT-006 | User presence DO | `durable-objects/UserPresence.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2368,8 +2239,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 47,
       "raw": "| VK-RT-007 | Conference UI | `ConferenceRoomPanel.tsx`, `ConferenceSessionManager.tsx`, `ParticipantVideo.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2388,8 +2259,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Live Conference & Realtime",
       "line_no": 48,
       "raw": "| VK-RT-008 | Watch party & chat | `WatchParty.tsx`, `ChatPanel.tsx`, `ReactionBar.tsx`, `PollWidget.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2408,8 +2279,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 53,
       "raw": "| VK-BILL-001 | Pricing page | `apps/web/src/app/pricing/page.tsx` + `PricingClient.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2428,8 +2299,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 54,
       "raw": "| VK-BILL-002 | Stripe API routes | `/api/stripe` → `routes/stripe.ts` | 🔍 TODO | `routes/stripe.test.ts`, `__tests__/stripe.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Has tests |",
@@ -2448,8 +2319,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 55,
       "raw": "| VK-BILL-003 | Stripe lib | `lib/stripe.ts`, `lib/stripe-connect.ts` | 🔍 TODO | `lib/stripe.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Unit |",
@@ -2468,8 +2339,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 56,
       "raw": "| VK-BILL-004 | Stripe webhooks | `/api/webhooks` → `routes/webhooks.ts` | 🔍 TODO | `routes/webhooks.idempotency.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Idempotency |",
@@ -2488,8 +2359,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 57,
       "raw": "| VK-BILL-005 | Entitlements | `lib/entitlements.ts` + `EntitlementsContext.tsx` | 🔍 TODO | `lib/entitlements.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -2508,8 +2379,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 58,
       "raw": "| VK-BILL-006 | Trial activation | `POST /api/auth/trial/activate` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -2528,8 +2399,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 59,
       "raw": "| VK-BILL-007 | Subscribe button | `components/SubscribeButton.tsx` | 🔍 TODO | `e2e/01-viewer-signup-subscribe.spec.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -2548,8 +2419,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 60,
       "raw": "| VK-BILL-008 | Pay-per-view unlock | Video-level unlock | 🔍 TODO | `e2e/02-pay-per-view-unlock.spec.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -2568,8 +2439,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 61,
       "raw": "| VK-BILL-009 | Creator payouts API | `/api/admin/payouts` → `routes/payouts.ts` | 🔍 TODO | `routes/payouts.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Has tests |",
@@ -2588,8 +2459,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 62,
       "raw": "| VK-BILL-010 | Payout service/lib | `lib/payout-service.ts`, `payout-reconciliation.ts`, `payouts.ts` | 🔍 TODO | `lib/payout-alerting.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | Alerting only |",
@@ -2608,8 +2479,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 63,
       "raw": "| VK-BILL-011 | Payout cron DO | `durable-objects/payout-cron.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -2628,8 +2499,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 64,
       "raw": "| VK-BILL-012 | Earnings dashboard | `/dashboard/earnings` + `EarningsTable.tsx` + `GET /api/dashboard/earnings` | 🔍 TODO | `e2e/03-creator-earnings-dashboard.spec.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2648,8 +2519,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Billing, Payouts & Stripe Connect",
       "line_no": 65,
       "raw": "| VK-BILL-013 | Admin payout batch | Admin UI + `/api/admin/payouts` | 🔍 TODO | `e2e/04-admin-payout-batch.spec.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 5 | |",
@@ -2668,8 +2539,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 70,
       "raw": "| VK-CR-001 | Creator dashboard | `/dashboard` + `CreatorDashboard.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2688,8 +2559,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 71,
       "raw": "| VK-CR-002 | Creator verification | `components/CreatorVerification.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2708,8 +2579,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 72,
       "raw": "| VK-CR-003 | Creator analytics | `/api/creator-analytics` → `routes/creator-analytics.ts` | 🔍 TODO | `routes/creator-analytics.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2728,8 +2599,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 73,
       "raw": "| VK-CR-004 | Dashboard analytics endpoint | `GET /api/dashboard/analytics` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2748,8 +2619,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 74,
       "raw": "| VK-CR-005 | Analytics dashboard UI | `components/AnalyticsDashboard.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2768,8 +2639,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 75,
       "raw": "| VK-CR-006 | Growth manager | `/dashboard/growth` + `GrowthManager.tsx` + `GET /api/dashboard/growth` | 🔍 TODO | `lib/growth.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | Unit only |",
@@ -2788,8 +2659,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 76,
       "raw": "| VK-CR-007 | Referrals | `/api/referrals` → `routes/referrals.ts` + `ReferralDashboard.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2808,8 +2679,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 77,
       "raw": "| VK-CR-008 | Experiments | `/api/experiments` → `routes/experiments.ts` | 🔍 TODO | `lib/experiments.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | Unit lib |",
@@ -2828,8 +2699,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 78,
       "raw": "| VK-CR-009 | CRM | `/api/admin/crm` → `routes/crm.ts` | 🔍 TODO | `lib/crm.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | |",
@@ -2848,8 +2719,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 79,
       "raw": "| VK-CR-010 | Events | `/api/events` + `/events`, `/events/[slug]` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2868,8 +2739,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 80,
       "raw": "| VK-CR-011 | Conference booking page | `/conference/[slug]/page.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 4 | |",
@@ -2888,8 +2759,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Creator Tools & Growth",
       "line_no": 81,
       "raw": "| VK-CR-012 | VIP features | `components/VIPFeatures.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2908,8 +2779,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 86,
       "raw": "| VK-ADM-001 | Ads API | `/api/ads` → `routes/ads.ts` + `lib/ad-manager.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -2928,8 +2799,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 87,
       "raw": "| VK-ADM-002 | Moderation API | `/api/moderation` → `routes/moderation.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | |",
@@ -2948,8 +2819,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 88,
       "raw": "| VK-ADM-003 | Admin routes | `/api/admin` → `routes/admin.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | |",
@@ -2968,8 +2839,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 89,
       "raw": "| VK-ADM-004 | Admin dashboard page | `/dashboard/admin` + `AdminPanel.tsx`, `GovernanceDashboard.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | |",
@@ -2988,8 +2859,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 90,
       "raw": "| VK-ADM-005 | Governance lib | `lib/governance.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | |",
@@ -3008,8 +2879,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 91,
       "raw": "| VK-ADM-006 | Dead letter queue | `/api/admin/dead-letter-queue` → `routes/dead-letter-queue.ts` | 🔍 TODO | `routes/dead-letter-queue.test.ts`, `lib/dead-letter-queue.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | Has tests |",
@@ -3028,8 +2899,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Ads, Moderation & Admin",
       "line_no": 92,
       "raw": "| VK-ADM-007 | Admin analytics | `/api/admin/analytics` → `routes/analytics.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 2 | |",
@@ -3048,8 +2919,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 97,
       "raw": "| VK-NOT-001 | Notifications API | `/api/notifications` → `routes/notifications.ts` + `NotificationBanner.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -3068,8 +2939,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 98,
       "raw": "| VK-NOT-002 | Email API | `/api/email` → `routes/email.ts` + `lib/email.ts` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -3088,8 +2959,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 99,
       "raw": "| VK-NOT-003 | Email preferences | `components/EmailPreferences.tsx` | 🔍 TODO | — | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -3108,8 +2979,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 100,
       "raw": "| VK-NOT-004 | Creator notifications lib | `lib/creator-notifications.ts` | 🔍 TODO | `lib/creator-notifications.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 3 | |",
@@ -3128,8 +2999,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 101,
       "raw": "| VK-NOT-005 | SEO / sitemap | `routes/seo.ts` + `app/sitemap.ts` + `app/manifest.ts` | 🔍 TODO | `routes/seo.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 1 | |",
@@ -3148,8 +3019,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 102,
       "raw": "| VK-NOT-006 | Retry utility | `lib/retry.ts` | — | `lib/retry.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 1 | |",
@@ -3168,8 +3039,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 103,
       "raw": "| VK-NOT-007 | Platform config | `lib/platform-config.ts` | — | `lib/platform-config.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 1 | |",
@@ -3188,8 +3059,8 @@
       "overlays": []
     },
     {
-      "repo_key": "VK",
-      "repo_name": "videoking",
+      "repo_key": "CC",
+      "repo_name": "capricast",
       "section": "Notifications, Email & SEO",
       "line_no": 104,
       "raw": "| VK-NOT-008 | Types contract | `apps/worker/src/types.ts` | — | `types.test.ts` | 🔍 | @adrper79-dot | 2026-05-11 | — | 1 | |",

@@ -101,12 +101,18 @@ jobs:
       - name: Enforce smoke secret contract
         run: node scripts/check-smoke-secret-contract.mjs
 
+      - name: Enforce telemetry contract coverage
+        run: node scripts/check-telemetry-contract.mjs
+
       - name: Enforce service registry / app-registry drift check (FRH-01)
         working-directory: apps/admin-studio
         run: node scripts/check-service-registry.mjs
 
       - name: Enforce wrangler name ↔ service-registry drift (FRH-WRNG-01)
         run: node scripts/check-wrangler-registry-drift.mjs
+
+      - name: Enforce monitor target generation is up-to-date (FRH-05)
+        run: node scripts/generate-monitor-targets.mjs --check
 
       - name: Lint publish workflow with actionlint (FRH-06)
         run: |

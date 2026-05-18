@@ -58,7 +58,7 @@ Source synthesis: `documents/factory/2026-05-11_HOLISTIC_GAP_REVIEW.md` (Sauna-s
 | G24 | No multi-region story for D1 | open | @adrper79-dot | out-of-roadmap (until forced) | CF roadmap, defer |
 | G25 | Per-product rate limiting standardized | open | @factory-cross-repo[bot] | stage-5 | Audit + canonicalize via `@lwt/rate-limit` package |
 | G26 | Queue / DO backpressure documented per Worker | open | @factory-cross-repo[bot] | stage-5 | Audit each DO; document backpressure pattern |
-| G27 | GCP key rotation overdue (`76bc15364b7d…`) | open | @adrper79-dot | this week | Manual rotate; update `memory/SAUNA_TOOLS.md` |
+| G27 | GCP key rotation overdue (`76bc15364b7d…`) | **closed** | @adrper79-dot | this week | Rotated — original key `76bc15364b7d` no longer in `gcloud iam service-accounts keys list factory-sa@factory-495015`; current active keys are `f5ce42a8` (2026-05-09), `0b2e6ad8` (2026-04-30), `2b6fadf6` (2026-05-02), `0dbfec87` (2026-05-12). Verified during 2026-05-17 holistic review. |
 | G28 | No calendar event for Monday review | open | @sauna | stage-0 follow-up | Create recurring Google Calendar event via `apn_4vhDK94` |
 | G29 | HubSpot keep-or-delete pending | open | @adrper79-dot | this week | Decide + ADR if keeping |
 | G30 | Pipedream Gmail (adrper79@gmail.com) reconnect or retire | open | @adrper79-dot | this week | Reconnect via Sauna or retire connection |

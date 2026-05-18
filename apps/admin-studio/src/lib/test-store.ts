@@ -175,7 +175,7 @@ export async function getTestRun(
     FROM studio_test_runs
     WHERE id = ${runId}
   `);
-  const rows = (result as unknown as RunRow[]) ?? [];
+  const rows = result.rows as unknown as RunRow[];
   if (rows.length === 0) return null;
   return rowToRun(rows[0]!);
 }
@@ -203,7 +203,7 @@ export async function listTestRuns(
         ORDER BY started_at DESC
         LIMIT ${limit}
       `);
-  const rows = (result as unknown as RunRow[]) ?? [];
+  const rows = result.rows as unknown as RunRow[];
   return rows.map(rowToRun);
 }
 
@@ -307,7 +307,7 @@ export async function listTestResults(
     WHERE run_id = ${runId}
     ORDER BY suite ASC, name ASC
   `);
-  const rows = (result as unknown as ResultRow[]) ?? [];
+  const rows = result.rows as unknown as ResultRow[];
   return rows.map((r) => ({
     id: r.test_id,
     suite: r.suite,

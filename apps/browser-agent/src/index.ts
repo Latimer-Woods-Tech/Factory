@@ -174,7 +174,14 @@ async function uploadToR2(videoPath: string, key: string, config: R2Config): Pro
 function createPlaywrightAutomation(): BrowserAutomation {
   let browserPromise: Promise<Browser> | undefined;
   const getBrowser = (): Promise<Browser> => {
-    browserPromise ??= chromium.launch({ headless: true });
+    // --no-sandbox + --disable-dev-shm-usage: required on Cloud Run (gVisor)
+    // where Chromium's namespace-based sandbox cannot initialize and /dev/shm
+    // is undersized. Without these flags chromium.launch() throws and every
+    // /scrape, /screenshot, /run-scenario request 500s.
+    browserPromise ??= chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-dev-shm-usage'],
+    });
     return browserPromise;
   };
 
@@ -303,6 +310,9 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
 
   app.onError((err, c) => {
     if (err instanceof HttpError) return c.json({ error: err.message }, err.status as 400 | 422);
+    // Cloud Run only persists logs that reach stdout/stderr — without this the
+    // 500-path discards the real failure and operators see empty {} payloads.
+    console.error('browser-agent error:', err instanceof Error ? err.stack ?? err.message : err);
     return c.json({ error: 'Internal server error' }, 500);
   });
 
