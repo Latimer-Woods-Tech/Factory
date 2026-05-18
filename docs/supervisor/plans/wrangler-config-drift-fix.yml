@@ -14,7 +14,7 @@ preconditions:
 slots:
   - name: app_name
     type: enum
-    values: [HumanDesign, videoking, xico-city, factory-admin]
+    values: [HumanDesign, capricast, xico-city, factory-admin]
     source: issue_body
     referential_check: factory_admin.repo.health
   - name: binding_kind
