@@ -23,10 +23,10 @@ Readiness state legend (per [`CONSTITUTION.md §5`](./CONSTITUTION.md)):
 
 | | **Chart-curious consumer** | **Power user / enthusiast** | **Practitioner-of-1** | **Practitioner team / studio** | **Channel partner / aggregator** |
 |---|---|---|---|---|---|
-| **Selfprime** (selfprime.net) | 🟡 [`selfprime-consumer`](./icp/selfprime-consumer.md) | ⏳ [`selfprime-power`](./icp/selfprime-power.md) | 🟡 [`selfprime-practitioner`](./icp/selfprime-practitioner.md) ← *first domino* | ⏳ [`selfprime-studio`](./icp/selfprime-studio.md) | ⏳ [`selfprime-partner`](./icp/selfprime-partner.md) |
+| **Selfprime** (selfprime.net) | 🟡 [`selfprime-consumer`](./icp/selfprime-consumer.md) | ⏳ power | 🟡 [`selfprime-practitioner`](./icp/selfprime-practitioner.md) ← *first domino* | ⏳ studio | ⏳ partner |
 | **Capricast** (capricast.com) | ⏳ | ⏳ | 🟡 [`capricast-creator`](./icp/capricast-creator.md) | ⏳ collective | ⏳ |
-| **Cypher of Healing** (cipherofhealing.com) | 🟡 [`cypher-seeker`](./icp/cypher-seeker.md) | 🚫 (not differentiated from seeker tier 12mo) | ⏳ [`cypher-practitioner`](./icp/cypher-practitioner.md) | ⏳ [`cypher-clinic`](./icp/cypher-clinic.md) | 🚫 (regulated vertical, not 2026) |
-| **Xico City** (xicocity.com) | ⏳ creator-curious | ⏳ DJMEXXICO super-fan | 🟡 [`xicocity-creator`](./icp/xicocity-creator.md) | ⏳ [`xicocity-collective`](./icp/xicocity-collective.md) | ⏳ cultural institution / festival |
+| **Cypher of Healing** (cipherofhealing.com) | ⏳ seeker *(positioning landed in [`packages/copy/`](../../packages/copy/src/index.ts) `cypher_healing` voice; ICP file pending)* | 🚫 (not differentiated from seeker tier 12mo) | ⏳ [`cypher-practitioner`](./icp/cypher-practitioner.md) | ⏳ clinic | 🚫 (regulated vertical, not 2026) |
+| **Xico City** (xicocity.com) | ⏳ creator-curious | ⏳ DJMEXXICO super-fan | ⏳ creator *(positioning landed in [`VOICES.md`](./VOICES.md) `xicocity_creator`; ICP file pending)* | ⏳ collective | ⏳ cultural institution / festival |
 | **Factory** (internal) | 🚫 N/A — not a consumer product | 🚫 N/A | 🟡 [`factory-internal`](./icp/factory-internal.md) (operators using LWT packages) | ⏳ portfolio teams | 🚫 (not selling Factory externally 2026) |
 
 ---
@@ -109,8 +109,8 @@ Set 2026-05-18; revised quarterly. Honor the [portfolio priority memory](../../.
 | 1 | `selfprime-practitioner` | First domino. 5 design partners unlock the autonomous loop's bootstrap data. |
 | 2 | `selfprime-consumer` | Larger TAM, same engine, complementary distribution surface. |
 | 3 | `factory-internal` | Internal "customer"; serves the other 4 products. |
-| 4 | `cypher-seeker` | Cypher voice + audience already differentiated; second-easiest start. |
-| 5 | `xicocity-creator` | Creator-economy audience has clear positioning per [`project_xicocity_canonical.md`](../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_xicocity_canonical.md). |
+| 4 | `cypher-seeker` | Cypher voice + audience already differentiated; second-easiest start (ICP file pending). |
+| 5 | `xicocity-creator` | Creator-economy audience has clear positioning (DJMEXXICO creative-economy OS); ICP file pending. |
 | 6+ | Remaining cells | After data from #1-5 informs priority |
 
 ---
