@@ -84,14 +84,27 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Pull the SA key JSON; write to a private temp file. The secret
-          # is stored with a UTF-8 BOM prefix that gcloud auth's JSON parser
-          # rejects, so we strip it via python's utf-8-sig codec before saving.
+          # Pull the SA key JSON; write to a private temp file. The version
+          # stored in GCP Secret Manager has three quirks that gcloud's JSON
+          # parser refuses: a UTF-8 BOM prefix, Windows CR/CRLF line endings,
+          # and a missing opening `{` brace. Normalize all three so gcloud
+          # gets clean JSON. Once the secret value is replaced with a clean
+          # SA key JSON, this normalization becomes a no-op.
           gcloud secrets versions access latest \
             --secret=VERTEX_SA_KEY \
             --project="$GCP_PROJECT" \
-            | python3 -c "import sys; sys.stdout.write(sys.stdin.buffer.read().decode('utf-8-sig'))" \
-            > /tmp/vertex-sa.json
+            | python3 -c "
+import sys, json
+raw = sys.stdin.buffer.read().decode('utf-8-sig')
+raw = raw.replace('\r\r\n', '\n').replace('\r\n', '\n').replace('\r', '\n').strip()
+if not raw.startswith('{'):
+    raw = '{' + raw
+if not raw.rstrip().endswith('}'):
+    raw = raw + '}'
+# Round-trip through json to catch other issues before writing.
+parsed = json.loads(raw)
+sys.stdout.write(json.dumps(parsed))
+" > /tmp/vertex-sa.json
           chmod 600 /tmp/vertex-sa.json
 
           # Activate the Vertex SA from its key and mint an access token
