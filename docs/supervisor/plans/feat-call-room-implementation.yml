@@ -1,0 +1,207 @@
+id: feat-call-room-implementation
+version: 1
+tier: green
+description: "Sprint 2 calling/live-broadcast feature work in capricast: DirectCallRoom Durable Object for 1:1 video calls, LiveBroadcastRoom DO for live-stream chat, and Cloudflare Stream Live Inputs Go-Live flow. Scaffolds a Durable Object class, Hono routes wiring it up, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER must add the DO binding to wrangler.jsonc and review WHIP/WHEP/CF Calls integration before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR."
+# T3 gap 2 — Pattern #3 (PR-per-snapshot) and Pattern #4 (`git add` before
+# `diff --cached`) both apply: this template opens a PR against main and may
+# include generated TypeScript/Hono/test scaffolds that must be staged before
+# the diff is inspected.
+pattern_check: [3, 4]
+trigger_keywords:
+  - call
+  - calls
+  - directcallroom
+  - livebroadcastroom
+  - whip
+  - whep
+  - rtmps
+  - live
+  - broadcast
+  - stream
+  - obs
+  - hls
+  - durable-object
+  - hibernation
+  - conference
+triggers:
+  labels_any_of: [enhancement, sprint:2]
+  # Title evidence — capricast call/live-broadcast issue titles
+  # Matches: #61 CALLS_APP_ID + 2-participant CF Calls smoke; #62 Conference
+  # recording → Cloudflare Stream; #63 DirectCallRoom DO + 1:1 call endpoints;
+  # #64 1:1 call UI; #65 Cloudflare Stream Live Inputs Go Live; #66 Live
+  # broadcast viewer page + LiveBroadcastRoom DO.
+  # Deliberately does NOT match conversation/messaging issues — those are
+  # covered by feat-conversations-implementation.
+  title_pattern: "(DirectCallRoom|LiveBroadcastRoom|Live Input|Live Inputs|live broadcast|Go Live|1:1 (call|video.?call)|CF Calls|Cloudflare Calls|Cloudflare Stream Live|conference recording|ringing screen|video-call endpoint|CALLS_APP_(ID|TOKEN))"
+  # Body evidence required (no label-only matching — that's the bug PR #815
+  # just fixed). At least ONE of these phrases must appear in the issue body
+  # to confirm this is genuine call/live-broadcast implementation work.
+  body_patterns:
+    - "(DirectCallRoom|LiveBroadcastRoom|/calls/initiate|/calls/accept|/calls/decline|/calls/hangup|/live/start|RTMPS|WHIP|WHEP|live_input\\.connected|CALLS_APP_ID|CALLS_APP_TOKEN|Durable Object|hibernation|2-participant|HLS playback|CF Calls session|Stream Live Input)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: feature_slug
+    type: string
+    # Short kebab-case identifier for branch + filenames. e.g. "direct-call-room",
+    # "live-broadcast-room", "live-inputs". Derived from issue title.
+    validator: "^[a-z][a-z0-9-]{2,40}$"
+    source: issue_title
+    default: "direct-call-room"
+  - name: do_class_name
+    type: string
+    # Durable Object class name in PascalCase. e.g. "DirectCallRoom",
+    # "LiveBroadcastRoom".
+    validator: "^[A-Z][A-Za-z0-9]{2,60}$"
+    source: issue_title
+    default: "DirectCallRoom"
+  - name: do_file_path
+    type: string
+    # Durable Object file under capricast worker app. Narrow validator so the
+    # LLM cannot scaffold into arbitrary locations.
+    validator: "^apps/worker/src/durable-objects/[A-Z][A-Za-z0-9]{2,60}\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/durable-objects/DirectCallRoom.ts"
+  - name: do_content
+    type: string
+    # DO class extending DurableObject with at least one `fetch` handler and
+    # one state-mutating method. 80-line minimum so the file is a real
+    # scaffold, not a placeholder.
+    validator: "^[\\s\\S]{80,40000}$"
+    source: issue_body
+  - name: route_file_path
+    type: string
+    # Hono route file wiring up the DO to HTTP endpoints
+    # (e.g. /calls/initiate, /calls/accept, /live/start).
+    validator: "^apps/worker/src/routes/[a-z][a-z0-9_-]{2,60}\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/routes/calls.ts"
+  - name: route_content
+    type: string
+    # Hono route module: imports, factory function returning a Hono router,
+    # at minimum one handler that proxies into the Durable Object via stub.
+    # 60-line minimum.
+    validator: "^[\\s\\S]{60,40000}$"
+    source: issue_body
+  - name: test_file_path
+    type: string
+    # Vitest test file colocated with the DO file. Path validator scoped to
+    # __tests__ subdir under durable-objects so DO tests stay together.
+    validator: "^apps/worker/src/durable-objects/__tests__/[A-Z][A-Za-z0-9]{2,60}\\.test\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/durable-objects/__tests__/DirectCallRoom.test.ts"
+  - name: test_content
+    type: string
+    # Vitest test module — describe block + at least one `it()` exercising
+    # the DO's happy path (initiate, accept, hangup, or Go Live). 40-line minimum.
+    validator: "^[\\s\\S]{40,40000}$"
+    source: issue_body
+  - name: branch_name
+    type: string
+    validator: "^supervisor/feat-call-room/[a-z0-9][a-z0-9-]{2,60}$"
+    source: issue_title
+    default: "supervisor/feat-call-room/scaffold"
+  - name: commit_message
+    type: string
+    validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
+    source: issue_title
+    default: "feat(calls): scaffold Durable Object, routes, and test"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "apps/worker/src/durable-objects"
+      ref: "main"
+      allow_missing: true
+    intent: "Confirm the durable-objects directory exists in the capricast worker and read existing DOs so the new class does not collide with one already on main."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "apps/worker/src/routes"
+      ref: "main"
+      allow_missing: true
+    intent: "List existing route files so the new route module does not collide with one already on main."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor plan — `feat-call-room-implementation` for `capricast`**
+
+        Feature slug: `$slots.feature_slug`
+        Durable Object class: `$slots.do_class_name`
+        DO file: `$slots.do_file_path`
+        Route file: `$slots.route_file_path`
+        Test: `$slots.test_file_path`
+
+        This template scaffolds three files derived from the issue body:
+        1. A Durable Object class extending the WebSocket Hibernation API base for the call/broadcast room state machine.
+        2. A Hono route module wiring HTTP endpoints (`/calls/initiate`, `/calls/accept`, `/live/start`, etc.) to the DO via stub.
+        3. A Vitest test file under `__tests__/` exercising the DO's happy path.
+
+        🟢 Green tier — scaffold lands as a non-draft PR. A CODEOWNER must:
+        - Add the DO binding to `wrangler.jsonc` (the supervisor cannot mutate wrangler config).
+        - Review the WHIP/WHEP and CF Calls integration (these touch external SDKs).
+        - Confirm the migration block matches the existing wrangler `migrations[]` numbering.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a plan comment so the human reviewer sees the three file paths and the manual wrangler.jsonc work required before merge."
+    requires_human_review: false
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      branch: "$slots.branch_name"
+      base: "main"
+      title: "$slots.commit_message"
+      commit_message: "$slots.commit_message"
+      files:
+        - path: "$slots.do_file_path"
+          content: "$slots.do_content"
+        - path: "$slots.route_file_path"
+          content: "$slots.route_content"
+        - path: "$slots.test_file_path"
+          content: "$slots.test_content"
+      body: |
+        Closes #$triggers.issue_number
+
+        Auto-drafted by Factory Supervisor (`feat-call-room-implementation`).
+
+        **Scaffolds:**
+        - Durable Object: `$slots.do_file_path` (class `$slots.do_class_name`)
+        - Hono routes: `$slots.route_file_path`
+        - Vitest test: `$slots.test_file_path`
+
+        🟢 Green tier — scaffold only. A CODEOWNER must:
+        1. Add the DO binding + migration entry to `apps/worker/wrangler.jsonc`.
+        2. Review WHIP/WHEP and Cloudflare Calls/Stream integration.
+        3. Fill in additional handlers/tests for the full call flow.
+
+        Plan comment: see source issue for details.
+      labels: [enhancement, sprint:2, supervisor, tier-green]
+      draft: false
+    intent: "Open a real (non-draft, non-empty) PR with the three scaffolded files so CI runs and a CODEOWNER can review."
+    requires_human_review: true
+acceptance_gate:
+  description: "PR is open on capricast with at least one changed file matching one of the slot paths."
+  verifier_query:
+    tool: github.openPR
+    query: "pr:$s4.number files.count >= 1 AND base == 'main'"
+    assert: "files.any(f => f.path == '$slots.do_file_path')"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      pr_number: "$s4.pr_number"
+      comment: "Supervisor rollback: closing call-room scaffold PR. CODEOWNER must implement manually or re-trigger with a clearer issue body."
