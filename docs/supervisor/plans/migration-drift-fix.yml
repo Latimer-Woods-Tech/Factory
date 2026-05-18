@@ -14,7 +14,7 @@ preconditions:
 slots:
   - name: affected_app
     type: enum
-    values: [humandesign, videoking, xico-city, factory-admin, wordis-bond]
+    values: [humandesign, capricast, xico-city, factory-admin, wordis-bond]
     source: issue_body
   - name: missing_item
     type: string

@@ -69,6 +69,11 @@ page.on('console', (msg) => {
 });
 page.on('requestfailed', (req) => {
   if (shouldIgnore(req.url())) return;
+  // Playwright fires requestfailed on the source side of a redirect chain
+  // (the new Request for the redirect target is what actually carries the
+  // final result). Ignore failures that have a successor request — the
+  // redirect was followed; the final response is reported separately.
+  if (typeof req.redirectedTo === 'function' && req.redirectedTo()) return;
   networkFailures.push({ phase: currentPhase, status: 'failed', method: req.method(), url: req.url(), reason: req.failure()?.errorText });
 });
 page.on('response', (resp) => {
@@ -96,15 +101,36 @@ async function visit(label, path) {
 async function visitByClick(label, linkText) {
   currentPhase = label;
   const start = Date.now();
-  try {
-    await page.getByRole('link', { name: new RegExp(`^${linkText}$`, 'i') }).first().click({ timeout: 5_000 });
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
-    await page.waitForTimeout(1500);
-  } catch (err) {
-    steps.push({ label, error: err.message, ms: Date.now() - start });
+  // Desktop nav uses Radix <TabsTrigger> which renders as role=tab,
+  // mobile uses NavLink (role=link). Try both, then fall back to text.
+  const candidates = [
+    () => page.getByRole('tab', { name: new RegExp(`^${linkText}$`, 'i') }),
+    () => page.getByRole('link', { name: new RegExp(`^${linkText}$`, 'i') }),
+    () => page.getByText(new RegExp(`^${linkText}$`, 'i'), { exact: false }),
+  ];
+  let clicked = false;
+  for (const factory of candidates) {
+    try {
+      await factory().first().click({ timeout: 4_000 });
+      clicked = true;
+      break;
+    } catch { /* try next */ }
+  }
+  if (!clicked) {
+    steps.push({ label, error: `no clickable nav element for ${linkText}`, ms: Date.now() - start });
     return;
   }
-  await page.screenshot({ path: join(OUT_DIR, `${label}.png`), fullPage: true });
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await page.waitForTimeout(1500);
+  } catch { /* networkidle can be flaky; carry on */ }
+  try {
+    await page.screenshot({ path: join(OUT_DIR, `${label}.png`), fullPage: true, timeout: 60_000 });
+  } catch (err) {
+    // Screenshot timeout shouldn't kill the walk — record and continue.
+    steps.push({ label, finalUrl: page.url(), screenshotError: err.message, ms: Date.now() - start });
+    return;
+  }
   steps.push({ label, finalUrl: page.url(), title: await page.title(), ms: Date.now() - start });
 }
 
