@@ -2,7 +2,7 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-16T00:44:59.308Z
+// Generated: 2026-05-18T14:59:49.548Z
 // Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-ci-workflow.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
@@ -287,7 +287,6 @@ export const GENERATED_TEMPLATES: Template[] = [
     "tier": "yellow",
     "description": "",
     "trigger_keywords": [
-      "enhancement",
       "engineering",
       "epic",
       "wordis-bond-engine",
@@ -298,7 +297,6 @@ export const GENERATED_TEMPLATES: Template[] = [
     ],
     "triggers": {
       "labels_any_of": [
-        "enhancement",
         "engineering",
         "epic:wordis-bond-engine"
       ],
@@ -347,15 +345,13 @@ export const GENERATED_TEMPLATES: Template[] = [
     "trigger_keywords": [
       "engineering",
       "hardening",
-      "enhancement",
       "feat",
       "workflow"
     ],
     "triggers": {
       "labels_any_of": [
         "engineering",
-        "hardening",
-        "enhancement"
+        "hardening"
       ],
       "title_pattern": "(feat\\(ci\\)|feat\\(triage\\)|feat\\(review\\)|feat\\(reliability\\)|feat\\(process\\)|chore\\(ci\\)|chore\\(process\\)|chore\\(governance\\))",
       "body_patterns": [
@@ -399,9 +395,7 @@ export const GENERATED_TEMPLATES: Template[] = [
     "tier": "yellow",
     "description": "Flaky check detector: tracks CI checks that fail then pass on re-run and publishes a weekly GitHub issue with a remediation report. Implements a new workflow file under .github/workflows/; no production code is changed.\n",
     "trigger_keywords": [
-      "engineering",
       "hardening",
-      "enhancement",
       "feat",
       "flaky",
       "detector",
@@ -415,9 +409,7 @@ export const GENERATED_TEMPLATES: Template[] = [
     ],
     "triggers": {
       "labels_any_of": [
-        "engineering",
-        "hardening",
-        "enhancement"
+        "hardening"
       ],
       "title_pattern": "^feat[(]reliability[)]:.*flaky",
       "body_patterns": [
@@ -465,7 +457,6 @@ export const GENERATED_TEMPLATES: Template[] = [
           "labels": [
             "engineering",
             "hardening",
-            "enhancement",
             "supervisor",
             "tier-yellow"
           ]
@@ -573,8 +564,6 @@ export const GENERATED_TEMPLATES: Template[] = [
     "description": "Auto-request / notify relevant CODEOWNERS and platform/security reviewers when a PR touches sensitive paths. Implements reviewer-class hints via CODEOWNERS updates and/or a path-based labeler workflow. Changes go to a draft PR for human review.\n",
     "trigger_keywords": [
       "hardening",
-      "engineering",
-      "enhancement",
       "feat",
       "review",
       "hints",
@@ -588,9 +577,7 @@ export const GENERATED_TEMPLATES: Template[] = [
     ],
     "triggers": {
       "labels_any_of": [
-        "hardening",
-        "engineering",
-        "enhancement"
+        "hardening"
       ],
       "title_pattern": "^feat[(]review[)]:.*reviewer",
       "body_patterns": [
@@ -638,7 +625,6 @@ export const GENERATED_TEMPLATES: Template[] = [
           "labels": [
             "hardening",
             "engineering",
-            "enhancement",
             "supervisor",
             "tier-red"
           ]
@@ -1105,18 +1091,16 @@ export const GENERATED_TEMPLATES: Template[] = [
     "trigger_keywords": [
       "hardening",
       "governance",
-      "engineering",
       "tweak"
     ],
     "triggers": {
       "labels_any_of": [
         "hardening",
-        "governance",
-        "engineering"
+        "governance"
       ],
-      "title_pattern": "^(chore|feat|docs)[(](governance|triage|review|reliability|docs|security)[)]:",
+      "title_pattern": "^(chore|docs)[(](governance|docs|security|review)[)]:",
       "body_patterns": [
-        "(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
+        "(workflow|label|CODEOWNERS|codeowner|readme|branch.?protect|labeler|AGENT_PROTOCOL|permissions:)"
       ]
     },
     "steps": [
@@ -1425,7 +1409,6 @@ export const GENERATED_TEMPLATES: Template[] = [
     "tier": "yellow",
     "description": "",
     "trigger_keywords": [
-      "enhancement",
       "hardening",
       "reusable",
       "workflow",
@@ -1433,7 +1416,6 @@ export const GENERATED_TEMPLATES: Template[] = [
     ],
     "triggers": {
       "labels_any_of": [
-        "enhancement",
         "hardening"
       ],
       "title_pattern": "(_app-ci|_app-deploy|reusable workflow|factory workflow)",

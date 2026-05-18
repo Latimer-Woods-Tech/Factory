@@ -3,12 +3,15 @@
 // ESM, Node 20+, no external dependencies
 
 const ORG = 'Latimer-Woods-Tech';
-const MONITORED_REPOS = ['factory', 'HumanDesign', 'videoking', 'xico-city'];
+const MONITORED_REPOS = ['factory', 'HumanDesign', 'capricast', 'xico-city'];
 const DENYLIST = new Set(['wordis-bond']);
 const RUN_ID = `sup-${Date.now()}`;
 const MAX_GENERATED_LINES = parseInt(process.env.MAX_GENERATED_LINES ?? '800', 10);
 const { GH_TOKEN, ANTHROPIC_API_KEY, PUSHOVER_TOKEN, PUSHOVER_USER, TRIGGER_ISSUE } = process.env;
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const COPILOT_ROUTED_FEATURE_ISSUES = {
+  capricast: new Set([61, 62, 63, 64, 65, 66, 74, 75, 76, 77, 78, 79, 80, 81, 116]),
+};
 
 // ─── GitHub API ───────────────────────────────────────────────────────────────
 
@@ -43,6 +46,24 @@ async function addLabels(repo, issue, labels) {
 
 async function postComment(repo, issue, body) {
   return gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/comments`, { body });
+}
+
+async function removeLabel(repo, issueNumber, label) {
+  try {
+    await gh('DELETE', `/repos/${ORG}/${repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`);
+  } catch (e) {
+    console.warn(`[WARN] remove label "${label}" on ${repo}#${issueNumber}: ${e.message}`);
+  }
+}
+
+async function assignCopilot(repo, issueNumber) {
+  try {
+    await gh('POST', `/repos/${ORG}/${repo}/issues/${issueNumber}/assignees`, {
+      assignees: ['copilot-swe-agent'],
+    });
+  } catch (e) {
+    console.warn(`[WARN] assign copilot on ${repo}#${issueNumber}: ${e.message}`);
+  }
 }
 
 // ─── Pushover ─────────────────────────────────────────────────────────────────
@@ -102,6 +123,8 @@ function matchTemplate(issue, templates) {
 
   for (const tmpl of templates) {
     let score = 0;
+    let matchedTitle = false;
+    let matchedBody = false;
 
     // Signal 1: label overlap
     if (tmpl.labels?.some((l) => labels.includes(l))) score += 0.5;
@@ -109,7 +132,10 @@ function matchTemplate(issue, templates) {
     // Signal 2: title pattern
     if (tmpl.titlePattern) {
       try {
-        if (new RegExp(tmpl.titlePattern, 'i').test(title)) score += 0.5;
+        if (new RegExp(tmpl.titlePattern, 'i').test(title)) {
+          score += 0.5;
+          matchedTitle = true;
+        }
       } catch {
         // ignore malformed regex
       }
@@ -121,6 +147,7 @@ function matchTemplate(issue, templates) {
       try {
         if (new RegExp(jsPattern, 'is').test(body)) {
           score += 0.25;
+          matchedBody = true;
           break; // body counts once
         }
       } catch {
@@ -128,7 +155,7 @@ function matchTemplate(issue, templates) {
       }
     }
 
-    if (score >= 0.35) {
+    if (score >= 0.35 && (matchedTitle || matchedBody)) {
       scores.push({ tmpl, score });
     }
   }
@@ -136,6 +163,10 @@ function matchTemplate(issue, templates) {
   if (scores.length === 0) return null;
   scores.sort((a, b) => b.score - a.score);
   return scores[0].tmpl;
+}
+
+function isCopilotRerouteCandidate(repo, issue) {
+  return Boolean(COPILOT_ROUTED_FEATURE_ISSUES[repo]?.has(issue.number));
 }
 
 // ─── Plan comment ─────────────────────────────────────────────────────────────
@@ -809,7 +840,7 @@ async function main() {
   // PR-level dedup check (findExistingPR) to guard against that window.
   candidates = candidates.filter((i) => {
     const lbls = i.labels.map((l) => l.name);
-    return !lbls.includes('agent:claimed:supervisor') &&
+    return (!lbls.includes('agent:claimed:supervisor') || isCopilotRerouteCandidate(i.repo, i)) &&
            !lbls.includes('agent:claimed:copilot') &&
            !lbls.includes('status:done') &&
            !lbls.includes('supervisor:no-template');
@@ -836,6 +867,32 @@ async function main() {
       // Template match
       const template = matchTemplate(ctx, templates);
       if (!template) {
+        if (isCopilotRerouteCandidate(repo, issue)) {
+          await addLabels(repo, issue.number, ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']);
+          await removeLabel(repo, issue.number, 'agent:claimed:supervisor');
+          await assignCopilot(repo, issue.number);
+          await postComment(
+            repo,
+            issue.number,
+            [
+              '🟡 **Supervisor reroute: Copilot/manual feature implementation path required.**',
+              '',
+              'The operational supervisor only opens PRs from predeclared file templates. This issue requires runtime feature code, so there is no safe supervisor template for it today.',
+              '',
+              'Actions taken:',
+              '- Added `supervisor:no-template` to prevent further false matches.',
+              '- Re-routed the issue to `agent:claimed:copilot` for implementation work.',
+              '- Assigned `copilot-swe-agent` when GitHub accepted the assignment.',
+              '',
+              'Tracked by Factory #814. If Copilot cannot land this cleanly, a CODEOWNER must handle it manually.',
+              '',
+              `_Run ID: ${RUN_ID}_`,
+            ].join('\n'),
+          );
+          outcomes.push(`🟡 ${repo}#${issue.number}: no supervisor template → rerouted to Copilot/manual path`);
+          continue;
+        }
+
         console.log(`[SKIP] ${repo}#${issue.number} "${issue.title}" — no template match`);
         await addLabels(repo, issue.number, ['supervisor:no-template']);
         await postComment(
