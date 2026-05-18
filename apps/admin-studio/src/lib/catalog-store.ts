@@ -161,7 +161,10 @@ export async function listCatalog(
   env?: string,
 ): Promise<FunctionCatalogRow[]> {
   const db = getDb(hyperdrive);
-  const rows = await db.execute<DbRow>(sql`
+  // FactoryDb.execute returns { rows, rowCount }; the previous code cast
+  // the whole result as the rows array, which is why /catalog 500'd with
+  // "rows.map is not a function" in production.
+  const result = await db.execute<DbRow>(sql`
     SELECT id, app, env, method, path, auth, summary, owner, reversibility,
            slo_p95_ms, slo_error_rate, tags, smoke, build_sha,
            first_seen_at, last_seen_at
@@ -170,7 +173,7 @@ export async function listCatalog(
        AND (${env ?? null}::text IS NULL OR env = ${env ?? null})
      ORDER BY app, env, path, method
   `);
-  return (rows as unknown as DbRow[]).map(toRow);
+  return result.rows.map(toRow);
 }
 
 export interface CatalogSummary {
@@ -184,7 +187,7 @@ export async function summariseCatalog(
   hyperdrive: HyperdriveBinding,
 ): Promise<CatalogSummary[]> {
   const db = getDb(hyperdrive);
-  const rows = await db.execute<{
+  const result = await db.execute<{
     app: string;
     env: string;
     endpoints: number;
@@ -195,12 +198,7 @@ export async function summariseCatalog(
      GROUP BY app, env
      ORDER BY app, env
   `);
-  return (rows as unknown as Array<{
-    app: string;
-    env: string;
-    endpoints: number;
-    last_seen_at: string | Date;
-  }>).map((r) => ({
+  return result.rows.map((r) => ({
     app: r.app,
     env: r.env,
     endpoints: Number(r.endpoints),
