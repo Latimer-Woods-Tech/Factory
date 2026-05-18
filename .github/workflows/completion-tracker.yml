@@ -97,9 +97,25 @@ jobs:
           # was re-triggered today (e.g. repository_dispatch or manual run
           # after the scheduled run already succeeded). Skip to avoid a
           # non-fast-forward push error on the already-existing branch.
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
-          if [ -n "$EXISTING_PR" ]; then
-            echo "PR #$EXISTING_PR already open for $BRANCH — skipping duplicate push."
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open \
+            --json number,createdAt,autoMergeRequest \
+            --jq '.[0]' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+            PR_NUMBER=$(echo "$EXISTING_PR" | jq -r '.number')
+            CREATED_AT=$(echo "$EXISTING_PR" | jq -r '.createdAt')
+            AUTO_MERGE=$(echo "$EXISTING_PR" | jq -r '.autoMergeRequest')
+            echo "PR #$PR_NUMBER already open for $BRANCH (created $CREATED_AT)."
+            # G39 fix: if the PR has been open >2h and auto-merge is not armed,
+            # re-arm it so the auto-merge-spotter can pick it up and squash it.
+            PR_AGE_SECONDS=$(( $(date -u +%s) - $(date -u -d "$CREATED_AT" +%s) ))
+            if [ "$PR_AGE_SECONDS" -gt 7200 ] && [ "$AUTO_MERGE" = "null" ]; then
+              echo "  PR #$PR_NUMBER is >2h old and auto-merge is not set — re-arming."
+              gh pr merge "$PR_NUMBER" --auto --squash \
+                --repo Latimer-Woods-Tech/Factory || \
+                echo "  re-arm failed (already merged or conflict); skipping."
+            else
+              echo "  auto-merge already armed or PR <2h old — no action needed."
+            fi
             exit 0
           fi
 

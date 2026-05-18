@@ -1,0 +1,135 @@
+name: PR Size Guard
+
+# Enforces ADR-0005 diff-size budgets on every PR.
+#
+# Thresholds (net lines changed, generated/lock files excluded):
+#   < 50   — pass (green)
+#   50–199 — warn  (annotation posted; merge not blocked)
+#   200–499— soft block (annotation + failing check; reviewer can override by
+#             adding the "size/override" label)
+#   ≥ 500  — hard block (failing check; label cannot override)
+#
+# Excluded patterns (never count toward budget):
+#   *.lock, package-lock.json, pnpm-lock.yaml, yarn.lock
+#   *.generated.*, *.gen.ts
+#   docs/completion-tracker*, docs/completion-tracker.json
+#   docs/completion-tracker-history.jsonl
+#   docs/scorecard/**, docs/cost/**
+#   migrations/** (SQL schema diffs — reviewed separately)
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+permissions:
+  pull-requests: write   # to post comments / update PR checks
+  statuses: write        # to set commit status (fallback)
+
+jobs:
+  size-check:
+    name: Diff size budget (ADR-0005)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Count net lines changed (excluding generated/lock files)
+        id: count
+        run: |
+          set -euo pipefail
+
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          # Build an exclude pattern list for git diff --stat / numstat.
+          # We use pathspec exclusions via -- and ':!pattern'.
+          EXCLUDES=(
+            ':!*.lock'
+            ':!*package-lock.json'
+            ':!*pnpm-lock.yaml'
+            ':!*yarn.lock'
+            ':!*.generated.*'
+            ':!*.gen.ts'
+            ':!docs/completion-tracker*'
+            ':!docs/completion-tracker.json'
+            ':!docs/completion-tracker-history.jsonl'
+            ':!docs/scorecard/**'
+            ':!docs/cost/**'
+            ':!migrations/**'
+          )
+
+          # git diff --numstat outputs: additions<TAB>deletions<TAB>filename
+          # Sum additions + deletions for each file, then total.
+          TOTAL=$(git diff --numstat "$BASE" "$HEAD" -- "${EXCLUDES[@]}" \
+            | awk '{ if ($1 != "-" && $2 != "-") total += $1 + $2 } END { print total+0 }')
+
+          echo "total=$TOTAL" >> "$GITHUB_OUTPUT"
+          echo "Diff size (excluding generated/lock files): $TOTAL lines"
+
+      - name: Evaluate budget and post result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TOTAL: ${{ steps.count.outputs.total }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HAS_OVERRIDE: ${{ contains(github.event.pull_request.labels.*.name, 'size/override') }}
+        run: |
+          set -euo pipefail
+
+          WARN_THRESHOLD=50
+          SOFT_THRESHOLD=200
+          HARD_THRESHOLD=500
+
+          # Determine tier
+          if   [ "$TOTAL" -lt "$WARN_THRESHOLD" ]; then
+            TIER="pass"
+            MSG="✅ **PR size OK** — ${TOTAL} lines changed (budget: <${WARN_THRESHOLD} clean, <${SOFT_THRESHOLD} soft-block, <${HARD_THRESHOLD} hard-block)."
+          elif [ "$TOTAL" -lt "$SOFT_THRESHOLD" ]; then
+            TIER="warn"
+            MSG="⚠️ **PR size warning** — ${TOTAL} lines changed (warn threshold: ${WARN_THRESHOLD}). Consider splitting into smaller PRs per ADR-0005."
+          elif [ "$TOTAL" -lt "$HARD_THRESHOLD" ]; then
+            TIER="soft"
+            MSG="🚫 **PR size soft-block** — ${TOTAL} lines changed (soft-block threshold: ${SOFT_THRESHOLD}). Split this PR or add the \`size/override\` label to proceed."
+          else
+            TIER="hard"
+            MSG="❌ **PR size hard-block** — ${TOTAL} lines changed (hard-block threshold: ${HARD_THRESHOLD}). This PR must be split; the \`size/override\` label cannot override a hard-block."
+          fi
+
+          echo "Tier: $TIER"
+
+          # Decide pass/fail for the check
+          if [ "$TIER" = "pass" ] || [ "$TIER" = "warn" ]; then
+            CONCLUSION="success"
+          elif [ "$TIER" = "soft" ] && [ "$HAS_OVERRIDE" = "true" ]; then
+            MSG="${MSG}"$'\n'"_Override label detected — soft-block bypassed by reviewer._"
+            CONCLUSION="success"
+          else
+            CONCLUSION="failure"
+          fi
+
+          # Post or update a sticky comment on the PR
+          COMMENT_MARKER="<!-- pr-size-guard -->"
+          BODY="${COMMENT_MARKER}"$'\n'"${MSG}"$'\n'"_Counted ${TOTAL} net lines (generated and lock files excluded)._"
+
+          EXISTING=$(gh api \
+            "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq ".[] | select(.body | startswith(\"${COMMENT_MARKER}\")) | .id" 2>/dev/null | head -1 || true)
+
+          if [ -n "$EXISTING" ]; then
+            gh api --method PATCH \
+              "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              -f body="$BODY"
+          else
+            gh api --method POST \
+              "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+              -f body="$BODY"
+          fi
+
+          # Exit with appropriate code so GitHub sets the check status
+          if [ "$CONCLUSION" = "failure" ]; then
+            exit 1
+          fi
