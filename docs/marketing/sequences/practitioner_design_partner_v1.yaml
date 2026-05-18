@@ -1,0 +1,129 @@
+# Practitioner Design Partner Outreach — sequence v1
+#
+# Sequence consumed by @lwt/email sequencer (PR 3a) once code lands.
+# Purpose: bootstrap the 5 design partners from the candidate list in
+# docs/marketing/playbooks/first-domino-candidates.md.
+#
+# Voice gate: every step's content passes validateAiOutput() with
+# voice_key='prime_self:practitioner' before send (CONSTITUTION.md §2).
+#
+# Compliance: contact must have consent_status='opted_in' at enrollment
+# (CONSTITUTION.md §6). The supervisor's OutreachSender (PR 3e) is
+# responsible for confirming consent before invoking enroll. Cold mass
+# outbound is denied per CONSTITUTION.md §5 — this sequence runs only on
+# WARM contacts (public business email + the practitioner has interacted
+# with our content OR is a referred-introduction).
+
+name: practitioner_design_partner_v1
+cell_key: selfprime:practitioner
+campaign_id: 2026-q3-practitioner-design-partners
+
+# Each step renders through @lwt/copy generateCopy() at send time —
+# the LLM rewrites the template in 'prime_self:practitioner' voice with
+# the candidate's name + lineage substituted in. Templates here are the
+# brief, not the final copy. Voice gate validates the LLM output.
+
+steps:
+  - step: 0
+    delayDays: 0
+    subject_template: "{{first_name}} — a tool I'd want a working astrologer to break"
+    voice_key: prime_self:practitioner
+    body_brief: |
+      We're building Selfprime — a chart-prep co-pilot for working
+      astrologers. Cut your prep from 90 minutes to 20, in your voice,
+      shipped to the client.
+
+      It's at the stage where five working practitioners using it for
+      real client work would change everything. Your lineage and the
+      way you frame {{specific_pattern_observed}} is exactly the
+      pressure-test it needs.
+
+      30-minute call this month. If it's not a fit you'll tell me in
+      five minutes. If it is, you get 12 months free and your edits
+      become the product.
+
+      — {{operator_first_name}}
+      {{operator_signature_block}}
+
+      Includes:
+        - One concrete reference to the practitioner's public work
+          (substituted at send time by LLM with brief context)
+        - Honest "five minutes" framing (no fake reciprocity)
+        - The 12-month free + edits-as-product offer (real, not bait)
+        - Operator signature (not Selfprime company signature) — peer-to-peer per voice rules
+
+    require_consent: true
+    skip_if_event: 'meeting_booked'
+
+  - step: 1
+    delayDays: 5
+    subject_template: "Re: {{first_name}} — a tool I'd want a working astrologer to break"
+    voice_key: prime_self:practitioner
+    body_brief: |
+      Following up briefly — the design partner cohort is closing at five
+      practitioners by end of June. If now isn't your season, totally fine.
+
+      If you've got 30 minutes this week or next, my calendar is at
+      {{operator_calendar_link}}.
+
+      Quick context if useful: {{one_concrete_capability}} is what most
+      practitioners ask about first. Happy to demo on the call instead of
+      describing it here.
+
+      — {{operator_first_name}}
+
+      Includes:
+        - Honest deadline (real — capped at 5 partners — not fake scarcity)
+        - One concrete capability surfaced (rotates: prep-time, branded shareables, newsletter substrate)
+        - Lower-friction CTA (calendar link, not "reply if interested")
+
+    require_consent: true
+    skip_if_event: 'meeting_booked'
+    skip_if_event_alt: 'no_response_after_step_1'  # see notes
+
+  - step: 2
+    delayDays: 14
+    subject_template: "{{first_name}} — closing the loop"
+    voice_key: prime_self:practitioner
+    body_brief: |
+      Last note — closing out the design partner outreach this week.
+
+      If timing isn't right, no need to reply. I'll keep an eye on
+      {{their_public_channel}} and reach out properly when there's
+      something worth showing.
+
+      If you're curious enough to give it 30 minutes, the calendar
+      link's still active: {{operator_calendar_link}}.
+
+      — {{operator_first_name}}
+
+      Includes:
+        - Genuine release ("no need to reply") — honors their time
+        - Future-thread hook ("watching your channel") — relationship preserved
+        - Final low-friction CTA, no follow-up after this
+
+    require_consent: true
+    skip_if_event: 'meeting_booked'
+
+# After step 2: contact transitions to dnc=false but sequence_state='completed'.
+# The OutreachSender does NOT re-enroll. Re-engagement requires explicit
+# operator action (Tier-3 per CONSTITUTION §4) — protects against the
+# autonomous loop becoming a spam engine over time.
+
+# Observability:
+#   - Every send emits factory_events {event: 'outreach_sent',
+#     properties: {step, sequence_name, cell_key, campaign_id,
+#     voice_key, voice_gate_pass: true}}
+#   - Replies route via Resend webhook → CRM as crm_interactions row
+#   - meeting_booked event fired by Calendly webhook ingestion
+#     (PR 3e supervisor responsibility)
+#
+# Success criteria (cohort, not per-recipient):
+#   - ≥10% reply rate from Tier 1 candidates
+#   - ≥5 meeting_booked events from the cohort within 21 days of step 0
+#   - 0 spam complaints (tripwire per CONSTITUTION §7)
+#   - 0 unsubscribe rate >2× baseline (tripwire)
+#
+# If success criteria miss: the supervisor's RetroWriter (PR 3e) opens
+# a retro doc at docs/marketing/playbooks/retros/2026-q3-practitioner-design-partners.md
+# and pauses the cohort pending operator review (Tier-2 escalation).
