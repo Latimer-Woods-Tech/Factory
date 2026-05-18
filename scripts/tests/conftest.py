@@ -47,3 +47,9 @@ def aggregate():
 def sync_labels():
     """Load scripts/sync_labels_to_matrix.py as a module."""
     return _load_module("sync_labels_to_matrix_under_test", "sync_labels_to_matrix.py")
+
+
+@pytest.fixture(scope="session")
+def platform_conformance():
+    """Load scripts/platform_conformance.py as a module."""
+    return _load_module("platform_conformance_under_test", "platform_conformance.py")
