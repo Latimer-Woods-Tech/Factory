@@ -2,8 +2,8 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-18T14:59:49.548Z
-// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-ci-workflow.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-18T18:50:15.875Z
+// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-call-room-implementation.yml, feat-ci-workflow.yml, feat-conversations-implementation.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
@@ -339,6 +339,104 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "feat-call-room-implementation",
+    "tier": "green",
+    "description": "Sprint 2 calling/live-broadcast feature work in capricast: DirectCallRoom Durable Object for 1:1 video calls, LiveBroadcastRoom DO for live-stream chat, and Cloudflare Stream Live Inputs Go-Live flow. Scaffolds a Durable Object class, Hono routes wiring it up, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER must add the DO binding to wrangler.jsonc and review WHIP/WHEP/CF Calls integration before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "call",
+      "calls",
+      "directcallroom",
+      "livebroadcastroom",
+      "whip",
+      "whep",
+      "rtmps",
+      "live",
+      "broadcast",
+      "stream",
+      "obs",
+      "hls",
+      "durable-object",
+      "hibernation",
+      "conference"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:2"
+      ],
+      "title_pattern": "(DirectCallRoom|LiveBroadcastRoom|Live Input|Live Inputs|live broadcast|Go Live|1:1 (call|video.?call)|CF Calls|Cloudflare Calls|Cloudflare Stream Live|conference recording|ringing screen|video-call endpoint|CALLS_APP_(ID|TOKEN))",
+      "body_patterns": [
+        "(DirectCallRoom|LiveBroadcastRoom|/calls/initiate|/calls/accept|/calls/decline|/calls/hangup|/live/start|RTMPS|WHIP|WHEP|live_input\\.connected|CALLS_APP_ID|CALLS_APP_TOKEN|Durable Object|hibernation|2-participant|HLS playback|CF Calls session|Stream Live Input)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/worker/src/durable-objects",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/worker/src/routes",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-call-room-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nDurable Object class: `$slots.do_class_name`\nDO file: `$slots.do_file_path`\nRoute file: `$slots.route_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds three files derived from the issue body:\n1. A Durable Object class extending the WebSocket Hibernation API base for the call/broadcast room state machine.\n2. A Hono route module wiring HTTP endpoints (`/calls/initiate`, `/calls/accept`, `/live/start`, etc.) to the DO via stub.\n3. A Vitest test file under `__tests__/` exercising the DO's happy path.\n\n🟢 Green tier — scaffold lands as a non-draft PR. A CODEOWNER must:\n- Add the DO binding to `wrangler.jsonc` (the supervisor cannot mutate wrangler config).\n- Review the WHIP/WHEP and CF Calls integration (these touch external SDKs).\n- Confirm the migration block matches the existing wrangler `migrations[]` numbering.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.do_file_path",
+              "content": "$slots.do_content"
+            },
+            {
+              "path": "$slots.route_file_path",
+              "content": "$slots.route_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-call-room-implementation`).\n\n**Scaffolds:**\n- Durable Object: `$slots.do_file_path` (class `$slots.do_class_name`)\n- Hono routes: `$slots.route_file_path`\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Add the DO binding + migration entry to `apps/worker/wrangler.jsonc`.\n2. Review WHIP/WHEP and Cloudflare Calls/Stream integration.\n3. Fill in additional handlers/tests for the full call flow.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:2",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "feat-ci-workflow",
     "tier": "yellow",
     "description": "",
@@ -385,6 +483,102 @@ export const GENERATED_TEMPLATES: Template[] = [
           "title": "feat(ci): add $slots.workflow_name workflow",
           "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` implementing: $slots.description\n\nFollows Factory App token pattern and COORDINATION.md conventions.\n\nGenerated by supervisor. Human review required before merge.",
           "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-conversations-implementation",
+    "tier": "green",
+    "description": "Sprint 2 conversations/messaging feature work in capricast (compose/edit/delete/reactions/typing/read-receipts, R2 attachments). Scaffolds a Hono route file under apps/worker/src/routes/, a Drizzle migration adding required columns, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews handler logic + migration numbering before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "conversations",
+      "messages",
+      "chat",
+      "dm",
+      "inbox",
+      "reactions",
+      "typing",
+      "read-receipts",
+      "attachments",
+      "r2",
+      "vapid",
+      "vectorize",
+      "moderation"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:2"
+      ],
+      "title_pattern": "(conversation|conversations|ConversationRoom|/inbox|message_attachments|read receipts|message create|message search|messaging|chat thread|DM thread|compose.*edit|edit.*delete.*reactions|Web Push.*VAPID|Llama-Guard.*message|Vectorize.*message|Attachments via R2)",
+      "body_patterns": [
+        "(conversation_members|message_attachments|conversations\\(id|messages\\(id|/api/conversations|/inbox|last_read_at|edited_at|deleted_at|reactions|typing indicator|read receipts|presigned R2|VAPID|ServiceWorker.*push|llama-guard|Vectorize|broadcast to other members|message bodies)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/worker/src/routes",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "workers/src/db/migrations",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-conversations-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nRoute file: `$slots.route_file_path`\nMigration: `$slots.migration_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds three files derived from the issue body:\n1. A Hono route module wired into `apps/worker/src/routes/` covering the verbs described in the acceptance criteria.\n2. A Drizzle migration adding the columns/tables described in the issue (e.g. `conversations`, `conversation_members`, `messages`, `message_attachments`).\n3. A Vitest test file at `apps/worker/src/routes/__tests__/` exercising the happy path.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER review is still required before merge.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.route_file_path",
+              "content": "$slots.route_content"
+            },
+            {
+              "path": "$slots.migration_file_path",
+              "content": "$slots.migration_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-conversations-implementation`).\n\n**Scaffolds:**\n- Hono route: `$slots.route_file_path`\n- Drizzle migration: `$slots.migration_file_path`\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Review handler logic and add business rules.\n2. Verify migration numbering does not collide with PRs already in flight.\n3. Fill in additional test cases for failure paths.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:2",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
         },
         "side_effects": "none"
       }
