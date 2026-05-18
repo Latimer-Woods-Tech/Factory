@@ -8,6 +8,7 @@
  */
 import type { MiddlewareHandler } from 'hono';
 import type { AppEnv } from '../types.js';
+import { createLogger } from '@latimer-woods-tech/logger';
 import { redactSecrets, type AuditEntry } from '@latimer-woods-tech/studio-core';
 import { insertAuditEntry } from '../lib/audit-store.js';
 
@@ -77,8 +78,17 @@ export function auditMiddleware(): MiddlewareHandler<AppEnv> {
         requestId: c.var.requestId ?? crypto.randomUUID(),
       };
 
-      // Always echo to console so logs are searchable even if DB is down.
-      console.log('[AUDIT]', JSON.stringify(entry));
+      const auditLogger = createLogger({
+        workerId: 'admin-studio-audit',
+        requestId: entry.requestId,
+      });
+      auditLogger.info('audit_entry', {
+        event: 'audit.write',
+        request_id: entry.requestId,
+        action: entry.action,
+        resource: entry.resource,
+        result: entry.result,
+      });
 
       // Best-effort DB insert. Use waitUntil when available so we don't
       // hold the response open. Hono exposes the executionCtx via c.executionCtx.

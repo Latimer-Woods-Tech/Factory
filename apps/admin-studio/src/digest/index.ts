@@ -13,6 +13,7 @@
  */
 
 import type { Env } from '../env.js';
+import { createLogger } from '@latimer-woods-tech/logger';
 import { collectAll } from './collect.js';
 import { renderDigest } from './render.js';
 import { generateAndUploadAudio } from './audio.js';
@@ -44,21 +45,22 @@ export async function runDigest(env: Env): Promise<void> {
     return `${date}-${period}`;
   })();
   const dedupKey = `digest:sent:${windowLabel}`;
+  const digestLogger = createLogger({ workerId: 'admin-studio-digest', requestId: dedupKey });
 
   if (env.MONITOR_KV) {
     const already = await env.MONITOR_KV.get(dedupKey);
     if (already) {
-      console.log(`[digest] already sent for window ${windowLabel} — skipping duplicate run`);
+      digestLogger.info('digest_skip_duplicate', { event: 'digest.skip', window_label: windowLabel, request_id: dedupKey });
       return;
     }
   }
 
-  console.log('[digest] starting collection');
+  digestLogger.info('digest_collection_start', { event: 'digest.collect.start', request_id: dedupKey });
 
   // ── 1. Collect ────────────────────────────────────────────────────────────
   const data = await collectAll(env);
   const label = digestLabel(data.collectedAt);
-  console.log(`[digest] collection complete for ${label}`);
+  digestLogger.info('digest_collection_complete', { event: 'digest.collect.done', label, request_id: dedupKey });
 
   // ── 2. Audio (best-effort) ────────────────────────────────────────────────
   // Render a plain-text summary first so audio can be generated before we
@@ -66,9 +68,9 @@ export async function runDigest(env: Env): Promise<void> {
   const { text: plainText } = renderDigest(data);
   const audioUrl = await generateAndUploadAudio(plainText, label, env);
   if (audioUrl) {
-    console.log(`[digest] audio uploaded: ${audioUrl}`);
+    digestLogger.info('digest_audio_uploaded', { event: 'digest.audio.uploaded', audio_url: audioUrl, request_id: dedupKey });
   } else {
-    console.warn('[digest] audio generation skipped or failed — proceeding without audio link');
+    digestLogger.warn('digest_audio_skipped', { event: 'digest.audio.skipped', request_id: dedupKey });
   }
 
   // ── 3. Render ─────────────────────────────────────────────────────────────
@@ -77,7 +79,11 @@ export async function runDigest(env: Env): Promise<void> {
   // ── 4. Send ───────────────────────────────────────────────────────────────
   const outcome = await sendDigestEmail(rendered, env);
   if (outcome.ok) {
-    console.log(`[digest] email sent successfully, messageId=${outcome.messageId}`);
+    digestLogger.info('digest_email_sent', {
+      event: 'digest.email.sent',
+      message_id: outcome.messageId,
+      request_id: dedupKey,
+    });
     // KV dedup write is intentionally AFTER confirmed delivery (outcome.ok === true).
     // If sendDigestEmail returns { ok: false }, this block is skipped entirely so the
     // KV key is never written — future cron retries will re-attempt delivery.
@@ -87,6 +93,6 @@ export async function runDigest(env: Env): Promise<void> {
       await env.MONITOR_KV.put(dedupKey, '1', { expirationTtl: 86400 });
     }
   } else {
-    console.error(`[digest] email send failed: ${outcome.reason}`);
+    digestLogger.error('digest_email_failed', { event: 'digest.email.failed', reason: outcome.reason, request_id: dedupKey });
   }
 }
