@@ -2,7 +2,7 @@ id: feat-ci-workflow
 version: 1
 tier: yellow
 triggers:
-  labels_any_of: [engineering, hardening, enhancement]
+  labels_any_of: [engineering, hardening]
   title_pattern: "(feat\\(ci\\)|feat\\(triage\\)|feat\\(review\\)|feat\\(reliability\\)|feat\\(process\\)|chore\\(ci\\)|chore\\(process\\)|chore\\(governance\\))"
   body_patterns:
     - "(github actions|workflow|\\.github/workflows|ci check|path\\.based|required\\.check)"

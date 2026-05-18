@@ -30,7 +30,7 @@ slots:
 
   - name: target_repo
     type: enum
-    values: [factory, HumanDesign, videoking, xico-city, factory-admin]
+    values: [factory, HumanDesign, capricast, xico-city, factory-admin]
     source: issue_body
     default: factory
 
