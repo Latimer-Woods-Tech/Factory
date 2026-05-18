@@ -64,7 +64,7 @@ jobs:
           # printf '%s' instead of echo: echo appends a trailing newline that
           # wrangler v4 stores verbatim, which corrupts the Bearer header at
           # request time and surfaces as "Bad credentials" from GitHub.
-          printf '%s' "$NEW_TOKEN" | npx wrangler secret put GITHUB_TOKEN --env production
+          printf '%s' "$NEW_TOKEN" | npx wrangler@3 secret put GITHUB_TOKEN --env production
 
       # ──────────────────────────────────────────────────────────────
       # 2) Mint Vertex AI access token from the SA key in GCP SM
@@ -110,9 +110,9 @@ jobs:
 
           # Push as the three secrets the worker's LLM package expects.
           # See GITHUB_TOKEN push above re: printf vs echo.
-          printf '%s' "$ACCESS_TOKEN" | npx wrangler secret put VERTEX_ACCESS_TOKEN --env production
-          printf '%s' "factory-495015" | npx wrangler secret put VERTEX_PROJECT --env production
-          printf '%s' "us-central1" | npx wrangler secret put VERTEX_LOCATION --env production
+          printf '%s' "$ACCESS_TOKEN" | npx wrangler@3 secret put VERTEX_ACCESS_TOKEN --env production
+          printf '%s' "factory-495015" | npx wrangler@3 secret put VERTEX_PROJECT --env production
+          printf '%s' "us-central1" | npx wrangler@3 secret put VERTEX_LOCATION --env production
 
           # Cleanup.
           rm -f /tmp/vertex-sa.json
