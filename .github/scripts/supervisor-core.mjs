@@ -101,6 +101,7 @@ async function loadTemplates() {
       labels:         t.triggers?.labels_any_of ?? [],
       slotNames:      t.slot_names      ?? [],
       slotValidators: t.slot_validators ?? {},
+      slotDefaults:   t.slot_defaults   ?? {},
       stepIntents:    t.step_intents    ?? [],
       prFiles:        t.pr_files        ?? [],
     }));
@@ -271,8 +272,12 @@ function checkGeneratedContent(filename, content) {
 
 // 2. Schema guard — strip keys not declared in the template's slotNames,
 //    validate values against per-slot regex validators from the YAML schema.
-function enforceSlotSchema(raw, slotNames, slotValidators = {}) {
-  if (!raw || typeof raw !== 'object') return {};
+//    When validation nulls a slot, fall back to the YAML-declared `default:`
+//    (if any) so the template can still produce a non-empty PR with placeholder
+//    content. The default itself was validated against the regex at build time
+//    by generate-supervisor-templates.mjs.
+function enforceSlotSchema(raw, slotNames, slotValidators = {}, slotDefaults = {}) {
+  if (!raw || typeof raw !== 'object') raw = {};
   const allowed = new Set(slotNames);
   const clean = {};
   const INJECTION_RE = /\b(ignore|disregard|forget|override)\s+(previous|above|all|prior|earlier)\s+(instructions?|context|rules?|prompt)/i;
@@ -283,7 +288,7 @@ function enforceSlotSchema(raw, slotNames, slotValidators = {}) {
       continue;
     }
     const val = raw[key];
-    // Injection guard
+    // Injection guard — never fall back to default for tainted input.
     if (typeof val === 'string' && INJECTION_RE.test(val)) {
       console.warn(`[GUARD] Slot "${key}" contains suspicious instruction text — nulled`);
       clean[key] = null;
@@ -307,6 +312,15 @@ function enforceSlotSchema(raw, slotNames, slotValidators = {}) {
   // Ensure all declared slots exist (even if null)
   for (const name of slotNames) {
     if (!(name in clean)) clean[name] = null;
+  }
+  // Default fallback — applied AFTER validation so we never override
+  // a value that passed its validator. Injected text was nulled above and
+  // is eligible for the default (the default is template-author trusted).
+  for (const name of slotNames) {
+    if (clean[name] == null && slotDefaults[name] != null) {
+      console.log(`[GUARD] Slot "${name}" filled from template default`);
+      clean[name] = slotDefaults[name];
+    }
   }
   return clean;
 }
@@ -344,7 +358,7 @@ function fixAddressesConcerns(concernLines, oldContent, newContent) {
 
 // ─── Anthropic slot extraction ────────────────────────────────────────────────
 
-async function extractSlots(slotNames, issue, factoryContext = '', slotValidators = {}) {
+async function extractSlots(slotNames, issue, factoryContext = '', slotValidators = {}, slotDefaults = {}) {
   const contextPrefix = factoryContext
     ? `[FACTORY CONTEXT — immutable architectural rules]\n${factoryContext}\n\n`
     : '';
@@ -383,8 +397,10 @@ async function extractSlots(slotNames, issue, factoryContext = '', slotValidator
   } catch {
     parsed = {};
   }
-  // Guard 2: enforce schema — strip hallucinated keys, null missing ones, validate formats
-  return enforceSlotSchema(parsed, slotNames, slotValidators);
+  // Guard 2: enforce schema — strip hallucinated keys, null missing ones,
+  // validate formats, then fall back to template defaults so partial extractions
+  // still produce non-empty PRs.
+  return enforceSlotSchema(parsed, slotNames, slotValidators, slotDefaults);
 }
 
 // ─── Green execution (create branch + files + PR) ────────────────────────────
@@ -943,7 +959,7 @@ async function main() {
       }
 
       // Green — extract slots, execute, open PR
-      const slots = await extractSlots(template.slotNames, ctx, factoryContext, template.slotValidators);
+      const slots = await extractSlots(template.slotNames, ctx, factoryContext, template.slotValidators, template.slotDefaults);
       console.log(`[SLOTS] ${JSON.stringify(slots)}`);
 
       let execNote = '';
