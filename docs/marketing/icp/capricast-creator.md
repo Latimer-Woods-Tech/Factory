@@ -206,7 +206,7 @@ Each is a job the supervisor loop runs without operator intervention:
 - [`MARKETING_PLAN.md`](../MARKETING_PLAN.md) — global plan
 - [`CONSTITUTION.md`](../CONSTITUTION.md) — non-negotiable rules
 - [`VOICES.md`](../VOICES.md) — `capricast:creator` profile spec
-- [`xicocity-creator.md`](./xicocity-creator.md) — sister-product creator cell; differentiation note in [`capricast.md`](./capricast.md)
+- `xicocity-creator` — sister-product creator cell (ICP file pending; positioning lives in [`VOICES.md`](../VOICES.md) `xicocity_creator`); differentiation note in [`capricast.md`](./capricast.md)
 - [`selfprime-practitioner.md`](./selfprime-practitioner.md) — same structural template; the practitioner-of-1 column shares this play pattern across products
 - [`docs/customer-gate/M1_M2_CATALOG_2026-05-17.md`](../../customer-gate/M1_M2_CATALOG_2026-05-17.md#product-3--capricast-capricast-repo) — paired operator worksheet (blank — that's the unknown)
 - [`docs/capricast/SELFPRIME_MONETIZATION_CONTRACT.md`](../../capricast/SELFPRIME_MONETIZATION_CONTRACT.md) — monetization event contract (creator_id ↔ practitioner_id mapping)

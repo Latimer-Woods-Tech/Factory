@@ -130,7 +130,7 @@ Template (auto-filled by the supervisor's `RetroWriter` agent per [`MARKETING_SU
 ## What didn't
 ## Lessons folded back
 - [ ] Voice corpus update (added N artefacts)
-- [ ] Baseline updates ([`KPI_DECOMPOSITION.md`](../../KPI_DECOMPOSITION.md))
+- [ ] Baseline updates ([`KPI_DECOMPOSITION.md`](./KPI_DECOMPOSITION.md))
 - [ ] Channel state advancement (yes/no)
 ## Next campaign ideas
 ```

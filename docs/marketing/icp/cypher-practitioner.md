@@ -2,7 +2,7 @@
 
 **Product:** Cypher of Healing (`cipherofhealing.com`) · **Audience archetype:** Practitioner-of-1 (healer / coach / therapist / body-worker / energy practitioner) · **Readiness state:** ⏳ queued → 🟡 `discovery` (on ICP-file merge) · **Priority:** #6 (per [`ICP_MATRIX.md`](../ICP_MATRIX.md#priority-order-rolling))
 
-> Parent: [`cypher-seeker.md`](./cypher-seeker.md) (sibling, not parent — seeker is the consumer cell) · Matrix cell: row "Cypher of Healing" × col "Practitioner-of-1" · Voice: `cypher_practitioner` (sibling of `cypher_seeker`, formerly `cypher_healing`) · Regulated-vertical cell — see §3.4
+> Sibling cell: `cypher-seeker` (consumer audience — ICP file pending; positioning in [`packages/copy/src/index.ts`](../../../packages/copy/src/index.ts) `cypher_healing` voice profile) · Matrix cell: row "Cypher of Healing" × col "Practitioner-of-1" · Voice: `cypher_practitioner` (sibling of `cypher_seeker`, formerly `cypher_healing`) · Regulated-vertical cell — see §3.4
 
 ---
 
@@ -215,7 +215,7 @@ Each is a job the supervisor loop runs without operator intervention once the ce
 
 ## 9. Cross-references
 
-- [`cypher-seeker.md`](./cypher-seeker.md) — sibling cell (consumer audience)
+- `cypher-seeker` — sibling cell (consumer audience; ICP file pending)
 - [`selfprime-practitioner.md`](./selfprime-practitioner.md) — structural template + cross-product flywheel partner
 - [`ICP_MATRIX.md`](../ICP_MATRIX.md) — the grid
 - [`MARKETING_PLAN.md`](../MARKETING_PLAN.md) — global plan
