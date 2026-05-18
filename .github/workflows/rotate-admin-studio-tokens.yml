@@ -52,6 +52,11 @@ jobs:
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
           repositories: factory
+          # CRITICAL: by default this action revokes the token in its post-step,
+          # which kills the freshly-rotated worker secret as soon as the cron
+          # finishes. The whole point of the cron is to push a 1-hour token
+          # that survives the run, so we must opt out of revocation.
+          skip-token-revoke: true
 
       - name: Push GITHUB_TOKEN to admin-studio-production
         env:
