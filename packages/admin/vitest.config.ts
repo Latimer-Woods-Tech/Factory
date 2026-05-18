@@ -7,10 +7,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
-      // RATCHET: floored for 0.3.0 per factory TECH_DEBT DEBT-006.
+      // RATCHET: raised for 0.3.1 per factory TECH_DEBT DEBT-006.
       // Raise to lines:90/functions:90/branches:85 once RS256 + JWKS paths
-      // and legacy createAdminRouter routes gain dedicated coverage.
-      thresholds: { lines: 75, functions: 80, branches: 65 },
+      // gain dedicated coverage.
+      thresholds: { lines: 85, functions: 90, branches: 75 },
       include: ['src/**'],
       exclude: ['src/**/*.test.ts', 'src/types.ts'],
     },
