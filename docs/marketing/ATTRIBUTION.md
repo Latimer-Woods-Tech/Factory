@@ -41,6 +41,18 @@ Every inbound URL the supervisor publishes gets UTM params. Standardized format:
 - All subsequent events in the session stamp the touch as `lwt_last_touch`
 - Backend webhook handlers (Stripe, Resend, etc.) read both from session metadata
 
+### 2.1 Bi-cell surface UTM rewrite (T2-2)
+
+On bi-cell surfaces (any URL pattern that can serve more than one matrix cell — e.g. `selfprime.net/r/{practitioner}/{reading}` serves both `selfprime:practitioner` as publisher and `selfprime:consumer` as visitor), the `utm_content` field is **rewritten at capture time** to match the **visitor's cell**, not the surface owner's cell.
+
+Rule:
+- Inbound URL `?utm_content=practitioner` lands on `selfprime.net/r/sarah-astrology/abc` (a public reading)
+- The capture middleware identifies the visitor's likely cell from: referer host class → declared intent → IP geo → fallback to surface default
+- If the visitor's cell ≠ `utm_content` declared cell, **the captured `utm_content` is rewritten** to the visitor's cell; the original is preserved in `touch_history` as `original_utm_content` for audit
+- The owner's cell (the practitioner who published) is preserved separately in `referral_chain` per [`CAMPAIGN_TAGGING.md`](./CAMPAIGN_TAGGING.md), NOT in `utm_content`
+
+Why: a consumer's $9/mo would otherwise attribute to the practitioner cell's metrics, polluting cohort math.
+
 Implementation in [`@lwt/attribution`](../../packages/attribution/) per PR 3k. Schema added to [`packages/analytics/src/event-schemas.ts`](../../packages/analytics/src/event-schemas.ts) per PR 3b.
 
 ---
@@ -146,6 +158,8 @@ ORDER BY d30_retention_pct DESC;
 | Cross-product attribution | A `crm_leads` row is `(user_id, app_id)` unique; cross-product touches are joined on `user_id` for flywheel analysis but not collapsed |
 | Bot traffic | Bot filter applied before stamping (`user_agent` deny list); flag `bot=true` in `factory_events` and exclude from rollups |
 | Pre-launch backfill | Pre-2026-05-18 data is **not** retroactively attributed — explicitly out of scope per ADR |
+| Messenger forwarding (WhatsApp, iMessage, Signal, Telegram) *(T2-5)* | Most messenger apps strip the `Referer` header on click. Capture relies on UTM-in-URL only when Referer is null and the host class is unknown. Forwarded links should always carry full UTM in the URL. Bare clicks (no UTM, no Referer) get `source=direct`, `last_touch_valid=false` for cohort exclusion |
+| Consent-violating sends | Touches from sends without prior consent get `valid_touch=false` (T2-6 dependency); they appear in `touch_history` for audit but are filtered out of rollups |
 
 ---
 

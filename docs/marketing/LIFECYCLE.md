@@ -13,19 +13,34 @@ The lifecycle is **6 stages, immutable across all cells.** Per-cell mappings det
 | # | Stage | Definition | Reached when |
 |---|---|---|---|
 | 0 | **Unknown** | Anonymous visitor; identified by session_id only | First PostHog event captured |
+| 0.5 | **Anonymous-MQL** *(T2-8)* | Identified by `distinct_id` only (no `user_id`); demonstrated product interest before signup | Cell-specific anonymous trigger (e.g. `chart_calculated` without `user_id`) |
 | 1 | **Cold** | Identified prospect with no expressed intent | `user_id` resolved on a session (form fill, modal opened, etc.) |
 | 2 | **MQL** (marketing-qualified) | Demonstrated buying signal | Cell-specific MQL trigger event fired |
 | 3 | **Trial / Active free** | Using the product without paying | `trial_started` event |
 | 4 | **Paid** | Converting transaction completed | `subscription_created` event |
-| 5 | **Retained** | Sustained product use post-payment | Still paid + ≥1 product event in trailing 30 days |
-| 6 | **Advocate** | Referrer or public endorser | Either `referral_invited` event fired by user, OR opted into directory / case study |
+| 5 | **Retained** | Sustained product use post-payment — see canonical definition in §1.1 below | Still paid + canonical retention check |
+| 6 | **Advocate** | Referrer or public endorser | Any of: `referral_invited`, `reading_published` (T2-7), `case_study_consent_obtained`, directory opt-in |
+
+**Stage 6 transition note (T1-5):** Advocate is a **concurrent marker**, not a sequential stage after Retained. A practitioner who refers a peer on day 45 (before reaching Retained at day 60) can be both `stage=Paid` AND `is_advocate=true` simultaneously. The state machine allows `4 → 6` directly. Stage transitions are NOT strictly monotone with respect to Advocate; they ARE monotone for stages 0→1→2→3→4→5.
+
+### 1.1 Canonical retention definition (T2-1 reconciliation)
+
+Three definitions of "retained" co-existed across docs. **The canonical definition is:**
+
+> **A user is `Retained` if `subscription.status='active'` AND `days_since_first_paid >= 30` AND `≥1 product event in trailing 30 days`.**
+
+This matches [`MARKETING_PLAN.md §1`](./MARKETING_PLAN.md#1-north-star) and [`KPI_DECOMPOSITION.md §1`](./KPI_DECOMPOSITION.md#1-top-of-tree-the-north-star).
+
+Superseded definitions (do NOT use):
+- ❌ "N=2 renewals" — was useful as a proxy but tied retention to billing cycle, which discriminates against annual subscribers
+- ❌ "≥1 product event in 45d" — windowing was inconsistent with the 30d north-star
 
 **Exit states:**
 - `lapsed` — paid → no product event in 60d → automatic
 - `churned` — paid → `subscription_canceled` event
 - `dnc` — `do_not_contact` consent status (per [`packages/crm/src/index.ts`](../../packages/crm/src/index.ts))
 
-State machine is monotone — stages only advance, never retreat, except via exit states. Re-engagement after `lapsed` resumes from `MQL` with the prior cohort tag preserved.
+State machine is monotone for stages 0→5 — stages only advance, never retreat, except via exit states. Re-engagement after `lapsed` resumes from `MQL` with the prior cohort tag preserved. Stage 6 (Advocate) is a concurrent marker (see §1 note above).
 
 ---
 
@@ -36,14 +51,18 @@ These map the 12 monetization events from [`docs/MONETIZATION_FUNNEL_INSTRUMENTA
 | Event | Triggers transition to | Notes |
 |---|---|---|
 | (any PostHog event with new `distinct_id`) | 0 → 1 if `user_id` resolves | Identity resolution gates Cold |
+| `chart_calculated` *(new event)* with no `user_id` | 0 → 0.5 (Anonymous-MQL) | T2-8: pre-identity product engagement |
 | `email_subscribed` *(new event — adds to schema)* | 1 → 2 | MQL signal for owned channels |
-| `chart_calculated` *(new event)* | 1 → 2 | MQL signal for Selfprime cells (product engagement before signup) |
-| `signup_completed` *(new event)* | 2 → 3 if no prior trial | Trial begins |
+| `chart_calculated` *(new event)* with resolved `user_id` | 1 → 2 OR 0.5 → 2 on identity resolution | MQL signal for Selfprime cells (product engagement before signup) |
+| `signup_completed` *(new event)* | 2 → 3 if no prior trial | Trial begins; carries forward cohort tag from stage 0.5 if applicable |
 | `checkout_started` (#1 in monetization doc) | 3 → 3 (intent recorded) | Not a stage change; tracked for funnel viz |
 | `subscription_created` (#4) | 3 → 4 | First paying conversion |
-| `subscription_renewed` (#5) | 4 → 5 on N=2 (second renewal = retained) | Retention threshold per-cell |
-| `referral_invited` *(new event)* | 5 → 6 | Advocate signal |
-| `subscription_canceled` (#7) | 4 or 5 → churned | Exit |
+| `subscription_renewed` (#5) | (informational; retention computed dynamically) | T2-1: stage 5 = canonical retention check per §1.1, NOT N=2 renewals |
+| Canonical retention check passes | 4 → 5 | Polled hourly; idempotent |
+| `referral_invited` *(new event)* | any → +Advocate marker (concurrent) | T1-5: does NOT require stage 5 first |
+| `reading_published` with consent_obtained=true *(new event, T2-7)* | any → +Advocate marker (concurrent) | Public artefact counts as advocacy |
+| Directory opt-in / case-study consent | any → +Advocate marker (concurrent) | Operator-initiated; Tier-3 approval |
+| `subscription_canceled` (#7) | 4 or 5 → churned | Exit; preserves Advocate marker for audit |
 | 60d inactivity after last product event | 4 or 5 → lapsed | Cron-driven; not event-driven |
 
 New events to add to [`packages/analytics/src/event-schemas.ts`](../../packages/analytics/src/event-schemas.ts) (per PR 3b):
@@ -51,6 +70,7 @@ New events to add to [`packages/analytics/src/event-schemas.ts`](../../packages/
 - `chart_calculated`
 - `signup_completed`
 - `referral_invited`
+- `reading_published` *(T2-7 addition; carries `consent_obtained:boolean`)*
 
 ---
 

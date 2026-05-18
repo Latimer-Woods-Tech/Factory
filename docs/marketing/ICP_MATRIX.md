@@ -71,6 +71,33 @@ Every filled cell has an `icp/{slug}.md` file matching this template (cross-link
 
 This is the *contract*. New cells without this structure can't progress past `discovery`.
 
+### Cell capabilities (T2-12)
+
+In addition to the file structure, every cell declares **capability flags** that drive system enforcement. Capabilities live in a per-cell YAML stub at `docs/marketing/cells/{cell-key}.yaml` (created in the same PR that fills the cell) and are read by the marketing supervisor at every action.
+
+| Capability | Default | When to enable |
+|---|---|---|
+| `publishes_user_content` | `false` | Cell surfaces accept content from users/practitioners that gets public exposure (e.g. `selfprime.net/r/*`). Forces synchronous vision-gate at publish time; enables `ugc_brand_safety` tripwire |
+| `accepts_paid_spend` | `false` | Cell has reached `paid_active` readiness state. Required for any paid-channel campaign |
+| `regulated_vertical` | `false` | Cell touches regulated content (health, finance). Activates universal regulated-terms denylist + FDA-aware language gate; forbids efficacy claims; requires consent audit on every send |
+| `b2b_outreach_active` | `false` | Cell runs outbound to practitioners with consent on file. Enforces warm-only outreach; cold-mass-outbound denied |
+| `cross_product_flywheel_source` | `false` | Cell publishes content that drives signups in OTHER cells (e.g. `selfprime:practitioner` shareables → `selfprime:consumer` signups). Enables `referral_chain` tracking on downstream cells |
+| `localized` | `false` | Cell has registered voices for non-English locales. Determines whether i18n routing applies |
+
+Capabilities map per current matrix:
+
+| Cell | Capabilities |
+|---|---|
+| `selfprime:practitioner` | `b2b_outreach_active=true`, `publishes_user_content=true` (via shareables), `cross_product_flywheel_source=true` |
+| `selfprime:consumer` | (none enabled until validation completes) |
+| `cypher:seeker` | `regulated_vertical=true` |
+| `cypher:practitioner` | `regulated_vertical=true`, `b2b_outreach_active=true` (when promoted) |
+| `xicocity:creator` | `publishes_user_content=true` |
+| `capricast:creator` | `publishes_user_content=true` |
+| `factory:internal` | (none) |
+
+The autonomous supervisor reads these flags at every action gate. A cell without `accepts_paid_spend=true` cannot run paid campaigns even if the operator authorizes — the supervisor refuses. This is the **code-enforced layer** that the consistency audit identified as missing.
+
 ---
 
 ## Priority order (rolling)

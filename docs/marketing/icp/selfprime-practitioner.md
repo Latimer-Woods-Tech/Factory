@@ -137,6 +137,17 @@ How this cell makes Selfprime self-market:
 
 Pattern: **each paying practitioner = one new distribution node**.
 
+### 5.1 Referral commission economics (T2-9)
+
+| Mechanism | Terms | System | Audit / cohort effect |
+|---|---|---|---|
+| **Referral code** (`/i/{code}` per future `@lwt/referrals`) | Both parties get 3 months free; referrer earns **20% of net referred MRR for 12 months** paid via Stripe Connect transfer | `referral_codes`, `referral_redemptions`, `referral_commissions` tables | Referred user's `referral_chain` records the referrer for flywheel rollup |
+| **Flywheel credit** (vanity attribution — no payout) | When a practitioner publishes a `selfprime.net/r/*` shareable and a downstream consumer signs up via that link, the practitioner gets *credit* in dashboards but **no commission** (no Stripe transfer) | Touch-history stamping per [`ATTRIBUTION.md`](../ATTRIBUTION.md); preserved in `published_readings.downstream_attribution` | Surfaces in per-practitioner monthly retro; does NOT show as MRR |
+| **Cap on referrer** | Max 50 redemptions per code per 30 days | Anti-abuse per [`CONSTITUTION.md §3`](../CONSTITUTION.md#3-budget-caps) free-tier abuse rules | Tier-3 escalation on overage |
+| **FTC disclosure** | "I earn a commission if you sign up through my link" must appear in any public mention of the referral | Compliance per [`CONSTITUTION.md §9`](../CONSTITUTION.md#9-honesty--truth) | Voice gate adds a disclosure-check rule on practitioner-channel sends |
+
+**Hard rule (T2-9 clarification):** flywheel credit and referral commission are **distinct**. A practitioner who publishes a great shareable that gets forwarded organically is owed **credit but not money** — that downstream user came via shareable, not a referral code. A practitioner who sends a peer their `/i/{code}` invite and that peer pays is owed **both credit and money**. The CRM tracks these in different columns so dashboards don't conflate them.
+
 ---
 
 ## 6. Build-stop threshold

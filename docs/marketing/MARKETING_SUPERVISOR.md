@@ -255,6 +255,33 @@ Every failure mode below has an auto-recovery path. Escalation is the path of la
 
 **Recovery telemetry:** every auto-recovery emits a `marketing_recovery` row to `factory_events` so engineering retros can spot patterns.
 
+### 8.1 Race conditions + ordering rules (T3-7)
+
+The 3 concurrent loops + 10 agents introduce real concurrency. Explicit rules:
+
+| Race | Resolution |
+|---|---|
+| **Signup → drip enrollment ordering** | Signup is the durable event in `factory_events`; drip enrollment is a fire-and-forget message to the `marketing-events` Cloudflare Queue. The supervisor processes the queue in arrival order; idempotency key `(user_id, sequence_name)` prevents double-enroll if the queue retries |
+| **Concurrent voice-gate evaluations on the same artefact** | The voice gate uses optimistic locking on `marketing_artefacts.voice_gate_status`. Two agents trying to gate the same artefact: the second sees the first's result via cache lookup keyed by `hash(body, voice_profile_version)`; only one LLM call fires |
+| **Two agents claim the same kanban issue** | `LockDO` (Durable Object) serializes claim attempts per issue; second agent gets `already_claimed` error and moves on |
+| **Touch stamping race** (multiple events arrive for the same user near-simultaneously) | `first_touch_*` writes use `INSERT ... ON CONFLICT (user_id, app_id) DO NOTHING` — first arrival wins. `last_touch_*` writes use `UPDATE` with a `last_touch_at < $new_timestamp` predicate — older events cannot overwrite newer |
+| **Tripwire fire while supervisor mid-tick** | Tripwire pause is applied at the *cell* level, not the *tick* level — in-flight tick completes for already-claimed artefacts but no new claims start on a paused cell |
+| **DSR erasure mid-send** | Email sequencer checks suppression list as part of the send transaction (read in the same DB tx that records the send); if user was added to suppression between enqueue and send, the send aborts and rolls back |
+
+These rules are spec — implementation lives in [PR 3a (sequencer)](https://github.com/Latimer-Woods-Tech/Factory/pull/810) (now closed; will resurrect) + [PR 3e (supervisor worker)](https://github.com/Latimer-Woods-Tech/Factory/pull/810) + each agent's contract.
+
+### 8.2 Budget check ordering (T3-8)
+
+**Hard rule:** BudgetWatcher's `preflight()` runs **before** any LLM dispatch. Order within a single agent action:
+
+1. `preflight_budget_check(cell, channel, estimated_cost)` — if breach → refuse, mark `escalation:budget-block`, end
+2. Voice gate (if generating content) — preloaded brand profile, no LLM call yet
+3. LLM dispatch (Anthropic/Grok/Groq chain)
+4. Voice gate evaluation on output — possible re-dispatch if minor issues + auto-fix path
+5. `record_actual_cost(cell, channel, actual_cost)` — diff vs estimate, alert if >20% under-estimate pattern
+
+The audit found the prior implementation hint (in [`docs/marketing/scenarios/01-happy-path-practitioner.md`](./scenarios/01-happy-path-practitioner.md) Gap F1) suggested the check was happening *after* dispatch in places. That is wrong. **Spend that exceeds the cap should never happen** — the loop refuses; it does not reconcile after.
+
 ---
 
 ## 9. Cross-references
