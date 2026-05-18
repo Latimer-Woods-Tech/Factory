@@ -59,6 +59,18 @@ Legend + full grid + cell-file template: [`ICP_MATRIX.md`](./ICP_MATRIX.md).
 | [`KPI_DECOMPOSITION.md`](./KPI_DECOMPOSITION.md) | North star → per-cell diagnostic decomposition |
 | [`CAMPAIGN_TAGGING.md`](./CAMPAIGN_TAGGING.md) | `(product, icp, channel, surface, campaign_id)` convention |
 
+### Completeness pass (PR 5 — added 2026-05-18 from grand review)
+
+| Doc | What lives there |
+|---|---|
+| [`COST_PROJECTION.md`](./COST_PROJECTION.md) | Bottoms-up cost math; identifies v1 [`BUDGET_CAPS.md`](./BUDGET_CAPS.md) as at-the-ceiling; three load-bearing controls (tier demotion, prompt caching, circuit breaker) |
+| [`OPS_CHECKLIST.md`](./OPS_CHECKLIST.md) | 12 ops touchpoints per new Worker (rate-limiter, DNS, secrets, etc.) + external account lead times |
+| [`IMAGE_GENERATION.md`](./IMAGE_GENERATION.md) | Visual matrix + Replicate/SDXL/Imagen stack + image-voice gate |
+| [`DSR_HANDLING.md`](./DSR_HANDLING.md) | Per-table DSR cascade rules; supersedes [`CONSTITUTION.md §6`](./CONSTITUTION.md#6-data-consent-compliance) placeholder |
+| [`docs/decisions/2026-05-18-resend-fallback-provider.md`](../decisions/2026-05-18-resend-fallback-provider.md) | ADR — Postmark as Resend fallback |
+| [`docs/runbooks/marketing-incident-response.md`](../runbooks/marketing-incident-response.md) | M-SEV-1 to M-SEV-4; 7-tripwire response table; account suspension matrix |
+| [`icp/capricast.md`](./icp/capricast.md) + [`icp/capricast-creator.md`](./icp/capricast-creator.md) | Capricast positioning (portfolio #3 — was entirely ⏳) |
+
 ---
 
 ## 5. The plumbing layer (PR 3, 13 sub-PRs)

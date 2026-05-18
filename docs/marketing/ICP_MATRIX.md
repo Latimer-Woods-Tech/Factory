@@ -24,7 +24,7 @@ Readiness state legend (per [`CONSTITUTION.md §5`](./CONSTITUTION.md)):
 | | **Chart-curious consumer** | **Power user / enthusiast** | **Practitioner-of-1** | **Practitioner team / studio** | **Channel partner / aggregator** |
 |---|---|---|---|---|---|
 | **Selfprime** (selfprime.net) | 🟡 [`selfprime-consumer`](./icp/selfprime-consumer.md) | ⏳ [`selfprime-power`](./icp/selfprime-power.md) | 🟡 [`selfprime-practitioner`](./icp/selfprime-practitioner.md) ← *first domino* | ⏳ [`selfprime-studio`](./icp/selfprime-studio.md) | ⏳ [`selfprime-partner`](./icp/selfprime-partner.md) |
-| **Capricast** | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| **Capricast** (capricast.com) | ⏳ | ⏳ | 🟡 [`capricast-creator`](./icp/capricast-creator.md) | ⏳ collective | ⏳ |
 | **Cypher of Healing** (cipherofhealing.com) | 🟡 [`cypher-seeker`](./icp/cypher-seeker.md) | 🚫 (not differentiated from seeker tier 12mo) | ⏳ [`cypher-practitioner`](./icp/cypher-practitioner.md) | ⏳ [`cypher-clinic`](./icp/cypher-clinic.md) | 🚫 (regulated vertical, not 2026) |
 | **Xico City** (xicocity.com) | ⏳ creator-curious | ⏳ DJMEXXICO super-fan | 🟡 [`xicocity-creator`](./icp/xicocity-creator.md) | ⏳ [`xicocity-collective`](./icp/xicocity-collective.md) | ⏳ cultural institution / festival |
 | **Factory** (internal) | 🚫 N/A — not a consumer product | 🚫 N/A | 🟡 [`factory-internal`](./icp/factory-internal.md) (operators using LWT packages) | ⏳ portfolio teams | 🚫 (not selling Factory externally 2026) |
@@ -36,7 +36,7 @@ Readiness state legend (per [`CONSTITUTION.md §5`](./CONSTITUTION.md)):
 **One row at a time:** "Which audiences does this product currently *play* to?"
 - Selfprime plays to 2 cells today (consumer + practitioner); 3 are queued.
 - Cypher of Healing plays to 1; clinic/team is queued, channel-partner is forbidden until regulatory work is done.
-- Capricast is queued in all cells — needs a positioning pass first.
+- Capricast plays to 1 cell as of 2026-05-18 (creator-of-1; positioning landed in [`icp/capricast.md`](./icp/capricast.md)); 4 other cells queued.
 
 **One column at a time:** "Which products compete for the same audience?"
 - The "practitioner-of-1" column has 3 active or queued plays (Selfprime, Cypher, Xico City) — same operating motion (B2B-of-1), reuse the playbook.
