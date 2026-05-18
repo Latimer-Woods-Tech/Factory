@@ -84,10 +84,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Pull the SA key JSON; write to a private temp file.
+          # Pull the SA key JSON; write to a private temp file. The secret
+          # is stored with a UTF-8 BOM prefix that gcloud auth's JSON parser
+          # rejects, so we strip it via python's utf-8-sig codec before saving.
           gcloud secrets versions access latest \
             --secret=VERTEX_SA_KEY \
-            --project="$GCP_PROJECT" > /tmp/vertex-sa.json
+            --project="$GCP_PROJECT" \
+            | python3 -c "import sys; sys.stdout.write(sys.stdin.buffer.read().decode('utf-8-sig'))" \
+            > /tmp/vertex-sa.json
           chmod 600 /tmp/vertex-sa.json
 
           # Activate the Vertex SA from its key and mint an access token
