@@ -61,7 +61,10 @@ jobs:
         working-directory: apps/admin-studio
         run: |
           set -euo pipefail
-          echo "$NEW_TOKEN" | npx wrangler secret put GITHUB_TOKEN --env production
+          # printf '%s' instead of echo: echo appends a trailing newline that
+          # wrangler v4 stores verbatim, which corrupts the Bearer header at
+          # request time and surfaces as "Bad credentials" from GitHub.
+          printf '%s' "$NEW_TOKEN" | npx wrangler secret put GITHUB_TOKEN --env production
 
       # ──────────────────────────────────────────────────────────────
       # 2) Mint Vertex AI access token from the SA key in GCP SM
@@ -106,9 +109,10 @@ jobs:
           fi
 
           # Push as the three secrets the worker's LLM package expects.
-          echo "$ACCESS_TOKEN" | npx wrangler secret put VERTEX_ACCESS_TOKEN --env production
-          echo "factory-495015" | npx wrangler secret put VERTEX_PROJECT --env production
-          echo "us-central1" | npx wrangler secret put VERTEX_LOCATION --env production
+          # See GITHUB_TOKEN push above re: printf vs echo.
+          printf '%s' "$ACCESS_TOKEN" | npx wrangler secret put VERTEX_ACCESS_TOKEN --env production
+          printf '%s' "factory-495015" | npx wrangler secret put VERTEX_PROJECT --env production
+          printf '%s' "us-central1" | npx wrangler secret put VERTEX_LOCATION --env production
 
           # Cleanup.
           rm -f /tmp/vertex-sa.json
