@@ -1,6 +1,8 @@
 import puppeteer from '@cloudflare/puppeteer';
 import { Hono } from 'hono';
 import type { Env } from './env.js';
+import { GENERATED_TARGETS } from './targets.generated.js';
+import { CUSTOM_TARGETS } from './targets.custom.js';
 
 class ValidationError extends Error {
   public readonly status = 422;
@@ -61,19 +63,11 @@ const SERVICE_BINDINGS_BY_HOST: Readonly<Record<string, ServiceBindingName>> = {
 const DEFAULT_TIMEOUT_MS = 8_000;
 const DEFAULT_EXPECTED_STATUS = 200;
 
+/** Combined liveness + manifest + SLO journey targets. Generated probes first, then custom. */
 const DEFAULT_TARGETS: readonly MonitorTarget[] = [
-  { id: 'schedule-worker.health', url: 'https://schedule-worker.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'video-cron.health', url: 'https://video-cron.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'admin-studio.staging.health', url: 'https://admin-studio-staging.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'prime-self.api', url: 'https://prime-self.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'schedule-worker.manifest', url: 'https://schedule-worker.adrper79.workers.dev/manifest', contains: 'manifestVersion' },
-  { id: 'video-cron.manifest', url: 'https://video-cron.adrper79.workers.dev/manifest', contains: 'manifestVersion' },
-  { id: 'admin-studio.manifest', url: 'https://admin-studio-staging.adrper79.workers.dev/manifest', contains: 'manifestVersion' },
-  { id: 'slo.journey.render-ingest', url: 'https://schedule-worker.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'slo.journey.video-dispatch', url: 'https://video-cron.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'slo.journey.auth-api', url: 'https://prime-self.adrper79.workers.dev/health', contains: 'ok' },
-  { id: 'slo.journey.operator-plane', url: 'https://admin-studio-staging.adrper79.workers.dev/health', contains: 'ok' },
-] as const;
+  ...GENERATED_TARGETS,
+  ...CUSTOM_TARGETS,
+];
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -384,10 +378,8 @@ export default {
         urls: Object.fromEntries(result.results.map(r => [r.id, r.url])),
       };
       const key = `snapshots:${result.checkedAt}`;
-      await Promise.all([
-        env.MONITOR_KV.put(key, JSON.stringify(snapshot), { expirationTtl: 604800 }),
-        env.MONITOR_KV.put('latest', JSON.stringify(snapshot)),
-      ]);
+      await env.MONITOR_KV.put(key, JSON.stringify(snapshot), { expirationTtl: 604800 });
+      await env.MONITOR_KV.put('latest', JSON.stringify(snapshot));
     }
   },
 };

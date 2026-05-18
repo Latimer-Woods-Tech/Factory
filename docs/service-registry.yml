@@ -51,9 +51,13 @@ workers:
     custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
     custom_domain_status: attached                         # CF custom domain confirmed live 2026-05-08
     health_endpoint: /health
+    telemetry_required: true                               # must expose /api/admin/health|metrics|events
     critical_endpoints:
       - /auth/login
       - /api/practitioners
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     consumers:
       # Files that hardcode this worker's URL — must be updated before any rename
       - repo: Latimer-Woods-Tech/prime-self-ui
@@ -71,6 +75,7 @@ workers:
     url: https://schedule.latwoodtech.work                 # canonical custom domain (attached 2026-05-08)
     custom_domain: schedule.latwoodtech.work
     health_endpoint: /health
+    telemetry_required: false                              # infra worker; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
       - /jobs
@@ -105,6 +110,7 @@ workers:
     url: https://video-cron.adrper79.workers.dev           # canonical workers.dev URL
     custom_domain: null
     health_endpoint: /health
+    telemetry_required: false                              # infra worker; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
       - /health
@@ -136,6 +142,7 @@ workers:
     url: https://monitor.latwoodtech.work                  # canonical custom domain (attached 2026-05-08)
     custom_domain: monitor.latwoodtech.work
     health_endpoint: /health
+    telemetry_required: false                              # infra monitor; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
       - /health
@@ -155,6 +162,7 @@ workers:
     custom_domain_status: pending_attach                   # attaches on next admin-studio staging deploy
     workers_dev_url: https://admin-studio-staging.adrper79.workers.dev  # CF fallback; never hardcode in user-facing code
     health_endpoint: /health
+    telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
       - /health
@@ -199,6 +207,7 @@ workers:
     custom_domain: api.apunlimited.com
     custom_domain_alternate: admin.latwoodtech.work        # second custom domain on the same worker (attached 2026-05-08)
     health_endpoint: /health
+    telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-05-06
     notes: >
       Production `/health` returned `200` on 2026-05-06. Treat this as a
@@ -243,6 +252,11 @@ workers:
     custom_domain: api.capricast.com
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    telemetry_required: true                                   # must expose /api/admin/health|metrics|events
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     deployment_status: live
     notes: >
       Capricast production traffic is split across `capricast.com` (Pages),
@@ -260,6 +274,7 @@ workers:
     custom_domain: api.cipherofhealing.com
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    telemetry_required: false
     consumers: []
 
   - id: factory-supervisor
@@ -270,6 +285,8 @@ workers:
     custom_domain: supervisor.latwoodtech.work
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
+    telemetry_required: false
+    consumers: []
 
   - id: xico-city
     name: xico-city
@@ -279,6 +296,7 @@ workers:
     custom_domain: xicocity.com
     custom_domain_status: attached                             # verified 2026-05-06
     health_endpoint: /health
+    telemetry_required: false                                  # /health + /ready only; no /api/admin/* contract
     deployment_status: custom_domain_live_verified_2026-05-06
     notes: >
       Product: DJMEXXICO — creative economy OS for artists (11 roles). NOT a
@@ -319,6 +337,7 @@ workers:
     custom_domain: staging.xicocity.com
     custom_domain_status: pending_dns                          # DNS record not yet created (2026-05-06)
     health_endpoint: /health
+    telemetry_required: false                                  # /health + /ready only; no /api/admin/* contract
     deployment_status: live_health_verified_2026-05-06
     notes: >
       Deployed 2026-05-06: /health 200, /ready 200. AUTH_RATE_LIMITER binding
@@ -345,7 +364,8 @@ workers:
       - RELEASE
       - PROCESSOR_URL
       - GCP_PROJECT_ID
-      - GCP_REGION    consumers: []
+      - GCP_REGION
+    consumers: []
 
 pages:
   - id: prime-self-ui

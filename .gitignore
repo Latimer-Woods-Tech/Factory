@@ -11,6 +11,15 @@ apps/*/*.tsbuildinfo
 .dev.vars
 **/.dev.vars
 **/.dev.vars.*
+
+# Scratch files that look like they could hold secrets (FRIDGE rule 2).
+# Catches common slip-ups: secret.md, secret01.md, secrets_inventory.md, etc.
+secret*.md
+SECRET*.md
+secrets*.md
+SECRETS*.md
+*.secret
+*.secrets
 _external_reviews/
 # Track standing orders for each external repo but not the repo code itself
 !_external_reviews/*/CLAUDE.md
@@ -19,3 +28,6 @@ package-lock.json
 !apps/supervisor/package-lock.json
 !apps/browser-agent/package-lock.json
 !packages/browser/package-lock.json
+
+# Storybook
+storybook-static
