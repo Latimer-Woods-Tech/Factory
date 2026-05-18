@@ -852,6 +852,311 @@
     ]
   },
   {
+    "id": "feat-editor-effect-implementation",
+    "tier": "green",
+    "description": "Sprint 4 advanced editor effect modules in capricast: 12 LUT-shader filters (WebGL), beauty smoothing (MediaPipe + WebGL bilateral), greenscreen (MediaPipe selfie segmentation), AR face stickers (MediaPipe FaceLandmarker), voiceover, 6 voice FX (Web Audio), music drawer (Pixabay/Jamendo), beat detection + snap-to-beat, client-side render (WebCodecs + ffmpeg-wasm fallback), server render (RenderQueue DO + Cloud Run), render-path switchover heuristic, Stream upload pipeline, templates (duet/stitch/transformation), open editor from feed. Scaffolds a pure-function effect module under apps/web/src/effects/ + a colocated `node --test` test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews the WebGL/MediaPipe/WebAudio/WebCodecs wiring + (for #100) the DO binding before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "lut",
+      "shader",
+      "webgl",
+      "beauty",
+      "mediapipe",
+      "greenscreen",
+      "segmentation",
+      "facelandmarker",
+      "sticker",
+      "voiceover",
+      "voice",
+      "music",
+      "pixabay",
+      "jamendo",
+      "beat",
+      "onset",
+      "webcodecs",
+      "ffmpeg",
+      "render",
+      "renderqueue",
+      "duet",
+      "stitch"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:4"
+      ],
+      "title_pattern": "(LUT.?shader|LUT filter|WebGL filter|Beauty smoothing|MediaPipe|Greenscreen|background replace|selfie segmentation|AR face sticker|FaceLandmarker|Voiceover|voice FX|chipmunk|robot|telephone|hall reverb|autotune|Music drawer|Pixabay|Jamendo|Beat detection|onset|snap.?to.?beat|Client.?side render|WebCodecs|ffmpeg|@ffmpeg/ffmpeg|Server render —|RenderQueue|Cloud Run Remotion|Render.?path switchover|Editor → Cloudflare Stream|Templates? — duet|duet, stitch|stitch, transformation|Open editor from /feed|use.?this.?sound)",
+      "body_patterns": [
+        "(LUT cubes?|WebGL fragment shader|bilateral blur|ImageSegmenter|FaceLandmarker|face.?mesh|landmark indices|chroma composite|Web Audio API|AudioWorkletNode|onset detector|ConvolverNode|PhaseVocoder|Pixabay Music API|Jamendo|VideoEncoder|AudioEncoder|WebCodecs|mp4.?muxer|@ffmpeg/ffmpeg|RenderQueue|Remotion 4|Cloud Run Remotion|estimate client.?render|effects_complexity|duet template|stitch template|Use this sound|action rail on .?/feed)"
+      ]
+    },
+    "slot_names": [
+      "feature_slug",
+      "effect_file_path",
+      "effect_content",
+      "test_file_path",
+      "test_content",
+      "branch_name",
+      "commit_message"
+    ],
+    "slot_validators": {
+      "feature_slug": "^[a-z][a-z0-9-]{2,40}$",
+      "effect_file_path": "^apps/web/src/effects/[a-z][a-z0-9_-]{2,60}\\.ts$",
+      "effect_content": "^[\\s\\S]{80,40000}$",
+      "test_file_path": "^apps/web/src/effects/__tests__/[a-z][a-z0-9_-]{2,60}\\.test\\.ts$",
+      "test_content": "^[\\s\\S]{60,40000}$",
+      "branch_name": "^(supervisor/feat-editor-effect/|feat/)[a-z0-9][a-z0-9/_-]{2,80}$",
+      "commit_message": "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
+    },
+    "slot_defaults": {
+      "feature_slug": "editor-effect",
+      "effect_file_path": "apps/web/src/effects/editor-effect.ts",
+      "effect_content": "// Supervisor scaffold — review the issue body and replace this with\n// the real effect implementation. Tests in __tests__/ will fail until\n// the algorithm and types from the source issue are wired.\n\n// TODO(supervisor-scaffold): replace with the real effect signature\n// implied by the source issue (LUT, MediaPipe, WebAudio, WebCodecs,\n// render-path heuristic, etc.). Module must be browser-safe.\n\nexport function editorEffect(input: unknown): { applied: boolean; input: unknown } {\n  return { applied: false, input };\n}\n",
+      "test_file_path": "apps/web/src/effects/__tests__/editor-effect.test.ts",
+      "test_content": "import { test } from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { editorEffect } from \"../editor-effect\";\n\n// TODO(supervisor-scaffold): replace with real assertions tied to the\n// acceptance criteria in the source issue. CODEOWNER must also review\n// any WebGL / MediaPipe / WebAudio / WebCodecs feature-detection paths\n// before this module ships.\ntest(\"editorEffect scaffold — returns expected shape\", () => {\n  const out = editorEffect({ probe: 1 });\n  assert.equal(out.applied, false);\n  assert.deepEqual(out.input, { probe: 1 });\n});\n",
+      "branch_name": "supervisor/feat-editor-effect/scaffold",
+      "commit_message": "feat(editor): scaffold effect module and test"
+    },
+    "slot_descriptions": {
+      "feature_slug": "Short kebab-case identifier derived from the issue title — used in branch names and module filenames. Examples: lut-filters, beauty-smoothing, greenscreen, ar-face-stickers, voiceover, voice-fx, music-drawer, beat-detection, client-render, server-render, render-path-heuristic, stream-upload, templates, open-from-feed.",
+      "effect_file_path": "Path to a new TypeScript effect module under apps/web/src/effects/. Kebab-case filename reflecting the effect (e.g. lut-filters.ts, beauty-smoothing.ts, greenscreen.ts, ar-face-stickers.ts, voice-fx.ts, beat-detection.ts, client-render.ts, server-render.ts, render-path.ts). Effect modules are pure-function-style — exports take an input frame/audio/timeline and return a transformed result; they do not own React state.",
+      "effect_content": "Full TypeScript source for a pure-function effect module. SYNTHESIZE from the issue body — read the algorithm described (LUT lookup, WebGL bilateral blur, MediaPipe segmentation mask, FaceLandmarker anchored quads, WebAudio ConvolverNode FX, AudioWorkletNode onset detector, WebCodecs encoder pipeline, ffmpeg-wasm fallback, Cloud Run dispatch, cost-function heuristic, Stream direct-upload, duet/stitch template composition) and produce a real module. Export at least one named function whose signature matches the effect's role (e.g. `export function applyLut(frame, lutCube, intensity)`, `export async function detectBeats(audioBuffer)`, `export async function renderClient(timeline, clips)`, `export function chooseRenderPath(timeline, device)`). Re-use EditTimeline types from @capricast/types where appropriate. Module must be browser-safe (no node:* imports); Workers-safe is NOT a requirement here because the editor effects run in the user's browser. For #99 (WebCodecs render) include feature-detection of `VideoEncoder`/`AudioEncoder`. For #100 (RenderQueue DO) the module returns the upload payload + GCP endpoint shape but the actual Durable Object lives in apps/worker (CODEOWNER must port it). For #101 (render-path heuristic) the cost function should mirror the formula in the issue body. Tests in __tests__/ verify the contract — do not produce a stub.",
+      "test_file_path": "Test file path colocated under apps/web/src/effects/__tests__/. Kebab-case filename mirroring the effect module (e.g. lut-filters.test.ts, beat-detection.test.ts, render-path.test.ts). Tests use `node --test` (Node 20+ built-in) — zero new dependencies. Pure-function effects compose well with node --test because they do not need a DOM.",
+      "test_content": "`node --test` test module — SYNTHESIZE assertions for the effect described in the issue. Use `import { test } from 'node:test'` and `import assert from 'node:assert/strict'`. Cover: (1) happy path — input shaped to the issue's acceptance criteria produces the expected output shape (LUT applied, beats detected, render path chosen correctly), (2) failure / degraded path (e.g. unsupported feature → returns null, malformed input → throws TypeError), (3) at least one numeric correctness assertion derived from the issue (e.g. intensity 0 returns unchanged frame, beat count > 0 on a synthetic kick pattern, render-path heuristic chooses 'server' when clip total > 2 min). Stub WebGL/MediaPipe/WebAudio/WebCodecs only as far as needed to exercise the pure logic — heavy GPU/MediaPipe paths can be wrapped in a feature-detection branch that is exercised separately. Aim for ≥3 test() blocks. Do not produce test.todo() stubs.",
+      "branch_name": "Git branch name. Prefer supervisor/feat-editor-effect/<feature_slug> so the bot's PRs are visually grouped. The conventional feat/<feature_slug> form is also accepted because the LLM keeps producing it.",
+      "commit_message": "Conventional Commits message for the squash-merge. Scope should reflect the effect (e.g. feat(editor): ..., feat(effects): ..., feat(render): ..., feat(audio): ..., feat(filters): ...). Description should be a single-sentence imperative summary of what the PR adds."
+    },
+    "step_intents": [
+      "Confirm the apps/web/src directory exists. The effects/ subdirectory does not exist on main yet — the supervisor will create it as the convention for browser-side editor effect modules. If apps/web/src is missing entirely the CODEOWNER must scaffold capricast's apps/web manually first.",
+      "Read the shared @capricast/types package so the CODEOWNER can confirm whether the EditTimeline shape referenced in the effect module already exists or needs to be added (Sprint 3 #82 introduces it).",
+      "Post a plan comment so the human reviewer sees the two file paths, which effect surfaces span web↔worker, and what manual follow-up is required before merge.",
+      "Open a real (non-draft, non-empty) PR with the two scaffolded files so CI runs and a CODEOWNER can review."
+    ],
+    "pr_files": [
+      {
+        "pathSlot": "effect_file_path",
+        "contentSlot": "effect_content"
+      },
+      {
+        "pathSlot": "test_file_path",
+        "contentSlot": "test_content"
+      }
+    ],
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/src",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "packages/types",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-editor-effect-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nEffect module: `$slots.effect_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds two files derived from the issue body:\n1. A browser-safe TypeScript effect module under `apps/web/src/effects/` implementing the algorithm described (LUT, MediaPipe, WebAudio, WebCodecs, render-path heuristic, etc.).\n2. A colocated `node --test` test file exercising the pure logic — no new test dependencies.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:\n- Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring for correctness against the issue's acceptance criteria.\n- For #100 (Server render — RenderQueue DO) port the Durable Object skeleton into `apps/worker/src/durable-objects/` — the effect module here only describes the upload payload + Cloud Run dispatch shape.\n- For #99 (Client render) confirm the WebCodecs feature-detection branch falls back to ffmpeg-wasm correctly.\n- For #101 (render-path heuristic) tune the cost-function constants once real PostHog data lands.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.effect_file_path",
+              "content": "$slots.effect_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-editor-effect-implementation`).\n\n**Scaffolds:**\n- Effect module: `$slots.effect_file_path`\n- `node --test` test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring against the issue's acceptance criteria.\n2. For server-render issues (#100), port the Durable Object skeleton into `apps/worker/src/durable-objects/RenderQueue.ts` and add the binding to `apps/worker/wrangler.jsonc`.\n3. For client-render issues (#99), confirm the WebCodecs → ffmpeg-wasm fallback covers Safari < 17.\n4. For render-path heuristic (#101), tune constants once PostHog telemetry confirms real client render times.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:4",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-editor-web-implementation",
+    "tier": "green",
+    "description": "Sprint 3 mobile-editor web UI feature work in capricast: EditTimeline JSON schema, camera screen with multi-clip record, timeline scrubber with thumbnails, trim/split/reorder/speed presets, text overlays, sticker pack, drafts (IndexedDB + R2 sync), auto-captions (Workers AI Whisper), and caption styles. Scaffolds a React component under apps/web/src/app/edit/components/, a Vitest test file alongside it, and an optional Hono route for draft sync. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER must wire vitest+jsdom into apps/web devDependencies (web app currently has no in-app unit runner) and review the editor wiring before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "edittimeline",
+      "editor",
+      "timeline",
+      "scrubber",
+      "trim",
+      "split",
+      "reorder",
+      "speed",
+      "overlay",
+      "sticker",
+      "drafts",
+      "indexeddb",
+      "captions",
+      "whisper",
+      "camera",
+      "record",
+      "countdown"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:3"
+      ],
+      "title_pattern": "(EditTimeline|Camera screen|multi.?clip record|Timeline (scrubber|strip)|frame thumbnails|Trim, split, reorder|speed presets|Text overlays|motion presets|Sticker pack|sticker drawer|Drafts in IndexedDB|R2 for cross.?device|Auto.?captions?|Whisper|caption styles|TikTok.?classic|Karaoke|per.?line edit|getUserMedia|hold.?to.?record|tap.?to.?record|countdown|front/back camera)",
+      "body_patterns": [
+        "(EditTimeline|@capricast/types|clips\\[\\]|audio_tracks\\[\\]|text_overlays\\[\\]|getUserMedia|facingMode|tap.?to.?record|hold.?to.?record|VideoFrame\\.copyTo|frame thumbnails|drag handles to trim|split.?at.?playhead|speed presets|Add.?text button|style picker|motion presets|sticker drawer|royalty.?free SVG|IndexedDB|debounce.?save|drafts/<user_id>|Workers AI|whisper|word.?level timestamps|TikTok.?classic|caption preset|Karaoke|3-2-1 countdown|/create route)"
+      ]
+    },
+    "slot_names": [
+      "feature_slug",
+      "component_name",
+      "component_file_path",
+      "component_content",
+      "test_file_path",
+      "test_content",
+      "branch_name",
+      "commit_message"
+    ],
+    "slot_validators": {
+      "feature_slug": "^[a-z][a-z0-9-]{2,40}$",
+      "component_name": "^[A-Z][A-Za-z0-9]{2,60}$",
+      "component_file_path": "^apps/web/src/app/edit/components/[A-Z][A-Za-z0-9]{2,60}\\.tsx$",
+      "component_content": "^[\\s\\S]{80,40000}$",
+      "test_file_path": "^apps/web/src/app/edit/components/__tests__/[A-Z][A-Za-z0-9]{2,60}\\.test\\.tsx$",
+      "test_content": "^[\\s\\S]{60,40000}$",
+      "branch_name": "^(supervisor/feat-editor-web/|feat/)[a-z0-9][a-z0-9/_-]{2,80}$",
+      "commit_message": "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
+    },
+    "slot_defaults": {
+      "feature_slug": "editor-component",
+      "component_name": "EditorComponent",
+      "component_file_path": "apps/web/src/app/edit/components/EditorComponent.tsx",
+      "component_content": "// Supervisor scaffold — review the issue body and replace this with\n// the real editor component. Tests in __tests__/ will fail until the\n// UI primitives, state, and acceptance criteria are implemented.\n\"use client\";\n\nimport { useState } from \"react\";\n\ntype Props = {\n  // TODO(supervisor-scaffold): replace with the prop shape implied by\n  // the source issue (EditTimeline ref, callbacks, etc.).\n  className?: string;\n};\n\nexport default function EditorComponent({ className }: Props) {\n  const [ready, setReady] = useState(false);\n  return (\n    <section className={className} data-testid=\"editor-component-scaffold\">\n      <button\n        type=\"button\"\n        onClick={() => setReady(true)}\n        className=\"rounded bg-black px-3 py-2 text-sm text-white\"\n      >\n        {ready ? \"ready\" : \"scaffold\"}\n      </button>\n    </section>\n  );\n}\n",
+      "test_file_path": "apps/web/src/app/edit/components/__tests__/EditorComponent.test.tsx",
+      "test_content": "import { describe, it, expect } from \"vitest\";\nimport { render } from \"@testing-library/react\";\nimport EditorComponent from \"../EditorComponent\";\n\n// TODO(supervisor-scaffold): replace with real assertions tied to the\n// acceptance criteria in the source issue. The CODEOWNER must also\n// wire vitest + @testing-library/react + jsdom into apps/web/package.json\n// — the web app currently has no in-app unit runner.\ndescribe(\"EditorComponent scaffold\", () => {\n  it(\"renders the scaffold marker\", () => {\n    const { getByTestId } = render(<EditorComponent />);\n    expect(getByTestId(\"editor-component-scaffold\")).toBeTruthy();\n  });\n});\n",
+      "branch_name": "supervisor/feat-editor-web/scaffold",
+      "commit_message": "feat(editor): scaffold web component and test"
+    },
+    "slot_descriptions": {
+      "feature_slug": "Short kebab-case identifier derived from the issue title — used in branch names and component filenames. Examples: edit-timeline-schema, camera-screen, timeline-scrubber, trim-split-reorder, text-overlays, sticker-pack, drafts-sync, auto-captions, caption-styles.",
+      "component_name": "React component name in PascalCase. Should reflect the editor surface. Examples: EditTimelineSchema, CameraScreen, TimelineScrubber, ClipEditor, TextOverlayPanel, StickerDrawer, DraftsSync, AutoCaptions, CaptionStylePicker.",
+      "component_file_path": "Path to a new React component file under apps/web/src/app/edit/components/. PascalCase filename matching component_name (e.g. CameraScreen.tsx, TimelineScrubber.tsx). The /edit route does not exist on main yet — scaffolding under apps/web/src/app/edit/components/ creates the convention; the CODEOWNER may move it during review if a different module layout fits the editor's IA.",
+      "component_content": "Full TypeScript source for a React 19 + Next.js 15 client component. SYNTHESIZE from the issue body — extract the UI primitives, state, and events described in the acceptance criteria and produce a real component. Use 'use client' at top for browser-only APIs (getUserMedia, IndexedDB, WebAudio, MediaPipe, WebGL). Import React hooks (useState, useEffect, useRef, useCallback) as needed. Use Tailwind utility classes (the project already uses tailwindcss 3.4 + tailwind-merge + clsx). Use lucide-react for icons (already a dependency). Reuse shared types from @capricast/types when modelling EditTimeline / clips / overlays. Wire posthog-js capture() calls for non-trivial creator actions (recordStarted, clipTrimmed, captionApplied, etc.) — analytics is required per the BlerdArt spec. Component must default-export the component. Tests in the colocated __tests__/ dir verify the contract — do not produce a stub.",
+      "test_file_path": "Vitest test file path colocated under apps/web/src/app/edit/components/__tests__/. PascalCase filename mirroring the component (e.g. CameraScreen.test.tsx). NOTE: apps/web currently has no vitest config or @testing-library — the CODEOWNER must add vitest + @testing-library/react + jsdom to apps/web/package.json devDependencies and create a vitest.config.ts during review. Same model as the call-room template requiring wrangler.jsonc edits.",
+      "test_content": "Vitest + @testing-library/react test module — SYNTHESIZE assertions for the React component described in the issue. Cover: (1) renders without crashing with minimal props, (2) primary user interaction described in the acceptance criteria (e.g. clicking record starts capture, dragging trim handle updates timeline state, applying a caption style updates the preview), (3) at least one negative/edge case (e.g. record button disabled while permissions pending, no clips → empty state). Use describe + it() blocks. Mock browser-only APIs (navigator.mediaDevices, IndexedDB, WebGL) via vi.mock or jsdom stubs as needed. Aim for ≥3 it() blocks. Import the default export of the component and exercise it via render() + fireEvent or userEvent. Do not produce it.todo() stubs.",
+      "branch_name": "Git branch name. Prefer supervisor/feat-editor-web/<feature_slug> so the bot's PRs are visually grouped. The conventional feat/<feature_slug> form is also accepted because the LLM keeps producing it.",
+      "commit_message": "Conventional Commits message for the squash-merge. Scope should reflect the editor surface (e.g. feat(editor): ..., feat(camera): ..., feat(timeline): ..., feat(captions): ...). Description should be a single-sentence imperative summary of what the PR adds."
+    },
+    "step_intents": [
+      "Confirm the apps/web/src/app directory exists. The /edit subdirectory does not exist on main yet — the supervisor will create it. If the parent app router directory is missing entirely the CODEOWNER must scaffold capricast's apps/web manually first.",
+      "Read apps/web/package.json so the CODEOWNER reviewer can confirm which vitest + testing-library packages they need to add — the web app currently has none.",
+      "Post a plan comment so the human reviewer sees the two file paths, the test-infra gap they need to close, and the convention this PR introduces before the PR lands.",
+      "Open a real (non-draft, non-empty) PR with the two scaffolded files so CI runs and a CODEOWNER can review."
+    ],
+    "pr_files": [
+      {
+        "pathSlot": "component_file_path",
+        "contentSlot": "component_content"
+      },
+      {
+        "pathSlot": "test_file_path",
+        "contentSlot": "test_content"
+      }
+    ],
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/src/app",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/package.json",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-editor-web-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nComponent: `$slots.component_name`\nComponent file: `$slots.component_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds two files derived from the issue body:\n1. A React 19 / Next.js 15 client component under `apps/web/src/app/edit/components/` covering the editor surface described in the acceptance criteria.\n2. A colocated Vitest + @testing-library/react test file exercising the component contract.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:\n- Add `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, and `jsdom` to `apps/web/package.json` devDependencies (the web app currently has no in-app unit runner) and create `apps/web/vitest.config.ts`.\n- Move the component file if a different module layout fits the editor's IA — `apps/web/src/app/edit/` does not exist on main yet, this PR creates the convention.\n- Review the React + Tailwind wiring for the editor surface.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.component_file_path",
+              "content": "$slots.component_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-editor-web-implementation`).\n\n**Scaffolds:**\n- React component: `$slots.component_file_path` (component `$slots.component_name`)\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Add `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `jsdom` to `apps/web/package.json` and create `apps/web/vitest.config.ts` — the web app currently has no in-app unit runner.\n2. Review the React + Tailwind wiring and fill in any handlers the supervisor could not synthesize from the issue body.\n3. Confirm the chosen path under `apps/web/src/app/edit/components/` fits the editor's eventual information architecture.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:3",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "feat-flaky-detector",
     "tier": "yellow",
     "description": "Flaky check detector: tracks CI checks that fail then pass on re-run and publishes a weekly GitHub issue with a remediation report. Implements a new workflow file under .github/workflows/; no production code is changed.\n",

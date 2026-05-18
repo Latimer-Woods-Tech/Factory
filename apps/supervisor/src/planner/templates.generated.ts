@@ -2,8 +2,8 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-18T18:50:15.875Z
-// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-call-room-implementation.yml, feat-ci-workflow.yml, feat-conversations-implementation.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-18T21:16:13.292Z
+// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-call-room-implementation.yml, feat-ci-workflow.yml, feat-conversations-implementation.yml, feat-editor-effect-implementation.yml, feat-editor-web-implementation.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
@@ -575,6 +575,203 @@ export const GENERATED_TEMPLATES: Template[] = [
           "labels": [
             "enhancement",
             "sprint:2",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-editor-effect-implementation",
+    "tier": "green",
+    "description": "Sprint 4 advanced editor effect modules in capricast: 12 LUT-shader filters (WebGL), beauty smoothing (MediaPipe + WebGL bilateral), greenscreen (MediaPipe selfie segmentation), AR face stickers (MediaPipe FaceLandmarker), voiceover, 6 voice FX (Web Audio), music drawer (Pixabay/Jamendo), beat detection + snap-to-beat, client-side render (WebCodecs + ffmpeg-wasm fallback), server render (RenderQueue DO + Cloud Run), render-path switchover heuristic, Stream upload pipeline, templates (duet/stitch/transformation), open editor from feed. Scaffolds a pure-function effect module under apps/web/src/effects/ + a colocated `node --test` test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews the WebGL/MediaPipe/WebAudio/WebCodecs wiring + (for #100) the DO binding before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "lut",
+      "shader",
+      "webgl",
+      "beauty",
+      "mediapipe",
+      "greenscreen",
+      "segmentation",
+      "facelandmarker",
+      "sticker",
+      "voiceover",
+      "voice",
+      "music",
+      "pixabay",
+      "jamendo",
+      "beat",
+      "onset",
+      "webcodecs",
+      "ffmpeg",
+      "render",
+      "renderqueue",
+      "duet",
+      "stitch"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:4"
+      ],
+      "title_pattern": "(LUT.?shader|LUT filter|WebGL filter|Beauty smoothing|MediaPipe|Greenscreen|background replace|selfie segmentation|AR face sticker|FaceLandmarker|Voiceover|voice FX|chipmunk|robot|telephone|hall reverb|autotune|Music drawer|Pixabay|Jamendo|Beat detection|onset|snap.?to.?beat|Client.?side render|WebCodecs|ffmpeg|@ffmpeg/ffmpeg|Server render —|RenderQueue|Cloud Run Remotion|Render.?path switchover|Editor → Cloudflare Stream|Templates? — duet|duet, stitch|stitch, transformation|Open editor from /feed|use.?this.?sound)",
+      "body_patterns": [
+        "(LUT cubes?|WebGL fragment shader|bilateral blur|ImageSegmenter|FaceLandmarker|face.?mesh|landmark indices|chroma composite|Web Audio API|AudioWorkletNode|onset detector|ConvolverNode|PhaseVocoder|Pixabay Music API|Jamendo|VideoEncoder|AudioEncoder|WebCodecs|mp4.?muxer|@ffmpeg/ffmpeg|RenderQueue|Remotion 4|Cloud Run Remotion|estimate client.?render|effects_complexity|duet template|stitch template|Use this sound|action rail on .?/feed)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/src",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "packages/types",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-editor-effect-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nEffect module: `$slots.effect_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds two files derived from the issue body:\n1. A browser-safe TypeScript effect module under `apps/web/src/effects/` implementing the algorithm described (LUT, MediaPipe, WebAudio, WebCodecs, render-path heuristic, etc.).\n2. A colocated `node --test` test file exercising the pure logic — no new test dependencies.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:\n- Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring for correctness against the issue's acceptance criteria.\n- For #100 (Server render — RenderQueue DO) port the Durable Object skeleton into `apps/worker/src/durable-objects/` — the effect module here only describes the upload payload + Cloud Run dispatch shape.\n- For #99 (Client render) confirm the WebCodecs feature-detection branch falls back to ffmpeg-wasm correctly.\n- For #101 (render-path heuristic) tune the cost-function constants once real PostHog data lands.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.effect_file_path",
+              "content": "$slots.effect_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-editor-effect-implementation`).\n\n**Scaffolds:**\n- Effect module: `$slots.effect_file_path`\n- `node --test` test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring against the issue's acceptance criteria.\n2. For server-render issues (#100), port the Durable Object skeleton into `apps/worker/src/durable-objects/RenderQueue.ts` and add the binding to `apps/worker/wrangler.jsonc`.\n3. For client-render issues (#99), confirm the WebCodecs → ffmpeg-wasm fallback covers Safari < 17.\n4. For render-path heuristic (#101), tune constants once PostHog telemetry confirms real client render times.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:4",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-editor-web-implementation",
+    "tier": "green",
+    "description": "Sprint 3 mobile-editor web UI feature work in capricast: EditTimeline JSON schema, camera screen with multi-clip record, timeline scrubber with thumbnails, trim/split/reorder/speed presets, text overlays, sticker pack, drafts (IndexedDB + R2 sync), auto-captions (Workers AI Whisper), and caption styles. Scaffolds a React component under apps/web/src/app/edit/components/, a Vitest test file alongside it, and an optional Hono route for draft sync. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER must wire vitest+jsdom into apps/web devDependencies (web app currently has no in-app unit runner) and review the editor wiring before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "edittimeline",
+      "editor",
+      "timeline",
+      "scrubber",
+      "trim",
+      "split",
+      "reorder",
+      "speed",
+      "overlay",
+      "sticker",
+      "drafts",
+      "indexeddb",
+      "captions",
+      "whisper",
+      "camera",
+      "record",
+      "countdown"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:3"
+      ],
+      "title_pattern": "(EditTimeline|Camera screen|multi.?clip record|Timeline (scrubber|strip)|frame thumbnails|Trim, split, reorder|speed presets|Text overlays|motion presets|Sticker pack|sticker drawer|Drafts in IndexedDB|R2 for cross.?device|Auto.?captions?|Whisper|caption styles|TikTok.?classic|Karaoke|per.?line edit|getUserMedia|hold.?to.?record|tap.?to.?record|countdown|front/back camera)",
+      "body_patterns": [
+        "(EditTimeline|@capricast/types|clips\\[\\]|audio_tracks\\[\\]|text_overlays\\[\\]|getUserMedia|facingMode|tap.?to.?record|hold.?to.?record|VideoFrame\\.copyTo|frame thumbnails|drag handles to trim|split.?at.?playhead|speed presets|Add.?text button|style picker|motion presets|sticker drawer|royalty.?free SVG|IndexedDB|debounce.?save|drafts/<user_id>|Workers AI|whisper|word.?level timestamps|TikTok.?classic|caption preset|Karaoke|3-2-1 countdown|/create route)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/src/app",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/package.json",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-editor-web-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nComponent: `$slots.component_name`\nComponent file: `$slots.component_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds two files derived from the issue body:\n1. A React 19 / Next.js 15 client component under `apps/web/src/app/edit/components/` covering the editor surface described in the acceptance criteria.\n2. A colocated Vitest + @testing-library/react test file exercising the component contract.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:\n- Add `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, and `jsdom` to `apps/web/package.json` devDependencies (the web app currently has no in-app unit runner) and create `apps/web/vitest.config.ts`.\n- Move the component file if a different module layout fits the editor's IA — `apps/web/src/app/edit/` does not exist on main yet, this PR creates the convention.\n- Review the React + Tailwind wiring for the editor surface.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.component_file_path",
+              "content": "$slots.component_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-editor-web-implementation`).\n\n**Scaffolds:**\n- React component: `$slots.component_file_path` (component `$slots.component_name`)\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Add `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `jsdom` to `apps/web/package.json` and create `apps/web/vitest.config.ts` — the web app currently has no in-app unit runner.\n2. Review the React + Tailwind wiring and fill in any handlers the supervisor could not synthesize from the issue body.\n3. Confirm the chosen path under `apps/web/src/app/edit/components/` fits the editor's eventual information architecture.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:3",
             "supervisor",
             "tier-green"
           ],

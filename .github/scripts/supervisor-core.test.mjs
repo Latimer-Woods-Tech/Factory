@@ -608,3 +608,337 @@ test('slot descriptions: ALL governance/feature templates either declare descrip
     assert.ok(t.slot_descriptions !== null, `${t.id}: slot_descriptions must not be null`);
   }
 });
+
+// ─── feat-editor-web-implementation match tests (Sprint 3) ───────────────────
+//
+// Asserts that the editor-web template:
+//   1. Matches the intended capricast Sprint 3 mobile-editor UI issues
+//      (#82-#87, #92, #97, #98) where both title evidence and body evidence
+//      agree.
+//   2. Refuses the Sprint 2 conversations/call-room issues (covered by
+//      feat-conversations-implementation / feat-call-room-implementation).
+//   3. Refuses the Sprint 4 advanced-effect issues (covered by
+//      feat-editor-effect-implementation).
+//   4. Refuses label-only overlap (the bug PR #815 just fixed).
+
+test('feat-editor-web-implementation: matches capricast #82 (EditTimeline JSON schema)', () => {
+  const template = loadTemplate('feat-editor-web-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'EditTimeline JSON schema (consumed by client preview AND server renderer)',
+      labels: ['enhancement', 'sprint:3'],
+      body: 'Define a deterministic JSON schema in `packages/types`: `clips[] (source, in, out, speed, transform)`, `audio_tracks[] (source, gain, in, out, ducking)`, `text_overlays[] (text, font, color, motion, time_in, time_out, anchor)`, `stickers[]`, `filters[]`, `face_effects[]`, `captions{source, style, segments[]}`, `output{width, height, fps, bitrate}`. Both the WebGL preview compositor and the Cloud Run Remotion server renderer consume this same spec. Schema typed in `@capricast/types`.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-web-implementation to match capricast #82');
+  assert.equal(match.id, 'feat-editor-web-implementation');
+});
+
+test('feat-editor-web-implementation: matches capricast #83 (Camera screen multi-clip record)', () => {
+  const template = loadTemplate('feat-editor-web-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Camera screen — multi-clip record (hold/tap, pause/resume, countdown, flip, mic mute)',
+      labels: ['enhancement', 'sprint:3'],
+      body: '`/create` route. `getUserMedia` with `facingMode` toggle. Record button: tap-to-record (60s default cap, configurable), hold-to-record. Pause/resume on same recording session. 3-2-1 countdown. Front/back camera flip. Mic mute toggle.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-web-implementation to match capricast #83');
+  assert.equal(match.id, 'feat-editor-web-implementation');
+});
+
+test('feat-editor-web-implementation: matches capricast #97 (Auto-captions Whisper)', () => {
+  const template = loadTemplate('feat-editor-web-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Auto-captions — Workers AI Whisper-large-v3-turbo with word-level timestamps',
+      labels: ['enhancement', 'sprint:3'],
+      body: 'After timeline assembled, submit muxed audio to Workers AI `@cf/openai/whisper-large-v3-turbo`. Returns segments with word-level timestamps. Persist as `captions` block on EditTimeline. Deepgram fallback if Workers AI is degraded.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-web-implementation to match capricast #97');
+  assert.equal(match.id, 'feat-editor-web-implementation');
+});
+
+test('feat-editor-web-implementation: REFUSES capricast #88 (LUT filters — Sprint 4, wrong template)', () => {
+  const template = loadTemplate('feat-editor-web-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: '12 LUT-shader filter presets (WebGL)',
+      labels: ['enhancement', 'sprint:4'],
+      body: 'Author/source 12 LUT cubes (1024×32 PNG identity-mapped color cubes). WebGL fragment shader samples LUT per pixel. Intensity slider 0-100%. Per-clip or whole-timeline.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'feat-editor-web-implementation must NOT match Sprint 4 effect issues');
+});
+
+test('feat-editor-web-implementation: REFUSES capricast #77 (conversations — Sprint 2, wrong template)', () => {
+  const template = loadTemplate('feat-editor-web-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Compose, edit (5min window), delete, reactions, typing, read receipts',
+      labels: ['enhancement', 'sprint:2', 'supervisor:approved-source'],
+      body: 'Compose box with shift+enter newline. Edit own message ≤5 min after send. Read receipts via `last_read_at` updated on scroll-to-bottom.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'feat-editor-web-implementation must NOT match Sprint 2 conversations issues');
+});
+
+test('feat-editor-web-implementation: REFUSES label-only overlap (no title/body evidence)', () => {
+  const template = loadTemplate('feat-editor-web-implementation');
+  // Labels match (`enhancement`, `sprint:3`) but neither title nor body
+  // mention any Sprint 3 editor vocabulary — this is the regression PR #815 fixed.
+  const match = simulateMatchTemplate(
+    {
+      title: 'Bump @sentry/cloudflare to 8.45.0',
+      labels: ['enhancement', 'sprint:3', 'dependencies'],
+      body: 'Routine dependency bump for the Sentry SDK. Patch release notes attached. No behavior change expected.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'label-only matches must be rejected — title/body evidence required');
+});
+
+// ─── feat-editor-effect-implementation match tests (Sprint 4) ────────────────
+//
+// Asserts that the editor-effect template:
+//   1. Matches the intended capricast Sprint 4 advanced-effect issues
+//      (#88-#91, #93-#96, #99-#104) where both title evidence and body
+//      evidence agree.
+//   2. Refuses the Sprint 3 editor-UI issues (covered by
+//      feat-editor-web-implementation).
+//   3. Refuses the Sprint 2 conversations/call-room issues.
+//   4. Refuses label-only overlap.
+
+test('feat-editor-effect-implementation: matches capricast #88 (LUT filters)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: '12 LUT-shader filter presets (WebGL)',
+      labels: ['enhancement', 'sprint:4'],
+      body: 'Author/source 12 LUT cubes (1024×32 PNG identity-mapped color cubes): Original, Vivid, Mood, B&W, Film, Sunset, Cool, Warm, Faded, Crisp, Dreamy, Noir. WebGL fragment shader samples LUT per pixel. Intensity slider 0-100%.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-effect-implementation to match capricast #88');
+  assert.equal(match.id, 'feat-editor-effect-implementation');
+});
+
+test('feat-editor-effect-implementation: matches capricast #90 (Greenscreen MediaPipe)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Greenscreen / background replace — MediaPipe selfie segmentation',
+      labels: ['enhancement', 'sprint:4'],
+      body: 'Replace background with: solid color, gradient, image upload, or another video clip from the user library. Selfie mask per frame via MediaPipe `ImageSegmenter`. WebGL chroma composite.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-effect-implementation to match capricast #90');
+  assert.equal(match.id, 'feat-editor-effect-implementation');
+});
+
+test('feat-editor-effect-implementation: matches capricast #99 (Client-side WebCodecs render)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Client-side render — WebCodecs encoder (preferred) + @ffmpeg/ffmpeg WASM fallback',
+      labels: ['enhancement', 'sprint:4'],
+      body: 'Render path A: feature-detect `VideoEncoder` + `AudioEncoder` (WebCodecs). Composite frames in WebGL → encode → mux to MP4 via `mp4-muxer`. Render path B: when WebCodecs unavailable, fall back to `@ffmpeg/ffmpeg` 0.12 WASM.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-effect-implementation to match capricast #99');
+  assert.equal(match.id, 'feat-editor-effect-implementation');
+});
+
+test('feat-editor-effect-implementation: matches capricast #100 (Server render RenderQueue DO + Cloud Run)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Server render — RenderQueue DO + Cloud Run Remotion+FFmpeg job',
+      labels: ['enhancement', 'sprint:4'],
+      body: 'New DO `RenderQueue` accepts EditTimeline + clip blob refs (R2 keys), enqueues a Cloud Run job. Cloud Run service in `factory-495015` GCP project: pulls clips from R2 → renders via Remotion 4 + FFmpeg → uploads MP4 to R2 → ingests into Cloudflare Stream.',
+    },
+    [template],
+  );
+  assert.ok(match, 'expected feat-editor-effect-implementation to match capricast #100');
+  assert.equal(match.id, 'feat-editor-effect-implementation');
+});
+
+test('feat-editor-effect-implementation: REFUSES capricast #83 (Camera screen — Sprint 3, wrong template)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Camera screen — multi-clip record (hold/tap, pause/resume, countdown, flip, mic mute)',
+      labels: ['enhancement', 'sprint:3'],
+      body: '`/create` route. `getUserMedia` with `facingMode` toggle. Record button: tap-to-record. Pause/resume. 3-2-1 countdown. Front/back camera flip.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'feat-editor-effect-implementation must NOT match Sprint 3 UI issues');
+});
+
+test('feat-editor-effect-implementation: REFUSES capricast #65 (Cloudflare Stream Live Inputs — Sprint 2, wrong template)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'Cloudflare Stream Live Inputs — creator Go Live flow',
+      labels: ['enhancement', 'sprint:2', 'supervisor:approved-source'],
+      body: 'Backend creates a Stream Live Input on `POST /live/start`, returns RTMPS URL+key (for OBS path) and a WHIP URL. On `live_input.connected` webhook, mark broadcast active.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'feat-editor-effect-implementation must NOT match Sprint 2 live-input issues');
+});
+
+test('feat-editor-effect-implementation: REFUSES label-only overlap (no title/body evidence)', () => {
+  const template = loadTemplate('feat-editor-effect-implementation');
+  // Labels match (`enhancement`, `sprint:4`) but neither title nor body
+  // mention any Sprint 4 effect vocabulary.
+  const match = simulateMatchTemplate(
+    {
+      title: 'Add weekly README freshness check workflow',
+      labels: ['enhancement', 'sprint:4', 'hardening'],
+      body: 'Adds a GitHub Actions cron job that lints README.md and fails if the last-updated stamp is older than 30 days.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'label-only matches must be rejected — title/body evidence required');
+});
+
+// ─── Cross-template refusal: the conversations + call-room templates must
+//     NOT pick up Sprint 3 / Sprint 4 editor issues that belong to the new
+//     editor templates. This is the inverse of the existing cross-template
+//     refusal tests for conversations <-> call-room. ──────────────────────
+
+test('feat-conversations-implementation: REFUSES capricast #82 (EditTimeline — Sprint 3, wrong template)', () => {
+  const template = loadTemplate('feat-conversations-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: 'EditTimeline JSON schema (consumed by client preview AND server renderer)',
+      labels: ['enhancement', 'sprint:3'],
+      body: 'Define a deterministic JSON schema in `packages/types`: clips[], audio_tracks[], text_overlays[]. WebGL preview compositor and Cloud Run Remotion server renderer consume this spec.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'feat-conversations-implementation must NOT match Sprint 3 editor issues');
+});
+
+test('feat-call-room-implementation: REFUSES capricast #88 (LUT filters — Sprint 4, wrong template)', () => {
+  const template = loadTemplate('feat-call-room-implementation');
+  const match = simulateMatchTemplate(
+    {
+      title: '12 LUT-shader filter presets (WebGL)',
+      labels: ['enhancement', 'sprint:4'],
+      body: 'Author/source 12 LUT cubes. WebGL fragment shader samples LUT per pixel. Intensity slider 0-100%.',
+    },
+    [template],
+  );
+  assert.equal(match, null, 'feat-call-room-implementation must NOT match Sprint 4 effect issues');
+});
+
+// ─── Slot defaults regression — the new editor templates must produce
+//     non-empty PRs even when extraction returns all-null slots. ─────────
+
+test('feat-editor-web-implementation: all 8 slots have defaults that satisfy their own validators', () => {
+  const t = loadFullTemplate('feat-editor-web-implementation');
+  const required = ['feature_slug', 'component_name', 'component_file_path', 'component_content', 'test_file_path', 'test_content', 'branch_name', 'commit_message'];
+  for (const slot of required) {
+    const defaultValue = t.slot_defaults?.[slot];
+    assert.ok(defaultValue, `slot "${slot}" must have a default in slot_defaults`);
+    const validator = t.slot_validators?.[slot];
+    if (validator) {
+      assert.ok(new RegExp(validator).test(defaultValue), `slot "${slot}" default must satisfy its own validator /${validator}/`);
+    }
+  }
+});
+
+test('feat-editor-effect-implementation: all 7 slots have defaults that satisfy their own validators', () => {
+  const t = loadFullTemplate('feat-editor-effect-implementation');
+  const required = ['feature_slug', 'effect_file_path', 'effect_content', 'test_file_path', 'test_content', 'branch_name', 'commit_message'];
+  for (const slot of required) {
+    const defaultValue = t.slot_defaults?.[slot];
+    assert.ok(defaultValue, `slot "${slot}" must have a default in slot_defaults`);
+    const validator = t.slot_validators?.[slot];
+    if (validator) {
+      assert.ok(new RegExp(validator).test(defaultValue), `slot "${slot}" default must satisfy its own validator /${validator}/`);
+    }
+  }
+});
+
+test('feat-editor-web-implementation: all-null extraction yields a non-empty PR via defaults', () => {
+  const t = loadFullTemplate('feat-editor-web-implementation');
+  const allNull = Object.fromEntries(t.slot_names.map(n => [n, null]));
+  const clean = simulateEnforceSlotSchema(allNull, t.slot_names, t.slot_validators, t.slot_defaults);
+
+  const template = { id: t.id, prFiles: t.pr_files };
+  const ghCalls = [];
+  return simulateExecuteGreen({ template, slots: clean, ghCalls }).then((result) => {
+    assert.equal(result.skipped, false, 'defaults must produce a non-empty PR even with all-null extraction');
+    const putCalls = ghCalls.filter(c => c.startsWith('PUT '));
+    assert.ok(putCalls.length >= 1, `expected ≥1 file commit from defaults, got ${putCalls.length}`);
+  });
+});
+
+test('feat-editor-effect-implementation: all-null extraction yields a non-empty PR via defaults', () => {
+  const t = loadFullTemplate('feat-editor-effect-implementation');
+  const allNull = Object.fromEntries(t.slot_names.map(n => [n, null]));
+  const clean = simulateEnforceSlotSchema(allNull, t.slot_names, t.slot_validators, t.slot_defaults);
+
+  const template = { id: t.id, prFiles: t.pr_files };
+  const ghCalls = [];
+  return simulateExecuteGreen({ template, slots: clean, ghCalls }).then((result) => {
+    assert.equal(result.skipped, false, 'defaults must produce a non-empty PR even with all-null extraction');
+    const putCalls = ghCalls.filter(c => c.startsWith('PUT '));
+    assert.ok(putCalls.length >= 1, `expected ≥1 file commit from defaults, got ${putCalls.length}`);
+  });
+});
+
+test('feat-editor-web-implementation: relaxed branch_name validator accepts both prefixes', () => {
+  const t = loadFullTemplate('feat-editor-web-implementation');
+  const v = new RegExp(t.slot_validators.branch_name);
+  assert.ok(v.test('supervisor/feat-editor-web/camera-screen'), 'must accept supervisor-prefixed branch');
+  assert.ok(v.test('feat/timeline-scrubber'), 'must accept conventional feat/ branch');
+  assert.ok(!v.test('main'), 'must reject bare main');
+  assert.ok(!v.test('chore/something'), 'must reject non-feat prefixes');
+});
+
+test('feat-editor-effect-implementation: relaxed branch_name validator accepts both prefixes', () => {
+  const t = loadFullTemplate('feat-editor-effect-implementation');
+  const v = new RegExp(t.slot_validators.branch_name);
+  assert.ok(v.test('supervisor/feat-editor-effect/lut-filters'), 'must accept supervisor-prefixed branch');
+  assert.ok(v.test('feat/webcodecs-render'), 'must accept conventional feat/ branch');
+  assert.ok(!v.test('main'), 'must reject bare main');
+});
+
+// Regression: issue #82's title "EditTimeline JSON schema (consumed by client
+// preview AND server renderer)" used to match feat-editor-effect because the
+// title pattern contained the loose substring "Server render". Both templates
+// scored 1.25 and the effect template won by sort order. The fix anchors the
+// pattern as "Server render —" so it only matches #100's title format, not
+// any random title containing the words. This test guards the disambiguation.
+test('feat-editor-effect-implementation: does NOT win against editor-web on capricast #82 (server-renderer ambiguity)', () => {
+  const webT = loadTemplate('feat-editor-web-implementation');
+  const effectT = loadTemplate('feat-editor-effect-implementation');
+  const issue = {
+    title: 'EditTimeline JSON schema (consumed by client preview AND server renderer)',
+    labels: ['enhancement', 'sprint:3'],
+    body: 'Define a deterministic JSON schema in `packages/types`: `clips[]`, `audio_tracks[]`, `text_overlays[]`. Both the WebGL preview compositor and the Cloud Run Remotion server renderer consume this same spec. Schema typed in `@capricast/types`.',
+  };
+  // Editor-web should still match the issue
+  assert.ok(simulateMatchTemplate(issue, [webT]), 'editor-web must match #82');
+  // Editor-effect must NOT match #82's title (the body might still match but the
+  // title pattern is what was causing the wrong winner)
+  const effectOnly = simulateMatchTemplate(issue, [effectT]);
+  // Even if body matches loosely, the score must be lower than editor-web's
+  // (label 0.5 + title 0.5 + body 0.25 = 1.25 vs label 0.5 + body 0.25 = 0.75)
+  // so the multi-template match goes to editor-web:
+  const both = simulateMatchTemplate(issue, [webT, effectT]);
+  assert.equal(both?.id, 'feat-editor-web-implementation', 'editor-web must win when both templates are evaluated together');
+});
