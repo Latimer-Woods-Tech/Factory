@@ -934,3 +934,115 @@ FROM mcr.microsoft.com/playwright:v1.60.0-noble   # match package.json/lock
 **Workaround:** `gh pr merge --admin --squash` bypasses required-review checks when the caller has admin permissions on the repo. Use sparingly — the audit trail records "merged by admin override," not "approved by reviewer."
 
 **Lesson:** Admin override is the correct tool when the only blocker is a bot-review-without-human-counterpart pattern, and the human (you, as owner) has the same context the absent reviewer would have. Log the rationale in a PR comment before merging so the future archaeologist sees why the override was used.
+
+
+---
+
+## Probe Round 2 — Cache Poisoning, Cross-Origin Redirects, and the Silently Broken Probe — May 2026
+
+A re-probe of the production admin-studio worker after the earlier fixes (PR #783, #784) surfaced three more issues the first probe round missed — including one where the probe itself had been lying about the state of the system. Each lesson maps to a fix in PR #821.
+
+### A WeakMap-cached postgres-js client poisons every subsequent request when one query dies
+
+**Problem:** `/catalog` returned `500 "Failed query: ..."` on 40% of calls; `/audit` on 50%. Both endpoints intermittent. `/timeline` (which calls the same `queryAuditEntries`) was 100% green only because the timeline route swallows DB errors and returns `[]` — the underlying flakiness was identical.
+
+**Root cause:** The `dbCache = new WeakMap<HyperdriveBinding, FactoryDb>()` pattern in `catalog-store` and `audit-store` memoises a single drizzle/postgres-js client per Worker isolate. When a query gets aborted (network blip, statement cancellation, etc.), the postgres-js pool connection enters a bad state — and every subsequent `db.execute()` call on the *same cached client* then fails until the isolate cold-starts. Worker isolates can live for hours, so a single bad request can poison the connection cache for the entire isolate's lifetime.
+
+**Fix:** Wrap the cached client in a retry helper that evicts the cache and rebuilds the client on first failure.
+
+```ts
+async function withDbRetry<T>(
+  hyperdrive: HyperdriveBinding,
+  op: (db: FactoryDb) => Promise<T>,
+): Promise<T> {
+  try {
+    return await op(getDb(hyperdrive));
+  } catch (err) {
+    console.error('[store] DB query failed; evicting cache and retrying:', (err as Error).message);
+    dbCache.delete(hyperdrive);
+    return await op(getDb(hyperdrive));
+  }
+}
+```
+
+Use at every read site: `const result = await withDbRetry(hyperdrive, (db) => db.execute(sql ...))`. Verified: sticky 50% flake to 0/20 failures after deploy.
+
+**Lesson:** "Memoise the client" is a tempting micro-optimization but is only safe if the underlying connection pool is itself fault-tolerant. postgres-js's pool isn't — a single bad query can leave a stuck connection that the pool will hand out again. Either don't cache (create the client per request — cheap for Hyperdrive) or wrap every read in retry+evict. Caching without recovery is a footgun.
+
+### A worker-level trailing-slash redirect needs CORS headers inline, and must skip OPTIONS
+
+**Problem:** After the UI fix in #783, the production Pages bundle still calls `/timeline/` (with slash) because the admin-studio-ui deploy never picked up the new code. The worker registered routes at the bare path (`/timeline`), so trailing-slash requests 404'd.
+
+**The naive fix:** add a worker middleware that redirects `/foo/` to `/foo` via 308.
+
+**The two non-obvious gotchas:**
+
+1. **The redirect response must carry CORS headers itself.** Chrome treats every leg of a cross-origin redirect chain as a separate CORS check. If the 308 response lacks `Access-Control-Allow-Origin`, the fetch fails with `net::ERR_FAILED` — *even though* the final redirected response would have had CORS headers. The cors middleware decorates `c.res` *after* `next()`, but a redirect handler returns before `next()` is called, so it must inline the CORS logic.
+
+2. **The redirect MUST skip OPTIONS preflights.** Browsers refuse to follow redirects during a CORS preflight — a 308 on the preflight aborts the entire fetch chain. The trailing-slash middleware must let `OPTIONS /foo/` fall through to the cors middleware, which returns a 204 preflight response inline.
+
+```ts
+app.use('*', async (c, next) => {
+  // Preflights cannot be redirected.
+  if (c.req.method === 'OPTIONS') return next();
+
+  const url = new URL(c.req.url);
+  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+    url.pathname = url.pathname.replace(/\/+$/, '');
+    const origin = c.req.header('Origin');
+    const allowed = c.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()) ?? [];
+    const headers = new Headers({ Location: url.toString() });
+    if (origin && allowed.includes(origin)) {
+      headers.set('Access-Control-Allow-Origin', origin);
+      headers.set('Access-Control-Allow-Credentials', 'true');
+      headers.set('Vary', 'Origin');
+    }
+    return new Response(null, { status: 308, headers });
+  }
+  return next();
+});
+```
+
+**Lesson:** Any middleware that short-circuits before `next()` and returns its own response must self-inline whatever cross-cutting concerns the after-`next()` middleware would have added. For Workers serving SPA bundles, that's at minimum CORS — and for preflights specifically, the answer is always "skip and let the dedicated CORS handler answer."
+
+### The smoke probe was silently broken: every tab click timed out and the failure was reported as "no network failures"
+
+**Problem:** A re-probe of production reported `no network failures` for several runs in a row. Inspection of the captured steps showed every tab from `03-overview` through `10-audit` had `finalUrl: ?` and ms timings of exactly 5008–5014ms — the click timeout. **Every nav click had failed, no tab was loaded, no API call ever fired, and the probe celebrated.**
+
+**Root cause:** The probe used `page.getByRole('link', { name: ... })` to find nav elements. Mobile uses `<NavLink>` (role=link) but desktop nav uses Radix `<TabsTrigger>` (role=tab) — the probe ran at a 1280x800 viewport (desktop), where no element matches role=link. The `.click({ timeout: 5_000 })` timed out for every tab, the handler returned without firing any `goto` or API request, and the probe's "no failures" report was technically accurate but operationally meaningless.
+
+**Fix:** Try multiple roles + fall back to text:
+
+```ts
+const candidates = [
+  () => page.getByRole('tab',  { name: new RegExp('^' + linkText + '$', 'i') }),
+  () => page.getByRole('link', { name: new RegExp('^' + linkText + '$', 'i') }),
+  () => page.getByText(new RegExp('^' + linkText + '$', 'i'), { exact: false }),
+];
+for (const factory of candidates) {
+  try { await factory().first().click({ timeout: 4_000 }); break; }
+  catch { /* try next */ }
+}
+```
+
+**Lesson:** A probe that reports "all clear" while doing nothing is worse than one that throws. Whenever an automated check appears to pass with zero work, audit the workload — duration per step is a good tell. If every tab took the timeout duration exactly, no real navigation happened. Add a positive assertion at the end of each step (e.g. `expect URL change` or `expect named element to appear`) so silent no-ops surface as failures, not as success.
+
+### Playwright fires `requestfailed` on the source side of a redirect chain
+
+**Problem:** Even after the worker properly redirected `/timeline/` to `/timeline` with CORS headers, the smoke probe kept reporting `failed GET https://api.apunlimited.com/timeline/` with reason `net::ERR_FAILED`. The actual fetch returned 200; the user's browser saw the redirected response.
+
+**Root cause:** Playwright's `request` lifecycle treats redirects as creating a *new* Request for the target URL. The original Request (pointing at the pre-redirect URL) is then marked failed with `net::ERR_FAILED` — even though, from the fetch caller's perspective, the request succeeded by following to the redirect target. The probe's `page.on('requestfailed', ...)` handler was capturing the redirect-source side and falsely counting it as a failure.
+
+**Fix:** Filter out failures whose request has a non-null `redirectedTo()`:
+
+```ts
+page.on('requestfailed', (req) => {
+  if (shouldIgnore(req.url())) return;
+  // Source side of a redirect chain — the actual final response is on the
+  // redirect target. Skip.
+  if (typeof req.redirectedTo === 'function' && req.redirectedTo()) return;
+  networkFailures.push({ /* ... */ });
+});
+```
+
+**Lesson:** Playwright's request lifecycle does NOT model redirects as "one request, multiple legs." It models them as "two distinct requests, the first marked failed when the redirect fires." For network-failure-counting probes, this means a 100%-clean redirect chain still produces one `requestfailed` event per redirect leg. Use `redirectedTo()` / `redirectedFrom()` to distinguish probe-relevant failures from redirect-chain artifacts. The same shape applies to any tool inspecting raw request events (HAR analyzers, Chrome DevTools Protocol consumers, etc.).
