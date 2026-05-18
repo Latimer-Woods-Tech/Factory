@@ -49,23 +49,16 @@ jobs:
             if (!ok) { console.error('npm ' + v + ' < 11.5.1 — OIDC trusted publishers unavailable'); process.exit(1); }
           "
 
-      - name: Verify publish auth (OIDC preferred, NPM_TOKEN fallback)
+      - name: Verify publish auth (OIDC)
         run: |
           set -euo pipefail
           # OIDC env vars are injected automatically by GitHub when permissions.id-token: write is set.
           if [ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
             echo "OIDC id-token endpoint present — npm will attempt trusted-publisher auth."
           else
-            echo "::warning::ACTIONS_ID_TOKEN_REQUEST_URL is not set — OIDC will not be attempted."
+            echo "::error::ACTIONS_ID_TOKEN_REQUEST_URL is not set — OIDC trusted publisher auth is unavailable. Ensure permissions.id-token: write is set for this job."
+            exit 1
           fi
-          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "NPM_TOKEN fallback present. npm whoami via token:"
-            npm whoami || echo "::warning::npm whoami via token failed — token may be invalid or expired. OIDC will be required."
-          else
-            echo "No NPM_TOKEN configured — relying entirely on OIDC trusted publishers."
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish all packages in dependency order
         run: |
@@ -164,8 +157,7 @@ jobs:
               else
                 # OIDC failures: package has no trusted publisher configured on npmjs.com,
                 #   or repo full_name / workflow filename / org name don't match (case-sensitive).
-                # Token failures: 404 = token lacks publish permission, 403 = different ownership.
-                echo "::error::publish failed for ${NAME}@${VER} — verify (a) trusted publisher configured on npmjs.com for this package, OR (b) NPM_TOKEN fallback has write access. See docs/runbooks/npm-oidc-publishing.md."
+                echo "::error::publish failed for ${NAME}@${VER} — verify trusted publisher configuration on npmjs.com. See docs/runbooks/npm-oidc-publishing.md."
                 FAILED+=("${NAME}@${VER}")
               fi
             fi
@@ -186,5 +178,3 @@ jobs:
             echo "::error::${#FAILED[@]} package(s) failed to publish — see summary above."
             exit 1
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
