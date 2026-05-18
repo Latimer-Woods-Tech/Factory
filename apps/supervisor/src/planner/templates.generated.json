@@ -34,6 +34,7 @@
       "target_repo": "factory",
       "target_branch": "main"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the current required_status_checks list so we know where we are before proposing a change.",
       "Gather pass/fail counts for the candidate check over the configured observation window. Returns total_runs, failed_runs, fp_rate (percent), and days_elapsed.",
@@ -124,6 +125,7 @@
       "column_or_relation": "^[a-z_][a-z0-9_]{0,62}$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Fetch the Sentry issue to confirm the DatabaseError text and extract stack context.",
       "Scan migrations directory for a migration that creates the referenced column or relation.",
@@ -212,6 +214,7 @@
     "slot_defaults": {
       "security_advisory": "none"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Confirm the PR only touches package.json (and lockfile) and that the bumped package matches the slot.",
       "Sanity-check the lockfile resolves $slots.package_name to $slots.to_version.",
@@ -308,6 +311,7 @@
     "slot_defaults": {
       "scope": "general"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Verify the parent directory exists before writing a new doc into it.",
       "Check whether the target doc already exists so the PR is an add vs. update.",
@@ -410,6 +414,7 @@
     "slot_defaults": {
       "target_package": "call-analytics"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Confirm rule 1 (wordis-bond UI off-limits) before proceeding. Engine-layer files only; abort if source_file path looks like a UI/frontend asset.",
       "Post plan comment and wait for CODEOWNER ✅ before any file mutation.",
@@ -518,6 +523,18 @@
       "test_content": "import { describe, it } from \"vitest\";\n// TODO(supervisor-scaffold): import the DO class and exercise the\n// happy path described in the source issue (initiate, accept, hangup,\n// or Go Live).\ndescribe(\"call-room scaffold\", () => {\n  it.todo(\"happy path — replace with real assertions\");\n});\n",
       "branch_name": "supervisor/feat-call-room/scaffold",
       "commit_message": "feat(calls): scaffold Durable Object, routes, and test"
+    },
+    "slot_descriptions": {
+      "feature_slug": "Short kebab-case identifier derived from the issue title. Examples: direct-call-room, live-broadcast-room, live-inputs, conference-recording.",
+      "do_class_name": "Durable Object class name in PascalCase. Should reflect the room type: DirectCallRoom for 1:1 calls, LiveBroadcastRoom for live, ConferenceRoom for multi-party. Examples: DirectCallRoom, LiveBroadcastRoom, ConferenceRoom.",
+      "do_file_path": "Path to the Durable Object class file under apps/worker/src/durable-objects/. Filename in PascalCase matching do_class_name (e.g. DirectCallRoom.ts, LiveBroadcastRoom.ts).",
+      "do_content": "Full TypeScript source for a Durable Object class. SYNTHESIZE from the issue body. Class extends DurableObject<Env> from 'cloudflare:workers'. Implements at least one fetch(request) handler that routes by URL/method. Manages state via this.ctx.storage (for persistent state) and instance fields (for hot state). For call rooms: track participant set, signaling state, hibernation hooks (extends DurableObject base for WS hibernation). For live broadcast: track viewer count, chat history, presence. Wire Cloudflare Calls API where appropriate (CALLS_APP_ID/CALLS_APP_TOKEN env). Wire @lwt/logger. Do not produce a placeholder — the issue body has the verbs and state model.",
+      "route_file_path": "Path to the Hono route file that wires the DO to HTTP endpoints. Kebab-case under apps/worker/src/routes/ (e.g. calls.ts, live.ts, conferences.ts).",
+      "route_content": "Full TypeScript source for the Hono route module that exposes the DO over HTTP. SYNTHESIZE from the issue body. Imports: hono, Env. Export a default Hono router. Each handler obtains a DO stub via c.env.<BINDING_NAME>.get(c.env.<BINDING_NAME>.idFromName(...)) and forwards the request via stub.fetch(). Handlers should cover the verbs described (e.g. POST /calls/initiate, POST /calls/accept, POST /calls/hangup, POST /live/start, GET /live/:id). Validate input, return appropriate status codes.",
+      "test_file_path": "Vitest test file path under apps/worker/src/durable-objects/__tests__/. PascalCase mirroring the DO class (e.g. DirectCallRoom.test.ts).",
+      "test_content": "Vitest test module exercising the DO. SYNTHESIZE from the issue body. Use @cloudflare/vitest-pool-workers to construct a DO stub. Cover the happy path verbs described (initiate→accept→hangup, or start→view→stop). Include at least one state-mutation assertion (e.g. participant added, viewer count incremented) and one failure assertion (e.g. cannot accept call that's already hung up). Aim for ≥3 it() blocks.",
+      "branch_name": "Git branch name. Prefer supervisor/feat-call-room/<feature_slug>. Conventional feat/<feature_slug> is also accepted.",
+      "commit_message": "Conventional Commits message. Scope reflects the feature (e.g. feat(calls): ..., feat(live): ..., feat(conference): ...)."
     },
     "step_intents": [
       "Confirm the durable-objects directory exists in the capricast worker and read existing DOs so the new class does not collide with one already on main.",
@@ -635,6 +652,7 @@
     "slot_defaults": {
       "trigger_events": "workflow_dispatch"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the workflow coordination guide to understand naming conventions and approval patterns for this repo.",
       "Post a plan comment and wait for CODEOWNER confirmation before creating any files.",
@@ -738,6 +756,17 @@
       "test_content": "import { describe, it, expect } from \"vitest\";\n// TODO(supervisor-scaffold): import the route under test and\n// exercise the verbs described in the source issue.\ndescribe(\"conversations scaffold\", () => {\n  it.todo(\"happy path — replace with real assertions\");\n});\n",
       "branch_name": "supervisor/feat-conversations/scaffold",
       "commit_message": "feat(conversations): scaffold route, migration, and test"
+    },
+    "slot_descriptions": {
+      "feature_slug": "Short kebab-case identifier derived from the issue title — used in branch names and filenames. Examples: conversations, message-attachments, inbox-ui, web-push-vapid.",
+      "route_file_path": "Path to a new Hono route file under the capricast worker app. Pick a kebab-case filename that reflects the feature (e.g. apps/worker/src/routes/conversations.ts, apps/worker/src/routes/inbox.ts, apps/worker/src/routes/messages.ts).",
+      "route_content": "Full TypeScript source for the Hono route module. SYNTHESIZE this from the issue body — extract the HTTP verbs, paths, and behaviors described in the acceptance criteria and produce a real Hono router file. Imports: hono, Env type from ../env. Export a default Hono router with at least one handler matching the verbs in the issue (e.g. POST /:id/messages for compose, PATCH /:id/messages/:msgId for edit, DELETE for delete, POST /:id/reactions, etc.). Use Drizzle queries via the c.env.DB Hyperdrive binding. Wire @lwt/logger and @lwt/errors per Platform Standards. Return JSON responses with proper status codes (201 create, 204 delete, 400 validation, 401 auth, 404 not found). Tests will verify the contract — do not produce a stub.",
+      "migration_file_path": "Drizzle SQL migration filename. Format NNNN_<snake_case_description>.sql where NNNN is a 3-4 digit sequence number. Pick a number ≥ 0017 to stay clear of existing migrations on main; the CODEOWNER will reconcile if it collides with a parallel PR. Snake-case description should reflect the feature (e.g. 0017_conversations_tables.sql, 0018_message_attachments.sql).",
+      "migration_content": "SQL DDL — SYNTHESIZE from the issue body. Identify the tables/columns the issue requires and produce CREATE TABLE / ALTER TABLE statements. Follow Platform Standards §6 (Expand → Contract): additive-only changes; include a `-- ROLLBACK:` comment with the inverse statement. For new tables include sensible defaults (created_at, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP), proper FK constraints REFERENCES …, and indexes on commonly-queried columns. For ALTER TABLE additions, use DEFAULT values and NOT NULL only when safe. Do not produce a SELECT 1 placeholder — the issue body has enough information.",
+      "test_file_path": "Vitest test file path under apps/worker/src/routes/__tests__/. Filename should mirror the route module being tested (e.g. conversations.test.ts for conversations.ts). Tests run via @cloudflare/vitest-pool-workers.",
+      "test_content": "Vitest test module — SYNTHESIZE assertions for the route handlers described in the issue. Use describe + multiple it() blocks covering: happy path (verb+path returns 2xx with expected body shape), validation failures (400 on bad input), auth failures (401 unauthenticated), and at least one edge case from the acceptance criteria. Use @cloudflare/vitest-pool-workers to construct request/response. Import the router under test from ../<route_file>. Use unstable_dev or env-fetcher patterns as needed. Aim for ≥3 it() blocks.",
+      "branch_name": "Git branch name. Use the supervisor-prefixed form supervisor/feat-conversations/<feature_slug> for new supervisor work. The conventional feat/<feature_slug> form is also accepted but supervisor-prefixed is preferred so the bot's PRs are visually grouped.",
+      "commit_message": "Conventional Commits message for the squash-merge. Scope should reflect the feature (e.g. feat(conversations): ..., feat(inbox): ..., feat(moderation): ...). Description should be a single-sentence imperative summary of what the PR adds."
     },
     "step_intents": [
       "Confirm the routes directory exists in the capricast worker before scaffolding a new route file into it.",
@@ -865,6 +894,7 @@
       "report_schedule": "0 9 * * 1",
       "branch_name": "supervisor/ci/flaky-detector"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the workflow coordination guide to confirm naming conventions and approval patterns before adding a new workflow.",
       "Check whether a flaky-detector workflow already exists to avoid duplicate creation.",
@@ -976,6 +1006,7 @@
       "branch_name": "supervisor/ci/memory-single-writer",
       "commit_message": "feat(ci): add memory single-writer lock workflow (MA-8)"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the workflow coordination guide to confirm naming conventions for the new lock workflow.",
       "Check whether a memory-lock workflow already exists to avoid duplicate creation.",
@@ -1084,6 +1115,7 @@
       "change_target": "CODEOWNERS",
       "branch_name": "supervisor/governance/review-hints-scaffold"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the existing CODEOWNERS file to understand current reviewer assignments before proposing additions.",
       "Read the existing labeler workflow (if present) to determine whether reviewer-hint rules already exist for these paths.",
@@ -1182,6 +1214,7 @@
     "slot_defaults": {
       "handler_file": "workers/src/handlers/analytics.js"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the analytics handler to locate the PUBLIC_SHELL_EVENT_NAMES set and verify which event names are currently whitelisted.",
       "Post a diagnosis comment identifying the missing event names before opening a PR.",
@@ -1254,6 +1287,7 @@
     "slot_defaults": {
       "billing_handler_file": "workers/src/handlers/billing.js"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Fetch the Sentry issue to confirm the 400 error context, affected user tier, and the null stripe_customer_id stack frame.",
       "Read the billing handler to understand the stripe_customer_id lookup path and verify whether a fallback chain exists.",
@@ -1347,6 +1381,7 @@
       "failing_workflow_path": ".github/workflows/ci.yml",
       "failure_mode": "both"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the failing workflow file to check for NODE_AUTH_TOKEN, packages:read permission, and the token fallback expression.",
       "Post a diagnosis comment showing the exact fix pattern required.",
@@ -1423,6 +1458,7 @@
     "slot_defaults": {
       "headers_file": "client/public/_headers"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Verify the old hash exists in the _headers file and confirm the full CSP header context.",
       "Post diagnosis comment confirming the old hash location and the new hash to substitute.",
@@ -1501,6 +1537,7 @@
       "breakpoint": "768px",
       "layout_issue_kind": "other"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the CSS file to understand the existing breakpoint rules and locate the grid/flex context causing the regression.",
       "Post a diagnosis comment with the known fix pattern for this breakpoint and layout kind.",
@@ -1576,6 +1613,7 @@
       "secret_name": "STRIPE_PRICE_ID",
       "environment": "production"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Fetch the Sentry issue to confirm the exact price ID that Stripe rejected and which handler method called it.",
       "Check wrangler.jsonc to confirm the secret name is declared (not hardcoded as a var) and identify where it is consumed.",
@@ -1667,6 +1705,7 @@
       "phase": "phase-1-audit",
       "branch_name": "supervisor/governance/branch-protect-hardening"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the existing secrets/tokens runbook to understand current branch-protection baseline before proposing changes.",
       "Read the current security-hardening workflow to determine which checks are already wired.",
@@ -1768,6 +1807,7 @@
     "slot_defaults": {
       "change_type": "workflow-addition"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the target file (if it exists) to determine whether this is an add or update and avoid clobbering existing content.",
       "Open a draft PR adding or updating the governance/hardening artifact so a human can review and merge.",
@@ -1857,6 +1897,7 @@
     "slot_defaults": {
       "target_file": "CLAUDE.md"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Confirm the target repo is healthy and accessible before proposing governance changes.",
       "Read the current state of the target file so the PR diff is minimal and correct.",
@@ -1935,6 +1976,7 @@
       "migration_number": "^\\d{3,4}$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Scan migration files for the missing column/relation to identify which migration creates it.",
       "List all migration files to establish the apply sequence.",
@@ -2019,6 +2061,7 @@
       "repo": "^[a-zA-Z0-9-]+$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "read existing inline implementation to verify replacement is complete",
       "verify new package is listed as dependency",
@@ -2089,6 +2132,7 @@
       "branch_name": "supervisor/governance/repo-audit-scaffold",
       "commit_message": "docs(governance): add repo governance audit report"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the transfer runbook to understand the pre-archive checklist criteria used to evaluate legacy repos.",
       "Read the service registry to enumerate known Factory-managed repos and distinguish them from legacy repos.",
@@ -2184,6 +2228,7 @@
     "slot_defaults": {
       "existing_workflow_path": ".github/workflows/deploy.yml"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Confirm the target repo is healthy and reachable before proposing workflow changes.",
       "Read the app's current workflow file so the caller can preserve any custom inputs.",
@@ -2281,6 +2326,7 @@
     "slot_defaults": {
       "violation_type": "other"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Read the file containing the CodeQL alert to understand the surrounding context.",
       "Post a diagnosis comment before opening the PR so the issue has context.",
@@ -2351,6 +2397,7 @@
       "sentry_issue_id": "^[A-Z][A-Z0-9\\-]+-\\d+$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Fetch Sentry issue to confirm Stripe error code, affected user, and stack frame.",
       "Post a structured triage comment with app-specific Stripe error runbook.",
@@ -2419,6 +2466,7 @@
       "severity": "medium",
       "fix_mode": "comment_only"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Fetch the Sentry issue detail including stacktrace, breadcrumbs, and culprit frame.",
       "Read the implicated source file at the top stack frame to localize the defect line.",
@@ -2507,6 +2555,7 @@
       "target_repo": "^[\\s\\S]{0,120}$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Post migration triage checklist and request explicit review."
     ],
@@ -2556,6 +2605,7 @@
       "reason": "^[\\w\\s,\\.\\-]{10,200}$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Verify user exists and fetch current account status before suspending.",
       "Post verification summary and request CODEOWNER approval before executing suspension.",
@@ -2629,6 +2679,7 @@
     "slot_defaults": {
       "severity": "unknown"
     },
+    "slot_descriptions": {},
     "step_intents": [
       "Post a structured triage plan comment and request human approval for execution."
     ],
@@ -2675,6 +2726,7 @@
     ],
     "slot_validators": {},
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Fetch cross-app Sentry error rates and synthetic monitor status to confirm scope of degradation.",
       "Post structured degradation runbook with curl commands and rollback instructions.",
@@ -2738,6 +2790,7 @@
       "worker_name": "^[a-z][a-z0-9-]{1,62}$"
     },
     "slot_defaults": {},
+    "slot_descriptions": {},
     "step_intents": [
       "Read the worker's current wrangler.jsonc to inspect declared bindings.",
       "Verify whether the referenced binding exists in the Cloudflare account and resolve the correct ID if drifted.",
