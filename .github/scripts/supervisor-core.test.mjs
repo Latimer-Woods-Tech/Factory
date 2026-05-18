@@ -10,7 +10,7 @@
 //
 // Affected issues at the time of the fix:
 //   factory#529, factory#500
-//   videoking#116, #81, #57, #56, #55, #54, #49, #47, #33
+//   capricast#116, #81, #57, #56, #55, #54, #49, #47, #33
 //
 // We do not import supervisor-core.mjs (it executes main() at import time
 // and reads env vars). Instead we exercise the same branching logic the
@@ -18,6 +18,41 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+
+function simulateMatchTemplate(issue, templates) {
+  const { title, labels, body = '' } = issue;
+  const scores = [];
+
+  for (const tmpl of templates) {
+    let score = 0;
+    let matchedTitle = false;
+    let matchedBody = false;
+
+    if (tmpl.labels?.some((label) => labels.includes(label))) score += 0.5;
+
+    if (tmpl.titlePattern && new RegExp(tmpl.titlePattern, 'i').test(title)) {
+      score += 0.5;
+      matchedTitle = true;
+    }
+
+    for (const pattern of tmpl.bodyPatterns ?? []) {
+      const jsPattern = pattern.replace(/^\(\?[is]+\)/, '');
+      if (new RegExp(jsPattern, 'is').test(body)) {
+        score += 0.25;
+        matchedBody = true;
+        break;
+      }
+    }
+
+    if (score >= 0.35 && (matchedTitle || matchedBody)) {
+      scores.push({ tmpl, score });
+    }
+  }
+
+  if (scores.length === 0) return null;
+  scores.sort((a, b) => b.score - a.score);
+  return scores[0].tmpl;
+}
 
 // Reproduces the file-write loop + empty-branch guard from executeGreen()
 // in .github/scripts/supervisor-core.mjs. If you change the guard there,
@@ -136,4 +171,26 @@ test('executeGreen: partial slots (some null) → only valid files committed, PR
   assert.equal(putCalls.length, 1);
   const pullsCalls = ghCalls.filter((c) => c === 'POST /repos/org/repo/pulls');
   assert.equal(pullsCalls.length, 1);
+});
+
+test('matchTemplate: label-only overlap does not match a governance template', () => {
+  const templates = [
+    {
+      id: 'governance-hardening',
+      labels: ['hardening'],
+      titlePattern: '(governance|branch.protect|CLAUDE\\.md)',
+      bodyPatterns: ['(branch.protect|AGENT_PROTOCOL|standing.orders)'],
+    },
+  ];
+
+  const match = simulateMatchTemplate(
+    {
+      title: 'VK-R2-001: Migrate R2 buckets videoking-r2 → capricast-r2',
+      labels: ['enhancement', 'hardening'],
+      body: 'Copy objects between R2 buckets and swap wrangler bindings after parity verification.',
+    },
+    templates,
+  );
+
+  assert.equal(match, null);
 });
