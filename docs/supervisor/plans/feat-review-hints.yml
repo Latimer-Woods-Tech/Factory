@@ -33,7 +33,7 @@ slots:
     type: string
     validator: "^supervisor/governance/review-hints-[a-z0-9][a-z0-9-]{0,50}$"
     source: issue_body
-    default: supervisor/governance/review-hints
+    default: supervisor/governance/review-hints-scaffold
   - name: commit_message
     type: string
     validator: "^feat[(]review[)]:"
