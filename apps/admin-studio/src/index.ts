@@ -54,6 +54,42 @@ import { flagship } from './routes/flagship.js';
 const app = new Hono<AppEnv>();
 
 // ── Global middleware (order matters) ─────────────────────────────────────────────────────
+
+// Strip trailing slashes BEFORE routing. Hono treats `/timeline` and
+// `/timeline/` as distinct paths, so when UI bundles ship with a trailing
+// slash they 404 on routes mounted at the bare form. Issuing a 308
+// preserves the request method (so a stale `POST /foo/` survives) and is
+// cacheable. Root path `/` is left alone.
+//
+// CORS headers are set inline on the redirect response. The cors
+// middleware decorates `c.res` after `next()`, but this handler returns
+// before `next()` is called, so the redirect would otherwise lack CORS
+// and the browser would fail the cross-origin redirect with
+// `net::ERR_FAILED`. Cross-origin redirects MUST carry CORS headers on
+// every leg of the chain.
+app.use('*', async (c, next) => {
+  // OPTIONS must NOT be redirected — browsers refuse to follow redirects
+  // during a CORS preflight, so a 308 on the preflight aborts the entire
+  // fetch with net::ERR_FAILED. Let OPTIONS fall through to corsMiddleware,
+  // which returns the 204 preflight response inline.
+  if (c.req.method === 'OPTIONS') return next();
+
+  const url = new URL(c.req.url);
+  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+    url.pathname = url.pathname.replace(/\/+$/, '');
+    const origin = c.req.header('Origin');
+    const allowed = c.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()) ?? [];
+    const headers = new Headers({ Location: url.toString() });
+    if (origin && allowed.includes(origin)) {
+      headers.set('Access-Control-Allow-Origin', origin);
+      headers.set('Access-Control-Allow-Credentials', 'true');
+      headers.set('Vary', 'Origin');
+    }
+    return new Response(null, { status: 308, headers });
+  }
+  return next();
+});
+
 app.use('*', requestIdMiddleware());
 // Initialise Sentry on the first request that has SENTRY_DSN available, then
 // every subsequent request runs inside the configured Sentry scope. This is

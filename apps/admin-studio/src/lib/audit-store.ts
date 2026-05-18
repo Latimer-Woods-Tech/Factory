@@ -35,6 +35,26 @@ function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
   return db;
 }
 
+/**
+ * Run a DB op against the cached FactoryDb; if it throws, drop the cache,
+ * rebuild a fresh client, and retry once. Postgres-js connections in the
+ * cache can get poisoned by partially-aborted queries and every subsequent
+ * borrow from that pool then fails until the isolate restarts. Observed as
+ * ~50% 500-rate on /audit before this wrapper.
+ */
+async function withDbRetry<T>(
+  hyperdrive: HyperdriveBinding,
+  op: (db: FactoryDb) => Promise<T>,
+): Promise<T> {
+  try {
+    return await op(getDb(hyperdrive));
+  } catch (err) {
+    console.error('[audit-store] DB query failed; evicting cache and retrying:', (err as Error).message);
+    dbCache.delete(hyperdrive);
+    return await op(getDb(hyperdrive));
+  }
+}
+
 async function ensureAuditSchema(hyperdrive: HyperdriveBinding): Promise<void> {
   let init = schemaInitCache.get(hyperdrive);
   if (!init) {
@@ -128,7 +148,6 @@ export async function queryAuditEntries(
   query: AuditQuery,
 ): Promise<AuditPage<AuditEntry>> {
   await ensureAuditSchema(hyperdrive);
-  const db = getDb(hyperdrive);
   const limit = clamp(query.limit ?? 50, 1, 200);
 
   // Build WHERE incrementally to keep parameters bound and avoid string concat.
@@ -158,7 +177,7 @@ export async function queryAuditEntries(
   }
   const whereSql = sql.join(whereChunks, sql` `);
 
-  const result = await db.execute(sql`
+  const result = await withDbRetry(hyperdrive, (db) => db.execute(sql`
     SELECT
       id, occurred_at, user_id, user_email, user_role, session_id, env,
       action, resource, resource_id, reversibility, payload, result,
@@ -167,7 +186,7 @@ export async function queryAuditEntries(
     ${whereSql}
     ORDER BY occurred_at DESC
     LIMIT ${limit + 1}
-  `);
+  `));
 
   // FactoryDb.execute (from @latimer-woods-tech/neon) returns
   // { rows, rowCount }. The previous comment + cast pre-dated that
