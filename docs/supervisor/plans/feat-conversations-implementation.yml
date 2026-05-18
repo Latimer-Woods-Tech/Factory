@@ -66,6 +66,21 @@ slots:
     # 80-line minimum so the file is a real scaffold, not a placeholder.
     validator: "^[\\s\\S]{80,40000}$"
     source: issue_body
+    default: |
+      // Supervisor scaffold — review the issue body and replace this
+      // with real handler logic. Tests in the colocated __tests__/ dir
+      // will fail until the handlers are wired.
+      import { Hono } from "hono";
+      import type { Env } from "../env";
+
+      const router = new Hono<{ Bindings: Env }>();
+
+      // TODO(supervisor-scaffold): replace with handlers derived from the
+      // acceptance criteria in the source issue. The route file path was
+      // chosen by the supervisor; rename if a different module fits better.
+      router.get("/", (c) => c.json({ status: "scaffold", todo: "implement" }));
+
+      export default router;
   - name: migration_file_path
     type: string
     # Drizzle migration under workers/src/db/migrations. Filename pattern
@@ -80,6 +95,15 @@ slots:
     # to prevent empty placeholder migrations.
     validator: "^[\\s\\S]{60,40000}$"
     source: issue_body
+    default: |
+      -- Supervisor scaffold — replace with the tables/columns described
+      -- in the source issue's acceptance criteria. CODEOWNER must also
+      -- re-verify the migration number against existing migrations on main
+      -- (the supervisor cannot atomically reserve a number).
+
+      -- TODO(supervisor-scaffold): replace this no-op with the real DDL.
+      SELECT 1;
+      -- ROLLBACK: SELECT 1;
   - name: test_file_path
     type: string
     # Vitest test file colocated with the route file. Path validator mirrors
@@ -93,9 +117,20 @@ slots:
     # the route's happy path. 40-line minimum.
     validator: "^[\\s\\S]{40,40000}$"
     source: issue_body
+    default: |
+      import { describe, it, expect } from "vitest";
+      // TODO(supervisor-scaffold): import the route under test and
+      // exercise the verbs described in the source issue.
+      describe("conversations scaffold", () => {
+        it.todo("happy path — replace with real assertions");
+      });
   - name: branch_name
     type: string
-    validator: "^supervisor/feat-conversations/[a-z0-9][a-z0-9-]{2,60}$"
+    # Accept either the supervisor-prefixed style or a conventional `feat/`
+    # branch name — both are safe and align with current repo conventions.
+    # When the LLM produces something outside this shape, the default below
+    # is used and the resulting PRs land on the supervisor-prefixed branch.
+    validator: "^(supervisor/feat-conversations/|feat/)[a-z0-9][a-z0-9/_-]{2,80}$"
     source: issue_title
     default: "supervisor/feat-conversations/scaffold"
   - name: commit_message
