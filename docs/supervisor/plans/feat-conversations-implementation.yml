@@ -1,0 +1,197 @@
+id: feat-conversations-implementation
+version: 1
+tier: green
+description: "Sprint 2 conversations/messaging feature work in capricast (compose/edit/delete/reactions/typing/read-receipts, R2 attachments). Scaffolds a Hono route file under apps/worker/src/routes/, a Drizzle migration adding required columns, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews handler logic + migration numbering before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR."
+# T3 gap 2 — Pattern #3 (PR-per-snapshot) and Pattern #4 (`git add` before
+# `diff --cached`) both apply: this template opens a PR against main and may
+# include generated TypeScript/SQL/test scaffolds that must be staged before
+# the diff is inspected.
+pattern_check: [3, 4]
+trigger_keywords:
+  - conversations
+  - messages
+  - chat
+  - dm
+  - inbox
+  - reactions
+  - typing
+  - read-receipts
+  - attachments
+  - r2
+  - vapid
+  - vectorize
+  - moderation
+triggers:
+  labels_any_of: [enhancement, sprint:2]
+  # Title evidence — capricast conversation/messaging issue titles
+  # Matches: #74 Generalize VideoRoom → ConversationRoom; #75 Schema migration:
+  # conversations, conversation_members, messages; #76 /inbox UI; #77 Compose,
+  # edit, delete, reactions, typing, read receipts; #78 Attachments via R2;
+  # #79 Web Push (VAPID) with per-conversation mute; #80 Vectorize message
+  # search; #81 Llama-Guard moderation on message create; #116 ConversationRoom
+  # DO migration strategy.
+  # Deliberately does NOT match VK-CALLS-* / live-broadcast / 1:1 call issues.
+  title_pattern: "(conversation|conversations|ConversationRoom|/inbox|message_attachments|read receipts|message create|message search|messaging|chat thread|DM thread|compose.*edit|edit.*delete.*reactions|Web Push.*VAPID|Llama-Guard.*message|Vectorize.*message|Attachments via R2)"
+  # Body evidence required (no label-only matching — that's the bug PR #815
+  # just fixed). At least ONE of these phrases must appear in the issue body
+  # to confirm this is genuine conversation/messaging implementation work and
+  # not a tangentially-related issue.
+  body_patterns:
+    - "(conversation_members|message_attachments|conversations\\(id|messages\\(id|/api/conversations|/inbox|last_read_at|edited_at|deleted_at|reactions|typing indicator|read receipts|presigned R2|VAPID|ServiceWorker.*push|llama-guard|Vectorize|broadcast to other members|message bodies)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: feature_slug
+    type: string
+    # Short kebab-case identifier for branch + filenames. e.g. "conversations",
+    # "message-attachments", "inbox-ui". Derived from issue title.
+    validator: "^[a-z][a-z0-9-]{2,40}$"
+    source: issue_title
+    default: "conversations"
+  - name: route_file_path
+    type: string
+    # Hono route file under capricast worker app. The path validator is
+    # deliberately narrow so the LLM cannot scaffold into arbitrary locations.
+    validator: "^apps/worker/src/routes/[a-z][a-z0-9_-]{2,60}\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/routes/conversations.ts"
+  - name: route_content
+    type: string
+    # Hono route module: imports, factory function returning a Hono router,
+    # at minimum one handler covering the verb described in the issue (POST
+    # /api/conversations/:id/messages, PATCH for edit, DELETE for delete, etc.).
+    # 80-line minimum so the file is a real scaffold, not a placeholder.
+    validator: "^[\\s\\S]{80,40000}$"
+    source: issue_body
+  - name: migration_file_path
+    type: string
+    # Drizzle migration under workers/src/db/migrations. Filename pattern
+    # NNNN_<snake>.sql — generator pre-allocates 0017+ (per capricast #75).
+    validator: "^workers/src/db/migrations/[0-9]{3,4}_[a-z][a-z0-9_]{2,60}\\.sql$"
+    source: issue_body
+    default: "workers/src/db/migrations/0017_conversations.sql"
+  - name: migration_content
+    type: string
+    # SQL DDL — must include at least one CREATE TABLE or ALTER TABLE that
+    # adds the columns/tables described in the issue body. 60-line minimum
+    # to prevent empty placeholder migrations.
+    validator: "^[\\s\\S]{60,40000}$"
+    source: issue_body
+  - name: test_file_path
+    type: string
+    # Vitest test file colocated with the route file. Path validator mirrors
+    # route_file_path so tests land next to the code they cover.
+    validator: "^apps/worker/src/routes/__tests__/[a-z][a-z0-9_-]{2,60}\\.test\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/routes/__tests__/conversations.test.ts"
+  - name: test_content
+    type: string
+    # Vitest test module — describe block + at least one `it()` exercising
+    # the route's happy path. 40-line minimum.
+    validator: "^[\\s\\S]{40,40000}$"
+    source: issue_body
+  - name: branch_name
+    type: string
+    validator: "^supervisor/feat-conversations/[a-z0-9][a-z0-9-]{2,60}$"
+    source: issue_title
+    default: "supervisor/feat-conversations/scaffold"
+  - name: commit_message
+    type: string
+    validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
+    source: issue_title
+    default: "feat(conversations): scaffold route, migration, and test"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "apps/worker/src/routes"
+      ref: "main"
+      allow_missing: true
+    intent: "Confirm the routes directory exists in the capricast worker before scaffolding a new route file into it."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "workers/src/db/migrations"
+      ref: "main"
+      allow_missing: true
+    intent: "List existing migrations so the new migration number does not collide with one already on main."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor plan — `feat-conversations-implementation` for `capricast`**
+
+        Feature slug: `$slots.feature_slug`
+        Route file: `$slots.route_file_path`
+        Migration: `$slots.migration_file_path`
+        Test: `$slots.test_file_path`
+
+        This template scaffolds three files derived from the issue body:
+        1. A Hono route module wired into `apps/worker/src/routes/` covering the verbs described in the acceptance criteria.
+        2. A Drizzle migration adding the columns/tables described in the issue (e.g. `conversations`, `conversation_members`, `messages`, `message_attachments`).
+        3. A Vitest test file at `apps/worker/src/routes/__tests__/` exercising the happy path.
+
+        🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER review is still required before merge.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a plan comment so the human reviewer sees the three file paths and scope before the PR lands."
+    requires_human_review: false
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      branch: "$slots.branch_name"
+      base: "main"
+      title: "$slots.commit_message"
+      commit_message: "$slots.commit_message"
+      files:
+        - path: "$slots.route_file_path"
+          content: "$slots.route_content"
+        - path: "$slots.migration_file_path"
+          content: "$slots.migration_content"
+        - path: "$slots.test_file_path"
+          content: "$slots.test_content"
+      body: |
+        Closes #$triggers.issue_number
+
+        Auto-drafted by Factory Supervisor (`feat-conversations-implementation`).
+
+        **Scaffolds:**
+        - Hono route: `$slots.route_file_path`
+        - Drizzle migration: `$slots.migration_file_path`
+        - Vitest test: `$slots.test_file_path`
+
+        🟢 Green tier — scaffold only. A CODEOWNER must:
+        1. Review handler logic and add business rules.
+        2. Verify migration numbering does not collide with PRs already in flight.
+        3. Fill in additional test cases for failure paths.
+
+        Plan comment: see source issue for details.
+      labels: [enhancement, sprint:2, supervisor, tier-green]
+      draft: false
+    intent: "Open a real (non-draft, non-empty) PR with the three scaffolded files so CI runs and a CODEOWNER can review."
+    requires_human_review: true
+acceptance_gate:
+  description: "PR is open on capricast with exactly three changed files matching the three slot paths."
+  verifier_query:
+    tool: github.openPR
+    query: "pr:$s4.number files.count >= 1 AND base == 'main'"
+    assert: "files.any(f => f.path == '$slots.route_file_path')"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      pr_number: "$s4.pr_number"
+      comment: "Supervisor rollback: closing conversations scaffold PR. CODEOWNER must implement manually or re-trigger with a clearer issue body."
