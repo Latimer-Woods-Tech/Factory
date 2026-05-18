@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-15T05:08:24.963156+00:00",
+  "generated": "2026-05-18T08:56:06.195821+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,7 +7,7 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-05-15T05:08:09.620084+00:00",
+      "timestamp": "2026-05-18T08:55:38.188752+00:00",
       "cohesion": 41,
       "dimensions": [
         {
@@ -297,8 +297,8 @@
       "repo_key": "CC",
       "repo_name": "capricast",
       "repo_path": "Latimer-Woods-Tech/capricast",
-      "timestamp": "2026-05-15T05:08:13.934504+00:00",
-      "cohesion": 24,
+      "timestamp": "2026-05-18T08:55:45.281193+00:00",
+      "cohesion": 37,
       "dimensions": [
         {
           "key": "stack",
@@ -403,7 +403,7 @@
           "key": "observability",
           "title": "Observability",
           "weight": 10,
-          "score": 0,
+          "score": 20,
           "checks": [
             {
               "name": "Sentry import",
@@ -422,7 +422,7 @@
             },
             {
               "name": "SLO doc present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -436,11 +436,11 @@
           "key": "security",
           "title": "Security",
           "weight": 15,
-          "score": 40,
+          "score": 60,
           "checks": [
             {
               "name": "CodeQL workflow present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -538,16 +538,16 @@
           "key": "performance",
           "title": "Performance",
           "weight": 10,
-          "score": 0,
+          "score": 67,
           "checks": [
             {
               "name": "p95 budgets declared",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "Canary or post-deploy verify",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -561,11 +561,11 @@
           "key": "privacy",
           "title": "Privacy",
           "weight": 5,
-          "score": 0,
+          "score": 33,
           "checks": [
             {
               "name": "PII_INVENTORY.md present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -587,14 +587,14 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-05-15T05:08:17.853725+00:00",
-      "cohesion": 29,
+      "timestamp": "2026-05-18T08:55:51.687661+00:00",
+      "cohesion": 55,
       "dimensions": [
         {
           "key": "stack",
           "title": "Stack",
           "weight": 10,
-          "score": 20,
+          "score": 60,
           "checks": [
             {
               "name": "wrangler.jsonc present",
@@ -603,12 +603,12 @@
             },
             {
               "name": "ESM ('type': 'module')",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "Hono in deps",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -627,21 +627,21 @@
           "key": "code_patterns",
           "title": "Code patterns",
           "weight": 15,
-          "score": 20,
+          "score": 80,
           "checks": [
             {
               "name": "@latimer-woods-tech/logger in deps",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "@latimer-woods-tech/errors in deps",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "@latimer-woods-tech/monitoring in deps",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -693,7 +693,7 @@
           "key": "observability",
           "title": "Observability",
           "weight": 10,
-          "score": 0,
+          "score": 40,
           "checks": [
             {
               "name": "Sentry import",
@@ -707,12 +707,12 @@
             },
             {
               "name": "Sourcemap upload step",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "SLO doc present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -726,7 +726,7 @@
           "key": "security",
           "title": "Security",
           "weight": 15,
-          "score": 40,
+          "score": 80,
           "checks": [
             {
               "name": "CodeQL workflow present",
@@ -740,12 +740,12 @@
             },
             {
               "name": "No NPM_TOKEN in workflows",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "Trusted Publishers (OIDC)",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -828,11 +828,11 @@
           "key": "performance",
           "title": "Performance",
           "weight": 10,
-          "score": 67,
+          "score": 100,
           "checks": [
             {
               "name": "p95 budgets declared",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -877,7 +877,7 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-05-15T05:08:21.444066+00:00",
+      "timestamp": "2026-05-18T08:55:59.054805+00:00",
       "cohesion": 25,
       "dimensions": [
         {
@@ -1167,7 +1167,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-05-15T05:08:24.962439+00:00",
+      "timestamp": "2026-05-18T08:56:06.195112+00:00",
       "cohesion": 52,
       "dimensions": [
         {
