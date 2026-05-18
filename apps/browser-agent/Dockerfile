@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.55.1-noble AS build
+FROM mcr.microsoft.com/playwright:v1.60.0-noble AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -6,7 +6,7 @@ COPY tsconfig.json .eslintrc.json ./
 COPY src ./src
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.55.1-noble
+FROM mcr.microsoft.com/playwright:v1.60.0-noble
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
