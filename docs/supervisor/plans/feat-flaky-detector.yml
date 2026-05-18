@@ -6,7 +6,7 @@ description: >
   weekly GitHub issue with a remediation report. Implements a new workflow file under
   .github/workflows/; no production code is changed.
 triggers:
-  labels_any_of: [engineering, hardening, enhancement]
+  labels_any_of: [hardening]
   title_pattern: "^feat[(]reliability[)]:.*flaky"
   body_patterns:
     - "(?i)(flaky|flak|check.?fail.*re.?run|re.?run.*fail|intermittent.?check|weekly.?report|track.?fail|fail.?pass)"
@@ -97,7 +97,7 @@ steps:
         No runtime code changed. Only `.github/workflows/$slots.workflow_name.yml` added.
 
         Yellow-tier: human review required before merge. Draft until approved.
-      labels: [engineering, hardening, enhancement, supervisor, tier-yellow]
+      labels: [engineering, hardening, supervisor, tier-yellow]
     intent: "Open a draft PR containing the new flaky-detector workflow YAML."
     requires_human_review: true
   - id: s5
