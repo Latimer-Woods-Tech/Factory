@@ -60,9 +60,16 @@ One row per filled `ICP_MATRIX.md` cell. Empty cells have no voice (publication 
 |---|---|---|---|---|---|
 | `factory_internal` | precise, low-ceremony, peer-engineer | binding, contract, ADR, shadow, scorecard, gate | hype, marketing language, generic dev-rel tone | professional | *"This package owns the brand-voice gate. If a campaign ships copy that breaks the gate, it's a constitution violation, not a feature request."* |
 
-### Capricast — queued
+### Capricast (`capricast`)
 
-No registered voices yet. Per [`project_capricast_rename.md`](../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_capricast_rename.md), product positioning is in flux.
+Hypothesis-level registration per [`capricast.md`](./icp/capricast.md) and [`capricast-creator.md`](./icp/capricast-creator.md) (2026-05-18 positioning pass). Tone: **pragmatic, builder-coded, irreverent — workmanlike.** The creator's leverage is craft, not personality.
+
+| ICP key | Tone | Vocabulary | Avoid | Register | Example |
+|---|---|---|---|---|---|
+| `capricast:default` | pragmatic, builder-coded, irreverent | platform, take rate, payout, unlock, subscription, catalog, the math, ship | "creator economy," "monetize your passion," "supporter," "exclusive content drop" | professional | *"Niche video. Real revenue. Below 8% take rate, audience is yours to export."* |
+| `capricast:creator` | workmanlike, peer-to-peer, builder-coded | the work, your audience, your numbers, ship the next video, paywall, library, take rate | "your tribe," "your supporters," "passion project," anything that flattens craft to feelings | professional | *"You don't have a content problem. You have a checkout problem. 200 fans at $5/mo is a livelihood — Patreon takes too much, YouTube pays too little, this fits."* |
+
+**Differentiation from `xicocity_creator`:** both target "niche creator" but the register differs. XicoCity is **kinetic, culturally rooted, the scene**; Capricast is **workmanlike, builder-coded, the work**. XicoCity sells your *scene*; Capricast sells your *craft*. A creator who fits both is rare but possible — the voice gate routes by surface, not by creator identity. Cross-check rule: copy approved for `capricast:creator` should NOT pass the `xicocity_creator` gate without explicit re-validation, and vice versa — that's the test that the registers are distinct.
 
 ---
 
