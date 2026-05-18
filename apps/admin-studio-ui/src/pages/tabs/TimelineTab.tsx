@@ -108,7 +108,7 @@ export function TimelineTab() {
     setErr(null);
     try {
       const page = await apiFetch<TimelinePage>(
-        `/timeline/${buildQuery(filters, reset ? null : cursor)}`,
+        `/timeline${buildQuery(filters, reset ? null : cursor)}`,
       );
       setEvents((prev) => (reset ? page.events : [...prev, ...page.events]));
       setNextCursor(page.nextCursor);
