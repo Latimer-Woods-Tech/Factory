@@ -1,0 +1,119 @@
+name: rotate admin-studio tokens
+
+# Rotates the short-lived tokens that admin-studio-production needs:
+#
+#   GITHUB_TOKEN          → factory-cross-repo[bot] installation token
+#                           (1 hour TTL; powers /repo/branches, /repo/tree, etc.)
+#
+#   VERTEX_ACCESS_TOKEN   → Vertex AI access token minted from VERTEX_SA_KEY
+#                           (1 hour TTL; powers planning/drafting AI strategies
+#                           via @latimer-woods-tech/llm)
+#
+# Both endpoints would otherwise 401/503 once the previous token expires.
+# Refresh interval (40 min) is well under the 1h TTL so a missed run still
+# leaves a valid token in place.
+#
+# This workflow runs on the default runner without declaring a GitHub
+# deployment environment, so it sidesteps the production-env scheduling
+# wedge tracked in #782.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '*/40 * * * *'
+
+concurrency:
+  group: rotate-admin-studio-tokens
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write   # Required for Workload Identity Federation to GCP
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      # ──────────────────────────────────────────────────────────────
+      # 1) Mint factory-cross-repo[bot] installation token
+      # ──────────────────────────────────────────────────────────────
+      - name: Generate factory[bot] token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: factory
+
+      - name: Push GITHUB_TOKEN to admin-studio-production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          NEW_TOKEN: ${{ steps.app-token.outputs.token }}
+        working-directory: apps/admin-studio
+        run: |
+          set -euo pipefail
+          echo "$NEW_TOKEN" | npx wrangler secret put GITHUB_TOKEN --env production
+
+      # ──────────────────────────────────────────────────────────────
+      # 2) Mint Vertex AI access token from the SA key in GCP SM
+      # ──────────────────────────────────────────────────────────────
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/891842778224/locations/global/workloadIdentityPools/github-factory/providers/github
+          service_account: factory-sa@factory-495015.iam.gserviceaccount.com
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Mint Vertex token from VERTEX_SA_KEY and push to worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          GCP_PROJECT: factory-495015
+        working-directory: apps/admin-studio
+        run: |
+          set -euo pipefail
+
+          # Pull the SA key JSON; write to a private temp file.
+          gcloud secrets versions access latest \
+            --secret=VERTEX_SA_KEY \
+            --project="$GCP_PROJECT" > /tmp/vertex-sa.json
+          chmod 600 /tmp/vertex-sa.json
+
+          # Activate the Vertex SA from its key and mint an access token
+          # under its identity. Doing it this way (vs impersonation) avoids
+          # any roles/iam.serviceAccountTokenCreator dependency on factory-sa.
+          gcloud auth activate-service-account --key-file=/tmp/vertex-sa.json
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+
+          if [ -z "$ACCESS_TOKEN" ]; then
+            echo "::error::Failed to mint Vertex access token"
+            exit 1
+          fi
+
+          # Push as the three secrets the worker's LLM package expects.
+          echo "$ACCESS_TOKEN" | npx wrangler secret put VERTEX_ACCESS_TOKEN --env production
+          echo "factory-495015" | npx wrangler secret put VERTEX_PROJECT --env production
+          echo "us-central1" | npx wrangler secret put VERTEX_LOCATION --env production
+
+          # Cleanup.
+          rm -f /tmp/vertex-sa.json
+
+      - name: Smoke test the worker
+        env:
+          BASE_URL: https://api.apunlimited.com
+        run: |
+          set -euo pipefail
+          # /health must respond before we claim success.
+          curl -fsS "$BASE_URL/health" > /dev/null
+          echo "✓ rotation complete and worker /health is 200"
