@@ -2,7 +2,7 @@ id: extract-from-wordis-bond
 version: 1
 tier: yellow
 triggers:
-  labels_any_of: [enhancement, engineering, epic:wordis-bond-engine]
+  labels_any_of: [engineering, epic:wordis-bond-engine]
   title_pattern: "^WB-\\d+:\\s*\\[Extract\\]"
   body_patterns:
     - "wordis-bond/(src/(handlers|workers|lib)|engine)"

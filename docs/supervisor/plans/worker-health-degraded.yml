@@ -14,7 +14,7 @@ preconditions:
 slots:
   - name: affected_worker
     type: enum
-    values: [humandesign, videoking, xico-city, factory-admin, admin-studio, prime-self-worker]
+    values: [humandesign, capricast, xico-city, factory-admin, admin-studio, prime-self-worker]
     source: issue_body
   - name: error_code
     type: enum

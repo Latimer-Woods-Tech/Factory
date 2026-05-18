@@ -20,7 +20,7 @@ slots:
     referential_check: humandesign.user.lookup
   - name: affected_app
     type: enum
-    values: [humandesign, videoking, xico-city]
+    values: [humandesign, capricast, xico-city]
     source: issue_labels
   - name: reason
     type: string

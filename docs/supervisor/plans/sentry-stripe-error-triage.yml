@@ -23,7 +23,7 @@ slots:
     source: issue_body
   - name: affected_app
     type: enum
-    values: [humandesign, videoking, xico-city]
+    values: [humandesign, capricast, xico-city]
     source: issue_labels
 steps:
   - id: s1
