@@ -564,3 +564,47 @@ test('feat-call-room-implementation: relaxed branch_name validator accepts both 
   assert.ok(v.test('feat/cloudflare-stream-live-inputs'), 'must accept conventional feat/ branch');
   assert.ok(!v.test('main'), 'must reject bare main');
 });
+
+// ─── Generative slots — descriptions are exposed to the LLM so it can
+//     synthesize code rather than only extract values from issue bodies.
+//     Without this, content slots (route_content, migration_content,
+//     test_content, do_content) always fell back to placeholder defaults
+//     on the 2026-05-18 18:23 scan. With descriptions in the prompt and
+//     max_tokens=16000, the LLM can produce real first-pass scaffolds. ───
+
+test('slot descriptions: every content slot in the 2 feature templates has a description', () => {
+  for (const id of ['feat-conversations-implementation', 'feat-call-room-implementation']) {
+    const t = loadFullTemplate(id);
+    const contentSlots = t.slot_names.filter(n => /content$/.test(n));
+    assert.ok(contentSlots.length > 0, `${id}: expected at least one content slot`);
+    for (const slot of contentSlots) {
+      const desc = t.slot_descriptions?.[slot];
+      assert.ok(desc, `${id}: content slot "${slot}" must have a description in slot_descriptions`);
+      // Descriptions should be substantive enough to guide the LLM, not one-liners
+      assert.ok(desc.length >= 100, `${id}.${slot} description too short to guide synthesis: ${desc.length} chars`);
+    }
+  }
+});
+
+test('slot descriptions: path slot descriptions document the directory convention', () => {
+  const t = loadFullTemplate('feat-conversations-implementation');
+  // route_file_path description should explain WHERE files go (the path
+  // validator pins the prefix; the description teaches the LLM why)
+  const desc = t.slot_descriptions?.route_file_path ?? '';
+  assert.ok(/apps\/worker\/src\/routes/.test(desc), 'route_file_path description must mention the path convention');
+});
+
+test('slot descriptions: ALL governance/feature templates either declare descriptions or have none', () => {
+  // Build-time invariant: slot_descriptions must be an object (possibly
+  // empty). This catches a regression where the generator stops emitting
+  // the field entirely.
+  const url = new URL(
+    `../../apps/supervisor/src/planner/templates.generated.json`,
+    import.meta.url,
+  );
+  const data = JSON.parse(readFileSync(url, 'utf8'));
+  for (const t of data) {
+    assert.equal(typeof t.slot_descriptions, 'object', `${t.id}: slot_descriptions must be an object`);
+    assert.ok(t.slot_descriptions !== null, `${t.id}: slot_descriptions must not be null`);
+  }
+});

@@ -46,30 +46,25 @@ preconditions:
 slots:
   - name: feature_slug
     type: string
-    # Short kebab-case identifier for branch + filenames. e.g. "direct-call-room",
-    # "live-broadcast-room", "live-inputs". Derived from issue title.
+    description: "Short kebab-case identifier derived from the issue title. Examples: direct-call-room, live-broadcast-room, live-inputs, conference-recording."
     validator: "^[a-z][a-z0-9-]{2,40}$"
     source: issue_title
     default: "direct-call-room"
   - name: do_class_name
     type: string
-    # Durable Object class name in PascalCase. e.g. "DirectCallRoom",
-    # "LiveBroadcastRoom".
+    description: "Durable Object class name in PascalCase. Should reflect the room type: DirectCallRoom for 1:1 calls, LiveBroadcastRoom for live, ConferenceRoom for multi-party. Examples: DirectCallRoom, LiveBroadcastRoom, ConferenceRoom."
     validator: "^[A-Z][A-Za-z0-9]{2,60}$"
     source: issue_title
     default: "DirectCallRoom"
   - name: do_file_path
     type: string
-    # Durable Object file under capricast worker app. Narrow validator so the
-    # LLM cannot scaffold into arbitrary locations.
+    description: "Path to the Durable Object class file under apps/worker/src/durable-objects/. Filename in PascalCase matching do_class_name (e.g. DirectCallRoom.ts, LiveBroadcastRoom.ts)."
     validator: "^apps/worker/src/durable-objects/[A-Z][A-Za-z0-9]{2,60}\\.ts$"
     source: issue_body
     default: "apps/worker/src/durable-objects/DirectCallRoom.ts"
   - name: do_content
     type: string
-    # DO class extending DurableObject with at least one `fetch` handler and
-    # one state-mutating method. 80-line minimum so the file is a real
-    # scaffold, not a placeholder.
+    description: "Full TypeScript source for a Durable Object class. SYNTHESIZE from the issue body. Class extends DurableObject<Env> from 'cloudflare:workers'. Implements at least one fetch(request) handler that routes by URL/method. Manages state via this.ctx.storage (for persistent state) and instance fields (for hot state). For call rooms: track participant set, signaling state, hibernation hooks (extends DurableObject base for WS hibernation). For live broadcast: track viewer count, chat history, presence. Wire Cloudflare Calls API where appropriate (CALLS_APP_ID/CALLS_APP_TOKEN env). Wire @lwt/logger. Do not produce a placeholder — the issue body has the verbs and state model."
     validator: "^[\\s\\S]{80,40000}$"
     source: issue_body
     default: |
@@ -89,16 +84,13 @@ slots:
       }
   - name: route_file_path
     type: string
-    # Hono route file wiring up the DO to HTTP endpoints
-    # (e.g. /calls/initiate, /calls/accept, /live/start).
+    description: "Path to the Hono route file that wires the DO to HTTP endpoints. Kebab-case under apps/worker/src/routes/ (e.g. calls.ts, live.ts, conferences.ts)."
     validator: "^apps/worker/src/routes/[a-z][a-z0-9_-]{2,60}\\.ts$"
     source: issue_body
     default: "apps/worker/src/routes/calls.ts"
   - name: route_content
     type: string
-    # Hono route module: imports, factory function returning a Hono router,
-    # at minimum one handler that proxies into the Durable Object via stub.
-    # 60-line minimum.
+    description: "Full TypeScript source for the Hono route module that exposes the DO over HTTP. SYNTHESIZE from the issue body. Imports: hono, Env. Export a default Hono router. Each handler obtains a DO stub via c.env.<BINDING_NAME>.get(c.env.<BINDING_NAME>.idFromName(...)) and forwards the request via stub.fetch(). Handlers should cover the verbs described (e.g. POST /calls/initiate, POST /calls/accept, POST /calls/hangup, POST /live/start, GET /live/:id). Validate input, return appropriate status codes."
     validator: "^[\\s\\S]{60,40000}$"
     source: issue_body
     default: |
@@ -113,15 +105,13 @@ slots:
       export default router;
   - name: test_file_path
     type: string
-    # Vitest test file colocated with the DO file. Path validator scoped to
-    # __tests__ subdir under durable-objects so DO tests stay together.
+    description: "Vitest test file path under apps/worker/src/durable-objects/__tests__/. PascalCase mirroring the DO class (e.g. DirectCallRoom.test.ts)."
     validator: "^apps/worker/src/durable-objects/__tests__/[A-Z][A-Za-z0-9]{2,60}\\.test\\.ts$"
     source: issue_body
     default: "apps/worker/src/durable-objects/__tests__/DirectCallRoom.test.ts"
   - name: test_content
     type: string
-    # Vitest test module — describe block + at least one `it()` exercising
-    # the DO's happy path (initiate, accept, hangup, or Go Live). 40-line minimum.
+    description: "Vitest test module exercising the DO. SYNTHESIZE from the issue body. Use @cloudflare/vitest-pool-workers to construct a DO stub. Cover the happy path verbs described (initiate→accept→hangup, or start→view→stop). Include at least one state-mutation assertion (e.g. participant added, viewer count incremented) and one failure assertion (e.g. cannot accept call that's already hung up). Aim for ≥3 it() blocks."
     validator: "^[\\s\\S]{40,40000}$"
     source: issue_body
     default: |
@@ -134,15 +124,13 @@ slots:
       });
   - name: branch_name
     type: string
-    # Accept either the supervisor-prefixed style or a conventional `feat/`
-    # branch name — both are safe and align with current repo conventions.
-    # When the LLM produces something outside this shape, the default below
-    # is used and the resulting PRs land on the supervisor-prefixed branch.
+    description: "Git branch name. Prefer supervisor/feat-call-room/<feature_slug>. Conventional feat/<feature_slug> is also accepted."
     validator: "^(supervisor/feat-call-room/|feat/)[a-z0-9][a-z0-9/_-]{2,80}$"
     source: issue_title
     default: "supervisor/feat-call-room/scaffold"
   - name: commit_message
     type: string
+    description: "Conventional Commits message. Scope reflects the feature (e.g. feat(calls): ..., feat(live): ..., feat(conference): ...)."
     validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
     source: issue_title
     default: "feat(calls): scaffold Durable Object, routes, and test"
