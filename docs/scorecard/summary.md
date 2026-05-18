@@ -1,15 +1,15 @@
 # Launch Readiness Scorecard
 
-*Generated: 2026-05-17T09:20:43.809258+00:00 · Reporting day: 2026-05-17*
+*Generated: 2026-05-18T11:31:21.390416+00:00 · Reporting day: 2026-05-18*
 
 ## Org composite
 
-**35.7 / 100** — Latimer-Woods-Tech (portfolio)
+**22.8 / 100** — Latimer-Woods-Tech (portfolio)
 
 | Dimension | Weight | Score | Detail |
 |---|--:|--:|---|
 | conformance | 40% | 34 | avg cohesion across 5 apps |
-| cost | 20% | 39 | worst-cap utilisation 122% |
+| cost | 20% | 0 | worst-cap utilisation 251% |
 | mrr | 20% | — | MRR is 0 — Stage 2 not yet generating recurring |
 | reliability | 20% | — | awaiting Sentry user-facing error rate (#723) |
 
