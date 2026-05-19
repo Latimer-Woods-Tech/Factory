@@ -462,15 +462,46 @@ def dim_performance(repo: str) -> DimensionScore:
 
 
 def dim_privacy(repo: str) -> DimensionScore:
-    pii = gh_get_file(repo, "docs/PII_INVENTORY.md")
-    retention = gh_get_file(repo, "docs/RETENTION.md") or gh_get_file(repo, "docs/runbooks/compliance.md")
+    pii = (
+        gh_get_file(repo, "docs/PII_INVENTORY.md")
+        or gh_get_file(repo, "docs/pii_inventory.md")
+        or gh_get_file(repo, "docs/privacy/PII_INVENTORY.md")
+    )
+    retention = (
+        gh_get_file(repo, "docs/RETENTION.md")
+        or gh_get_file(repo, "docs/retention.md")
+        or gh_get_file(repo, "docs/privacy/RETENTION.md")
+        or gh_get_file(repo, "docs/runbooks/compliance.md")
+    )
+    def has_search_hit(*queries: str) -> bool:
+        # Query both quoted and unquoted forms: GitHub code search behavior can
+        # vary between exact string-literal matches and tokenized path matches.
+        for query in queries:
+            if gh_search_code(repo, query) > 0:
+                return True
+        return False
+
+    export_hint = has_search_hit(
+        '"data-export"',
+        "data-export",
+        '"/api/me/export"',
+        "/api/me/export",
+        '"/v1/me/data-export"',
+        "/v1/me/data-export",
+        '"/privacy/export"',
+        "/privacy/export",
+    )
+    delete_hint = has_search_hit(
+        '"DELETE /api/me"',
+        "DELETE /api/me",
+        '"/privacy/delete"',
+        "/privacy/delete",
+    )
 
     checks = [
         check("PII_INVENTORY.md present",      pii is not None),
         check("Retention policy doc present",  retention is not None),
-        check("DSR export endpoint hint",      gh_search_code(repo, '"data-export"') > 0
-                                              or gh_search_code(repo, '"/api/me/export"') > 0
-                                              or gh_search_code(repo, '"/v1/me/data-export"') > 0),
+        check("DSR endpoint hints (export + delete)", export_hint and delete_hint),
     ]
     return DimensionScore("privacy", "Privacy", 5, score_from_checks(checks), checks)
 
