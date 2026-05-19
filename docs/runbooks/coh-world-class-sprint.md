@@ -22,12 +22,14 @@ Three parallel teams run today to close that gap in one synchronized sprint inst
 
 | Team | PR | Status |
 |------|----|--------|
-| A — Safety net | <!-- TBD --> | <!-- not yet opened at time of writing --> |
-| B — Test coverage | <!-- TBD --> | <!-- not yet opened at time of writing --> |
-| C — Planning reconciliation | <!-- TBD this PR's URL --> | open (Factory PR) |
-| Sprint tracking issue (parent) | `Latimer-Woods-Tech/coh` issue — see below | open after this PR |
+| A — Safety net | [coh#48](https://github.com/Latimer-Woods-Tech/coh/pull/48) | open, pr-check.yml green |
+| B — Test coverage | [coh#49](https://github.com/Latimer-Woods-Tech/coh/pull/49) | open, 220 tests passing (was 25); 61% lines / 73% branches / 93% functions |
+| Dual-domain alias | [coh#50](https://github.com/Latimer-Woods-Tech/coh/pull/50) | open, registers cipherofhealing.com as alias of cypherofhealing.com |
+| Stripe/booking bug fixes | [coh#51](https://github.com/Latimer-Woods-Tech/coh/pull/51) | open, fixes subscription status mapping + appointment transition guard |
+| C — Planning reconciliation | [Factory#839](https://github.com/Latimer-Woods-Tech/Factory/pull/839) | open (this PR) |
+| Sprint tracking issue (parent) | [coh#47](https://github.com/Latimer-Woods-Tech/coh/issues/47) | open |
 
-Update this table as PRs land. The Factory PR (Team C) is the *meta* PR that documents the sprint; the coh PRs (Teams A + B) are the actual shipped changes.
+The Factory PR (Team C, this PR) is the *meta* PR that documents the sprint; the coh PRs are the actual shipped changes.
 
 ## Target bar (definition of world-class for coh)
 
@@ -41,7 +43,8 @@ A "world-class" coh ships when **all** of the following hold simultaneously:
 - [ ] **Docs hygiene:** Root of repo has ≤5 `.md` files (README + LICENSE + CHANGELOG + CONTRIBUTING + SECURITY). All operational docs live in `coh/docs/runbooks/`. README is internally consistent (no broken intra-repo links, no contradictory deployment instructions). (closes G46; deferred — stage-3)
 - [ ] **Service registry:** Factory `docs/service-registry.yml` has a `coh` entry with verified `workers_dev_url` (curl proof attached to PR). (closes G47 — this PR)
 - [ ] **Cohesion score:** ≥70/100 on the `cypher-healing` row in `docs/conformance/summary.md`. Currently 25/100. (closes G48 as a roll-up)
-- [ ] **Naming:** The wrangler.jsonc `name` field and the `coh/CLAUDE.md` health URL agree. Today they disagree (`cypher-of-healing-api` in wrangler vs `coh` in CLAUDE.md). Sprint owner decides which is canonical and follows the [Worker Rename Protocol](../../CLAUDE.md#worker-rename-protocol).
+- [x] **Naming:** Resolved 2026-05-19 in coh#50 — wrangler.jsonc was authoritative; `cypher-of-healing-api` is the canonical worker name and CLAUDE.md was the stale artifact. CLAUDE.md updated to match.
+- [x] **Dual-domain alias:** Resolved 2026-05-19 in coh#50 — both `cypherofhealing.com` and `cipherofhealing.com` are intentional aliases of the same product (DNS for both resolves to Cloudflare anycast). Worker custom_domain routes now bind both API hostnames; CORS allows both frontend origins.
 
 ## Acceptance criteria for THIS PR (Team C)
 
@@ -76,10 +79,16 @@ If the sprint reveals that any of the three teams is destabilizing production:
 
 The Factory-side reconciliation (Team C, this PR) is doc-only and has zero deploy risk; the rollback story for it is `git revert`.
 
-## Contradictions found during reconciliation
+## Contradictions found during reconciliation — RESOLUTIONS
 
-These are intentional surfacings — flagged here so future readers don't trust the planning artifacts blindly:
+These were surfaced during the sprint; resolutions ratified 2026-05-19:
 
-1. **Two-repo name collision:** `Latimer-Woods-Tech/cypher-healing` is an older multi-tenant scaffold at `api.cipherofhealing.com`; `Latimer-Woods-Tech/coh` is the live five-stream product at `api.cypherofhealing.com`. The names look identical to a human reader. Decision needed: keep both, retire one, or rename one to disambiguate.
-2. **Worker-name disagreement inside coh:** `coh/wrangler.jsonc` declares `name: "cypher-of-healing-api"`, but `coh/CLAUDE.md` says the health URL is `https://coh.adrper79.workers.dev/health`. Both cannot be true simultaneously. The service-registry entry created in this PR follows CLAUDE.md (per the user's instruction to Team C) and flags this loudly with a `legacy_names: [cypher-of-healing-api]` field and a verification TODO.
-3. **FUNCTIONS_MATRIX scope:** `.bootstrap/cypher-healing/FUNCTIONS_MATRIX.md` describes the OLDER cypher-healing scaffold (tenants/clients/bookings/courses), not the coh five-stream surface. The 36 unverified rows in that matrix cannot legitimately be marked "shipped" against coh's routes — they describe a different worker. A fresh `.bootstrap/coh/FUNCTIONS_MATRIX.md` is needed and is deferred to a follow-up PR.
+1. **Two-repo name collision — RESOLVED:** `Latimer-Woods-Tech/coh` is the live product. `Latimer-Woods-Tech/cypher-healing` is the older multi-tenant scaffold and its spec'd hostname `api.cipherofhealing.com` is now an alias of coh (coh#50). Default disposition for `cypher-healing` repo: RETIRE unless someone makes the case for keeping it. Service-registry note updated accordingly.
+
+2. **Worker-name disagreement inside coh — RESOLVED:** `wrangler.jsonc` was authoritative; the canonical worker name is `cypher-of-healing-api`. coh#50 fixes CLAUDE.md to match (was stale, said "coh"). Service-registry `name` field corrected in this PR amendment.
+
+3. **FUNCTIONS_MATRIX scope — DEFERRED:** `.bootstrap/cypher-healing/FUNCTIONS_MATRIX.md` describes the OLDER cypher-healing scaffold, not coh. The 36 unverified rows cannot legitimately be marked "shipped" against coh's routes — different worker. A fresh `.bootstrap/coh/FUNCTIONS_MATRIX.md` is a follow-up PR.
+
+4. **Dual-domain ratification (NEW, 2026-05-19):** Both `cypherofhealing.com` and `cipherofhealing.com` are intentional aliases. This dissolves the naming collision noted in #1 from "two competing products" to "one product, two domain spellings" — cleaner from a customer-acquisition standpoint (catches typos in either direction).
+
+5. **Issue count off by 2 (minor):** Brief said 19 stale issues; only 17 actually open at sprint start (3 of the 2026-05-08 wave were already closed pre-sprint).

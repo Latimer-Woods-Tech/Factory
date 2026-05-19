@@ -278,46 +278,67 @@ workers:
     notes: >
       Older multi-tenant scaffold (tenants/clients/bookings/courses). NOT the
       five-stream cypher-of-healing product that shipped to production — see
-      the `coh` entry below for the live consumer-facing surface at
-      api.cypherofhealing.com. The two repos have collided names and need to
-      be reconciled (open question: keep both, retire cypher-healing, or
-      merge). Tracked under the 2026-05-19 world-class sprint.
+      the `coh` entry below for the live consumer-facing surface.
+
+      RECONCILED 2026-05-19: this older scaffold was spec'd at
+      api.cipherofhealing.com (with i). Per the dual-domain ratification,
+      `api.cipherofhealing.com` is now an alias of the live `coh` worker
+      and points to that product. This `cypher-healing` repo therefore
+      either (a) needs a different hostname if it's still being developed,
+      or (b) should be retired. Open decision; default to RETIRE until
+      someone makes the case for keeping it.
     consumers: []
 
   - id: coh
-    name: coh                                                  # per coh/CLAUDE.md health URL convention
-    legacy_names: [cypher-of-healing-api]                      # current wrangler.jsonc deploys as `cypher-of-healing-api`; rename pending
+    name: cypher-of-healing-api                                # canonical worker name per coh/wrangler.jsonc (authoritative)
     repo: Latimer-Woods-Tech/coh
-    url: https://api.cypherofhealing.com                       # canonical custom domain (branded, route pattern in wrangler.jsonc)
-    workers_dev_url: https://coh.adrper79.workers.dev          # per coh/CLAUDE.md; verify against actual deployed name (see notes)
+    url: https://api.cypherofhealing.com                       # primary API custom domain
+    aliases:
+      - https://api.cipherofhealing.com                        # alt-spelling API alias (coh#50 adds the wrangler route; DNS already resolves to CF)
+    workers_dev_url: https://cypher-of-healing-api.adrper79.workers.dev
     custom_domain: api.cypherofhealing.com
+    custom_domain_aliases:
+      - api.cipherofhealing.com
     custom_domain_status: attached                             # route declared in wrangler.jsonc as custom_domain: true
     health_endpoint: /health
-    telemetry_required: false                                  # Sentry DSN synced but not yet initialized — tracked as a HIGH gap
+    telemetry_required: false                                  # Sentry DSN synced; initialization landing in coh#48
     deployment_status: shipped_polish_in_flight
     notes: >
       Five-stream personal brand platform (Chair / Vault / Academy / Stage /
-      Inner Circle). Frontend at https://cypherofhealing.com (Cloudflare
-      Pages); API worker at https://api.cypherofhealing.com. Shipped to
-      production WITHOUT waiting for W360-032 templates — 31 commits in the
-      last 30 days. World-class polish sprint started 2026-05-19; see
-      docs/runbooks/coh-world-class-sprint.md.
+      Inner Circle).
 
-      KNOWN NAMING CONFLICT: coh/wrangler.jsonc currently declares
-      `name: "cypher-of-healing-api"` while coh/CLAUDE.md states the health
-      URL is https://coh.adrper79.workers.dev/health. Either CLAUDE.md is
-      out of date or the worker name has not yet been rotated to `coh`. The
-      `workers_dev_url` above follows CLAUDE.md but should be re-verified by
-      curl against both candidates before any consumer code references it.
+      DUAL-DOMAIN ALIAS (ratified 2026-05-19): both `cypherofhealing.com`
+      (with y) and `cipherofhealing.com` (with i) are intentional aliases
+      of the same product. DNS for both resolves to Cloudflare anycast IPs.
+      coh#50 adds the second hostname to the worker's custom_domain routes
+      and updates CORS to allow both frontend origins. Pages custom-domain
+      binding for `cipherofhealing.com` is a one-click manual step in the
+      Cloudflare dashboard.
 
-      OPEN GAPS (see docs/GAP_REGISTER.md G41–G48):
-        - HIGH: no CI test gate on deploy.yml (sprint A fixing)
-        - HIGH: test coverage ~5% (sprint B fixing — targeting 70% sprint, 90% world-class)
-        - HIGH: Sentry DSN synced but never initialized (sprint A fixing)
-        - MED: 3 hardcoded `.workers.dev` fallback URLs in frontend (sprint A fixing)
-        - MED: `/__db/reset` and `/__db/stripe-bootstrap` live in production without env guard
+      Frontend at https://cypherofhealing.com / https://cipherofhealing.com
+      (Cloudflare Pages, project name `coh`); API worker at
+      https://api.cypherofhealing.com / https://api.cipherofhealing.com.
+
+      Shipped to production WITHOUT waiting for W360-032 templates — 31
+      commits in the last 30 days. World-class polish sprint started
+      2026-05-19; see docs/runbooks/coh-world-class-sprint.md for current
+      state of the 5 sprint PRs (coh#48 safety net, coh#49 test coverage,
+      coh#50 dual-domain, coh#51 stripe/booking bug fixes; Factory#839
+      planning reconcile).
+
+      Worker name disagreement was a stale CLAUDE.md (said "coh"). coh#50
+      corrects CLAUDE.md to match wrangler.jsonc: the authoritative worker
+      name is `cypher-of-healing-api`.
+
+      OPEN GAPS (see docs/GAP_REGISTER.md G41–G48; status updated as
+      sprint PRs merge):
+        - HIGH: no CI test gate on deploy.yml → in-flight: coh#48
+        - HIGH: test coverage ~5% → in-flight: coh#49 (5% → 61% lines)
+        - HIGH: Sentry DSN synced but never initialized → in-flight: coh#48
+        - MED: 3 hardcoded `.workers.dev` fallback URLs in frontend → in-flight: coh#48
+        - MED: `/__db/reset` + `/__db/stripe-bootstrap` live in prod without env guard → in-flight: coh#48
         - MED: 20+ obsolete root MD docs; README internally inconsistent
-        - LOW: this service registry entry was missing pre-2026-05-19
+        - LOW: this service registry entry was missing pre-2026-05-19 → fixed in this PR
         - LOW: Cohesion score 25/100 vs threshold 70 (rolls up the above)
     critical_endpoints:
       - /health
