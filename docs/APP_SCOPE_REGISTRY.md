@@ -51,7 +51,7 @@
 | App Name | Type | Owner | Current Status | Setup | CI | Docs | W360 Disposition | Graduation Gate |
 |---|---|---|---|---|---|---|---|---|
 | **wordis-bond** | Marketplace | D07 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
-| **cypher-healing** | Community | D08 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
+| **cypher-healing** (a.k.a. **coh** / cipherofhealing.com) | Five-stream personal brand platform | D08 | 🚀 Live API (`https://api.cipherofhealing.com`) | 🟡 Partial (5 baseline tests) | ✅ Wrangler + GH Actions | ⚡ Sprint in flight | LAUNCHED (API) — UI sprint active | Canonical surface map: [`.bootstrap/coh/FUNCTIONS_MATRIX.md`](../.bootstrap/coh/FUNCTIONS_MATRIX.md) |
 | **ijustus** | Booking | D11 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
 | **the-calling** | Creator platform | D14 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
 | **neighbor-aid** | Local services | D12 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
