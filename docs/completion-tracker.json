@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-17T19:07:57.484975+00:00",
+  "generated_at": "2026-05-19T13:41:36.823867+00:00",
   "overall_weighted": 26.5,
   "overall_known": 43.2,
   "overall_raw": 23.7,
@@ -14,7 +14,6 @@
     "XC"
   ],
   "smoke_red": [
-    "FA",
     "XC"
   ],
   "rows": [
@@ -3094,11 +3093,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "❌ smoke red — Returns env/service/timestamp",
+      "notes": "Returns env/service/timestamp",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3116,11 +3113,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Has tests",
+      "notes": "Has tests",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3138,11 +3133,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Requires env context",
+      "notes": "Requires env context",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3160,11 +3153,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Gates most routes",
+      "notes": "Gates most routes",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3182,11 +3173,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "❌ smoke red — Applied to mutating routes",
+      "notes": "Applied to mutating routes",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3204,11 +3193,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Data-loss guard",
+      "notes": "Data-loss guard",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3226,11 +3213,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "❌ smoke red",
+      "notes": "",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3248,11 +3233,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "❌ smoke red",
+      "notes": "",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3270,11 +3253,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Webhook signing",
+      "notes": "Webhook signing",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",

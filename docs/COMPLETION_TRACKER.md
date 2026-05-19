@@ -1,5 +1,5 @@
 # Completion Tracker
-_Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-05-19T13:41:36+00:00 by `scripts/aggregate_completion.py`._
 
 ## 🚨 CI red on main: XC
 
@@ -7,8 +7,8 @@ _Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | **HD** HumanDesign | 64 | 1 | 18 | 6 | 89 | 71.9% | 77.1% | **74.9%** (Δ+0.0) |
-| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** |
-| **FA** factory-admin-studio 🟧smoke | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **FA** factory-admin-studio | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **CH** cypher-healing | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
@@ -241,15 +241,15 @@ _Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
 ### Health, Auth & Session — 0.0% weighted (0✅ 0⚠️ 0❌ 9🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | smoke-red |
-| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | smoke-red |
-| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | smoke-red |
-| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | smoke-red |
-| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | smoke-red |
+| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | — |
+| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | — |
+| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | — |
+| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | — |
+| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | — |
+| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | — |
+| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | — |
+| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | — |
+| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | — |
 
 ### Public Manifest & Function Catalog — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
