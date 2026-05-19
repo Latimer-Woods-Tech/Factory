@@ -51,7 +51,7 @@
 | App Name | Type | Owner | Current Status | Setup | CI | Docs | W360 Disposition | Graduation Gate |
 |---|---|---|---|---|---|---|---|---|
 | **wordis-bond** | Marketplace | D07 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
-| **cypher-healing** | Community | D08 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
+| **coh** (cypher-of-healing) | Five-stream community platform | D08 | 🚧 Shipped — polish-to-world-class sprint in flight | ✅ Production live at `cypherofhealing.com` + `api.cypherofhealing.com` | 🟡 Deploy workflow green; no CI test gate yet (sprint A fixing) | 🟡 Partial — 20+ obsolete root MDs; README inconsistent | LAUNCHED (sub-bar) → graduating | W360-035 (in remediation) |
 | **ijustus** | Booking | D11 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
 | **the-calling** | Creator platform | D14 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
 | **neighbor-aid** | Local services | D12 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
@@ -89,7 +89,8 @@
 
 ### Template/Scaffolding Phase (W360-032 dependency)
 
-- 📚 **wordis-bond**, **cypher-healing**, **ijustus**, **the-calling**, **neighbor-aid** — Awaiting W360-032 template buildout + W360-033 standards before scaffolding
+- 📚 **wordis-bond**, **ijustus**, **the-calling**, **neighbor-aid** — Awaiting W360-032 template buildout + W360-033 standards before scaffolding
+- 🚧 **coh** (cypher-of-healing) — Shipped to production WITHOUT waiting for W360-032 templates. All five product streams (Chair / Vault / Academy / Stage / Inner Circle) live at the route level on `https://api.cypherofhealing.com`; 31 commits in the last 30 days. Now being retrofitted to world-class bar via the 2026-05-19 sprint — see [`docs/runbooks/coh-world-class-sprint.md`](./runbooks/coh-world-class-sprint.md). Cohesion currently 25/100 vs threshold 70.
 
 ### Video Production Pipeline (W360-022/023 track)
 
@@ -172,6 +173,9 @@ For each app in W360-035, verify:
 - Updated Factory-internal app rows to distinguish local validation from live verification
 - Recorded the restored local typecheck status for admin-studio, admin-studio-ui, schedule-worker, and video-cron
 - Recorded the new `prime-self-smoke` typecheck support and supervisor test fix
+
+**coh reconciliation — 2026-05-19:**
+- Reclassified `coh` from "📚 Planning · ❌ Not started · DESIGN" to "🚧 Shipped — polish-to-world-class". The app shipped to production without W360-032 templates and is now being retrofitted on three parallel sprint branches (`worldclass/safety-net`, `worldclass/test-coverage`, `worldclass/planning-reconcile`). See [`docs/runbooks/coh-world-class-sprint.md`](./runbooks/coh-world-class-sprint.md).
 
 **Next Steps:**
 1. W360-034: Audit configs across all apps + normalize
