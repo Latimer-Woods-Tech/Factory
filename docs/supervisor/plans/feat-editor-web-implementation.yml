@@ -134,10 +134,10 @@ slots:
     default: "supervisor/feat-editor-web/scaffold"
   - name: commit_message
     type: string
-    description: "Conventional Commits message for the squash-merge. Scope should reflect the editor surface (e.g. feat(editor): ..., feat(camera): ..., feat(timeline): ..., feat(captions): ...). Description should be a single-sentence imperative summary of what the PR adds."
+    description: "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope should reflect the editor surface (e.g. feat(editor): ..., feat(camera): ..., feat(timeline): ..., feat(captions): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(camera): add multi-clip record with countdown and flip (cap#83)`."
     validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
     source: issue_title
-    default: "feat(editor): scaffold web component and test"
+    default: "feat(editor): scaffold web component and test (cap#0)"
 steps:
   - id: s1
     tool: github.readFile

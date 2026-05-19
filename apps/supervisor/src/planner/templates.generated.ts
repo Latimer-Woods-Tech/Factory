@@ -2,7 +2,7 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-18T21:16:13.292Z
+// Generated: 2026-05-19T21:44:19.962Z
 // Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-call-room-implementation.yml, feat-ci-workflow.yml, feat-conversations-implementation.yml, feat-editor-effect-implementation.yml, feat-editor-web-implementation.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';

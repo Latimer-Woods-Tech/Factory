@@ -917,6 +917,228 @@ test('feat-editor-effect-implementation: relaxed branch_name validator accepts b
   assert.ok(!v.test('main'), 'must reject bare main');
 });
 
+// ─── findExistingPR dedup-by-body-marker (Factory #832) ─────────────────────
+//
+// The 2026-05-19 01:59 supervisor scan opened 9 duplicate PRs on capricast
+// because the old `findExistingPR` searched by `[Supervisor]` title prefix.
+// 38 supervisor PRs had been renamed to conventional-commits format
+// (`feat(scope): description (cap#NNN)`) so the title check stopped
+// seeing them. The fix moves dedup onto the PR body marker
+// `**Source issue:** #N`, which is immutable in practice and survives
+// title renames.
+//
+// We reproduce the production logic locally (same reason the rest of the
+// test file does — supervisor-core.mjs executes main() on import). Mirror
+// any production change here.
+const SUPERVISOR_BOT_LOGIN_RE = /^factory-cross-repo(\[bot\])?$/;
+function buildSourceIssueMarkerRegex(issueNumber) {
+  return new RegExp(`\\*\\*Source issue:\\*\\* #${issueNumber}(?!\\d)`);
+}
+function simulateFindExistingPR(prs, issueNumber) {
+  const markerRe = buildSourceIssueMarkerRegex(issueNumber);
+  return prs.find(
+    (pr) =>
+      SUPERVISOR_BOT_LOGIN_RE.test(pr.user?.login ?? '') &&
+      markerRe.test(pr.body ?? ''),
+  ) ?? null;
+}
+
+test('findExistingPR: matches renamed conventional-commits PR by body marker (Factory #832 regression)', () => {
+  // The exact failure mode from 2026-05-19 01:59: 38 PRs had been renamed
+  // from `[Supervisor] ...` to `feat(scope): description (cap#NNN)`. Under
+  // the old title-prefix check, the dedup pass missed all of them and the
+  // scan opened a fresh PR for each source issue.
+  const renamedPr = {
+    number: 247,
+    title: 'feat(editor): open editor from /feed — remix / use-this-sound (cap#104)',
+    user: { login: 'factory-cross-repo[bot]' },
+    body: [
+      'Auto-drafted by Factory Supervisor (sup-1779156009334).',
+      '',
+      '**Template:** `feat-editor-effect-implementation`  ',
+      '**Tier:** 🟢 Green  ',
+      '**Source issue:** #104  ',
+      '**Files:** apps/web/src/effects/feed-audio-loader.ts',
+    ].join('\n'),
+  };
+  const match = simulateFindExistingPR([renamedPr], 104);
+  assert.ok(match, 'must find the existing supervisor PR by body marker even after title rename');
+  assert.equal(match.number, 247);
+});
+
+test('findExistingPR: still matches legacy `[Supervisor]` PRs by body marker (back-compat)', () => {
+  // Legacy PRs from before the rename pass also carry the body marker —
+  // the dedup query MUST keep finding them so we don't open dupes against
+  // old PRs that haven't been renamed yet.
+  const legacyPr = {
+    number: 200,
+    title: '[Supervisor] DirectCallRoom DO + 1:1 video-call endpoints',
+    user: { login: 'factory-cross-repo[bot]' },
+    body: [
+      'Auto-drafted by Factory Supervisor (sup-1779000000000).',
+      '',
+      '**Template:** `feat-call-room-implementation`  ',
+      '**Source issue:** #63  ',
+      '**Files:** apps/worker/src/do/direct-call-room.ts',
+    ].join('\n'),
+  };
+  const match = simulateFindExistingPR([legacyPr], 63);
+  assert.ok(match, 'body-marker dedup must also catch legacy `[Supervisor] ...` titles');
+  assert.equal(match.number, 200);
+});
+
+test('findExistingPR: anchored marker — looking for #1 does NOT match #11 or #100 (off-by-one regression)', () => {
+  // Without the (?!\d) negative-lookahead, `#1` would substring-match `#11`
+  // and `#100`. The dedup check would falsely conclude that issue #1 already
+  // has a PR open and silently skip creating one, which is worse than
+  // opening a dupe (silent data loss vs noisy duplicate).
+  const prs = [
+    {
+      number: 11,
+      title: 'feat(x): some thing (cap#11)',
+      user: { login: 'factory-cross-repo[bot]' },
+      body: '**Source issue:** #11  ',
+    },
+    {
+      number: 100,
+      title: 'feat(y): another thing (cap#100)',
+      user: { login: 'factory-cross-repo[bot]' },
+      body: '**Source issue:** #100  ',
+    },
+  ];
+  assert.equal(simulateFindExistingPR(prs, 1), null, 'looking for #1 must NOT match #11 or #100');
+  assert.equal(simulateFindExistingPR(prs, 11)?.number, 11, 'looking for #11 must still match #11');
+  assert.equal(simulateFindExistingPR(prs, 100)?.number, 100, 'looking for #100 must still match #100');
+});
+
+test('findExistingPR: ignores PRs from non-supervisor authors (human PR mentioning the same issue body marker)', () => {
+  // A human-authored PR that happens to mention `**Source issue:** #N` in
+  // its body must NOT be treated as a supervisor PR — otherwise the
+  // supervisor would silently skip opening a PR because it thinks there
+  // is already one open. The author-login filter prevents this.
+  const humanPr = {
+    number: 999,
+    title: 'fix: address conversations bug',
+    user: { login: 'human-contributor' },
+    body: 'Related to **Source issue:** #77 — also fixes a typo in the readme.',
+  };
+  const match = simulateFindExistingPR([humanPr], 77);
+  assert.equal(match, null, 'human PRs must NOT count as supervisor dedup hits');
+});
+
+// ─── buildPrTitle / commit_message slot defaults (Factory #832) ────────────
+//
+// The 4 feature templates now teach the LLM (via slot description) to
+// produce `feat(<scope>): <verb-phrase> (cap#<source-issue-number>)`. The
+// YAML default carries a literal `(cap#0)` placeholder that the runtime
+// substitutes with the real issue number at PR-creation time. This makes
+// the manual rename pass that ran 38 times on 2026-05-19 unnecessary on
+// future scans.
+
+const REPO_SCOPE_ABBREV = {
+  capricast: 'cap',
+  factory: 'fac',
+  selfprime: 'self',
+  cipherofhealing: 'coh',
+  xicocity: 'xic',
+  humandesign: 'hd',
+};
+function simulateBuildPrTitle(repo, issue, slots) {
+  const abbrev = REPO_SCOPE_ABBREV[repo] ?? repo.slice(0, 3);
+  const issueRef = `${abbrev}#${issue.number}`;
+  const commitMessage = slots && typeof slots.commit_message === 'string'
+    ? slots.commit_message.trim()
+    : '';
+  if (!commitMessage) return `[Supervisor] ${issue.title}`;
+  let title = commitMessage.replace(
+    /\((?:cap|fac|self|coh|xic|hd)#(?:0|NNN|<source-issue-number>|<issue>)\)/g,
+    `(${issueRef})`,
+  );
+  if (!/\([a-z]{2,4}#\d+\)\s*$/.test(title)) title = `${title} (${issueRef})`;
+  if (title.length > 200) title = title.slice(0, 200);
+  return title;
+}
+
+test('buildPrTitle: ALL 4 feature templates\' commit_message default yields a conventional-commits title with (cap#NNN) suffix', () => {
+  // This is the core Factory #832 requirement: every feature template's
+  // default must produce a real conventional-commits PR title once the
+  // runtime binds it to a source-issue number. The shape regex matches
+  // `feat(scope): description (cap#<digits>)` exactly.
+  const TITLE_RE = /^feat\([a-z0-9-]+\):\s.+\s\(cap#\d+\)$/;
+  const ids = [
+    'feat-conversations-implementation',
+    'feat-call-room-implementation',
+    'feat-editor-web-implementation',
+    'feat-editor-effect-implementation',
+  ];
+  for (const id of ids) {
+    const t = loadFullTemplate(id);
+    const defaultValue = t.slot_defaults?.commit_message;
+    assert.ok(defaultValue, `${id}: commit_message must have a default`);
+    // The default itself satisfies the validator (the generator enforces this
+    // at build time, so this is a belt-and-suspenders assertion).
+    const validator = t.slot_validators?.commit_message;
+    assert.ok(validator, `${id}: commit_message must have a validator`);
+    assert.ok(
+      new RegExp(validator).test(defaultValue),
+      `${id}.commit_message default ${JSON.stringify(defaultValue)} must satisfy its own validator /${validator}/`,
+    );
+    // Default contains the `(cap#0)` placeholder so the runtime can
+    // substitute the real issue number.
+    assert.match(
+      defaultValue,
+      /\(cap#0\)/,
+      `${id}.commit_message default must end with the (cap#0) placeholder that the runtime substitutes`,
+    );
+    // Bind to a sample issue (capricast#77) and assert the produced PR title
+    // is a real conventional-commits title with (cap#77) suffix.
+    const slots = { commit_message: defaultValue };
+    const title = simulateBuildPrTitle('capricast', { number: 77, title: 'sample' }, slots);
+    assert.match(
+      title,
+      TITLE_RE,
+      `${id}: buildPrTitle from default must produce a conventional-commits title with (cap#77) suffix — got ${JSON.stringify(title)}`,
+    );
+    assert.match(title, /\(cap#77\)$/, `${id}: trailing suffix must be (cap#77) for issue 77`);
+  }
+});
+
+test('buildPrTitle: LLM-produced title already containing (cap#NNN) passes through with the real number', () => {
+  // The LLM follows the description and writes a real title like
+  // `feat(conversations): add edit/delete/reactions (cap#77)`. The runtime
+  // sees a real issue number, NOT the placeholder, so it leaves the title
+  // alone.
+  const slots = { commit_message: 'feat(conversations): add edit/delete/reactions (cap#77)' };
+  const title = simulateBuildPrTitle('capricast', { number: 77, title: 't' }, slots);
+  assert.equal(title, 'feat(conversations): add edit/delete/reactions (cap#77)');
+});
+
+test('buildPrTitle: LLM-produced title WITHOUT the (cap#NNN) suffix has it appended automatically', () => {
+  // Belt-and-suspenders: even if the LLM ignores the description and skips
+  // the source-issue suffix, the runtime appends it so the dedup body
+  // marker and the PR title stay aligned and tracing works.
+  const slots = { commit_message: 'feat(conversations): add edit/delete/reactions' };
+  const title = simulateBuildPrTitle('capricast', { number: 77, title: 't' }, slots);
+  assert.equal(title, 'feat(conversations): add edit/delete/reactions (cap#77)');
+});
+
+test('buildPrTitle: missing commit_message slot falls back to legacy [Supervisor] form (governance/docs templates)', () => {
+  // Governance and docs templates don't declare a commit_message slot.
+  // The runtime keeps the legacy `[Supervisor] <issue title>` form for
+  // those so non-feature PRs aren't forced into the conventional-commits
+  // convention. Only feature templates declare commit_message.
+  const title = simulateBuildPrTitle('capricast', { number: 500, title: 'docs: naming convention' }, {});
+  assert.equal(title, '[Supervisor] docs: naming convention');
+});
+
+test('buildPrTitle: factory repo uses (fac#NNN) suffix', () => {
+  // The scope abbreviation is derived per-repo. Factory issues should
+  // produce `(fac#NNN)`, not `(cap#NNN)`.
+  const slots = { commit_message: 'feat(supervisor): add dedup-by-body-marker (cap#0)' };
+  const title = simulateBuildPrTitle('factory', { number: 832, title: 't' }, slots);
+  assert.equal(title, 'feat(supervisor): add dedup-by-body-marker (fac#832)');
+});
+
 // Regression: issue #82's title "EditTimeline JSON schema (consumed by client
 // preview AND server renderer)" used to match feat-editor-effect because the
 // title pattern contained the loose substring "Server render". Both templates
