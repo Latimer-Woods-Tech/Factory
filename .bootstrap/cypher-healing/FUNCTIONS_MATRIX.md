@@ -1,9 +1,17 @@
 # cypher-healing — Functions & Features Matrix
-**Date**: 2026-05-11
+**Date**: 2026-05-11 (reconciled 2026-05-19)
 **Repo**: Latimer-Woods-Tech/cypher-healing
 **Status**: Rebuilt with full handler enumeration from `src/index.ts`, `src/routes/{tenants,clients,bookings,courses}.ts`, and `src/db/schema.ts`. Hono worker on Cloudflare with Neon (Drizzle), multi-tenant (`X-Tenant-Id`).
 **Owner Convention**: human owner = @adrper79-dot, bot owner = @factory-cross-repo[bot]
 **Weight scale**: 1 (infra/utility) · 2 (internal admin) · 3 (standard feature) · 4 (customer-visible UX) · 5 (payment/auth/data-loss path)
+
+> **Reconciliation note — 2026-05-19:** The product that actually shipped to production under the "cypher-of-healing" banner is the `Latimer-Woods-Tech/coh` repo (a five-stream personal brand platform — Chair / Vault / Academy / Stage / Inner Circle — at `https://api.cypherofhealing.com`). This matrix describes a *different* surface — the older `Latimer-Woods-Tech/cypher-healing` multi-tenant scaffold at `api.cipherofhealing.com`. The 36 rows below are **not** the shipped surface of coh and the row-by-row status reconciliation requested for coh therefore cannot be applied here without first auditing the cypher-healing repo on its own terms.
+>
+> **What is happening on coh right now:** test coverage sprint in progress on branch `worldclass/test-coverage`; safety-net sprint on `worldclass/safety-net`; planning reconciliation on `worldclass/planning-reconcile` (this PR). See [`docs/runbooks/coh-world-class-sprint.md`](../../docs/runbooks/coh-world-class-sprint.md) for the full sprint scope. The shipped surface of coh (17 route files in `src/routes/` covering auth, booking, store, academy, events, show, subscriptions, webhooks, communications, plus eight `admin-*` routes) is **not enumerated below** — that work belongs in a fresh `.bootstrap/coh/FUNCTIONS_MATRIX.md` once the two-app naming collision is resolved.
+>
+> **Test coverage of the actual coh repo (verified 2026-05-19 against `Latimer-Woods-Tech/coh@ceab479`):** 5 test files present — `test/utils/auth.test.ts`, `test/utils/logger.test.ts`, `test/middleware/rate-limit.test.ts`, `test/routes/booking-availability.test.ts`, `test/webhooks/idempotency.test.ts`. Estimated ~5% line coverage; Team B sprint targets 70% by end of sprint and 90% for world-class.
+>
+> Rows below remain at 🔍 because nobody has done a fresh verification pass on the *cypher-healing* (not *coh*) repo since 2026-05-11. Do not interpret these 🔍s as a status for coh.
 
 ## Status legend (strict, single meaning per emoji)
 - ✅ — automated test exists AND latest CI run on main is green AND no unresolved Sentry issues touching this row's endpoint
