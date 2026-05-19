@@ -1,0 +1,215 @@
+id: feat-editor-effect-implementation
+version: 1
+tier: green
+description: "Sprint 4 advanced editor effect modules in capricast: 12 LUT-shader filters (WebGL), beauty smoothing (MediaPipe + WebGL bilateral), greenscreen (MediaPipe selfie segmentation), AR face stickers (MediaPipe FaceLandmarker), voiceover, 6 voice FX (Web Audio), music drawer (Pixabay/Jamendo), beat detection + snap-to-beat, client-side render (WebCodecs + ffmpeg-wasm fallback), server render (RenderQueue DO + Cloud Run), render-path switchover heuristic, Stream upload pipeline, templates (duet/stitch/transformation), open editor from feed. Scaffolds a pure-function effect module under apps/web/src/effects/ + a colocated `node --test` test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews the WebGL/MediaPipe/WebAudio/WebCodecs wiring + (for #100) the DO binding before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR."
+# T3 gap 2 — Pattern #3 (PR-per-snapshot) and Pattern #4 (`git add` before
+# `diff --cached`) both apply: this template opens a PR against main and may
+# include generated TypeScript effect modules + test scaffolds that must be
+# staged before the diff is inspected.
+pattern_check: [3, 4]
+trigger_keywords:
+  - lut
+  - shader
+  - webgl
+  - beauty
+  - mediapipe
+  - greenscreen
+  - segmentation
+  - facelandmarker
+  - sticker
+  - voiceover
+  - voice
+  - music
+  - pixabay
+  - jamendo
+  - beat
+  - onset
+  - webcodecs
+  - ffmpeg
+  - render
+  - renderqueue
+  - duet
+  - stitch
+triggers:
+  labels_any_of: [enhancement, sprint:4]
+  # Title evidence — capricast Sprint 4 advanced-effect issue titles.
+  # Matches: #88 12 LUT-shader filters; #89 Beauty smoothing MediaPipe; #90
+  # Greenscreen MediaPipe; #91 AR face stickers MediaPipe; #93 Voiceover;
+  # #94 6 voice FX; #95 Music drawer Pixabay/Jamendo; #96 Beat detection
+  # snap-to-beat; #99 Client-side render WebCodecs/ffmpeg-wasm; #100 Server
+  # render RenderQueue DO + Cloud Run; #101 Render-path switchover heuristic;
+  # #102 Editor → Stream upload pipeline; #103 Templates duet/stitch/
+  # transformation; #104 Open editor from /feed.
+  # Deliberately does NOT match Sprint 3 editor-UI issues (#82-#87, #92, #97,
+  # #98) which are covered by feat-editor-web-implementation. Does NOT match
+  # Sprint 2 conversations/call-room issues.
+  title_pattern: "(LUT.?shader|LUT filter|WebGL filter|Beauty smoothing|MediaPipe|Greenscreen|background replace|selfie segmentation|AR face sticker|FaceLandmarker|Voiceover|voice FX|chipmunk|robot|telephone|hall reverb|autotune|Music drawer|Pixabay|Jamendo|Beat detection|onset|snap.?to.?beat|Client.?side render|WebCodecs|ffmpeg|@ffmpeg/ffmpeg|Server render —|RenderQueue|Cloud Run Remotion|Render.?path switchover|Editor → Cloudflare Stream|Templates? — duet|duet, stitch|stitch, transformation|Open editor from /feed|use.?this.?sound)"
+  # Body evidence required (no label-only matching — that's the bug PR #815
+  # just fixed). At least ONE of these phrases must appear in the issue body
+  # to confirm this is genuine Sprint 4 effect implementation work.
+  body_patterns:
+    - "(LUT cubes?|WebGL fragment shader|bilateral blur|ImageSegmenter|FaceLandmarker|face.?mesh|landmark indices|chroma composite|Web Audio API|AudioWorkletNode|onset detector|ConvolverNode|PhaseVocoder|Pixabay Music API|Jamendo|VideoEncoder|AudioEncoder|WebCodecs|mp4.?muxer|@ffmpeg/ffmpeg|RenderQueue|Remotion 4|Cloud Run Remotion|estimate client.?render|effects_complexity|duet template|stitch template|Use this sound|action rail on .?/feed)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: feature_slug
+    type: string
+    description: "Short kebab-case identifier derived from the issue title — used in branch names and module filenames. Examples: lut-filters, beauty-smoothing, greenscreen, ar-face-stickers, voiceover, voice-fx, music-drawer, beat-detection, client-render, server-render, render-path-heuristic, stream-upload, templates, open-from-feed."
+    validator: "^[a-z][a-z0-9-]{2,40}$"
+    source: issue_title
+    default: "editor-effect"
+  - name: effect_file_path
+    type: string
+    description: "Path to a new TypeScript effect module under apps/web/src/effects/. Kebab-case filename reflecting the effect (e.g. lut-filters.ts, beauty-smoothing.ts, greenscreen.ts, ar-face-stickers.ts, voice-fx.ts, beat-detection.ts, client-render.ts, server-render.ts, render-path.ts). Effect modules are pure-function-style — exports take an input frame/audio/timeline and return a transformed result; they do not own React state."
+    validator: "^apps/web/src/effects/[a-z][a-z0-9_-]{2,60}\\.ts$"
+    source: issue_body
+    default: "apps/web/src/effects/editor-effect.ts"
+  - name: effect_content
+    type: string
+    description: "Full TypeScript source for a pure-function effect module. SYNTHESIZE from the issue body — read the algorithm described (LUT lookup, WebGL bilateral blur, MediaPipe segmentation mask, FaceLandmarker anchored quads, WebAudio ConvolverNode FX, AudioWorkletNode onset detector, WebCodecs encoder pipeline, ffmpeg-wasm fallback, Cloud Run dispatch, cost-function heuristic, Stream direct-upload, duet/stitch template composition) and produce a real module. Export at least one named function whose signature matches the effect's role (e.g. `export function applyLut(frame, lutCube, intensity)`, `export async function detectBeats(audioBuffer)`, `export async function renderClient(timeline, clips)`, `export function chooseRenderPath(timeline, device)`). Re-use EditTimeline types from @capricast/types where appropriate. Module must be browser-safe (no node:* imports); Workers-safe is NOT a requirement here because the editor effects run in the user's browser. For #99 (WebCodecs render) include feature-detection of `VideoEncoder`/`AudioEncoder`. For #100 (RenderQueue DO) the module returns the upload payload + GCP endpoint shape but the actual Durable Object lives in apps/worker (CODEOWNER must port it). For #101 (render-path heuristic) the cost function should mirror the formula in the issue body. Tests in __tests__/ verify the contract — do not produce a stub."
+    validator: "^[\\s\\S]{80,40000}$"
+    source: issue_body
+    default: |
+      // Supervisor scaffold — review the issue body and replace this with
+      // the real effect implementation. Tests in __tests__/ will fail until
+      // the algorithm and types from the source issue are wired.
+
+      // TODO(supervisor-scaffold): replace with the real effect signature
+      // implied by the source issue (LUT, MediaPipe, WebAudio, WebCodecs,
+      // render-path heuristic, etc.). Module must be browser-safe.
+
+      export function editorEffect(input: unknown): { applied: boolean; input: unknown } {
+        return { applied: false, input };
+      }
+  - name: test_file_path
+    type: string
+    description: "Test file path colocated under apps/web/src/effects/__tests__/. Kebab-case filename mirroring the effect module (e.g. lut-filters.test.ts, beat-detection.test.ts, render-path.test.ts). Tests use `node --test` (Node 20+ built-in) — zero new dependencies. Pure-function effects compose well with node --test because they do not need a DOM."
+    validator: "^apps/web/src/effects/__tests__/[a-z][a-z0-9_-]{2,60}\\.test\\.ts$"
+    source: issue_body
+    default: "apps/web/src/effects/__tests__/editor-effect.test.ts"
+  - name: test_content
+    type: string
+    description: "`node --test` test module — SYNTHESIZE assertions for the effect described in the issue. Use `import { test } from 'node:test'` and `import assert from 'node:assert/strict'`. Cover: (1) happy path — input shaped to the issue's acceptance criteria produces the expected output shape (LUT applied, beats detected, render path chosen correctly), (2) failure / degraded path (e.g. unsupported feature → returns null, malformed input → throws TypeError), (3) at least one numeric correctness assertion derived from the issue (e.g. intensity 0 returns unchanged frame, beat count > 0 on a synthetic kick pattern, render-path heuristic chooses 'server' when clip total > 2 min). Stub WebGL/MediaPipe/WebAudio/WebCodecs only as far as needed to exercise the pure logic — heavy GPU/MediaPipe paths can be wrapped in a feature-detection branch that is exercised separately. Aim for ≥3 test() blocks. Do not produce test.todo() stubs."
+    validator: "^[\\s\\S]{60,40000}$"
+    source: issue_body
+    default: |
+      import { test } from "node:test";
+      import assert from "node:assert/strict";
+      import { editorEffect } from "../editor-effect";
+
+      // TODO(supervisor-scaffold): replace with real assertions tied to the
+      // acceptance criteria in the source issue. CODEOWNER must also review
+      // any WebGL / MediaPipe / WebAudio / WebCodecs feature-detection paths
+      // before this module ships.
+      test("editorEffect scaffold — returns expected shape", () => {
+        const out = editorEffect({ probe: 1 });
+        assert.equal(out.applied, false);
+        assert.deepEqual(out.input, { probe: 1 });
+      });
+  - name: branch_name
+    type: string
+    description: "Git branch name. Prefer supervisor/feat-editor-effect/<feature_slug> so the bot's PRs are visually grouped. The conventional feat/<feature_slug> form is also accepted because the LLM keeps producing it."
+    validator: "^(supervisor/feat-editor-effect/|feat/)[a-z0-9][a-z0-9/_-]{2,80}$"
+    source: issue_title
+    default: "supervisor/feat-editor-effect/scaffold"
+  - name: commit_message
+    type: string
+    description: "Conventional Commits message for the squash-merge. Scope should reflect the effect (e.g. feat(editor): ..., feat(effects): ..., feat(render): ..., feat(audio): ..., feat(filters): ...). Description should be a single-sentence imperative summary of what the PR adds."
+    validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
+    source: issue_title
+    default: "feat(editor): scaffold effect module and test"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "apps/web/src"
+      ref: "main"
+      allow_missing: true
+    intent: "Confirm the apps/web/src directory exists. The effects/ subdirectory does not exist on main yet — the supervisor will create it as the convention for browser-side editor effect modules. If apps/web/src is missing entirely the CODEOWNER must scaffold capricast's apps/web manually first."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "packages/types"
+      ref: "main"
+      allow_missing: true
+    intent: "Read the shared @capricast/types package so the CODEOWNER can confirm whether the EditTimeline shape referenced in the effect module already exists or needs to be added (Sprint 3 #82 introduces it)."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor plan — `feat-editor-effect-implementation` for `capricast`**
+
+        Feature slug: `$slots.feature_slug`
+        Effect module: `$slots.effect_file_path`
+        Test: `$slots.test_file_path`
+
+        This template scaffolds two files derived from the issue body:
+        1. A browser-safe TypeScript effect module under `apps/web/src/effects/` implementing the algorithm described (LUT, MediaPipe, WebAudio, WebCodecs, render-path heuristic, etc.).
+        2. A colocated `node --test` test file exercising the pure logic — no new test dependencies.
+
+        🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:
+        - Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring for correctness against the issue's acceptance criteria.
+        - For #100 (Server render — RenderQueue DO) port the Durable Object skeleton into `apps/worker/src/durable-objects/` — the effect module here only describes the upload payload + Cloud Run dispatch shape.
+        - For #99 (Client render) confirm the WebCodecs feature-detection branch falls back to ffmpeg-wasm correctly.
+        - For #101 (render-path heuristic) tune the cost-function constants once real PostHog data lands.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a plan comment so the human reviewer sees the two file paths, which effect surfaces span web↔worker, and what manual follow-up is required before merge."
+    requires_human_review: false
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      branch: "$slots.branch_name"
+      base: "main"
+      title: "$slots.commit_message"
+      commit_message: "$slots.commit_message"
+      files:
+        - path: "$slots.effect_file_path"
+          content: "$slots.effect_content"
+        - path: "$slots.test_file_path"
+          content: "$slots.test_content"
+      body: |
+        Closes #$triggers.issue_number
+
+        Auto-drafted by Factory Supervisor (`feat-editor-effect-implementation`).
+
+        **Scaffolds:**
+        - Effect module: `$slots.effect_file_path`
+        - `node --test` test: `$slots.test_file_path`
+
+        🟢 Green tier — scaffold only. A CODEOWNER must:
+        1. Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring against the issue's acceptance criteria.
+        2. For server-render issues (#100), port the Durable Object skeleton into `apps/worker/src/durable-objects/RenderQueue.ts` and add the binding to `apps/worker/wrangler.jsonc`.
+        3. For client-render issues (#99), confirm the WebCodecs → ffmpeg-wasm fallback covers Safari < 17.
+        4. For render-path heuristic (#101), tune constants once PostHog telemetry confirms real client render times.
+
+        Plan comment: see source issue for details.
+      labels: [enhancement, sprint:4, supervisor, tier-green]
+      draft: false
+    intent: "Open a real (non-draft, non-empty) PR with the two scaffolded files so CI runs and a CODEOWNER can review."
+    requires_human_review: true
+acceptance_gate:
+  description: "PR is open on capricast with at least one changed file matching one of the slot paths."
+  verifier_query:
+    tool: github.openPR
+    query: "pr:$s4.number files.count >= 1 AND base == 'main'"
+    assert: "files.any(f => f.path == '$slots.effect_file_path')"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      pr_number: "$s4.pr_number"
+      comment: "Supervisor rollback: closing editor-effect scaffold PR. CODEOWNER must implement manually or re-trigger with a clearer issue body."
