@@ -275,7 +275,93 @@ workers:
     custom_domain_status: attached                             # CF custom domain attached 2026-05-08
     health_endpoint: /health
     telemetry_required: false
+    notes: >
+      Older multi-tenant scaffold (tenants/clients/bookings/courses). NOT the
+      five-stream cypher-of-healing product that shipped to production — see
+      the `coh` entry below for the live consumer-facing surface at
+      api.cypherofhealing.com. The two repos have collided names and need to
+      be reconciled (open question: keep both, retire cypher-healing, or
+      merge). Tracked under the 2026-05-19 world-class sprint.
     consumers: []
+
+  - id: coh
+    name: coh                                                  # per coh/CLAUDE.md health URL convention
+    legacy_names: [cypher-of-healing-api]                      # current wrangler.jsonc deploys as `cypher-of-healing-api`; rename pending
+    repo: Latimer-Woods-Tech/coh
+    url: https://api.cypherofhealing.com                       # canonical custom domain (branded, route pattern in wrangler.jsonc)
+    workers_dev_url: https://coh.adrper79.workers.dev          # per coh/CLAUDE.md; verify against actual deployed name (see notes)
+    custom_domain: api.cypherofhealing.com
+    custom_domain_status: attached                             # route declared in wrangler.jsonc as custom_domain: true
+    health_endpoint: /health
+    telemetry_required: false                                  # Sentry DSN synced but not yet initialized — tracked as a HIGH gap
+    deployment_status: shipped_polish_in_flight
+    notes: >
+      Five-stream personal brand platform (Chair / Vault / Academy / Stage /
+      Inner Circle). Frontend at https://cypherofhealing.com (Cloudflare
+      Pages); API worker at https://api.cypherofhealing.com. Shipped to
+      production WITHOUT waiting for W360-032 templates — 31 commits in the
+      last 30 days. World-class polish sprint started 2026-05-19; see
+      docs/runbooks/coh-world-class-sprint.md.
+
+      KNOWN NAMING CONFLICT: coh/wrangler.jsonc currently declares
+      `name: "cypher-of-healing-api"` while coh/CLAUDE.md states the health
+      URL is https://coh.adrper79.workers.dev/health. Either CLAUDE.md is
+      out of date or the worker name has not yet been rotated to `coh`. The
+      `workers_dev_url` above follows CLAUDE.md but should be re-verified by
+      curl against both candidates before any consumer code references it.
+
+      OPEN GAPS (see docs/GAP_REGISTER.md G41–G48):
+        - HIGH: no CI test gate on deploy.yml (sprint A fixing)
+        - HIGH: test coverage ~5% (sprint B fixing — targeting 70% sprint, 90% world-class)
+        - HIGH: Sentry DSN synced but never initialized (sprint A fixing)
+        - MED: 3 hardcoded `.workers.dev` fallback URLs in frontend (sprint A fixing)
+        - MED: `/__db/reset` and `/__db/stripe-bootstrap` live in production without env guard
+        - MED: 20+ obsolete root MD docs; README internally inconsistent
+        - LOW: this service registry entry was missing pre-2026-05-19
+        - LOW: Cohesion score 25/100 vs threshold 70 (rolls up the above)
+    critical_endpoints:
+      - /health
+      - /api/docs
+      - /api/auth
+      - /api/booking
+      - /api/store
+      - /api/academy
+      - /api/events
+      - /api/show
+      - /api/subscriptions
+      - /api/webhooks
+    required_bindings:
+      - HYPERDRIVE                                             # Neon Postgres via Hyperdrive
+      - SESSIONS                                               # KV namespace for sessions + magic links + rate-limit counters + webhook idempotency keys
+      - MEDIA                                                  # R2 bucket cypher-healing-media
+    required_secrets:
+      - STRIPE_SECRET_KEY
+      - STRIPE_WEBHOOK_SECRET
+      - JWT_SECRET
+      - RESEND_API_KEY
+      - TELNYX_API_KEY
+      - TELNYX_PHONE_NUMBER
+      - TELNYX_CONNECTION_ID
+      - TELNYX_PUBLIC_KEY
+      - ELEVENLABS_API_KEY
+      - ELEVEN_LABS_VOICE_ID
+      - SENTRY_DSN                                             # synced but unused — flag for HIGH gap
+      - CLOUDFLARE_API
+      - CLOUDFLARE_ACCOUNT_ID
+    required_vars:
+      - ENVIRONMENT
+      - CORS_ORIGIN
+      - APP_NAME
+    consumers:
+      - repo: Latimer-Woods-Tech/coh
+        file: web/                                             # Cloudflare Pages site under coh repo
+        line: ~0
+        pattern: "https://cypherofhealing.com (the Pages site is the only consumer of the API)"
+        note: >
+          The frontend consumer lives in the same repo at web/. Per the
+          2026-05-19 audit, the frontend also has 3 hardcoded
+          *.workers.dev fallback URLs (HARD-CONSTRAINTS violation tracked as
+          a MED gap and being fixed by sprint A).
 
   - id: factory-supervisor
     name: factory-supervisor                                   # matches wrangler.jsonc name
