@@ -181,25 +181,45 @@ export async function captureScreenshots(
   const viewports = ['desktop', 'mobile', 'tablet'] as const;
   const paths: Partial<CapturedScreenshots> = {};
 
+  // Both setViewportSize and waitForLoadState in Playwright are async; the
+  // previous version did not await them, so the screenshot could fire before
+  // the resize and network had settled — every capture observed a slightly
+  // different render moment, producing 0.2-0.6% pixel drift between runs of
+  // the same page and falsely flagging visual regression. Await both, and
+  // give a longer per-viewport budget to absorb cold-start re-layouts.
+  type PageLike = {
+    setViewportSize: (dims: { width: number; height: number }) => Promise<void>;
+    waitForLoadState: (state: string, opts?: { timeout?: number }) => Promise<void>;
+    screenshot: (opts: { path: string; animations?: 'disabled' | 'allow'; caret?: 'hide' | 'initial' }) => Promise<string>;
+  };
+  const p = page as PageLike;
+
   for (const viewport of viewports) {
     const dims = viewport === 'desktop' ? { width: 1280, height: 720 }
       : viewport === 'mobile' ? { width: 375, height: 667 }
       : { width: 768, height: 1024 };
 
+    await p.setViewportSize(dims);
     try {
-      (page as { setViewportSize: (dims: { width: number; height: number }) => void }).setViewportSize(dims);
-      (page as { waitForLoadState: (state: string) => void }).waitForLoadState('networkidle');
-    } catch (err) {
-      // Network timeout is acceptable; take screenshot anyway
-      console.warn(`Network wait timeout for ${routeName}.${viewport}`);
+      await p.waitForLoadState('networkidle', { timeout: 15_000 });
+    } catch {
+      // Network never settles on some pages (analytics beacons, RUM). Take
+      // the screenshot anyway — the viewport resize has already taken effect.
+      console.warn(`Network wait timeout for ${routeName}.${viewport}; capturing anyway`);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const outputPath = path.join(outputDir, routeName, `${viewport}.png`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const screenshotPath = await (page as { screenshot: (opts: { path: string }) => Promise<string> }).screenshot({ path: outputPath });
+    // animations: 'disabled' freezes CSS transitions, caret: 'hide' kills
+    // the text-input caret blink — both are common sources of small per-run
+    // pixel drift on visual-regression captures.
+    const screenshotPath = await p.screenshot({
+      path: outputPath,
+      animations: 'disabled',
+      caret: 'hide',
+    });
     paths[viewport] = screenshotPath;
   }
 
@@ -245,8 +265,22 @@ export async function compareScreenshots(
     // Read and decode both screenshots using pngjs for deterministic pixel comparison.
     // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
     const { PNG } = require('pngjs') as { PNG: { sync: { read: (buf: Uint8Array) => { data: Uint8Array; width: number; height: number } } } };
-    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-    const pixelmatch = require('pixelmatch') as (img1: Uint8Array, img2: Uint8Array, output: null, width: number, height: number, opts?: { threshold?: number }) => number;
+    // pixelmatch v6+ ships as pure ESM. require() returns the Module wrapper
+    // (with `.default` as the actual function), not the function itself —
+    // calling it directly threw "pixelmatch is not a function" on every
+    // diff. Use dynamic import + .default to support both v5 (CJS, default
+    // export *is* the function) and v6+ (ESM, function on .default).
+    type Pixelmatch = (img1: Uint8Array, img2: Uint8Array, output: null, width: number, height: number, opts?: { threshold?: number }) => number;
+    // pixelmatch has no @types/ package; the runtime resolution handles both
+    // CJS and ESM shapes, but the static type is opaque to TS.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pmModule = await (import('pixelmatch') as Promise<any>);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+    const candidate = typeof pmModule === 'function' ? pmModule : pmModule?.default;
+    if (typeof candidate !== 'function') {
+      throw new Error('pixelmatch resolution failed: neither default export nor module is a function');
+    }
+    const pixelmatch = candidate as Pixelmatch;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const actualRaw: Uint8Array = await fs.readFile(actualPath);
