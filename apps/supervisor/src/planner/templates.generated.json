@@ -522,7 +522,7 @@
       "test_file_path": "apps/worker/src/durable-objects/__tests__/DirectCallRoom.test.ts",
       "test_content": "import { describe, it } from \"vitest\";\n// TODO(supervisor-scaffold): import the DO class and exercise the\n// happy path described in the source issue (initiate, accept, hangup,\n// or Go Live).\ndescribe(\"call-room scaffold\", () => {\n  it.todo(\"happy path — replace with real assertions\");\n});\n",
       "branch_name": "supervisor/feat-call-room/scaffold",
-      "commit_message": "feat(calls): scaffold Durable Object, routes, and test"
+      "commit_message": "feat(calls): scaffold Durable Object, routes, and test (cap#0)"
     },
     "slot_descriptions": {
       "feature_slug": "Short kebab-case identifier derived from the issue title. Examples: direct-call-room, live-broadcast-room, live-inputs, conference-recording.",
@@ -534,7 +534,7 @@
       "test_file_path": "Vitest test file path under apps/worker/src/durable-objects/__tests__/. PascalCase mirroring the DO class (e.g. DirectCallRoom.test.ts).",
       "test_content": "Vitest test module exercising the DO. SYNTHESIZE from the issue body. Use @cloudflare/vitest-pool-workers to construct a DO stub. Cover the happy path verbs described (initiate→accept→hangup, or start→view→stop). Include at least one state-mutation assertion (e.g. participant added, viewer count incremented) and one failure assertion (e.g. cannot accept call that's already hung up). Aim for ≥3 it() blocks.",
       "branch_name": "Git branch name. Prefer supervisor/feat-call-room/<feature_slug>. Conventional feat/<feature_slug> is also accepted.",
-      "commit_message": "Conventional Commits message. Scope reflects the feature (e.g. feat(calls): ..., feat(live): ..., feat(conference): ...)."
+      "commit_message": "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope reflects the feature (e.g. feat(calls): ..., feat(live): ..., feat(conference): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(calls): add DirectCallRoom DO and 1:1 video-call endpoints (cap#63)`."
     },
     "step_intents": [
       "Confirm the durable-objects directory exists in the capricast worker and read existing DOs so the new class does not collide with one already on main.",
@@ -755,7 +755,7 @@
       "test_file_path": "apps/worker/src/routes/__tests__/conversations.test.ts",
       "test_content": "import { describe, it, expect } from \"vitest\";\n// TODO(supervisor-scaffold): import the route under test and\n// exercise the verbs described in the source issue.\ndescribe(\"conversations scaffold\", () => {\n  it.todo(\"happy path — replace with real assertions\");\n});\n",
       "branch_name": "supervisor/feat-conversations/scaffold",
-      "commit_message": "feat(conversations): scaffold route, migration, and test"
+      "commit_message": "feat(conversations): scaffold route, migration, and test (cap#0)"
     },
     "slot_descriptions": {
       "feature_slug": "Short kebab-case identifier derived from the issue title — used in branch names and filenames. Examples: conversations, message-attachments, inbox-ui, web-push-vapid.",
@@ -766,7 +766,7 @@
       "test_file_path": "Vitest test file path under apps/worker/src/routes/__tests__/. Filename should mirror the route module being tested (e.g. conversations.test.ts for conversations.ts). Tests run via @cloudflare/vitest-pool-workers.",
       "test_content": "Vitest test module — SYNTHESIZE assertions for the route handlers described in the issue. Use describe + multiple it() blocks covering: happy path (verb+path returns 2xx with expected body shape), validation failures (400 on bad input), auth failures (401 unauthenticated), and at least one edge case from the acceptance criteria. Use @cloudflare/vitest-pool-workers to construct request/response. Import the router under test from ../<route_file>. Use unstable_dev or env-fetcher patterns as needed. Aim for ≥3 it() blocks.",
       "branch_name": "Git branch name. Use the supervisor-prefixed form supervisor/feat-conversations/<feature_slug> for new supervisor work. The conventional feat/<feature_slug> form is also accepted but supervisor-prefixed is preferred so the bot's PRs are visually grouped.",
-      "commit_message": "Conventional Commits message for the squash-merge. Scope should reflect the feature (e.g. feat(conversations): ..., feat(inbox): ..., feat(moderation): ...). Description should be a single-sentence imperative summary of what the PR adds."
+      "commit_message": "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope should reflect the feature (e.g. feat(conversations): ..., feat(inbox): ..., feat(moderation): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(conversations): add edit/delete/reactions to message composer (cap#77)`."
     },
     "step_intents": [
       "Confirm the routes directory exists in the capricast worker before scaffolding a new route file into it.",
@@ -918,7 +918,7 @@
       "test_file_path": "apps/web/src/effects/__tests__/editor-effect.test.ts",
       "test_content": "import { test } from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { editorEffect } from \"../editor-effect\";\n\n// TODO(supervisor-scaffold): replace with real assertions tied to the\n// acceptance criteria in the source issue. CODEOWNER must also review\n// any WebGL / MediaPipe / WebAudio / WebCodecs feature-detection paths\n// before this module ships.\ntest(\"editorEffect scaffold — returns expected shape\", () => {\n  const out = editorEffect({ probe: 1 });\n  assert.equal(out.applied, false);\n  assert.deepEqual(out.input, { probe: 1 });\n});\n",
       "branch_name": "supervisor/feat-editor-effect/scaffold",
-      "commit_message": "feat(editor): scaffold effect module and test"
+      "commit_message": "feat(editor): scaffold effect module and test (cap#0)"
     },
     "slot_descriptions": {
       "feature_slug": "Short kebab-case identifier derived from the issue title — used in branch names and module filenames. Examples: lut-filters, beauty-smoothing, greenscreen, ar-face-stickers, voiceover, voice-fx, music-drawer, beat-detection, client-render, server-render, render-path-heuristic, stream-upload, templates, open-from-feed.",
@@ -927,7 +927,7 @@
       "test_file_path": "Test file path colocated under apps/web/src/effects/__tests__/. Kebab-case filename mirroring the effect module (e.g. lut-filters.test.ts, beat-detection.test.ts, render-path.test.ts). Tests use `node --test` (Node 20+ built-in) — zero new dependencies. Pure-function effects compose well with node --test because they do not need a DOM.",
       "test_content": "`node --test` test module — SYNTHESIZE assertions for the effect described in the issue. Use `import { test } from 'node:test'` and `import assert from 'node:assert/strict'`. Cover: (1) happy path — input shaped to the issue's acceptance criteria produces the expected output shape (LUT applied, beats detected, render path chosen correctly), (2) failure / degraded path (e.g. unsupported feature → returns null, malformed input → throws TypeError), (3) at least one numeric correctness assertion derived from the issue (e.g. intensity 0 returns unchanged frame, beat count > 0 on a synthetic kick pattern, render-path heuristic chooses 'server' when clip total > 2 min). Stub WebGL/MediaPipe/WebAudio/WebCodecs only as far as needed to exercise the pure logic — heavy GPU/MediaPipe paths can be wrapped in a feature-detection branch that is exercised separately. Aim for ≥3 test() blocks. Do not produce test.todo() stubs.",
       "branch_name": "Git branch name. Prefer supervisor/feat-editor-effect/<feature_slug> so the bot's PRs are visually grouped. The conventional feat/<feature_slug> form is also accepted because the LLM keeps producing it.",
-      "commit_message": "Conventional Commits message for the squash-merge. Scope should reflect the effect (e.g. feat(editor): ..., feat(effects): ..., feat(render): ..., feat(audio): ..., feat(filters): ...). Description should be a single-sentence imperative summary of what the PR adds."
+      "commit_message": "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope should reflect the effect (e.g. feat(editor): ..., feat(effects): ..., feat(render): ..., feat(audio): ..., feat(filters): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(filters): add 12 LUT-shader filter presets with intensity slider (cap#88)`."
     },
     "step_intents": [
       "Confirm the apps/web/src directory exists. The effects/ subdirectory does not exist on main yet — the supervisor will create it as the convention for browser-side editor effect modules. If apps/web/src is missing entirely the CODEOWNER must scaffold capricast's apps/web manually first.",
@@ -1069,7 +1069,7 @@
       "test_file_path": "apps/web/src/app/edit/components/__tests__/EditorComponent.test.tsx",
       "test_content": "import { describe, it, expect } from \"vitest\";\nimport { render } from \"@testing-library/react\";\nimport EditorComponent from \"../EditorComponent\";\n\n// TODO(supervisor-scaffold): replace with real assertions tied to the\n// acceptance criteria in the source issue. The CODEOWNER must also\n// wire vitest + @testing-library/react + jsdom into apps/web/package.json\n// — the web app currently has no in-app unit runner.\ndescribe(\"EditorComponent scaffold\", () => {\n  it(\"renders the scaffold marker\", () => {\n    const { getByTestId } = render(<EditorComponent />);\n    expect(getByTestId(\"editor-component-scaffold\")).toBeTruthy();\n  });\n});\n",
       "branch_name": "supervisor/feat-editor-web/scaffold",
-      "commit_message": "feat(editor): scaffold web component and test"
+      "commit_message": "feat(editor): scaffold web component and test (cap#0)"
     },
     "slot_descriptions": {
       "feature_slug": "Short kebab-case identifier derived from the issue title — used in branch names and component filenames. Examples: edit-timeline-schema, camera-screen, timeline-scrubber, trim-split-reorder, text-overlays, sticker-pack, drafts-sync, auto-captions, caption-styles.",
@@ -1079,7 +1079,7 @@
       "test_file_path": "Vitest test file path colocated under apps/web/src/app/edit/components/__tests__/. PascalCase filename mirroring the component (e.g. CameraScreen.test.tsx). NOTE: apps/web currently has no vitest config or @testing-library — the CODEOWNER must add vitest + @testing-library/react + jsdom to apps/web/package.json devDependencies and create a vitest.config.ts during review. Same model as the call-room template requiring wrangler.jsonc edits.",
       "test_content": "Vitest + @testing-library/react test module — SYNTHESIZE assertions for the React component described in the issue. Cover: (1) renders without crashing with minimal props, (2) primary user interaction described in the acceptance criteria (e.g. clicking record starts capture, dragging trim handle updates timeline state, applying a caption style updates the preview), (3) at least one negative/edge case (e.g. record button disabled while permissions pending, no clips → empty state). Use describe + it() blocks. Mock browser-only APIs (navigator.mediaDevices, IndexedDB, WebGL) via vi.mock or jsdom stubs as needed. Aim for ≥3 it() blocks. Import the default export of the component and exercise it via render() + fireEvent or userEvent. Do not produce it.todo() stubs.",
       "branch_name": "Git branch name. Prefer supervisor/feat-editor-web/<feature_slug> so the bot's PRs are visually grouped. The conventional feat/<feature_slug> form is also accepted because the LLM keeps producing it.",
-      "commit_message": "Conventional Commits message for the squash-merge. Scope should reflect the editor surface (e.g. feat(editor): ..., feat(camera): ..., feat(timeline): ..., feat(captions): ...). Description should be a single-sentence imperative summary of what the PR adds."
+      "commit_message": "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope should reflect the editor surface (e.g. feat(editor): ..., feat(camera): ..., feat(timeline): ..., feat(captions): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(camera): add multi-clip record with countdown and flip (cap#83)`."
     },
     "step_intents": [
       "Confirm the apps/web/src/app directory exists. The /edit subdirectory does not exist on main yet — the supervisor will create it. If the parent app router directory is missing entirely the CODEOWNER must scaffold capricast's apps/web manually first.",
