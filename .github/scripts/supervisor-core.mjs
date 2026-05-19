@@ -3,7 +3,7 @@
 // ESM, Node 20+, no external dependencies
 
 const ORG = 'Latimer-Woods-Tech';
-const MONITORED_REPOS = ['factory', 'HumanDesign', 'capricast', 'xico-city'];
+const MONITORED_REPOS = ['factory', 'HumanDesign', 'capricast', 'xico-city', 'coh'];
 const DENYLIST = new Set(['wordis-bond']);
 const RUN_ID = `sup-${Date.now()}`;
 const MAX_GENERATED_LINES = parseInt(process.env.MAX_GENERATED_LINES ?? '800', 10);
