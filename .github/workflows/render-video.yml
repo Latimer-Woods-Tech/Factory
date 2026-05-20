@@ -44,6 +44,11 @@ on:
         description: 'Topic / title seed for the render'
         required: true
         type: string
+      brief_key:
+        description: 'Optional named content brief under apps/video-studio/content-briefs/{app-id}/ (without .json)'
+        required: false
+        type: string
+        default: ''
       brand_color:
         description: 'Primary brand hex colour'
         required: false
@@ -119,6 +124,7 @@ jobs:
           COMPOSITION_ID: ${{ inputs.composition_id || 'MarketingVideo' }}
           APP_ID: ${{ inputs.app_id || 'prime_self' }}
           TOPIC: ${{ inputs.topic || 'Your Free Energy Blueprint' }}
+          BRIEF_KEY: ${{ inputs.brief_key || '' }}
           BRAND_COLOR: ${{ inputs.brand_color || '#6366f1' }}
           BRAND_ACCENT: ${{ inputs.brand_accent || '#a5b4fc' }}
           LOGO_URL: ${{ inputs.logo_url || '' }}
@@ -128,6 +134,7 @@ jobs:
           echo "composition_id=$COMPOSITION_ID"
           echo "app_id=$APP_ID"
           echo "topic=$TOPIC"
+          echo "brief_key=$BRIEF_KEY"
           echo "brand_color=$BRAND_COLOR"
           echo "brand_accent=$BRAND_ACCENT"
           echo "logo_url=$LOGO_URL"
@@ -268,7 +275,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
+          client-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
           skip-token-revoke: true
@@ -375,15 +382,83 @@ jobs:
           echo "voice_id=$VOICE_ID" >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
+      # Step 2.5 — Load optional JSON content brief
+      # -----------------------------------------------------------------------
+      - name: Resolve content brief
+        id: brief
+        env:
+          APP_ID: ${{ inputs.app_id }}
+          INPUT_TOPIC: ${{ inputs.topic }}
+          INPUT_BRIEF_KEY: ${{ inputs.brief_key }}
+          INPUT_BRAND_COLOR: ${{ inputs.brand_color }}
+          INPUT_BRAND_ACCENT: ${{ inputs.brand_accent }}
+        run: |
+          set -euo pipefail
+
+          brief_dir="apps/video-studio/content-briefs/${APP_ID//_/-}"
+          brief_json=''
+          topic="$INPUT_TOPIC"
+          brand_color="$INPUT_BRAND_COLOR"
+          brand_accent="$INPUT_BRAND_ACCENT"
+          learning_goal=''
+          tone_notes=''
+          script_override=''
+          key_points='[]'
+          forbidden_claims='[]'
+          screenshot_urls='[]'
+
+          if [ -n "$INPUT_BRIEF_KEY" ]; then
+            brief_json="$brief_dir/$INPUT_BRIEF_KEY.json"
+            if [ ! -f "$brief_json" ]; then
+              echo "::error::Content brief not found: $brief_json"
+              exit 1
+            fi
+
+            topic="$(jq -r '.topic // empty' "$brief_json")"
+            brand_color="$(jq -r '.brandColor // empty' "$brief_json")"
+            brand_accent="$(jq -r '.brandAccent // empty' "$brief_json")"
+            learning_goal="$(jq -r '.learningGoal // empty' "$brief_json")"
+            tone_notes="$(jq -r '.toneNotes // empty' "$brief_json")"
+            script_override="$(jq -r '.script // empty' "$brief_json")"
+            key_points="$(jq -c '.keyPoints // []' "$brief_json")"
+            forbidden_claims="$(jq -c '.forbiddenClaims // []' "$brief_json")"
+            screenshot_urls="$(jq -c '.screenshotUrls // []' "$brief_json")"
+          fi
+
+          if [ -z "$topic" ]; then
+            echo '::error::Resolved topic is empty after content brief resolution'
+            exit 1
+          fi
+
+          {
+            echo "topic=$topic"
+            echo "brand_color=$brand_color"
+            echo "brand_accent=$brand_accent"
+            echo "learning_goal=$learning_goal"
+            echo "tone_notes=$tone_notes"
+            echo "script_override<<EOF"
+            echo "$script_override"
+            echo "EOF"
+            echo "key_points=$key_points"
+            echo "forbidden_claims=$forbidden_claims"
+            echo "screenshot_urls=$screenshot_urls"
+          } >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
       # Step 3 — Generate LLM script (headline + narration)
       # -----------------------------------------------------------------------
       - name: Generate LLM script
         id: script
         env:
           COMPOSITION_TYPE: ${{ inputs.composition_id }}
-          RESOLVED_TOPIC: ${{ inputs.topic }}
+          RESOLVED_TOPIC: ${{ steps.brief.outputs.topic }}
           # SYSTEM_CONTEXT is loaded from the per-app brief directory.
           APP_ID: ${{ inputs.app_id }}
+          BRIEF_LEARNING_GOAL: ${{ steps.brief.outputs.learning_goal }}
+          BRIEF_KEY_POINTS: ${{ steps.brief.outputs.key_points }}
+          BRIEF_FORBIDDEN_CLAIMS: ${{ steps.brief.outputs.forbidden_claims }}
+          BRIEF_TONE_NOTES: ${{ steps.brief.outputs.tone_notes }}
+          STATIC_SCRIPT_OVERRIDE: ${{ steps.brief.outputs.script_override }}
         run: |
           set -euo pipefail
           BRIEF_DIR="apps/video-studio/content-briefs/${APP_ID//_/-}"
@@ -393,11 +468,37 @@ jobs:
             SYSTEM_CONTEXT="You are generating narration for a Factory application video."
           fi
           export SYSTEM_CONTEXT
-          export KEY_POINTS_BLOCK=""
-          export FORBIDDEN_BLOCK=""
-          export TONE_BLOCK=""
-          export BRIEF_LEARNING_GOAL=""
-          export BRIEF_KEY_POINTS="[]"
+
+          if [ "$BRIEF_KEY_POINTS" = '[]' ]; then
+            export KEY_POINTS_BLOCK=""
+          else
+            export KEY_POINTS_BLOCK="$(echo "$BRIEF_KEY_POINTS" | jq -r '.[]' | sed 's/^/- /')"
+          fi
+
+          if [ "$BRIEF_FORBIDDEN_CLAIMS" = '[]' ]; then
+            export FORBIDDEN_BLOCK=""
+          else
+            export FORBIDDEN_BLOCK="$(echo "$BRIEF_FORBIDDEN_CLAIMS" | jq -r '.[]' | sed 's/^/- /')"
+          fi
+
+          export TONE_BLOCK="$BRIEF_TONE_NOTES"
+          export BRIEF_LEARNING_GOAL
+          export BRIEF_KEY_POINTS
+
+          if [ -n "$STATIC_SCRIPT_OVERRIDE" ]; then
+            {
+              echo "headline<<EOF"
+              echo "$RESOLVED_TOPIC"
+              echo "EOF"
+              echo "script<<EOF"
+              echo "$STATIC_SCRIPT_OVERRIDE"
+              echo "EOF"
+              echo "narration<<EOF"
+              echo "$STATIC_SCRIPT_OVERRIDE"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           node apps/video-studio/scripts/generate-script.mjs
 
@@ -466,16 +567,18 @@ jobs:
         env:
           COMPOSITION_ID: ${{ inputs.composition_id }}
           APP_ID: ${{ inputs.app_id }}
-          TOPIC: ${{ inputs.topic }}
-          BRAND_COLOR: ${{ inputs.brand_color }}
-          BRAND_ACCENT: ${{ inputs.brand_accent }}
+          TOPIC: ${{ steps.brief.outputs.topic }}
+          BRAND_COLOR: ${{ steps.brief.outputs.brand_color }}
+          BRAND_ACCENT: ${{ steps.brief.outputs.brand_accent }}
           LOGO_URL: ${{ inputs.logo_url }}
           NARRATION_URL: ${{ steps.narration_upload.outputs.narration_url }}
           SCRIPT_TEXT: ${{ steps.script.outputs.narration }}
+          SCREENSHOT_URLS_JSON: ${{ steps.brief.outputs.screenshot_urls }}
         run: |
           set -euo pipefail
           # Build props JSON with jq so multi-line scripts survive cleanly.
           PROPS=$(jq -n \
+            --arg composition  "$COMPOSITION_ID" \
             --arg appId        "$APP_ID" \
             --arg topic        "$TOPIC" \
             --arg script       "$SCRIPT_TEXT" \
@@ -483,7 +586,11 @@ jobs:
             --arg brandColor   "$BRAND_COLOR" \
             --arg brandAccent  "$BRAND_ACCENT" \
             --arg logoUrl      "$LOGO_URL" \
-            '{appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl}')
+            --argjson screenshotUrls "$SCREENSHOT_URLS_JSON" \
+            'if $composition == "WalkthroughVideo"
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls}
+             else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl}
+             end')
           cd apps/video-studio
           node -r ts-node/register src/render.ts \
             --composition "$COMPOSITION_ID" \
@@ -541,16 +648,20 @@ jobs:
             -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
             -H 'Content-Type: application/json' \
             --data "$REQ")
-          UID=$(echo "$RESP" | jq -r '.result.uid // empty')
-          if [ -z "$UID" ]; then
+          # NOTE: `UID` is a bash readonly variable (the running user's uid).
+          # Assigning to it fails with "UID: readonly variable". Use a renamed
+          # local instead. STREAM_UID matches the dry-run job's naming + the
+          # step's output key.
+          STREAM_UID=$(echo "$RESP" | jq -r '.result.uid // empty')
+          if [ -z "$STREAM_UID" ]; then
             echo "::error::Cloudflare Stream copy did not return uid: $RESP"
             exit 1
           fi
-          echo "Stream uid: $UID"
+          echo "Stream uid: $STREAM_UID"
           # Poll for ready (max 10 min, 10s interval).
           for i in $(seq 1 60); do
             STATE=$(curl -sS \
-              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${UID}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${STREAM_UID}" \
               -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
               | jq -r '.result.status.state // "unknown"')
             echo "[$i/60] stream state: $STATE"
@@ -568,12 +679,12 @@ jobs:
             exit 1
           fi
           DURATION=$(curl -sS \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${UID}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${STREAM_UID}" \
             -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
             | jq -r '.result.duration // 0')
-          THUMB_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${UID}/thumbnails/thumbnail.jpg"
+          THUMB_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${STREAM_UID}/thumbnails/thumbnail.jpg"
           {
-            echo "stream_uid=$UID"
+            echo "stream_uid=$STREAM_UID"
             echo "duration_seconds=$DURATION"
             echo "thumbnail_url=$THUMB_URL"
           } >> "$GITHUB_OUTPUT"
