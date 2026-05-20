@@ -332,9 +332,15 @@ jobs:
           fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_BASE_URL ai-gateway-base-url
 
       - name: Build local package dependencies
+        # `llm` added: apps/video-studio/scripts/generate-script.mjs imports
+        # `@latimer-woods-tech/llm`. The package's npm install resolves to the
+        # workspace dir but the `dist/index.mjs` isn't generated until
+        # `npm run build` runs there. Without this step the import fails with
+        # ERR_MODULE_NOT_FOUND on dist/index.mjs. Per CLAUDE.md package order
+        # (#8), llm's deps are errors + logger, both already in the loop.
         run: |
           set -euo pipefail
-          for package in errors monitoring logger neon video schedule; do
+          for package in errors monitoring logger neon llm video schedule; do
             echo "=== ${package} ==="
             cd "packages/${package}"
             npm ci --ignore-scripts
