@@ -280,7 +280,12 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          # `cache: 'npm'` removed — actions/setup-node looks for
+          # package-lock.json at the repo root, but Factory uses per-app
+          # lockfiles (apps/video-cron/package-lock.json,
+          # apps/video-studio/package-lock.json). The cache miss isn't
+          # worth the workflow-level breakage; render runs are infrequent
+          # enough that cold installs are acceptable.
 
       - name: Install system dependencies (ffmpeg + awscli)
         run: |
