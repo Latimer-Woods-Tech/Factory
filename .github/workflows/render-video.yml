@@ -329,7 +329,11 @@ jobs:
           fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
           fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
           fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
-          fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_BASE_URL ai-gateway-base-url
+          # AI_GATEWAY_URL is the canonical GCP secret name (no _BASE_ infix).
+          # `@latimer-woods-tech/llm@0.3.0+` requires the env var
+          # AI_GATEWAY_BASE_URL (note the _BASE_) — fetch_to_env's first arg
+          # is the local env var name, subsequent args are GCP secret aliases.
+          fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
 
       - name: Build local package dependencies
         # `llm` added: apps/video-studio/scripts/generate-script.mjs imports
