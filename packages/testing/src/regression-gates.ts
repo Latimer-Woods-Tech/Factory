@@ -173,10 +173,17 @@ export async function captureScreenshots(
   routeName: string,
   outputDir: string,
 ): Promise<CapturedScreenshots> {
+  // Typed Node.js shape — only the members this function uses. Casting the
+  // require result keeps callers strict (outputPath stays `string`, not `any`)
+  // without pulling @types/node into a package that already runs Node-only.
+  type PathModule = {
+    join: (...parts: string[]) => string;
+    dirname: (p: string) => string;
+  };
   // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
   const fs = require('fs/promises');
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-  const path = require('path');
+  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
+  const path = require('path') as PathModule;
 
   const viewports = ['desktop', 'mobile', 'tablet'] as const;
   const paths: Partial<CapturedScreenshots> = {};
@@ -208,8 +215,7 @@ export async function captureScreenshots(
       console.warn(`Network wait timeout for ${routeName}.${viewport}; capturing anyway`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const outputPath = path.join(outputDir, routeName, `${viewport}.png`);
+    const outputPath: string = path.join(outputDir, routeName, `${viewport}.png`);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     // animations: 'disabled' freezes CSS transitions, caret: 'hide' kills
@@ -270,17 +276,26 @@ export async function compareScreenshots(
     // calling it directly threw "pixelmatch is not a function" on every
     // diff. Use dynamic import + .default to support both v5 (CJS, default
     // export *is* the function) and v6+ (ESM, function on .default).
-    type Pixelmatch = (img1: Uint8Array, img2: Uint8Array, output: null, width: number, height: number, opts?: { threshold?: number }) => number;
-    // pixelmatch has no @types/ package; the runtime resolution handles both
-    // CJS and ESM shapes, but the static type is opaque to TS.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pmModule = await (import('pixelmatch') as Promise<any>);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const candidate = typeof pmModule === 'function' ? pmModule : pmModule?.default;
+    type Pixelmatch = (
+      img1: Uint8Array,
+      img2: Uint8Array,
+      output: Uint8Array | null,
+      width: number,
+      height: number,
+      opts?: { threshold?: number },
+    ) => number;
+    // The local pixelmatch.d.ts shim declares `export default pixelmatch`, so
+    // dynamic import is precisely typed — no `any` and no unsafe member access.
+    // We still tolerate the v5 CJS shape (module itself is the function) at
+    // runtime via a typeof check, narrowing through a typed union.
+    type PixelmatchModule = { default: Pixelmatch } | Pixelmatch;
+    const pmModule: PixelmatchModule = (await import('pixelmatch')) as PixelmatchModule;
+    const candidate: Pixelmatch | undefined =
+      typeof pmModule === 'function' ? pmModule : pmModule.default;
     if (typeof candidate !== 'function') {
       throw new Error('pixelmatch resolution failed: neither default export nor module is a function');
     }
-    const pixelmatch = candidate as Pixelmatch;
+    const pixelmatch: Pixelmatch = candidate;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const actualRaw: Uint8Array = await fs.readFile(actualPath);
