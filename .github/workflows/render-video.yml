@@ -287,13 +287,18 @@ jobs:
           # worth the workflow-level breakage; render runs are infrequent
           # enough that cold installs are acceptable.
 
-      - name: Install system dependencies (ffmpeg + awscli)
+      - name: Install system dependencies (ffmpeg + jq)
+        # awscli removed from this apt install — Ubuntu 24.04 (ubuntu-latest)
+        # has retired the awscli package. AWS CLI v2 is pre-installed at
+        # /usr/local/bin/aws on GitHub-hosted runners (verified by `aws
+        # --version`). Pipeline uses `aws s3 cp --endpoint-url=...` to push
+        # to R2 (S3-compatible).
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg awscli jq
+          sudo apt-get install -y --no-install-recommends ffmpeg jq
           ffmpeg -version | head -1
-          aws --version || true
+          aws --version
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
