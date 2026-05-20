@@ -72,6 +72,17 @@ on:
       - '.github/workflows/render-video.yml'
       - 'apps/video-studio/**'
       - 'apps/video-cron/**'
+  # Also run on push to non-main branches so dry-run executes from the PR
+  # branch's own workflow file (pull_request events use the BASE branch's
+  # workflow file, which means a brand-new render-video.yml only validates
+  # against main *after* merge). Push lets us validate on the PR branch.
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - '.github/workflows/render-video.yml'
+      - 'apps/video-studio/**'
+      - 'apps/video-cron/**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -80,8 +91,8 @@ permissions:
   contents: read
 
 concurrency:
-  # Real renders parallel-safe by job_id; PR dry-runs serialised per PR.
-  group: render-video-${{ inputs.job_id || github.event.pull_request.number || github.run_id }}
+  # Real renders parallel-safe by job_id; PR/branch dry-runs serialised per ref.
+  group: render-video-${{ github.event_name == 'workflow_dispatch' && inputs.job_id || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -89,7 +100,7 @@ jobs:
   # dry-run — runs on every PR. No external API calls.
   # ---------------------------------------------------------------------------
   dry-run:
-    if: github.event_name == 'pull_request' || inputs.dry_run == 'true'
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     name: Dry-run pipeline (fixtures)
@@ -566,7 +577,7 @@ jobs:
           # CAPRICAST_PUBLISH_TOKEN + CAPRICAST_SYSTEM_CREATOR_ID were loaded
           # into the environment by the "Fetch secrets" step. The publish
           # script reads CAPRICAST_CREATOR_ID — alias it here so the
-          # workflow lints cleanly without referencing env.* in `${{ }}`.
+          # workflow lints cleanly without referencing the env context.
           export CAPRICAST_CREATOR_ID="$CAPRICAST_SYSTEM_CREATOR_ID"
           node apps/video-studio/scripts/publish-to-capricast.mjs
 
