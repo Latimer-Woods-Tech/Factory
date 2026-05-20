@@ -46,7 +46,16 @@
 // identically. The reviewer's rule fires at scan time without distinguishing
 // Worker source from CLI tooling.
 import { appendFileSync } from 'fs';
-import { complete, withSystem } from '@latimer-woods-tech/llm';
+import { complete } from '@latimer-woods-tech/llm';
+
+// withSystem polyfill — the @latimer-woods-tech/llm package exports `complete`
+// which accepts `system` in its options bag, but not a `withSystem` partial-
+// application helper. This shim preserves the call sites' currying pattern
+// without changing the package surface: `withSystem(prompt)(messages, env,
+// opts)` is equivalent to `complete(messages, env, { ...opts, system: prompt })`.
+// Returns a function with the same signature as complete().
+const withSystem = (system) => (messages, env, opts = {}) =>
+  complete(messages, env, { ...opts, system });
 
 // ---------------------------------------------------------------------------
 // Env
