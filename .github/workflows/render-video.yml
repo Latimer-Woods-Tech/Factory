@@ -280,15 +280,25 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: 'npm'
+          # `cache: 'npm'` removed — actions/setup-node looks for
+          # package-lock.json at the repo root, but Factory uses per-app
+          # lockfiles (apps/video-cron/package-lock.json,
+          # apps/video-studio/package-lock.json). The cache miss isn't
+          # worth the workflow-level breakage; render runs are infrequent
+          # enough that cold installs are acceptable.
 
-      - name: Install system dependencies (ffmpeg + awscli)
+      - name: Install system dependencies (ffmpeg + jq)
+        # awscli removed from this apt install — Ubuntu 24.04 (ubuntu-latest)
+        # has retired the awscli package. AWS CLI v2 is pre-installed at
+        # /usr/local/bin/aws on GitHub-hosted runners (verified by `aws
+        # --version`). Pipeline uses `aws s3 cp --endpoint-url=...` to push
+        # to R2 (S3-compatible).
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg awscli jq
+          sudo apt-get install -y --no-install-recommends ffmpeg jq
           ffmpeg -version | head -1
-          aws --version || true
+          aws --version
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
@@ -319,12 +329,22 @@ jobs:
           fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
           fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
           fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
-          fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_BASE_URL ai-gateway-base-url
+          # AI_GATEWAY_URL is the canonical GCP secret name (no _BASE_ infix).
+          # `@latimer-woods-tech/llm@0.3.0+` requires the env var
+          # AI_GATEWAY_BASE_URL (note the _BASE_) — fetch_to_env's first arg
+          # is the local env var name, subsequent args are GCP secret aliases.
+          fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
 
       - name: Build local package dependencies
+        # `llm` added: apps/video-studio/scripts/generate-script.mjs imports
+        # `@latimer-woods-tech/llm`. The package's npm install resolves to the
+        # workspace dir but the `dist/index.mjs` isn't generated until
+        # `npm run build` runs there. Without this step the import fails with
+        # ERR_MODULE_NOT_FOUND on dist/index.mjs. Per CLAUDE.md package order
+        # (#8), llm's deps are errors + logger, both already in the loop.
         run: |
           set -euo pipefail
-          for package in errors monitoring logger neon video schedule; do
+          for package in errors monitoring logger neon llm video schedule; do
             echo "=== ${package} ==="
             cd "packages/${package}"
             npm ci --ignore-scripts
