@@ -430,20 +430,91 @@ async function extractSlots(slotNames, issue, factoryContext = '', slotValidator
 
 // ─── Green execution (create branch + files + PR) ────────────────────────────
 
+// Dedup invariant: at most one open supervisor PR per source issue, ever.
+// The dedup key is the **body marker** `**Source issue:** #N`, NOT the PR
+// title. Issue #832 (2026-05-19): when 38 supervisor PRs were renamed from
+// `[Supervisor] ...` to conventional-commits format
+// (`feat(scope): description (cap#NNN)`), the title-prefix check stopped
+// seeing them and the next scan opened 9 dupes. The body marker survives
+// title renames because it lives in the PR body, which is rarely edited.
+//
+// Why body-marker (Option A) over branch-prefix (Option B) or label
+// (Option C): the body marker is the only key that is (a) already written
+// by every supervisor PR (no migration), (b) immutable in practice
+// (humans don't edit auto-generated PR bodies), and (c) author-trusted
+// because we additionally filter by the bot author login to avoid
+// matching a human-authored PR that happens to reference the same issue.
+const SUPERVISOR_BOT_LOGIN_RE = /^factory-cross-repo(\[bot\])?$/;
+function buildSourceIssueMarkerRegex(issueNumber) {
+  // Anchored to prevent #11 matching when looking for #1. The published
+  // line is `**Source issue:** #N  ` (trailing two spaces); allow any
+  // non-digit boundary so the check is resilient to whitespace edits.
+  return new RegExp(`\\*\\*Source issue:\\*\\* #${issueNumber}(?!\\d)`);
+}
+
+// Repo → short scope token used inside the conventional-commits suffix.
+// Example: capricast → cap (so titles end with `(cap#NNN)` as the user
+// renamed all 38 Sprint 2/3/4 PRs to on 2026-05-19). Falls back to the
+// first 3 letters of the repo name for repos not in this table.
+const REPO_SCOPE_ABBREV = {
+  capricast: 'cap',
+  factory: 'fac',
+  selfprime: 'self',
+  cipherofhealing: 'coh',
+  xicocity: 'xic',
+  humandesign: 'hd',
+};
+function repoScopeAbbrev(repo) {
+  return REPO_SCOPE_ABBREV[repo] ?? repo.slice(0, 3);
+}
+
+// Build the PR title, preferring the conventional-commits `commit_message`
+// slot value over the legacy `[Supervisor] <title>` form. The slot's YAML
+// default (e.g. `feat(conversations): scaffold ... (cap#0)`) carries a
+// placeholder `cap#0` that we replace with the real issue number here.
+// Also tolerates `cap#NNN`, `cap#<source-issue-number>`, `cap#<issue>` as
+// LLM-friendly placeholders.
+function buildPrTitle(repo, issue, slots) {
+  const abbrev = repoScopeAbbrev(repo);
+  const issueRef = `${abbrev}#${issue.number}`;
+  const commitMessage = slots && typeof slots.commit_message === 'string'
+    ? slots.commit_message.trim()
+    : '';
+  if (!commitMessage) {
+    return `[Supervisor] ${issue.title}`;
+  }
+  // Substitute placeholders that the LLM (or YAML default) may have used
+  // in place of the unknown-at-build-time issue number.
+  let title = commitMessage.replace(
+    /\((?:cap|fac|self|coh|xic|hd)#(?:0|NNN|<source-issue-number>|<issue>)\)/g,
+    `(${issueRef})`,
+  );
+  // Append the marker if the LLM forgot it entirely.
+  if (!/\([a-z]{2,4}#\d+\)\s*$/.test(title)) {
+    title = `${title} (${issueRef})`;
+  }
+  // Cap length so the title stays within GitHub's UI and validator bound.
+  if (title.length > 200) title = title.slice(0, 200);
+  return title;
+}
+
 /**
  * Returns an existing open supervisor PR for this issue, or null.
  * Prevents duplicate PRs when the Supervisor loop runs concurrently or
  * retries before the `agent:claimed:supervisor` label propagates via GitHub API.
+ *
+ * Dedup key: bot-authored PR whose body contains `**Source issue:** #N`.
+ * Survives PR title renames (e.g. `[Supervisor] ...` → conventional
+ * commits) because the body marker is what we key on, not the title.
  */
 async function findExistingPR(repo, issueNumber) {
   try {
-    // Search open PRs whose title contains [Supervisor] and the source issue marker
     const prs = await gh('GET', `/repos/${ORG}/${repo}/pulls?state=open&per_page=50`);
-    const marker = `#${issueNumber}`;
+    const markerRe = buildSourceIssueMarkerRegex(issueNumber);
     return prs.find(
       (pr) =>
-        pr.title.startsWith('[Supervisor]') &&
-        (pr.body ?? '').includes(`**Source issue:** ${marker}`),
+        SUPERVISOR_BOT_LOGIN_RE.test(pr.user?.login ?? '') &&
+        markerRe.test(pr.body ?? ''),
     ) ?? null;
   } catch {
     return null; // non-fatal — proceed and let GitHub reject the dup branch
@@ -521,8 +592,19 @@ async function executeGreen(repo, issue, template, slots) {
     return { branch, prUrl: null, prNumber: null, skipped: true, reason: 'no-file-changes' };
   }
 
+  // PR title: prefer the `commit_message` slot value (conventional commits)
+  // when the template defines it. This is what the user-renamed PRs already
+  // look like and is what the new feature templates teach the LLM to produce:
+  //   feat(<scope>): <verb-phrase> (cap#<source-issue-number>)
+  // We substitute the literal placeholder `cap#0` (or `cap#NNN`) with the
+  // real issue number at PR-creation time — the YAML default can't know
+  // the issue number at build time.
+  // Falls back to the legacy `[Supervisor] ${issue.title}` form when no
+  // commit_message slot is set (governance templates, docs templates, etc.).
+  const prTitle = buildPrTitle(repo, issue, slots);
+
   const pr = await gh('POST', `/repos/${ORG}/${repo}/pulls`, {
-    title: `[Supervisor] ${issue.title}`,
+    title: prTitle,
     head: branch,
     base: 'main',
     body: [
