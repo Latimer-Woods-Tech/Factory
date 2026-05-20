@@ -130,10 +130,10 @@ slots:
     default: "supervisor/feat-call-room/scaffold"
   - name: commit_message
     type: string
-    description: "Conventional Commits message. Scope reflects the feature (e.g. feat(calls): ..., feat(live): ..., feat(conference): ...)."
+    description: "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope reflects the feature (e.g. feat(calls): ..., feat(live): ..., feat(conference): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(calls): add DirectCallRoom DO and 1:1 video-call endpoints (cap#63)`."
     validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
     source: issue_title
-    default: "feat(calls): scaffold Durable Object, routes, and test"
+    default: "feat(calls): scaffold Durable Object, routes, and test (cap#0)"
 steps:
   - id: s1
     tool: github.readFile
