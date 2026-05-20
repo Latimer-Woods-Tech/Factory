@@ -26,8 +26,10 @@
  *   GITHUB_OUTPUT         — Path to GitHub Actions output file
  *
  * Outputs (written to GITHUB_OUTPUT):
- *   script   — Narration text
- *   steps    — JSON array of step strings (TrainingVideo only, else [])
+ *   script    — Narration text (alias of `narration`, kept for back-compat)
+ *   narration — Full narration script (becomes the Capricast transcript)
+ *   headline  — Short on-screen headline derived from the topic (2–7 words)
+ *   steps     — JSON array of step strings (TrainingVideo only, else [])
  */
 
 import { appendFileSync } from 'node:fs';
@@ -241,6 +243,32 @@ async function generateMarketingVideo() {
 }
 
 // ---------------------------------------------------------------------------
+// Headline generator — short on-screen headline derived from the topic.
+// Single low-temperature call; falls back to the topic if the LLM call fails.
+// ---------------------------------------------------------------------------
+async function generateHeadline() {
+  const systemPrompt = [
+    'You write short on-screen video headlines.',
+    'Output exactly one headline: 2 to 7 words, no punctuation other than internal hyphens.',
+    'Never include quotes, colons, ellipses, em dashes, or exclamation marks.',
+    'Output ONLY the headline text. No labels, no quotes, no preamble.',
+  ].join('\n');
+  try {
+    const raw = await callLLM(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: `Topic: "${topic}"\n\nWrite the headline now.` },
+      ],
+      { temperature: 0.3, maxTokens: 40 },
+    );
+    return raw.split('\n')[0].replace(/^["'`]|["'`]$/g, '').trim() || topic;
+  } catch (err) {
+    console.error('headline generation failed, falling back to topic:', err.message);
+    return topic;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 try {
@@ -257,8 +285,13 @@ try {
   const { script, steps } = result;
   console.error(`Final script word count: ${wordCount(script)}`);
 
+  const headline = await generateHeadline();
+  console.error(`Headline: ${headline}`);
+
   writeOutput({
-    script,
+    script,               // back-compat: old workflows still read `script`
+    narration: script,    // explicit alias — what step 11 sends as transcript
+    headline,             // short on-screen / Capricast title
     steps: JSON.stringify(steps),
   });
 } catch (err) {

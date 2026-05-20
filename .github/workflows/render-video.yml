@@ -1,0 +1,619 @@
+name: Render Video
+
+# End-to-end render pipeline. Dispatched by apps/video-cron on every cron
+# tick once a render job is queued in schedule-worker. Each dispatch:
+#
+#   1. Generate headline + narration script (LLM chain)
+#   2. Synthesise narration audio (ElevenLabs)
+#   3. Upload narration MP3 to R2
+#   4. Render MP4 with Remotion
+#   5. ffmpeg re-encode (H.264 baseline + AAC)
+#   6. Upload MP4 to R2
+#   7. Register with Cloudflare Stream and wait for `ready`
+#   8. POST to Capricast admin import endpoint
+#   9. PATCH schedule-worker job → status=done (or status=failed on any step)
+#
+# Two jobs share the workflow file:
+#   * `render`  — runs only on `workflow_dispatch` (cron-initiated). Touches
+#                 real external APIs.
+#   * `dry-run` — runs on every PR change. Walks the same shape using local
+#                 fixtures so we exercise the workflow + scripts in CI
+#                 without burning ElevenLabs / R2 / Stream / Capricast budget.
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: 'schedule-worker job id'
+        required: true
+        type: string
+      composition_id:
+        description: 'Remotion composition'
+        required: true
+        type: choice
+        default: 'MarketingVideo'
+        options:
+          - 'MarketingVideo'
+          - 'TrainingVideo'
+          - 'WalkthroughVideo'
+      app_id:
+        description: 'Factory application id (e.g. prime_self)'
+        required: true
+        type: string
+      topic:
+        description: 'Topic / title seed for the render'
+        required: true
+        type: string
+      brand_color:
+        description: 'Primary brand hex colour'
+        required: false
+        type: string
+        default: '#6366f1'
+      brand_accent:
+        description: 'Accent brand hex colour'
+        required: false
+        type: string
+        default: '#a5b4fc'
+      logo_url:
+        description: 'Logo image URL (may be empty)'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Dry run — walk pipeline shape using fixtures, no external calls'
+        required: false
+        type: choice
+        default: 'false'
+        options:
+          - 'false'
+          - 'true'
+  pull_request:
+    paths:
+      - '.github/workflows/render-video.yml'
+      - 'apps/video-studio/**'
+      - 'apps/video-cron/**'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+concurrency:
+  # Real renders parallel-safe by job_id; PR dry-runs serialised per PR.
+  group: render-video-${{ inputs.job_id || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # dry-run — runs on every PR. No external API calls.
+  # ---------------------------------------------------------------------------
+  dry-run:
+    if: github.event_name == 'pull_request' || inputs.dry_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    name: Dry-run pipeline (fixtures)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Validate workflow inputs shape (dispatch contract)
+        env:
+          JOB_ID: ${{ inputs.job_id || 'dryrun-job' }}
+          COMPOSITION_ID: ${{ inputs.composition_id || 'MarketingVideo' }}
+          APP_ID: ${{ inputs.app_id || 'prime_self' }}
+          TOPIC: ${{ inputs.topic || 'Your Free Energy Blueprint' }}
+          BRAND_COLOR: ${{ inputs.brand_color || '#6366f1' }}
+          BRAND_ACCENT: ${{ inputs.brand_accent || '#a5b4fc' }}
+          LOGO_URL: ${{ inputs.logo_url || '' }}
+        run: |
+          set -euo pipefail
+          echo "job_id=$JOB_ID"
+          echo "composition_id=$COMPOSITION_ID"
+          echo "app_id=$APP_ID"
+          echo "topic=$TOPIC"
+          echo "brand_color=$BRAND_COLOR"
+          echo "brand_accent=$BRAND_ACCENT"
+          echo "logo_url=$LOGO_URL"
+          case "$COMPOSITION_ID" in
+            MarketingVideo|TrainingVideo|WalkthroughVideo) ;;
+            *) echo "::error::Unknown composition_id: $COMPOSITION_ID"; exit 1 ;;
+          esac
+
+      - name: Validate publish-to-capricast.mjs is parseable
+        run: node --check apps/video-studio/scripts/publish-to-capricast.mjs
+
+      - name: Validate generate-script.mjs is parseable
+        run: node --check apps/video-studio/scripts/generate-script.mjs
+
+      - name: Validate render.ts entry exists
+        run: |
+          set -euo pipefail
+          test -f apps/video-studio/src/render.ts
+          test -f apps/video-studio/src/Root.tsx
+
+      - name: Install jq
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends jq
+
+      - name: Load fixtures and emit step outputs
+        id: fixtures
+        env:
+          JOB_ID: ${{ inputs.job_id || 'dryrun-job' }}
+          TOPIC: ${{ inputs.topic || 'Your Free Energy Blueprint' }}
+        run: |
+          set -euo pipefail
+          SCRIPT_FX="apps/video-studio/scripts/fixtures/dry-run-script.json"
+          STREAM_FX="apps/video-studio/scripts/fixtures/dry-run-stream.json"
+          test -f "$SCRIPT_FX"
+          test -f "$STREAM_FX"
+          HEADLINE=$(jq -r '.headline' "$SCRIPT_FX")
+          NARRATION=$(jq -r '.narration' "$SCRIPT_FX")
+          STREAM_UID=$(jq -r '.result.uid' "$STREAM_FX")
+          STREAM_STATE=$(jq -r '.result.status.state' "$STREAM_FX")
+          [ "$STREAM_STATE" = "ready" ] || { echo "fixture stream not ready"; exit 1; }
+          echo "headline=$HEADLINE"
+          echo "narration_len=${#NARRATION}"
+          echo "stream_uid=$STREAM_UID"
+          # Synthesise the URLs the real pipeline would compute
+          NARRATION_URL="https://dryrun.example.com/narrations/${JOB_ID}.mp3"
+          VIDEO_URL="https://dryrun.example.com/videos/${JOB_ID}.mp4"
+          THUMB_URL="https://customer-dryrun.cloudflarestream.com/${STREAM_UID}/thumbnails/thumbnail.jpg"
+          {
+            echo "headline=$HEADLINE"
+            echo "stream_uid=$STREAM_UID"
+            echo "narration_url=$NARRATION_URL"
+            echo "video_url=$VIDEO_URL"
+            echo "thumbnail_url=$THUMB_URL"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write Capricast stub server
+        run: |
+          cat > /tmp/capricast-stub.cjs <<'EOF'
+          const http = require('http');
+          const { spawn } = require('child_process');
+          const srv = http.createServer((req, res) => {
+            if (req.method === 'POST' && req.url === '/api/admin/videos/import') {
+              let body = '';
+              req.on('data', (c) => { body += c; });
+              req.on('end', () => {
+                try {
+                  const json = JSON.parse(body);
+                  if (!json.streamUid || !json.title || !json.creatorId || typeof json.durationSeconds !== 'number') {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'BadRequest', got: Object.keys(json) }));
+                    return;
+                  }
+                  res.writeHead(201, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ id: 'dryrun-video-1', url: 'https://capricast.example.com/v/dryrun-video-1' }));
+                } catch {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: 'InvalidJSON' }));
+                }
+              });
+            } else {
+              res.writeHead(404); res.end();
+            }
+          });
+          srv.listen(8787, '127.0.0.1', () => {
+            console.error('dry-run capricast stub listening on :8787');
+            // Spawn publish-to-capricast.mjs as a child of the stub so the
+            // server is guaranteed to be ready before the publish runs.
+            const child = spawn(process.execPath, [process.argv[2]], {
+              env: process.env,
+              stdio: 'inherit',
+            });
+            child.on('exit', (code) => {
+              console.error('publish-to-capricast exited with code', code);
+              srv.close(() => process.exit(code || 0));
+            });
+          });
+          EOF
+
+      - name: Dry-run publish-to-capricast.mjs against a local stub server
+        env:
+          STREAM_UID: ${{ steps.fixtures.outputs.stream_uid }}
+          HEADLINE: ${{ steps.fixtures.outputs.headline }}
+          THUMBNAIL_URL: ${{ steps.fixtures.outputs.thumbnail_url }}
+        run: |
+          set -euo pipefail
+          export CAPRICAST_API_URL="http://127.0.0.1:8787"
+          export CAPRICAST_PUBLISH_TOKEN="dryrun-token"
+          export CAPRICAST_CREATOR_ID="dryrun-creator"
+          export TITLE="$HEADLINE"
+          export DESCRIPTION="$HEADLINE"
+          export DURATION_SECONDS="15"
+          export TRANSCRIPT="dryrun transcript"
+          export TRANSCRIPT_LANGUAGE="en"
+          node /tmp/capricast-stub.cjs apps/video-studio/scripts/publish-to-capricast.mjs
+
+      - name: Dry-run summary
+        env:
+          STREAM_UID: ${{ steps.fixtures.outputs.stream_uid }}
+          NARRATION_URL: ${{ steps.fixtures.outputs.narration_url }}
+          VIDEO_URL: ${{ steps.fixtures.outputs.video_url }}
+        run: |
+          echo "dry-run OK — stream_uid=$STREAM_UID narration=$NARRATION_URL video=$VIDEO_URL"
+
+  # ---------------------------------------------------------------------------
+  # render — real pipeline. Only triggered by the cron worker (workflow_dispatch).
+  # ---------------------------------------------------------------------------
+  render:
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: Render and publish video
+    environment: production
+
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          skip-token-revoke: true
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install system dependencies (ffmpeg + awscli)
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg awscli jq
+          ffmpeg -version | head -1
+          aws --version || true
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env ANTHROPIC_API_KEY               ANTHROPIC_API_KEY anthropic-api-key
+          fetch_to_env GROQ_API_KEY                    GROQ_API_KEY groq-api-key
+          fetch_to_env ELEVENLABS_API_KEY              ELEVENLABS_API_KEY elevenlabs-api-key
+          fetch_to_env ELEVENLABS_VOICE_PRIME_SELF     ELEVENLABS_VOICE_PRIME_SELF elevenlabs-voice-prime-self
+          fetch_to_env ELEVENLABS_VOICE_CYPHER         ELEVENLABS_VOICE_CYPHER elevenlabs-voice-cypher
+          fetch_to_env ELEVENLABS_VOICE_DEFAULT        ELEVENLABS_VOICE_DEFAULT elevenlabs-voice-default
+          fetch_to_env CF_ACCOUNT_ID                   CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env CF_STREAM_TOKEN                 CF_STREAM_TOKEN cf-stream-token
+          fetch_to_env CF_STREAM_CUSTOMER_DOMAIN       CF_STREAM_CUSTOMER_DOMAIN cf-stream-customer-domain
+          fetch_to_env R2_ACCESS_KEY_ID                R2_ACCESS_KEY_ID r2-access-key-id
+          fetch_to_env R2_SECRET_ACCESS_KEY            R2_SECRET_ACCESS_KEY r2-secret-access-key
+          fetch_to_env R2_BUCKET_NAME                  R2_BUCKET_NAME r2-bucket-name
+          fetch_to_env R2_PUBLIC_DOMAIN                R2_PUBLIC_DOMAIN r2-public-domain
+          fetch_to_env SCHEDULE_WORKER_URL             SCHEDULE_WORKER_URL schedule-worker-url
+          fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
+          fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
+          fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
+          fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_BASE_URL ai-gateway-base-url
+
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for package in errors monitoring logger neon video schedule; do
+            echo "=== ${package} ==="
+            cd "packages/${package}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install video-studio dependencies
+        working-directory: apps/video-studio
+        run: npm install
+
+      - name: Resolve ElevenLabs voice id
+        id: voice
+        env:
+          APP_ID: ${{ inputs.app_id }}
+        run: |
+          set -euo pipefail
+          case "$APP_ID" in
+            prime_self) VOICE_ID="$ELEVENLABS_VOICE_PRIME_SELF" ;;
+            cypher)     VOICE_ID="$ELEVENLABS_VOICE_CYPHER" ;;
+            *)          VOICE_ID="$ELEVENLABS_VOICE_DEFAULT" ;;
+          esac
+          if [ -z "${VOICE_ID:-}" ]; then
+            echo "::error::No ElevenLabs voice id resolved for app_id=$APP_ID"
+            exit 1
+          fi
+          echo "::add-mask::$VOICE_ID"
+          echo "voice_id=$VOICE_ID" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # Step 3 — Generate LLM script (headline + narration)
+      # -----------------------------------------------------------------------
+      - name: Generate LLM script
+        id: script
+        env:
+          COMPOSITION_TYPE: ${{ inputs.composition_id }}
+          RESOLVED_TOPIC: ${{ inputs.topic }}
+          # SYSTEM_CONTEXT is loaded from the per-app brief directory.
+          APP_ID: ${{ inputs.app_id }}
+        run: |
+          set -euo pipefail
+          BRIEF_DIR="apps/video-studio/content-briefs/${APP_ID//_/-}"
+          if [ -f "$BRIEF_DIR/SYSTEM_CONTEXT.md" ]; then
+            SYSTEM_CONTEXT="$(cat "$BRIEF_DIR/SYSTEM_CONTEXT.md")"
+          else
+            SYSTEM_CONTEXT="You are generating narration for a Factory application video."
+          fi
+          export SYSTEM_CONTEXT
+          export KEY_POINTS_BLOCK=""
+          export FORBIDDEN_BLOCK=""
+          export TONE_BLOCK=""
+          export BRIEF_LEARNING_GOAL=""
+          export BRIEF_KEY_POINTS="[]"
+
+          node apps/video-studio/scripts/generate-script.mjs
+
+      # -----------------------------------------------------------------------
+      # Step 4 — Generate ElevenLabs narration MP3
+      # -----------------------------------------------------------------------
+      - name: Generate ElevenLabs narration
+        id: narration
+        env:
+          NARRATION_TEXT: ${{ steps.script.outputs.narration }}
+          VOICE_ID: ${{ steps.voice.outputs.voice_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NARRATION_TEXT" ]; then
+            echo "::error::generate-script produced no narration"
+            exit 1
+          fi
+          # Build the request body via jq so newlines/quotes in the script are
+          # JSON-encoded safely (no manual escaping in bash).
+          jq -n --arg text "$NARRATION_TEXT" '{
+            text: $text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          }' > /tmp/eleven-body.json
+
+          HTTP_CODE=$(curl -sS -w '%{http_code}' -o /tmp/narration.mp3 \
+            -X POST "https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}" \
+            -H "xi-api-key: ${ELEVENLABS_API_KEY}" \
+            -H 'accept: audio/mpeg' \
+            -H 'content-type: application/json' \
+            --data @/tmp/eleven-body.json)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::ElevenLabs returned HTTP $HTTP_CODE"
+            # body was written to /tmp/narration.mp3 — may be JSON error, may be binary
+            head -c 400 /tmp/narration.mp3 2>/dev/null | tr -d '\000' || true
+            exit 1
+          fi
+          ls -la /tmp/narration.mp3
+
+      # -----------------------------------------------------------------------
+      # Step 5 — Upload narration MP3 to R2
+      # -----------------------------------------------------------------------
+      - name: Upload narration to R2
+        id: narration_upload
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          set -euo pipefail
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 cp /tmp/narration.mp3 \
+            "s3://${R2_BUCKET_NAME}/narrations/${JOB_ID}.mp3" \
+            --endpoint-url "$ENDPOINT" \
+            --content-type audio/mpeg
+          PUBLIC_URL="https://${R2_PUBLIC_DOMAIN}/narrations/${JOB_ID}.mp3"
+          echo "narration_url=$PUBLIC_URL" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # Step 6 — Render MP4 with Remotion
+      # -----------------------------------------------------------------------
+      - name: Render MP4
+        id: render
+        timeout-minutes: 15
+        env:
+          COMPOSITION_ID: ${{ inputs.composition_id }}
+          APP_ID: ${{ inputs.app_id }}
+          TOPIC: ${{ inputs.topic }}
+          BRAND_COLOR: ${{ inputs.brand_color }}
+          BRAND_ACCENT: ${{ inputs.brand_accent }}
+          LOGO_URL: ${{ inputs.logo_url }}
+          NARRATION_URL: ${{ steps.narration_upload.outputs.narration_url }}
+          SCRIPT_TEXT: ${{ steps.script.outputs.narration }}
+        run: |
+          set -euo pipefail
+          # Build props JSON with jq so multi-line scripts survive cleanly.
+          PROPS=$(jq -n \
+            --arg appId        "$APP_ID" \
+            --arg topic        "$TOPIC" \
+            --arg script       "$SCRIPT_TEXT" \
+            --arg narrationUrl "$NARRATION_URL" \
+            --arg brandColor   "$BRAND_COLOR" \
+            --arg brandAccent  "$BRAND_ACCENT" \
+            --arg logoUrl      "$LOGO_URL" \
+            '{appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl}')
+          cd apps/video-studio
+          node -r ts-node/register src/render.ts \
+            --composition "$COMPOSITION_ID" \
+            --props "$PROPS" \
+            --output /tmp/output.mp4
+          ls -la /tmp/output.mp4
+
+      # -----------------------------------------------------------------------
+      # Step 7 — ffmpeg re-encode for max Stream + browser compatibility
+      # -----------------------------------------------------------------------
+      - name: ffmpeg re-encode (H.264 baseline + AAC)
+        run: |
+          set -euo pipefail
+          ffmpeg -y -i /tmp/output.mp4 \
+            -c:v libx264 -profile:v baseline -level 3.0 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k \
+            /tmp/output-final.mp4
+          ls -la /tmp/output-final.mp4
+
+      # -----------------------------------------------------------------------
+      # Step 8 — Upload MP4 to R2
+      # -----------------------------------------------------------------------
+      - name: Upload MP4 to R2
+        id: video_upload
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          set -euo pipefail
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 cp /tmp/output-final.mp4 \
+            "s3://${R2_BUCKET_NAME}/videos/${JOB_ID}.mp4" \
+            --endpoint-url "$ENDPOINT" \
+            --content-type video/mp4
+          PUBLIC_URL="https://${R2_PUBLIC_DOMAIN}/videos/${JOB_ID}.mp4"
+          echo "video_url=$PUBLIC_URL" >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # Step 9 — Register with Cloudflare Stream + poll until ready
+      # -----------------------------------------------------------------------
+      - name: Register with Cloudflare Stream and poll
+        id: stream
+        env:
+          VIDEO_URL: ${{ steps.video_upload.outputs.video_url }}
+          TOPIC: ${{ inputs.topic }}
+          APP_ID: ${{ inputs.app_id }}
+        run: |
+          set -euo pipefail
+          REQ=$(jq -n --arg url "$VIDEO_URL" --arg name "$TOPIC" --arg appId "$APP_ID" \
+            '{url:$url, meta:{name:$name, appId:$appId}}')
+          RESP=$(curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/copy" \
+            -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$REQ")
+          UID=$(echo "$RESP" | jq -r '.result.uid // empty')
+          if [ -z "$UID" ]; then
+            echo "::error::Cloudflare Stream copy did not return uid: $RESP"
+            exit 1
+          fi
+          echo "Stream uid: $UID"
+          # Poll for ready (max 10 min, 10s interval).
+          for i in $(seq 1 60); do
+            STATE=$(curl -sS \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${UID}" \
+              -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+              | jq -r '.result.status.state // "unknown"')
+            echo "[$i/60] stream state: $STATE"
+            if [ "$STATE" = "ready" ]; then
+              break
+            fi
+            if [ "$STATE" = "error" ]; then
+              echo "::error::Stream encoding failed"
+              exit 1
+            fi
+            sleep 10
+          done
+          if [ "$STATE" != "ready" ]; then
+            echo "::error::Stream did not reach ready within 10 minutes (last state: $STATE)"
+            exit 1
+          fi
+          DURATION=$(curl -sS \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${UID}" \
+            -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+            | jq -r '.result.duration // 0')
+          THUMB_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${UID}/thumbnails/thumbnail.jpg"
+          {
+            echo "stream_uid=$UID"
+            echo "duration_seconds=$DURATION"
+            echo "thumbnail_url=$THUMB_URL"
+          } >> "$GITHUB_OUTPUT"
+
+      # -----------------------------------------------------------------------
+      # Step 11 — Publish to Capricast
+      # -----------------------------------------------------------------------
+      - name: Publish to Capricast
+        id: capricast
+        env:
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          DURATION_SECONDS: ${{ steps.stream.outputs.duration_seconds }}
+          THUMBNAIL_URL: ${{ steps.stream.outputs.thumbnail_url }}
+          TITLE: ${{ steps.script.outputs.headline }}
+          DESCRIPTION: ${{ inputs.topic }}
+          TRANSCRIPT: ${{ steps.script.outputs.narration }}
+          TRANSCRIPT_LANGUAGE: 'en'
+          CAPRICAST_API_URL: 'https://api.capricast.com'
+        run: |
+          set -euo pipefail
+          # CAPRICAST_PUBLISH_TOKEN + CAPRICAST_SYSTEM_CREATOR_ID were loaded
+          # into the environment by the "Fetch secrets" step. The publish
+          # script reads CAPRICAST_CREATOR_ID — alias it here so the
+          # workflow lints cleanly without referencing env.* in `${{ }}`.
+          export CAPRICAST_CREATOR_ID="$CAPRICAST_SYSTEM_CREATOR_ID"
+          node apps/video-studio/scripts/publish-to-capricast.mjs
+
+      # -----------------------------------------------------------------------
+      # Step 12 — PATCH schedule-worker → status=done
+      # -----------------------------------------------------------------------
+      - name: Mark schedule-worker job done
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          CAPRICAST_URL: ${{ steps.capricast.outputs.capricastUrl }}
+        run: |
+          set -euo pipefail
+          BODY=$(jq -n \
+            --arg streamUid "$STREAM_UID" \
+            --arg videoUrl  "$CAPRICAST_URL" \
+            '{status:"done", streamUid:$streamUid, videoUrl:$videoUrl}')
+          HTTP_CODE=$(curl -sS -o /tmp/patch-resp.txt -w '%{http_code}' \
+            -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${JOB_ID}" \
+            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$BODY")
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+            echo "::error::schedule-worker PATCH returned HTTP $HTTP_CODE"
+            head -c 400 /tmp/patch-resp.txt || true
+            exit 1
+          fi
+          echo "✅ schedule-worker job $JOB_ID marked done"
+
+      # -----------------------------------------------------------------------
+      # On any failure, PATCH the job to status=failed so it stops blocking the cron.
+      # -----------------------------------------------------------------------
+      - name: Mark schedule-worker job failed (on-failure handler)
+        if: failure()
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          FAILED_STEP: ${{ github.action }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SCHEDULE_WORKER_URL:-}" ] || [ -z "${WORKER_API_TOKEN:-}" ]; then
+            echo "::warning::Secrets not loaded — cannot PATCH schedule-worker"
+            exit 0
+          fi
+          REASON="render-video.yml failed in step: ${FAILED_STEP:-unknown}"
+          BODY=$(jq -n --arg error "$REASON" '{status:"failed", script:$error}')
+          curl -sS -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${JOB_ID}" \
+            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$BODY" || true
+          echo "schedule-worker job $JOB_ID marked failed"
