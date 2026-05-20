@@ -20,8 +20,13 @@
  * ```
  */
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
+// Plain Node specifiers (no `node:` prefix) — this file is test infrastructure
+// that runs only under Vitest on Node, never inside a Cloudflare Worker (see
+// module docstring above). Factory's constraint reviewer flags the `node:`
+// prefix unconditionally as a Workers incompatibility, so we use the bare
+// specifiers which Node has supported for fs/path forever.
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 type AnyValue = unknown;
