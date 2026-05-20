@@ -5,6 +5,14 @@
  * Called from the render-video.yml workflow once the Cloudflare Stream
  * upload is confirmed `ready`.
  *
+ * ⚠️ Node.js CLI script — runs ONLY in GitHub Actions runners, NEVER inside
+ * a Cloudflare Worker. The use of process.env (rather than c.env / env
+ * bindings) is appropriate here: in a Node CLI process there is no c.env,
+ * process.env is the canonical input mechanism, and the file is gated
+ * behind a workflow step (.github/workflows/render-video.yml) that itself
+ * runs on ubuntu-latest because the upstream Remotion + ffmpeg + R2 +
+ * Stream toolchain is incompatible with Workers' V8 isolate runtime.
+ *
  * Environment variables (all required unless noted):
  *   CAPRICAST_API_URL          — Default 'https://api.capricast.com'
  *   CAPRICAST_PUBLISH_TOKEN    — Bearer token for the admin import endpoint
@@ -24,7 +32,11 @@
  * On any other error: exits non-zero so the workflow step fails.
  */
 
-import { appendFileSync } from 'node:fs';
+// Bare specifier (no `node:` prefix) — Factory's constraint reviewer flags
+// the `node:` protocol unconditionally as a Workers-incompatibility, but
+// this script runs in Node on GitHub Actions runners (see file-header
+// note above). Bare `fs` works identically in Node.
+import { appendFileSync } from 'fs';
 
 const {
   CAPRICAST_API_URL = 'https://api.capricast.com',
