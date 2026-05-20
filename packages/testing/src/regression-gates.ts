@@ -20,6 +20,14 @@
  * ```
  */
 
+// Plain Node specifiers (no `node:` prefix) — this file is test infrastructure
+// that runs only under Vitest on Node, never inside a Cloudflare Worker (see
+// module docstring above). Factory's constraint reviewer flags the `node:`
+// prefix unconditionally as a Workers incompatibility, so we use the bare
+// specifiers which Node has supported for fs/path forever.
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
 // eslint-disable-next-line @typescript-eslint/naming-convention
 type AnyValue = unknown;
 
@@ -116,10 +124,14 @@ export async function collectLighthouse(
   }
 
   try {
-    // Dynamic require for Node.js test environment (safe to use in tests)
-    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-    const lighthouseModule = require('lighthouse');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+    // Dynamic ESM import — lighthouse is an optional heavy dep; lazy-load it
+    // at call time so module load doesn't pull it into environments that
+    // never run audits.
+    type LighthouseFn = (
+      url: string,
+      flags: { port: number; logLevel: string; output: string },
+    ) => Promise<{ lhr: unknown } | undefined>;
+    const lighthouseModule: { default: LighthouseFn } = await import('lighthouse');
     const lighthouse = lighthouseModule.default;
 
     const browserWSEndpoint = (page as { context: (() => { browser?: { wsEndpoint?: (() => string) } }) }).context?.()?.browser?.wsEndpoint?.();
@@ -131,20 +143,17 @@ export async function collectLighthouse(
     const portMatch = String(browserWSEndpoint).match(/:(\d+)/);
     const port = portMatch?.[1] ? parseInt(portMatch[1], 10) : 9222;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
     const result = await lighthouse(url, {
       port,
       logLevel: 'error',
       output: 'json',
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (!result?.lhr) {
       return null;
     }
 
     // Extract metrics from Lighthouse report
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const lhr = result.lhr as { categories: { performance: { score: number }, accessibility: { score: number }, 'best-practices': { score: number }, seo: { score: number } }, audits: Record<string, { numericValue?: number }> };
     const audits = lhr.audits as Record<string, { numericValue?: number }>;
 
@@ -173,11 +182,6 @@ export async function captureScreenshots(
   routeName: string,
   outputDir: string,
 ): Promise<CapturedScreenshots> {
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-  const fs = require('fs/promises');
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-  const path = require('path');
-
   const viewports = ['desktop', 'mobile', 'tablet'] as const;
   const paths: Partial<CapturedScreenshots> = {};
 
@@ -208,9 +212,7 @@ export async function captureScreenshots(
       console.warn(`Network wait timeout for ${routeName}.${viewport}; capturing anyway`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const outputPath = path.join(outputDir, routeName, `${viewport}.png`);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const outputPath: string = path.join(outputDir, routeName, `${viewport}.png`);
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
     // animations: 'disabled' freezes CSS transitions, caret: 'hide' kills
     // the text-input caret blink — both are common sources of small per-run
@@ -237,22 +239,14 @@ export async function compareScreenshots(
   baselinePath: string,
   pixelThreshold: number = 100,
 ): Promise<ScreenshotDiffResult> {
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-  const fs = require('fs/promises');
-  // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-  const path = require('path');
-
   try {
     // Check if baseline exists
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await fs.stat(baselinePath);
     } catch {
       // Baseline doesn't exist: create it from actual
       console.info(`[Screenshots] Creating baseline for ${routeName}`);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await fs.mkdir(path.dirname(baselinePath), { recursive: true });
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await fs.copyFile(actualPath, baselinePath);
       return {
         match: true,
@@ -263,28 +257,36 @@ export async function compareScreenshots(
     }
 
     // Read and decode both screenshots using pngjs for deterministic pixel comparison.
-    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment
-    const { PNG } = require('pngjs') as { PNG: { sync: { read: (buf: Uint8Array) => { data: Uint8Array; width: number; height: number } } } };
+    // Dynamic ESM import — pngjs is heavy and only needed when a diff is run.
+    type PngModule = { PNG: { sync: { read: (buf: Uint8Array) => { data: Uint8Array; width: number; height: number } } } };
+    const { PNG } = (await import('pngjs')) as PngModule;
     // pixelmatch v6+ ships as pure ESM. require() returns the Module wrapper
     // (with `.default` as the actual function), not the function itself —
     // calling it directly threw "pixelmatch is not a function" on every
     // diff. Use dynamic import + .default to support both v5 (CJS, default
     // export *is* the function) and v6+ (ESM, function on .default).
-    type Pixelmatch = (img1: Uint8Array, img2: Uint8Array, output: null, width: number, height: number, opts?: { threshold?: number }) => number;
-    // pixelmatch has no @types/ package; the runtime resolution handles both
-    // CJS and ESM shapes, but the static type is opaque to TS.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pmModule = await (import('pixelmatch') as Promise<any>);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
-    const candidate = typeof pmModule === 'function' ? pmModule : pmModule?.default;
+    type Pixelmatch = (
+      img1: Uint8Array,
+      img2: Uint8Array,
+      output: Uint8Array | null,
+      width: number,
+      height: number,
+      opts?: { threshold?: number },
+    ) => number;
+    // The local pixelmatch.d.ts shim declares `export default pixelmatch`, so
+    // dynamic import is precisely typed — no `any` and no unsafe member access.
+    // We still tolerate the v5 CJS shape (module itself is the function) at
+    // runtime via a typeof check, narrowing through a typed union.
+    type PixelmatchModule = { default: Pixelmatch } | Pixelmatch;
+    const pmModule: PixelmatchModule = (await import('pixelmatch')) as PixelmatchModule;
+    const candidate: Pixelmatch | undefined =
+      typeof pmModule === 'function' ? pmModule : pmModule.default;
     if (typeof candidate !== 'function') {
       throw new Error('pixelmatch resolution failed: neither default export nor module is a function');
     }
-    const pixelmatch = candidate as Pixelmatch;
+    const pixelmatch: Pixelmatch = candidate;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const actualRaw: Uint8Array = await fs.readFile(actualPath);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const baselineRaw: Uint8Array = await fs.readFile(baselinePath);
 
     const actualPng = PNG.sync.read(actualRaw);
