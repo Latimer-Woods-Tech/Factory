@@ -84,46 +84,51 @@ Required GCP secrets (each tried by the names listed, in order):
 | `WORKER_API_TOKEN`          | `WORKER_API_TOKEN`, `worker-api-token`                |
 | `CAPRICAST_PUBLISH_TOKEN`   | `CAPRICAST_PUBLISH_TOKEN`, `capricast-publish-token`  |
 | `CAPRICAST_SYSTEM_CREATOR_ID` | `CAPRICAST_SYSTEM_CREATOR_ID`, `capricast-system-creator-id` |
-| `AI_GATEWAY_BASE_URL`       | `AI_GATEWAY_BASE_URL`, `ai-gateway-base-url`          |
+| `AI_GATEWAY_BASE_URL`       | `AI_GATEWAY_URL`, `AI_GATEWAY_BASE_URL`, `ai-gateway-base-url`, `ai-gateway-url` |
 
-### New secrets that must be added
+### Secret provisioning conventions
 
-These two secrets are new to this PR and must be created in GCP Secret
-Manager **before** any cron-dispatched render can succeed:
-
-1. `CAPRICAST_PUBLISH_TOKEN` — Bearer token accepted by Capricast's
-   `POST /api/admin/videos/import` endpoint. Issued by Capricast.
-2. `CAPRICAST_SYSTEM_CREATOR_ID` — the Capricast user id under which
-   automated renders should be attributed.
-
-Create with:
+**Always use `printf '%s'`, never `echo`**, when piping a value into
+`gcloud secrets create` or `gcloud secrets versions add`. `echo` appends
+a trailing newline that gets stored as part of the secret value and
+silently breaks any strict-equality header check (Anthropic, Stream,
+Capricast import endpoint).
 
 ```bash
-gcloud secrets create CAPRICAST_PUBLISH_TOKEN \
-  --project=factory-495015 \
-  --data-file=- < /path/to/token.txt
-gcloud secrets create CAPRICAST_SYSTEM_CREATOR_ID \
-  --project=factory-495015 \
-  --data-file=- < /path/to/creator-id.txt
+# WRONG — trailing newline corrupts the stored value
+echo "$VALUE" | gcloud secrets versions add SECRET_NAME --data-file=-
+# RIGHT
+printf '%s' "$VALUE" | gcloud secrets versions add SECRET_NAME --data-file=-
 ```
 
-Grant the WIF service account access:
+Many secrets in `factory-495015` were originally pasted with a leading
+UTF-8 BOM (`ef bb bf`) — equally invisible, equally broken. When in
+doubt, audit:
 
 ```bash
-gcloud secrets add-iam-policy-binding CAPRICAST_PUBLISH_TOKEN \
+gcloud secrets versions access latest --secret=SECRET_NAME --project=factory-495015 \
+  | head -c 3 | xxd
+# Clean keys start with their expected printable bytes (e.g. `sk-` for
+# Anthropic). BOM is bytes `ef bb bf` at the start.
+```
+
+To strip BOM defensively when reading in scripts:
+
+```bash
+CLEAN=$(printf '%s' "$RAW" | sed 's/^\xef\xbb\xbf//' | tr -d '\r\n')
+```
+
+### IAM access for WIF
+
+When creating a new secret, grant the factory WIF service account read
+access:
+
+```bash
+gcloud secrets add-iam-policy-binding NEW_SECRET_NAME \
   --project=factory-495015 \
   --member='serviceAccount:factory-sa@factory-495015.iam.gserviceaccount.com' \
   --role='roles/secretmanager.secretAccessor'
-gcloud secrets add-iam-policy-binding CAPRICAST_SYSTEM_CREATOR_ID \
-  --project=factory-495015 \
-  --member='serviceAccount:factory-sa@factory-495015.iam.gserviceaccount.com' \
-  --role='roles/secretmanager.secretAccessor'
 ```
-
-Until both exist, the "Fetch secrets from GCP Secret Manager" step will log
-a warning and leave the env vars unset; the Capricast publish step will
-exit non-zero and the on-failure handler will mark the schedule-worker job
-as `failed`. The render itself (steps 1–9) will still complete.
 
 ## Manual test render
 
@@ -155,14 +160,26 @@ gh workflow run render-video.yml -f dry_run=true \
 After a real render, verify the published video exists:
 
 ```bash
-# Stream playback URL (use the streamUid returned by the workflow)
+# Stream playback URL (use the streamUid returned by the workflow).
+# CF_STREAM_CUSTOMER_DOMAIN is a per-account subdomain; for factory-495015
+# it's `op4b8eq1uv0ciwqy`.
 curl -I "https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${STREAM_UID}/manifest/video.m3u8"
 # Expect: HTTP/2 200
 
-# Capricast public watch URL (use the id returned by publish-to-capricast)
-curl -I "https://capricast.com/v/${CAPRICAST_ID}"
-# Expect: HTTP/2 200 (or 302 to the same)
+# Capricast API direct (use the Capricast video id from publish-to-capricast)
+curl "https://api.capricast.com/api/videos/${CAPRICAST_ID}"
+# Expect: HTTP 200 + JSON object with title, transcript, etc.
+
+# Capricast public watch page (frontend)
+curl -I "https://capricast.com/watch/${CAPRICAST_ID}"
+# Expect: HTTP 200. The path is `/watch/...` — NOT `/v/...`.
 ```
+
+A live end-to-end-verified example (2026-05-20 first production
+pipeline run):
+- Capricast video id: `5209dd21-71a8-4ee4-afeb-0c030ade1a70`
+- Stream UID: `f6989d17880309e2618a7c4325a995dc`
+- Public URL: https://capricast.com/watch/5209dd21-71a8-4ee4-afeb-0c030ade1a70
 
 ## Troubleshooting
 
@@ -173,15 +190,126 @@ curl -I "https://capricast.com/v/${CAPRICAST_ID}"
   doesn't exist in GCP Secret Manager, or the factory WIF service account
   lacks `secretmanager.secretAccessor` on it. Diagnose with
   `gcloud secrets list --project=factory-495015 | grep -i capricast`.
-- **ElevenLabs returns 401.** Voice id is per-account; confirm the API
-  key and voice ids match.
-- **Stream poll times out at `queued`.** Stream's `copy` endpoint sometimes
-  takes longer for the first render of a new R2 video. Increase the poll
-  cap from 10 minutes if needed.
+- **ElevenLabs returns 401.** First suspect a UTF-8 BOM on the stored
+  secret (see "Operational gotchas" below). Then verify voice ids match
+  the API key's account.
+- **Anthropic returns 401 despite correct key format.** The
+  `ANTHROPIC_API_KEY` in this project's GCP Secret Manager has been a
+  known stale value (revoked workspace, suffix `3DegAA`). The live key
+  is stored separately as `LATIMER_ANTHROPIC_API` (suffix `Y-jgAA`); if
+  you ever rotate ANTHROPIC_API_KEY again, mirror the LATIMER value or
+  update the workflow's fetch alias chain. `SELFPRIME_CLAUDE_API` is
+  also a copy of the dead `3DegAA` key.
+- **Stream poll times out at `queued`.** Stream's `copy` endpoint
+  sometimes takes longer for the first render of a new R2 video.
+  Increase the poll cap from 10 minutes if needed.
+- **Stream `/copy` returns "video not found" or similar.** The MP4 URL
+  must be publicly fetchable by Cloudflare's edge — Stream pulls it via
+  unauthenticated HTTPS GET. The `factory-videos` R2 bucket has its
+  managed `.r2.dev` domain enabled; if it's ever disabled, re-enable:
+  ```
+  PUT /accounts/{account_id}/r2/buckets/factory-videos/domains/managed
+  Body: {"enabled": true}
+  ```
 - **Capricast 409 `DuplicateStreamUid`.** Expected when the workflow
   re-runs for the same `streamUid`. Treated as success.
-- **schedule-worker PATCH returns 401.** `WORKER_API_TOKEN` doesn't match
-  the schedule-worker's configured bearer.
+- **Capricast publish returns 401.** `CAPRICAST_PUBLISH_TOKEN` must
+  also be `wrangler secret put` on the Capricast worker (the deploy.yml
+  does this automatically on every Capricast prod deploy, but if you
+  changed the value in GCP you must also redeploy the worker for the
+  binding to update).
+- **`GET /api/videos/:id` returns 500 "Failed to fetch video".** The
+  Capricast worker uses Drizzle which wraps the underlying postgres-js
+  PgError. Inspect `err.cause` to see the real Postgres error. The
+  most common cause is "column X does not exist" — Drizzle's
+  migration ledger is in a broken state and migrations don't auto-
+  apply (see "Drizzle ledger" gotcha). Apply missing migrations via
+  `psql` directly.
+- **schedule-worker PATCH returns 401.** `WORKER_API_TOKEN` doesn't
+  match the schedule-worker's configured bearer.
+- **schedule-worker PATCH returns 404.** The `job_id` doesn't exist
+  in the schedule-worker DB. Expected for manual `gh workflow run`
+  dispatches with synthetic ids — non-fatal, the render itself
+  succeeded.
+
+## Operational gotchas (load-bearing constraints)
+
+These all caused production outages or hours of debugging during the
+2026-05-20 end-to-end pipeline validation. Treat as load-bearing.
+
+### 1. GCP secrets and UTF-8 BOM
+
+A bulk-paste process originally populated this project's secrets with a
+leading UTF-8 BOM (`ef bb bf`). The BOM is invisible to humans, treated
+as part of the secret value by `gcloud secrets versions access`, and
+silently breaks any strict-equality header check (Anthropic 401, Stream
+400, etc.). Five were re-pushed clean on 2026-05-20. Always use
+`printf '%s'` when creating new secrets; verify with `xxd` if you
+suspect issues.
+
+### 2. Drizzle migration ledger is broken
+
+`drizzle.__drizzle_migrations` in the Neon DB has a single row that
+matches no migration file. `drizzle-kit migrate` tries to re-apply
+0001+ and fails on existing tables. The deploy step is wrapped in
+`continue-on-error: true` so deploys still complete; **new migrations
+must be applied via `psql` manually** until the ledger is repaired.
+
+The schema files in `packages/db/src/schema/` are the canonical source —
+diff their column lists against `information_schema.columns` to find
+drift. As of 2026-05-20 two migrations had been silently skipped:
+`0015_gdpr_deleted_at.sql` (users.deleted_at) and
+`0019_video_transcripts.sql` (videos.transcript +
+videos.transcript_language). Both applied manually via `ALTER TABLE …
+ADD COLUMN IF NOT EXISTS` (the migration files themselves use this
+idempotent form).
+
+### 3. Capricast Pages project name is `videoking` (legacy)
+
+The videoking → capricast rename never propagated to the Cloudflare
+Pages project. capricast.com / www.capricast.com / itsjusus.com all
+map to a project named `videoking`. The Capricast `deploy.yml` had
+`--project-name capricast` for months → every Pages deploy silently
+failed with code 8000007 "Project not found". Worker deploys ran
+fine; the frontend just never updated. Fixed 2026-05-20 by changing
+to `--project-name videoking`. Renaming the Pages project would
+require coordinated DNS changes; leaving as-is.
+
+### 4. Stream customer subdomain is per-account
+
+`customer-{CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com` URLs use
+an account-specific subdomain that isn't the account UUID. For
+factory-495015 it's `op4b8eq1uv0ciwqy`. Extract from any existing
+Stream video's `thumbnail` URL:
+
+```bash
+curl -s -H "Authorization: Bearer $CF_STREAM_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/stream?per_page=1" \
+  | jq -r '.result[0].thumbnail'
+```
+
+### 5. CF_STREAM_TOKEN can be a `cfut_` token (despite earlier memory)
+
+A previous memory note claimed Cloudflare `cfut_` tokens are R2-only.
+This account's `cfut_dcqbV…` token verifies as `active` against
+`/user/tokens/verify` AND lists Stream videos successfully — i.e. it
+carries Stream scope. `CF_STREAM_TOKEN` in GCP Secret Manager was
+created on 2026-05-20 as a copy of `CF_API_TOKEN`. If you ever rotate,
+make sure the replacement has both Stream:Edit and Stream:Read.
+
+### 6. Capricast system creator must have role=`creator`
+
+The factory-managed video creator user (`0194b4cc-…`,
+`factory-bot@itsjusus.com`) was originally provisioned with
+`role='viewer'`. The `creator_id` FK on videos.users isn't filtered by
+role at the DB layer, but downstream worker queries (and the watch
+page) assume the joined user has `role='creator'`. Promoted via:
+
+```sql
+UPDATE users SET role='creator' WHERE id='0194b4cc-ce46-4441-99af-937a20dca00a';
+```
+
+Any new factory-managed creator account needs the same promotion.
 
 ## Related
 
