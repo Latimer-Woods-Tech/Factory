@@ -8,6 +8,7 @@ export const GENERATED_TARGETS = [
   { id: "admin-studio-staging.health", url: "https://admin-staging.latwoodtech.work/health", contains: "ok" },
   { id: "capricast-api.health", url: "https://api.capricast.com/health", contains: "ok" },
   { id: "cypher-healing.health", url: "https://api.cipherofhealing.com/health", contains: "ok" },
+  { id: "coh.health", url: "https://api.cypherofhealing.com/health", contains: "ok" },
   { id: "factory-supervisor.health", url: "https://supervisor.latwoodtech.work/health", contains: "ok" },
   { id: "xico-city.health", url: "https://xicocity.com/health", contains: "ok" },
   { id: "xico-city-staging.health", url: "https://xico-city-staging.adrper79.workers.dev/health", contains: "ok" },
