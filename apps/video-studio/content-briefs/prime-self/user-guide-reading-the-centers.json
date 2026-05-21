@@ -1,0 +1,49 @@
+{
+  "briefKey": "user-guide-reading-the-centers",
+  "key": "user-guide-reading-the-centers",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "user-guide",
+  "title": "Reading the Centers: Defined and Undefined",
+  "description": "What it means when a center is colored, what it means when it is open, and why neither is better than the other.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "chronos",
+  "forgeTheme": "chronos",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Defined and Undefined Centers",
+  "learningGoal": "User can hover over any center in their blueprint and accurately read what its definition state means for their lived experience.",
+  "targetPersona": "new_user",
+  "keyPoints": [
+    "Defined centers are reliable broadcasters — they carry a consistent signal you can trust",
+    "Undefined centers are not weak — they are open to environmental input and become places of accumulated wisdom",
+    "The polarity between defined and undefined is the structural drama of your design",
+    "Conditioning happens in undefined centers; clarity comes from learning to discern the field from the self"
+  ],
+  "forbiddenClaims": [
+    "defined is stronger than undefined",
+    "undefined centers are deficient",
+    "guaranteed insight",
+    "instant clarity"
+  ],
+  "toneNotes": "Patient and corrective. Many viewers arrive with the misconception that undefined equals weak. Reframe carefully without lecturing.",
+  "narration_script": "There is no hierarchy between defined and undefined.\n\nA defined center carries a consistent signal. When color fills a center on your body graph, the energy of that center is reliable. You broadcast it. People feel it from you without you having to try. It is part of your fixed self.\n\nAn undefined center carries no consistent signal of its own. It is open. It samples the centers of every person you stand near. It amplifies. It feels everything that moves through it, fully, before the field passes on.\n\nThis is not weakness.\n\nUndefined centers are the places where you accumulate wisdom. Over years, by feeling so many versions of that energy through so many people, you become a connoisseur of it. You can tell, with precision, when it is healthy in someone else and when it is distorted.\n\nThe risk is conditioning. When you mistake the field for yourself. When the emotional weather of the room becomes the story of who you are.\n\nThe practice is discernment. Notice what is yours, drawn from your defined centers, and notice what is the room you are standing in.\n\nHover over each center. Read its state. Sit with the polarity. Defined is signal. Undefined is reception. Together they make the whole.\n\nThis is the first dance of your design.",
+  "script": "There is no hierarchy between defined and undefined.\n\nA defined center carries a consistent signal. When color fills a center on your body graph, the energy of that center is reliable. You broadcast it. People feel it from you without you having to try. It is part of your fixed self.\n\nAn undefined center carries no consistent signal of its own. It is open. It samples the centers of every person you stand near. It amplifies. It feels everything that moves through it, fully, before the field passes on.\n\nThis is not weakness.\n\nUndefined centers are the places where you accumulate wisdom. Over years, by feeling so many versions of that energy through so many people, you become a connoisseur of it. You can tell, with precision, when it is healthy in someone else and when it is distorted.\n\nThe risk is conditioning. When you mistake the field for yourself. When the emotional weather of the room becomes the story of who you are.\n\nThe practice is discernment. Notice what is yours, drawn from your defined centers, and notice what is the room you are standing in.\n\nHover over each center. Read its state. Sit with the polarity. Defined is signal. Undefined is reception. Together they make the whole.\n\nThis is the first dance of your design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "There is no hierarchy between defined and undefined.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Defined centers carry a consistent signal. You broadcast them. People feel them without you having to try.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "Undefined centers sample the field. They are not weak — they are where you accumulate wisdom about that energy.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Conditioning", "Discernment", "Wisdom"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "Hover over each center. Notice what is yours. Notice what is the room you are standing in.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Defined and Undefined Centers: Reading the Polarity",
+    "description": "Defined centers broadcast. Undefined centers receive. Neither is better. Both are the architecture of your design."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

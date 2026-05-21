@@ -1,0 +1,49 @@
+{
+  "briefKey": "philosophy-5-hexad",
+  "key": "philosophy-5-hexad",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "philosophy",
+  "title": "Hexad: The Fifth Overtone",
+  "description": "The six Knowledges. Circuit group closure. Hexagonal optimality — nature's chosen packing pattern.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "eros",
+  "forgeTheme": "eros",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Hexad — Minor Third 6:5 — The Six Knowledges and Hexagonal Closure",
+  "learningGoal": "Deep user understands the six Knowledges as a closed circuit-group system and recognizes hexagonal packing as the structural optimum nature defaults to.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "Hexad is the fifth overtone — the minor third, 6:5",
+    "Six Knowledges close the structural circuit — Individual, Collective, Tribal, and their inverses",
+    "Hexagonal packing is the most efficient tiling of a plane — bees, snowflakes, carbon",
+    "The six is where the chart becomes a self-organizing field, not a hierarchy"
+  ],
+  "forbiddenClaims": [
+    "the six gives you cosmic insight",
+    "hexagons are mystical",
+    "guaranteed wisdom",
+    "the Knowledges are categories you fit into"
+  ],
+  "toneNotes": "Mathematically precise but warm. The hexagon is everywhere in nature — use that as the anchor. The viewer should feel the elegance, not the abstraction.",
+  "narration_script": "The fifth overtone is the minor third. Six to five.\n\nSix is the number of closure. Six sides make a hexagon. Six is the first perfect number — equal to the sum of its divisors. Six is what nature reaches for when it wants to pack the most into the least.\n\nLook at a honeycomb. Look at a snowflake. Look at the lattice of carbon in graphite. Six everywhere.\n\nThis is hexagonal optimality. The mathematical fact that the hexagon tiles a plane more efficiently than any other regular shape. No gaps. No waste. No wasted edge.\n\nIn your blueprint, the hexad is the closure of the circuit groups. Six Knowledges. Individual, Collective, Tribal — each one with its inner and outer face. Together they form the complete topology of how energy moves in human design.\n\nThe Individual carries the mutation. The Collective carries the pattern. The Tribal carries the support. Each one has a logical face that abstracts and an empirical face that grounds.\n\nSix faces. One closed system.\n\nWhen you read your chart through the hexad, the parts stop being separate features. The channels are no longer a list. They become a self-organizing field. Each Knowledge feeding the others. No waste. No gap. No edge left unattended.\n\nThis is what nature does when it has had enough time to settle.\n\nThis is the fifth overtone of your design.",
+  "script": "The fifth overtone is the minor third. Six to five.\n\nSix is the number of closure. Six sides make a hexagon. Six is the first perfect number — equal to the sum of its divisors. Six is what nature reaches for when it wants to pack the most into the least.\n\nLook at a honeycomb. Look at a snowflake. Look at the lattice of carbon in graphite. Six everywhere.\n\nThis is hexagonal optimality. The mathematical fact that the hexagon tiles a plane more efficiently than any other regular shape. No gaps. No waste. No wasted edge.\n\nIn your blueprint, the hexad is the closure of the circuit groups. Six Knowledges. Individual, Collective, Tribal — each one with its inner and outer face. Together they form the complete topology of how energy moves in human design.\n\nThe Individual carries the mutation. The Collective carries the pattern. The Tribal carries the support. Each one has a logical face that abstracts and an empirical face that grounds.\n\nSix faces. One closed system.\n\nWhen you read your chart through the hexad, the parts stop being separate features. The channels are no longer a list. They become a self-organizing field. Each Knowledge feeding the others. No waste. No gap. No edge left unattended.\n\nThis is what nature does when it has had enough time to settle.\n\nThis is the fifth overtone of your design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "The fifth overtone is the minor third. Six to five. Six is the number of closure.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Honeycomb. Snowflake. Carbon lattice. The hexagon tiles a plane more efficiently than any other regular shape.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "Six Knowledges. Individual. Collective. Tribal. Each with its inner and outer face. Six faces. One closed system.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Individual", "Collective", "Tribal"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "Your chart becomes a self-organizing field. This is what nature does when it has had enough time to settle.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Hexad: Six Knowledges and the Closure of the Circuit",
+    "description": "The fifth overtone — hexagonal optimality and the six-fold closure of the design field."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

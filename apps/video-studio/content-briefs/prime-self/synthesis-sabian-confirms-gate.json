@@ -1,0 +1,49 @@
+{
+  "briefKey": "synthesis-sabian-confirms-gate",
+  "key": "synthesis-sabian-confirms-gate",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "synthesis-moments",
+  "title": "When the Sabian Symbol Confirms the Gate",
+  "description": "A planet's exact degree of activation carries a Sabian image — and when it mirrors the Human Design gate beneath it, the synthesis tightens.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "chronos",
+  "forgeTheme": "chronos",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Sun in Gate 24 Line 4 — Sabian symbol An Indian warrior riding fiercely",
+  "learningGoal": "User sees how the Sabian symbols, a system of 360 symbolic images for each degree of the zodiac, can independently confirm the archetype of the Human Design gate they activate.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Each degree of the zodiac has a Sabian symbol — a brief image first recorded in 1925",
+    "The 360 symbols are independent of Human Design but map to the same 360 degrees the gates are drawn from",
+    "When the Sabian for a planet's degree mirrors the gate it activates, the reading gains structural weight",
+    "Two cultural traditions independently arriving at the same archetypal motion"
+  ],
+  "forbiddenClaims": [
+    "Sabian symbols predict your behavior",
+    "this is occult proof",
+    "the symbols are literally true",
+    "guaranteed validation"
+  ],
+  "toneNotes": "Patient and detective-like. Walk through one specific example. Let the convergence land on its own.",
+  "narration_script": "There are three hundred and sixty degrees in the zodiac. There are three hundred and sixty Sabian symbols, one for each degree, first recorded by Marc Edmund Jones and Elsie Wheeler in nineteen twenty-five.\n\nEach symbol is a brief image. An Indian warrior riding fiercely. A woman drawing two dark curtains aside. A girl filling her apron with eggs.\n\nThis system was developed without any knowledge of Human Design. The gates of the body graph would not be mapped to the same three hundred and sixty degrees until decades later.\n\nThen something interesting happens.\n\nImagine your Sun is in Gate Twenty-Four, Line Four. Gate Twenty-Four is the gate of returning. The mind's relentless attempt to make sense of what has already happened. The mental loop that becomes wisdom when it lands.\n\nNow look up the Sabian symbol for that exact degree. An Indian warrior riding fiercely.\n\nA warrior, riding. Not arriving. Not finished. The body of someone whose entire job is the motion of return — the charge, the retreat, the charge again. The exact archetypal motion of Gate Twenty-Four.\n\nThis is what the synthesis notices. When the Sabian for a planet's degree mirrors the gate it activates, you are not reading two horoscopes. You are reading two independent cultural traditions arriving at the same archetypal pattern.\n\nThe convergence is the signal.",
+  "script": "There are three hundred and sixty degrees in the zodiac. There are three hundred and sixty Sabian symbols, one for each degree, first recorded by Marc Edmund Jones and Elsie Wheeler in nineteen twenty-five.\n\nEach symbol is a brief image. An Indian warrior riding fiercely. A woman drawing two dark curtains aside. A girl filling her apron with eggs.\n\nThis system was developed without any knowledge of Human Design. The gates of the body graph would not be mapped to the same three hundred and sixty degrees until decades later.\n\nThen something interesting happens.\n\nImagine your Sun is in Gate Twenty-Four, Line Four. Gate Twenty-Four is the gate of returning. The mind's relentless attempt to make sense of what has already happened. The mental loop that becomes wisdom when it lands.\n\nNow look up the Sabian symbol for that exact degree. An Indian warrior riding fiercely.\n\nA warrior, riding. Not arriving. Not finished. The body of someone whose entire job is the motion of return — the charge, the retreat, the charge again. The exact archetypal motion of Gate Twenty-Four.\n\nThis is what the synthesis notices. When the Sabian for a planet's degree mirrors the gate it activates, you are not reading two horoscopes. You are reading two independent cultural traditions arriving at the same archetypal pattern.\n\nThe convergence is the signal.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "Three hundred and sixty degrees. Three hundred and sixty symbols. Recorded in nineteen twenty-five.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Gate Twenty-Four is the gate of returning. The mental loop that becomes wisdom when it lands.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "The Sabian for the same degree: An Indian warrior riding fiercely. The exact archetypal motion of the gate.", "showBodyGraph": false },
+    { "type": "triad", "durationFrames": 360, "triad": ["Charge", "Retreat", "Return"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "Two independent traditions. One archetypal pattern. The convergence is the signal.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "When the Sabian Symbol Confirms the Gate",
+    "description": "A worked example of cross-system convergence — the 360 Sabian symbols and the 64 Human Design gates pointing to the same archetypal motion."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}
