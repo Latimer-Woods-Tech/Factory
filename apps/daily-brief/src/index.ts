@@ -6,10 +6,11 @@ import { runDailyBrief } from './brief';
  * Secrets (wrangler secret put):
  *   ANTHROPIC_API_KEY, GROQ_API_KEY, GROK_API_KEY, VERTEX_ACCESS_TOKEN,
  *   ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, RESEND_API_KEY,
- *   GITHUB_TOKEN, NEWS_API_KEY
+ *   GITHUB_TOKEN, NEWS_API_KEY, TRIGGER_TOKEN
  *
  * Vars (wrangler.jsonc):
  *   GITHUB_ORG, ZIP_CODE, RECIPIENTS, AUDIO_PUBLIC_BASE_URL,
+ *   RESEND_FROM_ADDRESS, RESEND_FROM_NAME,
  *   AI_GATEWAY_BASE_URL, VERTEX_PROJECT, VERTEX_LOCATION
  */
 export interface Env {
@@ -31,6 +32,9 @@ export interface Env {
 
   // Email (Resend)
   RESEND_API_KEY: string;
+  RESEND_FROM_ADDRESS: string;
+  RESEND_FROM_NAME: string;
+  TRIGGER_TOKEN?: string;
 
   // External data APIs
   GITHUB_TOKEN: string;
@@ -70,6 +74,13 @@ export default {
 
     // Manual trigger for testing — POST /trigger
     if (url.pathname === '/trigger' && request.method === 'POST') {
+      if (env.TRIGGER_TOKEN) {
+        const expected = `Bearer ${env.TRIGGER_TOKEN}`;
+        if (request.headers.get('authorization') !== expected) {
+          return Response.json({ status: 'unauthorized' }, { status: 401 });
+        }
+      }
+
       ctx.waitUntil(runDailyBrief(env));
       return Response.json({ status: 'triggered', message: 'Brief generation started' });
     }

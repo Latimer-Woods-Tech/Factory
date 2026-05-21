@@ -125,36 +125,51 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-      - name: Provision studio credentials
+      - name: Provision required runtime secrets
         run: |
-          if [ -z "${{ secrets.FACTORY_USER }}" ] || [ -z "${{ secrets.FACTORY_PW }}" ]; then
-            echo "::warning::FACTORY_USER or FACTORY_PW missing; using placeholder credentials"
-            exit 0
-          fi
-          password_hash=$(echo -n "${{ secrets.FACTORY_PW }}" | sha256sum | cut -d' ' -f1)
-          echo "${{ secrets.FACTORY_USER }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "${{ steps.target.outputs.env }}"
-          echo "$password_hash" | npx wrangler secret put STUDIO_ADMIN_PASSWORD_SHA256 --env "${{ steps.target.outputs.env }}"
-        working-directory: apps/admin-studio
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          set -euo pipefail
 
-      - name: Push self-improvement secrets
-        run: |
-          echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "${{ steps.target.outputs.env }}"
-          echo "${{ secrets.GH_PAT }}" | npx wrangler secret put GITHUB_TOKEN --env "${{ steps.target.outputs.env }}"
-          if [ -n "${{ secrets.STUDIO_WEBHOOK_SECRET }}" ]; then
-            echo "${{ secrets.STUDIO_WEBHOOK_SECRET }}" | npx wrangler secret put STUDIO_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
-          else
-            echo "::warning::STUDIO_WEBHOOK_SECRET missing; /tests/runs and /webhooks/studio-tests will return 503 until configured"
-          fi
-          if [ -n "${{ secrets.WORKER_API_TOKEN }}" ]; then
-            echo "${{ secrets.WORKER_API_TOKEN }}" | npx wrangler secret put WORKER_API_TOKEN --env "${{ steps.target.outputs.env }}"
-          fi
+          put_required_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "::error::$name is required for admin-studio deploy"
+              exit 1
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name" --env "${{ steps.target.outputs.env }}"
+          }
+
+          put_optional_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "::warning::Skipping optional secret $name — value not configured"
+              return 0
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name" --env "${{ steps.target.outputs.env }}"
+          }
+
+          password_hash=$(printf '%s' "$SECRET_FACTORY_PW" | sha256sum | cut -d' ' -f1)
+
+          put_required_secret JWT_SECRET "$SECRET_JWT_SECRET"
+          put_required_secret STUDIO_ADMIN_EMAIL "$SECRET_FACTORY_USER"
+          put_required_secret STUDIO_ADMIN_PASSWORD_SHA256 "$password_hash"
+          put_required_secret ANTHROPIC_API_KEY "$SECRET_ANTHROPIC_API_KEY"
+          put_required_secret GITHUB_TOKEN "$SECRET_GH_PAT"
+
+          put_optional_secret STUDIO_WEBHOOK_SECRET "$SECRET_STUDIO_WEBHOOK_SECRET"
+          put_optional_secret WORKER_API_TOKEN "$SECRET_WORKER_API_TOKEN"
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          SECRET_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SECRET_FACTORY_USER: ${{ secrets.FACTORY_USER }}
+          SECRET_FACTORY_PW: ${{ secrets.FACTORY_PW }}
+          SECRET_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SECRET_GH_PAT: ${{ secrets.GH_PAT }}
+          SECRET_STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
+          SECRET_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
 
       - name: Apply database migrations
         run: |

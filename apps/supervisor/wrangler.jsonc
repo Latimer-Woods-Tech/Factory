@@ -5,12 +5,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
 
-  // Cron: daily weekday heartbeat at 12:00 UTC (≈07:00 ET).
-  // Phase-1: noop heartbeat only. Enable after D1 databases are provisioned.
-  "triggers": {
-    "crons": ["0 12 * * 1-5"]
-  },
-
   // Cron: 11:00 UTC = 07:00 AM ET on weekdays (Mon–Fri).
   // Required secrets (injected by deploy-supervisor.yml from GitHub repo secrets):
   //   FACTORY_APP_ID              — GitHub App numeric ID
@@ -61,6 +55,7 @@
     "production": {
       "workers_dev": false,
       "routes": [
+        { "pattern": "supervisor.latwoodtech.work/*", "zone_name": "latwoodtech.work" },
         { "pattern": "supervisor.apunlimited.com/*", "zone_name": "apunlimited.com" }
       ]
     }

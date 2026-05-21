@@ -40,8 +40,63 @@ gh workflow run render-video.yml \
 `topic` remains required by the workflow contract for backward compatibility, but when
 `brief_key` is set the brief's `topic` becomes the actual rendered topic.
 
-## Development
+## Feature guidance library pattern
 
+The same brief-driven flow can be used to build a feature training library instead of
+isolated one-off videos.
+
+Recommended structure:
+
+- Keep one manifest per app at `apps/video-studio/content-briefs/{app-id}/training-library.json`
+- Keep one brief per module in the same folder using a stable `briefKey`
+- Use `TrainingVideo` for task or concept modules and `WalkthroughVideo` when screenshots
+  are required
+- Track audience, product area, and current publishing status in the manifest so admin
+  tooling can schedule, filter, and publish the library later
+
+Prime Self now includes a starter manifest with feature guidance modules covering onboarding,
+chart interpretation, dashboard usage, transits, exports, sessions, and billing.
+
+Example training-library render:
+
+```bash
+gh workflow run render-video.yml \
+  --repo Latimer-Woods-Tech/Factory \
+  -f job_id=manual-training-energy-type \
+  -f composition_id=TrainingVideo \
+  -f app_id=prime_self \
+  -f topic="placeholder" \
+  -f brief_key=energy-type-overview \
+  -f brand_color=#8B5CF6 \
+  -f brand_accent=#10B981 \
+  -f logo_url=https://selfprime.net/icons/icon-72.png
+```
+
+The next layer should read the manifest and expose it through an admin scheduler plus a
+Practitioner-facing training library UI, matching the Phase 2 plan in
+`docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md`.
++
++### Training library admin surface
++
++The schedule-worker now exposes two manifest-aware endpoints:
++
++* `GET /training-library?appId=prime_self` — returns the Prime Self training library manifest
++* `POST /jobs/from-brief` — schedules a render job by `appId` and `briefKey`
++
++This allows external admin tooling to build a training library scheduler without manually
++copying topics or composition IDs.
++
++### Render the first training modules
++
++Use the helper script to inspect the manifest and generate GH CLI commands for the first
++ready training modules:
++
++```bash
++node apps/video-studio/scripts/dispatch-training-library.mjs --count=3
++```
++
++Add `--dispatch` to actually execute the dispatch commands from the current repository's
++GitHub CLI configuration.
 ```bash
 # Install dependencies
 npm install

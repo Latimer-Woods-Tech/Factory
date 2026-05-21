@@ -42,6 +42,28 @@ const COLORS = {
   blue: '#60a5fa',
 };
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function safeHref(value: string): string {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return escapeHtml(url.toString());
+    }
+  } catch {
+    // Invalid links should degrade to a harmless placeholder.
+  }
+
+  return '#';
+}
+
 function section(title: string, emoji: string, body: string): string {
   return `
     <div style="
@@ -58,7 +80,7 @@ function section(title: string, emoji: string, body: string): string {
         letter-spacing:0.12em;
         text-transform:uppercase;
         color:${COLORS.accentLight};
-      ">${emoji}&nbsp;&nbsp;${title}</h2>
+      ">${emoji}&nbsp;&nbsp;${escapeHtml(title)}</h2>
       ${body}
     </div>`;
 }
@@ -74,7 +96,7 @@ function pill(text: string, color: string): string {
     color:${color};
     border:1px solid ${color}44;
     margin-right:6px;
-  ">${text}</span>`;
+  ">${escapeHtml(text)}</span>`;
 }
 
 function row(label: string, value: string): string {
@@ -85,7 +107,7 @@ function row(label: string, value: string): string {
     border-bottom:1px solid ${COLORS.border};
     font-size:13px;
   ">
-    <span style="color:${COLORS.muted}">${label}</span>
+    <span style="color:${COLORS.muted}">${escapeHtml(label)}</span>
     <span style="color:${COLORS.text};font-weight:500">${value}</span>
   </div>`;
 }
@@ -111,12 +133,12 @@ function buildWeatherSection(w: WeatherData): string {
     <div style="display:flex;gap:20px;flex-wrap:wrap">
       <div style="flex:1;min-width:180px">
         <div style="font-size:42px;font-weight:700;color:${COLORS.text};line-height:1">${w.current.tempF}°F</div>
-        <div style="font-size:14px;color:${COLORS.muted};margin-top:4px">${w.current.conditionLabel}</div>
+        <div style="font-size:14px;color:${COLORS.muted};margin-top:4px">${escapeHtml(w.current.conditionLabel)}</div>
         <div style="font-size:12px;color:${COLORS.muted};margin-top:2px">Feels like ${w.current.feelsLikeF}°F · ${w.current.windMph} mph · ${w.current.humidity}% humidity</div>
       </div>
       <div style="flex:1;min-width:180px">
-        ${row('Today', `${w.today.highF}° / ${w.today.lowF}° — ${w.today.conditionLabel}`)}
-        ${row('Tomorrow', `${w.tomorrow.highF}° / ${w.tomorrow.lowF}° — ${w.tomorrow.conditionLabel}`)}
+        ${row('Today', `${w.today.highF}° / ${w.today.lowF}° — ${escapeHtml(w.today.conditionLabel)}`)}
+        ${row('Tomorrow', `${w.tomorrow.highF}° / ${w.tomorrow.lowF}° — ${escapeHtml(w.tomorrow.conditionLabel)}`)}
         ${w.today.precipInches > 0 ? row('Precip today', `${w.today.precipInches}"`) : ''}
       </div>
     </div>
@@ -133,8 +155,8 @@ function buildNewsSection(news: NewsSection): string {
           ${news.industry
             .map(
               (a) => `<div style="padding:10px 0;border-bottom:1px solid ${COLORS.border}">
-                <a href="${a.url}" style="color:${COLORS.text};text-decoration:none;font-size:13px;font-weight:500;line-height:1.4">${a.title}</a>
-                <div style="font-size:11px;color:${COLORS.muted};margin-top:3px">${a.source} · ${new Date(a.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                <a href="${safeHref(a.url)}" style="color:${COLORS.text};text-decoration:none;font-size:13px;font-weight:500;line-height:1.4">${escapeHtml(a.title)}</a>
+                <div style="font-size:11px;color:${COLORS.muted};margin-top:3px">${escapeHtml(a.source)} · ${new Date(a.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
               </div>`,
             )
             .join('')}
@@ -148,8 +170,8 @@ function buildNewsSection(news: NewsSection): string {
           ${news.local
             .map(
               (a) => `<div style="padding:10px 0;border-bottom:1px solid ${COLORS.border}">
-                <a href="${a.url}" style="color:${COLORS.text};text-decoration:none;font-size:13px;font-weight:500;line-height:1.4">${a.title}</a>
-                <div style="font-size:11px;color:${COLORS.muted};margin-top:3px">${a.source} · ${new Date(a.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                <a href="${safeHref(a.url)}" style="color:${COLORS.text};text-decoration:none;font-size:13px;font-weight:500;line-height:1.4">${escapeHtml(a.title)}</a>
+                <div style="font-size:11px;color:${COLORS.muted};margin-top:3px">${escapeHtml(a.source)} · ${new Date(a.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
               </div>`,
             )
             .join('')}
@@ -192,9 +214,9 @@ function buildGithubSection(a: GitHubActivity): string {
             .slice(0, 6)
             .map(
               (c) => `<div style="padding:7px 0;border-bottom:1px solid ${COLORS.border};font-size:13px">
-                <span style="font-family:monospace;font-size:11px;color:${COLORS.accent};margin-right:8px">${c.sha}</span>
-                <a href="${c.url}" style="color:${COLORS.text};text-decoration:none">${c.message.slice(0, 80)}</a>
-                <span style="color:${COLORS.muted};font-size:11px"> · ${c.repo}</span>
+                <span style="font-family:monospace;font-size:11px;color:${COLORS.accent};margin-right:8px">${escapeHtml(c.sha)}</span>
+                <a href="${safeHref(c.url)}" style="color:${COLORS.text};text-decoration:none">${escapeHtml(c.message.slice(0, 80))}</a>
+                <span style="color:${COLORS.muted};font-size:11px"> · ${escapeHtml(c.repo)}</span>
               </div>`,
             )
             .join('')}
@@ -214,8 +236,8 @@ function buildGithubSection(a: GitHubActivity): string {
           ${a.renovatePRs
             .map(
               (p) => `<div style="font-size:12px;color:${COLORS.muted};padding:3px 0">
-                <a href="${p.url}" style="color:${COLORS.yellow};text-decoration:none">${p.title}</a>
-                <span> · ${p.repo}</span>
+                <a href="${safeHref(p.url)}" style="color:${COLORS.yellow};text-decoration:none">${escapeHtml(p.title)}</a>
+                <span> · ${escapeHtml(p.repo)}</span>
               </div>`,
             )
             .join('')}
@@ -271,7 +293,7 @@ function buildInsightsSection(insights: BriefInsights, audioUrl: string | null):
         text-align:center;
       ">
         <div style="font-size:12px;color:${COLORS.accentLight};margin-bottom:10px;letter-spacing:0.1em;text-transform:uppercase">🎧 Listen to Today's Brief</div>
-        <a href="${audioUrl}" style="
+        <a href="${safeHref(audioUrl)}" style="
           display:inline-block;
           background:${COLORS.accent};
           color:white;
@@ -294,7 +316,7 @@ function buildInsightsSection(insights: BriefInsights, audioUrl: string | null):
         font-size:14px;
         color:${COLORS.green};
         font-weight:500;
-      ">🏆 ${insights.winOfTheDay}</div>`
+      ">🏆 ${escapeHtml(insights.winOfTheDay)}</div>`
     : '';
 
   const narrationHtml = `<div style="
@@ -303,7 +325,7 @@ function buildInsightsSection(insights: BriefInsights, audioUrl: string | null):
     color:${COLORS.text};
     white-space:pre-wrap;
     margin-bottom:20px;
-  ">${insights.narration.replace(/\n/g, '<br/>')}</div>`;
+  ">${escapeHtml(insights.narration).replace(/\n/g, '<br/>')}</div>`;
 
   const horizonsHtml = `
     <div style="margin-bottom:20px">
@@ -318,7 +340,7 @@ function buildInsightsSection(insights: BriefInsights, audioUrl: string | null):
         .map(
           ({ label, val, color }) => `<div style="padding:10px 0;border-bottom:1px solid ${COLORS.border}">
             <span style="font-size:11px;font-weight:600;color:${color}">${label}</span>
-            <div style="font-size:13px;color:${COLORS.text};margin-top:4px;line-height:1.5">${val}</div>
+            <div style="font-size:13px;color:${COLORS.text};margin-top:4px;line-height:1.5">${escapeHtml(val)}</div>
           </div>`,
         )
         .join('')}
@@ -330,14 +352,14 @@ function buildInsightsSection(insights: BriefInsights, audioUrl: string | null):
           <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:10px">Today's Focus</div>
           ${insights.todaysFocus
             .map(
-              (f, i) => `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid ${COLORS.border}">
+              (focus, index) => `<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid ${COLORS.border}">
                 <span style="
                   display:inline-flex;align-items:center;justify-content:center;
                   width:22px;height:22px;border-radius:50%;
                   background:${COLORS.accent};color:white;
                   font-size:11px;font-weight:700;flex-shrink:0;
-                ">${i + 1}</span>
-                <span style="font-size:13px;color:${COLORS.text};line-height:1.5">${f}</span>
+                ">${index + 1}</span>
+                <span style="font-size:13px;color:${COLORS.text};line-height:1.5">${escapeHtml(focus)}</span>
               </div>`,
             )
             .join('')}
@@ -355,7 +377,7 @@ function buildWisdomSection(w: WisdomSection): string {
   const wisdomLinesHtml = w.wisdomLines
     .map(
       (line) =>
-        `<div style="padding:12px 0;border-bottom:1px solid ${COLORS.border};font-size:14px;line-height:1.7;color:${COLORS.text};font-style:italic">&ldquo;${line}&rdquo;</div>`,
+        `<div style="padding:12px 0;border-bottom:1px solid ${COLORS.border};font-size:14px;line-height:1.7;color:${COLORS.text};font-style:italic">&ldquo;${escapeHtml(line)}&rdquo;</div>`,
     )
     .join('');
 
@@ -363,15 +385,15 @@ function buildWisdomSection(w: WisdomSection): string {
   const wotdHtml = `
     <div style="background:${COLORS.accent}18;border:1px solid ${COLORS.accent}44;border-radius:10px;padding:18px 20px;margin-top:20px">
       <div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${COLORS.accentLight};margin-bottom:4px">Word of the Day</div>
-      <div style="font-size:22px;font-weight:700;color:${COLORS.text};margin-bottom:2px">${wotd.word}</div>
-      <div style="font-size:12px;color:${COLORS.muted};margin-bottom:10px">${wotd.pronunciation} &middot; <em>${wotd.partOfSpeech}</em></div>
-      <div style="font-size:13px;color:${COLORS.text};margin-bottom:8px;line-height:1.5">${wotd.definition}</div>
-      <div style="font-size:12px;color:${COLORS.muted};font-style:italic">&ldquo;${wotd.usageExample}&rdquo;</div>
-      ${wotd.whyItMatters ? `<div style="font-size:12px;color:${COLORS.accentLight};margin-top:8px;font-weight:500">Why it matters: ${wotd.whyItMatters}</div>` : ''}
+      <div style="font-size:22px;font-weight:700;color:${COLORS.text};margin-bottom:2px">${escapeHtml(wotd.word)}</div>
+      <div style="font-size:12px;color:${COLORS.muted};margin-bottom:10px">${escapeHtml(wotd.pronunciation)} &middot; <em>${escapeHtml(wotd.partOfSpeech)}</em></div>
+      <div style="font-size:13px;color:${COLORS.text};margin-bottom:8px;line-height:1.5">${escapeHtml(wotd.definition)}</div>
+      <div style="font-size:12px;color:${COLORS.muted};font-style:italic">&ldquo;${escapeHtml(wotd.usageExample)}&rdquo;</div>
+      ${wotd.whyItMatters ? `<div style="font-size:12px;color:${COLORS.accentLight};margin-top:8px;font-weight:500">Why it matters: ${escapeHtml(wotd.whyItMatters)}</div>` : ''}
     </div>`;
 
   const body = `
-    <div style="font-size:18px;font-weight:700;color:${COLORS.accentLight};text-align:center;padding:16px 0 20px;border-bottom:1px solid ${COLORS.border};margin-bottom:20px;font-style:italic;line-height:1.6">${w.mantra}</div>
+    <div style="font-size:18px;font-weight:700;color:${COLORS.accentLight};text-align:center;padding:16px 0 20px;border-bottom:1px solid ${COLORS.border};margin-bottom:20px;font-style:italic;line-height:1.6">${escapeHtml(w.mantra)}</div>
     ${wisdomLinesHtml}
     ${wotdHtml}`;
 
@@ -416,8 +438,8 @@ function buildPostHogSection(ph: PostHogSnapshot): string {
         ({ label, val, sub, color }) =>
           `<div style="flex:1;min-width:100px;text-align:center;padding:12px 8px;background:${color}15;border:1px solid ${color}33;border-radius:10px">
             <div style="font-size:22px;font-weight:700;color:${color}">${val}</div>
-            <div style="font-size:11px;color:${COLORS.muted};margin-top:2px">${label}</div>
-            <div style="font-size:10px;color:${COLORS.muted}">${sub}</div>
+            <div style="font-size:11px;color:${COLORS.muted};margin-top:2px">${escapeHtml(label)}</div>
+            <div style="font-size:10px;color:${COLORS.muted}">${escapeHtml(sub)}</div>
           </div>`,
       )
       .join('')}
@@ -429,9 +451,9 @@ function buildPostHogSection(ph: PostHogSnapshot): string {
           <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:8px">Top Events (24h)</div>
           ${ph.topEvents
             .map(
-              (e) => `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${COLORS.border};font-size:13px">
-                <span style="color:${COLORS.text};font-family:monospace;font-size:12px">${e.event}</span>
-                <span style="color:${COLORS.accentLight};font-weight:600">${e.count.toLocaleString()}</span>
+              (event) => `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid ${COLORS.border};font-size:13px">
+                <span style="color:${COLORS.text};font-family:monospace;font-size:12px">${escapeHtml(event.event)}</span>
+                <span style="color:${COLORS.accentLight};font-weight:600">${event.count.toLocaleString()}</span>
               </div>`,
             )
             .join('')}
@@ -449,20 +471,20 @@ function buildSentrySection(s: SentryErrorData): string {
 
   const projectsHtml = s.projects.length
     ? s.projects
-        .map((p) => {
-          const pc = p.trend === 'spike' ? COLORS.red : p.trend === 'quiet' ? COLORS.muted : COLORS.green;
-          const topHtml = p.topIssues
+        .map((project) => {
+          const pc = project.trend === 'spike' ? COLORS.red : project.trend === 'quiet' ? COLORS.muted : COLORS.green;
+          const topHtml = project.topIssues
             .map(
-              (i) => `<div style="font-size:11px;color:${COLORS.muted};padding:2px 0">
-                  <a href="${i.url}" style="color:${COLORS.muted};text-decoration:none">${i.title.slice(0, 72)}</a>
-                  <span style="color:${pc}"> &times;${i.count}</span>
+              (issue) => `<div style="font-size:11px;color:${COLORS.muted};padding:2px 0">
+                  <a href="${safeHref(issue.url)}" style="color:${COLORS.muted};text-decoration:none">${escapeHtml(issue.title.slice(0, 72))}</a>
+                  <span style="color:${pc}"> &times;${issue.count}</span>
                 </div>`,
             )
             .join('');
           return `<div style="padding:10px 0;border-bottom:1px solid ${COLORS.border}">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-              <span style="color:${COLORS.text};font-family:monospace">${p.projectSlug}</span>
-              <span>${pill(p.trend, pc)}<span style="font-size:12px;color:${COLORS.muted}">${p.errors24h} err / 7d avg ${p.errors7dAvg}</span></span>
+              <span style="color:${COLORS.text};font-family:monospace">${escapeHtml(project.projectSlug)}</span>
+              <span>${pill(project.trend, pc)}<span style="font-size:12px;color:${COLORS.muted}">${project.errors24h} err / 7d avg ${project.errors7dAvg}</span></span>
             </div>
             ${topHtml}
           </div>`;
@@ -499,7 +521,7 @@ export function buildEmailHtml(input: EmailInput): string {
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <meta name="color-scheme" content="dark"/>
-  <title>Daily Brief — ${input.dateLabel}</title>
+  <title>Daily Brief — ${escapeHtml(input.dateLabel)}</title>
 </head>
 <body style="
   margin:0;padding:0;
@@ -513,7 +535,7 @@ export function buildEmailHtml(input: EmailInput): string {
     <!-- Header -->
     <div style="text-align:center;margin-bottom:32px">
       <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:8px">Daily Brief</div>
-      <h1 style="margin:0;font-size:24px;font-weight:700;color:${COLORS.text}">${input.dateLabel}</h1>
+      <h1 style="margin:0;font-size:24px;font-weight:700;color:${COLORS.text}">${escapeHtml(input.dateLabel)}</h1>
       <div style="width:40px;height:2px;background:${COLORS.accent};margin:12px auto 0"></div>
     </div>
 
