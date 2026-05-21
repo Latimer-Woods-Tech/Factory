@@ -1,5 +1,5 @@
 # Completion Tracker
-_Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-05-21T13:44:44+00:00 by `scripts/aggregate_completion.py`._
 
 ## 🚨 CI red on main: XC
 
@@ -7,7 +7,7 @@ _Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | **HD** HumanDesign | 64 | 1 | 18 | 6 | 89 | 71.9% | 77.1% | **74.9%** (Δ+0.0) |
-| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** |
+| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **FA** factory-admin-studio 🟧smoke | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **CH** cypher-healing | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
