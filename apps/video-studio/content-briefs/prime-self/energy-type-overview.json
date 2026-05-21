@@ -5,11 +5,11 @@
   "learningGoal": "User understands what their Energy Type means and how to apply their Strategy in daily decisions.",
   "targetPersona": "new_user",
   "keyPoints": [
-    "Your Energy Type is the most important factor in your Free Energy Blueprint — it defines how you generate and use life force energy",
+    "Your Energy Type is the most important factor in your Free Energy Blueprint \u00e2\u20ac\u201d it defines how you generate and use life force energy",
     "Generators and Manifesting Generators have a consistent sacral response: follow what lights you up, not what you think you should do",
-    "Projectors do not have consistent energy output — they thrive when invited, and burn out when they push without recognition",
+    "Projectors do not have consistent energy output \u00e2\u20ac\u201d they thrive when invited, and burn out when they push without recognition",
     "Manifestors initiate: inform the people affected by your decisions before you act, then move without waiting for permission",
-    "Your Strategy is the specific decision-making approach for your type — apply it to work, relationships, and major choices",
+    "Your Strategy is the specific decision-making approach for your type \u00e2\u20ac\u201d apply it to work, relationships, and major choices",
     "Your Signature feeling tells you when you are aligned: Satisfaction for Generators, Success for Projectors, Peace for Manifestors"
   ],
   "forbiddenClaims": [
@@ -18,8 +18,14 @@
     "guaranteed to work",
     "fixes all your problems"
   ],
-  "toneNotes": "Educational and precise. No mysticism. Treat the viewer as intelligent. Each type gets equal respect — no hierarchy.",
-  "script": "Your Energy Type is the most important piece of your Free Energy Blueprint. It defines how you generate and use life force energy — not as a fixed personality label, but as a decision-making framework. Generators and Manifesting Generators have a consistent sacral response. Follow what genuinely lights you up, not what you think you should do. Projectors do not have sustainable output energy. You thrive when invited and recognised — not when you push. Manifestors initiate. Inform the people affected by your actions before you move. Your Strategy is how all of this translates into daily decisions — in work, relationships, and what you choose to say yes to. When you are aligned with your type, you feel your Signature: Satisfaction for Generators, Success for Projectors, Peace for Manifestors, Surprise for Reflectors.",
+  "toneNotes": "Educational and precise. No mysticism. Treat the viewer as intelligent. Each type gets equal respect \u00e2\u20ac\u201d no hierarchy.",
+  "script": "Your Energy Type is the most important piece of your Free Energy Blueprint. It defines how you generate and use life force energy \u00e2\u20ac\u201d not as a fixed personality label, but as a decision-making framework. Generators and Manifesting Generators have a consistent sacral response. Follow what genuinely lights you up, not what you think you should do. Projectors do not have sustainable output energy. You thrive when invited and recognised \u00e2\u20ac\u201d not when you push. Manifestors initiate. Inform the people affected by your actions before you move. Your Strategy is how all of this translates into daily decisions \u00e2\u20ac\u201d in work, relationships, and what you choose to say yes to. When you are aligned with your type, you feel your Signature: Satisfaction for Generators, Success for Projectors, Peace for Manifestors, Surprise for Reflectors.",
   "brandColor": "#8B5CF6",
-  "brandAccent": "#10B981"
+  "brandAccent": "#10B981",
+  "status": "published",
+  "stream_uid": "d8048e55fd36f45e3e3b9a388a419245",
+  "stream_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/d8048e55fd36f45e3e3b9a388a419245/manifest/video.m3u8",
+  "thumbnail_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/d8048e55fd36f45e3e3b9a388a419245/thumbnails/thumbnail.jpg",
+  "duration_seconds": 30,
+  "rendered_at": "2026-05-21"
 }
