@@ -33,6 +33,7 @@ on:
         type: choice
         default: 'MarketingVideo'
         options:
+          - 'EnergyBlueprintVideo'
           - 'MarketingVideo'
           - 'TrainingVideo'
           - 'WalkthroughVideo'
@@ -139,7 +140,7 @@ jobs:
           echo "brand_accent=$BRAND_ACCENT"
           echo "logo_url=$LOGO_URL"
           case "$COMPOSITION_ID" in
-            MarketingVideo|TrainingVideo|WalkthroughVideo) ;;
+            MarketingVideo|TrainingVideo|WalkthroughVideo|EnergyBlueprintVideo) ;;
             *) echo "::error::Unknown composition_id: $COMPOSITION_ID"; exit 1 ;;
           esac
 
