@@ -172,7 +172,7 @@ Exact UIDs for the last three should be pulled from `schedule_worker.video_calen
 | (3 Prime Self training videos rendered 2026-05-21) | `title` / `description` | "AI Synthesis" wording | Mirror Cloudflare Stream titles above. |
 
 Apply via:
-- Cloudflare Stream API: `curl -X POST -H "Authorization: Bearer $CF_STREAM_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/stream/$UID" -d '{"meta":{"name":"…"}}'`
+- Cloudflare Stream API: `curl -X PATCH -H "Authorization: Bearer $CF_STREAM_TOKEN" -H "Content-Type: application/json" "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/stream/$UID" -d '{"meta":{"name":"…"}}'`
 - YouTube Data API v3: `videos.update` with `part=snippet`, body containing updated `title`, `description`, `tags`.
 - Capricast DB: `UPDATE videos SET title = $1, description = $2 WHERE id = $3` via the Capricast admin API (`PATCH /api/admin/videos/:id`).
 
