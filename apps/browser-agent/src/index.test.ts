@@ -9,6 +9,15 @@ const runScenarioMock = vi.fn().mockResolvedValue({
   finishedAt: '2026-05-15T00:00:00.000Z',
 });
 
+const auditMock = vi.fn().mockResolvedValue({
+  url: 'https://example.com',
+  auditedAt: '2026-05-15T00:00:00.000Z',
+  consoleErrors: [],
+  pageErrors: [],
+  failedRequests: [],
+  screenshotBase64: 'abc123',
+});
+
 const mockAutomation: BrowserAutomation = {
   scrape: vi.fn().mockResolvedValue({
     url: 'https://example.com',
@@ -22,6 +31,7 @@ const mockAutomation: BrowserAutomation = {
     dataBase64: 'abc123',
   }),
   runScenario: runScenarioMock,
+  audit: auditMock,
 };
 
 describe('browser-agent', () => {
@@ -150,6 +160,59 @@ describe('browser-agent', () => {
         body: 'not-json',
       });
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /audit', () => {
+    it('returns 200 with audit result for a valid url', async () => {
+      const res = await app.request('/audit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' }),
+      });
+      expect(res.status).toBe(200);
+      const body: unknown = await res.json();
+      expect(body).toHaveProperty('url', 'https://example.com');
+      expect(body).toHaveProperty('consoleErrors');
+      expect(body).toHaveProperty('pageErrors');
+      expect(body).toHaveProperty('failedRequests');
+      expect(body).toHaveProperty('screenshotBase64');
+      expect(auditMock).toHaveBeenCalledOnce();
+    });
+
+    it('accepts optional steps, captureConsole, and statusThreshold', async () => {
+      const res = await app.request('/audit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://example.com',
+          steps: [{ action: 'goto', url: 'https://example.com/login' }],
+          captureConsole: false,
+          statusThreshold: 500,
+        }),
+      });
+      expect(res.status).toBe(200);
+      expect(auditMock).toHaveBeenCalledWith(
+        expect.objectContaining({ captureConsole: false, statusThreshold: 500 }),
+      );
+    });
+
+    it('returns 422 when url is missing', async () => {
+      const res = await app.request('/audit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 for an out-of-range statusThreshold', async () => {
+      const res = await app.request('/audit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', statusThreshold: 50 }),
+      });
+      expect(res.status).toBe(422);
     });
   });
 });

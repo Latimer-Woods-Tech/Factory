@@ -58,11 +58,53 @@ export interface ScenarioResult {
   finishedAt: string;
 }
 
+/** A captured browser console message. */
+export interface ConsoleMessage {
+  type: string;
+  text: string;
+  location: string;
+}
+
+/** A captured JS runtime error. */
+export interface PageError {
+  message: string;
+  stack: string;
+}
+
+/** A captured HTTP response that met the status threshold. */
+export interface FailedRequest {
+  url: string;
+  method: string;
+  status: number;
+}
+
+/** Audit request body. */
+export interface AuditRequest {
+  url: string;
+  /** Optional scenario steps to run before auditing (e.g. login). */
+  steps?: ScenarioStep[];
+  /** Capture console.warn/error/log messages. Default: true. */
+  captureConsole?: boolean;
+  /** Flag responses with status >= this value. Default: 400. */
+  statusThreshold?: number;
+}
+
+/** Audit result. */
+export interface AuditResult {
+  url: string;
+  auditedAt: string;
+  consoleErrors: ConsoleMessage[];
+  pageErrors: PageError[];
+  failedRequests: FailedRequest[];
+  screenshotBase64: string;
+}
+
 /** Browser automation implementation, injectable for tests. */
 export interface BrowserAutomation {
   scrape(request: ScrapeRequest): Promise<{ url: string; scrapedAt: string; results: Record<string, ScrapeFieldResult> }>;
   screenshot(request: ScreenshotRequest): Promise<{ url: string; capturedAt: string; mimeType: 'image/png'; dataBase64: string }>;
   runScenario(request: ScenarioRequest, r2?: R2Config): Promise<ScenarioResult>;
+  audit(request: AuditRequest): Promise<AuditResult>;
 }
 
 class HttpError extends Error {
@@ -193,7 +235,7 @@ function createPlaywrightAutomation(): BrowserAutomation {
         await page.goto(request.url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
         const results: Record<string, ScrapeFieldResult> = {};
         for (const [key, selector] of Object.entries(request.selectors)) {
-          const text = (await page.locator(selector).allTextContents()).map((value) => value.trim()).filter(Boolean);
+          const text = (await page.locator(selector).allTextContents()).map((value: string) => value.trim()).filter(Boolean);
           results[key] = { selector, text };
         }
         return { url: request.url, scrapedAt: new Date().toISOString(), results };
@@ -216,6 +258,90 @@ function createPlaywrightAutomation(): BrowserAutomation {
         };
       } finally {
         await page.close();
+      }
+    },
+
+    async audit(request) {
+      const threshold = request.statusThreshold ?? 400;
+      const captureConsole = request.captureConsole !== false;
+
+      const browser = await getBrowser();
+      const context = await browser.newContext();
+      const page = await context.newPage();
+
+      const consoleErrors: ConsoleMessage[] = [];
+      const pageErrors: PageError[] = [];
+      const failedRequests: FailedRequest[] = [];
+
+      if (captureConsole) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        page.on('console', (msg: any) => {
+          const type: string = msg.type();
+          if (type === 'error' || type === 'warning' || type === 'warn') {
+            const loc: { url?: string; lineNumber?: number } = msg.location();
+            consoleErrors.push({
+              type,
+              text: msg.text(),
+              location: loc.url ? `${loc.url}:${loc.lineNumber ?? 0}` : '',
+            });
+          }
+        });
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      page.on('pageerror', (err: any) => {
+        pageErrors.push({ message: err.message, stack: err.stack ?? '' });
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      page.on('response', (res: any) => {
+        if (res.status() >= threshold) {
+          const req = res.request();
+          failedRequests.push({ url: res.url(), method: req.method(), status: res.status() });
+        }
+      });
+
+      try {
+        // Run optional login/setup steps before auditing
+        if (request.steps && request.steps.length > 0) {
+          for (const step of request.steps) {
+            switch (step.action) {
+              case 'goto':
+                await page.goto(step.url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+                break;
+              case 'fill':
+                await page.fill(step.selector, step.value);
+                break;
+              case 'click':
+                await page.click(step.selector);
+                break;
+              case 'wait':
+                await page.waitForTimeout(step.ms);
+                break;
+              case 'waitForSelector':
+                await page.waitForSelector(step.selector, step.timeout !== undefined ? { timeout: step.timeout } : undefined);
+                break;
+            }
+          }
+        }
+
+        // Navigate to the target URL and wait for network to settle
+        await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
+        // Brief extra wait to catch deferred XHR calls that fire after networkidle
+        await page.waitForTimeout(2_000);
+
+        const image = await page.screenshot({ type: 'png', fullPage: true });
+        return {
+          url: request.url,
+          auditedAt: new Date().toISOString(),
+          consoleErrors,
+          pageErrors,
+          failedRequests,
+          screenshotBase64: bytesToBase64(image),
+        };
+      } finally {
+        await page.close();
+        await context.close();
       }
     },
 
@@ -298,6 +424,23 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
   app.post('/screenshot', async (c) => {
     const body = await readJson(c);
     const result = await automation.screenshot({ url: normalizeUrl(body['url']) });
+    return c.json(result);
+  });
+
+  app.post('/audit', async (c) => {
+    const body = await readJson(c);
+    const url = normalizeUrl(body['url']);
+    const steps = body['steps'] !== undefined ? parseSteps(body['steps']) : undefined;
+    const captureConsole = body['captureConsole'] !== undefined ? Boolean(body['captureConsole']) : undefined;
+    const statusThreshold = body['statusThreshold'] !== undefined
+      ? (() => {
+          const raw: unknown = body['statusThreshold'];
+          const v = Number(raw);
+          if (!Number.isInteger(v) || v < 100 || v > 599) throw new HttpError(422, 'statusThreshold must be an integer between 100 and 599');
+          return v;
+        })()
+      : undefined;
+    const result = await automation.audit({ url, steps, captureConsole, statusThreshold });
     return c.json(result);
   });
 

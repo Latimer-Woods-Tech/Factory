@@ -89,36 +89,33 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
 
 ## Video Production Pipeline
-The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg):
+
+The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg). End-to-end pipeline is operational as of 2026-05-20; first live video at https://capricast.com/watch/5209dd21-71a8-4ee4-afeb-0c030ade1a70.
 
 ```
 PostHog engagement signals
-  → scorePriority() → video_calendar row
-  → Cloudflare cron Worker: getPendingJobs() → dispatch workflow_dispatch
-  → GitHub Actions render-video.yml:
-      1. LLM script (Anthropic)
+  → scorePriority() → schedule-worker video_calendar row
+  → apps/video-cron (hourly cron Worker) → workflow_dispatch
+  → .github/workflows/render-video.yml:
+      1. LLM headline + narration script (Anthropic Claude Haiku 4.5)
       2. ElevenLabs narration (MP3 → R2)
       3. Remotion render (MP4)
       4. ffmpeg encode (H.264 baseline + AAC)
-      5. R2 upload
-      6. Cloudflare Stream registration
-      7. updateJobStatus('done', { streamUid })
-  → getStreamEmbedUrl(uid) → landing page iframe
+      5. MP4 → R2
+      6. Cloudflare Stream `/copy` + poll until ready
+      7. POST /api/admin/videos/import on Capricast worker
+      8. PATCH schedule-worker job → status=done
+  → Capricast watch page renders enriched VideoObject JSON-LD with
+    transcript, twitter:player card, author/publisher/interactionStatistic
 ```
 
-**Required GitHub Secrets for render-video.yml:**
-- `ANTHROPIC_API_KEY` — LLM script generation
-- `ELEVENLABS_API_KEY` — narration audio generation
-- `ELEVENLABS_VOICE_PRIME_SELF`, `ELEVENLABS_VOICE_CYPHER`, `ELEVENLABS_VOICE_DEFAULT` — voice IDs
-- `CF_STREAM_TOKEN` — Cloudflare Stream API token (Stream:Edit + Stream:Read)
-- `CF_ACCOUNT_ID` — Cloudflare account ID
-- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — R2 S3-compatible credentials
-- `R2_BUCKET_NAME` — R2 bucket for video storage
-- `R2_PUBLIC_DOMAIN` — R2 public URL domain
-- `SCHEDULE_WORKER_URL` — cron Worker HTTPS endpoint
-- `WORKER_API_TOKEN` — secret for cron Worker PATCH /jobs/:id
+**Operational runbook (read this before debugging):** [`docs/runbooks/video-pipeline.md`](./docs/runbooks/video-pipeline.md) — full secret matrix, manual test recipe, and the load-bearing gotchas list (GCP secret UTF-8 BOM trap, broken Drizzle ledger, Capricast Pages project named `videoking`, dead `ANTHROPIC_API_KEY` aliasing live `LATIMER_ANTHROPIC_API`, etc.).
 
-**Never** run Remotion or ffmpeg in a Cloudflare Worker — they require Node.js + real compute.
+**Secrets are sourced from GCP Secret Manager via WIF**, NOT GitHub Actions repo secrets. The render-video.yml workflow runs `scripts/fetch_gcp_secrets.sh` after authenticating with `google-github-actions/auth@v3`. All workflow env vars are populated from GCP at runtime. New secrets must be created in factory-495015 with `printf '%s'` (NOT `echo`) to avoid the trailing-newline trap, and granted to the `factory-sa@factory-495015.iam.gserviceaccount.com` WIF identity. See the runbook for the full matrix.
+
+Local package dependencies the render step builds (in order): `errors`, `monitoring`, `logger`, `neon`, `llm`, `video`, `schedule`. The `llm` package is what supplies `complete()` — the workflow's `generate-script.mjs` shims `withSystem` locally since the package doesn't export that helper.
+
+**Never** run Remotion or ffmpeg in a Cloudflare Worker — they require Node.js + real compute. The video-cron Worker only dispatches; the actual render runs on `ubuntu-latest` in GitHub Actions.
 
 ## Quality Gates
 - TypeScript strict: zero errors
