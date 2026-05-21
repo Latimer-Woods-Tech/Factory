@@ -1,4 +1,13 @@
 # cypher-healing — Functions & Features Matrix
+
+> ⚠️ **Superseded — see `.bootstrap/coh/FUNCTIONS_MATRIX.md`** for the live cypher-of-healing
+> product (`Latimer-Woods-Tech/coh`, deployed at `https://api.cipherofhealing.com`). The matrix
+> below describes an older, distinct scaffold — a multi-tenant practitioner SaaS spec with
+> `tenants/clients/bookings/courses` tables and `X-Tenant-Id` isolation — that does not match
+> the shipped coh product (single-tenant five-stream personal-brand platform with a unified
+> `users` table). This file is kept because some legacy planning still references it, but it
+> should be treated as historical and may be archived once those references are migrated.
+
 **Date**: 2026-05-11 (reconciled 2026-05-19)
 **Repo**: Latimer-Woods-Tech/cypher-healing
 **Status**: Rebuilt with full handler enumeration from `src/index.ts`, `src/routes/{tenants,clients,bookings,courses}.ts`, and `src/db/schema.ts`. Hono worker on Cloudflare with Neon (Drizzle), multi-tenant (`X-Tenant-Id`).

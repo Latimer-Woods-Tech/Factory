@@ -51,7 +51,7 @@
 | App Name | Type | Owner | Current Status | Setup | CI | Docs | W360 Disposition | Graduation Gate |
 |---|---|---|---|---|---|---|---|---|
 | **wordis-bond** | Marketplace | D07 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
-| **coh** (cypher-of-healing) | Five-stream community platform | D08 | 🚧 Shipped — polish-to-world-class sprint in flight | ✅ Production live at `cypherofhealing.com` + `api.cypherofhealing.com` | 🟡 Deploy workflow green; no CI test gate yet (sprint A fixing) | 🟡 Partial — 20+ obsolete root MDs; README inconsistent | LAUNCHED (sub-bar) → graduating | W360-035 (in remediation) |
+| **cypher-healing** (a.k.a. **coh** / cipherofhealing.com) | Five-stream personal brand platform | D08 | 🚧 Live API and polish-to-world-class sprint in flight | ✅ Production live at `cypherofhealing.com` + `api.cypherofhealing.com` | 🟡 Deploy workflow green; CI hardening still in progress | 🟡 Partial — canonical map and sprint tracker exist; README/root-doc cleanup still pending | LAUNCHED (API) — remediation sprint active | Canonical surface map: [`.bootstrap/coh/FUNCTIONS_MATRIX.md`](../.bootstrap/coh/FUNCTIONS_MATRIX.md); sprint tracker: [`docs/runbooks/coh-world-class-sprint.md`](./runbooks/coh-world-class-sprint.md) |
 | **ijustus** | Booking | D11 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
 | **the-calling** | Creator platform | D14 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
 | **neighbor-aid** | Local services | D12 | 📚 Planning | ❌ Not started | ❌ No | ❌ No | DESIGN | W360-032 → 035 |
