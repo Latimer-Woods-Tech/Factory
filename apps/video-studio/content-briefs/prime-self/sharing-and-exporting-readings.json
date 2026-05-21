@@ -1,0 +1,22 @@
+{
+  "briefKey": "sharing-and-exporting-readings",
+  "composition": "TrainingVideo",
+  "topic": "Sharing and Exporting Readings for Clients or Personal Review",
+  "learningGoal": "Practitioners understand when to export, what to share, and how to keep communication clear and consent-based.",
+  "targetPersona": "practitioner",
+  "keyPoints": [
+    "Use exports when a client needs a structured takeaway they can revisit after a session",
+    "Share the reading with enough context that the client knows what they are looking at and how to use it",
+    "Keep exported materials focused on interpretation and reflection rather than deterministic claims",
+    "Confirm client consent before sending personalized materials outside the app"
+  ],
+  "forbiddenClaims": [
+    "medical advice",
+    "legal advice",
+    "guaranteed business outcomes",
+    "send client data without consent"
+  ],
+  "toneNotes": "Professional and bounded. This is about trustworthy practitioner delivery, not aggressive upsell.",
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981"
+}

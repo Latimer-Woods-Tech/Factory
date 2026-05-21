@@ -1,0 +1,22 @@
+{
+  "briefKey": "session-prep-workflow",
+  "composition": "TrainingVideo",
+  "topic": "Preparing for a Client Session With Prime Self",
+  "learningGoal": "Practitioners can turn a chart and synthesis into a focused, humane session-prep workflow.",
+  "targetPersona": "practitioner",
+  "keyPoints": [
+    "Review the client's Blueprint before the session so you can enter with orientation instead of improvising from scratch",
+    "Identify two or three themes to explore rather than trying to explain the whole chart in one sitting",
+    "Use the AI Synthesis as a prompt layer, then apply your own discernment and client context",
+    "End your prep with one intended outcome for the session so the conversation stays grounded"
+  ],
+  "forbiddenClaims": [
+    "AI replaces practitioner judgment",
+    "guaranteed client breakthrough",
+    "diagnose mental health",
+    "one session solves everything"
+  ],
+  "toneNotes": "Competent, calm, and practitioner-respectful. Reinforce discernment and scope.",
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981"
+}
