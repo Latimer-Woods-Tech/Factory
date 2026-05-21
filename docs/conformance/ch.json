@@ -2,8 +2,8 @@
   "repo_key": "CH",
   "repo_name": "cypher-healing",
   "repo_path": "Latimer-Woods-Tech/coh",
-  "timestamp": "2026-05-18T08:55:59.054805+00:00",
-  "cohesion": 25,
+  "timestamp": "2026-05-21T08:44:57.218952+00:00",
+  "cohesion": 28,
   "dimensions": [
     {
       "key": "stack",
@@ -75,7 +75,7 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 40,
+      "score": 60,
       "checks": [
         {
           "name": "vitest.config present",
@@ -99,7 +99,7 @@
         },
         {
           "name": "Coverage thresholds set",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]

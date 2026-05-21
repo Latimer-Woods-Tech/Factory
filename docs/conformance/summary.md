@@ -1,20 +1,20 @@
 # Platform Conformance — Shadow Mode
 
-*Generated: 2026-05-18 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
+*Generated: 2026-05-21 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
 
 ## Cohesion summary
 
 | Repo | Cohesion | Stack (10) | Code patterns (15) | Tests (15) | Observability (10) | Security (15) | Schema (5) | Workflows (10) | Release (5) | Performance (10) | Privacy (5) |
 |------|---------:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
-| HumanDesign | **41** | 40 | 0 | 60 | 60 | 60 | 33 | 33 | 67 | 33 | 33 |
-| capricast | **37** | 40 | 20 | 40 | 20 | 60 | 0 | 33 | 33 | 67 | 33 |
+| HumanDesign | **43** | 40 | 0 | 60 | 80 | 60 | 33 | 33 | 67 | 33 | 33 |
+| capricast | **37** | 20 | 20 | 40 | 40 | 60 | 0 | 33 | 33 | 67 | 33 |
 | factory-admin-studio | **55** | 60 | 80 | 20 | 40 | 80 | 67 | 33 | 33 | 100 | 0 |
-| cypher-healing | **25** | 60 | 20 | 40 | 0 | 20 | 33 | 33 | 33 | 0 | 0 |
+| cypher-healing | **28** | 60 | 20 | 60 | 0 | 20 | 33 | 33 | 33 | 0 | 0 |
 | xico-city | **52** | 80 | 80 | 60 | 0 | 40 | 67 | 33 | 33 | 67 | 33 |
 
 **Shadow threshold:** 70. Below this would block deploys once Stage 4 ships.
 
-## HumanDesign — 41/100
+## HumanDesign — 43/100
 
 ### Stack — 40/100 (weight 10)
 - ❌ wrangler.jsonc present
@@ -37,10 +37,10 @@
 - ✅ Smoke tier present
 - ❌ Coverage thresholds set
 
-### Observability — 60/100 (weight 10)
+### Observability — 80/100 (weight 10)
 - ✅ Sentry import
 - ✅ @lwt/monitoring consumed
-- ❌ Sourcemap upload step
+- ✅ Sourcemap upload step
 - ❌ SLO doc present
 - ✅ Structured log fields
 
@@ -78,11 +78,11 @@
 
 ## capricast — 37/100
 
-### Stack — 40/100 (weight 10)
+### Stack — 20/100 (weight 10)
 - ❌ wrangler.jsonc present
 - ❌ ESM ('type': 'module')
 - ❌ Hono in deps
-- ✅ No node:crypto imports
+- ❌ No node:crypto imports
 - ✅ No Express
 
 ### Code patterns — 20/100 (weight 15)
@@ -99,10 +99,10 @@
 - ❌ Smoke tier present
 - ❌ Coverage thresholds set
 
-### Observability — 20/100 (weight 10)
+### Observability — 40/100 (weight 10)
 - ❌ Sentry import
 - ❌ @lwt/monitoring consumed
-- ❌ Sourcemap upload step
+- ✅ Sourcemap upload step
 - ✅ SLO doc present
 - ❌ Structured log fields
 
@@ -200,7 +200,7 @@
 - ❌ Retention policy doc present
 - ❌ DSR export endpoint hint
 
-## cypher-healing — 25/100
+## cypher-healing — 28/100
 
 ### Stack — 60/100 (weight 10)
 - ✅ wrangler.jsonc present
@@ -216,12 +216,12 @@
 - ✅ No console.log in src/
 - ❌ Typed Env interface
 
-### Tests — 40/100 (weight 15)
+### Tests — 60/100 (weight 15)
 - ✅ vitest.config present
 - ❌ playwright.config present
 - ✅ tests/ or test/ dir present
 - ❌ Smoke tier present
-- ❌ Coverage thresholds set
+- ✅ Coverage thresholds set
 
 ### Observability — 0/100 (weight 10)
 - ❌ Sentry import

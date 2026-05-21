@@ -2,8 +2,8 @@
   "repo_key": "HD",
   "repo_name": "HumanDesign",
   "repo_path": "Latimer-Woods-Tech/HumanDesign",
-  "timestamp": "2026-05-18T08:55:38.188752+00:00",
-  "cohesion": 41,
+  "timestamp": "2026-05-21T08:44:33.062044+00:00",
+  "cohesion": 43,
   "dimensions": [
     {
       "key": "stack",
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 60,
+      "score": 80,
       "checks": [
         {
           "name": "Sentry import",
@@ -122,7 +122,7 @@
         },
         {
           "name": "Sourcemap upload step",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
