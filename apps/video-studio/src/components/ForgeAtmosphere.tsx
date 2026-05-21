@@ -1,5 +1,19 @@
 import React from 'react';
-import { AbsoluteFill, interpolate } from 'remotion';
+import { AbsoluteFill, Img, interpolate } from 'remotion';
+
+// ---------------------------------------------------------------------------
+// Grok-generated background images (uploaded to R2, pre-generated per forge)
+// The self forge uses no background image — pure deep space.
+// ---------------------------------------------------------------------------
+
+const R2 = 'https://pub-a39c3cff53fd406383c8ccbe9c1ddf02.r2.dev/video-assets/forge-backgrounds';
+const FORGE_IMAGES: Partial<Record<ForgeKey, string>> = {
+  chronos: `${R2}/chronos.png`,
+  eros:    `${R2}/eros.png`,
+  aether:  `${R2}/aether.png`,
+  lux:     `${R2}/lux.png`,
+  phoenix: `${R2}/phoenix.png`,
+};
 
 // LCG pseudo-random — deterministic, seed-stable
 const lcg = (s: number): number =>
@@ -160,14 +174,43 @@ export const ForgeAtmosphere: React.FC<ForgeAtmosphereProps> = ({
     extrapolateRight: 'clamp',
   });
 
+  const bgImage = FORGE_IMAGES[forge];
+  // Subtle parallax: image moves very slightly on frame to feel alive
+  const parallaxY = Math.sin(frame / 300) * 12;
+
   return (
     <AbsoluteFill style={{ opacity: fadeIn }}>
+      {/* Base: deep colour for blending */}
       <AbsoluteFill style={{ background: FORGE_BG[forge] }} />
-      {forge === 'chronos' && <ChronosAtmosphere frame={frame} intensity={intensity} />}
-      {forge === 'eros'    && <ErosAtmosphere    frame={frame} intensity={intensity} />}
-      {forge === 'aether'  && <AetherAtmosphere  frame={frame} intensity={intensity} />}
-      {forge === 'lux'     && <LuxAtmosphere     frame={frame} intensity={intensity} />}
-      {forge === 'phoenix' && <PhoenixAtmosphere frame={frame} intensity={intensity} />}
+
+      {/* Grok-generated background image — the visual soul of each Forge */}
+      {bgImage && (
+        <AbsoluteFill
+          style={{
+            transform: `scale(1.06) translateY(${String(parallaxY)}px)`,
+            transformOrigin: 'center',
+          }}
+        >
+          <Img
+            src={bgImage}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              opacity: 0.55, // background — text/elements render clearly on top
+              mixBlendMode: 'luminosity',
+            }}
+          />
+        </AbsoluteFill>
+      )}
+
+      {/* Animated particle/element overlays — subtle, on top of image */}
+      {forge === 'chronos' && <ChronosAtmosphere frame={frame} intensity={intensity * 0.5} />}
+      {forge === 'eros'    && <ErosAtmosphere    frame={frame} intensity={intensity * 0.4} />}
+      {forge === 'aether'  && <AetherAtmosphere  frame={frame} intensity={intensity * 0.4} />}
+      {forge === 'lux'     && <LuxAtmosphere     frame={frame} intensity={intensity * 0.4} />}
+      {forge === 'phoenix' && <PhoenixAtmosphere frame={frame} intensity={intensity * 0.4} />}
     </AbsoluteFill>
   );
 };
