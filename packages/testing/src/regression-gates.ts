@@ -131,7 +131,7 @@ export async function collectLighthouse(
       url: string,
       flags: { port: number; logLevel: string; output: string },
     ) => Promise<{ lhr: unknown } | undefined>;
-    const lighthouseModule: { default: LighthouseFn } = await import('lighthouse');
+    const lighthouseModule = await import('lighthouse') as unknown as { default: LighthouseFn };
     const lighthouse = lighthouseModule.default;
 
     const browserWSEndpoint = (page as { context: (() => { browser?: { wsEndpoint?: (() => string) } }) }).context?.()?.browser?.wsEndpoint?.();
@@ -259,7 +259,7 @@ export async function compareScreenshots(
     // Read and decode both screenshots using pngjs for deterministic pixel comparison.
     // Dynamic ESM import — pngjs is heavy and only needed when a diff is run.
     type PngModule = { PNG: { sync: { read: (buf: Uint8Array) => { data: Uint8Array; width: number; height: number } } } };
-    const { PNG } = (await import('pngjs')) as PngModule;
+    const { PNG } = (await import('pngjs') as unknown) as PngModule;
     // pixelmatch v6+ ships as pure ESM. require() returns the Module wrapper
     // (with `.default` as the actual function), not the function itself —
     // calling it directly threw "pixelmatch is not a function" on every
