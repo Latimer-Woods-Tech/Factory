@@ -1,0 +1,22 @@
+{
+  "briefKey": "practitioner-billing-and-upgrade",
+  "composition": "TrainingVideo",
+  "topic": "Billing, Upgrade, and Practitioner Access Basics",
+  "learningGoal": "Practitioners understand what changes when they upgrade and where to look for billing-related actions.",
+  "targetPersona": "practitioner",
+  "keyPoints": [
+    "Use the billing area to confirm your current plan, renewal state, and access level",
+    "Upgrade when you need practitioner workflows, client-facing delivery, or higher-volume usage",
+    "Check feature access after plan changes so you know what is available immediately versus what may require setup",
+    "Escalate billing issues through the proper support path instead of guessing or retrying charges repeatedly"
+  ],
+  "forbiddenClaims": [
+    "instant refunds guaranteed",
+    "unlimited usage on every tier",
+    "billing issues resolve themselves",
+    "chargebacks are the normal support path"
+  ],
+  "toneNotes": "Direct and reassuring. Treat billing as operational clarity, not sales pressure.",
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981"
+}

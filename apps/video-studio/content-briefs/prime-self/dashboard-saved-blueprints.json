@@ -1,0 +1,22 @@
+{
+  "briefKey": "dashboard-saved-blueprints",
+  "composition": "TrainingVideo",
+  "topic": "Managing Saved Blueprints From Your Dashboard",
+  "learningGoal": "User can return to saved Blueprints, understand what is stored, and use the dashboard as their home base.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Your dashboard keeps your saved Blueprints in one place so you do not need to regenerate them every time",
+    "Open a saved Blueprint to revisit your Energy Type, Authority, centers, gates, and AI Synthesis insights",
+    "Use saved entries to compare your understanding over time instead of treating one reading as a one-time event",
+    "Keep your dashboard organized around the charts and readings you actually return to"
+  ],
+  "forbiddenClaims": [
+    "unlimited storage forever",
+    "auto-updates every insight for you",
+    "guaranteed transformation",
+    "perfect memory replacement"
+  ],
+  "toneNotes": "Practical and low-friction. The message is continuity and ease, not hype.",
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981"
+}
