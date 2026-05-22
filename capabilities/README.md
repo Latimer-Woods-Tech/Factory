@@ -31,3 +31,49 @@ The compile step is fully deterministic:
 - timestamps are derived from `git` HEAD (committed) or omitted (local dev)
 
 This means two clones of the repo at the same commit produce byte-identical catalogs.
+
+## Commands
+
+Compile a recipe into a deterministic provisioning plan:
+
+```bash
+npm run compile:capability -- --recipe outbound-dialer
+```
+
+Or write the compiled plan to a file:
+
+```bash
+npm run compile:capability -- --recipe outbound-dialer --output capabilities/compiled/outbound-dialer.plan.json
+```
+
+Generate the golden-path implementation artifact for a recipe:
+
+```bash
+npm run build:capability-golden-path -- --recipe outbound-dialer --output capabilities/compiled/outbound-dialer.golden-path.json
+```
+
+The golden-path artifact includes the compiled plan contract, required secrets/vars/bindings, expected surfaces, smoke checks, and proof-gate conditions.
+
+Generate a human-readable preview for a compiled plan:
+
+```bash
+npm run preview:capability-plan -- --recipe outbound-dialer --output capabilities/compiled/outbound-dialer.preview.md
+```
+
+If you already have a compiled plan file, you can render it directly:
+
+```bash
+npm run preview:capability-plan -- --plan capabilities/compiled/outbound-dialer.plan.json
+```
+
+## Scope
+
+This is the first thin slice of the capability-factory registry.
+
+Current scope:
+
+1. primitive descriptors for the `outbound-dialer` slice
+2. one experimental recipe: `outbound-dialer`
+3. one composition rule: telephony-backed outbound recipes require compliance
+
+Future phases can extend this registry with graph schemas, compiled plan schemas, lineage records, and Studio-facing catalog views.

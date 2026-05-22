@@ -6,7 +6,7 @@
 | Title | Capability Factory backcasting and thin-slice plan |
 | Author | GitHub Copilot with user direction |
 | Date Opened | 2026-05-22 |
-| Status | review |
+| Status | approved |
 | Desired Decision Date | 2026-05-23 |
 | Primary Owner | capability-factory |
 | Related Docs | [Capability Factory — Backcasting Plan](../..//CAPABILITY_FACTORY_BACKCASTING_PLAN.md) |
@@ -159,8 +159,28 @@ Approval should require agreement on:
 
 ### Decision
 
-Pending council review.
+Approved on 2026-05-22.
 
 ### Notes
 
-Awaiting council decision.
+The council approves Option 3 and the backcasting doctrine as the canonical direction for the capability-factory initiative.
+
+Conditions of approval:
+
+1. `outbound-dialer` is confirmed as the first and only approved thin slice until the end-to-end proof gate is closed.
+2. The proof gate requires registry descriptors, deterministic plan compilation, staging provisioning, verified `/health` and `/manifest` surfaces, and Studio plan preview on the same compiled contract.
+3. No freeform visual composer or generalized orchestration engine work enters v1 before that proof gate is complete.
+4. The council must avoid separate v1/v2 infrastructure designs; it should design the endstate first and slice in, producing a single golden-path plan for implementation.
+5. Recipe expansion after the first slice requires explicit ownership, admission criteria, and lifecycle controls.
+
+Recorded rationale:
+
+1. Option 3 best balances architecture rigor with operator visibility.
+2. The shared seam is already beginning to exist in the repo through the registry and compiler foundations.
+3. Approving now preserves momentum while preventing scope drift into premature UI abstraction.
+
+Immediate next actions:
+
+1. Continue the registry, compiler, and provisioning path until the thin slice is staging-real.
+2. Define the thin-slice proof checklist as a named artifact before recipe expansion.
+3. Build Studio catalog and plan preview against the compiled plan contract rather than inventing UI-only semantics.
