@@ -259,3 +259,41 @@ def test_parse_issue_labels_ignores_non_dict_label_entries(sync_labels):
     assert state is not None
     assert state.feature_id == "HD-X-001"
     assert state.status == "✅"
+
+
+# ──────────────────────────── Phase D2: Sync Label Tests ────────────────────────
+
+def test_parse_issue_labels_status_word_mapping(sync_labels):
+    """parse_issue_labels() maps status label words to emoji."""
+    mappings = {
+        "passing": "✅",
+        "issues": "⚠️",
+        "fail": "❌",
+        "unknown": "🔍",
+    }
+    for word, emoji in mappings.items():
+        issue = {"number": 1, "labels": [
+            {"name": "feature:HD-X-001"},
+            {"name": f"status:{word}"},
+        ]}
+        state = sync_labels.parse_issue_labels(issue)
+        assert state.status == emoji, f"status:{word} should map to {emoji}"
+
+
+def test_parse_issue_labels_owner_normalization(sync_labels):
+    """parse_issue_labels() normalizes owner: label with @ prefix."""
+    # Test owner label without @ gets @-prefixed
+    issue_no_prefix = {"number": 1, "labels": [
+        {"name": "feature:HD-X-001"},
+        {"name": "owner:alice"},
+    ]}
+    state = sync_labels.parse_issue_labels(issue_no_prefix)
+    assert state.owner == "@alice"
+
+    # Test owner label already with @ stays as-is
+    issue_with_prefix = {"number": 1, "labels": [
+        {"name": "feature:HD-X-001"},
+        {"name": "owner:@bob"},
+    ]}
+    state = sync_labels.parse_issue_labels(issue_with_prefix)
+    assert state.owner == "@bob"

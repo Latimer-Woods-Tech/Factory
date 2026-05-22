@@ -432,3 +432,49 @@ def test_reconcile_labels_handles_get_error(init_matrix):
                                      remove_prefixes=("status:",))
     # Only the GET — no DELETE/POST attempted
     assert fake.call_count == 1
+
+
+# ──────────────────────────── Phase D: Label Sync Tests ──────────────────────
+
+# HTTP calls are mocked via dependency injection (fetch_fn parameter).
+# See conftest.py::stub_fetch factory.
+
+
+def test_main_missing_github_token_returns_2(init_matrix):
+    """main() returns 2 when GITHUB_TOKEN is missing."""
+    with patch.dict('os.environ', {'GITHUB_TOKEN': ''}):
+        with patch('sys.argv', ['init-matrix-issues', '--repo', 'Test/Repo', '--matrix', 'docs/file.md']):
+            result = init_matrix.main(fetch_fn=lambda url: (404, b'', {}))
+    assert result == 2
+
+
+def test_find_issue_constructs_correct_search_query(init_matrix):
+    """find_issue_by_feature_label() constructs proper GitHub search URL."""
+    captured_url = [None]
+
+    def capture_url(method, path, token, fetch_fn=None):
+        captured_url[0] = path
+        return (200, {"items": []})
+
+    with patch.object(init_matrix, "gh", side_effect=capture_url):
+        init_matrix.find_issue_by_feature_label("Test/Repo", "token", "HD-AUTH-001")
+
+    assert captured_url[0] is not None
+    assert "/search/issues" in captured_url[0]
+    assert "feature:HD-AUTH-001" in captured_url[0] or "HD-AUTH-001" in captured_url[0]
+
+
+def test_ensure_labels_idempotent_on_422(init_matrix):
+    """ensure_labels() treats 422 (already exists) as success."""
+    gh_call_count = [0]
+
+    def stub_gh(method, path, token, body=None, fetch_fn=None):
+        gh_call_count[0] += 1
+        # 422 = label already exists
+        return (422, {"errors": [{"code": "already_exists"}]})
+
+    with patch.object(init_matrix, "gh", side_effect=stub_gh):
+        # Should not raise or log error
+        init_matrix.ensure_labels("Test/Repo", "token", [("status:passing", "0E8A16")], fetch_fn=None)
+
+    assert gh_call_count[0] == 1  # exactly one label attempt
