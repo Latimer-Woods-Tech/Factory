@@ -1,0 +1,246 @@
+name: PR Size Guard (Hard Blocking)
+
+# Phase 1 enforcement — hard-blocks PRs that exceed ADR-0005 diff size budgets.
+# Different tiers have different limits:
+#  - Green (docs/**, *.md, generated): ≤50 lines
+#  - Yellow (apps/*, client/*, tests/*, non-critical routes): ≤200 lines
+#  - Red (.github/workflows/**, packages/**, migrations/**, billing, auth): ≤500 lines
+#
+# Exception: files matching patterns in .github/pr-size-exclusions.txt are not counted.
+#
+# Reference: ADR-0005 (docs/adr/0005-pr-size-budget.md)
+# Parent issue: #270 (phase-1-diff-enforcement) / #273 (pr-size-guard)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-size-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  size-guard:
+    name: Enforce diff-size budgets (ADR-0005)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ github.event.sender.type != 'Bot' && !github.event.pull_request.draft }}
+
+    steps:
+      - name: Checkout repo for exclusions list
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.base_ref }}
+
+      - name: Load exclusion patterns
+        id: exclusions
+        run: |
+          if [[ -f .github/pr-size-exclusions.txt ]]; then
+            # Remove comments and blank lines; format as pipe-separated regex
+            PATTERNS=$(grep -v '^#' .github/pr-size-exclusions.txt | grep -v '^\s*$' | sed 's/^\s*//g' | paste -sd '|' - | sed 's/|$//')
+            echo "patterns=$PATTERNS" >> "$GITHUB_OUTPUT"
+            echo "Loaded exclusion patterns: $PATTERNS"
+          else
+            echo "patterns=" >> "$GITHUB_OUTPUT"
+            echo "No exclusion file found; proceeding without exclusions."
+          fi
+
+      - name: Fetch PR diff and calculate size
+        id: calculate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          EXCLUSION_PATTERNS: ${{ steps.exclusions.outputs.patterns }}
+        run: |
+          set -euo pipefail
+
+          # Use `gh pr diff` to get the raw unified diff
+          DIFF=$(gh pr diff "$PR_NUMBER" --repo "$REPO")
+
+          # Parse the diff to count changed lines per file, excluding matches
+          declare -A file_changes
+          declare -A file_tiers
+
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^diff\ --git\ a/(.*)\ b/(.*) ]]; then
+              current_file="${BASH_REMATCH[2]}"
+              file_changes["$current_file"]=0
+            elif [[ "$line" =~ ^[\+\-] && ! "$line" =~ ^[\+\-][\+\-][\+\-] ]]; then
+              # Count added/removed lines (skip diff header lines +++/---)
+              if [[ -n "${current_file:-}" ]]; then
+                ((file_changes["$current_file"]++))
+              fi
+            fi
+          done <<< "$DIFF"
+
+          # Determine tier for each file and sum per-tier
+          GREEN_TOTAL=0
+          YELLOW_TOTAL=0
+          RED_TOTAL=0
+
+          declare -a green_files yellow_files red_files
+          declare -a excluded_files
+
+          for file in "${!file_changes[@]}"; do
+            changes=${file_changes[$file]}
+
+            # Check exclusions
+            EXCLUDED=0
+            if [[ -n "$EXCLUSION_PATTERNS" ]]; then
+              if [[ "$file" =~ $EXCLUSION_PATTERNS ]]; then
+                EXCLUDED=1
+              fi
+            fi
+
+            if [[ $EXCLUDED -eq 1 ]]; then
+              excluded_files+=("$file (+$changes)")
+              continue
+            fi
+
+            # Classify by tier
+            if [[ "$file" =~ ^(docs/|\.md$|.*\.md$|session/|.*generated.*) ]]; then
+              TIER="green"
+              GREEN_TOTAL=$((GREEN_TOTAL + changes))
+              green_files+=("$file (+$changes)")
+            elif [[ "$file" =~ ^(apps/[^/]+/src/|client/|tests?/|.*routes.*) && ! "$file" =~ ^(\.github|packages/|migrations/|.*auth.*|.*billing.*|wrangler) ]]; then
+              TIER="yellow"
+              YELLOW_TOTAL=$((YELLOW_TOTAL + changes))
+              yellow_files+=("$file (+$changes)")
+            else
+              # Red tier: .github/workflows, packages, migrations, auth, billing, wrangler, everything else
+              TIER="red"
+              RED_TOTAL=$((RED_TOTAL + changes))
+              red_files+=("$file (+$changes)")
+            fi
+          done
+
+          # Write outputs
+          echo "green_total=$GREEN_TOTAL" >> "$GITHUB_OUTPUT"
+          echo "yellow_total=$YELLOW_TOTAL" >> "$GITHUB_OUTPUT"
+          echo "red_total=$RED_TOTAL" >> "$GITHUB_OUTPUT"
+
+          # Format file lists (limit to 30 files per tier for readability)
+          GREEN_LIST=$(printf '%s\n' "${green_files[@]}" | head -30 | paste -sd '|' -)
+          YELLOW_LIST=$(printf '%s\n' "${yellow_files[@]}" | head -30 | paste -sd '|' -)
+          RED_LIST=$(printf '%s\n' "${red_files[@]}" | head -30 | paste -sd '|' -)
+          EXCLUDED_LIST=$(printf '%s\n' "${excluded_files[@]}" | head -30 | paste -sd '|' -)
+
+          echo "green_files=$GREEN_LIST" >> "$GITHUB_OUTPUT"
+          echo "yellow_files=$YELLOW_LIST" >> "$GITHUB_OUTPUT"
+          echo "red_files=$RED_LIST" >> "$GITHUB_OUTPUT"
+          echo "excluded_files=$EXCLUDED_LIST" >> "$GITHUB_OUTPUT"
+
+          # Determine pass/fail
+          PASS=1
+          FAILED_TIERS=""
+
+          if [[ $GREEN_TOTAL -gt 50 ]]; then
+            PASS=0
+            FAILED_TIERS="${FAILED_TIERS}green(${GREEN_TOTAL}/50) "
+          fi
+          if [[ $YELLOW_TOTAL -gt 200 ]]; then
+            PASS=0
+            FAILED_TIERS="${FAILED_TIERS}yellow(${YELLOW_TOTAL}/200) "
+          fi
+          if [[ $RED_TOTAL -gt 500 ]]; then
+            PASS=0
+            FAILED_TIERS="${FAILED_TIERS}red(${RED_TOTAL}/500) "
+          fi
+
+          echo "pass=$PASS" >> "$GITHUB_OUTPUT"
+          echo "failed_tiers=$FAILED_TIERS" >> "$GITHUB_OUTPUT"
+
+      - name: Post check result comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          GREEN: ${{ steps.calculate.outputs.green_total }}
+          YELLOW: ${{ steps.calculate.outputs.yellow_total }}
+          RED: ${{ steps.calculate.outputs.red_total }}
+          GREEN_FILES: ${{ steps.calculate.outputs.green_files }}
+          YELLOW_FILES: ${{ steps.calculate.outputs.yellow_files }}
+          RED_FILES: ${{ steps.calculate.outputs.red_files }}
+          EXCLUDED_FILES: ${{ steps.calculate.outputs.excluded_files }}
+          PASS: ${{ steps.calculate.outputs.pass }}
+          FAILED_TIERS: ${{ steps.calculate.outputs.failed_tiers }}
+        run: |
+          set -euo pipefail
+
+          MARKER="<!-- pr-size-guard -->"
+
+          # Build comment body
+          if [[ "$PASS" == "1" ]]; then
+            STATUS_EMOJI="✅"
+            STATUS_MSG="**This PR passes the diff-size budget.**"
+          else
+            STATUS_EMOJI="🚫"
+            STATUS_MSG="**This PR exceeds the diff-size budget** (${FAILED_TIERS})."
+          fi
+
+          BODY="${MARKER}
+          ## ${STATUS_EMOJI} PR Size Guard (ADR-0005)
+
+          ${STATUS_MSG}
+
+          | Tier | Changed | Budget | Status |
+          |------|---------|--------|--------|
+          | 🟢 Green (docs, *.md) | $GREEN | ≤50 | $([ \"$GREEN\" -le 50 ] && echo '✓' || echo '✗ FAIL') |
+          | 🟡 Yellow (apps, client, tests) | $YELLOW | ≤200 | $([ \"$YELLOW\" -le 200 ] && echo '✓' || echo '✗ FAIL') |
+          | 🔴 Red (.github, packages, migrations) | $RED | ≤500 | $([ \"$RED\" -le 500 ] && echo '✓' || echo '✗ FAIL') |
+
+          ### Per-tier breakdown
+
+          **Green tier** ($GREEN lines):
+          $([ -n \"$GREEN_FILES\" ] && echo \"\`\`\`$GREEN_FILES\`\`\`\" || echo \"(none)\")
+
+          **Yellow tier** ($YELLOW lines):
+          $([ -n \"$YELLOW_FILES\" ] && echo \"\`\`\`$YELLOW_FILES\`\`\`\" || echo \"(none)\")
+
+          **Red tier** ($RED lines):
+          $([ -n \"$RED_FILES\" ] && echo \"\`\`\`$RED_FILES\`\`\`\" || echo \"(none)\")
+
+          **Excluded** (not counted):
+          $([ -n \"$EXCLUDED_FILES\" ] && echo \"\`\`\`$EXCLUDED_FILES\`\`\`\" || echo \"(none)\")
+
+          ---
+
+          ### Resolution
+
+          If this PR exceeds the budget:
+          1. **Split by concern**: scaffolding → implementation → tests → docs (separate PRs)
+          2. **Split by file**: each file/package → its own atomic PR if independent
+          3. **Stack PRs**: use \`[stack: N of M]\` in PR title to declare merge sequence
+          4. **Exception label**: CODEOWNER can apply \`size-exception-approved\` with explanation (rare)
+
+          For details, see [ADR-0005: PR Size Budget](https://github.com/${REPO}/blob/main/docs/adr/0005-pr-size-budget.md)."
+
+          # Upsert comment
+          EXISTING_ID=\$(gh api \\
+            \"/repos/${REPO}/issues/${PR_NUMBER}/comments\" \\
+            --paginate \\
+            --jq \"[.[] | select(.body | startswith(\\\"${MARKER}\\\")) | .id] | first // empty\")
+
+          if [[ -n \"\$EXISTING_ID\" ]]; then
+            gh api --method PATCH \
+              \"/repos/${REPO}/issues/comments/\${EXISTING_ID}\" \
+              -f body=\"\$BODY\"
+          else
+            gh pr comment \"$PR_NUMBER\" --repo \"$REPO\" --body \"\$BODY\"
+          fi
+
+      - name: Fail check if budget exceeded
+        if: ${{ steps.calculate.outputs.pass == '0' }}
+        run: |
+          echo "❌ PR exceeds diff-size budget:"
+          echo "   - Green: ${{ steps.calculate.outputs.green_total }}/50"
+          echo "   - Yellow: ${{ steps.calculate.outputs.yellow_total }}/200"
+          echo "   - Red: ${{ steps.calculate.outputs.red_total }}/500"
+          exit 1
