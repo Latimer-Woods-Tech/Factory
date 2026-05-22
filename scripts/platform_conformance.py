@@ -391,7 +391,7 @@ def dim_code_patterns(repo: str) -> DimensionScore:
         check("@latimer-woods-tech/logger in deps",     "@latimer-woods-tech/logger" in deps),
         check("@latimer-woods-tech/errors in deps",     "@latimer-woods-tech/errors" in deps),
         check("@latimer-woods-tech/monitoring in deps", "@latimer-woods-tech/monitoring" in deps),
-check("No console.log in src/",                 gh_search_code(repo, f'path:{src_path} "console.log"') in (0, -1)),
+        check("No console.log in src/",                 gh_search_code(repo, f'path:{src_path} "console.log"') in (0, -1)),
         check("Typed Env interface",                    has_typed_env_bindings(repo)),
     ]
     return DimensionScore("code_patterns", "Code patterns", 15, score_from_checks(checks), checks)
