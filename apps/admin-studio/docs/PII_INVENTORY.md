@@ -64,11 +64,11 @@ This is an internal operator tool. Operators are employees or contractors of Lat
 | Right | Mechanism | SLA |
 |---|---|---|
 | Access | Operator can view their own audit log entries via the Audit tab | On request, within 30 days |
-| Erasure | Submit ticket to @adrper79-dot; purge rows from `audit_events` where `actor = email` | 30 days |
+| Erasure | Submit ticket to privacy@latimer-woods-tech.com; purge rows from `audit_events` where `actor = email` | 30 days |
 | Rectification | Audit events are immutable by design (legal requirement). Annotation ADR required. | N/A |
 | Portability | Export via `SELECT * FROM audit_events WHERE actor = ?` — CSV format on request | 30 days |
 
-**DSR contact:** adrper79@gmail.com  
+**DSR contact:** privacy@latimer-woods-tech.com  
 **Data Controller:** Latimer-Woods-Tech (sole operator)
 
 ---
