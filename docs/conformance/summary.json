@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-18T08:56:06.195821+00:00",
+  "generated": "2026-05-22T08:35:34.298787+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,8 +7,8 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-05-18T08:55:38.188752+00:00",
-      "cohesion": 41,
+      "timestamp": "2026-05-22T08:35:12.777812+00:00",
+      "cohesion": 58,
       "dimensions": [
         {
           "key": "stack",
@@ -80,11 +80,11 @@
           "key": "tests",
           "title": "Tests",
           "weight": 15,
-          "score": 60,
+          "score": 100,
           "checks": [
             {
               "name": "vitest.config present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -104,7 +104,7 @@
             },
             {
               "name": "Coverage thresholds set",
-              "passed": false,
+              "passed": true,
               "detail": ""
             }
           ]
@@ -113,7 +113,7 @@
           "key": "observability",
           "title": "Observability",
           "weight": 10,
-          "score": 60,
+          "score": 100,
           "checks": [
             {
               "name": "Sentry import",
@@ -127,12 +127,12 @@
             },
             {
               "name": "Sourcemap upload step",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "SLO doc present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -146,7 +146,7 @@
           "key": "security",
           "title": "Security",
           "weight": 15,
-          "score": 60,
+          "score": 80,
           "checks": [
             {
               "name": "CodeQL workflow present",
@@ -155,7 +155,7 @@
             },
             {
               "name": "npm audit step in CI",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -248,11 +248,11 @@
           "key": "performance",
           "title": "Performance",
           "weight": 10,
-          "score": 33,
+          "score": 67,
           "checks": [
             {
               "name": "p95 budgets declared",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -297,14 +297,14 @@
       "repo_key": "CC",
       "repo_name": "capricast",
       "repo_path": "Latimer-Woods-Tech/capricast",
-      "timestamp": "2026-05-18T08:55:45.281193+00:00",
+      "timestamp": "2026-05-22T08:35:18.449510+00:00",
       "cohesion": 37,
       "dimensions": [
         {
           "key": "stack",
           "title": "Stack",
           "weight": 10,
-          "score": 40,
+          "score": 20,
           "checks": [
             {
               "name": "wrangler.jsonc present",
@@ -323,7 +323,7 @@
             },
             {
               "name": "No node:crypto imports",
-              "passed": true,
+              "passed": false,
               "detail": ""
             },
             {
@@ -403,7 +403,7 @@
           "key": "observability",
           "title": "Observability",
           "weight": 10,
-          "score": 20,
+          "score": 40,
           "checks": [
             {
               "name": "Sentry import",
@@ -417,7 +417,7 @@
             },
             {
               "name": "Sourcemap upload step",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -587,8 +587,8 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-05-18T08:55:51.687661+00:00",
-      "cohesion": 55,
+      "timestamp": "2026-05-22T08:35:25.685280+00:00",
+      "cohesion": 57,
       "dimensions": [
         {
           "key": "stack",
@@ -805,7 +805,7 @@
           "key": "release",
           "title": "Release",
           "weight": 5,
-          "score": 33,
+          "score": 67,
           "checks": [
             {
               "name": "CHANGELOG.md present",
@@ -814,7 +814,7 @@
             },
             {
               "name": "Semver version (n.n.n)",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -877,8 +877,8 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-05-18T08:55:59.054805+00:00",
-      "cohesion": 25,
+      "timestamp": "2026-05-22T08:35:29.992872+00:00",
+      "cohesion": 28,
       "dimensions": [
         {
           "key": "stack",
@@ -950,7 +950,7 @@
           "key": "tests",
           "title": "Tests",
           "weight": 15,
-          "score": 40,
+          "score": 60,
           "checks": [
             {
               "name": "vitest.config present",
@@ -974,7 +974,7 @@
             },
             {
               "name": "Coverage thresholds set",
-              "passed": false,
+              "passed": true,
               "detail": ""
             }
           ]
@@ -1167,7 +1167,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-05-18T08:56:06.195112+00:00",
+      "timestamp": "2026-05-22T08:35:34.296941+00:00",
       "cohesion": 52,
       "dimensions": [
         {
