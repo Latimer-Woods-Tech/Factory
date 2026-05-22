@@ -38,12 +38,12 @@
       "topic": "How to Read Your Body Graph"
     },
     {
-      "briefKey": "ai-synthesis-walkthrough",
+      "briefKey": "synthesis-walkthrough",
       "composition": "WalkthroughVideo",
       "audience": "new_user",
-      "area": "ai-synthesis",
+      "area": "synthesis",
       "status": "ready",
-      "topic": "Reading Your AI Synthesis"
+      "topic": "Reading Your Synthesis"
     },
     {
       "briefKey": "daily-transits-guide",

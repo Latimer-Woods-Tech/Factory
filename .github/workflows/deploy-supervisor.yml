@@ -105,6 +105,8 @@ jobs:
           SECRET_FACTORY_APP_INSTALLATION_ID: ${{ secrets.FACTORY_APP_INSTALLATION_ID }}
           SECRET_PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           SECRET_PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          SECRET_SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+          SECRET_SLACK_OWNER_USER_ID: ${{ secrets.SLACK_OWNER_USER_ID }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
           # Only provision secrets that are actually set — skip empties with a warning.
@@ -130,6 +132,8 @@ jobs:
           put_secret FACTORY_APP_INSTALLATION_ID "${SECRET_FACTORY_APP_INSTALLATION_ID}"
           put_secret PUSHOVER_TOKEN             "${SECRET_PUSHOVER_TOKEN}"
           put_secret PUSHOVER_USER_KEY          "${SECRET_PUSHOVER_USER_KEY}"
+          put_secret SLACK_SIGNING_SECRET       "${SECRET_SLACK_SIGNING_SECRET}"
+          put_secret SLACK_OWNER_USER_ID        "${SECRET_SLACK_OWNER_USER_ID}"
 
       - name: Deploy
         working-directory: apps/supervisor
@@ -165,7 +169,7 @@ jobs:
       - name: Post-deploy health check (production)
         if: ${{ github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
         run: |
-          URL="https://supervisor.apunlimited.com"
+          URL="https://supervisor.latwoodtech.work"
           for i in 1 2 3 4 5; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
             if [ "$STATUS" = "200" ]; then

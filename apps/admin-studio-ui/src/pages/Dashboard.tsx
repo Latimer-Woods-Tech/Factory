@@ -12,6 +12,7 @@ import { AuditTab } from './tabs/AuditTab.js';
 import { FunctionsTab } from './tabs/FunctionsTab.js';
 import { TimelineTab } from './tabs/TimelineTab.js';
 import { FlagsTab } from './tabs/FlagsTab.js';
+import { TrainingLibraryTab } from './tabs/TrainingLibraryTab.js';
 import { Button } from '../components/ui/button.js';
 import { Drawer, DrawerContent, DrawerTrigger } from '../components/ui/drawer.js';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs.js';
@@ -22,6 +23,7 @@ const TABS = [
   { to: '/code',      label: 'Code' },
   { to: '/ai',        label: 'AI Chat' },
   { to: '/functions', label: 'Functions' },
+  { to: '/training-library', label: 'Training Library' },
   { to: '/timeline',  label: 'Timeline' },
   { to: '/flags',     label: 'Flags' },
   { to: '/audit',     label: 'Audit Log' },
@@ -91,6 +93,7 @@ export function Dashboard() {
           <Route path="/code" element={<CodeTab />} />
           <Route path="/ai" element={<AiTab />} />
           <Route path="/functions" element={<FunctionsTab />} />
+          <Route path="/training-library" element={<TrainingLibraryTab />} />
           <Route path="/timeline" element={<TimelineTab />} />
           <Route path="/flags" element={<FlagsTab />} />
           <Route path="/audit" element={<AuditTab />} />

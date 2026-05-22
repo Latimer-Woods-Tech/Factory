@@ -71,9 +71,9 @@ jobs:
       - name: Verify deployment
         run: |
           echo "🚀 Deployment complete"
-          echo "📍 Health check: https://schedule-worker.adrper79.workers.dev/health"
+          echo "📍 Health check: https://schedule.latwoodtech.work/health"
           node scripts/verify-http-endpoint.mjs \
-            --url https://schedule-worker.adrper79.workers.dev/health \
+            --url https://schedule.latwoodtech.work/health \
             --status 200 \
             --json-field status \
             --json-equals ok \

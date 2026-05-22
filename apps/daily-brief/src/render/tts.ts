@@ -26,11 +26,18 @@ export async function synthesizeAndStore(input: TtsInput): Promise<string | null
   // option and passes it to fetch). This cancels the HTTP connection on expiry,
   // preventing the Worker from consuming CPU budget on a hung connection.
   // NOTE: This timeout IS present — review concern was a diff-truncation false positive.
-  const audioBuffer = await synthesize(safeText, env.ELEVENLABS_VOICE_ID, env.ELEVENLABS_API_KEY, {
+  const synthesizeOptions = {
     stability: 0.55,
     similarityBoost: 0.75,
     signal: AbortSignal.timeout(25_000),
-  });
+  } as unknown as Parameters<typeof synthesize>[3];
+
+  const audioBuffer = await synthesize(
+    safeText,
+    env.ELEVENLABS_VOICE_ID,
+    env.ELEVENLABS_API_KEY,
+    synthesizeOptions,
+  );
 
   const key = `briefs/${dateLabel}-narration.mp3`;
 

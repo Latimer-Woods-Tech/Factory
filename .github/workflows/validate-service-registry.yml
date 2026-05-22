@@ -1,0 +1,49 @@
+name: Validate Service Registry
+
+on:
+  pull_request:
+    paths:
+      - 'docs/service-registry.yml'
+      - '.github/workflows/deploy-*.yml'
+      - '.github/workflows/validate-service-registry.yml'
+      - 'scripts/validate-service-registry.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/service-registry.yml'
+      - '.github/workflows/deploy-*.yml'
+      - '.github/workflows/validate-service-registry.yml'
+      - 'scripts/validate-service-registry.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install root dependencies
+        # No root package-lock.json (monorepo: each package owns its lock),
+        # so use `npm install` with --ignore-scripts for a deterministic-enough
+        # CI-only install of js-yaml + jsonc-parser used by the validator.
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Validate service registry coverage
+        run: npm run validate:service-registry
