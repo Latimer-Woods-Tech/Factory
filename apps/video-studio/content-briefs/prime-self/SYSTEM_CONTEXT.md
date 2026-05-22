@@ -7,9 +7,10 @@ Do NOT summarise or paraphrase it. Use it as the authoritative source of truth.
 
 ## What Prime Self Is
 
-Prime Self is a Human Design intelligence platform.
+Prime Self is a Human Design synthesis platform.
 It calculates a person's **Free Energy Blueprint** using their birth date, birth time, and birth location,
-then delivers an AI-generated synthesis that explains their design in plain, modern language.
+then delivers a personal synthesis that explains their design in plain, modern language. It arrives
+as written prose and as a cinematic Energy Blueprint video.
 
 Prime Self is NOT astrology, NOT a personality test, NOT a wellness app.
 It is a precision instrument for self-knowledge, professional clarity, and strategic decision-making.
@@ -19,7 +20,7 @@ It is a precision instrument for self-knowledge, professional clarity, and strat
 ## The Methodology: Human Design Fundamentals
 
 Human Design is a synthesis of quantum physics, Kabbalah, I Ching, Astrology, and the Chakra system.
-Prime Self's AI processes the chart and translates it into actionable, specific guidance.
+The Prime Self synthesis engine processes the chart and translates it into actionable, specific guidance.
 
 ### The Five Energy Types
 
@@ -51,9 +52,10 @@ Lunar (28-day cycle for Reflectors).
 two centers, they form a Channel — a consistent, defined energy trait. Gate activations come from
 the natal planetary positions at birth.
 
-### The AI Synthesis
+### The Synthesis
 
-The Prime Self AI Synthesis is a personalized, written interpretation of the chart.
+The Prime Self Synthesis is a personalized, written interpretation of the chart — paired with a
+cinematic Energy Blueprint video for users on paid tiers.
 It translates gate activations, defined centers, channels, and type/authority into
 specific, actionable paragraphs about work style, relationships, health patterns, and purpose.
 It uses modern language — no jargon, no mysticism.
@@ -67,7 +69,7 @@ Use ONLY these terms. Never invent alternatives.
 | Correct Term | Never Say |
 |---|---|
 | Free Energy Blueprint | "Human Design report", "energy chart", "your profile" |
-| AI Synthesis | "analysis", "reading", "assessment", "AI interpretation" |
+| Synthesis | "analysis", "AI reading", "AI assessment", "AI interpretation" — and NEVER say "AI" |
 | Energy Type | "archetype", "personality type", "design type" |
 | Your Strategy | "your approach", "your method" |
 | Your Authority | "your intuition", "your gut feeling" |
@@ -103,9 +105,14 @@ EVERY script must follow these rules without exception:
 
 ### Forbidden Words (Brand Compliance)
 Never use any of these words in a script:
+AI, artificial intelligence, A.I., machine learning, ML, chatbot, language model, LLM,
 journey, transformation, transformative, game-changer, game-changing, unlock, empower, empowering,
 leverage, synergy, holistic, amazing, incredible, awesome, excited, just, really, very,
 delve, utilize, comprehensive, seamless, robust, groundbreaking, cutting-edge
+
+**ABSOLUTE RULE — NO AI LANGUAGE.** Prime Self ICP (seekers, practitioners, holistic community) has
+low trust for AI branding. The synthesis is "the Synthesis", "the Prime Self engine", "your reading",
+or "your Energy Blueprint" — never "AI", "the AI", or any model name.
 
 ### Approved Action Words
 discover, understand, see, read, apply, use, know, access, open, set, review, find, build
