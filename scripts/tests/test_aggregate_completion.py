@@ -28,10 +28,10 @@ def test_parse_matrix_happy_path(aggregate):
     content = """\
 ## 1. Auth
 
-| ID | Feature | Endpoint | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
-|----|---------|----------|--------|-----------|--------|-------|---------------|----------|--------|-------|
-| HD-AUTH-001 | Login | POST /login | ✅ | ✅ | ✅ done | @a | 2026-05-14 | #1 | 3 | works |
-| HD-AUTH-002 | Logout | POST /logout | ✅ | ❌ | ⚠️ flaky | @b | 2026-05-13 | #2 | 2 | needs |
+| ID | Feature | Endpoint | Sentry Project | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
+|----|---------|----------|--------|--------|-----------|--------|-------|---------------|----------|--------|-------|
+| HD-AUTH-001 | Login | POST /login | selfprime | ✅ | ✅ | ✅ done | @a | 2026-05-14 | #1 | 3 | works |
+| HD-AUTH-002 | Logout | POST /logout | selfprime | ✅ | ❌ | ⚠️ flaky | @b | 2026-05-13 | #2 | 2 | needs |
 """
     rows, malformed = aggregate.parse_matrix("HD", "HumanDesign", content)
     assert len(rows) == 2
@@ -39,6 +39,7 @@ def test_parse_matrix_happy_path(aggregate):
     assert rows[0].repo_key == "HD"
     assert rows[0].section == "Auth"
     assert rows[0].id == "HD-AUTH-001"
+    assert rows[0].sentry_project == "selfprime"
     assert rows[0].weight == 3
     assert rows[0].status == "✅"
     assert rows[1].status == "⚠️"
@@ -47,22 +48,22 @@ def test_parse_matrix_happy_path(aggregate):
 def test_parse_matrix_reports_wrong_cell_count(aggregate):
     content = """\
 ## 1. T
-| ID | F | E | M | A | S | O | L | I | W | N |
-|---|---|---|---|---|---|---|---|---|---|---|
+| ID | F | E | SP | M | A | S | O | L | I | W | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|
 | HD-X-001 | only | three | cells |
 """
     rows, malformed = aggregate.parse_matrix("HD", "HumanDesign", content)
     assert rows == []
     assert len(malformed) == 1
-    assert "expected 11" in malformed[0].reason
+    assert "expected 12" in malformed[0].reason
 
 
 def test_parse_matrix_reports_bad_id(aggregate):
     content = """\
 ## 1. T
-| ID | F | E | M | A | S | O | L | I | W | N |
-|---|---|---|---|---|---|---|---|---|---|---|
-| not-a-id | f | e | ✅ | ✅ | ✅ done | @a | 2026-01-01 | #1 | 1 | n |
+| ID | F | E | SP | M | A | S | O | L | I | W | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| not-a-id | f | e | selfprime | ✅ | ✅ | ✅ done | @a | 2026-01-01 | #1 | 1 | n |
 """
     rows, malformed = aggregate.parse_matrix("HD", "HumanDesign", content)
     assert rows == []
@@ -73,9 +74,9 @@ def test_parse_matrix_reports_bad_id(aggregate):
 def test_parse_matrix_reports_bad_status_emoji(aggregate):
     content = """\
 ## 1. T
-| ID | F | E | M | A | S | O | L | I | W | N |
-|---|---|---|---|---|---|---|---|---|---|---|
-| HD-X-001 | f | e | ✅ | ✅ | 🤷 mystery | @a | 2026-01-01 | #1 | 1 | n |
+| ID | F | E | SP | M | A | S | O | L | I | W | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| HD-X-001 | f | e | selfprime | ✅ | ✅ | 🤷 mystery | @a | 2026-01-01 | #1 | 1 | n |
 """
     rows, malformed = aggregate.parse_matrix("HD", "HumanDesign", content)
     assert rows == []
@@ -85,9 +86,9 @@ def test_parse_matrix_reports_bad_status_emoji(aggregate):
 def test_parse_matrix_reports_bad_weight(aggregate):
     content = """\
 ## 1. T
-| ID | F | E | M | A | S | O | L | I | W | N |
-|---|---|---|---|---|---|---|---|---|---|---|
-| HD-X-001 | f | e | ✅ | ✅ | ✅ done | @a | 2026-01-01 | #1 | not-an-int | n |
+| ID | F | E | SP | M | A | S | O | L | I | W | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| HD-X-001 | f | e | selfprime | ✅ | ✅ | ✅ done | @a | 2026-01-01 | #1 | not-an-int | n |
 """
     rows, malformed = aggregate.parse_matrix("HD", "HumanDesign", content)
     assert rows == []
@@ -98,15 +99,15 @@ def test_parse_matrix_section_tracking(aggregate):
     content = """\
 ## 1. Auth
 
-| ID | F | E | M | A | S | O | L | I | W | N |
-|---|---|---|---|---|---|---|---|---|---|---|
-| HD-AUTH-001 | f | e | ✅ | ✅ | ✅ done | @a | 2026-01-01 | #1 | 1 | n |
+| ID | F | E | SP | M | A | S | O | L | I | W | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| HD-AUTH-001 | f | e | selfprime | ✅ | ✅ | ✅ done | @a | 2026-01-01 | #1 | 1 | n |
 
 ## 2. Billing
 
-| ID | F | E | M | A | S | O | L | I | W | N |
-|---|---|---|---|---|---|---|---|---|---|---|
-| HD-BILL-001 | f | e | ✅ | ✅ | ✅ done | @b | 2026-01-01 | #2 | 1 | n |
+| ID | F | E | SP | M | A | S | O | L | I | W | N |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| HD-BILL-001 | f | e | selfprime | ✅ | ✅ | ✅ done | @b | 2026-01-01 | #2 | 1 | n |
 """
     rows, _ = aggregate.parse_matrix("HD", "HumanDesign", content)
     assert [r.section for r in rows] == ["Auth", "Billing"]
@@ -204,24 +205,29 @@ def test_sentry_route_segments_empty_input(aggregate):
 
 # ───────────────────────── apply_sentry_overlay ─────────────────────────
 
-def test_apply_sentry_overlay_demotes_passing_to_warning(aggregate):
+def test_apply_sentry_overlay_per_project_demotes(aggregate):
     rows = [
         aggregate.Row(repo_key="HD", repo_name="HD", section="s", line_no=1, raw="",
-                      id="HD-X-001", endpoint="POST /api/me/subscriptions", status="✅"),
+                      id="HD-X-001", endpoint="POST /api/me/subscriptions",
+                      sentry_project="selfprime", status="✅"),
     ]
-    issues = [{"culprit": "Error in /api/me/subscriptions"}]
-    aggregate.apply_sentry_overlay(rows, issues)
+    # Mock fetch_sentry_unresolved to return issues for the selfprime project
+    def mock_fetch(*args, **kwargs):
+        return (200, json.dumps([{"culprit": "Error in /api/me/subscriptions"}]).encode(), {})
+    with patch.object(aggregate, "fetch_sentry_unresolved", return_value=[{"culprit": "Error in /api/me/subscriptions"}]):
+        aggregate.apply_sentry_overlay(rows, "token", fetch_fn=None)
     assert rows[0].status == "⚠️"
     assert "sentry-open" in rows[0].overlays
 
 
-def test_apply_sentry_overlay_no_endpoint_match(aggregate):
+def test_apply_sentry_overlay_per_project_no_match(aggregate):
     rows = [
         aggregate.Row(repo_key="HD", repo_name="HD", section="s", line_no=1, raw="",
-                      id="HD-X-001", endpoint="POST /v1/listings", status="✅"),
+                      id="HD-X-001", endpoint="POST /v1/listings",
+                      sentry_project="selfprime", status="✅"),
     ]
-    issues = [{"culprit": "Error in /api/me/subscriptions"}]
-    aggregate.apply_sentry_overlay(rows, issues)
+    with patch.object(aggregate, "fetch_sentry_unresolved", return_value=[{"culprit": "Error in /api/me/subscriptions"}]):
+        aggregate.apply_sentry_overlay(rows, "token", fetch_fn=None)
     assert rows[0].status == "✅"
     assert rows[0].overlays == []
 
@@ -230,19 +236,23 @@ def test_apply_sentry_overlay_skips_already_failing(aggregate):
     """Already-failing rows shouldn't be touched (the overlay only demotes ✅)."""
     rows = [
         aggregate.Row(repo_key="HD", repo_name="HD", section="s", line_no=1, raw="",
-                      id="HD-X-001", endpoint="POST /api/me/subscriptions", status="❌"),
+                      id="HD-X-001", endpoint="POST /api/me/subscriptions",
+                      sentry_project="selfprime", status="❌"),
     ]
-    issues = [{"culprit": "Error in /api/me/subscriptions"}]
-    aggregate.apply_sentry_overlay(rows, issues)
+    with patch.object(aggregate, "fetch_sentry_unresolved", return_value=[{"culprit": "Error in /api/me/subscriptions"}]):
+        aggregate.apply_sentry_overlay(rows, "token", fetch_fn=None)
     assert rows[0].status == "❌"
 
 
-def test_apply_sentry_overlay_empty_issues_noop(aggregate):
+def test_apply_sentry_overlay_no_project_noop(aggregate):
+    """Rows without sentry_project should be skipped."""
     rows = [
         aggregate.Row(repo_key="HD", repo_name="HD", section="s", line_no=1, raw="",
-                      id="HD-X-001", endpoint="POST /api/me/subscriptions", status="✅"),
+                      id="HD-X-001", endpoint="POST /api/me/subscriptions",
+                      sentry_project="", status="✅"),
     ]
-    aggregate.apply_sentry_overlay(rows, [])
+    with patch.object(aggregate, "fetch_sentry_unresolved", return_value=[{"culprit": "Error in /api/me/subscriptions"}]):
+        aggregate.apply_sentry_overlay(rows, "token", fetch_fn=None)
     assert rows[0].status == "✅"
 
 
@@ -673,12 +683,15 @@ def test_apply_sentry_overlay_downgrades_matching_endpoint(aggregate):
     rows = [
         aggregate.Row(repo_key="HD", repo_name="HumanDesign", section="Billing",
                       line_no=1, raw="", id="HD-BILL-001", status="✅",
-                      endpoint="POST /api/me/subscriptions"),
+                      endpoint="POST /api/me/subscriptions", sentry_project="selfprime"),
     ]
-    issues = [
-        {"culprit": "Error in POST /api/me/subscriptions", "id": 1001},
-    ]
-    aggregate.apply_sentry_overlay(rows, issues)
+
+    def mock_fetch(token, project=None, fetch_fn=None):
+        return [{"culprit": "Error in POST /api/me/subscriptions", "id": 1001}]
+
+    with patch.object(aggregate, 'fetch_sentry_unresolved', side_effect=mock_fetch):
+        aggregate.apply_sentry_overlay(rows, "token-test")
+
     # Row should be downgraded to ⚠️
     assert rows[0].status == "⚠️"
     assert "sentry-open" in rows[0].overlays

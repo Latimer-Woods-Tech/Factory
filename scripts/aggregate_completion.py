@@ -129,6 +129,7 @@ class Row:
     id: str = ""
     feature: str = ""
     endpoint: str = ""
+    sentry_project: str = ""
     manual: str = ""
     automated: str = ""
     status: str = ""
@@ -179,10 +180,10 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
             continue
         # split on pipes — drop leading/trailing empties from outer pipes
         parts = [p.strip() for p in raw.split("|")[1:-1]]
-        if len(parts) != 11:
-            malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"expected 11 cells, got {len(parts)}"))
+        if len(parts) != 12:
+            malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"expected 12 cells, got {len(parts)}"))
             continue
-        rid, feat, ep, manual, auto, status, owner, lv, issue, weight, notes = parts
+        rid, feat, ep, sentry_proj, manual, auto, status, owner, lv, issue, weight, notes = parts
         if not ID_RE.match(rid):
             malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"id '{rid}' does not match ^[A-Z]+-[A-Z]+-\\d+$"))
             continue
@@ -197,7 +198,7 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
             continue
         rows.append(Row(
             repo_key=repo_key, repo_name=repo_name, section=section, line_no=line_no, raw=raw,
-            id=rid, feature=feat, endpoint=ep, manual=manual, automated=auto,
+            id=rid, feature=feat, endpoint=ep, sentry_project=sentry_proj, manual=manual, automated=auto,
             status=status_emoji, owner=owner, last_verified=lv, issue_pr=issue,
             weight=w, notes=notes,
         ))
@@ -333,16 +334,20 @@ def count_gap_p0_p1() -> tuple[int, int]:
     return p0, p1
 
 
-def fetch_sentry_unresolved(token: str, fetch_fn: FetchFn | None = None) -> list[dict[str, Any]]:
+def fetch_sentry_unresolved(token: str, project: str | None = None, fetch_fn: FetchFn | None = None) -> list[dict[str, Any]]:
     if not token:
         jwarn("sentry_skipped_no_token")
         return []
     if fetch_fn is None:
         fetch_fn = http_request
-    url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
+    # If project specified, query that project; otherwise query org-wide
+    if project:
+        url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/projects/{project}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
+    else:
+        url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
     status, body, _ = fetch_fn(url)
     if status != 200:
-        jerr("sentry_fail", status=status)
+        jerr("sentry_fail", project=project, status=status)
         return []
     try:
         return json.loads(body)
@@ -366,22 +371,32 @@ def sentry_route_segments(issue: dict[str, Any]) -> list[str]:
 
 # ---------- overlays ----------
 
-def apply_sentry_overlay(rows: list[Row], issues: list[dict[str, Any]]) -> None:
-    if not issues:
-        return
-    segments: list[tuple[str, dict[str, Any]]] = []
-    for iss in issues:
-        for seg in sentry_route_segments(iss):
-            segments.append((seg.lower(), iss))
+def apply_sentry_overlay(rows: list[Row], sentry_token: str, fetch_fn: FetchFn | None = None) -> None:
+    # Group rows by sentry_project for per-project queries
+    by_project: dict[str, list[Row]] = {}
     for r in rows:
-        if r.status != "✅":
+        if r.sentry_project:
+            by_project.setdefault(r.sentry_project, []).append(r)
+
+    for project, project_rows in by_project.items():
+        issues = fetch_sentry_unresolved(sentry_token, project=project, fetch_fn=fetch_fn)
+        if not issues:
             continue
-        ep_lower = r.endpoint.lower()
-        for seg, _iss in segments:
-            if seg in ep_lower:
-                r.status = "⚠️"
-                r.overlays.append("sentry-open")
-                break
+        # Build segments from issues
+        segments: list[tuple[str, dict[str, Any]]] = []
+        for iss in issues:
+            for seg in sentry_route_segments(iss):
+                segments.append((seg.lower(), iss))
+        # Apply overlay to rows in this project
+        for r in project_rows:
+            if r.status != "✅":
+                continue
+            ep_lower = r.endpoint.lower()
+            for seg, _iss in segments:
+                if seg in ep_lower:
+                    r.status = "⚠️"
+                    r.overlays.append("sentry-open")
+                    break
 
 
 def apply_actions_overlay(rows: list[Row], red_repos: set[str]) -> None:
@@ -688,12 +703,14 @@ def main(fetch_fn: FetchFn | None = None) -> int:
         if smoke and smoke.get("conclusion") == "failure":
             red_smoke.add(repo["key"])
 
-    # sentry overlay
-    issues = fetch_sentry_unresolved(sentry_token, fetch_fn=fetch_fn)
-    apply_sentry_overlay(all_rows, issues)
+    # sentry overlay (per-project)
+    apply_sentry_overlay(all_rows, sentry_token, fetch_fn=fetch_fn)
     apply_actions_overlay(all_rows, red_ci)
     apply_smoke_overlay(all_rows, red_smoke)
     apply_decay_overlay(all_rows, now)
+
+    # fetch unresolved issues for digest rendering (org-wide)
+    issues = fetch_sentry_unresolved(sentry_token, fetch_fn=fetch_fn)
 
     # prev snapshot
     prev_path = out_dir / "completion-tracker.json"
