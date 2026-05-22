@@ -48,8 +48,10 @@ jobs:
           fetch_to_env CF_ACCOUNT_ID            CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
           fetch_to_env SCRAPE_CREATORS_API_KEY  SCRAPE_CREATORS_API_KEY
           fetch_to_env LOOPS_API_KEY            LOOPS_API_KEY
+          fetch_to_env AI_GATEWAY_BASE_URL      AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
           fetch_to_env ANTHROPIC_API_KEY        ANTHROPIC_API_KEY
           fetch_to_env GROQ_API_KEY             GROQ_API_KEY
+          fetch_to_env VERTEX_ACCESS_TOKEN      VERTEX_ACCESS_TOKEN
 
       - name: Build local package dependencies
         run: |
@@ -66,24 +68,51 @@ jobs:
         working-directory: apps/lead-gen
         run: npm install
 
+      - name: Provision runtime secrets
+        working-directory: apps/lead-gen
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID"
+
+          put_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "::error::$name is required for lead-gen deploy"
+              exit 1
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name"
+          }
+
+          put_secret SCRAPE_CREATORS_API_KEY "$SCRAPE_CREATORS_API_KEY"
+          put_secret LOOPS_API_KEY "$LOOPS_API_KEY"
+          put_secret ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
+          put_secret GROQ_API_KEY "$GROQ_API_KEY"
+          put_secret VERTEX_ACCESS_TOKEN "$VERTEX_ACCESS_TOKEN"
+
       - name: Deploy to Cloudflare
         working-directory: apps/lead-gen
         run: |
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID"
           npx wrangler deploy --minify \
             --var ENVIRONMENT:production \
+            --var AI_GATEWAY_BASE_URL:"$AI_GATEWAY_BASE_URL" \
             --var VERTEX_PROJECT:factory-495015 \
             --var VERTEX_LOCATION:us-central1
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ env.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
-          
-      - name: Inject Secrets
-        working-directory: apps/lead-gen
+
+      - name: Verify deployment
         run: |
-          echo "$SCRAPE_CREATORS_API_KEY" | npx wrangler secret put SCRAPE_CREATORS_API_KEY
-          echo "$LOOPS_API_KEY" | npx wrangler secret put LOOPS_API_KEY
-          echo "$ANTHROPIC_API_KEY" | npx wrangler secret put ANTHROPIC_API_KEY
-          echo "$GROQ_API_KEY" | npx wrangler secret put GROQ_API_KEY
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ env.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
+          export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID"
+          echo "🚀 Deployment complete"
+          echo "📍 Health check: https://lead-gen.adrper79.workers.dev/health"
+          node scripts/verify-http-endpoint.mjs \
+            --url https://lead-gen.adrper79.workers.dev/health \
+            --status 200 \
+            --json-field service \
+            --json-equals lead-gen \
+            --retries 8 \
+            --delay-ms 5000

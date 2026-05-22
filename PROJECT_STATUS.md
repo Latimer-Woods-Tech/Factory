@@ -1,8 +1,8 @@
 # Factory Core: Project Status & Ready State
 
-**Last Updated:** April 29, 2026  
-**Date:** April 29, 2026  
-**Status:** Phase 5 Complete | Phase 6 Infrastructure Setup Ready | Gates & Docs Established | Open Work Register Active  
+**Last Updated:** May 21, 2026  
+**Date:** May 21, 2026  
+**Status:** Phase 5 Complete | Phase 6 Infrastructure Setup Ready | Gates & Docs Established | Deployment alignment and registry validation hardened  
 **Audience:** All team members, deployment engineers, app developers
 
 ---
@@ -13,6 +13,22 @@ The Factory Core infrastructure library is **feature-complete** with all 19 reus
 
 The implementation plan for taking the platform and core application from "ready" to **world-class** now lives in [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](./WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md). That dashboard is the source of truth for cross-functional execution planning across Factory support and the core application. It also now contains the canonical open work register, project/repo inventory, multi-agent ownership process, and done/undone/unrealized status.
 The detailed execution specification for recent control-plane and repo hardening recommendations now lives in [docs/operations/W360_FACTORY_REPO_HARDENING_PLAN.md](./docs/operations/W360_FACTORY_REPO_HARDENING_PLAN.md), and is linked from the active W360 task dashboard.
+
+Recent deployment-alignment changes that matter for operators:
+- `webhook-fanout` has been repaired end to end: secret naming normalized, real Cloudflare bindings provisioned, deploy workflow corrected, and the `workers.dev` health endpoint verified.
+- `daily-brief` now has a dedicated deploy workflow in the Factory repo.
+- `schedule-worker` and `synthetic-monitor` workflow verification targets now follow the canonical branded domains in `docs/service-registry.yml`.
+- `admin-studio` now has an explicit required-secret provisioning path for both staging and production. The deploy workflow now fails fast if core runtime secrets are missing instead of silently relying on previously-set Worker state.
+- `lead-gen` deployment repair is complete: the workflow now provisions its runtime secrets before deploy, passes required vars explicitly, and verifies `/health` after deploy.
+- `factory-supervisor` hostname reconciliation is complete: production verification now targets `supervisor.latwoodtech.work`, the alternate hostname remains declared in Wrangler, and the workflow now provisions the Slack secrets the worker already requires at runtime.
+- `docs/service-registry.yml` is no longer just descriptive metadata. It is now validated by `scripts/validate-service-registry.mjs` and enforced in CI by `.github/workflows/validate-service-registry.yml`.
+- Contract validation now covers 9 local Worker deploy paths with zero exemptions: `admin-studio-staging`, `admin-studio-production`, `schedule-worker`, `video-cron`, `synthetic-monitor`, `lead-gen`, `webhook-fanout`, `daily-brief`, and `factory-supervisor`.
+- The operating runbook for this validator now lives at `docs/runbooks/validate-service-registry.md`.
+
+What this means operationally:
+- Workflow verification URLs, declared health targets, and worker runtime contracts are now checked together instead of being maintained by memory.
+- Drift between deploy workflows, Wrangler bindings, and the service registry is now caught in CI before merge for the covered workers.
+- Remaining unvalidated areas are intentional and should be treated as future hardening slices, not as implicit guarantees already provided by the current validator.
 
 The system is ready for:
 1. **Infrastructure Setup (Phase 6)** — execution pending credentials

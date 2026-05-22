@@ -305,7 +305,7 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
   const distinctId = customerId ?? email;
 
   tasks.push(
-    capturePostHogEvent(env.POSTHOG_API_KEY, distinctId, eventName, eventProps)
+    capturePostHogEvent(env.POSTHOG_KEY, distinctId, eventName, eventProps)
       .catch(err => {
         console.error(
           JSON.stringify({ level: 'error', msg: '[posthog] fan-out error', error: err instanceof Error ? err.message : String(err) }),

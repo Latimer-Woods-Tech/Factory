@@ -63,7 +63,7 @@ function makeD1(shouldFail = false): { db: D1Database; binds: D1BindValue[][] } 
 function makeEnv(kv: KVNamespace = makeKV(), db: D1Database = makeD1().db): Record<string, unknown> {
   return {
     STRIPE_WEBHOOK_SECRET: TEST_SECRET,
-    POSTHOG_API_KEY: 'test-posthog-key',
+    POSTHOG_KEY: 'test-posthog-key',
     RESEND_API_KEY: 'test-resend-key',
     RESEND_FROM: 'Factory <noreply@latwoodtech.com>',
     FACTORY_EVENTS_DB: db,
@@ -103,7 +103,7 @@ async function postStripe(
   env: Record<string, unknown>,
   ctx: ExecutionContext = makeCtx(),
 ): Promise<Response> {
-  const req = new Request('https://webhooks.latwoodtech.com/stripe', {
+  const req = new Request('https://webhooks.latwoodtech.work/stripe', {
     method: 'POST',
     headers: {
       'stripe-signature': sigHeader,
@@ -126,7 +126,7 @@ describe('webhook-fanout Worker', () => {
   // ---------- Health ----------
 
   it('GET /health returns 200', async () => {
-    const req = new Request('https://webhooks.latwoodtech.com/health');
+    const req = new Request('https://webhooks.latwoodtech.work/health');
     const res = await app.fetch(req, makeEnv(), makeCtx());
     expect(res.status).toBe(200);
     const body = await res.json() as Record<string, unknown>;

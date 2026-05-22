@@ -10,6 +10,9 @@ export const GENERATED_TARGETS = [
   { id: "cypher-healing.health", url: "https://api.cipherofhealing.com/health", contains: "ok" },
   { id: "coh.health", url: "https://api.cypherofhealing.com/health", contains: "ok" },
   { id: "factory-supervisor.health", url: "https://supervisor.latwoodtech.work/health", contains: "ok" },
+  { id: "lead-gen.health", url: "https://lead-gen.adrper79.workers.dev/health", contains: "ok" },
+  { id: "webhook-fanout.health", url: "https://webhooks.latwoodtech.work/stripe/health", contains: "ok" },
+  { id: "daily-brief.health", url: "https://daily-brief.adrper79.workers.dev/health", contains: "ok" },
   { id: "xico-city.health", url: "https://xicocity.com/health", contains: "ok" },
-  { id: "xico-city-staging.health", url: "https://xico-city-staging.adrper79.workers.dev/health", contains: "ok" },
+  { id: "xico-city-staging.health", url: "https://staging.xicocity.com/health", contains: "ok" },
 ] as const;

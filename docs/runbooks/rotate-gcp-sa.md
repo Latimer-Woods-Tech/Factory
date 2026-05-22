@@ -98,7 +98,7 @@ TOKEN=$(gcloud auth print-access-token)
 echo "$TOKEN" | wrangler secret put VERTEX_ACCESS_TOKEN --name factory-supervisor
 
 # 3. Verify
-curl https://supervisor.apunlimited.com/health
+curl https://supervisor.latwoodtech.work/health
 ```
 
 **Token expiry:** Google access tokens are valid for 1 hour.  The supervisor Worker

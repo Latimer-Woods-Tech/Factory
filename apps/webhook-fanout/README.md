@@ -2,9 +2,11 @@
 
 Cloudflare Worker that receives Stripe webhooks, verifies HMAC-SHA256 signatures, deduplicates via KV (7-day TTL), filters synthetic test customers at source, and fans out to STACK.md-approved **PostHog + factory_events** (analytics) and **Resend** (lifecycle emails).
 
-- **Endpoint:** `https://webhooks.latwoodtech.com/stripe`
+- **Endpoint:** `https://webhooks.latwoodtech.work/stripe`
 - **Handles:** `POST /stripe` (Stripe webhook receiver), `GET /health`
 - **Issue:** [#641](https://github.com/Latimer-Woods-Tech/factory/issues/641)
+
+The Worker binds the hostname `webhooks.latwoodtech.work` as its custom domain; the `/stripe` path is handled by the Hono router in application code.
 
 ---
 
@@ -48,32 +50,28 @@ Set these via `wrangler secret put <NAME>` or add to org-level GitHub Actions se
 | Secret | Description |
 |---|---|
 | `STRIPE_WEBHOOK_SECRET` | Signing secret from Stripe dashboard (after endpoint registration) |
-| `POSTHOG_API_KEY` | PostHog project API key |
+| `POSTHOG_KEY` | PostHog project API key |
 | `RESEND_API_KEY` | Resend API key |
 
 ---
 
 ## Deployment steps
 
-### 1. Provision the KV namespace (once)
+### 1. Cloudflare bindings
 
 ```bash
 wrangler kv namespace create webhook-fanout-idempotency
 wrangler kv namespace create webhook-fanout-idempotency --preview
+wrangler d1 create factory-events
 ```
 
-Copy the IDs into `wrangler.jsonc`, replacing `REPLACE_WITH_KV_NAMESPACE_ID` and `REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID`.
-
-Provision the `factory_events` D1 database and replace both `REPLACE_WITH_D1_DATABASE_ID` placeholders in `wrangler.jsonc`:
-
-- top-level `d1_databases[0].database_id` for local/preview development
-- `env.production.d1_databases[0].database_id` for production deploys
+The current Factory account bindings are already checked into `wrangler.jsonc`. Recreate and update those IDs only if the namespace or database is intentionally replaced.
 
 ### 2. Set secrets
 
 ```bash
 wrangler secret put STRIPE_WEBHOOK_SECRET --env production
-wrangler secret put POSTHOG_API_KEY --env production
+wrangler secret put POSTHOG_KEY --env production
 wrangler secret put RESEND_API_KEY --env production
 ```
 
@@ -86,7 +84,7 @@ npm run deploy   # deploys to production env
 ### 4. Register the Stripe webhook endpoint (after first deploy)
 
 1. Stripe Dashboard → Developers → Webhooks → **Add endpoint**
-2. URL: `https://webhooks.latwoodtech.com/stripe`
+2. URL: `https://webhooks.latwoodtech.work/stripe`
 3. Subscribe to all 8 events listed in the table above
 4. Copy the signing secret → set as `STRIPE_WEBHOOK_SECRET`
 
