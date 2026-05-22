@@ -146,35 +146,51 @@ def _fake_search_with_substrings(*needles: str):
     return fake_search
 
 
-def test_typed_env_accepts_interface_with_hono_bindings(platform_conformance):
-    platform_conformance.gh_search_code = _fake_search_with_hits(
+def test_typed_env_accepts_interface_with_hono_bindings(platform_conformance, monkeypatch):
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_search_code",
+        _fake_search_with_hits(
         'path:src/ "interface Env"',
         'path:src/ "new Hono<{ Bindings: Env"',
+        ),
     )
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_typed_env_accepts_type_alias_with_bindings(platform_conformance):
-    platform_conformance.gh_search_code = _fake_search_with_hits(
+def test_typed_env_accepts_type_alias_with_bindings(platform_conformance, monkeypatch):
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_search_code",
+        _fake_search_with_hits(
         'path:src/ "type Env ="',
         'path:src/ "Bindings: Env"',
+        ),
     )
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_typed_env_accepts_apps_layout(platform_conformance):
-    platform_conformance.gh_search_code = _fake_search_with_hits(
+def test_typed_env_accepts_apps_layout(platform_conformance, monkeypatch):
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_search_code",
+        _fake_search_with_hits(
         'path:apps/ "interface Env"',
         'path:apps/ "Bindings: Env"',
+        ),
     )
     assert platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_typed_env_rejects_missing_env_declaration(platform_conformance):
-    platform_conformance.gh_search_code = _fake_search_with_substrings("Bindings: Env")
+def test_typed_env_rejects_missing_env_declaration(platform_conformance, monkeypatch):
+    monkeypatch.setattr(platform_conformance, "gh_search_code", _fake_search_with_substrings("Bindings: Env"))
     assert not platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")
 
 
-def test_typed_env_rejects_missing_bindings_usage(platform_conformance):
-    platform_conformance.gh_search_code = _fake_search_with_substrings("interface Env", "type Env =")
+def test_typed_env_rejects_missing_bindings_usage(platform_conformance, monkeypatch):
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_search_code",
+        _fake_search_with_substrings("interface Env", "type Env ="),
+    )
     assert not platform_conformance.has_typed_env_bindings("Latimer-Woods-Tech/example")

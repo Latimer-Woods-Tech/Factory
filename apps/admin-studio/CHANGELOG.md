@@ -2,7 +2,8 @@
 
 All notable changes to the admin-studio Worker and admin-studio-ui frontend are documented here.
 
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
+Versions align with the `version` field in each `package.json`.
 
 ---
 
@@ -12,9 +13,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `PII_INVENTORY.md` documenting all personal data fields, flows, retention schedules, and DSR procedures
 - `session.test.ts` — 9 unit tests covering login, logout, hydrate, isAuthed, and JWT decode edge cases
 - `activeFile.test.ts` — 7 unit tests covering open, edit, saved, close, and dirty state transitions
+- `NotificationsContainer` component — global toast system (success / error / info / warning)
+- Google OAuth `/auth/google` endpoint with full ID token verification via Google JWKS
+- Google OAuth setup guide (`docs/google-oauth-setup.md`) and verification script
 
 ### Changed
 - `LoginPage`: added email validation, toast notifications, loading spinner, WCAG 2.2 AA accessibility improvements (fieldset/legend, focus rings, aria-describedby, ARIA labels)
+- `App.tsx`: integrated `NotificationsContainer` globally
 
 ### Fixed
 - CI workflow paths now include `scripts/platform_conformance.py` in trigger paths

@@ -39,3 +39,9 @@ apps/video-studio/*.webm
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Claude/Copilot agent worktrees (nested git repos — must not be tracked)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+

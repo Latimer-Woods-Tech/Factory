@@ -68,7 +68,7 @@ This is an internal operator tool. Operators are employees or contractors of Lat
 | Rectification | Audit events are immutable by design (legal requirement). Annotation ADR required. | N/A |
 | Portability | Export via `SELECT * FROM audit_events WHERE actor = ?` — CSV format on request | 30 days |
 
-**DSR contact:** privacy@latimer-woods-tech.com  
+**DSR contact:** privacy@latimer-woods-tech.com
 **Data Controller:** Latimer-Woods-Tech (sole operator)
 
 ---
