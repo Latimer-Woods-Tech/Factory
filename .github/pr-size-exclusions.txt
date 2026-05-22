@@ -1,0 +1,79 @@
+# PR Size Exclusions — Files/patterns excluded from diff-line count
+#
+# Format: one glob pattern per line (relative to repo root)
+# Matches use gitignore-style patterns
+
+# Documentation and markdown
+docs/**
+*.md
+CHANGELOG*
+LICENSE
+README*
+
+# Git and repository metadata
+.gitignore
+.gitattributes
+.git
+
+# Config files (non-critical)
+.editorconfig
+.prettier*
+.eslintignore
+
+# Lock files (generated, high churn, no code review value)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build and distribution artifacts (generated)
+packages/*/dist/**
+apps/*/dist/**
+.next/
+.nuxt/
+dist/
+build/
+*.tsbuildinfo
+
+# Test and coverage artifacts (generated)
+packages/*/coverage/**
+apps/*/coverage/**
+.nyc_output/
+coverage/
+*.lcov
+
+# IDE and editor metadata
+.vscode/**
+.idea/**
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Video render artifacts (generated from video-studio)
+apps/video-studio/**/*.mp4
+apps/video-studio/**/*.webm
+
+# Python cache (from scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Node cache
+node_modules/
+.npm/
+
+# Environment and secrets (local only, never committed)
+.env*
+.dev.vars*
+*.secret
+
+# Auto-generated Sentry files
+.sentry-release
+
+# Storybook static output
+storybook-static/
+
+# Git worktrees (local only, never committed)
+.claude/worktrees/
