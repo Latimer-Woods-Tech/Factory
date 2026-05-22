@@ -40,7 +40,10 @@ jobs:
           node-version: '24'
 
       - name: Install root dependencies
-        run: npm ci
+        # No root package-lock.json (monorepo: each package owns its lock),
+        # so use `npm install` with --ignore-scripts for a deterministic-enough
+        # CI-only install of js-yaml + jsonc-parser used by the validator.
+        run: npm install --no-audit --no-fund --ignore-scripts
 
       - name: Validate service registry coverage
         run: npm run validate:service-registry
