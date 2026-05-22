@@ -1,18 +1,18 @@
 # Completion Tracker
-_Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-05-22T12:39:35+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: XC
+## 🚨 CI red on main: FA, XC
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **HD** HumanDesign | 64 | 1 | 18 | 6 | 89 | 71.9% | 77.1% | **74.9%** (Δ+0.0) |
-| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** |
-| **FA** factory-admin-studio 🟧smoke | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **HD** HumanDesign | 68 | 1 | 18 | 6 | 93 | 73.1% | 78.2% | **76.0%** (Δ+1.1) |
+| **CC** capricast | 0 | 0 | 0 | 64 | 64 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **FA** factory-admin-studio 🚨 | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **CH** cypher-healing | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 26.5% (Δ+0.0)** · known: 43.2% · raw: 23.7%
+**Overall weighted pass: 27.7% (Δ+1.2)** · known: 44.7% · raw: 24.8%
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 91.5% weighted (11✅ 1⚠️ 0❌ 0🔍)
@@ -144,6 +144,26 @@ _Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
 | `HD-PERF-005` | Time to Interactive | 🔍 | 3 | — | — |
 | `HD-PERF-006` | Database Query Time | 🔍 | 3 | — | — |
 
+### Transits & Daily Features — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-TRANS-001` | Transit Forecast | ✅ | 4 | — | — |
+
+### Referrals — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-REF-001` | Get Referrals | ✅ | 3 | — | — |
+
+### Data Export — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-EXPORT-001` | Data Export | ✅ | 5 | — | — |
+
+### LLM Profile Generation — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-LLM-001` | LLM Profile Generate | ✅ | 4 | — | — |
+
 ## CC — capricast
 ### Authentication & Accounts — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
@@ -241,15 +261,15 @@ _Generated 2026-05-17T19:07:57+00:00 by `scripts/aggregate_completion.py`._
 ### Health, Auth & Session — 0.0% weighted (0✅ 0⚠️ 0❌ 9🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | smoke-red |
-| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | smoke-red |
-| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | smoke-red |
-| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | smoke-red |
-| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | smoke-red |
-| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | smoke-red |
+| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | — |
+| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | — |
+| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | — |
+| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | — |
+| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | — |
+| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | — |
+| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | — |
+| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | — |
+| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | — |
 
 ### Public Manifest & Function Catalog — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |

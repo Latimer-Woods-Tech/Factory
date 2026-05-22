@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-05-17T19:07:57.484975+00:00",
-  "overall_weighted": 26.5,
-  "overall_known": 43.2,
-  "overall_raw": 23.7,
+  "generated_at": "2026-05-22T12:39:35.980226+00:00",
+  "overall_weighted": 27.7,
+  "overall_known": 44.7,
+  "overall_raw": 24.8,
   "repo_weighted": {
-    "HD": 74.9,
+    "HD": 76.0,
     "CC": 0.0,
     "FA": 0.0,
     "CH": 0.0,
     "XC": 0.0
   },
   "ci_red": [
+    "FA",
     "XC"
   ],
   "smoke_red": [
-    "FA",
     "XC"
   ],
   "rows": [
@@ -363,18 +363,18 @@
       "repo_name": "HumanDesign",
       "section": "Chart Generation",
       "line_no": 38,
-      "raw": "| HD-CHART-006 | Today's Hint | `/api/chart/today-hint` | 🔍 TODO | `chart-today-hint.test.js` | ✅ | @adrper79-dot | 2026-05-11 | — | 3 | Migrated |",
+      "raw": "| HD-CHART-006 | Today's Hint | `chart-today-hint.js` (component) | ✅ Works | `chart-today-hint.test.js` | ✅ | @adrper79-dot | 2026-05-21 | — | 3 | client-side component — no API route needed |",
       "id": "HD-CHART-006",
       "feature": "Today's Hint",
-      "endpoint": "`/api/chart/today-hint`",
-      "manual": "🔍 TODO",
+      "endpoint": "`chart-today-hint.js` (component)",
+      "manual": "✅ Works",
       "automated": "`chart-today-hint.test.js`",
       "status": "✅",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-05-21",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Migrated",
+      "notes": "client-side component — no API route needed",
       "tags": [],
       "overlays": []
     },
@@ -1799,6 +1799,86 @@
       "overlays": []
     },
     {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Transits & Daily Features",
+      "line_no": 146,
+      "raw": "| HD-TRANS-001 | Transit Forecast | `GET /api/transits/forecast` | ✅ Works | — | ✅ | @adrper79-dot | 2026-05-21 | — | 4 | BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES |",
+      "id": "HD-TRANS-001",
+      "feature": "Transit Forecast",
+      "endpoint": "`GET /api/transits/forecast`",
+      "manual": "✅ Works",
+      "automated": "—",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-05-21",
+      "issue_pr": "—",
+      "weight": 4,
+      "notes": "BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Referrals",
+      "line_no": 151,
+      "raw": "| HD-REF-001 | Get Referrals | `GET /api/referrals` | ✅ Works | — | ✅ | @adrper79-dot | 2026-05-21 | — | 3 | BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id] |",
+      "id": "HD-REF-001",
+      "feature": "Get Referrals",
+      "endpoint": "`GET /api/referrals`",
+      "manual": "✅ Works",
+      "automated": "—",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-05-21",
+      "issue_pr": "—",
+      "weight": 3,
+      "notes": "BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id]",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Data Export",
+      "line_no": 156,
+      "raw": "| HD-EXPORT-001 | Data Export | `GET /api/auth/export` | ✅ Works | — | ✅ | @adrper79-dot | 2026-05-21 | — | 5 | Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user |",
+      "id": "HD-EXPORT-001",
+      "feature": "Data Export",
+      "endpoint": "`GET /api/auth/export`",
+      "manual": "✅ Works",
+      "automated": "—",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-05-21",
+      "issue_pr": "—",
+      "weight": 5,
+      "notes": "Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "LLM Profile Generation",
+      "line_no": 161,
+      "raw": "| HD-LLM-001 | LLM Profile Generate | `/api/profile/generate` (or equivalent) | ✅ Works | — | ✅ | @adrper79-dot | 2026-05-21 | — | 4 | BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string |",
+      "id": "HD-LLM-001",
+      "feature": "LLM Profile Generate",
+      "endpoint": "`/api/profile/generate` (or equivalent)",
+      "manual": "✅ Works",
+      "automated": "—",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-05-21",
+      "issue_pr": "—",
+      "weight": 4,
+      "notes": "BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string",
+      "tags": [],
+      "overlays": []
+    },
+    {
       "repo_key": "CC",
       "repo_name": "capricast",
       "section": "Authentication & Accounts",
@@ -3094,11 +3174,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "❌ smoke red — Returns env/service/timestamp",
+      "notes": "Returns env/service/timestamp",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3116,11 +3194,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Has tests",
+      "notes": "Has tests",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3138,11 +3214,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Requires env context",
+      "notes": "Requires env context",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3160,11 +3234,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Gates most routes",
+      "notes": "Gates most routes",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3182,11 +3254,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "❌ smoke red — Applied to mutating routes",
+      "notes": "Applied to mutating routes",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3204,11 +3274,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Data-loss guard",
+      "notes": "Data-loss guard",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3226,11 +3294,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "❌ smoke red",
+      "notes": "",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3248,11 +3314,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "❌ smoke red",
+      "notes": "",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
@@ -3270,11 +3334,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Webhook signing",
+      "notes": "Webhook signing",
       "tags": [],
-      "overlays": [
-        "smoke-red"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
