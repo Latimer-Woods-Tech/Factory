@@ -48,6 +48,10 @@ jobs:
         run: npm ci
         working-directory: apps/admin-studio-ui
 
+      - name: Test admin-studio-ui
+        run: npm test
+        working-directory: apps/admin-studio-ui
+
       - name: Build UI
         run: npm run build
         working-directory: apps/admin-studio-ui

@@ -7,6 +7,8 @@ Scores each app repo against PLATFORM_STANDARDS.md's 10 conformance dimensions
 merges. Output feeds the cohesion-score column in COMPLETION_TRACKER.md and the
 daily Pushover digest.
 
+[Trigger: 2026-05-22 18:35 - Main workflow fix merged]
+
 Dimensions (per PLATFORM_STANDARDS.md §"Conformance audit dimensions"):
   1. Stack            (weight 10) — wrangler.jsonc valid, ESM only, no node:crypto, Hono
   2. Code patterns    (weight 15) — @lwt/logger, @lwt/errors, idempotent webhooks, request_id
@@ -245,6 +247,36 @@ def gh_search_code(repo: str, query: str) -> int:
         return -1
 
 
+def any_search_hit(repo: str, queries: list[str]) -> bool:
+    """True when at least one GitHub code-search query returns a positive hit."""
+    return any(gh_search_code(repo, q) > 0 for q in queries)
+
+
+def has_typed_env_bindings(repo: str) -> bool:
+    """
+    Detect typed Worker env wiring with flexible patterns used across portfolio repos.
+
+    A repo passes when it has:
+    1) An `Env` declaration (`interface Env` or `type Env =`), and
+    2) Hono bindings usage wired to that Env (`Bindings: Env` in app/type wiring).
+    """
+    env_declaration_queries = [
+        'path:src/ "interface Env"',
+        'path:src/ "type Env ="',
+        'path:apps/ "interface Env"',
+        'path:apps/ "type Env ="',
+    ]
+    typed_binding_queries = [
+        'path:src/ "new Hono<{ Bindings: Env"',
+        'path:src/ "Bindings: Env"',
+        'path:apps/ "new Hono<{ Bindings: Env"',
+        'path:apps/ "Bindings: Env"',
+    ]
+    has_env_declaration = any_search_hit(repo, env_declaration_queries)
+    has_typed_bindings = any_search_hit(repo, typed_binding_queries)
+    return has_env_declaration and has_typed_bindings
+
+
 # ───────────── data classes ─────────────
 
 @dataclass
@@ -336,7 +368,7 @@ def dim_code_patterns(repo: str) -> DimensionScore:
         check("@latimer-woods-tech/errors in deps",     "@latimer-woods-tech/errors" in deps),
         check("@latimer-woods-tech/monitoring in deps", "@latimer-woods-tech/monitoring" in deps),
         check("No console.log in src/",                 gh_search_code(repo, f'path:{src_path} "console.log"') in (0, -1)),
-        check("Typed Env interface",                    gh_search_code(repo, f'path:{src_path} "interface Env"') > 0),
+        check("Typed Env interface",                    has_typed_env_bindings(repo)),
     ]
     return DimensionScore("code_patterns", "Code patterns", 15, score_from_checks(checks), checks)
 
