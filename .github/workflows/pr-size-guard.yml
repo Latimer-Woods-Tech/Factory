@@ -176,7 +176,7 @@ jobs:
 
           MARKER="<!-- pr-size-guard -->"
 
-          # Build comment body
+          # Determine status icon and message
           if [[ "$PASS" == "1" ]]; then
             STATUS_EMOJI="✅"
             STATUS_MSG="**This PR passes the diff-size budget.**"
@@ -185,30 +185,62 @@ jobs:
             STATUS_MSG="**This PR exceeds the diff-size budget** (${FAILED_TIERS})."
           fi
 
-          BODY="${MARKER}
-          ## ${STATUS_EMOJI} PR Size Guard (ADR-0005)
+          # Determine per-tier status
+          GREEN_STATUS=$([ "$GREEN" -le 50 ] && echo '✓' || echo '✗ FAIL')
+          YELLOW_STATUS=$([ "$YELLOW" -le 200 ] && echo '✓' || echo '✗ FAIL')
+          RED_STATUS=$([ "$RED" -le 500 ] && echo '✓' || echo '✗ FAIL')
 
-          ${STATUS_MSG}
+          # Format file lists for display
+          if [[ -n "$GREEN_FILES" ]]; then
+            GREEN_LIST=$(echo "$GREEN_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
+          else
+            GREEN_LIST="(none)"
+          fi
+
+          if [[ -n "$YELLOW_FILES" ]]; then
+            YELLOW_LIST=$(echo "$YELLOW_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
+          else
+            YELLOW_LIST="(none)"
+          fi
+
+          if [[ -n "$RED_FILES" ]]; then
+            RED_LIST=$(echo "$RED_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
+          else
+            RED_LIST="(none)"
+          fi
+
+          if [[ -n "$EXCLUDED_FILES" ]]; then
+            EXCLUDED_LIST=$(echo "$EXCLUDED_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
+          else
+            EXCLUDED_LIST="(none)"
+          fi
+
+          # Create markdown comment
+          BODY=$(cat <<'EOFCOMMENT'
+          <!-- pr-size-guard -->
+          ## STATUSEMOJI PR Size Guard (ADR-0005)
+
+          STATUSMSG
 
           | Tier | Changed | Budget | Status |
           |------|---------|--------|--------|
-          | 🟢 Green (docs, *.md) | $GREEN | ≤50 | $([ \"$GREEN\" -le 50 ] && echo '✓' || echo '✗ FAIL') |
-          | 🟡 Yellow (apps, client, tests) | $YELLOW | ≤200 | $([ \"$YELLOW\" -le 200 ] && echo '✓' || echo '✗ FAIL') |
-          | 🔴 Red (.github, packages, migrations) | $RED | ≤500 | $([ \"$RED\" -le 500 ] && echo '✓' || echo '✗ FAIL') |
+          | 🟢 Green (docs, *.md) | GREENTOTAL | ≤50 | GREENSTATUS |
+          | 🟡 Yellow (apps, client, tests) | YELLOWTOTAL | ≤200 | YELLOWSTATUS |
+          | 🔴 Red (.github, packages, migrations) | REDTOTAL | ≤500 | REDSTATUS |
 
           ### Per-tier breakdown
 
-          **Green tier** ($GREEN lines):
-          $([ -n \"$GREEN_FILES\" ] && echo \"\`\`\`$GREEN_FILES\`\`\`\" || echo \"(none)\")
+          **Green tier** (GREENTOTAL lines):
+          GREENLIST
 
-          **Yellow tier** ($YELLOW lines):
-          $([ -n \"$YELLOW_FILES\" ] && echo \"\`\`\`$YELLOW_FILES\`\`\`\" || echo \"(none)\")
+          **Yellow tier** (YELLOWTOTAL lines):
+          YELLOWLIST
 
-          **Red tier** ($RED lines):
-          $([ -n \"$RED_FILES\" ] && echo \"\`\`\`$RED_FILES\`\`\`\" || echo \"(none)\")
+          **Red tier** (REDTOTAL lines):
+          REDLIST
 
           **Excluded** (not counted):
-          $([ -n \"$EXCLUDED_FILES\" ] && echo \"\`\`\`$EXCLUDED_FILES\`\`\`\" || echo \"(none)\")
+          EXCLUDEDLIST
 
           ---
 
@@ -217,23 +249,40 @@ jobs:
           If this PR exceeds the budget:
           1. **Split by concern**: scaffolding → implementation → tests → docs (separate PRs)
           2. **Split by file**: each file/package → its own atomic PR if independent
-          3. **Stack PRs**: use \`[stack: N of M]\` in PR title to declare merge sequence
-          4. **Exception label**: CODEOWNER can apply \`size-exception-approved\` with explanation (rare)
+          3. **Stack PRs**: use `[stack: N of M]` in PR title to declare merge sequence
+          4. **Exception label**: CODEOWNER can apply `size-exception-approved` with explanation (rare)
 
-          For details, see [ADR-0005: PR Size Budget](https://github.com/${REPO}/blob/main/docs/adr/0005-pr-size-budget.md)."
+          For details, see [ADR-0005: PR Size Budget](https://github.com/REPO/blob/main/docs/adr/0005-pr-size-budget.md).
+          EOFCOMMENT
+          )
+
+          # Perform substitutions
+          BODY="${BODY//STATUSEMOJI/$STATUS_EMOJI}"
+          BODY="${BODY//STATUSMSG/$STATUS_MSG}"
+          BODY="${BODY//GREENTOTAL/$GREEN}"
+          BODY="${BODY//YELLOWTOTAL/$YELLOW}"
+          BODY="${BODY//REDTOTAL/$RED}"
+          BODY="${BODY//GREENSTATUS/$GREEN_STATUS}"
+          BODY="${BODY//YELLOWSTATUS/$YELLOW_STATUS}"
+          BODY="${BODY//REDSTATUS/$RED_STATUS}"
+          BODY="${BODY//GREENLIST/$GREEN_LIST}"
+          BODY="${BODY//YELLOWLIST/$YELLOW_LIST}"
+          BODY="${BODY//REDLIST/$RED_LIST}"
+          BODY="${BODY//EXCLUDEDLIST/$EXCLUDED_LIST}"
+          BODY="${BODY//REPO/$REPO}"
 
           # Upsert comment
-          EXISTING_ID=\$(gh api \\
-            \"/repos/${REPO}/issues/${PR_NUMBER}/comments\" \\
-            --paginate \\
-            --jq \"[.[] | select(.body | startswith(\\\"${MARKER}\\\")) | .id] | first // empty\")
+          EXISTING_ID=$(gh api \
+            "/repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --paginate \
+            --jq "[.[] | select(.body | startswith(\"${MARKER}\")) | .id] | first // empty")
 
-          if [[ -n \"\$EXISTING_ID\" ]]; then
+          if [[ -n "$EXISTING_ID" ]]; then
             gh api --method PATCH \
-              \"/repos/${REPO}/issues/comments/\${EXISTING_ID}\" \
-              -f body=\"\$BODY\"
+              "/repos/${REPO}/issues/comments/${EXISTING_ID}" \
+              -f body="$BODY"
           else
-            gh pr comment \"$PR_NUMBER\" --repo \"$REPO\" --body \"\$BODY\"
+            gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
           fi
 
       - name: Fail check if budget exceeded
