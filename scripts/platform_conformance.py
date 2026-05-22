@@ -7,7 +7,7 @@ Scores each app repo against PLATFORM_STANDARDS.md's 10 conformance dimensions
 merges. Output feeds the cohesion-score column in COMPLETION_TRACKER.md and the
 daily Pushover digest.
 
-[Trigger: 2026-05-22 17:10]
+[Trigger: 2026-05-22 18:35 - Main workflow fix merged]
 
 Dimensions (per PLATFORM_STANDARDS.md §"Conformance audit dimensions"):
   1. Stack            (weight 10) — wrangler.jsonc valid, ESM only, no node:crypto, Hono
