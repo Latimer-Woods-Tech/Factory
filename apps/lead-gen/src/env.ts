@@ -15,5 +15,4 @@ export interface Env {
   
   // Bindings
   LEAD_GEN_QUEUE: Queue;
-  IDEMPOTENCY_KV: KVNamespace;
 }

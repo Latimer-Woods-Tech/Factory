@@ -1,0 +1,40 @@
+{
+  "briefKey": "type-welcome-manifestor",
+  "key": "type-welcome-manifestor",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "type-welcome",
+  "title": "Welcome, Manifestor",
+  "description": "Initiator. The rare design with direct motor-to-throat current. Inform before you act.",
+  "composition": "MarketingVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Welcome, Manifestor",
+  "learningGoal": "A newly identified Manifestor understands their initiatory design — and the one practice that changes everything: informing.",
+  "targetPersona": "new_manifestor",
+  "keyPoints": [
+    "Manifestors carry a defined motor with a direct connection to the Throat — action without waiting",
+    "You are designed to initiate; you do not need response or invitation to move",
+    "Inform the people affected before you act — this is the one practice your design requires",
+    "Peace is your signature; anger is the signal something is misaligned"
+  ],
+  "forbiddenClaims": [
+    "Manifestors are above the rules",
+    "you should ignore other people's reactions",
+    "guaranteed initiation success",
+    "informing is the same as asking permission"
+  ],
+  "toneNotes": "Strong and direct. The Manifestor recognizes themselves in a confident voice. The informing teaching is the load-bearing line.",
+  "narration_script": "You are a Manifestor.\n\nNine percent of the population. The rarest of the energy types. You carry a defined motor with a direct line to your Throat. Action moves through you without waiting for response, invitation, or anyone else's permission.\n\nYou are designed to initiate.\n\nWhen the impulse comes, you move. You do not need a yes from the gut. You do not need an invitation from outside. The current is already running. This is why others have always experienced you as someone who simply does things while they are still thinking about them.\n\nThis is also why others get caught in your wake.\n\nWhen you move without warning, the people around you feel it as disruption. Even if your move is the right one. Even if it benefits them. The absence of information makes the action feel like impact.\n\nThe practice your design requires is informing.\n\nNot asking permission. Not negotiating consent. Informing. Telling the people who will be affected by your move that the move is happening, before it happens. This single shift changes everything. Resistance falls away. Your initiations land cleanly.\n\nPeace is your signature. Anger is the signal you are encountering resistance you could have prevented.\n\nWelcome to your blueprint.",
+  "script": "You are a Manifestor.\n\nNine percent of the population. The rarest of the energy types. You carry a defined motor with a direct line to your Throat. Action moves through you without waiting for response, invitation, or anyone else's permission.\n\nYou are designed to initiate.\n\nWhen the impulse comes, you move. You do not need a yes from the gut. You do not need an invitation from outside. The current is already running. This is why others have always experienced you as someone who simply does things while they are still thinking about them.\n\nThis is also why others get caught in your wake.\n\nWhen you move without warning, the people around you feel it as disruption. Even if your move is the right one. Even if it benefits them. The absence of information makes the action feel like impact.\n\nThe practice your design requires is informing.\n\nNot asking permission. Not negotiating consent. Informing. Telling the people who will be affected by your move that the move is happening, before it happens. This single shift changes everything. Resistance falls away. Your initiations land cleanly.\n\nPeace is your signature. Anger is the signal you are encountering resistance you could have prevented.\n\nWelcome to your blueprint.",
+  "output_metadata": {
+    "title": "Welcome, Manifestor — Your Energy Blueprint",
+    "description": "A personal welcome for Manifestors. Initiation as strategy. Informing as the practice. Peace as signature."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

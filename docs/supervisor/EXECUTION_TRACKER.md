@@ -168,6 +168,6 @@ The front-end remains locked. The outreach engine is cleared for synergy with Hu
 
 ## Change log
 
-- **2026-05-06 ET** — SUP-3 fully code-complete. PRs #359 (merged) + #360 (auto-merge queue). 4 capabilities.yml files (26 caps), 15 templates, template_stats D1 migration, SUP-1.4 migration drift guard, capabilities code generator, supervisor DO wired with stats/capabilities/cron. O1+O3 decision issues closed. Remaining blocker: D1 database provisioning (REPLACE_AFTER_PROVISIONING in wrangler.jsonc).
+- **2026-05-06 ET** — SUP-3 fully code-complete. PRs #359 (merged) + #360 (auto-merge queue). 4 capabilities.yml files (26 caps), 15 templates, template_stats D1 migration, SUP-1.4 migration drift guard, capabilities code generator, supervisor DO wired with stats/capabilities/cron. O1+O3 decision issues closed. Supervisor D1 bindings are configured in `apps/supervisor/wrangler.jsonc`; remaining operational blockers are first supervised Green run execution and production migration verification.
 - **2026-05-02 10:30 ET** — Tracker created. SUP-0/1/2/3 epics + 15 sub-issues filed, linked, added to board with Priority + Status. HumanDesign#39 closed as dup of HumanDesign#68. 19 new labels on factory. Scheduled supervisor task drafted (DISABLED). Template bootstrap candidates analyzed in `file://session/template-bootstrap-candidates.md`.
 - **2026-05-05** — SUP-1.2 code-side complete: `scripts/provision-vertex-ai-sa.sh`, `.github/workflows/verify-vertex-ai.yml`, `docs/runbooks/rotate-gcp-sa.md`. Pending Adrian: run provision script + trigger verify workflow.

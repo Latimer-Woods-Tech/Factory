@@ -1,8 +1,8 @@
 # World-Class Implementation Dashboard
 
-**Last Updated:** April 29, 2026 (WORLD CLASS 360 TASK DASHBOARD LOADED)  
+**Last Updated:** May 21, 2026 (deployment coordination and registry validation docs refreshed)  
 **Phase B Progress:** 28/28 (100% Complete) 🎉  
-**Status:** Canonical execution dashboard, work register, and coordination process  
+**Status:** Canonical execution dashboard, work register, and coordination process with current deployment alignment and executable registry guardrails  
 **Scope:** Factory support platform + core application delivery model  
 **Reference Core App:** `_external_reviews/videoking` as the current quality and operating baseline
 
@@ -25,6 +25,26 @@ What is still missing for world-class execution:
 - A dashboard that sequences the work by outcomes, not just by infrastructure or isolated features.
 
 **Conclusion:** the plan needed improvement. This dashboard is the updated implementation plan.
+
+## Current operational delta
+
+Recent deployment-alignment work changed the control-plane state in ways that matter operationally even though it does not change the broader W360 roadmap:
+
+- `webhook-fanout` is now deployed with real KV and D1 bindings, a verified `workers.dev` health endpoint, and a branded-domain route recorded in `docs/service-registry.yml`.
+- `daily-brief` now has a dedicated deploy workflow instead of relying on manual/operator memory.
+- `schedule-worker` and `synthetic-monitor` workflows now verify branded production domains instead of defaulting to `workers.dev` where a canonical custom domain already exists.
+- `admin-studio` staging and production are now part of the validated local deploy surface; the workflow provisions required runtime secrets explicitly instead of depending on pre-existing Worker state.
+- `lead-gen` deployment repair is complete and is now part of the validated local deploy surface.
+- `factory-supervisor` production hostname reconciliation is complete and its deploy workflow now provisions the Slack secrets required by the live worker contract.
+- `docs/service-registry.yml` is now enforced by CI rather than treated as advisory documentation only.
+- The service-registry validator now covers workflow verification targets for all 9 local deploy workflows and contract alignment for 9 local Workers with zero exemptions.
+
+Why this matters:
+
+- The control plane now has an executable source of truth for the covered local Workers.
+- Documentation, deploy workflows, and Wrangler config are materially harder to let drift apart.
+- Future hardening can proceed one Worker at a time without reopening broad repo-wide policy work.
+- The validator is now mature enough to deserve its own operating runbook instead of being documented only through status notes and coordination comments.
 
 ---
 

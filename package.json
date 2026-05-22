@@ -10,6 +10,29 @@
     "hono": "^4.12.14"
   },
   "devDependencies": {
+    "js-yaml": "^4.1.1",
+    "jsonc-parser": "^3.3.1",
     "typescript": "^5.4.0"
-  }
+  },
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "validate:service-registry": "node scripts/validate-service-registry.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/factory.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Latimer-Woods-Tech/factory/issues"
+  },
+  "homepage": "https://github.com/Latimer-Woods-Tech/factory#readme"
 }

@@ -44,11 +44,11 @@ jobs:
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
-          fetch_to_env CF_API_TOKEN           CF_API_TOKEN CLOUDFLARE_API_TOKEN
-          fetch_to_env CF_ACCOUNT_ID          CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env CLOUDFLARE_API_TOKEN   CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          fetch_to_env CLOUDFLARE_ACCOUNT_ID  CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
           fetch_to_env STRIPE_WEBHOOK_SECRET  STRIPE_WEBHOOK_SECRET
-          fetch_to_env POSTHOG_API_KEY        POSTHOG_API_KEY
-          fetch_to_env RESEND_API_KEY         RESEND_API_KEY
+          fetch_to_env POSTHOG_KEY            POSTHOG_KEY POSTHOG_API_KEY POSTHOG_API
+          fetch_to_env RESEND_API_KEY         RESEND_API_KEY FACTORY_RESEND_API_KEY
 
       - name: Build local package dependencies
         run: |
@@ -67,28 +67,21 @@ jobs:
           npm install
 
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ env.CF_API_TOKEN }}
-          accountId: ${{ env.CF_ACCOUNT_ID }}
-          workingDirectory: apps/webhook-fanout
-          command: deploy --env production
-          secrets: |
-            STRIPE_WEBHOOK_SECRET
-            POSTHOG_API_KEY
-            RESEND_API_KEY
-          environment: production
-        env:
-          STRIPE_WEBHOOK_SECRET: ${{ env.STRIPE_WEBHOOK_SECRET }}
-          POSTHOG_API_KEY: ${{ env.POSTHOG_API_KEY }}
-          RESEND_API_KEY: ${{ env.RESEND_API_KEY }}
+        working-directory: apps/webhook-fanout
+        run: |
+          set -euo pipefail
+          printf '%s' "$STRIPE_WEBHOOK_SECRET" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --env production
+          printf '%s' "$POSTHOG_KEY" | npx wrangler secret put POSTHOG_KEY --env production
+          printf '%s' "$RESEND_API_KEY" | npx wrangler secret put RESEND_API_KEY --env production
+          npx wrangler deploy --env production
 
       - name: Verify deployment
         run: |
           echo "🚀 Deployment complete"
-          echo "📍 Health check: https://webhooks.latwoodtech.com/health"
+          echo "📍 Health check: https://webhook-fanout.adrper79.workers.dev/health"
+          echo "📍 Custom domain target: https://webhooks.latwoodtech.work/health"
           node scripts/verify-http-endpoint.mjs \
-            --url https://webhooks.latwoodtech.com/health \
+            --url https://webhook-fanout.adrper79.workers.dev/health \
             --status 200 \
             --json-field worker \
             --json-equals webhook-fanout \

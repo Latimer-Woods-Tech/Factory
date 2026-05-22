@@ -1,11 +1,11 @@
 {
-  "briefKey": "ai-synthesis-walkthrough",
+  "briefKey": "synthesis-walkthrough",
   "composition": "WalkthroughVideo",
-  "topic": "Reading Your AI Synthesis",
-  "learningGoal": "User opens their AI Synthesis, navigates the sections, and extracts one actionable insight.",
+  "topic": "Reading Your Synthesis",
+  "learningGoal": "User opens their Synthesis, navigates the sections, and extracts one actionable insight.",
   "targetPersona": "new_user",
   "keyPoints": [
-    "Open your Free Energy Blueprint and scroll to the AI Synthesis section below your body graph",
+    "Open your Free Energy Blueprint and scroll to the Synthesis section below your body graph",
     "The Synthesis has five sections: Energy Type, Strategy, Authority, Defined Centers, and Your Gates — read them in order",
     "The Defined Centers section tells you where you have consistent, reliable energy — these are your strengths",
     "The Gates section shows your specific traits, gifts, and potential challenges based on your natal chart",

@@ -1,0 +1,40 @@
+{
+  "briefKey": "type-welcome-reflector",
+  "key": "type-welcome-reflector",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "type-welcome",
+  "title": "Welcome, Reflector",
+  "description": "The lunar one. The cosmic mirror. Patience as your gift, and the twenty-eight-day cycle as your decision-making instrument.",
+  "composition": "MarketingVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Welcome, Reflector",
+  "learningGoal": "A newly identified Reflector understands the lunar cycle as their decision-making mechanism and recognizes themselves as a structural mirror rather than an incomplete chart.",
+  "targetPersona": "new_reflector",
+  "keyPoints": [
+    "Reflectors are roughly one percent of the population — the rarest design",
+    "You carry no consistent definition; every center on your body graph is open",
+    "You sample the energy of every person and environment you stand in — you are a cosmic mirror",
+    "Your decision-making cycle is the full lunar month; wait twenty-eight days before any major commitment"
+  ],
+  "forbiddenClaims": [
+    "Reflectors are confused or broken",
+    "you have no identity of your own",
+    "the lunar cycle predicts your decisions",
+    "guaranteed clarity after twenty-eight days"
+  ],
+  "toneNotes": "Spacious and dignifying. Reflectors have often been told they are flaky, inconsistent, or hard to read. Restore the cosmic dignity of the design.",
+  "narration_script": "You are a Reflector.\n\nOne percent of the population. The rarest design on the planet. Every center on your body graph is open. You do not carry consistent definition anywhere. You are not a fixed signal in the field. You are the field itself, made visible.\n\nYou are a cosmic mirror.\n\nWhen you stand in a room, you sample every person in it. Their energy moves through you, fully, before passing on. You feel what each one is broadcasting. You amplify it. You return a reading of the whole room that nobody else can give.\n\nThis is your gift. Not a personality you are missing. A function only your design can perform.\n\nYour decision-making cycle is the Moon.\n\nWhile other types make decisions in seconds or minutes, your design is built to wait the full lunar cycle. Twenty-eight days. As the Moon travels the wheel of gates, she activates each one in turn. She illuminates a different facet of the decision each day. By the time she has returned to where she started, you have felt the choice from every angle.\n\nThis is not indecision. This is the most thorough decision-making structure in the entire system.\n\nSurprise is your signature. When you live your full cycle, life delights you in ways no fixed type can access.\n\nWelcome to your blueprint.",
+  "script": "You are a Reflector.\n\nOne percent of the population. The rarest design on the planet. Every center on your body graph is open. You do not carry consistent definition anywhere. You are not a fixed signal in the field. You are the field itself, made visible.\n\nYou are a cosmic mirror.\n\nWhen you stand in a room, you sample every person in it. Their energy moves through you, fully, before passing on. You feel what each one is broadcasting. You amplify it. You return a reading of the whole room that nobody else can give.\n\nThis is your gift. Not a personality you are missing. A function only your design can perform.\n\nYour decision-making cycle is the Moon.\n\nWhile other types make decisions in seconds or minutes, your design is built to wait the full lunar cycle. Twenty-eight days. As the Moon travels the wheel of gates, she activates each one in turn. She illuminates a different facet of the decision each day. By the time she has returned to where she started, you have felt the choice from every angle.\n\nThis is not indecision. This is the most thorough decision-making structure in the entire system.\n\nSurprise is your signature. When you live your full cycle, life delights you in ways no fixed type can access.\n\nWelcome to your blueprint.",
+  "output_metadata": {
+    "title": "Welcome, Reflector — Your Energy Blueprint",
+    "description": "A personal welcome for Reflectors. The lunar cycle as decision-making instrument. The cosmic mirror as gift."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

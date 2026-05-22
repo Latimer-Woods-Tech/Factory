@@ -1,0 +1,40 @@
+{
+  "briefKey": "type-welcome-generator",
+  "key": "type-welcome-generator",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "type-welcome",
+  "title": "Welcome, Generator",
+  "description": "A short, personalized welcome the moment your type is identified as Generator. Sacral as compass. Response as strategy.",
+  "composition": "MarketingVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Welcome, Generator",
+  "learningGoal": "A newly identified Generator immediately understands their core operating principle — response over initiation, sacral as the compass — and feels recognized.",
+  "targetPersona": "new_generator",
+  "keyPoints": [
+    "You are designed to respond, not to initiate",
+    "Your sacral center is the compass — gut-level yes or no",
+    "Satisfaction is your signature; frustration is the signal something is misaligned",
+    "Your energy is renewable when you use it for the right things"
+  ],
+  "forbiddenClaims": [
+    "Generators are the best type",
+    "guaranteed satisfaction",
+    "you must follow every gut response",
+    "Generators cannot initiate ever"
+  ],
+  "toneNotes": "Warm and recognition-based. Speak directly to the Generator. The video should feel like meeting someone who already understands you.",
+  "narration_script": "You are a Generator.\n\nThe most common design on the planet. Roughly thirty-five percent of all people share your structural type. The sacral motor in the center of your chart is the renewable engine of the species.\n\nYou are designed to respond. Not to initiate.\n\nThis is not a limitation. It is the mechanics of how your energy actually works. When you push, when you force, when you start something from nothing just because the mind decided to, you burn through your reserves and meet resistance.\n\nWhen you respond — when life puts something in front of you and your gut answers before the mind gets involved — your energy renews itself. You can work for hours. The satisfaction lands at the end of the day. Sleep is deep.\n\nThe sacral is your compass. A gut-level yes. A gut-level no. Trust it before you negotiate with it.\n\nSatisfaction is your signature. When you feel it, you are aligned. When frustration shows up instead, something is misaligned. The frustration is the signal, not the problem.\n\nThis is your design. Renewable, responsive, deeply satisfied when used the way it was built.\n\nWelcome to your blueprint.",
+  "script": "You are a Generator.\n\nThe most common design on the planet. Roughly thirty-five percent of all people share your structural type. The sacral motor in the center of your chart is the renewable engine of the species.\n\nYou are designed to respond. Not to initiate.\n\nThis is not a limitation. It is the mechanics of how your energy actually works. When you push, when you force, when you start something from nothing just because the mind decided to, you burn through your reserves and meet resistance.\n\nWhen you respond — when life puts something in front of you and your gut answers before the mind gets involved — your energy renews itself. You can work for hours. The satisfaction lands at the end of the day. Sleep is deep.\n\nThe sacral is your compass. A gut-level yes. A gut-level no. Trust it before you negotiate with it.\n\nSatisfaction is your signature. When you feel it, you are aligned. When frustration shows up instead, something is misaligned. The frustration is the signal, not the problem.\n\nThis is your design. Renewable, responsive, deeply satisfied when used the way it was built.\n\nWelcome to your blueprint.",
+  "output_metadata": {
+    "title": "Welcome, Generator — Your Energy Blueprint",
+    "description": "A personal welcome for Generators. Response as strategy. Sacral as compass. Satisfaction as signature."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

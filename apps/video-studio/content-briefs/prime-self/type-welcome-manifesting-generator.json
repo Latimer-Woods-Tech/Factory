@@ -1,0 +1,40 @@
+{
+  "briefKey": "type-welcome-manifesting-generator",
+  "key": "type-welcome-manifesting-generator",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "type-welcome",
+  "title": "Welcome, Manifesting Generator",
+  "description": "Multi-passionate. Response plus speed. Permission to skip the steps that do not matter.",
+  "composition": "MarketingVideo",
+  "forge": "eros",
+  "forgeTheme": "eros",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Welcome, Manifesting Generator",
+  "learningGoal": "A newly identified Manifesting Generator understands that their fast, multi-track design is structural, not flawed — and that informing replaces apologizing.",
+  "targetPersona": "new_manifesting_generator",
+  "keyPoints": [
+    "Manifesting Generators carry the sacral motor and a defined Throat connection — response plus immediate action",
+    "You are designed to be multi-passionate; the through-line is the sacral, not a single career path",
+    "You skip steps because your design genuinely does not need them; this is not laziness",
+    "Inform the people affected before you pivot — informing is not asking permission"
+  ],
+  "forbiddenClaims": [
+    "Manifesting Generators are superior",
+    "you can do anything at any speed without consequence",
+    "skipping steps is always correct",
+    "guaranteed efficiency"
+  ],
+  "toneNotes": "Energetic and validating. Many Manifesting Generators arrive carrying shame about not finishing things. Reframe that as design, not flaw.",
+  "narration_script": "You are a Manifesting Generator.\n\nThirty-three percent of the population. The most common variant of the sacral type. You carry the renewable motor of the Generator, and a direct connection from a motor to your Throat. That connection is the difference. It lets your response become action without delay.\n\nYou are designed to respond, and to move quickly.\n\nYou are also designed to be multi-passionate. Your sacral lights up for several things at once. You start. You go fast. You realize partway in that the next step does not actually need to happen. You skip it. You arrive at the result anyway.\n\nThis is not flightiness. This is not failure to finish. Your design is built to find the through-line that other types cannot see. The shortcut. The skipped rung that turns out to be unnecessary.\n\nThe through-line is the sacral, not the career path. You are following a yes, not a plan.\n\nThe one practice your design needs is informing. When you pivot, when you change direction mid-task, the people affected need to know before it happens. Not permission. Information.\n\nSatisfaction and peace are your signatures. When you feel both, you are aligned.\n\nWelcome to your blueprint.",
+  "script": "You are a Manifesting Generator.\n\nThirty-three percent of the population. The most common variant of the sacral type. You carry the renewable motor of the Generator, and a direct connection from a motor to your Throat. That connection is the difference. It lets your response become action without delay.\n\nYou are designed to respond, and to move quickly.\n\nYou are also designed to be multi-passionate. Your sacral lights up for several things at once. You start. You go fast. You realize partway in that the next step does not actually need to happen. You skip it. You arrive at the result anyway.\n\nThis is not flightiness. This is not failure to finish. Your design is built to find the through-line that other types cannot see. The shortcut. The skipped rung that turns out to be unnecessary.\n\nThe through-line is the sacral, not the career path. You are following a yes, not a plan.\n\nThe one practice your design needs is informing. When you pivot, when you change direction mid-task, the people affected need to know before it happens. Not permission. Information.\n\nSatisfaction and peace are your signatures. When you feel both, you are aligned.\n\nWelcome to your blueprint.",
+  "output_metadata": {
+    "title": "Welcome, Manifesting Generator — Your Energy Blueprint",
+    "description": "A personal welcome for Manifesting Generators. Response plus speed. Multi-passionate by design. Inform before you pivot."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

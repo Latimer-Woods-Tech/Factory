@@ -59,12 +59,12 @@ jobs:
       - name: Verify deployment
         run: |
           echo "🚀 Deployment complete"
-          echo "📍 Health endpoint: https://synthetic-monitor.adrper79.workers.dev/health"
+          echo "📍 Health endpoint: https://monitor.latwoodtech.work/health"
           node scripts/verify-http-endpoint.mjs \
-            --url https://synthetic-monitor.adrper79.workers.dev/health \
+            --url https://monitor.latwoodtech.work/health \
             --status 200 \
             --json-field status \
             --json-equals ok \
             --retries 8 \
             --delay-ms 5000
-          echo "📍 On-demand run: https://synthetic-monitor.adrper79.workers.dev/checks/run"
+          echo "📍 On-demand run: https://monitor.latwoodtech.work/checks/run"
