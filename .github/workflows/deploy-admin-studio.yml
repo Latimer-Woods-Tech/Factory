@@ -159,6 +159,8 @@ jobs:
 
           put_optional_secret STUDIO_WEBHOOK_SECRET "$SECRET_STUDIO_WEBHOOK_SECRET"
           put_optional_secret WORKER_API_TOKEN "$SECRET_WORKER_API_TOKEN"
+          put_optional_secret GOOGLE_CLIENT_ID "$SECRET_GOOGLE_CLIENT_ID"
+          put_optional_secret STUDIO_ALLOWED_USERS_JSON "$SECRET_STUDIO_ALLOWED_USERS_JSON"
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -170,6 +172,8 @@ jobs:
           SECRET_GH_PAT: ${{ secrets.GH_PAT }}
           SECRET_STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
           SECRET_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+          SECRET_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
+          SECRET_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
 
       - name: Apply database migrations
         run: |
