@@ -33,7 +33,10 @@ def test_dim_code_patterns_uses_admin_studio_paths_for_factory(platform_conforma
         assert repo == "Latimer-Woods-Tech/Factory"
         if 'path:apps/admin-studio/src/ "console.log"' in query:
             return 0
-        if 'path:apps/admin-studio/src/ "interface Env"' in query:
+        # has_typed_env_bindings checks for interface/type Env declarations + Bindings usage
+        if 'path:src/ "interface Env"' in query or 'path:apps/ "interface Env"' in query:
+            return 1
+        if 'path:src/ "Bindings: Env"' in query or 'path:apps/ "Bindings: Env"' in query:
             return 1
         return 0
 
