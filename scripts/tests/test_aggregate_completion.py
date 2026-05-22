@@ -591,3 +591,165 @@ def test_render_pushover_includes_extra_signals(aggregate):
     assert "5000" in output or "MRR" in output.upper()
     assert "12" in output or "PR" in output.upper()
     assert "1" in output or "P0" in output
+
+
+# ─────────────────────────── C: HTTP Error Handling ───────────────────────────
+
+def test_fetch_matrix_handles_404(aggregate):
+    """fetch_matrix() returns None if GitHub returns 404."""
+    def stub_404(url: str) -> tuple[int, bytes, dict[str, str]]:
+        return (404, b"Not Found", {})
+
+    result = aggregate.fetch_matrix("Latimer-Woods-Tech/HumanDesign", "docs/FUNCTIONS_MATRIX.md", "token", fetch_fn=stub_404)
+    assert result is None
+
+
+def test_fetch_matrix_handles_500_returns_none(aggregate):
+    """fetch_matrix() returns None if GitHub returns 500."""
+    def stub_500(url: str) -> tuple[int, bytes, dict[str, str]]:
+        return (500, b"Internal Server Error", {})
+
+    result = aggregate.fetch_matrix("Latimer-Woods-Tech/HumanDesign", "docs/FUNCTIONS_MATRIX.md", "token", fetch_fn=stub_500)
+    assert result is None
+
+
+def test_fetch_sentry_unresolved_handles_invalid_json(aggregate):
+    """fetch_sentry_unresolved() returns empty list if response is malformed JSON."""
+    def stub_malformed(url: str) -> tuple[int, bytes, dict[str, str]]:
+        return (200, b"not valid json", {})
+
+    result = aggregate.fetch_sentry_unresolved("token", fetch_fn=stub_malformed)
+    assert result == []
+
+
+def test_fetch_stripe_data_handles_500(aggregate):
+    """fetch_stripe_data() returns safe defaults if Stripe returns 500."""
+    def stub_stripe_500(url: str) -> tuple[int, bytes, dict[str, str]]:
+        return (500, b"Internal Server Error", {})
+
+    result = aggregate.fetch_stripe_data("sk-test-key", fetch_fn=stub_stripe_500)
+    assert result["mrr"] == 0.0
+    assert result["trials"] == 0
+    assert result["new_charges_24h"] == 0
+
+
+def test_github_get_4xx_does_not_retry(aggregate):
+    """github_get() does not retry on 4xx errors."""
+    call_count = [0]
+
+    def stub_403(url: str) -> tuple[int, bytes, dict[str, str]]:
+        call_count[0] += 1
+        return (403, b"Forbidden", {})
+
+    status, body = aggregate.github_get("repos/test/contents/file", "token", fetch_fn=stub_403)
+    # Should only call once (no retry on 4xx)
+    assert call_count[0] == 1
+    assert status == 403
+
+
+def test_count_open_prs_handles_empty_response(aggregate):
+    """count_open_prs() returns 0 if no PRs found."""
+    def stub_empty(url: str) -> tuple[int, bytes, dict[str, str]]:
+        return (200, b'{"items": []}', {})
+
+    result = aggregate.count_open_prs("token", fetch_fn=stub_empty)
+    assert result == 0
+
+
+# ─────────────────────────── C2: Sentry Integration ───────────────────────────
+
+def test_sentry_route_segments_extracts_from_culprit(aggregate):
+    """sentry_route_segments() extracts route from issue culprit."""
+    issue = {"culprit": "Error in POST /api/me/subscriptions"}
+    result = aggregate.sentry_route_segments(issue)
+    assert "/api/me/subscriptions" in result or any("/" in seg for seg in result)
+
+
+def test_sentry_route_segments_extracts_from_metadata(aggregate):
+    """sentry_route_segments() extracts route from issue metadata."""
+    issue = {"metadata": {"value": "Failed at GET /v1/internal/jobs/123/status"}}
+    result = aggregate.sentry_route_segments(issue)
+    assert any("/v1" in seg or "status" in seg.lower() for seg in result)
+
+
+def test_apply_sentry_overlay_downgrades_matching_endpoint(aggregate):
+    """apply_sentry_overlay() downgrades ✅ to ⚠️ when endpoint matches issue."""
+    rows = [
+        aggregate.Row(repo_key="HD", repo_name="HumanDesign", section="Billing",
+                      line_no=1, raw="", id="HD-BILL-001", status="✅",
+                      endpoint="POST /api/me/subscriptions"),
+    ]
+    issues = [
+        {"culprit": "Error in POST /api/me/subscriptions", "id": 1001},
+    ]
+    aggregate.apply_sentry_overlay(rows, issues)
+    # Row should be downgraded to ⚠️
+    assert rows[0].status == "⚠️"
+    assert "sentry-open" in rows[0].overlays
+
+
+def test_fetch_sentry_unresolved_constructs_correct_url(aggregate):
+    """fetch_sentry_unresolved() builds correct Sentry API URL."""
+    captured_url = [None]
+
+    def capture_url(url: str) -> tuple[int, bytes, dict[str, str]]:
+        captured_url[0] = url
+        return (200, b'[]', {})
+
+    aggregate.fetch_sentry_unresolved("test-token", fetch_fn=capture_url)
+    assert captured_url[0] is not None
+    assert "sentry.io" in captured_url[0]
+    assert "statsPeriod=24h" in captured_url[0]
+
+
+# ─────────────────────────── C3: Stripe Integration ───────────────────────────
+
+def test_fetch_stripe_data_calculates_mrr(aggregate):
+    """fetch_stripe_data() calculates MRR from subscription plans."""
+    def stub_stripe(url: str) -> tuple[int, bytes, dict[str, str]]:
+        if "/subscriptions" in url and "status=active" in url:
+            return (200, json.dumps({
+                "object": "list",
+                "data": [
+                    {"id": "sub_1", "status": "active", "plan": {"amount": 9900, "interval": "month"}},
+                    {"id": "sub_2", "status": "active", "plan": {"amount": 4900, "interval": "month"}},
+                ]
+            }).encode("utf-8"), {})
+        elif "/subscriptions" in url and "status=trialing" in url:
+            return (200, json.dumps({"object": "list", "data": []}).encode("utf-8"), {})
+        elif "/charges" in url:
+            return (200, json.dumps({"object": "list", "data": []}).encode("utf-8"), {})
+        return (404, b"", {})
+
+    result = aggregate.fetch_stripe_data("sk-test-key", fetch_fn=stub_stripe)
+    # MRR should be (9900 + 4900) / 100 = 148.00
+    assert result["mrr"] == 148.0
+
+
+def test_fetch_stripe_data_counts_trialing(aggregate):
+    """fetch_stripe_data() counts trialing subscriptions."""
+    def stub_stripe(url: str) -> tuple[int, bytes, dict[str, str]]:
+        if "/subscriptions" in url and "status=active" in url:
+            return (200, json.dumps({"object": "list", "data": []}).encode("utf-8"), {})
+        elif "/subscriptions" in url and "status=trialing" in url:
+            return (200, json.dumps({
+                "object": "list",
+                "data": [
+                    {"id": "sub_trial_1", "status": "trialing"},
+                    {"id": "sub_trial_2", "status": "trialing"},
+                ]
+            }).encode("utf-8"), {})
+        elif "/charges" in url:
+            return (200, json.dumps({"object": "list", "data": []}).encode("utf-8"), {})
+        return (404, b"", {})
+
+    result = aggregate.fetch_stripe_data("sk-test-key", fetch_fn=stub_stripe)
+    assert result["trials"] == 2
+
+
+def test_fetch_stripe_data_missing_key_returns_defaults(aggregate):
+    """fetch_stripe_data() returns safe defaults if no key provided."""
+    result = aggregate.fetch_stripe_data("", fetch_fn=None)
+    assert result["mrr"] == 0.0
+    assert result["trials"] == 0
+    assert result["new_charges_24h"] == 0
