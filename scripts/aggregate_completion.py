@@ -701,7 +701,7 @@ def main(fetch_fn: FetchFn | None = None) -> int:
 
     # write outputs
     md = render_markdown(all_rows, all_malformed, red_ci, red_smoke, prev, now)
-    (out_dir / "COMPLETION_TRACKER.md").write_text(md)
+    (out_dir / "COMPLETION_TRACKER.md").write_text(md, encoding='utf-8')
 
     overall = pass_pct(all_rows)
     by_repo_w: dict[str, float] = {}
@@ -720,7 +720,7 @@ def main(fetch_fn: FetchFn | None = None) -> int:
         "rows": [asdict(r) for r in all_rows],
         "malformed": [asdict(m) for m in all_malformed],
     }
-    prev_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False))
+    prev_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding='utf-8')
 
     # history append
     history_path = out_dir / "completion-tracker-history.jsonl"

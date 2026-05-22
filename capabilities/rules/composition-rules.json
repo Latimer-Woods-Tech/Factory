@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "rules",
+  "rules": [
+    {
+      "id": "outbound-telephony-requires-compliance",
+      "description": "Any recipe that includes telephony in an outbound-sensitive context must also include compliance.",
+      "ifAllPrimitives": [
+        "telephony"
+      ],
+      "thenRequirePrimitives": [
+        "compliance"
+      ]
+    }
+  ]
+}

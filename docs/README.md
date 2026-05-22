@@ -42,6 +42,7 @@
 ### Planning & Roadmap
 - [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) — Active implementation plan (7 tracks)
 - [PHASE_6_CHECKLIST.md](../PHASE_6_CHECKLIST.md) — Infrastructure provisioning
+- [Council Space](council/README.md) — Persistent inquiry workspace for cross-cutting review and decisions
 
 ### Quality & Process
 - [Definition of Ready & Done](runbooks/definition-of-ready-done.md) — Work gates and PR checklists

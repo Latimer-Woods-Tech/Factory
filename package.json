@@ -22,7 +22,9 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "validate:service-registry": "node scripts/validate-service-registry.mjs"
+    "validate:service-registry": "node scripts/validate-service-registry.mjs",
+    "validate:capabilities": "node scripts/validate-capability-registry.mjs",
+    "compile:capability": "node scripts/compile-capability-recipe.mjs"
   },
   "repository": {
     "type": "git",
