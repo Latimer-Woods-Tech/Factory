@@ -1,21 +1,17 @@
 """
-Tests for scripts/aggregate_completion.py — pure logic only.
+Tests for scripts/aggregate_completion.py — orchestration and integration.
 
-Covers:
-- parse_matrix: section tracking, header/separator detection, malformed
-  reporting (wrong cell count, bad ID, bad emoji, bad weight)
-- status_counts: tallies all four legend emojis + total
-- pass_pct: simple, known, and weighted percentages with edge cases
-- sentry_route_segments: route fragment extraction from issues
-- apply_sentry_overlay: ✅ → ⚠️ chain when endpoint contains a route segment
-- apply_actions_overlay: CI-RED tagging
-- apply_smoke_overlay: ❌ smoke red prepend for SMOKE_AFFECTED pairs
-- apply_decay_overlay: 30+ day decay → 🔍
-- diff_rows: regression/win sorting
+Phase A (Pure Logic): Covers parse_matrix, status_counts, pass_pct,
+sentry_route_segments, apply_sentry_overlay, apply_actions_overlay,
+apply_smoke_overlay, apply_decay_overlay, diff_rows.
 
-Phase B (HTTP Mocking): HTTP calls are mocked via dependency injection (fetch_fn
-parameter). See conftest.py::stub_fetch factory and docs/aggregator-http-mocking-design.md
-for the testing strategy.
+Phase B-D (HTTP Mocking): HTTP calls are mocked via dependency injection.
+The main() function accepts an optional fetch_fn parameter:
+  fetch_fn: Callable[[str], tuple[int, bytes, dict[str, str]]] | None
+When provided, fetch_fn is called instead of urllib for all HTTP requests.
+Tests use conftest.py::stub_fetch factory to create deterministic response stubs.
+
+See docs/aggregator-http-mocking-design.md for the complete testing strategy.
 """
 from __future__ import annotations
 
@@ -753,3 +749,26 @@ def test_fetch_stripe_data_missing_key_returns_defaults(aggregate):
     assert result["mrr"] == 0.0
     assert result["trials"] == 0
     assert result["new_charges_24h"] == 0
+
+
+def test_legend_constant_contains_status_emoji(aggregate):
+    """LEGEND constant contains all valid status emoji."""
+    assert "✅" in aggregate.LEGEND
+    assert "⚠️" in aggregate.LEGEND
+    assert "❌" in aggregate.LEGEND
+    assert "🔍" in aggregate.LEGEND
+    assert len(aggregate.LEGEND) == 4
+
+
+def test_status_counts_aggregates_correctly(aggregate):
+    """status_counts() tallies status emoji in matrix rows."""
+    class FakeRow:
+        def __init__(self, status):
+            self.status = status
+
+    rows = [FakeRow("✅"), FakeRow("✅"), FakeRow("⚠️"), FakeRow("❌")]
+    counts = aggregate.status_counts(rows)
+    assert counts["✅"] == 2
+    assert counts["⚠️"] == 1
+    assert counts["❌"] == 1
+    assert counts["🔍"] == 0

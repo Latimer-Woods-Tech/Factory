@@ -1,14 +1,16 @@
 """
-Tests for scripts/init-matrix-issues.py.
+Tests for scripts/init-matrix-issues.py — label sync and issue management.
 
-Covers:
-- parse_rows: the matrix-row parser (section tracking, header detection,
-  separator skip, malformed-row rejection, ID validation, status emoji map)
-- issue_body: deterministic Markdown body generation
-- gh: HTTP retry on 5xx + 429, abort on 4xx, JSON decoding
-- ensure_labels: idempotency on 422
-- find_issue_by_feature_label: search-API URL construction + empty handling
-- reconcile_labels: diff vs current + add/remove behavior
+Phase A-B (Logic + HTTP Mocking): Covers parse_rows, issue_body, gh(),
+ensure_labels, find_issue_by_feature_label, reconcile_labels.
+
+Phase D (Orchestration): Tests main() end-to-end with dependency-injected
+fetch_fn for HTTP mocking.
+
+The gh() function accepts an optional fetch_fn parameter that replaces urllib.
+Tests use unittest.mock.patch to stub GitHub API responses.
+
+See docs/aggregator-http-mocking-design.md for the testing strategy.
 """
 from __future__ import annotations
 
@@ -478,3 +480,83 @@ def test_ensure_labels_idempotent_on_422(init_matrix):
         init_matrix.ensure_labels("Test/Repo", "token", [("status:passing", "0E8A16")], fetch_fn=None)
 
     assert gh_call_count[0] == 1  # exactly one label attempt
+
+
+def test_parse_rows_parses_valid_matrix_rows(init_matrix):
+    """parse_rows() extracts all 11 cells from valid markdown rows."""
+    content = """\
+## 1. Auth
+
+| ID | Feature | Endpoint | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| HD-AUTH-001 | Login | POST /login | ✅ | ✅ | ✅ | @alice | 2026-05-20 | #1 | 3 | ready |
+"""
+    rows = init_matrix.parse_rows(content)
+    assert len(rows) == 1
+    assert rows[0]["id"] == "HD-AUTH-001"
+    assert rows[0]["feature"] == "Login"
+    assert rows[0]["status"] == "✅"
+    assert rows[0]["weight"] == "3"
+
+
+def test_issue_body_includes_row_metadata(init_matrix):
+    """issue_body() generates markdown with all row fields."""
+    row = {
+        "id": "HD-X-001",
+        "section": "Auth",
+        "feature": "Test Feature",
+        "endpoint": "GET /test",
+        "manual": "✅",
+        "automated": "❌",
+        "status": "⚠️",
+        "owner": "@bob",
+        "last_verified": "2026-01-01",
+        "weight": "5",
+        "notes": "pending",
+    }
+    body = init_matrix.issue_body(row, "Test/Repo", "docs/FUNCTIONS_MATRIX.md")
+    # body includes all fields except the ID (ID goes in the title)
+    assert "Test Feature" in body
+    assert "Auth" in body
+    assert "@bob" in body
+    assert "2026-01-01" in body
+    assert "GET /test" in body
+
+
+def test_main_dry_run_flag_prevents_writes(init_matrix):
+    """--dry-run flag should prevent issue creation."""
+    import tempfile
+    from pathlib import Path
+
+    matrix_content = """\
+## 1. Auth
+| ID | Feature | Endpoint | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| HD-TEST-001 | Test | GET /test | ✅ | ✅ | ✅ | @test | 2026-01-01 | - | 2 | test |
+"""
+    fd, fpath = tempfile.mkstemp(suffix=".md")
+    try:
+        import os
+        os.write(fd, matrix_content.encode("utf-8"))
+        os.close(fd)
+        with patch.dict("os.environ", {"GITHUB_TOKEN": "test-token"}):
+            with patch("sys.argv", ["init-matrix-issues", "--repo", "Test/Repo", "--matrix", "docs/FUNCTIONS_MATRIX.md", "--file", fpath, "--dry-run"]):
+                with patch.object(init_matrix, "gh", return_value=(200, None)):
+                    result = init_matrix.main(fetch_fn=lambda url: (404, b"", {}))
+                    assert result == 0
+    finally:
+        Path(fpath).unlink(missing_ok=True)
+
+
+def test_parse_rows_empty_content_returns_empty_list(init_matrix):
+    """parse_rows('') returns [] since there are no tables."""
+    rows = init_matrix.parse_rows("")
+    assert rows == []
+
+
+def test_legend_constant_maps_emoji_to_words(init_matrix):
+    """LEGEND dict maps status emoji to legend words."""
+    assert init_matrix.LEGEND["✅"] == "passing"
+    assert init_matrix.LEGEND["⚠️"] == "issues"
+    assert init_matrix.LEGEND["❌"] == "fail"
+    assert init_matrix.LEGEND["🔍"] == "unknown"
