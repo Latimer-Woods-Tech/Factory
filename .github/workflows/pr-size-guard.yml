@@ -64,19 +64,17 @@ jobs:
           # Use `gh pr diff` to get the raw unified diff
           DIFF=$(gh pr diff "$PR_NUMBER" --repo "$REPO")
 
-          # Parse the diff to count changed lines per file, excluding matches
+          # Parse the diff to count changed lines per file
           declare -A file_changes
-          declare -A file_tiers
+          current_file=""
 
           while IFS= read -r line; do
-            if [[ "$line" =~ ^diff\ --git\ a/(.*)\ b/(.*) ]]; then
-              current_file="${BASH_REMATCH[2]}"
+            if [[ "$line" =~ ^diff\ --git\ a/.*\ b/(.*)$ ]]; then
+              current_file="${BASH_REMATCH[1]}"
               file_changes["$current_file"]=0
-            elif [[ "$line" =~ ^[\+\-] && ! "$line" =~ ^[\+\-][\+\-][\+\-] ]]; then
-              # Count added/removed lines (skip diff header lines +++/---)
-              if [[ -n "${current_file:-}" ]]; then
-                ((file_changes["$current_file"]++))
-              fi
+            elif [[ "$line" =~ ^[\+\-][^\+\-] && -n "$current_file" ]]; then
+              # Count actual content changes: lines starting with + or -, but not +++ or ---
+              ((file_changes["$current_file"]++))
             fi
           done <<< "$DIFF"
 
@@ -91,7 +89,7 @@ jobs:
           for file in "${!file_changes[@]}"; do
             changes=${file_changes[$file]}
 
-            # Check exclusions
+            # Check exclusions first
             EXCLUDED=0
             if [[ -n "$EXCLUSION_PATTERNS" ]]; then
               if [[ "$file" =~ $EXCLUSION_PATTERNS ]]; then
@@ -104,18 +102,19 @@ jobs:
               continue
             fi
 
-            # Classify by tier
-            if [[ "$file" =~ ^(docs/|\.md$|.*\.md$|session/|.*generated.*) ]]; then
-              TIER="green"
+            # Classify by tier using ADR-0005 tier definitions
+            # Green: docs/**, *.md, session/**, generated docs
+            if [[ "$file" =~ ^docs/ || "$file" =~ \.md$ || "$file" =~ ^session/ ]]; then
               GREEN_TOTAL=$((GREEN_TOTAL + changes))
               green_files+=("$file (+$changes)")
-            elif [[ "$file" =~ ^(apps/[^/]+/src/|client/|tests?/|.*routes.*) && ! "$file" =~ ^(\.github|packages/|migrations/|.*auth.*|.*billing.*|wrangler) ]]; then
-              TIER="yellow"
+            # Yellow: apps/*/src/**, client/**, tests/**, non-critical routes
+            # (but not if they match Red tier patterns)
+            elif [[ "$file" =~ ^apps/[^/]+/src/ || "$file" =~ ^client/ || "$file" =~ ^tests?/ ]] && \
+                 ! [[ "$file" =~ ^\.github || "$file" =~ ^packages/ || "$file" =~ ^migrations/ ]]; then
               YELLOW_TOTAL=$((YELLOW_TOTAL + changes))
               yellow_files+=("$file (+$changes)")
+            # Red: .github/workflows/**, packages/**, migrations/**, auth/billing/wrangler
             else
-              # Red tier: .github/workflows, packages, migrations, auth, billing, wrangler, everything else
-              TIER="red"
               RED_TOTAL=$((RED_TOTAL + changes))
               red_files+=("$file (+$changes)")
             fi
@@ -127,10 +126,10 @@ jobs:
           echo "red_total=$RED_TOTAL" >> "$GITHUB_OUTPUT"
 
           # Format file lists (limit to 30 files per tier for readability)
-          GREEN_LIST=$(printf '%s\n' "${green_files[@]}" | head -30 | paste -sd '|' -)
-          YELLOW_LIST=$(printf '%s\n' "${yellow_files[@]}" | head -30 | paste -sd '|' -)
-          RED_LIST=$(printf '%s\n' "${red_files[@]}" | head -30 | paste -sd '|' -)
-          EXCLUDED_LIST=$(printf '%s\n' "${excluded_files[@]}" | head -30 | paste -sd '|' -)
+          GREEN_LIST=$(printf '%s\n' "${green_files[@]:-}" | head -30 | paste -sd '|' -)
+          YELLOW_LIST=$(printf '%s\n' "${yellow_files[@]:-}" | head -30 | paste -sd '|' -)
+          RED_LIST=$(printf '%s\n' "${red_files[@]:-}" | head -30 | paste -sd '|' -)
+          EXCLUDED_LIST=$(printf '%s\n' "${excluded_files[@]:-}" | head -30 | paste -sd '|' -)
 
           echo "green_files=$GREEN_LIST" >> "$GITHUB_OUTPUT"
           echo "yellow_files=$YELLOW_LIST" >> "$GITHUB_OUTPUT"
