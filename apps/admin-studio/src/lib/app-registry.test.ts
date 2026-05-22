@@ -8,14 +8,16 @@ describe('app-registry', () => {
       'prime-self',
       'schedule-worker',
       'video-cron',
+      'capricast-api',
+      'cypher-healing',
     ]);
   });
 
   it('uses custom domain for production health checks when configured', () => {
     const primeSelf = FACTORY_APPS.find((app) => app.id === 'prime-self');
     expect(primeSelf).toBeTruthy();
-    expect(healthUrlFor(primeSelf!, 'production')).toBe('https://selfprime.net/health');
-    expect(manifestUrlFor(primeSelf!, 'production')).toBe('https://selfprime.net/manifest');
+    expect(healthUrlFor(primeSelf!, 'production')).toBe('https://api.selfprime.net/health');
+    expect(manifestUrlFor(primeSelf!, 'production')).toBe('https://api.selfprime.net/manifest');
   });
 
   it('uses workers.dev hostnames for staging checks', () => {
