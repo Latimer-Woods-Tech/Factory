@@ -3,7 +3,7 @@
  * the environment before authenticating. This is Safeguard #3
  * (Environment Lock-In) made visible at session start.
  */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
@@ -21,9 +21,84 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checkingGoogleAuth, setCheckingGoogleAuth] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const login = useSession((s) => s.login);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  // Initialize Google Sign-In when env is selected
+  useEffect(() => {
+    if (!env || !googleButtonRef.current) return;
+
+    const google = (window as any).google;
+    if (!google) return;
+
+    // Clear any previously rendered button
+    googleButtonRef.current.innerHTML = '';
+
+    // Determine the client ID (would normally come from backend or env vars)
+    // For now, initialize the button without a specific client ID
+    // The actual client ID will be set by the backend or environment
+    try {
+      google.accounts.id.initialize({
+        callback: handleGoogleCallback,
+        hosted_domain: 'apunlimited.com',
+      });
+
+      google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        width: '320',
+      });
+
+      // Also try to render the One Tap experience
+      google.accounts.id.prompt();
+    } catch (err) {
+      console.warn('Failed to initialize Google Sign-In:', err);
+    }
+  }, [env]);
+
+  async function handleGoogleCallback(response: any) {
+    if (!env) return;
+
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const base = getApiBase(env);
+      const res = await fetch(`${base}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          credential: response.credential || response,
+          env,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        let msg = `Login failed (${res.status})`;
+        try {
+          const json = JSON.parse(text) as { error?: string; detail?: string };
+          msg = json.error ?? msg;
+          if (json.detail) msg = `${msg}: ${json.detail}`;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(msg);
+      }
+
+      const data = (await res.json()) as { token: string; expiresAt: number };
+      login(data.token, env, data.expiresAt);
+      navigate(searchParams.get('next') ?? '/');
+    } catch (err) {
+      setError((err as Error).message);
+      setSubmitting(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,37 +154,68 @@ export function LoginPage() {
         </div>
 
         {env && (
-          <form onSubmit={handleSubmit} className="mt-8 space-y-3">
-            <p className="text-sm text-slate-400">
-              Step 2 — sign in. You'll be locked to <strong>{env}</strong> until you sign out.
-            </p>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email"
-              autoComplete="username"
-              className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"
-            />
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="password"
-              autoComplete="current-password"
-              className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"
-            />
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500"
-            >
-              {submitting ? 'Signing in…' : `Sign in to ${env}`}
-            </button>
-          </form>
+          <div className="mt-8 space-y-6">
+            <div>
+              <p className="text-sm text-slate-400">
+                Step 2 — sign in. You'll be locked to <strong>{env}</strong> until you sign out.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-3">Recommended</h3>
+                <p className="text-xs text-white/80 mb-3">
+                  Sign in with your allowlisted Google account. Verified Google identity is the primary production path.
+                </p>
+                <div className="flex justify-center" ref={googleButtonRef} />
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-700" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-slate-950 text-slate-400">or</span>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-3">Fallback operator login</h3>
+                <p className="text-xs text-white/80 mb-3">
+                  Use the shared bootstrap password only for break-glass access or initial recovery.
+                </p>
+
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="email"
+                    autoComplete="username"
+                    className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"
+                  />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="password"
+                    autoComplete="current-password"
+                    className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white"
+                  />
+                  {error && <p className="text-sm text-red-400">{error}</p>}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500"
+                  >
+                    {submitting ? 'Signing in…' : `Sign in to ${env}`}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

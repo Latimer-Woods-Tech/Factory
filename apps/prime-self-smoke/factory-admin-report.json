@@ -1,0 +1,246 @@
+{
+  "base": "https://apunlimited.com",
+  "steps": [
+    {
+      "label": "01-landing",
+      "path": "/",
+      "finalUrl": "https://apunlimited.com/login?next=%2F",
+      "title": "Factory Admin Studio",
+      "ms": 9210
+    },
+    {
+      "label": "02-post-login",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio"
+    },
+    {
+      "label": "03-overview",
+      "path": "/overview",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio",
+      "ms": 5338
+    },
+    {
+      "label": "04-ai",
+      "path": "/ai",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio",
+      "ms": 2309
+    },
+    {
+      "label": "05-functions",
+      "path": "/functions",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio",
+      "ms": 3540
+    },
+    {
+      "label": "06-timeline",
+      "path": "/timeline",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio",
+      "ms": 2827
+    },
+    {
+      "label": "07-flags",
+      "path": "/flags",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio",
+      "ms": 2559
+    },
+    {
+      "label": "08-audit",
+      "path": "/audit",
+      "finalUrl": "https://apunlimited.com/overview",
+      "title": "Factory Admin Studio",
+      "ms": 2479
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 500 ()"
+  ],
+  "consoleWarns": [],
+  "networkFailures": [
+    {
+      "phase": "02-post-login",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "02-post-login",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "03-overview",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "03-overview",
+      "status": "failed",
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/telemetry-coverage?env=production",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "03-overview",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "03-overview",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "04-ai",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "04-ai",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "04-ai",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "05-functions",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "05-functions",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "05-functions",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "05-functions",
+      "status": 500,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/catalog"
+    },
+    {
+      "phase": "06-timeline",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "06-timeline",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "06-timeline",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/timeline/"
+    },
+    {
+      "phase": "06-timeline",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "07-flags",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "07-flags",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "07-flags",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/api/flags"
+    },
+    {
+      "phase": "07-flags",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/api/flags/activity"
+    },
+    {
+      "phase": "07-flags",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "08-audit",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "08-audit",
+      "status": "failed",
+      "method": "POST",
+      "url": "https://apunlimited.com/cdn-cgi/rum?",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "phase": "08-audit",
+      "status": 404,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/observability/synthetic/journey"
+    },
+    {
+      "phase": "08-audit",
+      "status": 500,
+      "method": "GET",
+      "url": "https://api.apunlimited.com/audit"
+    }
+  ]
+}

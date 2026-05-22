@@ -33,6 +33,10 @@ export interface Env {
   VERTEX_PROJECT?: string;
   /** Vertex AI location */
   VERTEX_LOCATION?: string;
+  /** Google OAuth 2.0 client ID for /auth/google endpoint */
+  GOOGLE_CLIENT_ID?: string;
+  /** JSON map of allowlisted users for Google OAuth: {"email@example.com": {"role": "owner"}} */
+  STUDIO_ALLOWED_USERS_JSON?: string;
   /** Sentry DSN for error reporting */
   SENTRY_DSN?: string;
   /** Slack webhook used by self-improvement loop critical alerts. */
