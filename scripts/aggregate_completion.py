@@ -27,12 +27,15 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 from urllib.parse import urlencode
 
 import urllib.error
 import urllib.request
 import base64 as _b64
+
+# Type alias for dependency-injected fetch function (used in testing)
+FetchFn = Callable[[str], tuple[int, bytes, dict[str, str]]]
 
 # ---------- config ----------
 
@@ -203,29 +206,32 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
 
 # ---------- github ----------
 
-def github_get(path: str, token: str, *, raw: bool = False) -> tuple[int, bytes]:
+def github_get(path: str, token: str, *, raw: bool = False, fetch_fn: FetchFn | None = None) -> tuple[int, bytes]:
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.raw" if raw else "application/vnd.github+json",
         "User-Agent": "latwood-completion-aggregator",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    status, body, _ = http_request(f"https://api.github.com{path}", headers=headers)
+    if fetch_fn is None:
+        fetch_fn = http_request
+    status, body, _ = fetch_fn(f"https://api.github.com{path}")
     return status, body
 
 
-def fetch_matrix(repo: str, matrix_path: str, token: str) -> str | None:
-    status, body = github_get(f"/repos/{repo}/contents/{matrix_path}", token, raw=True)
+def fetch_matrix(repo: str, matrix_path: str, token: str, fetch_fn: FetchFn | None = None) -> str | None:
+    status, body = github_get(f"/repos/{repo}/contents/{matrix_path}", token, raw=True, fetch_fn=fetch_fn)
     if status != 200:
         jerr("fetch_matrix_fail", repo=repo, path=matrix_path, status=status)
         return None
     return body.decode("utf-8", errors="replace")
 
 
-def fetch_latest_main_run(repo: str, token: str) -> dict[str, Any] | None:
+def fetch_latest_main_run(repo: str, token: str, fetch_fn: FetchFn | None = None) -> dict[str, Any] | None:
     status, body = github_get(
         f"/repos/{repo}/actions/runs?{urlencode({'branch':'main','status':'completed','per_page':1})}",
         token,
+        fetch_fn=fetch_fn,
     )
     if status != 200:
         jerr("fetch_runs_fail", repo=repo, status=status)
@@ -238,9 +244,9 @@ def fetch_latest_main_run(repo: str, token: str) -> dict[str, Any] | None:
         return None
 
 
-def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
+def fetch_smoke_run(repo: str, token: str, fetch_fn: FetchFn | None = None) -> dict[str, Any] | None:
     """Find any workflow whose name contains 'smoke' and return latest main run."""
-    status, body = github_get(f"/repos/{repo}/actions/workflows?per_page=100", token)
+    status, body = github_get(f"/repos/{repo}/actions/workflows?per_page=100", token, fetch_fn=fetch_fn)
     if status != 200:
         return None
     try:
@@ -254,6 +260,7 @@ def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
     status, body = github_get(
         f"/repos/{repo}/actions/workflows/{wf['id']}/runs?{urlencode({'branch':'main','per_page':1})}",
         token,
+        fetch_fn=fetch_fn,
     )
     if status != 200:
         return None
@@ -270,15 +277,17 @@ def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
 
 # ---------- extra signals ----------
 
-def fetch_stripe_data(stripe_key: str) -> dict[str, Any]:
+def fetch_stripe_data(stripe_key: str, fetch_fn: FetchFn | None = None) -> dict[str, Any]:
     if not stripe_key:
         jwarn("stripe_skipped_no_key")
         return {"mrr": 0.0, "trials": 0, "new_charges_24h": 0}
     creds = _b64.b64encode(f"{stripe_key}:".encode()).decode()
     hdrs = {"Authorization": f"Basic {creds}", "User-Agent": "latwood-completion-aggregator"}
+    if fetch_fn is None:
+        fetch_fn = http_request
 
     def sg(path: str) -> dict[str, Any]:
-        st, body, _ = http_request(f"https://api.stripe.com/v1{path}", headers=hdrs)
+        st, body, _ = fetch_fn(f"https://api.stripe.com/v1{path}")
         if st != 200:
             jerr("stripe_fail", path=path, status=st)
             return {}
@@ -300,10 +309,11 @@ def fetch_stripe_data(stripe_key: str) -> dict[str, Any]:
     return {"mrr": mrr, "trials": trials, "new_charges_24h": new_24h}
 
 
-def count_open_prs(token: str) -> int:
+def count_open_prs(token: str, fetch_fn: FetchFn | None = None) -> int:
     st, body = github_get(
         "/search/issues?" + urlencode({"q": "is:open is:pr org:Latimer-Woods-Tech", "per_page": 1}),
         token,
+        fetch_fn=fetch_fn,
     )
     if st == 200:
         try:
@@ -323,12 +333,14 @@ def count_gap_p0_p1() -> tuple[int, int]:
     return p0, p1
 
 
-def fetch_sentry_unresolved(token: str) -> list[dict[str, Any]]:
+def fetch_sentry_unresolved(token: str, fetch_fn: FetchFn | None = None) -> list[dict[str, Any]]:
     if not token:
         jwarn("sentry_skipped_no_token")
         return []
+    if fetch_fn is None:
+        fetch_fn = http_request
     url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
-    status, body, _ = http_request(url, headers={"Authorization": f"Bearer {token}", "User-Agent": "latwood-completion-aggregator"})
+    status, body, _ = fetch_fn(url)
     if status != 200:
         jerr("sentry_fail", status=status)
         return []
@@ -541,16 +553,15 @@ def render_markdown(
 
 # ---------- pushover ----------
 
-def send_pushover(text: str, user: str, token: str) -> None:
+def send_pushover(text: str, user: str, token: str, fetch_fn: FetchFn | None = None) -> None:
     if not user or not token:
         jwarn("pushover_skipped_no_creds")
         return
+    if fetch_fn is None:
+        fetch_fn = http_request
     body = urlencode({"user": user, "token": token, "message": text, "title": "Completion tracker"}).encode()
-    status, resp, _ = http_request(
-        "https://api.pushover.net/1/messages.json",
-        method="POST",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        body=body,
+    status, resp, _ = fetch_fn(
+        "https://api.pushover.net/1/messages.json"
     )
     if status != 200:
         jerr("pushover_fail", status=status, body=resp[:200].decode("utf-8", "replace"))
@@ -639,7 +650,7 @@ def render_pushover(
 
 # ---------- main ----------
 
-def main() -> int:
+def main(fetch_fn: FetchFn | None = None) -> int:
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
         jerr("missing_github_token")
@@ -658,7 +669,7 @@ def main() -> int:
 
     for repo in REPOS:
         jlog("fetch_repo", repo=repo["repo"])
-        content = fetch_matrix(repo["repo"], repo["matrix_path"], token)
+        content = fetch_matrix(repo["repo"], repo["matrix_path"], token, fetch_fn=fetch_fn)
         if content is None:
             continue
         rows, malformed = parse_matrix(repo["key"], repo["name"], content)
@@ -669,16 +680,16 @@ def main() -> int:
         jlog("parsed", repo=repo["key"], rows=len(rows), malformed=len(malformed))
 
         # actions overlay
-        latest = fetch_latest_main_run(repo["repo"], token)
+        latest = fetch_latest_main_run(repo["repo"], token, fetch_fn=fetch_fn)
         if latest and latest.get("conclusion") == "failure":
             red_ci.add(repo["key"])
         # smoke overlay
-        smoke = fetch_smoke_run(repo["repo"], token)
+        smoke = fetch_smoke_run(repo["repo"], token, fetch_fn=fetch_fn)
         if smoke and smoke.get("conclusion") == "failure":
             red_smoke.add(repo["key"])
 
     # sentry overlay
-    issues = fetch_sentry_unresolved(sentry_token)
+    issues = fetch_sentry_unresolved(sentry_token, fetch_fn=fetch_fn)
     apply_sentry_overlay(all_rows, issues)
     apply_actions_overlay(all_rows, red_ci)
     apply_smoke_overlay(all_rows, red_smoke)
@@ -726,8 +737,8 @@ def main() -> int:
 
     # extra signals for the rich digest
     stripe_key = os.environ.get("STRIPE_SECRET_KEY", "")
-    stripe_data = fetch_stripe_data(stripe_key)
-    open_prs = count_open_prs(token)
+    stripe_data = fetch_stripe_data(stripe_key, fetch_fn=fetch_fn)
+    open_prs = count_open_prs(token, fetch_fn=fetch_fn)
     p0_gaps, p1_gaps = count_gap_p0_p1()
     extra = {
         "mrr": stripe_data.get("mrr", 0.0),
@@ -743,6 +754,7 @@ def main() -> int:
         render_pushover(all_rows, prev, red_ci, red_smoke, issues, extra, now),
         pushover_user,
         pushover_token,
+        fetch_fn=fetch_fn,
     )
 
     jlog("done", overall=overall[2], rows=len(all_rows), malformed=len(all_malformed))

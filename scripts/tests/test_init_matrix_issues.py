@@ -296,7 +296,7 @@ def test_ensure_labels_treats_422_as_success(init_matrix):
          patch("sys.stderr") as fake_stderr:
         init_matrix.ensure_labels("r", "tok", [("status:passing", "0E8A16")])
     fake.assert_called_once_with("POST", "/repos/r/labels", "tok",
-                                  {"name": "status:passing", "color": "0E8A16"})
+                                  {"name": "status:passing", "color": "0E8A16"}, fetch_fn=None)
     # No "warn" message expected
     written = "".join(c.args[0] for c in fake_stderr.write.call_args_list if c.args)
     assert "warn" not in written.lower()
@@ -364,7 +364,7 @@ def test_reconcile_labels_removes_stale_managed_labels(init_matrix):
     is URL-encoded (`%3A`) in the DELETE path."""
     import urllib.parse as up
     calls = []
-    def fake_gh(method, path, token, body=None):
+    def fake_gh(method, path, token, body=None, fetch_fn=None):
         calls.append((method, path, body))
         if method == "GET":
             return (200, [{"name": "status:fail"}, {"name": "feature:HD-X-001"}, {"name": "unrelated"}])
@@ -392,7 +392,7 @@ def test_reconcile_labels_removes_stale_managed_labels(init_matrix):
 
 def test_reconcile_labels_noop_when_in_sync(init_matrix):
     """Already in sync: no DELETE, no POST."""
-    def fake_gh(method, path, token, body=None):
+    def fake_gh(method, path, token, body=None, fetch_fn=None):
         if method == "GET":
             return (200, [{"name": "status:passing"}, {"name": "feature:HD-X-001"}])
         return (200, None)
@@ -408,7 +408,7 @@ def test_reconcile_labels_preserves_non_managed_labels(init_matrix):
     """Labels outside the managed prefixes must be untouched."""
     import urllib.parse as up
     delete_paths = []
-    def fake_gh(method, path, token, body=None):
+    def fake_gh(method, path, token, body=None, fetch_fn=None):
         if method == "DELETE":
             delete_paths.append(up.unquote(path))
         if method == "GET":
