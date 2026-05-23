@@ -27,6 +27,7 @@
     "compile:capability": "node scripts/compile-capability-recipe.mjs",
     "build:capability-golden-path": "node scripts/generate-capability-golden-path.mjs",
     "preview:capability-plan": "node scripts/preview-capability-plan.mjs",
+    "generate:deploy-workflow": "node scripts/gen-deploy-workflow.mjs",
     "provision:app": "node scripts/provision-app.mjs"
   },
   "repository": {

@@ -75,7 +75,13 @@ Generate a scaffolded app from a compiled capability recipe:
 node packages/deploy/scripts/scaffold.mjs outbound-dialer-app --recipe outbound-dialer --no-install --no-secrets --no-deploy --no-prereq --hyperdrive-id REPLACE_WITH_HYPERDRIVE_ID
 ```
 
-This creates a minimal Factory app with recipe-derived dependencies, environment contract, and placeholder routes for the expected surfaces.
+Generate app-specific GitHub Actions workflows for a compiled plan:
+
+```bash
+npm run generate:deploy-workflow -- --recipe outbound-dialer --app-name outbound-dialer-app --output ./outbound-dialer-app
+```
+
+This creates `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` that call the shared factory reusable workflows.
 
 
 ## Scope
