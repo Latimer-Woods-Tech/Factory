@@ -52,7 +52,7 @@
       "name": "webhook-fanout",
       "routes": [
         {
-          "pattern": "webhooks.latwoodtech.work/*",
+          "pattern": "webhooks.latwoodtech.work",
           "custom_domain": true
         }
       ],

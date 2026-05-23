@@ -1,0 +1,74 @@
+{
+  "id": "outbound-dialer-campaign",
+  "displayName": "Outbound Dialer Campaign",
+  "summary": "Governed outbound dialer setup with routing for CRM segment or CSV import audiences.",
+  "status": "approved",
+  "maturity": "beta",
+  "tags": ["telephony", "crm", "campaigns"],
+  "menuVisible": true,
+  "approvalTier": "golden",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Custom domain for the deployed worker.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "dialer.example.com"
+    },
+    {
+      "id": "campaignSource",
+      "type": "string",
+      "description": "Audience source for the campaign.",
+      "required": true,
+      "enum": ["crm-segment", "csv-import"],
+      "default": "crm-segment",
+      "formatHint": null
+    },
+    {
+      "id": "enableVoiceSynthesis",
+      "type": "boolean",
+      "description": "Enable synthesized voice prompts.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": {
+    "defaultRecipeId": "outbound-dialer",
+    "rules": [
+      {
+        "id": "csv-import-uses-importer",
+        "recipeId": "outbound-dialer-importer",
+        "matchAll": [
+          { "parameter": "campaignSource", "equals": "csv-import" }
+        ]
+      }
+    ]
+  },
+  "recipes": [
+    {
+      "id": "outbound-dialer",
+      "summary": "CRM-segment driven outbound dialer workflow.",
+      "maturity": "beta",
+      "primitives": ["telephony", "crm", "analytics"],
+      "optionalPrimitives": ["compliance"]
+    },
+    {
+      "id": "outbound-dialer-importer",
+      "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+      "maturity": "beta",
+      "primitives": ["telephony", "crm", "analytics"],
+      "optionalPrimitives": ["compliance"]
+    }
+  ],
+  "sourcePrimitives": ["analytics", "compliance", "crm", "telephony"],
+  "qualification": {
+    "menuVisible": true,
+    "approvalTier": "golden",
+    "requiredCapabilities": ["custom-domain"],
+    "disallowedEnvironments": ["local"]
+  }
+}

@@ -34,5 +34,12 @@ export default defineConfig({
       name: 'ipad-mini',
       use: { ...devices['iPad Mini'] },
     },
+    {
+      // Desktop project for the capability-design-studio e2e (the staged
+      // workspace needs more width than mobile devices give us). Used by the
+      // 'capabilities-e2e' job in factory-admin-ui-ci.yml.
+      name: 'desktop-chrome',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
 });

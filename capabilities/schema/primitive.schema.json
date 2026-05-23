@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "primitive.schema.json",
+  "title": "Capability Primitive",
+  "description": "A reusable technical primitive backed by a Factory shared package.",
+  "type": "object",
+  "required": ["id", "package", "versionRange", "requirements", "contracts"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Stable kebab-case identifier referenced by recipes and rules."
+    },
+    "package": {
+      "type": "string",
+      "pattern": "^@latimer-woods-tech/[a-z][a-z0-9-]*$",
+      "description": "Canonical Factory package that backs this primitive."
+    },
+    "versionRange": {
+      "type": "string",
+      "minLength": 1,
+      "description": "npm semver range pinned in scaffolded apps."
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "secrets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "bindings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policyTags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}
