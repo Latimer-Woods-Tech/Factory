@@ -120,6 +120,37 @@ const ENTRIES: ReadonlyArray<ManifestEntry> = [
     summary: 'Structured code-edit proposal {before, after, rationale}',
     tags: ['ai'],
   },
+  {
+    method: 'GET',
+    path: '/capabilities',
+    auth: 'admin',
+    summary: 'List governed capability concepts from the compiled catalog',
+    tags: ['capabilities'],
+  },
+  {
+    method: 'POST',
+    path: '/capabilities/resolve',
+    auth: 'admin',
+    summary: 'Resolve a capability concept into an approved recipe handoff',
+    reversibility: 'reversible',
+    tags: ['capabilities'],
+  },
+  {
+    method: 'POST',
+    path: '/capabilities/preview',
+    auth: 'admin',
+    summary: 'Compile and preview the plan for a resolved capability concept',
+    reversibility: 'reversible',
+    tags: ['capabilities'],
+  },
+  {
+    method: 'POST',
+    path: '/capabilities/handoff',
+    auth: 'admin',
+    summary: 'Generate the audited scaffold handoff artifact for a previewed capability concept',
+    reversibility: 'reversible',
+    tags: ['capabilities'],
+  },
   // ── Authenticated: audit ──────────────────────────────────────────────
   {
     method: 'GET',

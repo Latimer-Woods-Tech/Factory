@@ -13,6 +13,7 @@ import { FunctionsTab } from './tabs/FunctionsTab.js';
 import { TimelineTab } from './tabs/TimelineTab.js';
 import { FlagsTab } from './tabs/FlagsTab.js';
 import { TrainingLibraryTab } from './tabs/TrainingLibraryTab.js';
+import { CapabilitiesTab } from './tabs/CapabilitiesTab.js';
 import { Button } from '../components/ui/button.js';
 import { Drawer, DrawerContent, DrawerTrigger } from '../components/ui/drawer.js';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs.js';
@@ -22,6 +23,7 @@ const TABS = [
   { to: '/tests',     label: 'Tests' },
   { to: '/code',      label: 'Code' },
   { to: '/ai',        label: 'AI Chat' },
+  { to: '/capabilities', label: 'Capabilities' },
   { to: '/functions', label: 'Functions' },
   { to: '/training-library', label: 'Training Library' },
   { to: '/timeline',  label: 'Timeline' },
@@ -92,6 +94,7 @@ export function Dashboard() {
           <Route path="/tests" element={<TestsTab />} />
           <Route path="/code" element={<CodeTab />} />
           <Route path="/ai" element={<AiTab />} />
+          <Route path="/capabilities" element={<CapabilitiesTab />} />
           <Route path="/functions" element={<FunctionsTab />} />
           <Route path="/training-library" element={<TrainingLibraryTab />} />
           <Route path="/timeline" element={<TimelineTab />} />
