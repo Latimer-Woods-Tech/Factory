@@ -47,6 +47,28 @@ export interface LLMOptions {
   actor?: string;
   /** Anthropic prompt-cache control. Defaults to `true` for `system` prompts ≥ 1024 tokens. */
   promptCache?: boolean;
+  /**
+   * Maximum estimated cost in USD for this completion. If the post-call estimated
+   * cost exceeds this cap, `complete` returns a {@link RateLimitError} with code
+   * `LLM_COST_CAP_EXCEEDED` and `completionStream` throws the same error.
+   * Pricing is based on {@link MODEL_PRICE_PER_1M}; unknown models default to
+   * Opus rates (conservative upper bound).
+   */
+  maxCostUsd?: number;
+  /**
+   * Org-level daily cost cap in USD. Requires `env.LLM_COST_KV` to be set.
+   * When today's cumulative spend read from KV is >= this value, `complete`
+   * returns a {@link RateLimitError} with code `LLM_DAILY_CAP_EXCEEDED`
+   * without making any provider call. After a successful call the daily
+   * accumulator is updated in KV (TTL: 48 h).
+   */
+  dailyCapUsd?: number;
+  /**
+   * Org-level monthly cost cap in USD. Requires `env.LLM_COST_KV` to be set.
+   * Same enforcement pattern as {@link dailyCapUsd} but keyed by YYYY-MM.
+   * KV TTL: 40 days.
+   */
+  monthlyCapUsd?: number;
 }
 
 /**
@@ -91,6 +113,22 @@ export interface LLMEnv {
   VERTEX_ACCESS_TOKEN: string;
   VERTEX_PROJECT: string;
   VERTEX_LOCATION: string;
+  /**
+   * Optional KV store for org-level daily/monthly cost tracking and enforcement.
+   * When provided alongside {@link LLMOptions.dailyCapUsd} or {@link LLMOptions.monthlyCapUsd},
+   * `complete` will block calls that would exceed the declared cap.
+   * Any KV-like store satisfying `get`/`put` works (e.g. Cloudflare KV, in-memory stub).
+   */
+  LLM_COST_KV?: CostKvStore;
+}
+
+/**
+ * Minimal KV store interface for org-level LLM cost tracking.
+ * Cloudflare KV satisfies this. An in-memory stub is sufficient for tests.
+ */
+export interface CostKvStore {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
 /**
@@ -155,6 +193,16 @@ function isProviderCoolingDown(provider: LLMProvider, now: () => number = Date.n
   const until = providerCooldownUntil.get(provider);
   if (until === undefined) return false;
   return now() < until;
+}
+
+/** Returns `YYYY-MM-DD` from a Unix timestamp (ms). Used for daily KV cost keys. */
+function isoDate(nowMs: number): string {
+  return new Date(nowMs).toISOString().slice(0, 10);
+}
+
+/** Returns `YYYY-MM` from a Unix timestamp (ms). Used for monthly KV cost keys. */
+function isoMonth(nowMs: number): string {
+  return new Date(nowMs).toISOString().slice(0, 7);
 }
 
 /**
@@ -648,6 +696,37 @@ export async function complete(
   const tokenEstimate = estimateTokens(messages, system);
   const route = plan(tier, opts, tokenEstimate);
 
+  // ── Org-level daily / monthly cap pre-check ──────────────────────────────
+  const kv = env.LLM_COST_KV;
+  const todayKey = `llm:daily-cost:${isoDate(now())}`;
+  const monthKey = `llm:monthly-cost:${isoMonth(now())}`;
+  if (kv) {
+    if (opts.dailyCapUsd !== undefined) {
+      const raw = await kv.get(todayKey).catch(() => null);
+      const spent = parseFloat(raw ?? '0');
+      if (spent >= opts.dailyCapUsd) {
+        return toErrorResponse(
+          new RateLimitError('LLM_DAILY_CAP_EXCEEDED', {
+            spentUsd: spent,
+            dailyCapUsd: opts.dailyCapUsd,
+          }),
+        );
+      }
+    }
+    if (opts.monthlyCapUsd !== undefined) {
+      const raw = await kv.get(monthKey).catch(() => null);
+      const spent = parseFloat(raw ?? '0');
+      if (spent >= opts.monthlyCapUsd) {
+        return toErrorResponse(
+          new RateLimitError('LLM_MONTHLY_CAP_EXCEEDED', {
+            spentUsd: spent,
+            monthlyCapUsd: opts.monthlyCapUsd,
+          }),
+        );
+      }
+    }
+  }
+
   const attemptLog: Array<{ provider: LLMProvider; status?: number; message: string }> = [];
 
   for (const leg of [route.primary, route.fallback].filter(Boolean) as Array<{ provider: LLMProvider; model: string }>) {
@@ -690,6 +769,34 @@ export async function complete(
         },
         error: null,
       };
+      if (opts.maxCostUsd !== undefined) {
+        const costUsd = estimateCostUsd(llmResult.tokens, llmResult.model);
+        if (costUsd > opts.maxCostUsd) {
+          return toErrorResponse(
+            new RateLimitError('LLM_COST_CAP_EXCEEDED', {
+              costUsd,
+              maxCostUsd: opts.maxCostUsd,
+              model: llmResult.model,
+              tokens: llmResult.tokens,
+            }),
+          );
+        }
+      }
+      // ── Update org-level cost accumulators in KV ─────────────────────────
+      if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
+        const callCost = estimateCostUsd(llmResult.tokens, llmResult.model);
+        if (opts.dailyCapUsd !== undefined) {
+          const raw = await kv.get(todayKey).catch(() => null);
+          const spent = parseFloat(raw ?? '0');
+          await kv.put(todayKey, String(spent + callCost), { expirationTtl: 172_800 /* 48 h */ }).catch(() => undefined);
+        }
+        if (opts.monthlyCapUsd !== undefined) {
+          const raw = await kv.get(monthKey).catch(() => null);
+          const spent = parseFloat(raw ?? '0');
+          await kv.put(monthKey, String(spent + callCost), { expirationTtl: 3_456_000 /* 40 d */ }).catch(() => undefined);
+        }
+      }
+      return { data: llmResult, error: null };
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         return toErrorResponse(

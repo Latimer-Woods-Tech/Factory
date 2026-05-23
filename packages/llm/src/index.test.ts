@@ -1129,3 +1129,70 @@ describe('assertGrounding', () => {
     expect(assertGrounding('some response text here today', ['', '   '])).toBe(false);
   });
 });
+
+// ─── org-level KV cost cap enforcement ───────────────────────────────────────
+
+describe('complete - org-level KV daily cap', () => {
+  function makeCostKv(stored: Record<string, string> = {}): import('./index.js').CostKvStore {
+    const store: Record<string, string> = { ...stored };
+    return {
+      get: async (key: string) => store[key] ?? null,
+      put: async (key: string, value: string) => { store[key] = value; },
+    };
+  }
+
+  it('blocks call when today spend >= dailyCapUsd', async () => {
+    const kv = makeCostKv();
+    // Pre-load today's spend at cap
+    const today = new Date().toISOString().slice(0, 10);
+    await kv.put(`llm:daily-cost:${today}`, '50');
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { dailyCapUsd: 50, dailyCapUsd: 50 },
+    );
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+
+  it('allows call when today spend < dailyCapUsd', async () => {
+    const kv = makeCostKv();
+    const today = new Date().toISOString().slice(0, 10);
+    await kv.put(`llm:daily-cost:${today}`, '10');
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      {
+        dailyCapUsd: 50,
+        fetch: () => Promise.resolve(anthropicResponse('ok')) as any,
+      } as any,
+    );
+    // Should pass cap check — result depends on fetch working
+    expect(result.error?.code).not.toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+
+  it('blocks call when monthly spend >= monthlyCapUsd', async () => {
+    const kv = makeCostKv();
+    const month = new Date().toISOString().slice(0, 7);
+    await kv.put(`llm:monthly-cost:${month}`, '500');
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { monthlyCapUsd: 500 },
+    );
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_MONTHLY_CAP_EXCEEDED');
+  });
+
+  it('does not enforce cap when LLM_COST_KV is not provided', async () => {
+    // Without KV, even setting dailyCapUsd should not block
+    const daily = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV }, // no LLM_COST_KV
+      { dailyCapUsd: 0, fetch: daily } as any,
+    );
+    // No KV means no cap check — call proceeds
+    expect(result.error?.code).not.toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+});
