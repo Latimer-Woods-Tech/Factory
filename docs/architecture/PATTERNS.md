@@ -2,7 +2,7 @@
 
 **Loaded by:** supervisor, Claude reviewer, sub-agents, Claude Code sessions  
 **Sibling docs:** [`PLATFORM_STANDARDS.md`](../PLATFORM_STANDARDS.md) (the norms — *what we build*) · [`FRIDGE.md`](../supervisor/FRIDGE.md) (the non-negotiable rules — *what we never break*)  
-**Updated:** 2026-05-15 — initial draft from Stage 1 close-out lessons
+**Updated:** 2026-05-23 — added patterns 7–9 from Capability Design Studio Stage C close-out
 
 This doc captures **operational know-how** — patterns that emerged from production debugging that the next agent (or future-you) would otherwise rediscover from scratch. Each entry is short: symptom → root cause → fix, with a code/commit reference so the fix is auditable.
 
@@ -144,6 +144,73 @@ value="$(printf '%s' "$value" | sed $'1s/^\xEF\xBB\xBF//' | sed -E 's/[[:space:]
 **Heuristic:** if you've already eyeballed the diff AND it's APPROVED AND every required check is SUCCESS, the BLOCKED state is a race, not a real gate. Admin-merge is correct.
 
 **Reference:** Used routinely throughout Stage 1 close-out on 2026-05-15 (PRs #684, #687, #688, #689, #692, #696, #699, #708, #705, #706, #702, HD #203, HD #199).
+
+---
+
+## 7. Staging worker that only responds on its custom domain needs `stagingCustomDomain`
+
+**Symptom:** Admin Studio's Overview dashboard shows `HTTP 404` for a staging app health check even though the worker is deployed and serving traffic.
+
+**Root cause:** `healthUrlFor()` in `app-registry.ts` falls back to `{stagingWorkerName}.adrper79.workers.dev` for staging. Some workers (e.g. `admin-studio`) are only routed via their custom domain and return 404 on the `workers.dev` URL.
+
+**Fix:** Add the optional `stagingCustomDomain` field to the app's entry in `FACTORY_APPS`:
+
+```typescript
+{
+  id: 'admin-studio',
+  stagingWorkerName: 'admin-studio-staging',
+  stagingCustomDomain: 'admin-staging.latwoodtech.work',   // ← add this
+  ...
+}
+```
+
+`healthUrlFor()` prefers `stagingCustomDomain` over the `workers.dev` fallback when defined. Only add the field when you've confirmed the `workers.dev` URL actually 404s.
+
+**Reference:** `apps/admin-studio/src/lib/app-registry.ts` · PR [#914](https://github.com/Latimer-Woods-Tech/Factory/pull/914)
+
+---
+
+## 8. GitHub Actions `workflow_dispatch` inputs must go through `env:` before shell use
+
+**Symptom:** `pr-review.mjs` flags a workflow with "GitHub Actions script injection risk" — CHANGES_REQUESTED.
+
+**Root cause:** Directly interpolating `${{ inputs.some_input }}` inside a `run:` shell step allows script injection. An operator with write access could pass `; rm -rf / ;` as an input value.
+
+**Fix:** Always bind inputs to env vars in the step's `env:` block, then reference them as `$ENV_VAR` in the shell:
+
+```yaml
+# ❌ Vulnerable
+- run: node scaffold.mjs "${{ inputs.app_name }}"
+
+# ✅ Safe
+- env:
+    APP_NAME: ${{ inputs.app_name }}
+  run: node scaffold.mjs "$APP_NAME"
+```
+
+`with:` fields (e.g. `actions/upload-artifact` `name:` and `path:`) are YAML context, not shell — they don't need this treatment.
+
+**Reference:** `.github/workflows/dispatch-capability-provision.yml` · PR [#910](https://github.com/Latimer-Woods-Tech/Factory/pull/910)
+
+---
+
+## 9. `pr-review.mjs` wrangler-vars secret check fires as false positive on TypeScript + workflow files
+
+**Symptom:** Factory canonical reviewer posts CHANGES_REQUESTED — "No secrets in wrangler vars" — but there are no secrets in any wrangler config file in the PR.
+
+**Root cause:** The check concatenates ALL added lines from ALL files and runs one regex over the blob. TypeScript type definitions (e.g. `vars: string[]`) introduce a `vars:` match, and GitHub Actions workflow env blocks (e.g. `STUDIO_DISPATCH_TOKEN: ${{ secrets.X }}`) introduce a `TOKEN:` match. The cross-file pattern fires even though no wrangler file was touched with a secret.
+
+**Fix (already applied in `.github/scripts/pr-review.mjs`):** The check is now scoped to added lines from wrangler config files only:
+
+```javascript
+const wranglerAddedLines = extractAddedLines(files.filter(f => /wrangler/.test(f.filename ?? '')));
+if (/vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im.test(wranglerAddedLines))
+  violations.push(...)
+```
+
+If you see the false positive again after the fix — check whether a wrangler config file in the PR genuinely has a secret-looking key in a `vars:` block.
+
+**Reference:** `.github/scripts/pr-review.mjs` · PR [#910](https://github.com/Latimer-Woods-Tech/Factory/pull/910)
 
 ---
 
