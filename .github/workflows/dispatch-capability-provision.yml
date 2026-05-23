@@ -17,7 +17,7 @@ name: Dispatch capability provision
 #           transitions to 'failed' with the error captured in notes.
 #
 # Two secrets are required:
-#   - STUDIO_API_BASE       — e.g. https://admin-studio-staging.adrper79.workers.dev
+#   - STUDIO_API_BASE       — e.g. https://admin-staging.latwoodtech.work
 #   - STUDIO_DISPATCH_TOKEN — admin-tier JWT (short-lived, rotated)
 #
 # The workflow stays manual on purpose. Stage D could replace workflow_dispatch
@@ -88,25 +88,29 @@ jobs:
         env:
           STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
           STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+          PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
           curl -fsSL -X POST \
             -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
             -H 'Content-Type: application/json' \
             -d '{"status":"dispatched","notes":"dispatched via GH Actions"}' \
-            "${STUDIO_API_BASE}/capabilities/provision-requests/${{ inputs.provision_request_id }}/transition"
+            "${STUDIO_API_BASE}/capabilities/provision-requests/${PROVISION_REQUEST_ID}/transition"
 
       - name: Run scaffold against handoff
         id: scaffold
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          NO_DEPLOY_INPUT: ${{ inputs.no_deploy }}
         run: |
           set -euo pipefail
           mkdir -p staging-workspace
           cd staging-workspace
           NO_DEPLOY_FLAG=""
-          if [ "${{ inputs.no_deploy }}" = "true" ]; then
+          if [ "${NO_DEPLOY_INPUT}" = "true" ]; then
             NO_DEPLOY_FLAG="--no-deploy --no-install"
           fi
-          node ../packages/deploy/scripts/scaffold.mjs "${{ inputs.app_name }}" \
+          node ../packages/deploy/scripts/scaffold.mjs "${APP_NAME}" \
             --handoff ../.factory-handoff/handoff.json $NO_DEPLOY_FLAG
 
       - name: Upload scaffolded workspace as artifact
@@ -123,23 +127,25 @@ jobs:
         env:
           STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
           STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+          PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
           curl -fsSL -X POST \
             -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
             -H 'Content-Type: application/json' \
             -d '{"status":"succeeded","notes":"scaffold artifact uploaded"}' \
-            "${STUDIO_API_BASE}/capabilities/provision-requests/${{ inputs.provision_request_id }}/transition"
+            "${STUDIO_API_BASE}/capabilities/provision-requests/${PROVISION_REQUEST_ID}/transition"
 
       - name: Transition provision request → failed
         if: failure()
         env:
           STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
           STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+          PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
           curl -fsSL -X POST \
             -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
             -H 'Content-Type: application/json' \
             -d '{"status":"failed","notes":"see GH Actions run log"}' \
-            "${STUDIO_API_BASE}/capabilities/provision-requests/${{ inputs.provision_request_id }}/transition" || true
+            "${STUDIO_API_BASE}/capabilities/provision-requests/${PROVISION_REQUEST_ID}/transition" || true
