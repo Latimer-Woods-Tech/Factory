@@ -28,7 +28,8 @@
 
   "vars": {
     "ENVIRONMENT": "development",
-    "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+    "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
+    "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com"
   },
 
   "d1_databases": [
@@ -43,13 +44,15 @@
   //   STRIPE_WEBHOOK_SECRET   — from Stripe dashboard after endpoint registration
   //   POSTHOG_KEY             — PostHog project API key
   //   RESEND_API_KEY          — Resend API key
+  // Optional secrets:
+  //   SLACK_WEBHOOK_URL       — Slack incoming webhook for landing-page contact intake
 
   "env": {
     "production": {
       "name": "webhook-fanout",
       "routes": [
         {
-          "pattern": "webhooks.latwoodtech.work",
+          "pattern": "webhooks.latwoodtech.work/*",
           "custom_domain": true
         }
       ],
@@ -61,7 +64,8 @@
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+        "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
+        "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com"
       },
       "d1_databases": [
         {
