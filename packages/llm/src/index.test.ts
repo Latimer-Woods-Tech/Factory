@@ -1136,8 +1136,8 @@ describe('complete - org-level KV daily cap', () => {
   function makeCostKv(stored: Record<string, string> = {}): import('./index.js').CostKvStore {
     const store: Record<string, string> = { ...stored };
     return {
-      get: async (key: string) => store[key] ?? null,
-      put: async (key: string, value: string) => { store[key] = value; },
+      get: (key: string) => Promise.resolve(store[key] ?? null),
+      put: (key: string, value: string) => { store[key] = value; return Promise.resolve(); },
     };
   }
 
@@ -1149,7 +1149,7 @@ describe('complete - org-level KV daily cap', () => {
     const result = await complete(
       [{ role: 'user', content: 'hello' }],
       { ...ENV, LLM_COST_KV: kv },
-      { dailyCapUsd: 50, dailyCapUsd: 50 },
+      { dailyCapUsd: 50 },
     );
     expect(result.error).not.toBeNull();
     expect(result.error?.message).toBe('LLM_DAILY_CAP_EXCEEDED');
@@ -1162,10 +1162,8 @@ describe('complete - org-level KV daily cap', () => {
     const result = await complete(
       [{ role: 'user', content: 'hello' }],
       { ...ENV, LLM_COST_KV: kv },
-      {
-        dailyCapUsd: 50,
-        fetch: () => Promise.resolve(anthropicResponse('ok')) as any,
-      } as any,
+      { dailyCapUsd: 50 },
+      { fetch: () => Promise.resolve(anthropicResponse('ok')) },
     );
     // Should pass cap check — result depends on fetch working
     expect(result.error?.code).not.toBe('LLM_DAILY_CAP_EXCEEDED');
@@ -1190,9 +1188,40 @@ describe('complete - org-level KV daily cap', () => {
     const result = await complete(
       [{ role: 'user', content: 'hello' }],
       { ...ENV }, // no LLM_COST_KV
-      { dailyCapUsd: 0, fetch: daily } as any,
+      { dailyCapUsd: 0 },
+      { fetch: daily },
     );
     // No KV means no cap check — call proceeds
     expect(result.error?.code).not.toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+
+  it('returns LLM_COST_CAP_EXCEEDED when per-call cost exceeds maxCostUsd', async () => {
+    // maxCostUsd=0 means any real call cost will exceed it
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV },
+      { maxCostUsd: 0 },
+      { fetch: fetchImpl },
+    );
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_COST_CAP_EXCEEDED');
+  });
+
+  it('accumulates monthly cost in KV after successful call', async () => {
+    const kv = makeCostKv();
+    const month = new Date().toISOString().slice(0, 7);
+    await kv.put(`llm:monthly-cost:${month}`, '10');
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { monthlyCapUsd: 100 },
+      { fetch: fetchImpl },
+    );
+    expect(result.error).toBeNull();
+    const raw = await kv.get(`llm:monthly-cost:${month}`);
+    // Accumulated value should be > 10 (initial) after a successful call
+    expect(parseFloat(raw ?? '0')).toBeGreaterThan(10);
   });
 });
