@@ -193,9 +193,6 @@ function createHyperdrive({ app, connectionString, envKey, dryRun }) {
     return null;
   }
 
-  const cfApiToken = requireEnv('CF_API_TOKEN');
-  const cfAccountId = requireEnv('CF_ACCOUNT_ID');
-
   const hdName = `${app}-db`;
   const cmd = `wrangler hyperdrive create ${hdName} --connection-string "${connectionString}" --json`;
 
@@ -205,6 +202,9 @@ function createHyperdrive({ app, connectionString, envKey, dryRun }) {
     console.log(`  [DRY-RUN] ${cmd}`);
     return 'dry-run-hyperdrive-uuid';
   }
+
+  const cfApiToken = requireEnv('CF_API_TOKEN');
+  const cfAccountId = requireEnv('CF_ACCOUNT_ID');
 
   const raw = run(cmd, {
     dryRun: false,
@@ -640,9 +640,11 @@ async function main() {
   console.log(`  Dry run:        ${dryRun ? 'YES' : 'no'}`);
 
   // Validate required env
-  requireEnv('GITHUB_TOKEN');
-  requireEnv('CF_API_TOKEN');
-  requireEnv('CF_ACCOUNT_ID');
+  if (!dryRun) {
+    requireEnv('GITHUB_TOKEN');
+    requireEnv('CF_API_TOKEN');
+    requireEnv('CF_ACCOUNT_ID');
+  }
 
   // A. Neon
   const neonResult = await provisionNeon({ app, db, envKey, dryRun });

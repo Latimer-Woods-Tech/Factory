@@ -11,20 +11,20 @@ const planPath = getFlagValue('--plan');
 const outputPath = getFlagValue('--output') ? resolve(process.cwd(), getFlagValue('--output')) : process.cwd();
 const appNameFlag = getFlagValue('--app-name');
 
-if (!recipeId && !planPath) {
-  console.error('Usage: node scripts/gen-deploy-workflow.mjs --recipe <id> | --plan <path> [--app-name <name>] [--output <dir>]');
+if (recipeId && planPath) {
+  console.error('Usage: node scripts/gen-deploy-workflow.mjs [--recipe <id> | --plan <path>] [--app-name <name>] [--output <dir>]');
   process.exit(1);
 }
 
 const appName = appNameFlag ?? await inferAppName(outputPath);
 const compiledPlanPath = planPath
   ? resolve(process.cwd(), planPath)
-  : join(ROOT_DIR, 'capabilities', 'compiled', `${recipeId}.plan.json`);
+  : recipeId
+    ? join(ROOT_DIR, 'capabilities', 'compiled', `${recipeId}.plan.json`)
+    : null;
 
-await ensureCompiledPlan(compiledPlanPath, recipeId);
-const planRaw = await readFile(compiledPlanPath, 'utf8');
-const plan = JSON.parse(planRaw);
-const healthPath = determineHealthPath(plan.expectedSurfaces ?? []);
+const plan = compiledPlanPath ? await loadPlan(compiledPlanPath, recipeId) : null;
+const healthPath = determineHealthPath(plan?.expectedSurfaces ?? []);
 const healthUrl = appName
   ? `https://${appName}.latwoodtech.work${healthPath}`
   : `https://REPLACE_WITH_APP_DOMAIN${healthPath}`;
@@ -86,6 +86,12 @@ function determineHealthPath(surfaces) {
   const healthCandidate = surfaces.find((surface) => surface.startsWith('/health'));
   if (healthCandidate) return healthCandidate;
   return surfaces.find((surface) => surface.startsWith('/')) ?? '/health';
+}
+
+async function loadPlan(path, recipeIdArg) {
+  await ensureCompiledPlan(path, recipeIdArg);
+  const planRaw = await readFile(path, 'utf8');
+  return JSON.parse(planRaw);
 }
 
 async function inferAppName(outputDir) {

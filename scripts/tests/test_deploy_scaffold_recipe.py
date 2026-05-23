@@ -52,6 +52,12 @@ def test_deploy_scaffold_recipe_generates_app(tmp_path: Path):
         index_ts = (app_dir / 'src' / 'index.ts').read_text(encoding='utf-8')
         assert "app.get('/manifest'" in index_ts
         assert "app.post('/api/campaigns/:id/start'" in index_ts
+
+        ci_text = (app_dir / '.github' / 'workflows' / 'ci.yml').read_text(encoding='utf-8')
+        deploy_text = (app_dir / '.github' / 'workflows' / 'deploy.yml').read_text(encoding='utf-8')
+        assert 'uses: Latimer-Woods-Tech/factory/.github/workflows/_app-ci.yml@main' in ci_text
+        assert 'uses: Latimer-Woods-Tech/factory/.github/workflows/_app-deploy.yml@main' in deploy_text
+        assert 'https://outbound-dialer-app-ci.latwoodtech.work/health' in deploy_text
     finally:
         if app_dir.exists():
             shutil.rmtree(app_dir, onerror=_remove_readonly)

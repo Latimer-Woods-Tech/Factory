@@ -218,6 +218,19 @@ function applyHandoffToScaffold(handoff) {
   console.log('  ✅ Handoff applied. See factory/handoff.json and factory/SMOKE.md.');
 }
 
+function generateWorkflowCallers() {
+  const generatorScript = resolve(REPO_ROOT, 'scripts', 'gen-deploy-workflow.mjs');
+  const parts = [
+    `node "${generatorScript}"`,
+    `--app-name ${APP_NAME}`,
+    `--output "${TARGET}"`,
+    CAPABILITY_RECIPE ? `--recipe ${CAPABILITY_RECIPE}` : '',
+    CAPABILITY_PLAN ? `--plan "${resolve(process.cwd(), CAPABILITY_PLAN)}"` : '',
+  ].filter(Boolean);
+
+  run(parts.join(' '), { cwd: REPO_ROOT });
+}
+
 // ── Prerequisites ─────────────────────────────────────────────────────────────
 
 function checkPrerequisites() {
@@ -487,70 +500,8 @@ export default defineConfig({
   // .dev.vars.example — local dev secrets template
   write('.dev.vars.example', renderDevVarsExample(capabilityPlan));
 
-  // .github/workflows/ci.yml
-  write('.github/workflows/ci.yml', `name: CI
-
-on:
-  push:
-    branches: [main, 'feature/**']
-  pull_request:
-    branches: [main]
-
-jobs:
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
-      - run: npm ci
-        env:
-          NODE_AUTH_TOKEN: \${{ secrets.PACKAGES_READ_TOKEN }}
-      - run: npm run typecheck
-      - run: npm test
-        env:
-          NEON_TEST_URL: \${{ secrets.NEON_PREVIEW_URL }}
-`);  
-
-  // .github/workflows/deploy.yml
-  write('.github/workflows/deploy.yml', `name: Deploy
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Target environment
-        required: true
-        default: production
-        type: choice
-        options: [production, staging]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: \${{ github.event.inputs.environment || 'production' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
-      - run: npm ci
-        env:
-          NODE_AUTH_TOKEN: \${{ secrets.PACKAGES_READ_TOKEN }}
-      - run: npm run typecheck
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: \${{ secrets.CF_API_TOKEN }}
-          accountId: \${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy --env \${{ github.event.inputs.environment || 'production' }}
-`);
+  // .github/workflows/ci.yml + deploy.yml
+  generateWorkflowCallers();
 
   console.log('\n  ✅ All files generated.');
 }
