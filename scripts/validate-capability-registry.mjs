@@ -243,6 +243,56 @@ function validateConcept(data, path, primitiveIds, recipeIds, recipesById) {
     }
   }
 
+  const recipeSelection = requireOptionalObject(data, 'recipeSelection', path);
+  if (recipeSelection) {
+    requireString(recipeSelection, 'defaultRecipeId', path);
+    if (!recipeIds.has(recipeSelection.defaultRecipeId)) {
+      errors.push(`${relative(path)}: recipeSelection.defaultRecipeId references unknown recipe "${recipeSelection.defaultRecipeId}"`);
+    }
+    if (!(data.recipeCandidates ?? []).includes(recipeSelection.defaultRecipeId)) {
+      errors.push(`${relative(path)}: recipeSelection.defaultRecipeId must also appear in recipeCandidates`);
+    }
+
+    const rules = recipeSelection.rules;
+    if (rules !== undefined) {
+      if (!Array.isArray(rules)) {
+        errors.push(`${relative(path)}: recipeSelection.rules must be an array`);
+      } else {
+        for (const [index, rule] of rules.entries()) {
+          if (!rule || typeof rule !== 'object' || Array.isArray(rule)) {
+            errors.push(`${relative(path)}: recipeSelection.rules[${index}] must be an object`);
+            continue;
+          }
+          requireString(rule, 'id', path);
+          requireString(rule, 'recipeId', path);
+          if (!recipeIds.has(rule.recipeId)) {
+            errors.push(`${relative(path)}: recipeSelection.rules[${index}].recipeId references unknown recipe "${rule.recipeId}"`);
+          }
+          if (!(data.recipeCandidates ?? []).includes(rule.recipeId)) {
+            errors.push(`${relative(path)}: recipeSelection.rules[${index}].recipeId must also appear in recipeCandidates`);
+          }
+          if (!Array.isArray(rule.matchAll) || rule.matchAll.length === 0) {
+            errors.push(`${relative(path)}: recipeSelection.rules[${index}].matchAll must be a non-empty array`);
+            continue;
+          }
+          for (const [conditionIndex, condition] of rule.matchAll.entries()) {
+            if (!condition || typeof condition !== 'object' || Array.isArray(condition)) {
+              errors.push(`${relative(path)}: recipeSelection.rules[${index}].matchAll[${conditionIndex}] must be an object`);
+              continue;
+            }
+            requireString(condition, 'parameter', path);
+            if (!(condition.parameter in (parameterSchema?.properties ?? {}))) {
+              errors.push(`${relative(path)}: recipeSelection.rules[${index}].matchAll[${conditionIndex}].parameter references unknown property "${condition.parameter}"`);
+            }
+            if (!Object.prototype.hasOwnProperty.call(condition, 'equals')) {
+              errors.push(`${relative(path)}: recipeSelection.rules[${index}].matchAll[${conditionIndex}].equals is required`);
+            }
+          }
+        }
+      }
+    }
+  }
+
   const qualification = requireObject(data, 'qualification', path);
   if (qualification) {
     requireBoolean(qualification, 'menuVisible', path);
@@ -251,6 +301,7 @@ function validateConcept(data, path, primitiveIds, recipeIds, recipesById) {
     requireStringArray(qualification, 'disallowedEnvironments', path, { optional: true });
   }
 
+  const coverage = new Map((data.sourcePrimitives ?? []).map((primitiveId) => [primitiveId, false]));
   for (const recipeId of data.recipeCandidates ?? []) {
     const recipe = recipesById.get(recipeId);
     if (!recipe) continue;
@@ -258,10 +309,21 @@ function validateConcept(data, path, primitiveIds, recipeIds, recipesById) {
       ...(Array.isArray(recipe.primitives) ? recipe.primitives : []),
       ...(Array.isArray(recipe.optionalPrimitives) ? recipe.optionalPrimitives : []),
     ]);
-    for (const primitiveId of data.sourcePrimitives ?? []) {
-      if (!declaredPrimitives.has(primitiveId)) {
-        errors.push(`${relative(path)}: recipe candidate "${recipeId}" does not declare source primitive "${primitiveId}"`);
+    for (const primitiveId of declaredPrimitives) {
+      if (!(data.sourcePrimitives ?? []).includes(primitiveId)) {
+        errors.push(`${relative(path)}: recipe candidate "${recipeId}" declares primitive "${primitiveId}" outside concept.sourcePrimitives`);
       }
+    }
+    for (const primitiveId of data.sourcePrimitives ?? []) {
+      if (declaredPrimitives.has(primitiveId)) {
+        coverage.set(primitiveId, true);
+      }
+    }
+  }
+
+  for (const [primitiveId, isCovered] of coverage.entries()) {
+    if (!isCovered) {
+      errors.push(`${relative(path)}: source primitive "${primitiveId}" is not covered by any recipe candidate`);
     }
   }
 }
@@ -327,6 +389,18 @@ function enforceRules(data, recipes) {
 
 function requireObject(value, key, path) {
   const target = value[key];
+  if (!target || typeof target !== 'object' || Array.isArray(target)) {
+    errors.push(`${relative(path)}: ${key} must be an object`);
+    return null;
+  }
+  return target;
+}
+
+function requireOptionalObject(value, key, path) {
+  const target = value[key];
+  if (target === undefined) {
+    return null;
+  }
   if (!target || typeof target !== 'object' || Array.isArray(target)) {
     errors.push(`${relative(path)}: ${key} must be an object`);
     return null;

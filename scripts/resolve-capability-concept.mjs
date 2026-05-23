@@ -38,14 +38,15 @@ if (validationErrors.length > 0) {
   process.exit(1);
 }
 
-const selectedRecipeId = selectRecipe(concept.recipeCandidates ?? []);
+const normalizedParams = normalizeParams(concept.parameterSchema ?? {}, providedParams);
+const selection = selectRecipe(concept, normalizedParams);
+const selectedRecipeId = selection.recipeId;
 const recipe = recipes.get(selectedRecipeId);
 if (!recipe) {
   console.error(`Concept ${conceptId} resolved to unknown recipe: ${selectedRecipeId}`);
   process.exit(1);
 }
 
-const normalizedParams = normalizeParams(concept.parameterSchema ?? {}, providedParams);
 const resolution = {
   schemaVersion: '1.0.0',
   kind: 'concept-resolution',
@@ -64,8 +65,9 @@ const resolution = {
   },
   parameters: normalizedParams,
   resolution: {
-    strategy: 'first-approved-recipe-candidate',
+    strategy: selection.strategy,
     candidateCount: Array.isArray(concept.recipeCandidates) ? concept.recipeCandidates.length : 0,
+    matchedRuleId: selection.matchedRuleId,
   },
 };
 
@@ -188,11 +190,36 @@ function validateParamType(key, type, value) {
   return null;
 }
 
-function selectRecipe(recipeCandidates) {
+function selectRecipe(concept, params) {
+  const recipeCandidates = concept.recipeCandidates;
   if (!Array.isArray(recipeCandidates) || recipeCandidates.length === 0) {
     throw new Error('Concept has no recipe candidates');
   }
-  return [...recipeCandidates].sort((left, right) => left.localeCompare(right))[0];
+
+  const selection = concept.recipeSelection;
+  if (selection) {
+    for (const rule of selection.rules ?? []) {
+      const matches = (rule.matchAll ?? []).every((condition) => params[condition.parameter] === condition.equals);
+      if (matches) {
+        return {
+          recipeId: rule.recipeId,
+          strategy: 'parameter-rules',
+          matchedRuleId: rule.id,
+        };
+      }
+    }
+    return {
+      recipeId: selection.defaultRecipeId,
+      strategy: 'parameter-rules',
+      matchedRuleId: null,
+    };
+  }
+
+  return {
+    recipeId: [...recipeCandidates].sort((left, right) => left.localeCompare(right))[0],
+    strategy: 'first-approved-recipe-candidate',
+    matchedRuleId: null,
+  };
 }
 
 function getFlagValue(flag) {

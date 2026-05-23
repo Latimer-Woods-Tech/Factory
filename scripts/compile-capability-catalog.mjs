@@ -73,6 +73,7 @@ async function buildCatalog() {
         menuVisible: Boolean(concept.qualification?.menuVisible),
         approvalTier: concept.qualification?.approvalTier ?? 'unreviewed',
         parameters: buildParameterIndex(concept.parameterSchema),
+        recipeSelection: concept.recipeSelection ?? null,
         recipes: (concept.recipeCandidates ?? [])
           .map((recipeId) => {
             const recipe = recipeMap.get(recipeId);

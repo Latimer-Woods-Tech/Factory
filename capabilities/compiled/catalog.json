@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0.0",
   "kind": "catalog",
-  "generatedAt": "2026-05-23T05:02:50.822Z",
+  "generatedAt": "2026-05-23T06:16:23.584Z",
   "summary": {
     "primitiveCount": 4,
-    "recipeCount": 1,
+    "recipeCount": 2,
     "conceptCount": 1,
     "ruleFileCount": 1
   },
@@ -110,6 +110,37 @@
           "expectContains": "manifestVersion"
         }
       ]
+    },
+    {
+      "id": "outbound-dialer-importer",
+      "maturity": "experimental",
+      "summary": "Outbound dialer service pattern optimized for imported lead lists and operator-managed targeting.",
+      "goal": "Provision a staging-first outbound calling service for CSV-imported audiences with consent-aware controls and delivery telemetry.",
+      "primitives": [
+        "telephony",
+        "compliance",
+        "analytics"
+      ],
+      "optionalPrimitives": [],
+      "expectedSurfaces": [
+        "/health",
+        "/manifest",
+        "/api/imports",
+        "/api/imports/:id/start",
+        "/api/dispositions"
+      ],
+      "smokeChecks": [
+        {
+          "path": "/health",
+          "expectedStatus": 200,
+          "expectContains": "status"
+        },
+        {
+          "path": "/manifest",
+          "expectedStatus": 200,
+          "expectContains": "manifestVersion"
+        }
+      ]
     }
   ],
   "concepts": [
@@ -159,6 +190,41 @@
           "formatHint": "hostname"
         }
       ],
+      "recipeSelection": {
+        "defaultRecipeId": "outbound-dialer",
+        "rules": [
+          {
+            "id": "csv-import-uses-importer",
+            "recipeId": "outbound-dialer-importer",
+            "matchAll": [
+              {
+                "parameter": "campaignSource",
+                "equals": "csv-import"
+              }
+            ]
+          },
+          {
+            "id": "crm-segment-uses-crm-dialer",
+            "recipeId": "outbound-dialer",
+            "matchAll": [
+              {
+                "parameter": "campaignSource",
+                "equals": "crm-segment"
+              }
+            ]
+          },
+          {
+            "id": "api-trigger-uses-crm-dialer",
+            "recipeId": "outbound-dialer",
+            "matchAll": [
+              {
+                "parameter": "campaignSource",
+                "equals": "api-trigger"
+              }
+            ]
+          }
+        ]
+      },
       "recipes": [
         {
           "id": "outbound-dialer",
@@ -167,6 +233,17 @@
           "primitives": [
             "telephony",
             "crm",
+            "compliance",
+            "analytics"
+          ],
+          "optionalPrimitives": []
+        },
+        {
+          "id": "outbound-dialer-importer",
+          "summary": "Outbound dialer service pattern optimized for imported lead lists and operator-managed targeting.",
+          "maturity": "experimental",
+          "primitives": [
+            "telephony",
             "compliance",
             "analytics"
           ],

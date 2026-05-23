@@ -25,6 +25,18 @@ describe('capability-registry', () => {
     expect(resolution.recipe.expectedSurfaces).toContain('/health');
   });
 
+  it('routes csv-import concepts to the importer recipe variant', () => {
+    const resolution = resolveCapabilityConcept('outbound-dialer-campaign', {
+      workerDomain: 'dialer.example.com',
+      campaignSource: 'csv-import',
+    });
+
+    expect(resolution.recipe.id).toBe('outbound-dialer-importer');
+    expect(resolution.resolution.strategy).toBe('parameter-rules');
+    expect(resolution.resolution.matchedRuleId).toBe('csv-import-uses-importer');
+    expect(resolution.recipe.expectedSurfaces).toContain('/api/imports');
+  });
+
   it('rejects unknown parameters', () => {
     expect(() =>
       resolveCapabilityConcept('outbound-dialer-campaign', {
