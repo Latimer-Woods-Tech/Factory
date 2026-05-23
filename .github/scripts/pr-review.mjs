@@ -355,11 +355,13 @@ function hasFetchCallInPatch(file) {
   return /\bfetch\s*\(/.test(patch);
 }
 
-function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
+function runDeterministicChecks(workerAddedLines, allAddedLines, filenames, wranglerAddedLines) {
   // workerAddedLines — added content from non-Actions-runner files only
   //   (Workers runtime constraints apply here)
   // allAddedLines — all added content regardless of file path
   //   (universal checks: secrets, fetch, any type)
+  // wranglerAddedLines — added content from wrangler config files only
+  //   (scoped to avoid cross-file false positives on the vars check)
   const violations = [];
   const warnings = [];
 
@@ -391,9 +393,11 @@ function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
   if (/import\s+.*jsonwebtoken/m.test(workerAddedLines))
     violations.push({ constraint: 'No jsonwebtoken', detail: 'Use Web Crypto API for JWT — never the jsonwebtoken package' });
 
-  // Secret in vars block (wrangler config) — check all lines
+  // Secret in vars block (wrangler config) — scope to wrangler files only to
+  // avoid cross-file false positives (TypeScript vars: type fields + workflow
+  // env TOKEN: keys would otherwise trigger a spurious match).
   if (filenames.some(f => /wrangler/.test(f)) &&
-      /vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im.test(allAddedLines))
+      /vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im.test(wranglerAddedLines))
     violations.push({ constraint: 'No secrets in wrangler vars', detail: 'Use wrangler secret put — never put secrets in the vars block' });
 
   // Fetch without error handling — check all lines
@@ -1212,10 +1216,12 @@ async function main() {
 
   // Deterministic checks
   // workerAddedLines — only files that run in CF Workers (excludes Actions runner files)
-  // allAddedLines — all files (for universal checks: secrets in wrangler, fetch handling, any type)
+  // allAddedLines — all files (for universal checks: fetch handling, any type)
+  // wranglerAddedLines — only wrangler config files (scoped to avoid cross-file false positives)
   const allAddedLines = extractAddedLines(files);
   const workerAddedLines = extractAddedLines(files.filter(f => !isNonWorkerFile(f.filename ?? '') && !isFrontendUiFile(f.filename ?? '')));
-  const deterministicResult = runDeterministicChecks(workerAddedLines, allAddedLines, filenames);
+  const wranglerAddedLines = extractAddedLines(files.filter(f => /wrangler/.test(f.filename ?? '')));
+  const deterministicResult = runDeterministicChecks(workerAddedLines, allAddedLines, filenames, wranglerAddedLines);
 
   console.log(`[INFO] Deterministic: ${deterministicResult.violations.length} violations, ${deterministicResult.warnings.length} warnings`);
 
