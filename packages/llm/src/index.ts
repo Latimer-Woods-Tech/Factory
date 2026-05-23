@@ -901,6 +901,20 @@ export async function complete(
       if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
         await recordOrgCostUsage(kv, todayKey, monthKey, costUsd, opts);
       }
+      // ── Update org-level cost accumulators in KV ─────────────────────────
+      if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
+        const callCost = estimateCostUsd(llmResult.tokens, llmResult.model);
+        if (opts.dailyCapUsd !== undefined) {
+          const raw = await kv.get(todayKey).catch(() => null);
+          const spent = parseFloat(raw ?? '0');
+          await kv.put(todayKey, String(spent + callCost), { expirationTtl: 172_800 /* 48 h */ }).catch(() => undefined);
+        }
+        if (opts.monthlyCapUsd !== undefined) {
+          const raw = await kv.get(monthKey).catch(() => null);
+          const spent = parseFloat(raw ?? '0');
+          await kv.put(monthKey, String(spent + callCost), { expirationTtl: 3_456_000 /* 40 d */ }).catch(() => undefined);
+        }
+      }
       return { data: llmResult, error: null };
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
@@ -1222,3 +1236,4 @@ export function assertGrounding(response: string, sources: string[]): boolean {
 
 export { MODELS, isProviderCoolingDown, markProviderCoolingDown, clearProviderCooldown, PROVIDER_COOLDOWN_MS };
 export { BASE_BACKOFF_MS };
+
