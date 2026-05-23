@@ -45,7 +45,7 @@ function deepSort(value) {
 
 function deterministicTimestamp() {
   try {
-    const output = execSync('git log -1 --format=%cI -- capabilities/', {
+    const output = execSync('git log -1 --format=%cI -- capabilities/concepts capabilities/primitives capabilities/recipes capabilities/rules', {
       cwd: REPO_ROOT,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore'],
