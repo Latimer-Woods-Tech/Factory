@@ -21,29 +21,36 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [checkingGoogleAuth, setCheckingGoogleAuth] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const login = useSession((s) => s.login);
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Google Sign-In when env is selected
+  // Fetch auth providers when env is selected
   useEffect(() => {
-    if (!env || !googleButtonRef.current) return;
+    if (!env) return;
+    setGoogleClientId(null);
+    const base = getApiBase(env);
+    fetch(`${base}/auth/providers`)
+      .then((r) => r.ok ? r.json() as Promise<{ googleClientId: string | null }> : Promise.resolve({ googleClientId: null }))
+      .then((data) => setGoogleClientId(data.googleClientId ?? null))
+      .catch(() => setGoogleClientId(null));
+  }, [env]);
+
+  // Initialize Google Sign-In once we have env + client ID + button ref
+  useEffect(() => {
+    if (!env || !googleClientId || !googleButtonRef.current) return;
 
     const google = (window as any).google;
     if (!google) return;
 
-    // Clear any previously rendered button
     googleButtonRef.current.innerHTML = '';
 
-    // Determine the client ID (would normally come from backend or env vars)
-    // For now, initialize the button without a specific client ID
-    // The actual client ID will be set by the backend or environment
     try {
       google.accounts.id.initialize({
+        client_id: googleClientId,
         callback: handleGoogleCallback,
-        hosted_domain: 'apunlimited.com',
       });
 
       google.accounts.id.renderButton(googleButtonRef.current, {
@@ -54,12 +61,11 @@ export function LoginPage() {
         width: '320',
       });
 
-      // Also try to render the One Tap experience
       google.accounts.id.prompt();
     } catch (err) {
       console.warn('Failed to initialize Google Sign-In:', err);
     }
-  }, [env]);
+  }, [env, googleClientId]);
 
   async function handleGoogleCallback(response: any) {
     if (!env) return;
