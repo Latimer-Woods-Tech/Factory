@@ -4,11 +4,16 @@
  * Implements Stages A + B + C of the council-approved Golden Design
  * (docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md):
  *
- *   GET  /capabilities                  — list governed concepts
- *   POST /capabilities/resolve          — concept + params → recipe (reversible)
- *   POST /capabilities/preview          — resolve + compiled plan + markdown
- *   POST /capabilities/handoff          — durable, content-addressable handoff
- *   POST /capabilities/provision-staging — audited staging-provision request
+ *   GET  /capabilities                         — list governed concepts
+ *   POST /capabilities/resolve                 — concept + params → recipe (reversible)
+ *   POST /capabilities/preview                 — resolve + compiled plan + markdown
+ *   POST /capabilities/handoff                 — durable, content-addressable handoff
+ *   GET  /capabilities/handoffs                — list handoffs (lineage)
+ *   GET  /capabilities/handoffs/:id            — single handoff lookup
+ *   POST /capabilities/provision-staging       — audited staging-provision request
+ *   GET  /capabilities/provision-requests      — list provision requests (lineage)
+ *   GET  /capabilities/provision-requests/:id  — single provision request (evidence polling)
+ *   POST /capabilities/provision-requests/:id/transition — lifecycle transition
  *
  * Every mutating route emits an audit entry via the audit middleware. The
  * handoff and provision-staging endpoints persist their artifacts in
@@ -27,6 +32,7 @@ import { compileCapabilityPlan, renderCapabilityPlanPreview } from '../lib/capab
 import { hashHandoffBody } from '../lib/handoff-hash.js';
 import {
   findHandoffById,
+  findProvisionRequestById,
   listHandoffs,
   listProvisionRequests,
   persistHandoff,
@@ -239,6 +245,23 @@ capabilities.post('/provision-staging', async (c) => {
 });
 
 /**
+ * Lineage: single handoff lookup by id.
+ * GET /capabilities/handoffs/:id
+ */
+capabilities.get('/handoffs/:id', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+  const id = c.req.param('id');
+  const handoff = await findHandoffById(c.env.DB, id);
+  if (!handoff) {
+    return c.json({ error: `Unknown handoff: ${id}` }, 404);
+  }
+  return c.json({ handoff });
+});
+
+/**
  * Lineage: list recent handoff packages. Optional conceptId / recipeId filter.
  * GET /capabilities/handoffs?conceptId=…&recipeId=…&limit=50
  */
@@ -253,6 +276,26 @@ capabilities.get('/handoffs', async (c) => {
   const limit = limitRaw ? Math.max(1, Math.min(200, Number.parseInt(limitRaw, 10) || 50)) : 50;
   const handoffs = await listHandoffs(c.env.DB, { conceptId, recipeId, limit });
   return c.json({ generatedAt: new Date().toISOString(), handoffs });
+});
+
+/**
+ * Deployment evidence: single provision request lookup by id.
+ * Polled by the Studio UI after a provision request is submitted so the
+ * operator can see live status transitions (dispatched → succeeded/failed)
+ * and scaffold notes without leaving the Studio.
+ * GET /capabilities/provision-requests/:id
+ */
+capabilities.get('/provision-requests/:id', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+  const id = c.req.param('id');
+  const request = await findProvisionRequestById(c.env.DB, id);
+  if (!request) {
+    return c.json({ error: `Unknown provision request: ${id}` }, 404);
+  }
+  return c.json({ request });
 });
 
 /**

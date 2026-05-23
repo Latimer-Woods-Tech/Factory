@@ -62,21 +62,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p .factory-handoff
-          # The handoff GET-by-id endpoint is implicit via /capabilities/handoffs?conceptId=…
-          # the dispatcher knows the id, so we list and filter. Future: dedicated /handoffs/:id.
           curl -fsSL \
             -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
-            "${STUDIO_API_BASE}/capabilities/handoffs?limit=200" \
+            "${STUDIO_API_BASE}/capabilities/handoffs/${HANDOFF_ID}" \
             | node -e "
               const fs = require('fs');
-              const id = process.env.HANDOFF_ID;
               let body = '';
               process.stdin.on('data', (c) => (body += c));
               process.stdin.on('end', () => {
                 const payload = JSON.parse(body);
-                const found = (payload.handoffs ?? []).find((h) => h.id === id);
+                const found = payload.handoff;
                 if (!found) {
-                  console.error('Handoff not found:', id);
+                  console.error('Handoff not found in response');
                   process.exit(1);
                 }
                 fs.writeFileSync('.factory-handoff/handoff.json', JSON.stringify(found, null, 2));

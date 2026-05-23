@@ -70,6 +70,16 @@ function buildCatalog() {
 
   const generatedAt = deterministicTimestamp();
 
+  // Cross-reference: enrich concept recipe summaries with version from recipe files.
+  const recipeVersionMap = new Map(recipes.map((r) => [r.id, r.version ?? null]));
+  const enrichedConcepts = concepts.map((c) => ({
+    ...c,
+    recipes: (c.recipes ?? []).map((rs) => ({
+      ...rs,
+      version: recipeVersionMap.get(rs.id) ?? null,
+    })),
+  }));
+
   return {
     schemaVersion: '1.0.0',
     kind: 'capability-catalog',
@@ -80,7 +90,7 @@ function buildCatalog() {
       recipeCount: recipes.length,
       ruleFileCount: rules.length,
     },
-    concepts: concepts
+    concepts: enrichedConcepts
       .map((c) => deepSort(c))
       .sort((a, b) => a.id.localeCompare(b.id)),
     recipes: recipes

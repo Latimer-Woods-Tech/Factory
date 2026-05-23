@@ -11,14 +11,237 @@ import type {
 const catalog = {
   "schemaVersion": "1.0.0",
   "kind": "capability-catalog",
-  "generatedAt": "2026-05-23T19:03:18.000Z",
+  "generatedAt": "2026-05-23T20:48:55.000Z",
   "summary": {
-    "conceptCount": 2,
-    "primitiveCount": 6,
-    "recipeCount": 3,
+    "conceptCount": 5,
+    "primitiveCount": 9,
+    "recipeCount": 6,
     "ruleFileCount": 1
   },
   "concepts": [
+    {
+      "approvalTier": "golden",
+      "displayName": "Video Publishing API (Capricast)",
+      "id": "capricast-video-api",
+      "maturity": "stable",
+      "menuVisible": true,
+      "parameters": [
+        {
+          "default": null,
+          "description": "Branded custom domain for the deployed worker.",
+          "enum": [],
+          "formatHint": "api.capricast.com",
+          "id": "workerDomain",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": null,
+          "description": "Cloudflare account ID for Stream and R2 operations.",
+          "enum": [],
+          "formatHint": "abc123def456",
+          "id": "cfAccountId",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": "cloudflare-stream",
+          "description": "Primary video storage strategy.",
+          "enum": [
+            "cloudflare-stream",
+            "r2-only"
+          ],
+          "formatHint": null,
+          "id": "streamStorage",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Emit watch events to the Factory analytics pipeline.",
+          "enum": [],
+          "formatHint": null,
+          "id": "enableAnalytics",
+          "required": false,
+          "type": "boolean"
+        }
+      ],
+      "qualification": {
+        "approvalTier": "golden",
+        "disallowedEnvironments": [
+          "local"
+        ],
+        "menuVisible": true,
+        "requiredCapabilities": [
+          "custom-domain",
+          "neon-database",
+          "cloudflare-stream"
+        ]
+      },
+      "recipeSelection": null,
+      "recipes": [
+        {
+          "id": "capricast-video-api",
+          "maturity": "stable",
+          "optionalPrimitives": [
+            "compliance"
+          ],
+          "primitives": [
+            "video",
+            "llm",
+            "analytics"
+          ],
+          "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata.",
+          "version": "1.0.0"
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "compliance",
+        "llm",
+        "video"
+      ],
+      "status": "approved",
+      "summary": "Video publishing and watch API with Cloudflare Stream ingest, R2 storage, LLM-enriched metadata, and structured JSON-LD.",
+      "tags": [
+        "video",
+        "media",
+        "llm",
+        "api"
+      ],
+      "templates": [
+        {
+          "hint": "Full Stream pipeline with adaptive bitrate delivery.",
+          "id": "capricast-stream",
+          "label": "Cloudflare Stream",
+          "values": {
+            "enableAnalytics": true,
+            "streamStorage": "cloudflare-stream"
+          }
+        },
+        {
+          "hint": "Direct R2 delivery; no Stream transcoding.",
+          "id": "capricast-r2",
+          "label": "R2-only storage",
+          "values": {
+            "enableAnalytics": true,
+            "streamStorage": "r2-only"
+          }
+        }
+      ]
+    },
+    {
+      "approvalTier": "golden",
+      "displayName": "Healing Voice API (Cypher of Healing)",
+      "id": "cypher-healing-api",
+      "maturity": "beta",
+      "menuVisible": true,
+      "parameters": [
+        {
+          "default": null,
+          "description": "Branded custom domain for the deployed worker.",
+          "enum": [],
+          "formatHint": "api.cipherofhealing.com",
+          "id": "workerDomain",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": null,
+          "description": "Telnyx inbound number to route healing intake calls from.",
+          "enum": [],
+          "formatHint": "+15551234567",
+          "id": "intakePhoneNumber",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Send email follow-up after each intake session.",
+          "enum": [],
+          "formatHint": null,
+          "id": "enableEmailFollowUp",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "default": true,
+          "description": "Enable compliance primitive for HIPAA-adjacent transcript redaction.",
+          "enum": [],
+          "formatHint": null,
+          "id": "enableCompliance",
+          "required": false,
+          "type": "boolean"
+        }
+      ],
+      "qualification": {
+        "approvalTier": "golden",
+        "disallowedEnvironments": [
+          "local"
+        ],
+        "menuVisible": true,
+        "requiredCapabilities": [
+          "custom-domain",
+          "telnyx-inbound-number",
+          "neon-database"
+        ]
+      },
+      "recipeSelection": null,
+      "recipes": [
+        {
+          "id": "healing-voice-agent",
+          "maturity": "beta",
+          "optionalPrimitives": [
+            "compliance",
+            "email"
+          ],
+          "primitives": [
+            "telephony",
+            "llm",
+            "crm",
+            "analytics"
+          ],
+          "summary": "Inbound healing voice agent with LLM-guided intake, CRM routing, and optional email follow-up.",
+          "version": "1.0.0"
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "compliance",
+        "crm",
+        "email",
+        "llm",
+        "telephony"
+      ],
+      "status": "approved",
+      "summary": "Inbound healing voice agent for cypherofhealing.com — LLM-guided intake triage, CRM routing, and optional email follow-up.",
+      "tags": [
+        "telephony",
+        "voice",
+        "llm",
+        "crm"
+      ],
+      "templates": [
+        {
+          "hint": "Email follow-up enabled with compliance transcript redaction.",
+          "id": "cypher-full",
+          "label": "Full — email + compliance",
+          "values": {
+            "enableCompliance": true,
+            "enableEmailFollowUp": true
+          }
+        },
+        {
+          "hint": "Intake triage only; no email or compliance layer.",
+          "id": "cypher-minimal",
+          "label": "Minimal — intake only",
+          "values": {
+            "enableCompliance": false,
+            "enableEmailFollowUp": false
+          }
+        }
+      ]
+    },
     {
       "approvalTier": "golden",
       "displayName": "Outbound Dialer Campaign",
@@ -94,7 +317,8 @@ const catalog = {
             "crm",
             "analytics"
           ],
-          "summary": "CRM-segment driven outbound dialer workflow."
+          "summary": "CRM-segment driven outbound dialer workflow.",
+          "version": "1.0.0"
         },
         {
           "id": "outbound-dialer-importer",
@@ -107,7 +331,8 @@ const catalog = {
             "crm",
             "analytics"
           ],
-          "summary": "Outbound dialer workflow with CSV import landing and ingestion flow."
+          "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -122,6 +347,139 @@ const catalog = {
         "telephony",
         "crm",
         "campaigns"
+      ],
+      "templates": [
+        {
+          "hint": "Targets a CRM segment with voice synthesis enabled.",
+          "id": "crm-segment-default",
+          "label": "CRM Segment — standard",
+          "values": {
+            "campaignSource": "crm-segment",
+            "enableVoiceSynthesis": true
+          }
+        },
+        {
+          "hint": "Targets a CSV-imported contact list, no voice synthesis.",
+          "id": "csv-import-default",
+          "label": "CSV Import — batch",
+          "values": {
+            "campaignSource": "csv-import",
+            "enableVoiceSynthesis": false
+          }
+        }
+      ]
+    },
+    {
+      "approvalTier": "golden",
+      "displayName": "Human Design API (Prime Self)",
+      "id": "prime-self-api",
+      "maturity": "stable",
+      "menuVisible": true,
+      "parameters": [
+        {
+          "default": null,
+          "description": "Branded custom domain for the deployed worker.",
+          "enum": [],
+          "formatHint": "api.selfprime.net",
+          "id": "workerDomain",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": null,
+          "description": "JWT audience claim — must match the client-side audience check.",
+          "enum": [],
+          "formatHint": "selfprime.net",
+          "id": "jwtAudience",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Enable Stripe Agentic Commerce Service webhook fulfillment.",
+          "enum": [],
+          "formatHint": null,
+          "id": "enableACSFulfillment",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "default": false,
+          "description": "Send transactional email after each reading is fulfilled.",
+          "enum": [],
+          "formatHint": null,
+          "id": "enableEmailFollowUp",
+          "required": false,
+          "type": "boolean"
+        }
+      ],
+      "qualification": {
+        "approvalTier": "golden",
+        "disallowedEnvironments": [
+          "local"
+        ],
+        "menuVisible": true,
+        "requiredCapabilities": [
+          "custom-domain",
+          "neon-database"
+        ]
+      },
+      "recipeSelection": null,
+      "recipes": [
+        {
+          "id": "human-design-api",
+          "maturity": "stable",
+          "optionalPrimitives": [
+            "email",
+            "compliance"
+          ],
+          "primitives": [
+            "auth",
+            "llm",
+            "analytics",
+            "stripe"
+          ],
+          "summary": "Human Design reading API with JWT auth, Stripe ACS fulfillment, and LLM synthesis.",
+          "version": "1.0.0"
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "auth",
+        "compliance",
+        "email",
+        "llm",
+        "stripe"
+      ],
+      "status": "approved",
+      "summary": "Backend API for selfprime.net — Human Design readings, Stripe ACS fulfillment, and LLM-synthesized content.",
+      "tags": [
+        "api",
+        "auth",
+        "payments",
+        "llm"
+      ],
+      "templates": [
+        {
+          "hint": "Stripe ACS fulfillment enabled with email follow-up.",
+          "id": "prime-self-full",
+          "label": "Full stack — ACS + email",
+          "values": {
+            "enableACSFulfillment": true,
+            "enableEmailFollowUp": true,
+            "jwtAudience": "selfprime.net"
+          }
+        },
+        {
+          "hint": "Readings API only; ACS and email disabled.",
+          "id": "prime-self-minimal",
+          "label": "Minimal — readings only",
+          "values": {
+            "enableACSFulfillment": false,
+            "enableEmailFollowUp": false,
+            "jwtAudience": "selfprime.net"
+          }
+        }
       ]
     },
     {
@@ -185,7 +543,8 @@ const catalog = {
             "analytics",
             "llm"
           ],
-          "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations."
+          "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -203,10 +562,206 @@ const catalog = {
         "voice",
         "intake",
         "llm"
+      ],
+      "templates": [
+        {
+          "hint": "Triage inbound calls and send email receipts to callers.",
+          "id": "intake-with-email",
+          "label": "Intake + email confirmation",
+          "values": {
+            "emailConfirmations": true
+          }
+        },
+        {
+          "hint": "Triage only; no outbound email.",
+          "id": "intake-silent",
+          "label": "Intake — silent (no email)",
+          "values": {
+            "emailConfirmations": false
+          }
+        }
       ]
     }
   ],
   "recipes": [
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
+        "required": [
+          "DB",
+          "VIDEO_BUCKET"
+        ]
+      },
+      "constraints": [
+        "Use a branded custom domain.",
+        "Cloudflare Stream tokens must be scoped to this worker only.",
+        "Verify staging smoke checks before production."
+      ],
+      "envContract": {
+        "secrets": [
+          "CLOUDFLARE_STREAM_TOKEN",
+          "ANTHROPIC_API_KEY"
+        ],
+        "vars": [
+          "WORKER_DOMAIN",
+          "CF_ACCOUNT_ID"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/videos",
+        "/api/admin/videos/import",
+        "/watch/:id"
+      ],
+      "goal": "Ingest rendered video artifacts, enrich with LLM-generated metadata, publish to Cloudflare Stream, and serve a watch page with structured JSON-LD.",
+      "id": "capricast-video-api",
+      "maturity": "stable",
+      "optionalPrimitives": [
+        "compliance"
+      ],
+      "primitives": [
+        "video",
+        "llm",
+        "analytics"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        },
+        {
+          "expectedStatus": 200,
+          "path": "/api/videos"
+        }
+      ],
+      "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata.",
+      "version": "1.0.0"
+    },
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
+        "required": [
+          "INTAKE_QUEUE",
+          "DB"
+        ]
+      },
+      "constraints": [
+        "Use a branded custom domain.",
+        "Voice transcripts must be redacted before storage.",
+        "HIPAA-adjacent data handling — compliance primitive is recommended.",
+        "Verify intake smoke checks before production."
+      ],
+      "envContract": {
+        "secrets": [
+          "TELNYX_INBOUND_TOKEN",
+          "DEEPGRAM_API_KEY",
+          "ANTHROPIC_API_KEY"
+        ],
+        "vars": [
+          "WORKER_DOMAIN",
+          "INTAKE_PHONE_NUMBER"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/calls",
+        "/api/intake",
+        "/api/sessions"
+      ],
+      "goal": "Receive inbound calls, triage with LLM-guided conversation, capture structured intent, route to CRM, and send email follow-ups to callers.",
+      "id": "healing-voice-agent",
+      "maturity": "beta",
+      "optionalPrimitives": [
+        "compliance",
+        "email"
+      ],
+      "primitives": [
+        "telephony",
+        "llm",
+        "crm",
+        "analytics"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        },
+        {
+          "expectedStatus": 200,
+          "path": "/api/intake"
+        }
+      ],
+      "summary": "Inbound healing voice agent with LLM-guided intake, CRM routing, and optional email follow-up.",
+      "version": "1.0.0"
+    },
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
+        "required": [
+          "DB"
+        ]
+      },
+      "constraints": [
+        "Use a branded custom domain.",
+        "JWT_SECRET must be at least 256 bits.",
+        "Stripe webhooks must be verified before fulfillment actions.",
+        "Verify staging smoke checks before production."
+      ],
+      "envContract": {
+        "secrets": [
+          "JWT_SECRET",
+          "ANTHROPIC_API_KEY",
+          "STRIPE_SECRET_KEY",
+          "STRIPE_WEBHOOK_SECRET"
+        ],
+        "vars": [
+          "WORKER_DOMAIN",
+          "JWT_AUDIENCE"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/auth/login",
+        "/api/auth/me",
+        "/api/readings",
+        "/api/commerce/checkout",
+        "/api/commerce/webhooks"
+      ],
+      "goal": "Serve signed-in users their Human Design readings, handle Stripe webhook-driven fulfillment, and synthesize personalized content via LLM.",
+      "id": "human-design-api",
+      "maturity": "stable",
+      "optionalPrimitives": [
+        "email",
+        "compliance"
+      ],
+      "primitives": [
+        "auth",
+        "llm",
+        "analytics",
+        "stripe"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        },
+        {
+          "expectedStatus": 401,
+          "path": "/api/auth/login"
+        }
+      ],
+      "summary": "Human Design reading API with JWT auth, Stripe ACS fulfillment, and LLM synthesis.",
+      "version": "1.0.0"
+    },
     {
       "bindingContract": {
         "optional": [
@@ -382,6 +937,21 @@ const catalog = {
     {
       "contracts": {
         "policyTags": [
+          "auth"
+        ]
+      },
+      "id": "auth",
+      "package": "@latimer-woods-tech/auth",
+      "requirements": {
+        "secrets": [
+          "JWT_SECRET"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
           "compliance"
         ]
       },
@@ -438,6 +1008,22 @@ const catalog = {
     {
       "contracts": {
         "policyTags": [
+          "payments"
+        ]
+      },
+      "id": "stripe",
+      "package": "@latimer-woods-tech/stripe",
+      "requirements": {
+        "secrets": [
+          "STRIPE_SECRET_KEY",
+          "STRIPE_WEBHOOK_SECRET"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
           "telephony"
         ]
       },
@@ -451,6 +1037,25 @@ const catalog = {
           "TELNYX_API_KEY",
           "DEEPGRAM_API_KEY",
           "ELEVENLABS_API_KEY"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
+          "video",
+          "media"
+        ]
+      },
+      "id": "video",
+      "package": "@latimer-woods-tech/video",
+      "requirements": {
+        "bindings": [
+          "VIDEO_BUCKET"
+        ],
+        "secrets": [
+          "CLOUDFLARE_STREAM_TOKEN"
         ]
       },
       "versionRange": "^0.1.0"
