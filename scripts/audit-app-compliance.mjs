@@ -178,16 +178,21 @@ function checkSecurityPractices(appPath, appName) {
 
   try {
     const walkDir = (dir) => {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        const fullPath = path.join(dir, file);
-        const stat = fs.statSync(fullPath);
-        if (stat.isDirectory()) {
-          if (!file.includes('node_modules') && !file.includes('dist')) {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (!entry.name.includes('node_modules') && !entry.name.includes('dist')) {
             walkDir(fullPath);
           }
-        } else if (file.endsWith('.ts')) {
-          const content = fs.readFileSync(fullPath, 'utf-8');
+        } else if (entry.isFile() && entry.name.endsWith('.ts')) {
+          let content;
+          try {
+            content = fs.readFileSync(fullPath, 'utf-8');
+          } catch (err) {
+            if (err.code === 'ENOENT' || err.code === 'EISDIR') continue;
+            throw err;
+          }
           if (content.includes('zod') || content.includes('validate')) hasValidation = true;
           if (content.includes('rls') || content.includes('row_level_security')) hasRLS = true;
           if (content.includes('RATE_LIMITER') || content.includes('rateLimit')) hasRateLimiting = true;

@@ -50,6 +50,11 @@ jobs:
       - name: Install pytest + script deps
         run: pip install --quiet pytest pytest-cov pyyaml
 
+      - name: Configure git identity for scaffold tests
+        run: |
+          git config --global user.email "[email protected]"
+          git config --global user.name "Factory CI"
+
       - name: Run tests
         working-directory: scripts/tests
         run: python -m pytest -v --cov --cov-report=term
