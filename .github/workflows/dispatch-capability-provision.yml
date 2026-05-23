@@ -1,0 +1,145 @@
+name: Dispatch capability provision
+
+# Operator-triggered dispatcher for staging provision requests recorded by
+# the Capability Design Studio (see docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md).
+#
+# Flow:
+#   1. Operator confirms the proof gates in admin-studio and a row is inserted
+#      into capability_provision_requests with status='requested'.
+#   2. Operator (or a scheduled poller) calls this workflow_dispatch with the
+#      provision_request_id and the persisted handoff_id.
+#   3. This workflow:
+#        a. fetches the handoff package from admin-studio
+#        b. transitions the request to 'dispatched'
+#        c. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
+#        d. uploads the scaffolded tree as a workflow artifact for review
+#        e. on success, transitions the request to 'succeeded'; on failure,
+#           transitions to 'failed' with the error captured in notes.
+#
+# Two secrets are required:
+#   - STUDIO_API_BASE       — e.g. https://admin-studio-staging.adrper79.workers.dev
+#   - STUDIO_DISPATCH_TOKEN — admin-tier JWT (short-lived, rotated)
+#
+# The workflow stays manual on purpose. Stage D could replace workflow_dispatch
+# with a schedule that polls /capabilities/provision-requests?status=requested,
+# but that's a separate council inquiry.
+
+on:
+  workflow_dispatch:
+    inputs:
+      provision_request_id:
+        description: capability_provision_requests.id (UUID)
+        required: true
+      handoff_id:
+        description: capability_handoffs.id (UUID) referenced by the request
+        required: true
+      app_name:
+        description: kebab-case name for the scaffolded app
+        required: true
+      no_deploy:
+        description: Skip the optional first-deploy prompt (default true)
+        required: false
+        default: 'true'
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch handoff package
+        env:
+          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+          HANDOFF_ID: ${{ inputs.handoff_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .factory-handoff
+          # The handoff GET-by-id endpoint is implicit via /capabilities/handoffs?conceptId=…
+          # the dispatcher knows the id, so we list and filter. Future: dedicated /handoffs/:id.
+          curl -fsSL \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            "${STUDIO_API_BASE}/capabilities/handoffs?limit=200" \
+            | node -e "
+              const fs = require('fs');
+              const id = process.env.HANDOFF_ID;
+              let body = '';
+              process.stdin.on('data', (c) => (body += c));
+              process.stdin.on('end', () => {
+                const payload = JSON.parse(body);
+                const found = (payload.handoffs ?? []).find((h) => h.id === id);
+                if (!found) {
+                  console.error('Handoff not found:', id);
+                  process.exit(1);
+                }
+                fs.writeFileSync('.factory-handoff/handoff.json', JSON.stringify(found, null, 2));
+                console.log('Handoff written:', found.recipeId, found.hash);
+              });
+            "
+
+      - name: Transition provision request → dispatched
+        env:
+          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d '{"status":"dispatched","notes":"dispatched via GH Actions"}' \
+            "${STUDIO_API_BASE}/capabilities/provision-requests/${{ inputs.provision_request_id }}/transition"
+
+      - name: Run scaffold against handoff
+        id: scaffold
+        run: |
+          set -euo pipefail
+          mkdir -p staging-workspace
+          cd staging-workspace
+          NO_DEPLOY_FLAG=""
+          if [ "${{ inputs.no_deploy }}" = "true" ]; then
+            NO_DEPLOY_FLAG="--no-deploy --no-install"
+          fi
+          node ../packages/deploy/scripts/scaffold.mjs "${{ inputs.app_name }}" \
+            --handoff ../.factory-handoff/handoff.json $NO_DEPLOY_FLAG
+
+      - name: Upload scaffolded workspace as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-workspace-${{ inputs.app_name }}
+          path: staging-workspace/${{ inputs.app_name }}
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Transition provision request → succeeded
+        if: success()
+        env:
+          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d '{"status":"succeeded","notes":"scaffold artifact uploaded"}' \
+            "${STUDIO_API_BASE}/capabilities/provision-requests/${{ inputs.provision_request_id }}/transition"
+
+      - name: Transition provision request → failed
+        if: failure()
+        env:
+          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d '{"status":"failed","notes":"see GH Actions run log"}' \
+            "${STUDIO_API_BASE}/capabilities/provision-requests/${{ inputs.provision_request_id }}/transition" || true

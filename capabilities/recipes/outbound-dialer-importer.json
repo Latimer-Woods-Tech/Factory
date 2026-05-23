@@ -1,0 +1,26 @@
+{
+  "id": "outbound-dialer-importer",
+  "version": "1.0.0",
+  "maturity": "beta",
+  "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+  "goal": "Launch governed outbound calling for imported contact lists.",
+  "primitives": ["telephony", "crm", "analytics"],
+  "optionalPrimitives": ["compliance"],
+  "expectedSurfaces": ["/health", "/api/campaigns", "/api/imports"],
+  "smokeChecks": [
+    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" },
+    { "path": "/api/imports", "expectedStatus": 200 }
+  ],
+  "constraints": [
+    "Use a branded custom domain.",
+    "Verify import smoke checks before production."
+  ],
+  "envContract": {
+    "secrets": ["CRM_API_KEY", "IMPORT_BUCKET_TOKEN"],
+    "vars": ["WORKER_DOMAIN"]
+  },
+  "bindingContract": {
+    "required": ["CRM_SEGMENTS", "IMPORT_BUCKET"],
+    "optional": ["ANALYTICS"]
+  }
+}

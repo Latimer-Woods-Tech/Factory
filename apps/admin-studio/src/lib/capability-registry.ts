@@ -47,13 +47,50 @@ export class CapabilityResolutionError extends Error {
 const conceptsById = new Map(capabilityCatalog.concepts.map((concept) => [concept.id, concept]));
 const recipesById = new Map(capabilityCatalog.recipes.map((recipe) => [recipe.id, recipe]));
 
+/**
+ * Operator-relevance ordering required by the Golden Design Concept Rail spec:
+ * approval tier first (golden > supported > experimental), then maturity
+ * (stable > beta > experimental > draft > deprecated > retired), then
+ * alphabetical by displayName.
+ *
+ * Exported as a pure function so the same ordering can be reused by tests.
+ */
+const APPROVAL_TIER_RANK: Record<string, number> = {
+  golden: 0,
+  supported: 1,
+  experimental: 2,
+};
+const MATURITY_RANK: Record<string, number> = {
+  stable: 0,
+  beta: 1,
+  experimental: 2,
+  draft: 3,
+  deprecated: 4,
+  retired: 5,
+};
+
+export function compareConceptsByOperatorRelevance(
+  left: CapabilityConcept,
+  right: CapabilityConcept,
+): number {
+  const tierDelta =
+    (APPROVAL_TIER_RANK[left.approvalTier] ?? 99) -
+    (APPROVAL_TIER_RANK[right.approvalTier] ?? 99);
+  if (tierDelta !== 0) return tierDelta;
+  const maturityDelta =
+    (MATURITY_RANK[left.maturity] ?? 99) - (MATURITY_RANK[right.maturity] ?? 99);
+  if (maturityDelta !== 0) return maturityDelta;
+  return left.displayName.localeCompare(right.displayName);
+}
+
 export function listCapabilityCatalog(): CapabilityCatalogResponse {
   return {
     generatedAt: capabilityCatalog.generatedAt,
     summary: capabilityCatalog.summary,
     concepts: capabilityCatalog.concepts
       .filter((concept) => concept.menuVisible)
-      .sort((left, right) => left.displayName.localeCompare(right.displayName)),
+      .slice()
+      .sort(compareConceptsByOperatorRelevance),
   };
 }
 

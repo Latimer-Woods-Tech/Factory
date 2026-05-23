@@ -151,6 +151,36 @@ const ENTRIES: ReadonlyArray<ManifestEntry> = [
     reversibility: 'reversible',
     tags: ['capabilities'],
   },
+  {
+    method: 'POST',
+    path: '/capabilities/provision-staging',
+    auth: 'admin',
+    summary: 'Record a staging-provision request against a persisted handoff (Stage C — proof-gated, manual-rollback in audit log)',
+    reversibility: 'irreversible',
+    tags: ['capabilities'],
+  },
+  {
+    method: 'GET',
+    path: '/capabilities/handoffs',
+    auth: 'admin',
+    summary: 'List recent capability handoff packages (lineage view; supports conceptId/recipeId/limit filters)',
+    tags: ['capabilities'],
+  },
+  {
+    method: 'GET',
+    path: '/capabilities/provision-requests',
+    auth: 'admin',
+    summary: 'List capability provision requests (lineage view; supports status/handoffId/limit filters)',
+    tags: ['capabilities'],
+  },
+  {
+    method: 'POST',
+    path: '/capabilities/provision-requests/:id/transition',
+    auth: 'admin',
+    summary: 'Operator-confirmed lifecycle transition for a provision request (acknowledged/dispatched/succeeded/failed/withdrawn)',
+    reversibility: 'irreversible',
+    tags: ['capabilities'],
+  },
   // ── Authenticated: audit ──────────────────────────────────────────────
   {
     method: 'GET',

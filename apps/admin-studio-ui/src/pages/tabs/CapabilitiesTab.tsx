@@ -1,4 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+/**
+ * Capability Design Studio — operator surface.
+ *
+ * Implements the Golden Design four-region staged workspace:
+ *   1. Concept rail   (left)
+ *   2. Configuration panel
+ *   3. Resolution + preview panel
+ *   4. Action rail    (bottom — handoff + staging provision)
+ *
+ * State machine (deriveCapabilityWorkflowStage):
+ *   browse → configure → resolved → previewed → confirmed-for-handoff
+ *           → staging-provision-requested
+ *
+ * Backend contract: /capabilities/{,resolve,preview,handoff,provision-staging}.
+ */
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiFetch } from '../../lib/api.js';
 import { Button } from '../../components/ui/button.js';
 
@@ -124,6 +139,8 @@ interface CapabilityPreviewResponse {
 }
 
 interface CapabilityScaffoldHandoff {
+  schemaVersion?: '1.0.0';
+  kind?: 'scaffold-handoff';
   conceptId: string;
   recipeId: string;
   parameters: Record<string, string | number | boolean | null>;
@@ -134,7 +151,83 @@ interface CapabilityScaffoldHandoff {
     conceptId: string;
     recipeId: string;
   };
+  id?: string | null;
+  hash?: string;
+  createdAt?: string;
 }
+
+interface ProofGateState {
+  reviewedPlan: boolean;
+  reviewedEnvContract: boolean;
+  reviewedSmokeChecks: boolean;
+  acknowledgedStagingFirst: boolean;
+  acknowledgedCustomDomain: boolean;
+}
+
+interface ProvisionResponse {
+  request: {
+    id: string;
+    handoffId: string;
+    status: string;
+    requestedAt: string;
+  };
+  handoff: {
+    id: string;
+    hash: string;
+    conceptId: string;
+    recipeId: string;
+  };
+  nextStep: {
+    action: string;
+    handoffId: string;
+    requestId: string;
+  };
+}
+
+type WorkflowStage =
+  | 'browse'
+  | 'configure'
+  | 'resolved'
+  | 'previewed'
+  | 'confirmed-for-handoff'
+  | 'staging-provision-requested';
+
+const PROOF_GATE_LABELS: Array<{ key: keyof ProofGateState; label: string; hint: string }> = [
+  {
+    key: 'reviewedPlan',
+    label: 'I reviewed the compiled plan',
+    hint: 'Selected recipe, packages, and expected surfaces match the intended outcome.',
+  },
+  {
+    key: 'reviewedEnvContract',
+    label: 'I reviewed the environment contract',
+    hint: 'All required secrets, vars, and bindings are accounted for in the target environment.',
+  },
+  {
+    key: 'reviewedSmokeChecks',
+    label: 'I reviewed the smoke expectations',
+    hint: 'Each smoke check is operationally meaningful for this service.',
+  },
+  {
+    key: 'acknowledgedStagingFirst',
+    label: 'Staging-first only',
+    hint: 'This request provisions to staging; production provisioning requires a separate council-approved path.',
+  },
+  {
+    key: 'acknowledgedCustomDomain',
+    label: 'Custom domain ready',
+    hint: 'No .workers.dev URL will be surfaced to end users — a branded custom domain is staged.',
+  },
+];
+
+const WORKFLOW_STAGES: Array<{ id: WorkflowStage; label: string }> = [
+  { id: 'browse', label: 'Browse' },
+  { id: 'configure', label: 'Configure' },
+  { id: 'resolved', label: 'Resolved' },
+  { id: 'previewed', label: 'Previewed' },
+  { id: 'confirmed-for-handoff', label: 'Handoff' },
+  { id: 'staging-provision-requested', label: 'Staging' },
+];
 
 export function initializeCapabilityFormValues(
   concept: Pick<CapabilityConcept, 'parameters'> | null,
@@ -182,7 +275,12 @@ export function CapabilitiesTab() {
   const [handoffInProgress, setHandoffInProgress] = useState(false);
   const [handoffError, setHandoffError] = useState<string | null>(null);
   const [handoffPackage, setHandoffPackage] = useState<CapabilityScaffoldHandoff | null>(null);
-  const [showHandoffPackage, setShowHandoffPackage] = useState(false);
+  const [proofGates, setProofGates] = useState<ProofGateState>(() => emptyProofGateState());
+  const [provisioning, setProvisioning] = useState(false);
+  const [provisionError, setProvisionError] = useState<string | null>(null);
+  const [provisionResponse, setProvisionResponse] = useState<ProvisionResponse | null>(null);
+  const [provisionConfirmOpen, setProvisionConfirmOpen] = useState(false);
+  const [copied, setCopied] = useState<'json' | 'hash' | null>(null);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -192,7 +290,7 @@ export function CapabilitiesTab() {
       setCatalog(data);
       setSelectedConceptId((current) => current ?? data.concepts[0]?.id ?? null);
     } catch (err) {
-      setError((err as Error).message);
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -207,13 +305,7 @@ export function CapabilitiesTab() {
     [catalog, selectedConceptId],
   );
 
-  useEffect(() => {
-    if (!selectedConcept) {
-      setFormValues({});
-      return;
-    }
-
-    setFormValues(initializeCapabilityFormValues(selectedConcept));
+  function resetDownstreamState() {
     setResolution(null);
     setResolutionError(null);
     setPreview(null);
@@ -221,23 +313,25 @@ export function CapabilitiesTab() {
     setHandoffPackage(null);
     setHandoffError(null);
     setHandoffConfirmed(false);
-    setShowHandoffPackage(false);
-  }, [selectedConcept]);
+    setProofGates(emptyProofGateState());
+    setProvisionError(null);
+    setProvisionResponse(null);
+    setProvisionConfirmOpen(false);
+  }
 
   useEffect(() => {
     if (!selectedConcept) {
+      setFormValues({});
       return;
     }
+    setFormValues(initializeCapabilityFormValues(selectedConcept));
+    resetDownstreamState();
+  }, [selectedConcept]);
 
-    if (resolution || preview || handoffPackage) {
-      setResolution(null);
-      setResolutionError(null);
-      setPreview(null);
-      setPreviewError(null);
-      setHandoffPackage(null);
-      setHandoffError(null);
-      setHandoffConfirmed(false);
-      setShowHandoffPackage(false);
+  useEffect(() => {
+    if (!selectedConcept) return;
+    if (resolution || preview || handoffPackage || provisionResponse) {
+      resetDownstreamState();
     }
   }, [formValues, selectedConcept]);
 
@@ -248,8 +342,9 @@ export function CapabilitiesTab() {
         resolution,
         preview,
         handoffConfirmed,
+        provisionRequested: Boolean(provisionResponse),
       }),
-    [handoffConfirmed, preview, resolution, selectedConceptId],
+    [handoffConfirmed, preview, resolution, selectedConceptId, provisionResponse],
   );
 
   async function resolveConcept() {
@@ -260,7 +355,6 @@ export function CapabilitiesTab() {
     setPreview(null);
     setPreviewError(null);
     setHandoffConfirmed(false);
-    setShowHandoffPackage(false);
     try {
       const result = await apiFetch<CapabilityResolutionResponse>('/capabilities/resolve', {
         method: 'POST',
@@ -282,7 +376,6 @@ export function CapabilitiesTab() {
     setHandoffPackage(null);
     setHandoffError(null);
     setHandoffConfirmed(false);
-    setShowHandoffPackage(false);
     try {
       const result = await apiFetch<CapabilityPreviewResponse>('/capabilities/preview', {
         method: 'POST',
@@ -302,18 +395,17 @@ export function CapabilitiesTab() {
     setHandoffInProgress(true);
     setHandoffPackage(null);
     setHandoffError(null);
-    setShowHandoffPackage(false);
-
+    setProofGates(emptyProofGateState());
+    setProvisionResponse(null);
     try {
-      const response = await apiFetch<{
-        generatedAt: string;
-        handoff: CapabilityScaffoldHandoff;
-      }>('/capabilities/handoff', {
-        method: 'POST',
-        body: JSON.stringify({ conceptId: selectedConcept.id, params: formValues }),
-      });
+      const response = await apiFetch<{ generatedAt: string; handoff: CapabilityScaffoldHandoff }>(
+        '/capabilities/handoff',
+        {
+          method: 'POST',
+          body: JSON.stringify({ conceptId: selectedConcept.id, params: formValues }),
+        },
+      );
       setHandoffPackage(response.handoff);
-      setShowHandoffPackage(true);
     } catch (err) {
       setHandoffError(extractErrorMessage(err));
     } finally {
@@ -321,19 +413,75 @@ export function CapabilitiesTab() {
     }
   }
 
+  async function requestStagingProvision() {
+    if (!handoffPackage?.id) return;
+    setProvisioning(true);
+    setProvisionError(null);
+    try {
+      const response = await apiFetch<ProvisionResponse>('/capabilities/provision-staging', {
+        method: 'POST',
+        confirmed: true,
+        body: JSON.stringify({
+          handoffId: handoffPackage.id,
+          proofGates,
+        }),
+      });
+      setProvisionResponse(response);
+      setProvisionConfirmOpen(false);
+    } catch (err) {
+      setProvisionError(extractErrorMessage(err));
+    } finally {
+      setProvisioning(false);
+    }
+  }
+
+  function copyHandoff(format: 'json' | 'hash') {
+    if (!handoffPackage) return;
+    const text =
+      format === 'json'
+        ? JSON.stringify(handoffPackage, null, 2)
+        : handoffPackage.hash ?? '';
+    if (!text) return;
+    void navigator.clipboard.writeText(text);
+    setCopied(format);
+    window.setTimeout(() => setCopied(null), 1500);
+  }
+
+  function downloadHandoff() {
+    if (!handoffPackage) return;
+    const blob = new Blob([JSON.stringify(handoffPackage, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const filename = `handoff-${handoffPackage.recipeId}-${handoffPackage.hash?.slice(0, 8) ?? 'preview'}.json`;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  const allProofGates = useMemo(
+    () => PROOF_GATE_LABELS.every(({ key }) => proofGates[key]),
+    [proofGates],
+  );
+
   return (
     <div className="space-y-4">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Capabilities</h1>
+          <h1 className="text-2xl font-semibold text-white">Capability Design Studio</h1>
           <p className="text-sm text-slate-400">
-            Governed concept menu backed by the capability catalog. Resolve a concept to see the approved
-            recipe handoff before compile and scaffold.
+            Governed concept menu backed by the on-disk capability registry. Configure → resolve → preview →
+            confirm handoff → request staging provision.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void loadCatalog()} disabled={loading}>
-          {loading ? 'Loading…' : 'Refresh'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <StagingFirstBadge />
+          <Button variant="outline" size="sm" onClick={() => void loadCatalog()} disabled={loading}>
+            {loading ? 'Loading…' : 'Refresh'}
+          </Button>
+        </div>
       </header>
 
       {error && (
@@ -351,19 +499,7 @@ export function CapabilitiesTab() {
         </div>
       )}
 
-      <div className="rounded border border-slate-800 bg-slate-900/70 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Workflow Stage</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              The Studio stays preview-first: configure, resolve, preview, then confirm a scaffold handoff.
-            </p>
-          </div>
-          <span className="rounded bg-blue-950/50 px-2 py-1 text-xs uppercase tracking-wide text-blue-200">
-            {workflowStage.replaceAll('-', ' ')}
-          </span>
-        </div>
-      </div>
+      <WorkflowStageIndicator current={workflowStage} />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
         <aside className="rounded border border-slate-800 bg-slate-900 p-3">
@@ -389,6 +525,9 @@ export function CapabilitiesTab() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-slate-400">{concept.summary}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wide text-amber-300/80">
+                    {concept.approvalTier} · {concept.id}
+                  </p>
                 </button>
               );
             })}
@@ -406,6 +545,7 @@ export function CapabilitiesTab() {
                   <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
                     {selectedConcept.approvalTier}
                   </span>
+                  <span className="font-mono text-xs text-slate-500">{selectedConcept.id}</span>
                 </div>
                 <p className="text-sm text-slate-400">{selectedConcept.summary}</p>
                 <div className="flex flex-wrap gap-2 text-xs text-slate-400">
@@ -461,190 +601,490 @@ export function CapabilitiesTab() {
                 </div>
               </div>
 
-              {resolution && (
-                <div className="rounded border border-emerald-800/60 bg-emerald-950/20 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-300">
-                        Resolution Result
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-200">
-                        Selected recipe <span className="font-mono">{resolution.recipe.id}</span> for next step{' '}
-                        <span className="font-mono">{resolution.nextStep.action}</span>.
-                      </p>
-                      <p className="mt-2 text-xs text-slate-400">
-                        Strategy: <span className="font-mono">{resolution.resolution.strategy}</span>
-                        {' · '}
-                        Rule:{' '}
-                        <span className="font-mono">
-                          {resolution.resolution.matchedRuleId ?? 'default-fallback'}
-                        </span>
-                      </p>
-                    </div>
-                    <span className="rounded bg-slate-900 px-2 py-1 text-xs text-slate-300">
-                      {resolution.recipe.maturity}
-                    </span>
-                  </div>
+              {resolution && <ResolutionPanel resolution={resolution} />}
 
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <div>
-                      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Normalized Parameters
-                      </h4>
-                      <dl className="space-y-2 text-sm text-slate-300">
-                        {Object.entries(resolution.parameters).map(([key, value]) => (
-                          <div key={key} className="flex items-start justify-between gap-3 rounded bg-slate-950/70 px-3 py-2">
-                            <dt className="font-mono text-slate-400">{key}</dt>
-                            <dd className="text-right text-slate-200">{String(value)}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </div>
-                    <div>
-                      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Expected Surfaces
-                      </h4>
-                      <ul className="space-y-2 text-sm text-slate-300">
-                        {resolution.recipe.expectedSurfaces.map((surface) => (
-                          <li key={surface} className="rounded bg-slate-950/70 px-3 py-2 font-mono">
-                            {surface}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+              {preview && <PreviewPanel preview={preview} />}
+
+              <ActionRail
+                preview={preview}
+                handoffConfirmed={handoffConfirmed}
+                setHandoffConfirmed={setHandoffConfirmed}
+                handoffInProgress={handoffInProgress}
+                handoffPackage={handoffPackage}
+                handoffError={handoffError}
+                onGenerateHandoff={() => void generateHandoff()}
+              />
+
+              {handoffPackage && (
+                <HandoffPanel
+                  handoff={handoffPackage}
+                  copied={copied}
+                  onCopy={copyHandoff}
+                  onDownload={downloadHandoff}
+                />
               )}
 
-              {preview && (
-                <div className="rounded border border-blue-800/60 bg-blue-950/20 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-300">
-                        Plan Preview
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-300">
-                        Recipe <span className="font-mono">{preview.plan.recipe.id}</span> prepared for{' '}
-                        <span className="font-mono">{preview.nextStep.action}</span>.
-                      </p>
-                    </div>
-                    <span className="text-xs text-slate-400">
-                      {new Date(preview.generatedAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                    <InfoCard title="Expected Surfaces" values={preview.plan.expectedSurfaces} />
-                    <InfoCard
-                      title="Required Secrets"
-                      values={preview.plan.env.secrets}
-                    />
-                    <InfoCard title="Required Vars" values={preview.plan.env.vars} />
-                    <InfoCard
-                      title="Required Bindings"
-                      values={preview.plan.bindings.required}
-                    />
-                  </div>
-                  <div className="mt-4 rounded border border-slate-800 bg-slate-950/70 p-3">
-                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Smoke Expectations
-                    </h4>
-                    {preview.plan.smokeChecks.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-500">No smoke checks declared.</p>
-                    ) : (
-                      <ul className="mt-2 space-y-2 text-sm text-slate-300">
-                        {preview.plan.smokeChecks.map((check) => (
-                          <li key={`${check.path}-${check.expectedStatus}`} className="rounded bg-slate-900 px-3 py-2">
-                            <span className="font-mono">{check.path}</span>
-                            {' · expected '}
-                            {check.expectedStatus}
-                            {check.expectContains ? ` · contains ${check.expectContains}` : ''}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  <div className="mt-4 rounded border border-amber-800/50 bg-amber-950/20 p-3 text-sm text-amber-100">
-                    <p>
-                      Staging-first handoff is required before provision work. Review the plan, environment contract,
-                      and smoke expectations before generating the scaffold package.
-                    </p>
-                    <p className="mt-2 text-xs text-amber-200/80">
-                      Entry script: <span className="font-mono">{preview.plan.scaffold.entryScript}</span>
-                      {' · stagingFirst: '}
-                      <span className="font-mono">{String(preview.plan.scaffold.stagingFirst)}</span>
-                    </p>
-                  </div>
-                  <pre className="mt-4 overflow-x-auto rounded bg-slate-950/80 p-4 text-xs text-slate-200 whitespace-pre-wrap">
-                    {preview.preview}
-                  </pre>
-                </div>
-              )}
-
-              <div className="rounded border border-slate-800 bg-slate-950/70 p-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Action Rail</h3>
-                <div className="mt-3 space-y-3 text-sm text-slate-400">
-                  <p>Resolve and preview are reversible. Scaffold handoff stays disabled until the plan has been reviewed.</p>
-                  <label className="flex items-start gap-2 rounded border border-slate-800 bg-slate-900 px-3 py-2 text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={handoffConfirmed}
-                      disabled={!preview}
-                      onChange={(event) => setHandoffConfirmed(event.target.checked)}
-                    />
-                    <span>
-                      I reviewed the preview, selected recipe, environment contract, and staging-first requirements.
-                    </span>
-                  </label>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button
-                      variant="secondary"
-                      disabled={!preview || !handoffConfirmed || handoffInProgress}
-                      onClick={() => void generateHandoff()}
-                    >
-                      {handoffInProgress
-                        ? 'Generating…'
-                        : handoffPackage
-                        ? 'Regenerate Scaffold Handoff'
-                        : 'Generate Scaffold Handoff'}
-                    </Button>
-                    <span className="text-xs text-slate-500">
-                      {preview && handoffConfirmed
-                        ? 'Confirmed handoff is ready for audit and scaffold consumption.'
-                        : 'Preview and confirm to enable the handoff package.'}
-                    </span>
-                  </div>
-                  {handoffError && (
-                    <div className="rounded border border-red-700 bg-red-950/40 px-3 py-2 text-sm text-red-300">
-                      {handoffError}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {showHandoffPackage && handoffPackage && (
-                <div className="rounded border border-violet-800/60 bg-violet-950/20 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-violet-200">
-                        Scaffold Handoff Package
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-300">
-                        Deterministic handoff artifact for the next scaffold step.
-                      </p>
-                    </div>
-                    <span className="rounded bg-slate-900 px-2 py-1 text-xs text-slate-300">
-                      {handoffPackage.recipeId}
-                    </span>
-                  </div>
-                  <pre className="mt-4 overflow-x-auto rounded bg-slate-950/80 p-4 text-xs text-slate-200 whitespace-pre-wrap">
-                    {JSON.stringify(handoffPackage, null, 2)}
-                  </pre>
-                </div>
+              {handoffPackage && (
+                <ProofGatePanel
+                  handoff={handoffPackage}
+                  gates={proofGates}
+                  setGate={(key, value) => setProofGates((cur) => ({ ...cur, [key]: value }))}
+                  allConfirmed={allProofGates}
+                  provisioning={provisioning}
+                  provisionError={provisionError}
+                  provisionResponse={provisionResponse}
+                  confirmOpen={provisionConfirmOpen}
+                  setConfirmOpen={setProvisionConfirmOpen}
+                  onRequestProvision={() => void requestStagingProvision()}
+                />
               )}
             </>
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sub-components
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StagingFirstBadge() {
+  return (
+    <span className="rounded-full border border-amber-500/40 bg-amber-950/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-200">
+      Staging-first only
+    </span>
+  );
+}
+
+function WorkflowStageIndicator({ current }: { current: WorkflowStage }) {
+  const currentIdx = WORKFLOW_STAGES.findIndex((s) => s.id === current);
+  return (
+    <ol className="flex flex-wrap items-center gap-2 rounded border border-slate-800 bg-slate-900/70 px-3 py-2 text-xs">
+      {WORKFLOW_STAGES.map((stage, idx) => {
+        const done = idx < currentIdx;
+        const active = idx === currentIdx;
+        return (
+          <li key={stage.id} className="flex items-center gap-2">
+            <span
+              className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                done
+                  ? 'border-emerald-500/60 bg-emerald-950/60 text-emerald-200'
+                  : active
+                    ? 'border-blue-400/70 bg-blue-950/70 text-blue-200'
+                    : 'border-slate-700 bg-slate-950 text-slate-500'
+              }`}
+            >
+              {done ? '✓' : idx + 1}
+            </span>
+            <span
+              className={
+                active
+                  ? 'font-semibold uppercase tracking-wider text-blue-200'
+                  : done
+                    ? 'uppercase tracking-wider text-emerald-200/80'
+                    : 'uppercase tracking-wider text-slate-500'
+              }
+            >
+              {stage.label}
+            </span>
+            {idx < WORKFLOW_STAGES.length - 1 && (
+              <span className="mx-1 text-slate-700">→</span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ResolutionPanel({ resolution }: { resolution: CapabilityResolutionResponse }) {
+  return (
+    <div className="rounded border border-emerald-800/60 bg-emerald-950/20 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-300">
+            Resolution Result
+          </h3>
+          <p className="mt-1 text-sm text-slate-200">
+            Selected recipe <span className="font-mono">{resolution.recipe.id}</span> for next step{' '}
+            <span className="font-mono">{resolution.nextStep.action}</span>.
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            Strategy: <span className="font-mono">{resolution.resolution.strategy}</span>
+            {' · '}
+            Rule:{' '}
+            <span className="font-mono">
+              {resolution.resolution.matchedRuleId ?? 'default-fallback'}
+            </span>
+          </p>
+        </div>
+        <span className="rounded bg-slate-900 px-2 py-1 text-xs text-slate-300">
+          {resolution.recipe.maturity}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Normalized Parameters
+          </h4>
+          <dl className="space-y-2 text-sm text-slate-300">
+            {Object.entries(resolution.parameters).map(([key, value]) => (
+              <div key={key} className="flex items-start justify-between gap-3 rounded bg-slate-950/70 px-3 py-2">
+                <dt className="font-mono text-slate-400">{key}</dt>
+                <dd className="text-right text-slate-200">{String(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div>
+          <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Expected Surfaces
+          </h4>
+          <ul className="space-y-2 text-sm text-slate-300">
+            {resolution.recipe.expectedSurfaces.map((surface) => (
+              <li key={surface} className="rounded bg-slate-950/70 px-3 py-2 font-mono">
+                {surface}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewPanel({ preview }: { preview: CapabilityPreviewResponse }) {
+  return (
+    <div className="rounded border border-blue-800/60 bg-blue-950/20 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-300">Plan Preview</h3>
+          <p className="mt-1 text-sm text-slate-300">
+            Recipe <span className="font-mono">{preview.plan.recipe.id}</span> prepared for{' '}
+            <span className="font-mono">{preview.nextStep.action}</span>.
+          </p>
+        </div>
+        <span className="text-xs text-slate-400">
+          {new Date(preview.generatedAt).toLocaleString()}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <InfoCard title="Expected Surfaces" values={preview.plan.expectedSurfaces} />
+        <InfoCard title="Required Secrets" values={preview.plan.env.secrets} />
+        <InfoCard title="Required Vars" values={preview.plan.env.vars} />
+        <InfoCard title="Required Bindings" values={preview.plan.bindings.required} />
+      </div>
+      <div className="mt-4 rounded border border-slate-800 bg-slate-950/70 p-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Smoke Expectations
+        </h4>
+        {preview.plan.smokeChecks.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-500">No smoke checks declared.</p>
+        ) : (
+          <ul className="mt-2 space-y-2 text-sm text-slate-300">
+            {preview.plan.smokeChecks.map((check) => (
+              <li key={`${check.path}-${check.expectedStatus}`} className="rounded bg-slate-900 px-3 py-2">
+                <span className="font-mono">{check.path}</span>
+                {' · expected '}
+                {check.expectedStatus}
+                {check.expectContains ? ` · contains ${check.expectContains}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div className="mt-4 rounded border border-amber-800/50 bg-amber-950/20 p-3 text-sm text-amber-100">
+        <p>
+          Staging-first handoff is required before provision work. Review the plan, environment contract,
+          and smoke expectations before generating the scaffold package.
+        </p>
+        <p className="mt-2 text-xs text-amber-200/80">
+          Entry script: <span className="font-mono">{preview.plan.scaffold.entryScript}</span>
+          {' · stagingFirst: '}
+          <span className="font-mono">{String(preview.plan.scaffold.stagingFirst)}</span>
+        </p>
+      </div>
+      <details className="mt-4 rounded border border-slate-800 bg-slate-950/80 p-3">
+        <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Rendered preview (markdown)
+        </summary>
+        <div className="mt-3">
+          <MarkdownPreview source={preview.preview} />
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function ActionRail({
+  preview,
+  handoffConfirmed,
+  setHandoffConfirmed,
+  handoffInProgress,
+  handoffPackage,
+  handoffError,
+  onGenerateHandoff,
+}: {
+  preview: CapabilityPreviewResponse | null;
+  handoffConfirmed: boolean;
+  setHandoffConfirmed: (next: boolean) => void;
+  handoffInProgress: boolean;
+  handoffPackage: CapabilityScaffoldHandoff | null;
+  handoffError: string | null;
+  onGenerateHandoff: () => void;
+}) {
+  return (
+    <div className="rounded border border-slate-800 bg-slate-950/70 p-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Action Rail</h3>
+      <div className="mt-3 space-y-3 text-sm text-slate-400">
+        <p>
+          Resolve and preview are reversible. Scaffold handoff stays disabled until the plan has been
+          reviewed.
+        </p>
+        <label className="flex items-start gap-2 rounded border border-slate-800 bg-slate-900 px-3 py-2 text-slate-300">
+          <input
+            type="checkbox"
+            checked={handoffConfirmed}
+            disabled={!preview}
+            onChange={(event) => setHandoffConfirmed(event.target.checked)}
+          />
+          <span>
+            I reviewed the preview, selected recipe, environment contract, and staging-first requirements.
+          </span>
+        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="secondary"
+            disabled={!preview || !handoffConfirmed || handoffInProgress}
+            onClick={onGenerateHandoff}
+          >
+            {handoffInProgress
+              ? 'Generating…'
+              : handoffPackage
+                ? 'Regenerate Scaffold Handoff'
+                : 'Generate Scaffold Handoff'}
+          </Button>
+          <span className="text-xs text-slate-500">
+            {preview && handoffConfirmed
+              ? 'Confirmed handoff is ready for audit and scaffold consumption.'
+              : 'Preview and confirm to enable the handoff package.'}
+          </span>
+        </div>
+        {handoffError && (
+          <div className="rounded border border-red-700 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+            {handoffError}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HandoffPanel({
+  handoff,
+  copied,
+  onCopy,
+  onDownload,
+}: {
+  handoff: CapabilityScaffoldHandoff;
+  copied: 'json' | 'hash' | null;
+  onCopy: (format: 'json' | 'hash') => void;
+  onDownload: () => void;
+}) {
+  return (
+    <div className="rounded border border-violet-800/60 bg-violet-950/20 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-violet-200">
+            Scaffold Handoff Package
+          </h3>
+          <p className="mt-1 text-sm text-slate-300">
+            Deterministic, content-addressable artifact for the next scaffold or provision step.
+          </p>
+          <dl className="mt-3 grid gap-x-6 gap-y-1 text-xs text-slate-300 sm:grid-cols-[max-content_1fr]">
+            <dt className="text-slate-500">Concept</dt>
+            <dd className="font-mono">{handoff.conceptId}</dd>
+            <dt className="text-slate-500">Recipe</dt>
+            <dd className="font-mono">{handoff.recipeId}</dd>
+            {handoff.id && (
+              <>
+                <dt className="text-slate-500">Handoff ID</dt>
+                <dd className="font-mono">{handoff.id}</dd>
+              </>
+            )}
+            {handoff.hash && (
+              <>
+                <dt className="text-slate-500">Content hash</dt>
+                <dd className="font-mono break-all">{handoff.hash}</dd>
+              </>
+            )}
+            {handoff.createdAt && (
+              <>
+                <dt className="text-slate-500">Created at</dt>
+                <dd>{new Date(handoff.createdAt).toLocaleString()}</dd>
+              </>
+            )}
+          </dl>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => onCopy('json')}>
+            {copied === 'json' ? 'Copied!' : 'Copy JSON'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!handoff.hash}
+            onClick={() => onCopy('hash')}
+          >
+            {copied === 'hash' ? 'Copied!' : 'Copy hash'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={onDownload}>
+            Download
+          </Button>
+        </div>
+      </div>
+      <details className="mt-4 rounded border border-slate-800 bg-slate-950/80">
+        <summary className="cursor-pointer px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Raw handoff JSON
+        </summary>
+        <pre className="overflow-x-auto p-3 text-xs text-slate-200 whitespace-pre-wrap">
+          {JSON.stringify(handoff, null, 2)}
+        </pre>
+      </details>
+    </div>
+  );
+}
+
+function ProofGatePanel({
+  handoff,
+  gates,
+  setGate,
+  allConfirmed,
+  provisioning,
+  provisionError,
+  provisionResponse,
+  confirmOpen,
+  setConfirmOpen,
+  onRequestProvision,
+}: {
+  handoff: CapabilityScaffoldHandoff;
+  gates: ProofGateState;
+  setGate: (key: keyof ProofGateState, value: boolean) => void;
+  allConfirmed: boolean;
+  provisioning: boolean;
+  provisionError: string | null;
+  provisionResponse: ProvisionResponse | null;
+  confirmOpen: boolean;
+  setConfirmOpen: (next: boolean) => void;
+  onRequestProvision: () => void;
+}) {
+  const isPersisted = Boolean(handoff.id);
+
+  return (
+    <div className="rounded border border-amber-800/60 bg-amber-950/10 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-200">
+            Proof Gate — Staging Provision Request
+          </h3>
+          <p className="mt-1 text-sm text-slate-300">
+            Every gate below must be acknowledged before a staging-provision request is allowed.
+            This request is audited as <span className="font-mono">manual-rollback</span>; it does not
+            automatically mutate Cloudflare or Neon.
+          </p>
+        </div>
+      </div>
+
+      {!isPersisted && (
+        <div className="mt-3 rounded border border-slate-800 bg-slate-950/70 px-3 py-2 text-xs text-slate-400">
+          Provision requests require a persisted handoff. Regenerate the handoff above with a signed-in
+          session to obtain a handoff id.
+        </div>
+      )}
+
+      <ul className="mt-4 space-y-2">
+        {PROOF_GATE_LABELS.map(({ key, label, hint }) => (
+          <li key={key}>
+            <label className="flex items-start gap-2 rounded border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-200">
+              <input
+                type="checkbox"
+                checked={gates[key]}
+                onChange={(event) => setGate(key, event.target.checked)}
+                disabled={!isPersisted || provisioning || Boolean(provisionResponse)}
+              />
+              <span className="flex-1">
+                <span className="font-medium">{label}</span>
+                <span className="block text-xs text-slate-500">{hint}</span>
+              </span>
+            </label>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Button
+          variant="secondary"
+          disabled={!isPersisted || !allConfirmed || provisioning || Boolean(provisionResponse)}
+          onClick={() => setConfirmOpen(true)}
+        >
+          Request Staging Provision
+        </Button>
+        <span className="text-xs text-slate-500">
+          {provisionResponse
+            ? 'Staging provision request recorded.'
+            : allConfirmed
+              ? 'All gates confirmed — request will require one more confirmation.'
+              : 'Confirm every proof gate to enable the request.'}
+        </span>
+      </div>
+
+      {confirmOpen && !provisionResponse && (
+        <div className="mt-4 rounded border border-amber-500/40 bg-amber-950/40 p-3 text-sm text-amber-100">
+          <p className="font-semibold">Confirm staging provision request</p>
+          <p className="mt-1 text-amber-100/80">
+            A row will be inserted into <span className="font-mono">capability_provision_requests</span>{' '}
+            with status <span className="font-mono">requested</span>. Downstream automation may dispatch
+            scaffold + deploy against staging only.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={provisioning}
+              onClick={onRequestProvision}
+            >
+              {provisioning ? 'Requesting…' : 'Confirm — submit request'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {provisionError && (
+        <div className="mt-4 rounded border border-red-700 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {provisionError}
+        </div>
+      )}
+
+      {provisionResponse && (
+        <div className="mt-4 rounded border border-emerald-700/60 bg-emerald-950/30 p-3 text-sm text-emerald-100">
+          <p className="font-semibold">Staging provision request recorded.</p>
+          <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[max-content_1fr]">
+            <dt className="text-emerald-300/70">Request ID</dt>
+            <dd className="font-mono">{provisionResponse.request.id}</dd>
+            <dt className="text-emerald-300/70">Status</dt>
+            <dd className="font-mono">{provisionResponse.request.status}</dd>
+            <dt className="text-emerald-300/70">Handoff hash</dt>
+            <dd className="font-mono break-all">{provisionResponse.handoff.hash}</dd>
+            <dt className="text-emerald-300/70">Next step</dt>
+            <dd className="font-mono">{provisionResponse.nextStep.action}</dd>
+          </dl>
+        </div>
+      )}
     </div>
   );
 }
@@ -722,7 +1162,138 @@ function InfoCard({ title, values }: { title: string; values: string[] }) {
   );
 }
 
-export function castFormValue(type: CapabilityParameterDefinition['type'], value: string): string | number | boolean {
+/**
+ * Minimal markdown renderer for the deterministic subset emitted by
+ * `renderCapabilityPlanPreview` in admin-studio: `#`, `##` headings,
+ * `- ` bullets (top-level and one nested level), and plain paragraphs.
+ *
+ * Inline `**bold**` and `` `code` `` are recognized. Anything else falls
+ * through as plain text — no HTML injection, no third-party renderer.
+ */
+function MarkdownPreview({ source }: { source: string }) {
+  return <div className="space-y-2 text-sm text-slate-200">{renderMarkdownBlocks(source)}</div>;
+}
+
+function renderMarkdownBlocks(source: string): ReactNode[] {
+  const lines = source.split('\n');
+  const out: ReactNode[] = [];
+  let buffer: ReactNode[] = [];
+  let listItems: ReactNode[] = [];
+
+  function flushList() {
+    if (listItems.length > 0) {
+      out.push(
+        <ul key={`ul-${out.length}`} className="ml-4 list-disc space-y-1 text-slate-300">
+          {listItems}
+        </ul>,
+      );
+      listItems = [];
+    }
+  }
+
+  function flushParagraph() {
+    if (buffer.length > 0) {
+      out.push(
+        <p key={`p-${out.length}`} className="text-slate-300">
+          {buffer}
+        </p>,
+      );
+      buffer = [];
+    }
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const raw = lines[i] ?? '';
+    if (raw.trim() === '') {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+    if (raw.startsWith('# ')) {
+      flushParagraph();
+      flushList();
+      out.push(
+        <h2 key={`h2-${i}`} className="mt-2 text-base font-semibold text-white">
+          {renderMarkdownInline(raw.slice(2))}
+        </h2>,
+      );
+      continue;
+    }
+    if (raw.startsWith('## ')) {
+      flushParagraph();
+      flushList();
+      out.push(
+        <h3 key={`h3-${i}`} className="mt-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+          {renderMarkdownInline(raw.slice(3))}
+        </h3>,
+      );
+      continue;
+    }
+    if (raw.startsWith('- ')) {
+      flushParagraph();
+      listItems.push(<li key={`li-${i}`}>{renderMarkdownInline(raw.slice(2))}</li>);
+      continue;
+    }
+    if (raw.startsWith('  - ')) {
+      flushParagraph();
+      listItems.push(
+        <li key={`li-nested-${i}`} className="ml-4">
+          {renderMarkdownInline(raw.slice(4))}
+        </li>,
+      );
+      continue;
+    }
+    flushList();
+    buffer.push(renderMarkdownInline(raw));
+    buffer.push(' ');
+  }
+  flushParagraph();
+  flushList();
+  return out;
+}
+
+function renderMarkdownInline(text: string): ReactNode {
+  const out: ReactNode[] = [];
+  let cursor = 0;
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > cursor) {
+      out.push(text.slice(cursor, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('**')) {
+      out.push(
+        <strong key={`b-${match.index}`} className="font-semibold text-white">
+          {token.slice(2, -2)}
+        </strong>,
+      );
+    } else {
+      out.push(
+        <code
+          key={`c-${match.index}`}
+          className="rounded bg-slate-900 px-1 py-0.5 font-mono text-xs text-amber-200"
+        >
+          {token.slice(1, -1)}
+        </code>,
+      );
+    }
+    cursor = match.index + token.length;
+  }
+  if (cursor < text.length) {
+    out.push(text.slice(cursor));
+  }
+  return <>{out}</>;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Exported helpers (also used by tests)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function castFormValue(
+  type: CapabilityParameterDefinition['type'],
+  value: string,
+): string | number | boolean {
   if (type === 'integer') {
     return Number.parseInt(value, 10);
   }
@@ -737,24 +1308,19 @@ export function deriveCapabilityWorkflowStage({
   resolution,
   preview,
   handoffConfirmed,
+  provisionRequested = false,
 }: {
   selectedConceptId: string | null;
   resolution: CapabilityResolutionResponse | null;
   preview: CapabilityPreviewResponse | null;
   handoffConfirmed: boolean;
-}): 'browse' | 'configure' | 'resolved' | 'previewed' | 'confirmed-for-handoff' {
-  if (!selectedConceptId) {
-    return 'browse';
-  }
-  if (preview && handoffConfirmed) {
-    return 'confirmed-for-handoff';
-  }
-  if (preview) {
-    return 'previewed';
-  }
-  if (resolution) {
-    return 'resolved';
-  }
+  provisionRequested?: boolean;
+}): WorkflowStage {
+  if (!selectedConceptId) return 'browse';
+  if (provisionRequested) return 'staging-provision-requested';
+  if (preview && handoffConfirmed) return 'confirmed-for-handoff';
+  if (preview) return 'previewed';
+  if (resolution) return 'resolved';
   return 'configure';
 }
 
@@ -764,7 +1330,6 @@ export function buildCapabilityScaffoldHandoff(
   if (!preview) {
     return null;
   }
-
   return {
     conceptId: preview.resolution.concept.id,
     recipeId: preview.resolution.recipe.id,
@@ -783,4 +1348,18 @@ export function extractErrorMessage(error: unknown): string {
     }
   }
   return error instanceof Error ? error.message : 'Unknown error';
+}
+
+export function emptyProofGateState(): ProofGateState {
+  return {
+    reviewedPlan: false,
+    reviewedEnvContract: false,
+    reviewedSmokeChecks: false,
+    acknowledgedStagingFirst: false,
+    acknowledgedCustomDomain: false,
+  };
+}
+
+export function isProofGateComplete(state: ProofGateState): boolean {
+  return PROOF_GATE_LABELS.every(({ key }) => state[key]);
 }

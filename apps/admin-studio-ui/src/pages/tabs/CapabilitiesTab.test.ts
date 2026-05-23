@@ -5,8 +5,10 @@ import {
   buildCapabilityScaffoldHandoff,
   castFormValue,
   deriveCapabilityWorkflowStage,
+  emptyProofGateState,
   extractErrorMessage,
   initializeCapabilityFormValues,
+  isProofGateComplete,
 } from './CapabilitiesTab';
 
 describe('CapabilitiesTab helpers', () => {
@@ -103,6 +105,50 @@ describe('CapabilitiesTab helpers', () => {
         handoffConfirmed: false,
       }),
     ).toBe('resolved');
+  });
+
+  it('flags staging-provision-requested when provisionRequested is true', () => {
+    expect(
+      deriveCapabilityWorkflowStage({
+        selectedConceptId: 'outbound-dialer-campaign',
+        resolution: null,
+        preview: null,
+        handoffConfirmed: false,
+        provisionRequested: true,
+      }),
+    ).toBe('staging-provision-requested');
+  });
+
+  it('returns an all-false proof-gate state by default', () => {
+    expect(emptyProofGateState()).toEqual({
+      reviewedPlan: false,
+      reviewedEnvContract: false,
+      reviewedSmokeChecks: false,
+      acknowledgedStagingFirst: false,
+      acknowledgedCustomDomain: false,
+    });
+  });
+
+  it('marks proof gates incomplete when any required key is false', () => {
+    expect(isProofGateComplete(emptyProofGateState())).toBe(false);
+    expect(
+      isProofGateComplete({
+        reviewedPlan: true,
+        reviewedEnvContract: true,
+        reviewedSmokeChecks: true,
+        acknowledgedStagingFirst: true,
+        acknowledgedCustomDomain: false,
+      }),
+    ).toBe(false);
+    expect(
+      isProofGateComplete({
+        reviewedPlan: true,
+        reviewedEnvContract: true,
+        reviewedSmokeChecks: true,
+        acknowledgedStagingFirst: true,
+        acknowledgedCustomDomain: true,
+      }),
+    ).toBe(true);
   });
 
   it('builds a deterministic scaffold handoff package from preview state', () => {
