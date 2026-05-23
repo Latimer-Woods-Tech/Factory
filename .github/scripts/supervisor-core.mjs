@@ -66,6 +66,53 @@ async function assignCopilot(repo, issueNumber) {
   }
 }
 
+// ─── Re-plan loop guards (PR-1, PR-2, PR-4) ───────────────────────────────────
+// See session/supervisor-replan-loop-audit.md.
+//   RC-1: stale-release immediately re-queued the issue → add cooldown label.
+//   RC-2/RC-3: scheduler re-posted plans every ~3.5h even with a claim already
+//   present → require no recent bot plan comment + no open PR before posting.
+const REPLAN_COOLDOWN_HOURS = 24;
+const STALE_RELEASE_COOLDOWN_MINUTES = 60;
+const COOLDOWN_LABEL = 'supervisor:cooldown';
+const PLAN_COMMENT_MARKER = '🤖 Supervisor plan';
+const STALE_RELEASE_MARKER = 'Supervisor: releasing stale agent claim';
+
+async function listIssueComments(repo, issueNumber, sinceIso) {
+  const qs = sinceIso
+    ? `?since=${encodeURIComponent(sinceIso)}&per_page=100`
+    : '?per_page=100';
+  return gh('GET', `/repos/${ORG}/${repo}/issues/${issueNumber}/comments${qs}`);
+}
+
+async function findRecentBotComment(repo, issueNumber, minutesBack, marker) {
+  const since = new Date(Date.now() - minutesBack * 60 * 1000).toISOString();
+  try {
+    const comments = await listIssueComments(repo, issueNumber, since);
+    return comments.find((c) =>
+      (c.user?.type === 'Bot' || (c.user?.login || '').endsWith('[bot]')) &&
+      typeof c.body === 'string' &&
+      c.body.includes(marker)
+    ) || null;
+  } catch (e) {
+    console.warn(`[Guard] could not list comments for ${repo}#${issueNumber}: ${e.message}`);
+    return null;
+  }
+}
+
+async function hasOpenLinkedPR(repo, issueNumber) {
+  try {
+    const res = await gh(
+      'GET',
+      `/search/issues?q=repo:${ORG}/${repo}+is:pr+is:open+%23${issueNumber}&per_page=5`,
+    );
+    return (res.total_count ?? 0) > 0;
+  } catch {
+    // Search rate-limited — be conservative and assume a PR exists (do NOT
+    // re-plan); idempotency bias.
+    return true;
+  }
+}
+
 // ─── Pushover ─────────────────────────────────────────────────────────────────
 
 async function pushover(title, message) {
@@ -873,6 +920,13 @@ async function releaseStaleClaimedIssues(outcomes) {
       }
 
       console.log(`[StaleClaim] ${repo}#${issue.number}: releasing stale claim (${claimLabels.join(', ')}) after ${STALE_CLAIM_DAYS}d`);
+      // PR-2 cooldown — block immediate re-claim on the same scheduler run and
+      // for STALE_RELEASE_COOLDOWN_MINUTES afterwards.
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${issue.number}/labels`, { labels: [COOLDOWN_LABEL] });
+      } catch (e) {
+        console.warn(`[StaleClaim] could not add cooldown label: ${e.message.slice(0, 80)}`);
+      }
       for (const label of claimLabels) {
         try {
           await gh('DELETE', `/repos/${ORG}/${repo}/issues/${issue.number}/labels/${encodeURIComponent(label)}`);
@@ -969,6 +1023,55 @@ async function main() {
            !lbls.includes('supervisor:no-template');
   });
   console.log(`[INFO] ${candidates.length} candidate issue(s) to process`);
+
+  // ── PR-1/PR-2/PR-4: re-plan loop guard ─────────────────────────────────────
+  // Skip issues that (a) are inside the stale-release cooldown window, or
+  // (b) already have a recent bot-posted supervisor plan comment with no
+  // open linked PR. See session/supervisor-replan-loop-audit.md (capricast
+  // #64-#66, #75, #76, #116 — 186 duplicate plan comments).
+  const gated = [];
+  for (const issue of candidates) {
+    const repo = issue.repo;
+    const lbls = issue.labels.map((l) => l.name);
+
+    if (lbls.includes(COOLDOWN_LABEL)) {
+      const recent = await findRecentBotComment(
+        repo,
+        issue.number,
+        STALE_RELEASE_COOLDOWN_MINUTES,
+        STALE_RELEASE_MARKER,
+      );
+      if (recent) {
+        console.log(`[Cooldown] ${repo}#${issue.number}: within ${STALE_RELEASE_COOLDOWN_MINUTES}m of stale release — skipping`);
+        outcomes.push(`❄️ ${repo}#${issue.number}: stale-release cooldown active — skipped`);
+        continue;
+      }
+      try {
+        await gh(
+          'DELETE',
+          `/repos/${ORG}/${repo}/issues/${issue.number}/labels/${encodeURIComponent(COOLDOWN_LABEL)}`,
+        );
+      } catch { /* label may already be gone */ }
+    }
+
+    const recentPlan = await findRecentBotComment(
+      repo,
+      issue.number,
+      REPLAN_COOLDOWN_HOURS * 60,
+      PLAN_COMMENT_MARKER,
+    );
+    if (recentPlan) {
+      const hasPR = await hasOpenLinkedPR(repo, issue.number);
+      if (!hasPR) {
+        console.log(`[Idempotency] ${repo}#${issue.number}: bot plan posted within ${REPLAN_COOLDOWN_HOURS}h, no open PR — skipping`);
+        outcomes.push(`⏭️ ${repo}#${issue.number}: existing plan within ${REPLAN_COOLDOWN_HOURS}h — skipped`);
+        continue;
+      }
+    }
+    gated.push(issue);
+  }
+  candidates = gated;
+  console.log(`[INFO] ${candidates.length} candidate(s) survive re-plan loop guard`);
 
   for (const issue of candidates) {
     const repo = issue.repo;
