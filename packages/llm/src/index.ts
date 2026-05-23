@@ -48,9 +48,12 @@ export interface LLMOptions {
   /** Anthropic prompt-cache control. Defaults to `true` for `system` prompts ≥ 1024 tokens. */
   promptCache?: boolean;
   /**
-   * Maximum estimated cost in USD for this completion. If the post-call estimated
-   * cost exceeds this cap, `complete` returns a {@link RateLimitError} with code
-   * `LLM_COST_CAP_EXCEEDED` and `completionStream` throws the same error.
+   * Maximum estimated cost in USD for this completion.
+   * This cap is enforced after the provider returns because it uses actual
+   * response token counts to compute the final cost.
+   * If the post-call estimated cost exceeds this cap, `complete` returns a
+   * {@link RateLimitError} with code `LLM_COST_CAP_EXCEEDED` and
+   * `completionStream` throws the same error.
    * Pricing is based on {@link MODEL_PRICE_PER_1M}; unknown models default to
    * Opus rates (conservative upper bound).
    */
@@ -201,9 +204,34 @@ function isoDate(nowMs: number): string {
 }
 
 /**
+ * Record actual call spend in org-level daily/monthly KV buckets.
+ * This is intentionally best-effort: Cloudflare KV does not provide an atomic
+ * compare-and-swap, so concurrent requests can race and undercount spend.
+ */
+async function recordOrgCostUsage(
+  kv: CostKvStore,
+  todayKey: string,
+  monthKey: string,
+  costUsd: number,
+  opts: LLMOptions,
+): Promise<void> {
+  if (opts.dailyCapUsd !== undefined) {
+    const raw = await kv.get(todayKey).catch(() => null);
+    const spent = parseFloat(raw ?? '0');
+    await kv.put(todayKey, String(spent + costUsd), { expirationTtl: 172_800 /* 48 h */ }).catch(() => undefined);
+  }
+  if (opts.monthlyCapUsd !== undefined) {
+    const raw = await kv.get(monthKey).catch(() => null);
+    const spent = parseFloat(raw ?? '0');
+    await kv.put(monthKey, String(spent + costUsd), { expirationTtl: 3_456_000 /* 40 d */ }).catch(() => undefined);
+  }
+}
+
+/**
  * USD cost per 1 million tokens for each model.
  * Source: Anthropic / Google pricing pages as of 2025-05.
- * Unknown models fall back to Opus rates (conservative upper bound).
+ * Keep these model names in sync with the default routing constants in
+ * {@link MODELS}; unknown models fall back to Opus rates (conservative upper bound).
  */
 const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic Haiku 4
@@ -809,32 +837,25 @@ export async function complete(
         attempts: result.attempts,
         gatewayRequestId: result.gatewayRequestId,
       };
-      if (opts.maxCostUsd !== undefined) {
-        const costUsd = estimateCostUsd(llmResult.tokens, llmResult.model);
-        if (costUsd > opts.maxCostUsd) {
-          return toErrorResponse(
-            new RateLimitError('LLM_COST_CAP_EXCEEDED', {
-              costUsd,
-              maxCostUsd: opts.maxCostUsd,
-              model: llmResult.model,
-              tokens: llmResult.tokens,
-            }),
-          );
+      const costUsd = estimateCostUsd(llmResult.tokens, llmResult.model);
+      if (opts.maxCostUsd !== undefined && costUsd > opts.maxCostUsd) {
+        if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
+          await recordOrgCostUsage(kv, todayKey, monthKey, costUsd, opts);
         }
+        return toErrorResponse(
+          new RateLimitError('LLM_COST_CAP_EXCEEDED', {
+            costUsd,
+            maxCostUsd: opts.maxCostUsd,
+            model: llmResult.model,
+            tokens: llmResult.tokens,
+          }),
+        );
       }
       // ── Update org-level cost accumulators in KV ─────────────────────────
+      // The KV writes are best-effort. Cloudflare KV does not support atomic
+      // compare-and-swap, so concurrent increments may undercount spend.
       if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
-        const callCost = estimateCostUsd(llmResult.tokens, llmResult.model);
-        if (opts.dailyCapUsd !== undefined) {
-          const raw = await kv.get(todayKey).catch(() => null);
-          const spent = parseFloat(raw ?? '0');
-          await kv.put(todayKey, String(spent + callCost), { expirationTtl: 172_800 /* 48 h */ }).catch(() => undefined);
-        }
-        if (opts.monthlyCapUsd !== undefined) {
-          const raw = await kv.get(monthKey).catch(() => null);
-          const spent = parseFloat(raw ?? '0');
-          await kv.put(monthKey, String(spent + callCost), { expirationTtl: 3_456_000 /* 40 d */ }).catch(() => undefined);
-        }
+        await recordOrgCostUsage(kv, todayKey, monthKey, costUsd, opts);
       }
       return { data: llmResult, error: null };
     } catch (e) {

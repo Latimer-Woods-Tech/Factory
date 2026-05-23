@@ -1208,6 +1208,24 @@ describe('complete - org-level KV daily cap', () => {
     expect(result.error?.message).toBe('LLM_COST_CAP_EXCEEDED');
   });
 
+  it('updates daily and monthly KV accumulators when maxCostUsd is exceeded', async () => {
+    const kv = makeCostKv();
+    const today = new Date().toISOString().slice(0, 10);
+    const month = new Date().toISOString().slice(0, 7);
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { maxCostUsd: 0, dailyCapUsd: 100, monthlyCapUsd: 500 },
+      { fetch: fetchImpl },
+    );
+
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_COST_CAP_EXCEEDED');
+    expect(parseFloat((await kv.get(`llm:daily-cost:${today}`)) ?? '0')).toBeGreaterThan(0);
+    expect(parseFloat((await kv.get(`llm:monthly-cost:${month}`)) ?? '0')).toBeGreaterThan(0);
+  });
+
   it('accumulates monthly cost in KV after successful call', async () => {
     const kv = makeCostKv();
     const month = new Date().toISOString().slice(0, 7);
