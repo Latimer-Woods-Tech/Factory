@@ -9,6 +9,10 @@ on:
       - '.github/workflows/deploy-latwoodtech-web.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # never cancel an in-flight production deploy
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
@@ -44,15 +48,39 @@ jobs:
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: pages deploy dist --project-name=latwoodtech-com --branch=main
 
-      - name: Verify deployment
+      - name: Verify Pages preview deployment
         run: |
           for i in {1..5}; do
             if curl -fsSL https://main.latwoodtech-com.pages.dev > /dev/null; then
-              echo "Deployment verified"
+              echo "Pages preview reachable"
               exit 0
             fi
-            echo "Retrying deploy verification ($i/5)..."
+            echo "Retrying preview verification ($i/5)..."
             sleep 5
           done
-          echo "Deployment verification failed"
+          echo "Pages preview verification failed"
           exit 1
+
+      # CLAUDE.md Verification Requirement: a deploy is not done until the
+      # customer-facing URL serves our build. This step fails loudly if
+      # latwoodtech.com still serves the Squarespace parking page (i.e.
+      # nameservers were never delegated to Cloudflare) so CI cannot go green
+      # while the public URL is broken.
+      - name: Verify custom domain serves the Pages build
+        run: |
+          set -e
+          body=$(curl -fsSL --retry 5 --retry-delay 5 --max-time 30 https://latwoodtech.com/ || true)
+          if [ -z "$body" ]; then
+            echo "::error::latwoodtech.com returned no body (DNS not delegated, cert pending, or origin down)."
+            exit 1
+          fi
+          if echo "$body" | grep -qiE "squarespace|coming soon|parking-page"; then
+            echo "::error::latwoodtech.com is still serving a Squarespace parking page — Cloudflare nameservers are not active yet."
+            echo "Fix at the Squarespace Domains registrar: set nameservers to the CF pair assigned to this zone."
+            exit 1
+          fi
+          if ! echo "$body" | grep -qiE "latimer woods|factory pulse"; then
+            echo "::error::latwoodtech.com is reachable but the body does not contain expected landing-page markers."
+            exit 1
+          fi
+          echo "Custom domain verified: latwoodtech.com is serving the Pages build."
