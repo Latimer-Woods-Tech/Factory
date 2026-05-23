@@ -16,6 +16,7 @@ import { TrainingLibraryTab } from './tabs/TrainingLibraryTab.js';
 import { CapabilitiesTab } from './tabs/CapabilitiesTab.js';
 import { CouncilTab } from './tabs/CouncilTab.js';
 import { AppsTab } from './tabs/AppsTab.js';
+import { CapabilitiesTab } from './tabs/CapabilitiesTab.js';
 import { Button } from '../components/ui/button.js';
 import { Drawer, DrawerContent, DrawerTrigger } from '../components/ui/drawer.js';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs.js';
@@ -33,6 +34,7 @@ const TABS = [
   { to: '/audit',     label: 'Audit Log' },
   { to: '/council',   label: 'Council' },
   { to: '/apps',      label: 'Apps' },
+  { to: '/capabilities', label: 'Capabilities' },
 ];
 
 export function Dashboard() {
@@ -106,6 +108,7 @@ export function Dashboard() {
           <Route path="/audit" element={<AuditTab />} />
           <Route path="/council" element={<CouncilTab />} />
           <Route path="/apps" element={<AppsTab />} />
+          <Route path="/capabilities" element={<CapabilitiesTab />} />
         </Routes>
       </main>
     </div>
