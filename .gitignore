@@ -45,3 +45,16 @@ __pycache__/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 
+# Provisioning scratch — repo root only, so agent API dumps don't leak into commits.
+# This catches the common Cloudflare/GitHub/GCP API curl-output filenames produced
+# during one-shot provisioning runs. Subdirectory files with these names are still tracked.
+/wrangler.toml
+/pages-*.json
+/zone*.json
+/response*.json
+/actions_*.json
+/blocked_*.json
+/shot.json
+/download.log
+/generate-jwt.*
+
