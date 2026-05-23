@@ -75,6 +75,22 @@ const APP_EXTEND_CONFIGS = {
       'BETTER_AUTH_SECRET',
       'SENTRY_DSN',
     ]
+  },
+  'wordis-bond': {
+    description: 'Language learning platform with AI tutoring',
+    hyperdriveId: null,
+    extraPackages: [
+      '@latimer-woods-tech/crm@0.2.0',
+      '@latimer-woods-tech/compliance@0.2.0',
+      '@latimer-woods-tech/telephony@0.2.0',
+    ],
+    rls: true,
+    hasDurableObjects: false,
+    hasR2: false,
+    requiredSecrets: [
+      'BETTER_AUTH_SECRET',
+      'SENTRY_DSN',
+    ]
   }
 };
 
