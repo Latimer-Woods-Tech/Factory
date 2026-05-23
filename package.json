@@ -26,7 +26,8 @@
     "validate:capabilities": "node scripts/validate-capability-registry.mjs",
     "compile:capability": "node scripts/compile-capability-recipe.mjs",
     "build:capability-golden-path": "node scripts/generate-capability-golden-path.mjs",
-    "preview:capability-plan": "node scripts/preview-capability-plan.mjs"
+    "preview:capability-plan": "node scripts/preview-capability-plan.mjs",
+    "provision:app": "node scripts/provision-app.mjs"
   },
   "repository": {
     "type": "git",
