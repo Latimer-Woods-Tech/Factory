@@ -701,6 +701,25 @@ pages:
     required_secrets:
       - CLOUDFLARE_API_TOKEN
       - CLOUDFLARE_ACCOUNT_ID
+
+  - id: latwoodtech-web
+    repo: Latimer-Woods-Tech/factory
+    project_name: latwoodtech-com                          # Cloudflare Pages project name
+    custom_domain: latwoodtech.com
+    staging_url: https://main.latwoodtech-com.pages.dev    # production branch alias on Pages
+    root_file: apps/latwoodtech-web/src/index.html
+    deploy_dir: apps/latwoodtech-web/dist
+    worker_dependencies: []
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+    # Cloudflare zone provisioning state (as of 2026-05-23):
+    #   - Zone created in CF account a1c8a33c… with id cce28f67fbf93e7d57b65a972ef00f5f
+    #   - Status: pending — awaiting NS delegation at Squarespace Domains registrar
+    #   - CF-assigned NS pair: joan.ns.cloudflare.com / troy.ns.cloudflare.com
+    #   - Original NS (still active): ns-cloud-e{1-4}.googledomains.com
+    #   - Pages custom-domain attachment will be re-created post-NS-cutover
+    notes: "Apex domain. NS swap at Squarespace Domains required before deploy workflow's custom-domain verify step can pass."
 # ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────
 #
 # Shared npm packages published to @adrper79-dot scope.
