@@ -771,7 +771,9 @@ async function main() {
 
   // Secrets
   if (NO_SECRETS) {
-    console.log('\n🔐 Skipping secrets (--no-secrets).');
+    console.log('\n🔐 Skipping Wrangler secrets configuration (--no-secrets).');
+    console.log('  ⏭  Run later:');
+    console.log(`     node node_modules/@latimer-woods-tech/deploy/scripts/setup-secrets.sh ${APP_NAME}`);
   } else {
     const doSecrets = await ask('\n🔐 Configure Wrangler secrets interactively now? (y/N): ');
     if (doSecrets.trim().toLowerCase() === 'y') {
