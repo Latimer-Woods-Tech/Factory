@@ -66,6 +66,18 @@ If you already have a compiled plan file, you can render it directly:
 npm run preview:capability-plan -- --plan capabilities/compiled/outbound-dialer.plan.json
 ```
 
+
+This outputs `capabilities/compiled/outbound-dialer.preview.md` and can be used to validate the proposed golden-path contract before provisioning.
+
+Generate a scaffolded app from a compiled capability recipe:
+
+```bash
+node packages/deploy/scripts/scaffold.mjs outbound-dialer-app --recipe outbound-dialer --no-install --no-secrets --no-deploy --no-prereq --hyperdrive-id REPLACE_WITH_HYPERDRIVE_ID
+```
+
+This creates a minimal Factory app with recipe-derived dependencies, environment contract, and placeholder routes for the expected surfaces.
+
+
 ## Scope
 
 This is the first thin slice of the capability-factory registry.

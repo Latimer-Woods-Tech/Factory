@@ -26,18 +26,29 @@
 
 import { execSync } from 'child_process';
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__dirname, '../../..');
 
-// ── Args ─────────────────────────────────────────────────────────────────────
+// ── Args ─────────────────────────────────────────────────────────────────────────────────
 
 const APP_NAME = process.argv[2];
 const CREATE_GITHUB = process.argv.includes('--github');
 const SKIP_DEPLOY = process.argv.includes('--no-deploy');
 const SKIP_INSTALL = process.argv.includes('--no-install');
+const NO_SECRETS = process.argv.includes('--no-secrets');
+const SKIP_PREREQ = process.argv.includes('--no-prereq');
+const CAPABILITY_RECIPE = (() => {
+  const idx = process.argv.indexOf('--recipe');
+  return idx !== -1 ? process.argv[idx + 1] ?? null : null;
+})();
+const CAPABILITY_PLAN = (() => {
+  const idx = process.argv.indexOf('--plan');
+  return idx !== -1 ? process.argv[idx + 1] ?? null : null;
+})();
 
 const CLI_HYPERDRIVE_ID = (() => {
   const idx = process.argv.indexOf('--hyperdrive-id');
@@ -55,7 +66,7 @@ const CLI_HANDOFF_PATH = (() => {
 })();
 
 if (!APP_NAME) {
-  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy] [--handoff <path>]');
+  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy] [--no-install] [--no-secrets] [--no-prereq] [--handoff <path>] [--recipe <id>] [--plan <path>]');
   process.exit(1);
 }
 
@@ -241,9 +252,39 @@ function checkPrerequisites() {
   }
 }
 
+// ── Capability Plan Loading ─────────────────────────────────────────────────
+
+function loadCapabilityPlan() {
+  if (CAPABILITY_PLAN) {
+    const planPath = resolve(process.cwd(), CAPABILITY_PLAN);
+    if (!existsSync(planPath)) {
+      console.error(`Error: plan file not found: ${planPath}`);
+      process.exit(1);
+    }
+    return JSON.parse(readFileSync(planPath, 'utf8'));
+  }
+
+  if (CAPABILITY_RECIPE) {
+    const compiledPlanPath = join(REPO_ROOT, 'capabilities', 'compiled', `${CAPABILITY_RECIPE}.plan.json`);
+    if (!existsSync(compiledPlanPath)) {
+      console.log(`
+🔧 Compiled plan for recipe ${CAPABILITY_RECIPE} not found — compiling now...`);
+      try {
+        execSync(`node ${join(REPO_ROOT, 'scripts', 'compile-capability-recipe.mjs')} --recipe ${CAPABILITY_RECIPE} --output ${compiledPlanPath}`, { stdio: 'inherit', cwd: REPO_ROOT });
+      } catch (err) {
+        console.error('Failed to compile capability recipe:', err.message);
+        process.exit(1);
+      }
+    }
+    return JSON.parse(readFileSync(compiledPlanPath, 'utf8'));
+  }
+
+  return null;
+}
+
 // ── File Generation ───────────────────────────────────────────────────────────
 
-function generateFiles(hyperdriveId, rateLimiterId) {
+function generateFiles(hyperdriveId, rateLimiterId, capabilityPlan = null) {
   console.log('\n📁 Generating files...');
 
   // .gitignore
@@ -260,6 +301,7 @@ coverage/
 `);
 
   // package.json
+  const dependencies = buildPackageDependencies(capabilityPlan);
   write('package.json', JSON.stringify({
     name: APP_NAME,
     version: '0.1.0',
@@ -273,18 +315,7 @@ coverage/
       test: 'vitest run',
       'test:watch': 'vitest',
     },
-    dependencies: {
-      '@latimer-woods-tech/errors': '^0.2.0',
-      '@latimer-woods-tech/logger': '^0.2.0',
-      '@latimer-woods-tech/monitoring': '^0.2.0',
-      '@latimer-woods-tech/auth': '^0.2.0',
-      '@latimer-woods-tech/neon': '^0.2.0',
-      '@latimer-woods-tech/analytics': '^0.2.0',
-      '@latimer-woods-tech/deploy': '^0.2.0',
-      '@latimer-woods-tech/flags': '^0.1.0',
-      'drizzle-orm': '^0.43.0',
-      hono: '^4.12.15',
-    },
+    dependencies,
     devDependencies: {
       '@latimer-woods-tech/testing': '^0.2.0',
       '@cloudflare/workers-types': '^4.20260426.1',
@@ -314,55 +345,7 @@ coverage/
   }, null, 2) + '\n');
 
   // wrangler.jsonc
-  write('wrangler.jsonc', `{
-  "name": "${APP_NAME}",
-  "compatibility_date": "2024-11-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": "src/index.ts",
-
-  // ── Hyperdrive (Neon Postgres via @latimer-woods-tech/neon) ──────────────────────
-  "hyperdrive": [
-    {
-      "binding": "DB",
-      "id": "${hyperdriveId}"
-    }
-  ],
-
-  // ── Flagship feature flags ────────────────────────────────────────────────
-  "flagship": { "binding": "FLAGS" },
-
-  // ── Flag telemetry (flag-meter D1) ────────────────────────────────────────
-  "d1_databases": [
-    { "binding": "FLAG_TELEMETRY", "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4", "database_name": "flag-meter" }
-  ],
-
-  // ── Non-secret vars (secrets go in wrangler secret put, never here) ────────
-  "vars": {
-    "ENVIRONMENT": "production",
-    "WORKER_NAME": "${APP_NAME}"
-  },
-
-  // ── Rate Limiter (auth routes) ────────────────────────────────────────────
-  "rate_limiters": [
-    {
-      "binding": "AUTH_RATE_LIMITER",
-      "namespace_id": "${rateLimiterId}",
-      "simple": { "limit": 60, "period": 60 }
-    }
-  ],
-
-  // ── Staging environment ────────────────────────────────────────────────────
-  "env": {
-    "staging": {
-      "name": "${APP_NAME}-staging",
-      "vars": {
-        "ENVIRONMENT": "staging",
-        "WORKER_NAME": "${APP_NAME}-staging"
-      }
-    }
-  }
-}
-`);
+  write('wrangler.jsonc', renderWranglerJson(capabilityPlan, hyperdriveId, rateLimiterId));
 
   // src/env.ts — Cloudflare Worker bindings type
   write('src/env.ts', `/**
@@ -393,74 +376,13 @@ export interface Env {
 `);
 
   // src/index.ts — minimal working Hono app
-  write('src/index.ts', `import { Hono } from 'hono';
-import {
-  FactoryBaseError,
-  withErrorBoundary,
-  toErrorResponse,
-} from '@latimer-woods-tech/errors';
-import { createDb } from '@latimer-woods-tech/neon';
-import { jwtMiddleware } from '@latimer-woods-tech/auth';
-import { createFlagClient } from '@latimer-woods-tech/flags';
-import type { Env } from './env.js';
+  write('src/index.ts', renderIndexSource(APP_NAME, capabilityPlan));
 
-const APP_NAME = '${APP_NAME}';
 
-const app = new Hono<{ Bindings: Env; Variables: { flags: ReturnType<typeof createFlagClient> } }>();
 
-// ── Middleware ───────────────────────────────────────────────────────────────
-app.use('*', withErrorBoundary());
 
-// ── Flagship feature flags ────────────────────────────────────────────────
-app.use('*', async (c, next) => {
-  const flags = createFlagClient(c.env, { app: APP_NAME, env: c.env.ENVIRONMENT });
-  c.set('flags', flags);
-  await next();
-});
 
-// ── Health check (public) ────────────────────────────────────────────────────
-app.get('/health', (c) =>
-  c.json({ status: 'ok', worker: c.env.WORKER_NAME, env: c.env.ENVIRONMENT }),
-);
 
-// ── Protected routes (require JWT) ──────────────────────────────────────────
-app.use('/api/*', (c, next) => jwtMiddleware(c.env.JWT_SECRET)(c, next));
-
-app.get('/api/me', (c) => {
-  // c.get('jwtPayload') is set by jwtMiddleware
-  return c.json({ data: c.get('jwtPayload'), error: null });
-});
-
-// ── Add your routes here ─────────────────────────────────────────────────────
-//
-// Example: mount the admin panel
-// import { createAdminRouter } from '@latimer-woods-tech/admin';
-// app.route('/admin', createAdminRouter({
-//   db: createDb(c.env.DB),
-//   appId: APP_NAME,
-// }));
-//
-// Example: read a flag in a route handler
-// const flags = c.get('flags');
-// const inMaintenance = await flags.getBool(\`\${APP_NAME}:ks:maintenance_mode\`);
-
-// ── Global unhandled error handler ───────────────────────────────────────────
-app.onError((err, c) => {
-  if (err instanceof FactoryBaseError) {
-    return c.json(
-      { error: { code: err.code, message: err.message }, data: null },
-      err.status as 400 | 401 | 403 | 404 | 500,
-    );
-  }
-  console.error('[unhandled]', err);
-  return c.json(
-    toErrorResponse(err),
-    500,
-  );
-});
-
-export default app;
-`);
 
   // drizzle.config.ts
   write('drizzle.config.ts', `import { defineConfig } from 'drizzle-kit';
@@ -563,18 +485,7 @@ export default defineConfig({
 `);
 
   // .dev.vars.example — local dev secrets template
-  write('.dev.vars.example', `# Copy this file to .dev.vars and fill in values for local development.
-# .dev.vars is gitignored — never commit it.
-# Wrangler reads .dev.vars automatically during wrangler dev.
-
-JWT_SECRET=dev-secret-at-least-32-characters-long
-SENTRY_DSN=
-POSTHOG_KEY=
-ANTHROPIC_API_KEY=
-GROK_API_KEY=
-GROQ_API_KEY=
-RESEND_API_KEY=
-`);
+  write('.dev.vars.example', renderDevVarsExample(capabilityPlan));
 
   // .github/workflows/ci.yml
   write('.github/workflows/ci.yml', `name: CI
@@ -807,8 +718,12 @@ async function main() {
   console.log(`   App:    ${APP_NAME}`);
   console.log(`   Target: ${TARGET}`);
   if (CREATE_GITHUB) console.log('   GitHub: yes (--github)');
+  if (NO_SECRETS) console.log('   No secrets mode: skipping interactive secret configuration');
+  if (SKIP_PREREQ) console.log('   Skipping prerequisites checks (--no-prereq)');
 
-  checkPrerequisites();
+  if (!SKIP_PREREQ) {
+    checkPrerequisites();
+  }
 
   // Hyperdrive (runs before file gen so ID is injected)
   const hyperdriveId = await createHyperdrive();
@@ -821,7 +736,8 @@ async function main() {
 
   // Create directory + all files
   mkdirSync(TARGET, { recursive: true });
-  generateFiles(hyperdriveId, rateLimiterId);
+  const capabilityPlan = await loadCapabilityPlan();
+  generateFiles(hyperdriveId, rateLimiterId, capabilityPlan);
 
   // Apply capability handoff if --handoff was supplied. Must run AFTER
   // generateFiles so package.json/.dev.vars.example exist, and BEFORE
