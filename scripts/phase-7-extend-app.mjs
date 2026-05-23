@@ -92,19 +92,22 @@ const STANDARD_PACKAGES = [
 ];
 
 /**
- * Step 1: Validate Hyperdrive binding exists in wrangler.toml
+ * Step 1: Validate Hyperdrive binding exists in wrangler config
  */
 function validateHyperdrive(appPath, config) {
   console.log('  • Validating Hyperdrive binding...');
 
-  const wranglerPath = path.join(appPath, 'wrangler.toml');
+  const wranglerToml = path.join(appPath, 'wrangler.toml');
+  const wranglerJsonc = path.join(appPath, 'wrangler.jsonc');
+  const wranglerPath = fs.existsSync(wranglerToml) ? wranglerToml : wranglerJsonc;
+
   if (!fs.existsSync(wranglerPath)) {
-    return { valid: false, error: 'wrangler.toml not found' };
+    return { valid: false, error: 'wrangler.toml/jsonc not found' };
   }
 
   const content = fs.readFileSync(wranglerPath, 'utf-8');
 
-  if (!content.includes('[[hyperdrive]]') && !content.includes('[[env.')) {
+  if (!content.includes('[[hyperdrive]]') && !content.includes('[[env.') && !content.includes('binding = "DB"')) {
     return { valid: false, error: 'No Hyperdrive binding found' };
   }
 
@@ -123,15 +126,22 @@ function validateHyperdrive(appPath, config) {
 function validateSentry(appPath) {
   console.log('  • Checking Sentry DSN...');
 
-  // Sentry DSN should be in wrangler.toml as a secret reference
-  const wranglerPath = path.join(appPath, 'wrangler.toml');
+  // Sentry DSN should be in wrangler config as a secret reference
+  const wranglerToml = path.join(appPath, 'wrangler.toml');
+  const wranglerJsonc = path.join(appPath, 'wrangler.jsonc');
+  const wranglerPath = fs.existsSync(wranglerToml) ? wranglerToml : wranglerJsonc;
+
+  if (!fs.existsSync(wranglerPath)) {
+    return { valid: false, error: 'wrangler config not found' };
+  }
+
   const content = fs.readFileSync(wranglerPath, 'utf-8');
 
   if (content.includes('SENTRY_DSN')) {
-    return { valid: true, status: 'DSN reference found in wrangler.toml' };
+    return { valid: true, status: 'DSN reference found in wrangler config' };
   }
 
-  return { valid: false, error: 'SENTRY_DSN not referenced in wrangler.toml' };
+  return { valid: false, error: 'SENTRY_DSN not referenced in wrangler config' };
 }
 
 /**
@@ -542,9 +552,11 @@ Modes:
   for (const p of possiblePaths) {
     if (fs.existsSync(p)) {
       const gitDir = path.join(p, '.git');
-      const wranglerFile = path.join(p, 'wrangler.toml');
-      // Check if it's a git repo and has wrangler.toml, OR is a subdirectory of a git repo
-      if ((fs.existsSync(gitDir) && fs.existsSync(wranglerFile)) || fs.existsSync(wranglerFile)) {
+      const wranglerToml = path.join(p, 'wrangler.toml');
+      const wranglerJsonc = path.join(p, 'wrangler.jsonc');
+      // Check for either wrangler.toml or wrangler.jsonc
+      const hasWrangler = fs.existsSync(wranglerToml) || fs.existsSync(wranglerJsonc);
+      if ((fs.existsSync(gitDir) && hasWrangler) || hasWrangler) {
         appPath = p;
         break;
       }
