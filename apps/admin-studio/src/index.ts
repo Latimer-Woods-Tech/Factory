@@ -36,6 +36,7 @@ import timeline from './routes/timeline.js';
 import apps from './routes/apps.js';
 import observability from './routes/observability.js';
 import repo from './routes/repo.js';
+import capabilities from './routes/capabilities.js';
 import manifest from './routes/manifest.js';
 import catalog from './routes/catalog.js';
 import smoke from './routes/smoke.js';
@@ -148,6 +149,7 @@ app.use('/audit/*', envContextMiddleware());
 app.use('/timeline/*', envContextMiddleware());
 app.use('/apps/*', envContextMiddleware());
 app.use('/observability/*', envContextMiddleware());
+app.use('/capabilities/*', envContextMiddleware(), auditMiddleware());
 // Audit middleware skips GET/HEAD/OPTIONS, so reads stay cheap and
 // writes (commit, create-branch, open-PR) are recorded.
 app.use('/repo/*', envContextMiddleware(), auditMiddleware());
@@ -174,6 +176,7 @@ app.route('/audit', audit);
 app.route('/timeline', timeline);
 app.route('/apps', apps);
 app.route('/observability', observability);
+app.route('/capabilities', capabilities);
 app.route('/repo', repo);
 app.route('/catalog', catalog);
 app.route('/smoke', smoke);
