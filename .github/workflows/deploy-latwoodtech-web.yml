@@ -1,0 +1,58 @@
+name: Deploy latwoodtech.com
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/latwoodtech-web/**'
+      - 'docs/completion-tracker.json'
+      - '.github/workflows/deploy-latwoodtech-web.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        working-directory: apps/latwoodtech-web
+        run: npm install
+
+      - name: Build frontend
+        working-directory: apps/latwoodtech-web
+        run: npm run build:frontend
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=latwoodtech-com --branch=main
+
+      - name: Verify deployment
+        run: |
+          for i in {1..5}; do
+            if curl -fsSL https://main.latwoodtech-com.pages.dev > /dev/null; then
+              echo "Deployment verified"
+              exit 0
+            fi
+            echo "Retrying deploy verification ($i/5)..."
+            sleep 5
+          done
+          echo "Deployment verification failed"
+          exit 1
