@@ -167,6 +167,50 @@ const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_TEMPERATURE = 0.7;
 const DEFAULT_LONG_CONTEXT_THRESHOLD = 150_000; // tokens
 
+/**
+ * Approximate token prices per provider model (USD per 1 M tokens).
+ * Used by {@link estimateCostUsd} to enforce {@link LLMOptions.maxCostUsd}.
+ * Prices sourced from provider pricing pages (2025-07). Update when rates change.
+ */
+export const MODEL_PRICE_PER_1M: Readonly<
+  Record<string, { input: number; output: number; cacheRead?: number; cacheWrite?: number }>
+> = {
+  // ── Anthropic ──────────────────────────────────────────────────────────────
+  'claude-haiku-4-20250514': { input: 0.80,  output: 4.00,  cacheRead: 0.08, cacheWrite: 1.00 },
+  'claude-sonnet-4-6':       { input: 3.00,  output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
+  'claude-opus-4-7':         { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
+  // ── Gemini ─────────────────────────────────────────────────────────────────
+  'gemini-2.5-pro':          { input: 1.25,  output: 10.00, cacheRead: 0.31 },
+  // ── Groq ───────────────────────────────────────────────────────────────────
+  'llama-4-maverick':        { input: 0.10,  output: 0.40 },
+  // ── Grok (opt-in only) ─────────────────────────────────────────────────────
+  'grok-4-fast':             { input: 5.00,  output: 15.00 },
+  'grok-3-mini-latest':      { input: 0.30,  output: 0.50 },
+};
+
+/** Fallback price when the model is absent from {@link MODEL_PRICE_PER_1M}. */
+const UNKNOWN_MODEL_PRICE: { input: number; output: number; cacheRead?: number; cacheWrite?: number } = { input: 15.00, output: 75.00 }; // Opus price as safe upper bound.
+
+/**
+ * Estimate the USD cost of an LLM call from its token counts and model name.
+ *
+ * @param tokens - Token breakdown from {@link LLMResult.tokens}.
+ * @param model  - Model identifier (e.g. `'claude-sonnet-4-6'`).
+ * @returns Estimated cost in USD.
+ */
+export function estimateCostUsd(
+  tokens: { input: number; output: number; cacheRead?: number; cacheWrite?: number },
+  model: string,
+): number {
+  const price = MODEL_PRICE_PER_1M[model] ?? UNKNOWN_MODEL_PRICE;
+  return (
+    (tokens.input * price.input) / 1_000_000 +
+    (tokens.output * price.output) / 1_000_000 +
+    ((tokens.cacheRead ?? 0) * (price.cacheRead ?? 0)) / 1_000_000 +
+    ((tokens.cacheWrite ?? 0) * (price.cacheWrite ?? 0)) / 1_000_000
+  );
+}
+
 // ─── Per-provider exponential backoff constants ────────────────────────────
 /** Base delay in ms for the first retry. */
 const BACKOFF_BASE_MS = 500;
@@ -1095,7 +1139,7 @@ export async function* completionStream(
     actor: opts.actor,
   });
 
-  return {
+  const streamResult: LLMResult = {
     content: accumulatedText,
     provider: route.primary.provider,
     model: modelName ?? route.primary.model,
@@ -1105,6 +1149,18 @@ export async function* completionStream(
     attempts: 1,
     gatewayRequestId,
   };
+  if (opts.maxCostUsd !== undefined) {
+    const costUsd = estimateCostUsd(streamResult.tokens, streamResult.model);
+    if (costUsd > opts.maxCostUsd) {
+      throw new RateLimitError('LLM_COST_CAP_EXCEEDED', {
+        costUsd,
+        maxCostUsd: opts.maxCostUsd,
+        model: streamResult.model,
+        tokens: streamResult.tokens,
+      });
+    }
+  }
+  return streamResult;
 }
 
 // ─── Grounding assertion ───────────────────────────────────────────────────
