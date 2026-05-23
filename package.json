@@ -25,6 +25,8 @@
     "validate:service-registry": "node scripts/validate-service-registry.mjs",
     "validate:capabilities": "node scripts/validate-capability-registry.mjs",
     "compile:capability": "node scripts/compile-capability-recipe.mjs",
+    "compile:capability-catalog": "node scripts/compile-capability-catalog.mjs",
+    "resolve:capability-concept": "node scripts/resolve-capability-concept.mjs",
     "build:capability-golden-path": "node scripts/generate-capability-golden-path.mjs",
     "preview:capability-plan": "node scripts/preview-capability-plan.mjs",
     "generate:deploy-workflow": "node scripts/gen-deploy-workflow.mjs",

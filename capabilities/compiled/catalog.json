@@ -1,0 +1,208 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "catalog",
+  "generatedAt": "2026-05-23T05:02:50.822Z",
+  "summary": {
+    "primitiveCount": 4,
+    "recipeCount": 1,
+    "conceptCount": 1,
+    "ruleFileCount": 1
+  },
+  "primitives": [
+    {
+      "id": "analytics",
+      "category": "telemetry",
+      "maturity": "stable",
+      "package": "@latimer-woods-tech/analytics",
+      "summary": "Behavioral and operational event capture substrate for Factory services.",
+      "provides": [
+        "event-tracking",
+        "funnel-signals",
+        "service-telemetry"
+      ],
+      "recommendedWith": [
+        "crm",
+        "telephony"
+      ]
+    },
+    {
+      "id": "compliance",
+      "category": "governance",
+      "maturity": "stable",
+      "package": "@latimer-woods-tech/compliance",
+      "summary": "Consent, audit, and policy enforcement substrate for regulated or operator-sensitive workflows.",
+      "provides": [
+        "audit-log",
+        "consent-recording",
+        "policy-check-hooks"
+      ],
+      "recommendedWith": [
+        "telephony",
+        "crm"
+      ]
+    },
+    {
+      "id": "crm",
+      "category": "customer-data",
+      "maturity": "stable",
+      "package": "@latimer-woods-tech/crm",
+      "summary": "Lead, contact, and customer workflow substrate backed by Neon and analytics-aware data flows.",
+      "provides": [
+        "contact-store",
+        "lead-workflows",
+        "customer-state",
+        "campaign-targeting-input"
+      ],
+      "recommendedWith": [
+        "analytics",
+        "compliance"
+      ]
+    },
+    {
+      "id": "telephony",
+      "category": "communications",
+      "maturity": "stable",
+      "package": "@latimer-woods-tech/telephony",
+      "summary": "Voice and telephony substrate for Telnyx, Deepgram, ElevenLabs, and LLM-mediated voice sessions.",
+      "provides": [
+        "voice-session",
+        "telnyx-webhook-verification",
+        "speech-to-text",
+        "text-to-speech",
+        "calling-hours-policy"
+      ],
+      "recommendedWith": [
+        "compliance",
+        "crm",
+        "analytics"
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "id": "outbound-dialer",
+      "maturity": "experimental",
+      "summary": "Outbound call-bank service pattern for compliant campaign dialing and disposition capture.",
+      "goal": "Provision a staging-first outbound calling service with lead targeting, consent-aware controls, and delivery telemetry.",
+      "primitives": [
+        "telephony",
+        "crm",
+        "compliance",
+        "analytics"
+      ],
+      "optionalPrimitives": [],
+      "expectedSurfaces": [
+        "/health",
+        "/manifest",
+        "/api/campaigns",
+        "/api/campaigns/:id/start",
+        "/api/dispositions"
+      ],
+      "smokeChecks": [
+        {
+          "path": "/health",
+          "expectedStatus": 200,
+          "expectContains": "status"
+        },
+        {
+          "path": "/manifest",
+          "expectedStatus": 200,
+          "expectContains": "manifestVersion"
+        }
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "outbound-dialer-campaign",
+      "displayName": "Outbound Dialer Campaign Service",
+      "summary": "Governed menu entry for a consent-aware outbound dialing service with CRM targeting and delivery telemetry.",
+      "status": "approved",
+      "maturity": "experimental",
+      "tags": [
+        "telephony",
+        "campaigns",
+        "outbound"
+      ],
+      "menuVisible": true,
+      "approvalTier": "council-reviewed",
+      "parameters": [
+        {
+          "id": "campaignSource",
+          "type": "string",
+          "description": "Primary source for campaign audience selection.",
+          "required": true,
+          "enum": [
+            "csv-import",
+            "crm-segment",
+            "api-trigger"
+          ],
+          "default": null,
+          "formatHint": null
+        },
+        {
+          "id": "enableVoiceSynthesis",
+          "type": "boolean",
+          "description": "Whether AI voice generation is included in the first release slice.",
+          "required": false,
+          "enum": [],
+          "default": true,
+          "formatHint": null
+        },
+        {
+          "id": "workerDomain",
+          "type": "string",
+          "description": "Branded hostname used for the deployed worker and smoke-check URLs.",
+          "required": true,
+          "enum": [],
+          "default": null,
+          "formatHint": "hostname"
+        }
+      ],
+      "recipes": [
+        {
+          "id": "outbound-dialer",
+          "summary": "Outbound call-bank service pattern for compliant campaign dialing and disposition capture.",
+          "maturity": "experimental",
+          "primitives": [
+            "telephony",
+            "crm",
+            "compliance",
+            "analytics"
+          ],
+          "optionalPrimitives": []
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "compliance",
+        "crm",
+        "telephony"
+      ],
+      "qualification": {
+        "menuVisible": true,
+        "approvalTier": "council-reviewed",
+        "requiredCapabilities": [
+          "telephony",
+          "crm",
+          "compliance"
+        ],
+        "disallowedEnvironments": [
+          "production-direct-bootstrap"
+        ]
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "outbound-telephony-requires-compliance",
+      "description": "Any recipe that includes telephony in an outbound-sensitive context must also include compliance.",
+      "ifAllPrimitives": [
+        "telephony"
+      ],
+      "thenRequirePrimitives": [
+        "compliance"
+      ]
+    }
+  ]
+}

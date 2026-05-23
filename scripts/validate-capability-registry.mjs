@@ -8,18 +8,23 @@ const ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CAPABILITIES_DIR = join(ROOT_DIR, 'capabilities');
 const PRIMITIVES_DIR = join(CAPABILITIES_DIR, 'primitives');
 const RECIPES_DIR = join(CAPABILITIES_DIR, 'recipes');
+const CONCEPTS_DIR = join(CAPABILITIES_DIR, 'concepts');
 const RULES_DIR = join(CAPABILITIES_DIR, 'rules');
 
 const errors = [];
 
 const primitives = await loadJsonDirectory(PRIMITIVES_DIR, 'primitive');
 const recipes = await loadJsonDirectory(RECIPES_DIR, 'recipe');
+const concepts = await loadJsonDirectory(CONCEPTS_DIR, 'concept');
 const rulesFiles = await loadJsonDirectory(RULES_DIR, 'rules');
 
 const primitiveIds = new Set(primitives.map((entry) => entry.data.id));
+const recipeIds = new Set(recipes.map((entry) => entry.data.id));
+const recipesById = new Map(recipes.map((entry) => [entry.data.id, entry.data]));
 
 checkDuplicates(primitives, 'primitive');
 checkDuplicates(recipes, 'recipe');
+checkDuplicates(concepts, 'concept');
 
 for (const primitive of primitives) {
   validatePrimitive(primitive.data, primitive.path);
@@ -27,6 +32,10 @@ for (const primitive of primitives) {
 
 for (const recipe of recipes) {
   validateRecipe(recipe.data, recipe.path, primitiveIds);
+}
+
+for (const concept of concepts) {
+  validateConcept(concept.data, concept.path, primitiveIds, recipeIds, recipesById);
 }
 
 for (const rulesFile of rulesFiles) {
@@ -45,6 +54,7 @@ console.log(JSON.stringify({
   ok: true,
   primitives: primitives.length,
   recipes: recipes.length,
+  concepts: concepts.length,
   ruleFiles: rulesFiles.length,
   checkedAt: new Date().toISOString(),
 }, null, 2));
@@ -175,6 +185,87 @@ function validateRecipe(data, path, primitiveIds) {
   }
 }
 
+function validateConcept(data, path, primitiveIds, recipeIds, recipesById) {
+  requireString(data, 'schemaVersion', path);
+  requireString(data, 'id', path, /^[a-z][a-z0-9-]{1,63}$/u);
+  requireString(data, 'displayName', path);
+  requireString(data, 'owner', path);
+  requireString(data, 'maturity', path);
+  requireString(data, 'status', path);
+  requireString(data, 'summary', path);
+  requireStringArray(data, 'tags', path, { optional: true });
+  requireStringArray(data, 'sourcePrimitives', path, { minItems: 1 });
+  requireStringArray(data, 'recipeCandidates', path, { minItems: 1 });
+
+  for (const primitiveId of data.sourcePrimitives ?? []) {
+    if (!primitiveIds.has(primitiveId)) {
+      errors.push(`${relative(path)}: references unknown source primitive "${primitiveId}"`);
+    }
+  }
+
+  for (const recipeId of data.recipeCandidates ?? []) {
+    if (!recipeIds.has(recipeId)) {
+      errors.push(`${relative(path)}: references unknown recipe candidate "${recipeId}"`);
+    }
+  }
+
+  const parameterSchema = requireObject(data, 'parameterSchema', path);
+  if (parameterSchema) {
+    const properties = requireObject(parameterSchema, 'properties', path);
+    requireStringArray(parameterSchema, 'required', path, { optional: true });
+
+    if (properties) {
+      for (const [name, definition] of Object.entries(properties)) {
+        if (!definition || typeof definition !== 'object' || Array.isArray(definition)) {
+          errors.push(`${relative(path)}: parameterSchema.properties.${name} must be an object`);
+          continue;
+        }
+        requireString(definition, 'type', path);
+        requireString(definition, 'description', path);
+        if (!['string', 'boolean', 'integer', 'number'].includes(definition.type)) {
+          errors.push(`${relative(path)}: parameterSchema.properties.${name}.type must be one of string, boolean, integer, number`);
+        }
+        if (definition.enum !== undefined) {
+          if (!Array.isArray(definition.enum) || definition.enum.length === 0) {
+            errors.push(`${relative(path)}: parameterSchema.properties.${name}.enum must be a non-empty array when provided`);
+          }
+        }
+        if (definition.formatHint !== undefined && (typeof definition.formatHint !== 'string' || definition.formatHint.length === 0)) {
+          errors.push(`${relative(path)}: parameterSchema.properties.${name}.formatHint must be a non-empty string when provided`);
+        }
+      }
+    }
+
+    for (const requiredKey of parameterSchema.required ?? []) {
+      if (!properties || !(requiredKey in properties)) {
+        errors.push(`${relative(path)}: parameterSchema.required references unknown property "${requiredKey}"`);
+      }
+    }
+  }
+
+  const qualification = requireObject(data, 'qualification', path);
+  if (qualification) {
+    requireBoolean(qualification, 'menuVisible', path);
+    requireString(qualification, 'approvalTier', path);
+    requireStringArray(qualification, 'requiredCapabilities', path, { optional: true });
+    requireStringArray(qualification, 'disallowedEnvironments', path, { optional: true });
+  }
+
+  for (const recipeId of data.recipeCandidates ?? []) {
+    const recipe = recipesById.get(recipeId);
+    if (!recipe) continue;
+    const declaredPrimitives = new Set([
+      ...(Array.isArray(recipe.primitives) ? recipe.primitives : []),
+      ...(Array.isArray(recipe.optionalPrimitives) ? recipe.optionalPrimitives : []),
+    ]);
+    for (const primitiveId of data.sourcePrimitives ?? []) {
+      if (!declaredPrimitives.has(primitiveId)) {
+        errors.push(`${relative(path)}: recipe candidate "${recipeId}" does not declare source primitive "${primitiveId}"`);
+      }
+    }
+  }
+}
+
 function validateRules(data, path, primitiveIds) {
   requireString(data, 'schemaVersion', path);
   const rules = data.rules;
@@ -268,6 +359,13 @@ function requireStringArray(value, key, path, options = {}) {
     if (typeof item !== 'string' || item.length === 0) {
       errors.push(`${relative(path)}: ${key}[${index}] must be a non-empty string`);
     }
+  }
+}
+
+function requireBoolean(value, key, path) {
+  const target = value[key];
+  if (typeof target !== 'boolean') {
+    errors.push(`${relative(path)}: ${key} must be a boolean`);
   }
 }
 

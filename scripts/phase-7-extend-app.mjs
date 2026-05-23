@@ -107,13 +107,18 @@ function validateHyperdrive(appPath, config) {
 
   const content = fs.readFileSync(wranglerPath, 'utf-8');
 
-  if (!content.includes('[[hyperdrive]]') && !content.includes('[[env.') && !content.includes('binding = "DB"')) {
+  // Check for hyperdrive in TOML format: [[hyperdrive]] with binding = "..."
+  // Or in JSON/JSONC format: "hyperdrive": [ ... ] with "binding": "..."
+  const hasTOMLHyperdrive = content.includes('[[hyperdrive]]') && content.includes('binding');
+  const hasJSONHyperdrive = content.includes('"hyperdrive"') && content.includes('"binding"');
+
+  if (!hasTOMLHyperdrive && !hasJSONHyperdrive) {
     return { valid: false, error: 'No Hyperdrive binding found' };
   }
 
   // Extract hyperdrive ID if config doesn't have it
   if (!config.hyperdriveId) {
-    const match = content.match(/id\s*=\s*"([^"]+)"/);
+    const match = content.match(/['"id['"]?\s*:\s*['"]([a-f0-9]+)['"]/);
     if (match) config.hyperdriveId = match[1];
   }
 

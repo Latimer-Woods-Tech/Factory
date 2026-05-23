@@ -3,7 +3,7 @@
  * the environment before authenticating. This is Safeguard #3
  * (Environment Lock-In) made visible at session start.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
@@ -38,36 +38,7 @@ export function LoginPage() {
       .catch(() => setGoogleClientId(null));
   }, [env]);
 
-  // Initialize Google Sign-In once we have env + client ID + button ref
-  useEffect(() => {
-    if (!env || !googleClientId || !googleButtonRef.current) return;
-
-    const google = (window as any).google;
-    if (!google) return;
-
-    googleButtonRef.current.innerHTML = '';
-
-    try {
-      google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: handleGoogleCallback,
-      });
-
-      google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: 'outline',
-        size: 'large',
-        text: 'continue_with',
-        shape: 'pill',
-        width: '320',
-      });
-
-      google.accounts.id.prompt();
-    } catch (err) {
-      console.warn('Failed to initialize Google Sign-In:', err);
-    }
-  }, [env, googleClientId]);
-
-  async function handleGoogleCallback(response: any) {
+  const handleGoogleCallback = useCallback(async (response: any) => {
     if (!env) return;
 
     setError(null);
@@ -104,7 +75,36 @@ export function LoginPage() {
       setError((err as Error).message);
       setSubmitting(false);
     }
-  }
+  }, [env, login, navigate, searchParams]);
+
+  // Initialize Google Sign-In once we have env + client ID + button ref
+  useEffect(() => {
+    if (!env || !googleClientId || !googleButtonRef.current) return;
+
+    const google = (window as any).google;
+    if (!google) return;
+
+    googleButtonRef.current.innerHTML = '';
+
+    try {
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCallback,
+      });
+
+      google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        width: '320',
+      });
+
+      google.accounts.id.prompt();
+    } catch (err) {
+      console.warn('Failed to initialize Google Sign-In:', err);
+    }
+  }, [env, googleClientId, handleGoogleCallback]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
