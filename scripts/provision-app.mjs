@@ -34,6 +34,8 @@
  *   --rate-limiter-id  Integer namespace ID for AUTH_RATE_LIMITER (prod). The next 3 IDs are auto-computed.
  *   --extra-secrets    Comma-separated list of extra Wrangler secret names beyond the standard set
  *   --create-repo      Create the GitHub repo (default: skip if it already exists)
+ *   --scaffold         After provisioning, scaffold app code using packages/deploy/scripts/scaffold.mjs
+ *   --recipe <id>      Capability recipe ID to drive scaffold (requires --scaffold)
  *   --dry-run          Print all commands without executing any
  *
  * Prerequisites (env vars):
@@ -74,6 +76,8 @@ function parseArgs() {
   const rateLimiterId = parseInt(get('--rate-limiter-id', '0'), 10);
   const extraSecrets = (get('--extra-secrets', '') || '').split(',').filter(Boolean);
   const createRepo = has('--create-repo');
+  const scaffold = has('--scaffold');
+  const recipe = get('--recipe', null);
   const dryRun = has('--dry-run');
 
   if (!rateLimiterId) {
@@ -81,7 +85,7 @@ function parseArgs() {
     process.exit(1);
   }
 
-  return { app, workerName, db, domain, rateLimiterId, extraSecrets, createRepo, dryRun };
+  return { app, workerName, db, domain, rateLimiterId, extraSecrets, createRepo, scaffold, recipe, dryRun };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -539,6 +543,57 @@ Types: feat | fix | docs | test | refactor | chore | perf
   printSnippet(`.github/repo-contexts/CLAUDE.md (in ${app} repo)`, claudeMd);
 }
 
+// ─── Step L: Scaffold App Code ───────────────────────────────────────────────
+
+function scaffoldAndPush({ app, hyperdriveUuid, rateLimiterId, recipe, createRepo, dryRun }) {
+  section('L. Scaffold App Code');
+
+  const scaffoldScript = resolve(ROOT, 'packages/deploy/scripts/scaffold.mjs');
+  const parts = [
+    `node "${scaffoldScript}" ${app}`,
+    hyperdriveUuid ? `--hyperdrive-id ${hyperdriveUuid}` : '',
+    `--rate-limiter-id ${rateLimiterId}`,
+    '--no-prereq',
+    '--no-secrets',
+    '--no-deploy',
+    '--no-install',
+    recipe ? `--recipe ${recipe}` : '',
+  ].filter(Boolean);
+  const cmd = parts.join(' ');
+
+  console.log(`  Scaffolding: ${app}`);
+  if (recipe) console.log(`  Recipe:      ${recipe}`);
+
+  if (dryRun) {
+    console.log(`  [DRY-RUN] ${cmd}`);
+  } else {
+    try {
+      execSync(cmd, { stdio: 'inherit', cwd: ROOT });
+    } catch (err) {
+      throw new Error(`Scaffold failed: ${err.message}`);
+    }
+  }
+
+  // Push local scaffold to the already-created GH repo (Step D)
+  if (createRepo) {
+    const appDir = resolve(ROOT, app);
+    const remoteUrl = `https://github.com/Latimer-Woods-Tech/${app}.git`;
+    const pushCmd = `git remote add origin ${remoteUrl} && git push -u origin main`;
+    console.log(`  Pushing to:  ${remoteUrl}`);
+    if (dryRun) {
+      console.log(`  [DRY-RUN] cd ${appDir} && ${pushCmd}`);
+    } else {
+      try {
+        execSync(pushCmd, { stdio: 'inherit', cwd: appDir });
+        console.log(`  ✅ Pushed to ${remoteUrl}`);
+      } catch {
+        console.log(`  ⚠️  Auto-push failed — run manually:`);
+        console.log(`     cd "${appDir}" && ${pushCmd}`);
+      }
+    }
+  }
+}
+
 // ─── Step K: Domain Wiring Instructions ──────────────────────────────────────
 
 function printDomainInstructions({ app, workerName, domain, dryRun }) {
@@ -567,7 +622,7 @@ async function main() {
   const {
     app, workerName, db, domain,
     rateLimiterId, extraSecrets,
-    createRepo, dryRun,
+    createRepo, scaffold, recipe, dryRun,
   } = parseArgs();
 
   const envKey = toEnvKey(app);
@@ -581,6 +636,7 @@ async function main() {
   console.log(`  Domain:         ${domain}`);
   console.log(`  Rate limiter:   ${rateLimiterId} (prod-auth), ${rateLimiterId+1} (prod-api), ${rateLimiterId+2} (stg-auth), ${rateLimiterId+3} (stg-api)`);
   console.log(`  Extra secrets:  ${extraSecrets.length ? extraSecrets.join(', ') : '(none)'}`);
+  console.log(`  Scaffold:       ${scaffold ? (recipe ? `yes (recipe: ${recipe})` : 'yes') : 'no'}`);
   console.log(`  Dry run:        ${dryRun ? 'YES' : 'no'}`);
 
   // Validate required env
@@ -627,15 +683,20 @@ async function main() {
   // K. Domain wiring instructions
   printDomainInstructions({ app, workerName, domain, dryRun });
 
+  // L. Scaffold (optional)
+  if (scaffold) {
+    scaffoldAndPush({ app, hyperdriveUuid, rateLimiterId, recipe, createRepo, dryRun });
+  }
+
   // ── Final checklist ────────────────────────────────────────────────────────
   section('✅ Provisioning Complete — Remaining Manual Steps');
   console.log(`
   [ ] Create Sentry project for '${app}' and set SENTRY_DSN_${envKey} in Factory secrets
   [ ] Patch .github/workflows/setup-app-secrets.yml (see Section H above)
-  [ ] Copy wrangler.jsonc snippet into ${app} repo (Section I)
+  [ ] Copy wrangler.jsonc snippet into ${app} repo (Section I)${scaffold ? ' — auto-done by scaffold' : ''}
   [ ] Copy .github/repo-contexts/CLAUDE.md into ${app} repo (Section J)
   [ ] Wire CF custom domain (Section K)${domain !== 'none' ? '' : ' — skipped (no domain)'}
-  [ ] Run: node packages/deploy/scripts/setup-all-apps.mjs --app ${app}
+  ${scaffold ? `[ ] Delete local scaffold dir if not needed: rm -rf ${app}/\n  ` : ''}[ ] Run: node packages/deploy/scripts/setup-all-apps.mjs --app ${app}
   [ ] Deploy worker and verify: curl https://${domain !== 'none' ? domain : workerName + '.adrper79.workers.dev'}/health
   `);
 }

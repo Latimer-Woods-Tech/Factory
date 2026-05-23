@@ -770,12 +770,16 @@ async function main() {
   }
 
   // Secrets
-  const doSecrets = await ask('\n🔐 Configure Wrangler secrets interactively now? (y/N): ');
-  if (doSecrets.trim().toLowerCase() === 'y') {
-    await configureSecrets();
+  if (NO_SECRETS) {
+    console.log('\n🔐 Skipping secrets (--no-secrets).');
   } else {
-    console.log('  ⏭  Skipped. Run later:');
-    console.log(`     node node_modules/@latimer-woods-tech/deploy/scripts/setup-secrets.sh ${APP_NAME}`);
+    const doSecrets = await ask('\n🔐 Configure Wrangler secrets interactively now? (y/N): ');
+    if (doSecrets.trim().toLowerCase() === 'y') {
+      await configureSecrets();
+    } else {
+      console.log('  ⏭  Skipped. Run later:');
+      console.log(`     node node_modules/@latimer-woods-tech/deploy/scripts/setup-secrets.sh ${APP_NAME}`);
+    }
   }
 
   // First deploy
