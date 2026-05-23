@@ -1,0 +1,65 @@
+{
+  "id": "prime-self-api",
+  "displayName": "Human Design API (Prime Self)",
+  "summary": "Backend API for selfprime.net — Human Design readings, Stripe ACS fulfillment, and LLM-synthesized content.",
+  "status": "approved",
+  "maturity": "stable",
+  "tags": ["api", "auth", "payments", "llm"],
+  "menuVisible": true,
+  "approvalTier": "golden",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Branded custom domain for the deployed worker.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "api.selfprime.net"
+    },
+    {
+      "id": "jwtAudience",
+      "type": "string",
+      "description": "JWT audience claim — must match the client-side audience check.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "selfprime.net"
+    },
+    {
+      "id": "enableACSFulfillment",
+      "type": "boolean",
+      "description": "Enable Stripe Agentic Commerce Service webhook fulfillment.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    },
+    {
+      "id": "enableEmailFollowUp",
+      "type": "boolean",
+      "description": "Send transactional email after each reading is fulfilled.",
+      "required": false,
+      "enum": [],
+      "default": false,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": null,
+  "recipes": [
+    {
+      "id": "human-design-api",
+      "summary": "Human Design reading API with JWT auth, Stripe ACS fulfillment, and LLM synthesis.",
+      "maturity": "stable",
+      "primitives": ["auth", "llm", "analytics", "stripe"],
+      "optionalPrimitives": ["email", "compliance"]
+    }
+  ],
+  "sourcePrimitives": ["analytics", "auth", "compliance", "email", "llm", "stripe"],
+  "qualification": {
+    "menuVisible": true,
+    "approvalTier": "golden",
+    "requiredCapabilities": ["custom-domain", "neon-database"],
+    "disallowedEnvironments": ["local"]
+  }
+}

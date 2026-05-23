@@ -1,17 +1,16 @@
 /**
  * Capability Design Studio — operator surface.
  *
- * Implements the Golden Design four-region staged workspace:
- *   1. Concept rail   (left)
- *   2. Configuration panel
- *   3. Resolution + preview panel
- *   4. Action rail    (bottom — handoff + staging provision)
+ * Stage A+B+C: Governed concept menu, resolve→preview→handoff→provision state machine.
+ * Stage D: Tag-based concept filtering, guided composition templates, recipe version
+ *          badges, and deployment evidence panel with live provision status polling.
  *
  * State machine (deriveCapabilityWorkflowStage):
  *   browse → configure → resolved → previewed → confirmed-for-handoff
  *           → staging-provision-requested
  *
- * Backend contract: /capabilities/{,resolve,preview,handoff,provision-staging}.
+ * Backend contract: /capabilities/{,resolve,preview,handoff,provision-staging,
+ *                   handoffs/:id,provision-requests/:id}.
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiFetch } from '../../lib/api.js';
@@ -184,6 +183,17 @@ interface ProvisionResponse {
   };
 }
 
+interface ProvisionRequestRecord {
+  id: string;
+  handoffId: string;
+  status: 'requested' | 'acknowledged' | 'dispatched' | 'succeeded' | 'failed' | 'withdrawn';
+  proofGates: ProofGateState;
+  requestedBy: string;
+  requestedAt: string;
+  env: string;
+  notes: string | null;
+}
+
 type WorkflowStage =
   | 'browse'
   | 'configure'
@@ -191,6 +201,88 @@ type WorkflowStage =
   | 'previewed'
   | 'confirmed-for-handoff'
   | 'staging-provision-requested';
+
+/** Guided template: pre-fills parameters for a common scenario. */
+interface ConceptTemplate {
+  id: string;
+  label: string;
+  hint: string;
+  values: Record<string, string | number | boolean>;
+}
+
+/** Per-concept guided templates keyed by concept id. */
+const CONCEPT_TEMPLATES: Record<string, ConceptTemplate[]> = {
+  'outbound-dialer-campaign': [
+    {
+      id: 'crm-segment-default',
+      label: 'CRM Segment — standard',
+      hint: 'Targets a CRM segment with voice synthesis enabled.',
+      values: { campaignSource: 'crm-segment', enableVoiceSynthesis: true },
+    },
+    {
+      id: 'csv-import-default',
+      label: 'CSV Import — batch',
+      hint: 'Targets a CSV-imported contact list, no voice synthesis.',
+      values: { campaignSource: 'csv-import', enableVoiceSynthesis: false },
+    },
+  ],
+  'voice-intake-bot': [
+    {
+      id: 'intake-with-email',
+      label: 'Intake + email confirmation',
+      hint: 'Triage inbound calls and send email receipts to callers.',
+      values: { emailConfirmations: true },
+    },
+    {
+      id: 'intake-silent',
+      label: 'Intake — silent (no email)',
+      hint: 'Triage only; no outbound email.',
+      values: { emailConfirmations: false },
+    },
+  ],
+  'prime-self-api': [
+    {
+      id: 'prime-self-full',
+      label: 'Full stack — ACS + email',
+      hint: 'Stripe ACS fulfillment enabled with email follow-up.',
+      values: { enableACSFulfillment: true, enableEmailFollowUp: true, jwtAudience: 'selfprime.net' },
+    },
+    {
+      id: 'prime-self-minimal',
+      label: 'Minimal — readings only',
+      hint: 'Readings API only; ACS and email disabled.',
+      values: { enableACSFulfillment: false, enableEmailFollowUp: false, jwtAudience: 'selfprime.net' },
+    },
+  ],
+  'capricast-video-api': [
+    {
+      id: 'capricast-stream',
+      label: 'Cloudflare Stream',
+      hint: 'Full Stream pipeline with adaptive bitrate delivery.',
+      values: { streamStorage: 'cloudflare-stream', enableAnalytics: true },
+    },
+    {
+      id: 'capricast-r2',
+      label: 'R2-only storage',
+      hint: 'Direct R2 delivery; no Stream transcoding.',
+      values: { streamStorage: 'r2-only', enableAnalytics: true },
+    },
+  ],
+  'cypher-healing-api': [
+    {
+      id: 'cypher-full',
+      label: 'Full — email + compliance',
+      hint: 'Email follow-up enabled with compliance transcript redaction.',
+      values: { enableEmailFollowUp: true, enableCompliance: true },
+    },
+    {
+      id: 'cypher-minimal',
+      label: 'Minimal — intake only',
+      hint: 'Intake triage only; no email or compliance layer.',
+      values: { enableEmailFollowUp: false, enableCompliance: false },
+    },
+  ],
+};
 
 const PROOF_GATE_LABELS: Array<{ key: keyof ProofGateState; label: string; hint: string }> = [
   {
@@ -229,6 +321,12 @@ const WORKFLOW_STAGES: Array<{ id: WorkflowStage; label: string }> = [
   { id: 'staging-provision-requested', label: 'Staging' },
 ];
 
+const STATUS_TERMINAL: ReadonlySet<ProvisionRequestRecord['status']> = new Set([
+  'succeeded',
+  'failed',
+  'withdrawn',
+]);
+
 export function initializeCapabilityFormValues(
   concept: Pick<CapabilityConcept, 'parameters'> | null,
 ): Record<string, string | number | boolean> {
@@ -262,6 +360,7 @@ export function initializeCapabilityFormValues(
 export function CapabilitiesTab() {
   const [catalog, setCatalog] = useState<CapabilityCatalogResponse | null>(null);
   const [selectedConceptId, setSelectedConceptId] = useState<string | null>(null);
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string | number | boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -281,6 +380,7 @@ export function CapabilitiesTab() {
   const [provisionResponse, setProvisionResponse] = useState<ProvisionResponse | null>(null);
   const [provisionConfirmOpen, setProvisionConfirmOpen] = useState(false);
   const [copied, setCopied] = useState<'json' | 'hash' | null>(null);
+  const [liveRequest, setLiveRequest] = useState<ProvisionRequestRecord | null>(null);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -300,10 +400,61 @@ export function CapabilitiesTab() {
     void loadCatalog();
   }, [loadCatalog]);
 
+  // Stage C: poll provision request status until terminal state
+  useEffect(() => {
+    const requestId = provisionResponse?.request.id;
+    if (!requestId) return;
+    if (liveRequest && STATUS_TERMINAL.has(liveRequest.status)) return;
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    async function poll() {
+      if (cancelled) return;
+      try {
+        const data = await apiFetch<{ request: ProvisionRequestRecord }>(
+          `/capabilities/provision-requests/${requestId}`,
+        );
+        if (!cancelled) {
+          setLiveRequest(data.request);
+          if (!STATUS_TERMINAL.has(data.request.status)) {
+            window.setTimeout(poll, 8000);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          window.setTimeout(poll, 15000);
+        }
+      }
+    }
+
+    void poll();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [provisionResponse?.request.id, liveRequest]);
+
   const selectedConcept = useMemo(
     () => catalog?.concepts.find((concept) => concept.id === selectedConceptId) ?? null,
     [catalog, selectedConceptId],
   );
+
+  // Stage D: collect all unique tags across concepts
+  const allTags = useMemo(() => {
+    if (!catalog) return [];
+    const tagSet = new Set<string>();
+    for (const concept of catalog.concepts) {
+      for (const tag of concept.tags) tagSet.add(tag);
+    }
+    return Array.from(tagSet).sort();
+  }, [catalog]);
+
+  const filteredConcepts = useMemo(() => {
+    if (!catalog) return [];
+    if (!activeTagFilter) return catalog.concepts;
+    return catalog.concepts.filter((c) => c.tags.includes(activeTagFilter));
+  }, [catalog, activeTagFilter]);
 
   function resetDownstreamState() {
     setResolution(null);
@@ -317,6 +468,7 @@ export function CapabilitiesTab() {
     setProvisionError(null);
     setProvisionResponse(null);
     setProvisionConfirmOpen(false);
+    setLiveRequest(null);
   }
 
   useEffect(() => {
@@ -397,6 +549,7 @@ export function CapabilitiesTab() {
     setHandoffError(null);
     setProofGates(emptyProofGateState());
     setProvisionResponse(null);
+    setLiveRequest(null);
     try {
       const response = await apiFetch<{ generatedAt: string; handoff: CapabilityScaffoldHandoff }>(
         '/capabilities/handoff',
@@ -466,6 +619,8 @@ export function CapabilitiesTab() {
     [proofGates],
   );
 
+  const conceptTemplates = selectedConceptId ? (CONCEPT_TEMPLATES[selectedConceptId] ?? []) : [];
+
   return (
     <div className="space-y-4">
       <header className="flex items-start justify-between gap-4">
@@ -502,35 +657,89 @@ export function CapabilitiesTab() {
       <WorkflowStageIndicator current={workflowStage} />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_1fr]">
-        <aside className="rounded border border-slate-800 bg-slate-900 p-3">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Concepts</h2>
-          <div className="space-y-2">
-            {catalog?.concepts.map((concept) => {
-              const isActive = concept.id === selectedConceptId;
-              return (
+        <aside className="space-y-3">
+          {/* Stage D: tag filter rail */}
+          {allTags.length > 0 && (
+            <div className="rounded border border-slate-800 bg-slate-900 p-3">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Filter by tag
+              </h2>
+              <div className="flex flex-wrap gap-1.5">
                 <button
-                  key={concept.id}
                   type="button"
-                  onClick={() => setSelectedConceptId(concept.id)}
-                  className={`w-full rounded border px-3 py-2 text-left transition-colors ${
-                    isActive
-                      ? 'border-blue-500/60 bg-blue-950/30 text-white'
-                      : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
+                  onClick={() => setActiveTagFilter(null)}
+                  className={`rounded px-2 py-0.5 text-xs transition-colors ${
+                    activeTagFilter === null
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{concept.displayName}</span>
-                    <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[11px] uppercase tracking-wide text-slate-400">
-                      {concept.maturity}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-400">{concept.summary}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wide text-amber-300/80">
-                    {concept.approvalTier} · {concept.id}
-                  </p>
+                  All
                 </button>
-              );
-            })}
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
+                    className={`rounded px-2 py-0.5 text-xs transition-colors ${
+                      activeTagFilter === tag
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded border border-slate-800 bg-slate-900 p-3">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Concepts {activeTagFilter ? `· ${activeTagFilter}` : ''}
+            </h2>
+            <div className="space-y-2">
+              {filteredConcepts.map((concept) => {
+                const isActive = concept.id === selectedConceptId;
+                return (
+                  <button
+                    key={concept.id}
+                    type="button"
+                    onClick={() => setSelectedConceptId(concept.id)}
+                    className={`w-full rounded border px-3 py-2 text-left transition-colors ${
+                      isActive
+                        ? 'border-blue-500/60 bg-blue-950/30 text-white'
+                        : 'border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">{concept.displayName}</span>
+                      {/* Stage D: maturity + recipe version badge */}
+                      <div className="flex items-center gap-1">
+                        <MaturityBadge maturity={concept.maturity} />
+                      </div>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">{concept.summary}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span className="text-[11px] uppercase tracking-wide text-amber-300/80">
+                        {concept.approvalTier}
+                      </span>
+                      {concept.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded bg-slate-800/80 px-1.5 py-0.5 text-[10px] text-slate-500"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+              {filteredConcepts.length === 0 && (
+                <p className="text-xs text-slate-500">No concepts match the active filter.</p>
+              )}
+            </div>
           </div>
         </aside>
 
@@ -545,6 +754,7 @@ export function CapabilitiesTab() {
                   <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
                     {selectedConcept.approvalTier}
                   </span>
+                  <MaturityBadge maturity={selectedConcept.maturity} />
                   <span className="font-mono text-xs text-slate-500">{selectedConcept.id}</span>
                 </div>
                 <p className="text-sm text-slate-400">{selectedConcept.summary}</p>
@@ -556,6 +766,16 @@ export function CapabilitiesTab() {
                   ))}
                 </div>
               </div>
+
+              {/* Stage D: guided composition templates */}
+              {conceptTemplates.length > 0 && (
+                <GuidedTemplateSelector
+                  templates={conceptTemplates}
+                  onApply={(values) =>
+                    setFormValues((current) => ({ ...current, ...values }))
+                  }
+                />
+              )}
 
               <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="space-y-4">
@@ -638,6 +858,14 @@ export function CapabilitiesTab() {
                   onRequestProvision={() => void requestStagingProvision()}
                 />
               )}
+
+              {/* Stage C: deployment evidence panel — visible once provision is requested */}
+              {provisionResponse && (
+                <DeploymentEvidencePanel
+                  provisionResponse={provisionResponse}
+                  liveRequest={liveRequest}
+                />
+              )}
             </>
           )}
         </section>
@@ -655,6 +883,62 @@ function StagingFirstBadge() {
     <span className="rounded-full border border-amber-500/40 bg-amber-950/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-200">
       Staging-first only
     </span>
+  );
+}
+
+/** Stage D: maturity badge with color-coded tier. */
+function MaturityBadge({ maturity }: { maturity: string }) {
+  const colorClass =
+    maturity === 'stable'
+      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+      : maturity === 'beta'
+        ? 'bg-blue-950/60 text-blue-300 border-blue-800/60'
+        : 'bg-amber-950/60 text-amber-300 border-amber-800/60';
+  return (
+    <span className={`rounded border px-1.5 py-0.5 text-[11px] uppercase tracking-wide ${colorClass}`}>
+      {maturity}
+    </span>
+  );
+}
+
+/** Stage D: guided composition template selector. */
+function GuidedTemplateSelector({
+  templates,
+  onApply,
+}: {
+  templates: ConceptTemplate[];
+  onApply: (values: Record<string, string | number | boolean>) => void;
+}) {
+  const [applied, setApplied] = useState<string | null>(null);
+
+  function apply(template: ConceptTemplate) {
+    onApply(template.values);
+    setApplied(template.id);
+    window.setTimeout(() => setApplied(null), 1500);
+  }
+
+  return (
+    <div className="rounded border border-slate-700/60 bg-slate-950/60 p-3">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        Guided Templates
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {templates.map((template) => (
+          <button
+            key={template.id}
+            type="button"
+            title={template.hint}
+            onClick={() => apply(template)}
+            className="rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-left text-xs text-slate-300 transition-colors hover:border-blue-600/60 hover:bg-blue-950/30 hover:text-white"
+          >
+            {applied === template.id ? '✓ Applied' : template.label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1.5 text-[11px] text-slate-600">
+        Templates pre-fill parameters for common scenarios. Adjust as needed before resolving.
+      </p>
+    </div>
   );
 }
 
@@ -1083,6 +1367,118 @@ function ProofGatePanel({
             <dt className="text-emerald-300/70">Next step</dt>
             <dd className="font-mono">{provisionResponse.nextStep.action}</dd>
           </dl>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Stage C: deployment evidence panel. Polls /capabilities/provision-requests/:id. */
+function DeploymentEvidencePanel({
+  provisionResponse,
+  liveRequest,
+}: {
+  provisionResponse: ProvisionResponse;
+  liveRequest: ProvisionRequestRecord | null;
+}) {
+  const status = liveRequest?.status ?? provisionResponse.request.status;
+  const notes = liveRequest?.notes ?? null;
+  const isTerminal = STATUS_TERMINAL.has(status as ProvisionRequestRecord['status']);
+
+  const statusColor =
+    status === 'succeeded'
+      ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-100'
+      : status === 'failed'
+        ? 'border-red-700/60 bg-red-950/30 text-red-100'
+        : status === 'withdrawn'
+          ? 'border-slate-700 bg-slate-950/50 text-slate-400'
+          : 'border-blue-700/60 bg-blue-950/30 text-blue-100';
+
+  const statusDot =
+    status === 'succeeded'
+      ? '✓'
+      : status === 'failed'
+        ? '✗'
+        : status === 'withdrawn'
+          ? '—'
+          : '…';
+
+  return (
+    <div className={`rounded border p-4 ${statusColor}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Deployment Evidence
+          </h3>
+          <p className="mt-1 text-xs opacity-70">
+            {isTerminal
+              ? 'Provision lifecycle complete.'
+              : 'Polling for provision request status updates…'}
+          </p>
+        </div>
+        <span className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold uppercase tracking-wide bg-black/20">
+          {statusDot} {status}
+        </span>
+      </div>
+
+      <dl className="mt-4 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[max-content_1fr]">
+        <dt className="opacity-60">Request ID</dt>
+        <dd className="font-mono">{provisionResponse.request.id}</dd>
+        <dt className="opacity-60">Handoff</dt>
+        <dd className="font-mono">{provisionResponse.handoff.conceptId} / {provisionResponse.handoff.recipeId}</dd>
+        <dt className="opacity-60">Requested at</dt>
+        <dd>{new Date(provisionResponse.request.requestedAt).toLocaleString()}</dd>
+      </dl>
+
+      {/* Provision lifecycle timeline */}
+      <div className="mt-4">
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide opacity-60">
+          Lifecycle
+        </h4>
+        <ol className="flex flex-wrap gap-2 text-xs">
+          {(['requested', 'acknowledged', 'dispatched', 'succeeded'] as const).map((step) => {
+            const order = ['requested', 'acknowledged', 'dispatched', 'succeeded', 'failed', 'withdrawn'];
+            const currentIdx = order.indexOf(status);
+            const stepIdx = order.indexOf(step);
+            const done = stepIdx <= currentIdx && status !== 'failed' && status !== 'withdrawn';
+            const active = step === status;
+            return (
+              <li key={step} className="flex items-center gap-1.5">
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full border text-[9px] font-bold ${
+                    done
+                      ? 'border-emerald-500/60 bg-emerald-950/80 text-emerald-200'
+                      : active
+                        ? 'border-blue-400/70 bg-blue-950/80 text-blue-200'
+                        : 'border-slate-700 bg-slate-950 text-slate-600'
+                  }`}
+                >
+                  {done ? '✓' : stepIdx + 1}
+                </span>
+                <span className={done || active ? 'opacity-100' : 'opacity-40'}>{step}</span>
+                {step !== 'succeeded' && <span className="opacity-30">→</span>}
+              </li>
+            );
+          })}
+        </ol>
+        {status === 'failed' && (
+          <p className="mt-2 rounded border border-red-800/60 bg-red-950/30 px-2 py-1 text-xs text-red-200">
+            Provision failed. Check the GitHub Actions run log for the scaffold error.
+          </p>
+        )}
+      </div>
+
+      {notes && (
+        <div className="mt-3 rounded border border-slate-700/50 bg-black/20 p-2">
+          <span className="text-xs opacity-60">Notes: </span>
+          <span className="text-xs">{notes}</span>
+        </div>
+      )}
+
+      {status === 'succeeded' && (
+        <div className="mt-3 rounded border border-emerald-700/40 bg-emerald-950/20 p-2 text-xs">
+          Scaffold artifact uploaded to GitHub Actions. Retrieve it from the workflow run to inspect
+          the generated app structure before promoting to a branch.
         </div>
       )}
     </div>

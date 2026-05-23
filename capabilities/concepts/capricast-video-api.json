@@ -1,0 +1,65 @@
+{
+  "id": "capricast-video-api",
+  "displayName": "Video Publishing API (Capricast)",
+  "summary": "Video publishing and watch API with Cloudflare Stream ingest, R2 storage, LLM-enriched metadata, and structured JSON-LD.",
+  "status": "approved",
+  "maturity": "stable",
+  "tags": ["video", "media", "llm", "api"],
+  "menuVisible": true,
+  "approvalTier": "golden",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Branded custom domain for the deployed worker.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "api.capricast.com"
+    },
+    {
+      "id": "cfAccountId",
+      "type": "string",
+      "description": "Cloudflare account ID for Stream and R2 operations.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "abc123def456"
+    },
+    {
+      "id": "streamStorage",
+      "type": "string",
+      "description": "Primary video storage strategy.",
+      "required": false,
+      "enum": ["cloudflare-stream", "r2-only"],
+      "default": "cloudflare-stream",
+      "formatHint": null
+    },
+    {
+      "id": "enableAnalytics",
+      "type": "boolean",
+      "description": "Emit watch events to the Factory analytics pipeline.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": null,
+  "recipes": [
+    {
+      "id": "capricast-video-api",
+      "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata.",
+      "maturity": "stable",
+      "primitives": ["video", "llm", "analytics"],
+      "optionalPrimitives": ["compliance"]
+    }
+  ],
+  "sourcePrimitives": ["analytics", "compliance", "llm", "video"],
+  "qualification": {
+    "menuVisible": true,
+    "approvalTier": "golden",
+    "requiredCapabilities": ["custom-domain", "neon-database", "cloudflare-stream"],
+    "disallowedEnvironments": ["local"]
+  }
+}
