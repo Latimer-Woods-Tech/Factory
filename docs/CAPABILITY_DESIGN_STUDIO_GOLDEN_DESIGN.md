@@ -205,13 +205,21 @@ Add:
 2. explicit confirmation UX
 3. audit record for design-to-handoff transition
 
-### Stage C — Staging Provision Control
+### Stage C — Staging Provision Control ✅ Complete (PR #910, 2026-05-23)
 
-Add:
+Delivered:
 
-1. staging provision request
-2. proof-gate checklist panel
-3. surface for deployment evidence and smoke outcomes
+1. `POST /capabilities/provision-staging` — inserts `capability_provision_requests` row with proof-gate validation; returns 201
+2. proof-gate checklist panel in the UI (five gates: `reviewedPlan`, `reviewedEnvContract`, `reviewedSmokeChecks`, `acknowledgedStagingFirst`, `acknowledgedCustomDomain`)
+3. `GET /capabilities/handoffs` + `GET /capabilities/provision-requests` lineage endpoints
+4. `POST /capabilities/provision-requests/:id/transition` lifecycle state machine
+5. `.github/workflows/dispatch-capability-provision.yml` — operator-triggered `workflow_dispatch` that fetches the handoff, transitions the request to `dispatched`, runs `scaffold.mjs`, and uploads the scaffolded tree as a GitHub Actions artifact
+
+**dispatch-capability-provision.yml is the Stage C → Stage D bridge.** It is intentionally manual. An operator confirms the proof gates in Admin Studio, triggering the `requested` row; then manually invokes this workflow with the `provision_request_id` and `handoff_id`. The scaffold artifact is uploaded for review before any deploy step runs. Stage D will replace the manual `workflow_dispatch` invocation with a scheduled poller.
+
+Required secrets (set via `wrangler secret put` or GitHub Secrets):
+- `STUDIO_API_BASE` — e.g. `https://admin-staging.latwoodtech.work`
+- `STUDIO_DISPATCH_TOKEN` — admin-tier JWT (short-lived, rotated)
 
 ### Stage D — Constrained Visual Authoring
 
