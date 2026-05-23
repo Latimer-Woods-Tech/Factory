@@ -30,7 +30,7 @@
  *   --app              Kebab-case app name (also used as GitHub repo name under Latimer-Woods-Tech/)
  *   --worker-name      Cloudflare Worker name in wrangler.jsonc (defaults to --app)
  *   --db               "new" to create a fresh Neon project, or "shared:<project-id>" to use THE_FACTORY
- *   --domain           Custom domain hostname (e.g. api.myapp.com) or "none"
+ *   --domain           Custom domain hostname (default: {app}.latwoodtech.work). Pass "none" to skip.
  *   --rate-limiter-id  Integer namespace ID for AUTH_RATE_LIMITER (prod). The next 3 IDs are auto-computed.
  *   --extra-secrets    Comma-separated list of extra Wrangler secret names beyond the standard set
  *   --create-repo      Create the GitHub repo (default: skip if it already exists)
@@ -72,7 +72,7 @@ function parseArgs() {
 
   const workerName = get('--worker-name', app);
   const db = get('--db', 'new');
-  const domain = get('--domain', 'none');
+  const domain = get('--domain', `${app}.latwoodtech.work`);
   const rateLimiterId = parseInt(get('--rate-limiter-id', '0'), 10);
   const extraSecrets = (get('--extra-secrets', '') || '').split(',').filter(Boolean);
   const createRepo = has('--create-repo');
