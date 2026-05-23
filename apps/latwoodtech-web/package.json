@@ -1,0 +1,11 @@
+{
+  "name": "latwoodtech-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static company landing page for latwoodtech.com",
+  "scripts": {
+    "build:frontend": "node ./build.js"
+  },
+  "license": "UNLICENSED"
+}
