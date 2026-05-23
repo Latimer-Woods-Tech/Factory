@@ -234,19 +234,20 @@ The Stage C proof gate is closed. Stage D is approved:
 5. staging provision evidence is visible in Studio ✅ (Deployment Evidence Panel)
 6. route and UI regressions exist for the design surface ✅
 
-Delivered in Stage D (feat/studio-stage-d):
+Delivered in Stage D (feat/studio-stage-d, commits df0ee836 + 884f1056):
 
 1. **Tag-based concept filtering** — filter rail above the concept list lets operators narrow by tag (`telephony`, `llm`, `video`, etc.) without leaving the studio
-2. **Guided composition templates** — each concept ships pre-configured parameter sets for common scenarios (e.g. "CRM Segment — standard", "Full stack — ACS + email") that operators can apply in one click before resolving
+2. **Guided composition templates** — each concept ships pre-configured parameter sets in the registry JSON; templates pass through `compile.mjs` into the catalog; UI reads from catalog, removing the hardcoded `CONCEPT_TEMPLATES` constant
 3. **Maturity badges** — color-coded tier badges (`stable` green, `beta` blue, `experimental` amber) on every concept card and in the detail header for at-a-glance upgrade posture
-4. **Expanded concept registry** — three new production concepts covering the actual portfolio: `prime-self-api` (Human Design API), `capricast-video-api` (video publishing), `cypher-healing-api` (healing voice agent), with three new recipes and three new primitives (`auth`, `stripe`, `video`)
-5. **Deployment Evidence Panel** — closes Stage C proof gate; auto-polls and renders lifecycle timeline, status badge, and scaffold notes
+4. **Recipe version badges** — `compile.mjs` cross-references recipe files to inject `version` into concept recipe summaries; concept list cards and detail header show `vX.Y.Z`
+5. **Expanded concept registry** — three new production concepts covering the actual portfolio: `prime-self-api` (Human Design API), `capricast-video-api` (video publishing), `cypher-healing-api` (healing voice agent), with three new recipes and three new primitives (`auth`, `stripe`, `video`)
+6. **Deployment Evidence Panel** — closes Stage C proof gate; auto-polls and renders lifecycle timeline, status badge, and scaffold notes
+7. **Concept lineage history panel** — collapsible `ConceptHistoryPanel` fetches `GET /capabilities/handoffs?conceptId=X&limit=5` on expand and renders past handoffs with recipe id and creation date
+8. **Auto-dispatch scheduled poller** — `.github/workflows/auto-dispatch-provision.yml` runs every 15 minutes, fetches pending provision rows, resolves concept id via `/capabilities/handoffs/:id`, and calls `gh workflow run dispatch-capability-provision.yml` — replaces the manual `workflow_dispatch` step
 
 Remaining Stage D work (no council approval needed — expansion unlocked):
 
-1. scheduled poller replacing manual `workflow_dispatch` for auto-dispatch of `requested` provision rows
-2. lineage history tab per concept showing past handoffs and provision outcomes
-3. concept upgrade lifecycle signal when a recipe version advances
+1. concept upgrade lifecycle signal when a recipe version advances
 
 ## Non-Goals
 
