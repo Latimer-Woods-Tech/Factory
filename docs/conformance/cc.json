@@ -2,14 +2,14 @@
   "repo_key": "CC",
   "repo_name": "capricast",
   "repo_path": "Latimer-Woods-Tech/capricast",
-  "timestamp": "2026-05-18T08:55:45.281193+00:00",
+  "timestamp": "2026-05-23T07:46:05.874141+00:00",
   "cohesion": 37,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 40,
+      "score": 20,
       "checks": [
         {
           "name": "wrangler.jsonc present",
@@ -28,7 +28,7 @@
         },
         {
           "name": "No node:crypto imports",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -65,7 +65,7 @@
           "detail": ""
         },
         {
-          "name": "Typed Env interface",
+          "name": "Typed Env bindings",
           "passed": false,
           "detail": ""
         }
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 20,
+      "score": 40,
       "checks": [
         {
           "name": "Sentry import",
@@ -122,7 +122,7 @@
         },
         {
           "name": "Sourcemap upload step",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -279,7 +279,7 @@
           "detail": ""
         },
         {
-          "name": "DSR export endpoint hint",
+          "name": "DSR endpoint hints (export + delete)",
           "passed": false,
           "detail": ""
         }

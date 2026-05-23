@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-18T08:56:06.195821+00:00",
+  "generated": "2026-05-23T07:46:57.947650+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,8 +7,8 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-05-18T08:55:38.188752+00:00",
-      "cohesion": 41,
+      "timestamp": "2026-05-23T07:45:52.005548+00:00",
+      "cohesion": 50,
       "dimensions": [
         {
           "key": "stack",
@@ -70,7 +70,7 @@
               "detail": ""
             },
             {
-              "name": "Typed Env interface",
+              "name": "Typed Env bindings",
               "passed": false,
               "detail": ""
             }
@@ -80,11 +80,11 @@
           "key": "tests",
           "title": "Tests",
           "weight": 15,
-          "score": 60,
+          "score": 100,
           "checks": [
             {
               "name": "vitest.config present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -104,7 +104,7 @@
             },
             {
               "name": "Coverage thresholds set",
-              "passed": false,
+              "passed": true,
               "detail": ""
             }
           ]
@@ -113,31 +113,31 @@
           "key": "observability",
           "title": "Observability",
           "weight": 10,
-          "score": 60,
+          "score": 40,
           "checks": [
             {
               "name": "Sentry import",
-              "passed": true,
+              "passed": false,
               "detail": ""
             },
             {
               "name": "@lwt/monitoring consumed",
-              "passed": true,
+              "passed": false,
               "detail": ""
             },
             {
               "name": "Sourcemap upload step",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "SLO doc present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "Structured log fields",
-              "passed": true,
+              "passed": false,
               "detail": ""
             }
           ]
@@ -146,7 +146,7 @@
           "key": "security",
           "title": "Security",
           "weight": 15,
-          "score": 60,
+          "score": 80,
           "checks": [
             {
               "name": "CodeQL workflow present",
@@ -155,7 +155,7 @@
             },
             {
               "name": "npm audit step in CI",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -248,11 +248,11 @@
           "key": "performance",
           "title": "Performance",
           "weight": 10,
-          "score": 33,
+          "score": 67,
           "checks": [
             {
               "name": "p95 budgets declared",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -271,7 +271,7 @@
           "key": "privacy",
           "title": "Privacy",
           "weight": 5,
-          "score": 33,
+          "score": 0,
           "checks": [
             {
               "name": "PII_INVENTORY.md present",
@@ -284,8 +284,8 @@
               "detail": ""
             },
             {
-              "name": "DSR export endpoint hint",
-              "passed": true,
+              "name": "DSR endpoint hints (export + delete)",
+              "passed": false,
               "detail": ""
             }
           ]
@@ -297,14 +297,14 @@
       "repo_key": "CC",
       "repo_name": "capricast",
       "repo_path": "Latimer-Woods-Tech/capricast",
-      "timestamp": "2026-05-18T08:55:45.281193+00:00",
+      "timestamp": "2026-05-23T07:46:05.874141+00:00",
       "cohesion": 37,
       "dimensions": [
         {
           "key": "stack",
           "title": "Stack",
           "weight": 10,
-          "score": 40,
+          "score": 20,
           "checks": [
             {
               "name": "wrangler.jsonc present",
@@ -323,7 +323,7 @@
             },
             {
               "name": "No node:crypto imports",
-              "passed": true,
+              "passed": false,
               "detail": ""
             },
             {
@@ -360,7 +360,7 @@
               "detail": ""
             },
             {
-              "name": "Typed Env interface",
+              "name": "Typed Env bindings",
               "passed": false,
               "detail": ""
             }
@@ -403,7 +403,7 @@
           "key": "observability",
           "title": "Observability",
           "weight": 10,
-          "score": 20,
+          "score": 40,
           "checks": [
             {
               "name": "Sentry import",
@@ -417,7 +417,7 @@
             },
             {
               "name": "Sourcemap upload step",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -574,7 +574,7 @@
               "detail": ""
             },
             {
-              "name": "DSR export endpoint hint",
+              "name": "DSR endpoint hints (export + delete)",
               "passed": false,
               "detail": ""
             }
@@ -587,8 +587,8 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-05-18T08:55:51.687661+00:00",
-      "cohesion": 55,
+      "timestamp": "2026-05-23T07:46:27.476674+00:00",
+      "cohesion": 57,
       "dimensions": [
         {
           "key": "stack",
@@ -650,7 +650,7 @@
               "detail": ""
             },
             {
-              "name": "Typed Env interface",
+              "name": "Typed Env bindings",
               "passed": false,
               "detail": ""
             }
@@ -805,7 +805,7 @@
           "key": "release",
           "title": "Release",
           "weight": 5,
-          "score": 33,
+          "score": 67,
           "checks": [
             {
               "name": "CHANGELOG.md present",
@@ -814,7 +814,7 @@
             },
             {
               "name": "Semver version (n.n.n)",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -864,7 +864,7 @@
               "detail": ""
             },
             {
-              "name": "DSR export endpoint hint",
+              "name": "DSR endpoint hints (export + delete)",
               "passed": false,
               "detail": ""
             }
@@ -877,8 +877,8 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-05-18T08:55:59.054805+00:00",
-      "cohesion": 25,
+      "timestamp": "2026-05-23T07:46:43.695096+00:00",
+      "cohesion": 28,
       "dimensions": [
         {
           "key": "stack",
@@ -940,7 +940,7 @@
               "detail": ""
             },
             {
-              "name": "Typed Env interface",
+              "name": "Typed Env bindings",
               "passed": false,
               "detail": ""
             }
@@ -950,7 +950,7 @@
           "key": "tests",
           "title": "Tests",
           "weight": 15,
-          "score": 40,
+          "score": 60,
           "checks": [
             {
               "name": "vitest.config present",
@@ -974,7 +974,7 @@
             },
             {
               "name": "Coverage thresholds set",
-              "passed": false,
+              "passed": true,
               "detail": ""
             }
           ]
@@ -1154,7 +1154,7 @@
               "detail": ""
             },
             {
-              "name": "DSR export endpoint hint",
+              "name": "DSR endpoint hints (export + delete)",
               "passed": false,
               "detail": ""
             }
@@ -1167,7 +1167,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-05-18T08:56:06.195112+00:00",
+      "timestamp": "2026-05-23T07:46:57.946052+00:00",
       "cohesion": 52,
       "dimensions": [
         {
@@ -1230,7 +1230,7 @@
               "detail": ""
             },
             {
-              "name": "Typed Env interface",
+              "name": "Typed Env bindings",
               "passed": false,
               "detail": ""
             }
@@ -1444,7 +1444,7 @@
               "detail": ""
             },
             {
-              "name": "DSR export endpoint hint",
+              "name": "DSR endpoint hints (export + delete)",
               "passed": false,
               "detail": ""
             }
