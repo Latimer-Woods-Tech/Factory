@@ -127,3 +127,12 @@ jobs:
 
       - name: Enforce JSDoc coverage ≥90% on exported symbols (FRH-DOC-001)
         run: node scripts/check-jsdoc-coverage.mjs
+
+      - name: Validate capability registry (FRH-CAP-001)
+        run: node scripts/capabilities/validate.mjs
+
+      - name: Enforce capability registry compile-determinism (FRH-CAP-002)
+        run: |
+          node scripts/capabilities/compile.mjs
+          git diff --exit-code -- capabilities/dist apps/admin-studio/src/lib/capability-data.generated.ts \
+            || (echo "::error::Capability registry artifacts are out of sync — run 'node scripts/capabilities/compile.mjs' locally and commit the result." && exit 1)

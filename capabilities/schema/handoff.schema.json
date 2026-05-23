@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "handoff.schema.json",
+  "title": "Capability Scaffold Handoff Package",
+  "description": "Deterministic, content-addressable artifact handed off from the design studio to scaffold and provision flows.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "conceptId",
+    "recipeId",
+    "parameters",
+    "plan",
+    "preview",
+    "nextAction"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "scaffold-handoff" },
+    "conceptId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "recipeId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean", "null"]
+      }
+    },
+    "plan": { "$ref": "plan.schema.json" },
+    "preview": { "type": "string" },
+    "nextAction": {
+      "type": "object",
+      "required": ["action", "conceptId", "recipeId"],
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "generate-scaffold-handoff",
+            "request-staging-provision"
+          ]
+        },
+        "conceptId": { "type": "string" },
+        "recipeId": { "type": "string" }
+      }
+    }
+  }
+}

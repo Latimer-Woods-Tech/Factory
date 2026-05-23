@@ -1,0 +1,462 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "capability-catalog",
+  "generatedAt": "2026-05-23T19:03:18.000Z",
+  "summary": {
+    "conceptCount": 2,
+    "primitiveCount": 6,
+    "recipeCount": 3,
+    "ruleFileCount": 1
+  },
+  "concepts": [
+    {
+      "approvalTier": "golden",
+      "displayName": "Outbound Dialer Campaign",
+      "id": "outbound-dialer-campaign",
+      "maturity": "beta",
+      "menuVisible": true,
+      "parameters": [
+        {
+          "default": null,
+          "description": "Custom domain for the deployed worker.",
+          "enum": [],
+          "formatHint": "dialer.example.com",
+          "id": "workerDomain",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": "crm-segment",
+          "description": "Audience source for the campaign.",
+          "enum": [
+            "crm-segment",
+            "csv-import"
+          ],
+          "formatHint": null,
+          "id": "campaignSource",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Enable synthesized voice prompts.",
+          "enum": [],
+          "formatHint": null,
+          "id": "enableVoiceSynthesis",
+          "required": false,
+          "type": "boolean"
+        }
+      ],
+      "qualification": {
+        "approvalTier": "golden",
+        "disallowedEnvironments": [
+          "local"
+        ],
+        "menuVisible": true,
+        "requiredCapabilities": [
+          "custom-domain"
+        ]
+      },
+      "recipeSelection": {
+        "defaultRecipeId": "outbound-dialer",
+        "rules": [
+          {
+            "id": "csv-import-uses-importer",
+            "matchAll": [
+              {
+                "equals": "csv-import",
+                "parameter": "campaignSource"
+              }
+            ],
+            "recipeId": "outbound-dialer-importer"
+          }
+        ]
+      },
+      "recipes": [
+        {
+          "id": "outbound-dialer",
+          "maturity": "beta",
+          "optionalPrimitives": [
+            "compliance"
+          ],
+          "primitives": [
+            "telephony",
+            "crm",
+            "analytics"
+          ],
+          "summary": "CRM-segment driven outbound dialer workflow."
+        },
+        {
+          "id": "outbound-dialer-importer",
+          "maturity": "beta",
+          "optionalPrimitives": [
+            "compliance"
+          ],
+          "primitives": [
+            "telephony",
+            "crm",
+            "analytics"
+          ],
+          "summary": "Outbound dialer workflow with CSV import landing and ingestion flow."
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "compliance",
+        "crm",
+        "telephony"
+      ],
+      "status": "approved",
+      "summary": "Governed outbound dialer setup with routing for CRM segment or CSV import audiences.",
+      "tags": [
+        "telephony",
+        "crm",
+        "campaigns"
+      ]
+    },
+    {
+      "approvalTier": "experimental",
+      "displayName": "Voice Intake Bot",
+      "id": "voice-intake-bot",
+      "maturity": "experimental",
+      "menuVisible": true,
+      "parameters": [
+        {
+          "default": null,
+          "description": "Custom domain for the deployed worker.",
+          "enum": [],
+          "formatHint": "intake.example.com",
+          "id": "workerDomain",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": null,
+          "description": "Telnyx inbound number to route calls from.",
+          "enum": [],
+          "formatHint": "+15551234567",
+          "id": "intakePhoneNumber",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": false,
+          "description": "Send email confirmations after each intake.",
+          "enum": [],
+          "formatHint": null,
+          "id": "emailConfirmations",
+          "required": false,
+          "type": "boolean"
+        }
+      ],
+      "qualification": {
+        "approvalTier": "experimental",
+        "disallowedEnvironments": [
+          "local"
+        ],
+        "menuVisible": true,
+        "requiredCapabilities": [
+          "custom-domain",
+          "telnyx-inbound-number"
+        ]
+      },
+      "recipeSelection": null,
+      "recipes": [
+        {
+          "id": "voice-intake-agent",
+          "maturity": "experimental",
+          "optionalPrimitives": [
+            "compliance",
+            "email"
+          ],
+          "primitives": [
+            "telephony",
+            "crm",
+            "analytics",
+            "llm"
+          ],
+          "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations."
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "compliance",
+        "crm",
+        "email",
+        "llm",
+        "telephony"
+      ],
+      "status": "approved",
+      "summary": "Inbound voice triage bot with optional email confirmations and CRM routing.",
+      "tags": [
+        "telephony",
+        "voice",
+        "intake",
+        "llm"
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
+        "required": [
+          "CRM_SEGMENTS"
+        ]
+      },
+      "constraints": [
+        "Use a branded custom domain.",
+        "Verify staging smoke checks before production."
+      ],
+      "envContract": {
+        "secrets": [
+          "CRM_API_KEY"
+        ],
+        "vars": [
+          "WORKER_DOMAIN"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/campaigns",
+        "/api/leads"
+      ],
+      "goal": "Launch governed outbound calling for CRM-selected contacts.",
+      "id": "outbound-dialer",
+      "maturity": "beta",
+      "optionalPrimitives": [
+        "compliance"
+      ],
+      "primitives": [
+        "telephony",
+        "crm",
+        "analytics"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        }
+      ],
+      "summary": "CRM-segment driven outbound dialer workflow.",
+      "version": "1.0.0"
+    },
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
+        "required": [
+          "CRM_SEGMENTS",
+          "IMPORT_BUCKET"
+        ]
+      },
+      "constraints": [
+        "Use a branded custom domain.",
+        "Verify import smoke checks before production."
+      ],
+      "envContract": {
+        "secrets": [
+          "CRM_API_KEY",
+          "IMPORT_BUCKET_TOKEN"
+        ],
+        "vars": [
+          "WORKER_DOMAIN"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/campaigns",
+        "/api/imports"
+      ],
+      "goal": "Launch governed outbound calling for imported contact lists.",
+      "id": "outbound-dialer-importer",
+      "maturity": "beta",
+      "optionalPrimitives": [
+        "compliance"
+      ],
+      "primitives": [
+        "telephony",
+        "crm",
+        "analytics"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        },
+        {
+          "expectedStatus": 200,
+          "path": "/api/imports"
+        }
+      ],
+      "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+      "version": "1.0.0"
+    },
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
+        "required": [
+          "INTAKE_QUEUE"
+        ]
+      },
+      "constraints": [
+        "Use a branded custom domain.",
+        "Verify intake smoke checks before production.",
+        "Voice transcripts must be redacted before storage."
+      ],
+      "envContract": {
+        "secrets": [
+          "TELNYX_INBOUND_TOKEN"
+        ],
+        "vars": [
+          "WORKER_DOMAIN",
+          "INTAKE_PHONE_NUMBER"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/calls",
+        "/api/intake"
+      ],
+      "goal": "Triage inbound voice calls, capture structured intent, and route to CRM segments.",
+      "id": "voice-intake-agent",
+      "maturity": "experimental",
+      "optionalPrimitives": [
+        "compliance",
+        "email"
+      ],
+      "primitives": [
+        "telephony",
+        "crm",
+        "analytics",
+        "llm"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        },
+        {
+          "expectedStatus": 200,
+          "path": "/api/intake"
+        }
+      ],
+      "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations.",
+      "version": "1.0.0"
+    }
+  ],
+  "primitives": [
+    {
+      "contracts": {
+        "policyTags": [
+          "analytics"
+        ]
+      },
+      "id": "analytics",
+      "package": "@latimer-woods-tech/analytics",
+      "requirements": {
+        "bindings": [
+          "ANALYTICS"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
+          "compliance"
+        ]
+      },
+      "id": "compliance",
+      "package": "@latimer-woods-tech/compliance",
+      "requirements": {},
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
+          "crm"
+        ]
+      },
+      "id": "crm",
+      "package": "@latimer-woods-tech/crm",
+      "requirements": {
+        "bindings": [
+          "CRM_SEGMENTS"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
+          "email"
+        ]
+      },
+      "id": "email",
+      "package": "@latimer-woods-tech/email",
+      "requirements": {
+        "secrets": [
+          "RESEND_API_KEY"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
+          "llm"
+        ]
+      },
+      "id": "llm",
+      "package": "@latimer-woods-tech/llm",
+      "requirements": {
+        "secrets": [
+          "ANTHROPIC_API_KEY"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    },
+    {
+      "contracts": {
+        "policyTags": [
+          "telephony"
+        ]
+      },
+      "id": "telephony",
+      "package": "@latimer-woods-tech/telephony",
+      "requirements": {
+        "bindings": [
+          "CALL_QUEUE"
+        ],
+        "secrets": [
+          "TELNYX_API_KEY",
+          "DEEPGRAM_API_KEY",
+          "ELEVENLABS_API_KEY"
+        ]
+      },
+      "versionRange": "^0.1.0"
+    }
+  ],
+  "ruleBundle": {
+    "rules": [
+      {
+        "id": "telephony-requires-crm",
+        "ifAllPrimitives": [
+          "telephony"
+        ],
+        "thenRequirePrimitives": [
+          "crm"
+        ]
+      }
+    ]
+  }
+}

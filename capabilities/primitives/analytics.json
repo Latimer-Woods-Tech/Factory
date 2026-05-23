@@ -1,0 +1,11 @@
+{
+  "id": "analytics",
+  "package": "@latimer-woods-tech/analytics",
+  "versionRange": "^0.1.0",
+  "requirements": {
+    "bindings": ["ANALYTICS"]
+  },
+  "contracts": {
+    "policyTags": ["analytics"]
+  }
+}
