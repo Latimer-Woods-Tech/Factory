@@ -56,6 +56,20 @@
     }
   ],
   "sourcePrimitives": ["analytics", "compliance", "llm", "video"],
+  "templates": [
+    {
+      "id": "capricast-stream",
+      "label": "Cloudflare Stream",
+      "hint": "Full Stream pipeline with adaptive bitrate delivery.",
+      "values": { "streamStorage": "cloudflare-stream", "enableAnalytics": true }
+    },
+    {
+      "id": "capricast-r2",
+      "label": "R2-only storage",
+      "hint": "Direct R2 delivery; no Stream transcoding.",
+      "values": { "streamStorage": "r2-only", "enableAnalytics": true }
+    }
+  ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "golden",

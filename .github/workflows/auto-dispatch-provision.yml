@@ -1,0 +1,129 @@
+name: Auto-dispatch capability provision
+
+# Scheduled poller that replaces the manual workflow_dispatch in
+# dispatch-capability-provision.yml (Stage D remaining work).
+#
+# Runs every 15 minutes, queries /capabilities/provision-requests?status=requested,
+# and calls `gh workflow run dispatch-capability-provision.yml` for each pending
+# row. This eliminates the manual trigger step from the Stage C flow.
+#
+# Required secrets (same as dispatch-capability-provision.yml):
+#   - STUDIO_API_BASE       — e.g. https://admin-staging.latwoodtech.work
+#   - STUDIO_DISPATCH_TOKEN — admin-tier JWT (short-lived, rotated)
+#
+# The workflow derives app_name from the provision request's conceptId by
+# stripping any trailing "-api" suffix (e.g. "prime-self-api" → "prime-self").
+#
+# See docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md — Stage D remaining work.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  poll-and-dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch pending provision requests
+        env:
+          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p .auto-dispatch
+          curl -fsSL \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            "${STUDIO_API_BASE}/capabilities/provision-requests?status=requested" \
+            | node -e "
+              const fs = require('fs');
+              let body = '';
+              process.stdin.on('data', (c) => (body += c));
+              process.stdin.on('end', () => {
+                const payload = JSON.parse(body);
+                const rows = payload.requests ?? [];
+                console.log('Pending requests: ' + rows.length);
+                fs.writeFileSync('.auto-dispatch/pending.json', JSON.stringify(rows, null, 2));
+              });
+            "
+
+      - name: Dispatch each pending request
+        env:
+          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node << 'DISPATCH_EOF'
+          const fs = require('fs');
+          const https = require('https');
+          const { execSync } = require('child_process');
+
+          const apiBase = process.env.STUDIO_API_BASE;
+          const token = process.env.STUDIO_DISPATCH_TOKEN;
+
+          function apiFetch(path) {
+            return new Promise((resolve, reject) => {
+              const url = new URL(path, apiBase);
+              const req = https.get(url.toString(), {
+                headers: { Authorization: 'Bearer ' + token },
+              }, (res) => {
+                let body = '';
+                res.on('data', (c) => (body += c));
+                res.on('end', () => {
+                  if (res.statusCode < 200 || res.statusCode >= 300) {
+                    reject(new Error('HTTP ' + res.statusCode + ' from ' + path + ': ' + body));
+                  } else {
+                    resolve(JSON.parse(body));
+                  }
+                });
+              });
+              req.on('error', reject);
+            });
+          }
+
+          async function main() {
+            const rows = JSON.parse(fs.readFileSync('.auto-dispatch/pending.json', 'utf8'));
+            if (rows.length === 0) {
+              console.log('No pending provision requests — nothing to dispatch.');
+              return;
+            }
+            for (const row of rows) {
+              const handoffId = row.handoffId;
+              const requestId = row.id;
+              if (!handoffId || !requestId) {
+                console.warn('Skipping row missing handoffId or id:', JSON.stringify(row));
+                continue;
+              }
+              let conceptId = 'unknown-concept';
+              try {
+                const payload = await apiFetch('/capabilities/handoffs/' + handoffId);
+                conceptId = payload.handoff?.conceptId ?? conceptId;
+              } catch (err) {
+                console.warn('Could not fetch handoff ' + handoffId + ':', err.message);
+              }
+              const appName = conceptId.replace(/-api$/, '');
+              const cmd = [
+                'gh workflow run dispatch-capability-provision.yml',
+                '--field provision_request_id=' + requestId,
+                '--field handoff_id=' + handoffId,
+                '--field app_name=' + appName,
+                '--field no_deploy=true',
+              ].join(' ');
+              console.log('Dispatching:', appName, '(request=' + requestId + ')');
+              execSync(cmd, { stdio: 'inherit' });
+            }
+          }
+
+          main().catch((err) => { console.error(err); process.exit(1); });
+          DISPATCH_EOF

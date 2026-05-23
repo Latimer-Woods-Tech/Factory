@@ -32,6 +32,7 @@ interface CapabilityRecipeSummary {
   maturity: string;
   primitives: string[];
   optionalPrimitives: string[];
+  version?: string | null;
 }
 
 interface CapabilityPlan {
@@ -77,6 +78,7 @@ interface CapabilityConcept {
   parameters: CapabilityParameterDefinition[];
   recipes: CapabilityRecipeSummary[];
   sourcePrimitives: string[];
+  templates?: ConceptTemplate[];
   qualification: {
     requiredCapabilities?: string[];
     disallowedEnvironments?: string[];
@@ -210,79 +212,6 @@ interface ConceptTemplate {
   values: Record<string, string | number | boolean>;
 }
 
-/** Per-concept guided templates keyed by concept id. */
-const CONCEPT_TEMPLATES: Record<string, ConceptTemplate[]> = {
-  'outbound-dialer-campaign': [
-    {
-      id: 'crm-segment-default',
-      label: 'CRM Segment — standard',
-      hint: 'Targets a CRM segment with voice synthesis enabled.',
-      values: { campaignSource: 'crm-segment', enableVoiceSynthesis: true },
-    },
-    {
-      id: 'csv-import-default',
-      label: 'CSV Import — batch',
-      hint: 'Targets a CSV-imported contact list, no voice synthesis.',
-      values: { campaignSource: 'csv-import', enableVoiceSynthesis: false },
-    },
-  ],
-  'voice-intake-bot': [
-    {
-      id: 'intake-with-email',
-      label: 'Intake + email confirmation',
-      hint: 'Triage inbound calls and send email receipts to callers.',
-      values: { emailConfirmations: true },
-    },
-    {
-      id: 'intake-silent',
-      label: 'Intake — silent (no email)',
-      hint: 'Triage only; no outbound email.',
-      values: { emailConfirmations: false },
-    },
-  ],
-  'prime-self-api': [
-    {
-      id: 'prime-self-full',
-      label: 'Full stack — ACS + email',
-      hint: 'Stripe ACS fulfillment enabled with email follow-up.',
-      values: { enableACSFulfillment: true, enableEmailFollowUp: true, jwtAudience: 'selfprime.net' },
-    },
-    {
-      id: 'prime-self-minimal',
-      label: 'Minimal — readings only',
-      hint: 'Readings API only; ACS and email disabled.',
-      values: { enableACSFulfillment: false, enableEmailFollowUp: false, jwtAudience: 'selfprime.net' },
-    },
-  ],
-  'capricast-video-api': [
-    {
-      id: 'capricast-stream',
-      label: 'Cloudflare Stream',
-      hint: 'Full Stream pipeline with adaptive bitrate delivery.',
-      values: { streamStorage: 'cloudflare-stream', enableAnalytics: true },
-    },
-    {
-      id: 'capricast-r2',
-      label: 'R2-only storage',
-      hint: 'Direct R2 delivery; no Stream transcoding.',
-      values: { streamStorage: 'r2-only', enableAnalytics: true },
-    },
-  ],
-  'cypher-healing-api': [
-    {
-      id: 'cypher-full',
-      label: 'Full — email + compliance',
-      hint: 'Email follow-up enabled with compliance transcript redaction.',
-      values: { enableEmailFollowUp: true, enableCompliance: true },
-    },
-    {
-      id: 'cypher-minimal',
-      label: 'Minimal — intake only',
-      hint: 'Intake triage only; no email or compliance layer.',
-      values: { enableEmailFollowUp: false, enableCompliance: false },
-    },
-  ],
-};
 
 const PROOF_GATE_LABELS: Array<{ key: keyof ProofGateState; label: string; hint: string }> = [
   {
@@ -619,7 +548,7 @@ export function CapabilitiesTab() {
     [proofGates],
   );
 
-  const conceptTemplates = selectedConceptId ? (CONCEPT_TEMPLATES[selectedConceptId] ?? []) : [];
+  const conceptTemplates = selectedConcept?.templates ?? [];
 
   return (
     <div className="space-y-4">
@@ -714,8 +643,12 @@ export function CapabilitiesTab() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium">{concept.displayName}</span>
-                      {/* Stage D: maturity + recipe version badge */}
                       <div className="flex items-center gap-1">
+                        {concept.recipes[0]?.version && (
+                          <span className="font-mono text-[10px] text-slate-500">
+                            v{concept.recipes[0].version}
+                          </span>
+                        )}
                         <MaturityBadge maturity={concept.maturity} />
                       </div>
                     </div>
@@ -755,6 +688,11 @@ export function CapabilitiesTab() {
                     {selectedConcept.approvalTier}
                   </span>
                   <MaturityBadge maturity={selectedConcept.maturity} />
+                  {selectedConcept.recipes[0]?.version && (
+                    <span className="rounded border border-slate-700 px-1.5 py-0.5 font-mono text-xs text-slate-400">
+                      recipe v{selectedConcept.recipes[0].version}
+                    </span>
+                  )}
                   <span className="font-mono text-xs text-slate-500">{selectedConcept.id}</span>
                 </div>
                 <p className="text-sm text-slate-400">{selectedConcept.summary}</p>
@@ -866,6 +804,9 @@ export function CapabilitiesTab() {
                   liveRequest={liveRequest}
                 />
               )}
+
+              {/* Stage D: lineage history — past handoffs for this concept */}
+              <ConceptHistoryPanel conceptId={selectedConcept.id} />
             </>
           )}
         </section>
@@ -1479,6 +1420,83 @@ function DeploymentEvidencePanel({
         <div className="mt-3 rounded border border-emerald-700/40 bg-emerald-950/20 p-2 text-xs">
           Scaffold artifact uploaded to GitHub Actions. Retrieve it from the workflow run to inspect
           the generated app structure before promoting to a branch.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Stage D: collapsible lineage history — shows last 5 handoffs for the selected concept. */
+function ConceptHistoryPanel({ conceptId }: { conceptId: string }) {
+  const [open, setOpen] = useState(false);
+  const [handoffs, setHandoffs] = useState<CapabilityScaffoldHandoff[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHandoffs(null);
+    setFetchError(null);
+  }, [conceptId]);
+
+  async function load() {
+    if (loading || handoffs !== null) return;
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const data = await apiFetch<{ handoffs: CapabilityScaffoldHandoff[] }>(
+        `/capabilities/handoffs?conceptId=${encodeURIComponent(conceptId)}&limit=5`,
+      );
+      setHandoffs(
+        (data.handoffs ?? []).filter((h) => h.conceptId === conceptId).slice(0, 5),
+      );
+    } catch (err) {
+      setFetchError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next) void load();
+  }
+
+  return (
+    <div className="rounded border border-slate-800 bg-slate-950/60">
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-200"
+      >
+        <span>Lineage history</span>
+        <span>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="border-t border-slate-800 px-4 py-3">
+          {loading && <p className="text-xs text-slate-500">Loading handoff history…</p>}
+          {fetchError && <p className="text-xs text-red-400">{fetchError}</p>}
+          {!loading && handoffs !== null && handoffs.length === 0 && (
+            <p className="text-xs text-slate-500">No handoffs recorded for this concept yet.</p>
+          )}
+          {!loading && handoffs && handoffs.length > 0 && (
+            <ul className="space-y-2">
+              {handoffs.map((h) => (
+                <li
+                  key={h.id ?? h.hash}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded border border-slate-800 bg-slate-900 px-3 py-2 text-xs"
+                >
+                  <div className="space-y-0.5">
+                    <div className="font-mono text-slate-300">{h.recipeId}</div>
+                    {h.id && <div className="font-mono text-[10px] text-slate-500">{h.id}</div>}
+                  </div>
+                  <div className="text-right text-slate-500">
+                    {h.createdAt ? new Date(h.createdAt).toLocaleString() : '—'}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>

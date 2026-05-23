@@ -56,6 +56,20 @@
     }
   ],
   "sourcePrimitives": ["analytics", "auth", "compliance", "email", "llm", "stripe"],
+  "templates": [
+    {
+      "id": "prime-self-full",
+      "label": "Full stack — ACS + email",
+      "hint": "Stripe ACS fulfillment enabled with email follow-up.",
+      "values": { "enableACSFulfillment": true, "enableEmailFollowUp": true, "jwtAudience": "selfprime.net" }
+    },
+    {
+      "id": "prime-self-minimal",
+      "label": "Minimal — readings only",
+      "hint": "Readings API only; ACS and email disabled.",
+      "values": { "enableACSFulfillment": false, "enableEmailFollowUp": false, "jwtAudience": "selfprime.net" }
+    }
+  ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "golden",

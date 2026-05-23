@@ -91,7 +91,8 @@ const catalog = {
             "llm",
             "analytics"
           ],
-          "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata."
+          "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -107,6 +108,26 @@ const catalog = {
         "media",
         "llm",
         "api"
+      ],
+      "templates": [
+        {
+          "hint": "Full Stream pipeline with adaptive bitrate delivery.",
+          "id": "capricast-stream",
+          "label": "Cloudflare Stream",
+          "values": {
+            "enableAnalytics": true,
+            "streamStorage": "cloudflare-stream"
+          }
+        },
+        {
+          "hint": "Direct R2 delivery; no Stream transcoding.",
+          "id": "capricast-r2",
+          "label": "R2-only storage",
+          "values": {
+            "enableAnalytics": true,
+            "streamStorage": "r2-only"
+          }
+        }
       ]
     },
     {
@@ -180,7 +201,8 @@ const catalog = {
             "crm",
             "analytics"
           ],
-          "summary": "Inbound healing voice agent with LLM-guided intake, CRM routing, and optional email follow-up."
+          "summary": "Inbound healing voice agent with LLM-guided intake, CRM routing, and optional email follow-up.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -198,6 +220,26 @@ const catalog = {
         "voice",
         "llm",
         "crm"
+      ],
+      "templates": [
+        {
+          "hint": "Email follow-up enabled with compliance transcript redaction.",
+          "id": "cypher-full",
+          "label": "Full — email + compliance",
+          "values": {
+            "enableCompliance": true,
+            "enableEmailFollowUp": true
+          }
+        },
+        {
+          "hint": "Intake triage only; no email or compliance layer.",
+          "id": "cypher-minimal",
+          "label": "Minimal — intake only",
+          "values": {
+            "enableCompliance": false,
+            "enableEmailFollowUp": false
+          }
+        }
       ]
     },
     {
@@ -275,7 +317,8 @@ const catalog = {
             "crm",
             "analytics"
           ],
-          "summary": "CRM-segment driven outbound dialer workflow."
+          "summary": "CRM-segment driven outbound dialer workflow.",
+          "version": "1.0.0"
         },
         {
           "id": "outbound-dialer-importer",
@@ -288,7 +331,8 @@ const catalog = {
             "crm",
             "analytics"
           ],
-          "summary": "Outbound dialer workflow with CSV import landing and ingestion flow."
+          "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -303,6 +347,26 @@ const catalog = {
         "telephony",
         "crm",
         "campaigns"
+      ],
+      "templates": [
+        {
+          "hint": "Targets a CRM segment with voice synthesis enabled.",
+          "id": "crm-segment-default",
+          "label": "CRM Segment — standard",
+          "values": {
+            "campaignSource": "crm-segment",
+            "enableVoiceSynthesis": true
+          }
+        },
+        {
+          "hint": "Targets a CSV-imported contact list, no voice synthesis.",
+          "id": "csv-import-default",
+          "label": "CSV Import — batch",
+          "values": {
+            "campaignSource": "csv-import",
+            "enableVoiceSynthesis": false
+          }
+        }
       ]
     },
     {
@@ -375,7 +439,8 @@ const catalog = {
             "analytics",
             "stripe"
           ],
-          "summary": "Human Design reading API with JWT auth, Stripe ACS fulfillment, and LLM synthesis."
+          "summary": "Human Design reading API with JWT auth, Stripe ACS fulfillment, and LLM synthesis.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -393,6 +458,28 @@ const catalog = {
         "auth",
         "payments",
         "llm"
+      ],
+      "templates": [
+        {
+          "hint": "Stripe ACS fulfillment enabled with email follow-up.",
+          "id": "prime-self-full",
+          "label": "Full stack — ACS + email",
+          "values": {
+            "enableACSFulfillment": true,
+            "enableEmailFollowUp": true,
+            "jwtAudience": "selfprime.net"
+          }
+        },
+        {
+          "hint": "Readings API only; ACS and email disabled.",
+          "id": "prime-self-minimal",
+          "label": "Minimal — readings only",
+          "values": {
+            "enableACSFulfillment": false,
+            "enableEmailFollowUp": false,
+            "jwtAudience": "selfprime.net"
+          }
+        }
       ]
     },
     {
@@ -456,7 +543,8 @@ const catalog = {
             "analytics",
             "llm"
           ],
-          "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations."
+          "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations.",
+          "version": "1.0.0"
         }
       ],
       "sourcePrimitives": [
@@ -474,6 +562,24 @@ const catalog = {
         "voice",
         "intake",
         "llm"
+      ],
+      "templates": [
+        {
+          "hint": "Triage inbound calls and send email receipts to callers.",
+          "id": "intake-with-email",
+          "label": "Intake + email confirmation",
+          "values": {
+            "emailConfirmations": true
+          }
+        },
+        {
+          "hint": "Triage only; no outbound email.",
+          "id": "intake-silent",
+          "label": "Intake — silent (no email)",
+          "values": {
+            "emailConfirmations": false
+          }
+        }
       ]
     }
   ],

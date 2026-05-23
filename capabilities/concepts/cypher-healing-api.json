@@ -56,6 +56,20 @@
     }
   ],
   "sourcePrimitives": ["analytics", "compliance", "crm", "email", "llm", "telephony"],
+  "templates": [
+    {
+      "id": "cypher-full",
+      "label": "Full — email + compliance",
+      "hint": "Email follow-up enabled with compliance transcript redaction.",
+      "values": { "enableEmailFollowUp": true, "enableCompliance": true }
+    },
+    {
+      "id": "cypher-minimal",
+      "label": "Minimal — intake only",
+      "hint": "Intake triage only; no email or compliance layer.",
+      "values": { "enableEmailFollowUp": false, "enableCompliance": false }
+    }
+  ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "golden",
