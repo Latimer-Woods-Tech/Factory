@@ -354,7 +354,9 @@ async function main() {
   if (DRY_RUN) {
     logAudit({ event: 'dry-run-skip-actions' });
     console.log('Dry-run mode: no tracking issues opened, no notifications sent.');
-    process.exit(1);  // still exit non-zero so CI invocation surfaces the drift
+    // Dry-run: advisory-only — violations visible in logs/summary but do not block PRs.
+    // The scheduled run (non-dry) exits 1, opens issues, and pages on-call.
+    return;
   }
 
   // Open / update one tracking issue per failed check.
