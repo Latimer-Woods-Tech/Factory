@@ -305,7 +305,7 @@ app.post('/webhook/telnyx', async (c) => {
     logger.info({ details }, 'Birth details parsed');
 
     // 2. Generate 3-sentence Human Design reading via @latimer-woods-tech/llm (Anthropic Haiku)
-    const reading = await generateReading(details, env, requestId);
+    const reading = await generateReading(details, c.env, requestId);
     logger.info({ readingLength: reading.length }, 'Human Design reading generated');
 
     // 3. Synthesize TTS audio via ElevenLabs
