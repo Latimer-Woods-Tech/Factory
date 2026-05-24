@@ -15,6 +15,7 @@ import { TimelineTab } from './tabs/TimelineTab.js';
 import { FlagsTab } from './tabs/FlagsTab.js';
 import { TrainingLibraryTab } from './tabs/TrainingLibraryTab.js';
 import { CapabilitiesTab } from './tabs/CapabilitiesTab.js';
+import { QualityTab } from './tabs/QualityTab.js';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { EnvironmentBanner } from '../components/EnvironmentBanner.js';
@@ -29,6 +30,7 @@ import {
   Clock, 
   Flag, 
   ShieldCheck,
+  BarChart2,
   Menu,
   X
 } from 'lucide-react';
@@ -44,6 +46,7 @@ const TABS = [
   { to: '/timeline',  label: 'Timeline', icon: Clock },
   { to: '/flags',     label: 'Flags', icon: Flag },
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
+  { to: '/quality',   label: 'Quality', icon: BarChart2 },
 ];
 
 // Mobile bottom nav shows first 4 tabs, rest go in "More"
@@ -111,6 +114,7 @@ export function Dashboard() {
             <Route path="/timeline" element={<TimelineTab />} />
             <Route path="/flags" element={<FlagsTab />} />
             <Route path="/audit" element={<AuditTab />} />
+            <Route path="/quality" element={<QualityTab />} />
           </Routes>
         </main>
       </div>
