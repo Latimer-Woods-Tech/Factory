@@ -6,6 +6,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(__dirname, 'src');
 const distDir = join(__dirname, 'dist');
 
+// Only customer-facing brand surfaces belong here. Internal infra hosts
+// (schedule.latwoodtech.work, monitor.latwoodtech.work, supervisor.latwoodtech.work,
+// webhooks.latwoodtech.work) are operator plumbing, not products — list them
+// in the authenticated Admin Studio, never on the public landing.
 const PUBLIC_SURFACES = [
 	{
 		name: 'Prime Self',
@@ -31,13 +35,50 @@ const PUBLIC_SURFACES = [
 		url: 'https://apunlimited.com',
 		note: 'Environment-aware operator controls',
 	},
-	{
-		name: 'Factory Schedule',
-		category: 'Render orchestration',
-		url: 'https://schedule.latwoodtech.work',
-		note: 'Video jobs, health probes, and status handoffs',
-	},
 ];
+
+// Build-time liveness probe so a dead landing page can never silently ship
+// into pulse.json. HEAD with redirect-follow; fall back to GET if the origin
+// rejects HEAD. Surfaces that don't respond < 400 within the timeout get
+// dropped from the public feed with a build-log warning.
+async function probeSurface(surface, timeoutMs = 8000) {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeoutMs);
+	const attempt = async (method) => {
+		const response = await fetch(surface.url, {
+			method,
+			redirect: 'follow',
+			signal: controller.signal,
+			headers: { 'User-Agent': 'latwoodtech-web build-probe' },
+		});
+		return response.status;
+	};
+	try {
+		let status = await attempt('HEAD');
+		if (status === 405 || status === 501) status = await attempt('GET');
+		clearTimeout(timer);
+		return { surface, alive: status < 400, status };
+	} catch (error) {
+		clearTimeout(timer);
+		return { surface, alive: false, error: error.message };
+	}
+}
+
+async function filterLiveSurfaces(surfaces) {
+	const results = await Promise.all(surfaces.map((s) => probeSurface(s)));
+	const live = [];
+	for (const result of results) {
+		if (result.alive) {
+			live.push(result.surface);
+		} else {
+			const detail = result.error ? `error=${result.error}` : `status=${result.status}`;
+			console.warn(
+				`[pulse] dropping surface ${result.surface.name} (${result.surface.url}) — ${detail}`,
+			);
+		}
+	}
+	return live;
+}
 
 const REPO_LABELS = {
 	HD: 'HumanDesign',
@@ -67,6 +108,7 @@ async function buildPulseSnapshot() {
 	const tracker = JSON.parse(await readFile(trackerPath, 'utf8'));
 	const rows = Array.isArray(tracker.rows) ? tracker.rows : [];
 	const verifiedRows = rows.filter((row) => row.status === '✅').length;
+	const liveSurfaces = await filterLiveSurfaces(PUBLIC_SURFACES);
 	const attentionRepos = unique([...(tracker.ci_red ?? []), ...(tracker.smoke_red ?? [])]);
 	const measuredRepos = Object.keys(tracker.repo_weighted ?? {}).length;
 	const repoNames = Object.fromEntries(
@@ -122,7 +164,7 @@ async function buildPulseSnapshot() {
 				{
 					id: 'public-surfaces',
 					label: 'Public surfaces',
-					value: String(PUBLIC_SURFACES.length),
+					value: String(liveSurfaces.length),
 					context: 'Branded domains carrying real product work',
 				},
 				{
@@ -159,11 +201,11 @@ async function buildPulseSnapshot() {
 				'The public surface shows proof of rigor while deeper operator controls remain inside authenticated studio surfaces.',
 				'Every visible metric is intentionally curated to communicate craft, readiness, and velocity with minimal risk surface.',
 			],
-			surfaces: PUBLIC_SURFACES,
+			surfaces: liveSurfaces,
 			vectors,
 			provenance: [
 				'docs/completion-tracker.json',
-				'Curated public-domain allowlist in build.js',
+				'Curated public-domain allowlist in build.js (filtered by build-time liveness probe)',
 			],
 		},
 	};
