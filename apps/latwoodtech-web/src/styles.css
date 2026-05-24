@@ -20,36 +20,6 @@
   --line: rgba(240, 207, 122, 0.16);
 }
 
-@keyframes reactor-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes reactor-spin-reverse {
-  from {
-    transform: rotate(360deg);
-  }
-  to {
-    transform: rotate(0deg);
-  }
-}
-
-@keyframes reactor-pulse {
-  0%,
-  100% {
-    transform: scale(0.96);
-    opacity: 0.72;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 1;
-  }
-}
-
 @keyframes hud-sweep {
   from {
     transform: translateX(-120%);
@@ -358,113 +328,16 @@ h3 {
   pointer-events: none;
 }
 
-.visual-card::after {
-  content: "";
-  position: absolute;
-  inset: auto 26px 20px auto;
-  width: 124px;
-  height: 124px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 234, 188, 0.2), transparent 68%);
-  filter: blur(4px);
+canvas[data-circuitry] {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
 }
 
-.visual-sigil {
-  position: absolute;
-  left: 22px;
-  bottom: 72px;
-  width: 118px;
-  height: 118px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 48% 38%, rgba(255, 241, 212, 0.3), rgba(255, 241, 212, 0.02) 42%, transparent 62%),
-    url("assets/latimerWoodslogovideo.png") center / 84% auto no-repeat;
-  border: 1px solid rgba(240, 207, 122, 0.16);
-  opacity: 0.72;
-  box-shadow: 0 0 0 1px rgba(240, 207, 122, 0.04) inset;
-}
-
-.reactor-core {
-  position: absolute;
-  inset: 24px 24px auto auto;
-  width: 112px;
-  height: 112px;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.reactor-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(240, 207, 122, 0.22);
-  box-shadow: 0 0 0 1px rgba(240, 207, 122, 0.04) inset;
-}
-
-.reactor-ring-outer {
-  width: 112px;
-  height: 112px;
-  border-top-color: rgba(217, 90, 67, 0.42);
-  border-right-color: rgba(73, 165, 109, 0.34);
-  animation: reactor-spin 14s linear infinite;
-}
-
-.reactor-ring-mid {
-  width: 82px;
-  height: 82px;
-  border-left-color: rgba(240, 207, 122, 0.44);
-  border-bottom-color: rgba(217, 90, 67, 0.28);
-  animation: reactor-spin-reverse 10s linear infinite;
-}
-
-.reactor-ring-inner {
-  width: 48px;
-  height: 48px;
-  border-color: rgba(240, 207, 122, 0.5);
-  animation: reactor-pulse 2.8s ease-in-out infinite;
-}
-
-.reactor-center {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #ffe8ac 0%, #d7a94b 60%, rgba(215, 169, 75, 0) 100%);
-  box-shadow: 0 0 22px rgba(240, 207, 122, 0.46), 0 0 44px rgba(217, 90, 67, 0.18);
-}
-
-.visual-hud {
-  position: absolute;
-  left: 22px;
-  top: 20px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  width: min(220px, calc(100% - 160px));
-  z-index: 2;
-  pointer-events: none;
-}
-
-.visual-hud span {
-  display: inline-flex;
-  width: 42px;
-  height: 14px;
-  border-radius: 999px;
-  background: rgba(10, 7, 4, 0.62);
-  border: 1px solid rgba(240, 207, 122, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 232, 171, 0.04);
-}
-
-.hud-node-gold {
-  background: linear-gradient(90deg, rgba(240, 207, 122, 0.88), rgba(240, 207, 122, 0.18));
-}
-
-.hud-node-red {
-  background: linear-gradient(90deg, rgba(217, 90, 67, 0.82), rgba(217, 90, 67, 0.16));
-}
-
-.hud-node-green {
-  background: linear-gradient(90deg, rgba(73, 165, 109, 0.86), rgba(73, 165, 109, 0.16));
+.visual-card > canvas[data-circuitry] {
+  aspect-ratio: 5 / 3;
 }
 
 .hero-readout {
@@ -526,13 +399,6 @@ h3 {
   color: #cdbb93;
   font-size: 0.92rem;
   line-height: 1.55;
-}
-
-.logo-video {
-  width: 100%;
-  display: block;
-  opacity: 0.96;
-  filter: saturate(1.08) contrast(1.08) brightness(0.92);
 }
 
 .visual-card strong {
@@ -1292,13 +1158,6 @@ h3 {
 
   .hero-readout {
     max-width: 100%;
-  }
-
-  .visual-sigil {
-    width: 92px;
-    height: 92px;
-    left: 16px;
-    bottom: 64px;
   }
 
   .section-heading {
