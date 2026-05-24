@@ -21,7 +21,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     name: Deploy daily-brief to Cloudflare
 
     steps:
@@ -59,8 +59,8 @@ jobs:
           fetch_to_env STRIPE_SECRET_KEY      STRIPE_SECRET_KEY
           fetch_to_env POSTHOG_API_KEY        POSTHOG_API_KEY POSTHOG_KEY POSTHOG_API
           fetch_to_env POSTHOG_PROJECT_ID     POSTHOG_PROJECT_ID
-          fetch_to_env SENTRY_AUTH_TOKEN      SENTRY_AUTH_TOKEN
-          fetch_to_env SENTRY_ORG             SENTRY_ORG
+          fetch_to_env SENTRY_AUTH_TOKEN      SENTRY_AUTH_TOKEN FACTORY_SENTRY_API sentry-auth-token
+          fetch_to_env SENTRY_ORG            SENTRY_ORG sentry-org
           fetch_to_env TRIGGER_TOKEN          TRIGGER_TOKEN DAILY_BRIEF_TRIGGER_TOKEN daily-brief-trigger-token
 
       - name: Build local package dependencies
@@ -86,7 +86,7 @@ jobs:
         run: npm test
         working-directory: apps/daily-brief
 
-      - name: Deploy to Cloudflare Workers
+      - name: Provision runtime secrets
         working-directory: apps/daily-brief
         run: |
           set -euo pipefail
@@ -127,7 +127,33 @@ jobs:
           put_optional_secret SENTRY_ORG "$SENTRY_ORG"
           put_optional_secret TRIGGER_TOKEN "$TRIGGER_TOKEN"
 
-          npx wrangler deploy --env production
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/daily-brief
+        run: |
+          mkdir -p .sentry-dist
+          npx wrangler deploy --env production --dry-run --outdir .sentry-dist
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/daily-brief
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/daily-brief
+        run: |
+          sentry-cli sourcemaps upload \
+            --project daily-brief \
+            .sentry-dist/
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: apps/daily-brief
+        run: |
+          set -euo pipefail
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" --env production
 
       - name: Verify deployment
         run: |
