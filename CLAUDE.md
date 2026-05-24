@@ -33,6 +33,7 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - Language: TypeScript strict with zero `any` in public APIs
 
 ## Hard Constraints
+**These constraints apply to production code (Cloudflare Workers runtime only).** GitHub Actions scripts (`.github/scripts/**/*.mjs`) run on Node.js and are exempt from these Cloudflare constraints.
 - No `process.env` anywhere; use Hono or Worker bindings (`c.env.VAR` / `env.VAR`)
 - No Node.js built-ins such as `fs`, `path`, or `crypto`; use platform-safe APIs
 - No CommonJS `require()`; use ESM `import` / `export` only
