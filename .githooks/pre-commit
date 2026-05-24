@@ -67,32 +67,15 @@ fi
 # Soft warnings — these don't block, but they print loudly for review.
 # -----------------------------------------------------------------------------
 
-# Warn if staging files outside a "scope" inferred from the branch name.
-# Example: branch `feat/admin-studio-foo` shouldn't normally stage
-# `apps/capricast/**`. The rule: if branch starts with feat/, fix/, chore/,
-# docs/, refactor/ — check that staged paths share at least one segment
-# with the branch suffix. This is a heuristic, not a hard rule.
-
-case "$branch" in
-  feat/*|fix/*|chore/*|docs/*|refactor/*|test/*|perf/*)
-    suffix="${branch#*/}"
-    # First "word" of the suffix (alphanumerics + dashes until next /, -, or _)
-    word="$(echo "$suffix" | sed -E 's/^([a-z0-9]+(-[a-z0-9]+)*).*/\1/')"
-    if [ -n "$word" ] && [ "$word" != "$suffix" ]; then
-      # We have a multi-word suffix; the first word is the focus area
-      :  # No-op for now — heuristic is noisy and we want to validate the hook before adding strict rules
-    fi
-    ;;
-esac
-
 # Loud warning for suspicious patterns in staged content.
-if git diff --cached -G '^\+.*(TODO|FIXME|XXX|DEBUG).*REMOVE.*BEFORE.*MERGE' --quiet 2>/dev/null; then
+if git diff --cached -G '^\+.*REMOVE.*BEFORE.*MERGE' --quiet 2>/dev/null; then
   : # silent — no matches
 else
   echo "⚠  pre-commit: staged content contains 'REMOVE BEFORE MERGE' marker(s). Continuing, but you've been warned." >&2
 fi
 
-# Loud warning for committing to a tracking-only branch (HEAD detached + named after origin).
+# Warn if branch name starts with 'origin/' — almost always a mistake when
+# creating a local branch directly from a remote ref.
 if [[ "$branch" == origin/* ]]; then
   echo "⚠  pre-commit: branch name '${branch}' starts with 'origin/' — this is unusual." >&2
   echo "     Did you mean to create a local branch from a remote ref?" >&2
