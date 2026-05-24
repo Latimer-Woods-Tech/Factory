@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useSession } from './stores/session.js';
+import { useEntitlements } from './stores/entitlements.js';
 import { EnvironmentBanner } from './components/EnvironmentBanner.js';
 import { ThemeToggle } from './components/ThemeToggle.js';
 import { LoginPage } from './pages/LoginPage.js';
@@ -19,6 +20,8 @@ function AuthedLoginRedirect() {
 
 export default function App() {
   const { hydrate, isAuthed } = useSession();
+  const { load: loadEntitlements } = useEntitlements();
+  useEffect(() => { if (isAuthed()) void loadEntitlements(); }, [isAuthed, loadEntitlements]);
 
   useEffect(() => { hydrate(); }, [hydrate]);
 
