@@ -63,7 +63,13 @@ jobs:
           cd "packages/${PACKAGE}"
           node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));if(p.publishConfig&&p.publishConfig.registry){delete p.publishConfig.registry;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');console.log('Stripped publishConfig.registry')}"
       - name: Install package
-        run: cd "packages/${PACKAGE}" && npm ci --ignore-scripts
+        run: |
+          cd "packages/${PACKAGE}"
+          if [ -f "package-lock.json" ]; then
+            npm ci --ignore-scripts
+          else
+            npm install --ignore-scripts --no-save
+          fi
       - name: Pre-publish checks
         run: cd "packages/${PACKAGE}" && (npm run prepublish --if-present || echo 'no prepublish')
       - name: Publish to npmjs.org
