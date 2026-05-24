@@ -11,7 +11,7 @@ import type {
 const catalog = {
   "schemaVersion": "1.0.0",
   "kind": "capability-catalog",
-  "generatedAt": "2026-05-23T23:40:15.000Z",
+  "generatedAt": "2026-05-24T00:23:25.000Z",
   "summary": {
     "conceptCount": 5,
     "primitiveCount": 9,
