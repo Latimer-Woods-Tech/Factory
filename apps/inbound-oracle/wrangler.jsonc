@@ -1,0 +1,68 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // inbound-oracle — Telnyx SMS webhook → Human Design reading → ElevenLabs TTS → MMS reply
+  // Deployed at: https://inbound-oracle.latwoodtech.work/webhook/telnyx
+  "name": "inbound-oracle",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": {
+    "enabled": true
+  },
+
+  // NOTE: Provision the R2 bucket before first deploy:
+  //   wrangler r2 bucket create inbound-oracle-audio
+  //   wrangler r2 bucket create inbound-oracle-audio-preview
+  // Then enable public-access on the production bucket via the Cloudflare dashboard.
+  "r2_buckets": [
+    {
+      "binding": "AUDIO_BUCKET",
+      "bucket_name": "inbound-oracle-audio",
+      "preview_bucket_name": "inbound-oracle-audio-preview"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development",
+    "TELNYX_FROM_NUMBER": "+1XXXXXXXXXX",
+    "ELEVENLABS_VOICE_ID": "21m00Tcm4TlvDq8ikWAM",
+    "AUDIO_PUBLIC_BASE_URL": "https://inbound-oracle.latwoodtech.work"
+  },
+
+  // Required secrets (set via `wrangler secret put <NAME>` or GitHub org secrets):
+  //   TELNYX_API_KEY         — Telnyx V2 API key
+  //   ELEVENLABS_API_KEY     — ElevenLabs API key
+  //   ANTHROPIC_API_KEY      — Anthropic API key (AI Gateway pass-through)
+  //   GROQ_API_KEY           — Groq API key (LLM verifier-tier fallback)
+  //   AI_GATEWAY_BASE_URL    — Cloudflare AI Gateway base URL
+  //   VERTEX_ACCESS_TOKEN    — Short-lived GCP token (smart-tier Gemini; can be empty for fast tier)
+  //   VERTEX_PROJECT         — GCP project for Vertex AI
+  //   VERTEX_LOCATION        — GCP region (e.g. us-central1)
+
+  "env": {
+    "production": {
+      "name": "inbound-oracle",
+      "routes": [
+        {
+          "pattern": "inbound-oracle.latwoodtech.work",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "TELNYX_FROM_NUMBER": "+1XXXXXXXXXX",
+        "ELEVENLABS_VOICE_ID": "21m00Tcm4TlvDq8ikWAM",
+        "AUDIO_PUBLIC_BASE_URL": "https://inbound-oracle.latwoodtech.work"
+      },
+      "r2_buckets": [
+        {
+          "binding": "AUDIO_BUCKET",
+          "bucket_name": "inbound-oracle-audio"
+        }
+      ]
+    }
+  }
+}
