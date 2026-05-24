@@ -76,9 +76,14 @@ function pointAt(parsed, dist) {
 
 // --- Health map -----------------------------------------------------------
 
-function buildHealthMap(pulseJson) {
+function defaultHealthMap() {
   const map = {};
   for (const key of Object.values(BRAND_BY_URL)) map[key] = 'unknown';
+  return map;
+}
+
+function buildHealthMap(pulseJson) {
+  const map = defaultHealthMap();
   const list = pulseJson?.pulse?.surfaceHealth;
   if (Array.isArray(list)) {
     for (const s of list) {
@@ -97,7 +102,9 @@ async function init() {
   if (!canvas) return;
 
   let topology = null;
-  let health = {};
+  // Default every known brand to 'unknown' so failed/missing pulse fetch
+  // never falls through to the 'alive' code path (green + 1s cadence).
+  let health = defaultHealthMap();
   try {
     const [tRes, pRes] = await Promise.all([
       fetch(TOPOLOGY_URL, { cache: 'no-cache' }),
@@ -108,7 +115,10 @@ async function init() {
     if (pRes && pRes.ok) {
       try {
         health = buildHealthMap(await pRes.json());
-      } catch (_) { /* pulse degraded — fall through with unknowns */ }
+      } catch (_) {
+        // pulse degraded — keep default-unknown map
+        health = defaultHealthMap();
+      }
     }
   } catch (_) {
     return;
@@ -165,7 +175,8 @@ async function init() {
       if (t.brand) {
         const state = health[t.brand];
         if (state === 'degraded') color = ALERT_DIM;
-        else color = BRAND_COLORS[t.brand]?.dim || NEUTRAL_DIM;
+        else if (state === 'alive') color = BRAND_COLORS[t.brand]?.dim || NEUTRAL_DIM;
+        // unknown → leave as NEUTRAL_DIM (gold) so brand isn't falsely "alive"
       }
       ctx.strokeStyle = color;
       ctx.beginPath();
@@ -246,9 +257,11 @@ async function init() {
 
       // Advance + render pulses.
       const remaining = [];
-      const color = brand
-        ? (brandState === 'degraded' ? ALERT_LIVE : BRAND_COLORS[brand]?.live || NEUTRAL_LIVE)
-        : NEUTRAL_LIVE;
+      let color;
+      if (!brand) color = NEUTRAL_LIVE;
+      else if (brandState === 'degraded') color = ALERT_LIVE;
+      else if (brandState === 'alive') color = BRAND_COLORS[brand]?.live || NEUTRAL_LIVE;
+      else color = NEUTRAL_LIVE; // unknown / missing pulse data → neutral gold
       for (const p of state.pulses) {
         p.distance += PULSE_SPEED * dt;
         if (p.distance > t.parsed.total + 12) continue;
