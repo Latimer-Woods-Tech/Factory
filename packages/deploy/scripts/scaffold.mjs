@@ -349,12 +349,27 @@ function renderDevVarsExample(plan) {
 function renderIndexSource(appName, plan) {
   const primitives = plan?.packages ?? [];
   const imports = primitives.map((p) => `// import { ... } from '${p.package}';`).join('\n');
+
+  // Infer HTTP method: action-verb last segment → POST, otherwise GET.
+  const ACTION_VERBS = new Set(['start', 'stop', 'end', 'submit', 'publish', 'pause', 'resume', 'cancel', 'trigger', 'fire', 'send', 'create', 'delete', 'update', 'approve', 'reject']);
+  const surfaces = (plan?.expectedSurfaces ?? []).filter((s) => s !== '/health');
+  const extraRoutes = surfaces.map((surface) => {
+    const lastSegment = surface.split('/').pop() ?? '';
+    const method = ACTION_VERBS.has(lastSegment) ? 'post' : 'get';
+    return `app.${method}('${surface}', (c) => c.json({ todo: true }));`;
+  });
+
+  const routeLines = [
+    `app.get('/health', (c) => c.json({ status: 'ok', app: '${appName}' }));`,
+    ...extraRoutes,
+  ].join('\n');
+
   return `import { Hono } from 'hono';
 import type { Env } from './env.js';
 
 ${imports ? imports + '\n\n' : ''}const app = new Hono<{ Bindings: Env }>();
 
-app.get('/health', (c) => c.json({ status: 'ok', app: '${appName}' }));
+${routeLines}
 
 export default app;
 `;
