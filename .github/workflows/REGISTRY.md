@@ -104,6 +104,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `platform-conformance.yml` | schedule (daily), dispatch | Conformance shadow scores → snapshot PR |
 | `pr-queue-digest.yml` | schedule (weekdays), dispatch | PR queue digest |
 | `revenue-digest.yml` | schedule (daily), dispatch | Revenue + reliability digest |
+| `council-deliberate.yml` | PR (paths: docs/council/inquiries) | Multi-voice LLM deliberation comment on council inquiry PRs |
 | `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker |
 | `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
 

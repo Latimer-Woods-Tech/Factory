@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-05-23T04:50:40.732Z",
+  "active": [],
+  "historical": [
+    {
+      "id": "C-001",
+      "title": "Capability Factory backcasting and thin-slice plan",
+      "status": "approved",
+      "owner": "capability-factory",
+      "dueDate": "2026-05-23",
+      "created": null,
+      "hasDeliberation": false,
+      "isStale": false,
+      "file": "001-capability-factory-backcasting.md"
+    }
+  ],
+  "staleCount": 0,
+  "totalCount": 1
+}
