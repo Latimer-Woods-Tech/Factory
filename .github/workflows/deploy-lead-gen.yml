@@ -20,9 +20,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     name: Deploy lead-gen to Cloudflare
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -52,6 +52,8 @@ jobs:
           fetch_to_env ANTHROPIC_API_KEY        ANTHROPIC_API_KEY
           fetch_to_env GROQ_API_KEY             GROQ_API_KEY
           fetch_to_env VERTEX_ACCESS_TOKEN      VERTEX_ACCESS_TOKEN
+          fetch_to_env SENTRY_AUTH_TOKEN        SENTRY_AUTH_TOKEN FACTORY_SENTRY_API sentry-auth-token
+          fetch_to_env SENTRY_ORG              SENTRY_ORG sentry-org
 
       - name: Build local package dependencies
         run: |
@@ -91,13 +93,42 @@ jobs:
           put_secret GROQ_API_KEY "$GROQ_API_KEY"
           put_secret VERTEX_ACCESS_TOKEN "$VERTEX_ACCESS_TOKEN"
 
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/lead-gen
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID"
+          mkdir -p .sentry-dist
+          npx wrangler deploy --dry-run --outdir .sentry-dist --minify \
+            --var ENVIRONMENT:production \
+            --var AI_GATEWAY_BASE_URL:"$AI_GATEWAY_BASE_URL" \
+            --var VERTEX_PROJECT:factory-495015 \
+            --var VERTEX_LOCATION:us-central1
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/lead-gen
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/lead-gen
+        run: |
+          sentry-cli sourcemaps upload \
+            --project lead-gen \
+            .sentry-dist/
+
       - name: Deploy to Cloudflare
         working-directory: apps/lead-gen
         run: |
           set -euo pipefail
           export CLOUDFLARE_API_TOKEN="$CF_API_TOKEN"
           export CLOUDFLARE_ACCOUNT_ID="$CF_ACCOUNT_ID"
-          npx wrangler deploy --minify \
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" \
             --var ENVIRONMENT:production \
             --var AI_GATEWAY_BASE_URL:"$AI_GATEWAY_BASE_URL" \
             --var VERTEX_PROJECT:factory-495015 \

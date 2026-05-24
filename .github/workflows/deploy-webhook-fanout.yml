@@ -20,9 +20,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     name: Deploy webhook-fanout to Cloudflare
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -49,6 +49,8 @@ jobs:
           fetch_to_env STRIPE_WEBHOOK_SECRET  STRIPE_WEBHOOK_SECRET
           fetch_to_env POSTHOG_KEY            POSTHOG_KEY POSTHOG_API_KEY POSTHOG_API
           fetch_to_env RESEND_API_KEY         RESEND_API_KEY FACTORY_RESEND_API_KEY
+          fetch_to_env SENTRY_AUTH_TOKEN      SENTRY_AUTH_TOKEN FACTORY_SENTRY_API sentry-auth-token
+          fetch_to_env SENTRY_ORG            SENTRY_ORG sentry-org
 
       - name: Build local package dependencies
         run: |
@@ -66,6 +68,26 @@ jobs:
           cd apps/webhook-fanout
           npm install
 
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/webhook-fanout
+        run: |
+          mkdir -p .sentry-dist
+          npx wrangler deploy --env production --dry-run --outdir .sentry-dist
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/webhook-fanout
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/webhook-fanout
+        run: |
+          sentry-cli sourcemaps upload \
+            --project webhook-fanout \
+            .sentry-dist/
+
       - name: Deploy to Cloudflare Workers
         working-directory: apps/webhook-fanout
         run: |
@@ -73,7 +95,9 @@ jobs:
           printf '%s' "$STRIPE_WEBHOOK_SECRET" | npx wrangler secret put STRIPE_WEBHOOK_SECRET --env production
           printf '%s' "$POSTHOG_KEY" | npx wrangler secret put POSTHOG_KEY --env production
           printf '%s' "$RESEND_API_KEY" | npx wrangler secret put RESEND_API_KEY --env production
-          npx wrangler deploy --env production
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" --env production
 
       - name: Verify deployment
         run: |

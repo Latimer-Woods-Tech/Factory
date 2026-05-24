@@ -35,7 +35,7 @@ jobs:
   deploy:
     name: Deploy to ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
     permissions:
       contents: read
@@ -135,6 +135,34 @@ jobs:
           put_secret SLACK_SIGNING_SECRET       "${SECRET_SLACK_SIGNING_SECRET}"
           put_secret SLACK_OWNER_USER_ID        "${SECRET_SLACK_OWNER_USER_ID}"
 
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/supervisor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+        run: |
+          mkdir -p .sentry-dist
+          ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+          npx wrangler deploy --dry-run --outdir .sentry-dist ${ENV_FLAG}
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/supervisor
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/supervisor
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.FACTORY_SENTRY_API }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        run: |
+          sentry-cli sourcemaps upload \
+            --project factory-supervisor \
+            .sentry-dist/
+
       - name: Deploy
         working-directory: apps/supervisor
         env:
@@ -142,13 +170,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
-          # Staging: deploy top-level config (workers_dev: true, all bindings including DO/D1)
-          # Production: deploy --env production (adds custom routes, disables workers_dev)
-          if [ "${TARGET_ENV}" = "production" ]; then
-            npx wrangler deploy --env production
-          else
-            npx wrangler deploy
-          fi
+          ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" ${ENV_FLAG}
 
       - name: Post-deploy health check (staging)
         if: ${{ (github.event.inputs.env != 'production') && (github.event_name != 'push' || github.ref != 'refs/heads/main') }}
