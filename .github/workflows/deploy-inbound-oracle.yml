@@ -49,6 +49,24 @@ jobs:
           cd apps/inbound-oracle
           npm install
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env ELEVENLABS_API_KEY ELEVENLABS_API_KEY
+          fetch_to_env TELNYX_API_KEY TELNYX_API_KEY
+          fetch_to_env ANTHROPIC_API_KEY ANTHROPIC_API_KEY
+          fetch_to_env FACTORY_R2_ACCESS_KEY FACTORY_R2_ACCESS_KEY R2_ACCESS_KEY_ID
+          fetch_to_env FACTORY_R2_SECRET_KEY FACTORY_R2_SECRET_KEY R2_SECRET_ACCESS_KEY
+
       - name: Deploy to Cloudflare Workers
         working-directory: apps/inbound-oracle
         env:
@@ -58,11 +76,11 @@ jobs:
           set -euo pipefail
           
           # Put secrets
-          printf '%s' "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env production
-          printf '%s' "${{ secrets.ELEVENLABS_API_KEY }}" | npx wrangler secret put ELEVENLABS_API_KEY --env production
-          printf '%s' "${{ secrets.TELNYX_API_KEY }}" | npx wrangler secret put TELNYX_API_KEY --env production
-          printf '%s' "${{ secrets.FACTORY_R2_ACCESS_KEY }}" | npx wrangler secret put R2_ACCESS_KEY_ID --env production
-          printf '%s' "${{ secrets.FACTORY_R2_SECRET_KEY }}" | npx wrangler secret put R2_SECRET_ACCESS_KEY --env production
+          printf '%s' "${ANTHROPIC_API_KEY:-${{ secrets.ANTHROPIC_API_KEY }}}" | npx wrangler secret put ANTHROPIC_API_KEY --env production
+          printf '%s' "${ELEVENLABS_API_KEY:-${{ secrets.ELEVENLABS_API_KEY }}}" | npx wrangler secret put ELEVENLABS_API_KEY --env production
+          printf '%s' "${TELNYX_API_KEY:-${{ secrets.TELNYX_API_KEY }}}" | npx wrangler secret put TELNYX_API_KEY --env production
+          printf '%s' "${FACTORY_R2_ACCESS_KEY:-${{ secrets.FACTORY_R2_ACCESS_KEY }}}" | npx wrangler secret put R2_ACCESS_KEY_ID --env production
+          printf '%s' "${FACTORY_R2_SECRET_KEY:-${{ secrets.FACTORY_R2_SECRET_KEY }}}" | npx wrangler secret put R2_SECRET_ACCESS_KEY --env production
           
           # Deploy
           npx wrangler deploy --env production
