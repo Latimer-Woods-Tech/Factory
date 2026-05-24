@@ -1,0 +1,67 @@
+# =============================================================================
+# Workflow Budget Gate — Phase 4 Part A of the workflow lifecycle.
+#
+# PR-time check. When a PR adds a new file under .github/workflows/, the PR
+# body must contain either:
+#   - `retires: <existing-workflow.yml>` (and that file must be deleted)
+#   - `budget-exception: <one-line reason>` (CODEOWNER-acknowledged)
+#
+# Modifications and removals are exempt. This is about preventing growth,
+# not preventing change.
+#
+# DEFENSES INHERITED
+#   #1 Kill switch       — fails-open under freeze (budget gate is bureaucracy,
+#                          not safety; better to let work through during incident)
+#   #2 External alerting — none (PR-time failure is visible inline)
+#   #3 Bounded blast     — workflow permissions: contents:read + pull-requests:write
+#   #4 Monthly audit     — WORKFLOW_BUDGET_AUDIT: log lines roll up monthly
+#
+# REF: docs/decisions/2026-05-23-workflow-lifecycle.md (Phase 4 / Pillar 4)
+# =============================================================================
+name: Workflow Budget Check
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+    paths:
+      - '.github/workflows/**.yml'
+      - '.github/workflows/**.yaml'
+
+concurrency:
+  group: workflow-budget-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Run workflow budget check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/workflow-budget-check.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Workflow Budget Check"
+            echo ""
+            echo "- PR: #${{ github.event.pull_request.number }}"
+            echo "- Trigger: ${{ github.event_name }}"
+            echo ""
+            echo "See workflow log for WORKFLOW_BUDGET_AUDIT: line + PR comment for details on any failure."
+          } >> "$GITHUB_STEP_SUMMARY"
