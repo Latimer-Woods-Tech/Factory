@@ -31,6 +31,12 @@ on:
   schedule:
     - cron: "17 6 * * *"   # daily reconcile (was project-board-sync.yml)
 
+# Per-event concurrency: bursts of issue/PR webhooks otherwise queue redundant
+# reconciles. Cancel-in-progress drops obsolete runs from the same item.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
