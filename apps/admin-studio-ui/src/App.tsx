@@ -37,15 +37,9 @@ export default function App() {
   }
 
   return (
-    <>
-      <EnvironmentBanner />
-      <div className="fixed right-3 top-14 z-50">
-        <ThemeToggle />
-      </div>
-      <Routes>
-        <Route path="/login" element={<AuthedLoginRedirect />} />
-        <Route path="/*" element={<Dashboard />} />
-      </Routes>
-    </>
+    <Routes>
+      <Route path="/login" element={<AuthedLoginRedirect />} />
+      <Route path="/*" element={<Dashboard />} />
+    </Routes>
   );
 }
