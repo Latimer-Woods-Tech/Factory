@@ -52,9 +52,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, Callable
 
 import yaml  # installed by label-sync.yml (`pip install pyyaml`)
+
+# Type alias for dependency-injected fetch function (used in testing)
+FetchFn = Callable[[str], tuple[int, bytes, dict[str, str]]]
 
 # ---------- logging (match aggregate_completion.py style) ----------
 
@@ -90,17 +93,25 @@ BOT_OWNER = "@factory-cross-repo[bot]"
 
 # ---------- gh API helper (redefined from init-matrix-issues.py) ----------
 
-def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None) -> tuple[int, Any]:
+def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None, fetch_fn: FetchFn | None = None) -> tuple[int, Any]:
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "sync-labels-to-matrix",
     }
+    url = f"https://api.github.com{path}"
+
+    # If fetch_fn provided, use it (for testing)
+    if fetch_fn is not None:
+        status, resp_body, _ = fetch_fn(url)
+        return status, json.loads(resp_body) if resp_body else None
+
+    # Default behavior with retries
     data = json.dumps(body).encode() if body is not None else None
     if data is not None:
         headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(f"https://api.github.com{path}", method=method, headers=headers, data=data)
+    req = urllib.request.Request(url, method=method, headers=headers, data=data)
     for attempt in range(5):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -123,14 +134,22 @@ def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None) -
     return 599, None
 
 
-def gh_raw(path: str, token: str) -> tuple[int, bytes]:
+def gh_raw(path: str, token: str, fetch_fn: FetchFn | None = None) -> tuple[int, bytes]:
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.raw",
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "sync-labels-to-matrix",
     }
-    req = urllib.request.Request(f"https://api.github.com{path}", headers=headers)
+    url = f"https://api.github.com{path}"
+
+    # If fetch_fn provided, use it (for testing)
+    if fetch_fn is not None:
+        status, resp_body, _ = fetch_fn(url)
+        return status, resp_body
+
+    # Default behavior with retries
+    req = urllib.request.Request(url, headers=headers)
     for attempt in range(5):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -262,7 +281,7 @@ def parse_issue_labels(issue: dict[str, Any]) -> IssueState | None:
     )
 
 
-def fetch_feature_issues(repo: str, token: str) -> list[IssueState]:
+def fetch_feature_issues(repo: str, token: str, fetch_fn: FetchFn | None = None) -> list[IssueState]:
     """Page through open issues with any `feature:*` label. The list endpoint
     supports passing a single label; we list all and filter client-side to
     catch the whole feature:* family without N+1 label calls."""
@@ -274,7 +293,7 @@ def fetch_feature_issues(repo: str, token: str) -> list[IssueState]:
             "per_page": "100",
             "page": str(page),
         })
-        status, body = gh("GET", f"/repos/{repo}/issues?{q}", token)
+        status, body = gh("GET", f"/repos/{repo}/issues?{q}", token, fetch_fn=fetch_fn)
         if status != 200 or not isinstance(body, list):
             jerr("issue_list_fail", repo=repo, page=page, status=status)
             break
@@ -442,12 +461,13 @@ def reconcile_repo(
     pr_cfg: dict[str, Any],
     now: datetime,
     dry_run: bool,
+    fetch_fn: FetchFn | None = None,
 ) -> dict[str, Any]:
     repo = repo_cfg["repo"]
     matrix_path = repo_cfg["matrix_path"]
     jlog("reconcile_start", repo=repo)
 
-    status, blob = gh_raw(f"/repos/{repo}/contents/{matrix_path}", token)
+    status, blob = gh_raw(f"/repos/{repo}/contents/{matrix_path}", token, fetch_fn=fetch_fn)
     if status != 200:
         jerr("matrix_fetch_fail", repo=repo, status=status)
         return {"changed": 0, "orphans_matrix": [], "orphans_issue": [], "pr_url": None, "error": f"fetch {status}"}
@@ -459,7 +479,7 @@ def reconcile_repo(
             jwarn("matrix_malformed", repo=repo, line=line_no, reason=reason)
     rows_by_id: dict[str, MatrixRow] = {r.id: r for r in rows}
 
-    issues = fetch_feature_issues(repo, token)
+    issues = fetch_feature_issues(repo, token, fetch_fn=fetch_fn)
     issues_by_id: dict[str, IssueState] = {}
     issue_orphans: list[str] = []
     for iss in issues:
@@ -522,7 +542,7 @@ def reconcile_repo(
 
 # ---------- entrypoint ----------
 
-def main() -> int:
+def main(fetch_fn: FetchFn | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", required=True, help="path to label-sync-config.yml")
     ap.add_argument("--dry-run", action="store_true")
@@ -549,7 +569,7 @@ def main() -> int:
     for repo_cfg in repos:
         key = repo_cfg.get("key") or repo_cfg["repo"].split("/")[-1]
         try:
-            summary[key] = reconcile_repo(repo_cfg, token, pr_cfg, now, args.dry_run)
+            summary[key] = reconcile_repo(repo_cfg, token, pr_cfg, now, args.dry_run, fetch_fn=fetch_fn)
         except Exception as e:
             jerr("reconcile_crash", repo=repo_cfg.get("repo"), err=str(e))
             summary[key] = {
