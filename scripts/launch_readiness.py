@@ -49,7 +49,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "docs" / "scorecard"
 CONFORMANCE = ROOT / "docs" / "conformance" / "summary.json"
-COMPLETION = ROOT / "docs" / "supervisor" / "completion-tracker.json"
+COMPLETION = ROOT / "docs" / "completion-tracker.json"
 COST = ROOT / "docs" / "cost" / "summary.json"
 REVENUE = ROOT / "docs" / "revenue" / "summary.json"
 
