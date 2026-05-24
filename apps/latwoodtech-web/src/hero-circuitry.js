@@ -162,9 +162,6 @@ async function init() {
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let prefersStatic = reducedMotion.matches;
-  reducedMotion.addEventListener?.('change', (e) => {
-    prefersStatic = e.matches;
-  });
 
   // Draw the static trace layer once per resize and cache colors.
   function drawStaticTraces() {
@@ -215,6 +212,11 @@ async function init() {
     state.pulses.push({ start: now, distance: 0 });
   }
 
+  function renderStaticOnce() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawStaticTraces();
+  }
+
   function frame(ts) {
     if (!running) return;
     if (!lastTs) lastTs = ts;
@@ -225,12 +227,6 @@ async function init() {
     // Clear + redraw static layer (single pass; cheap enough at this size).
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawStaticTraces();
-
-    if (prefersStatic) {
-      // Static only — no further animation work.
-      rafId = requestAnimationFrame(frame);
-      return;
-    }
 
     // Schedule + advance pulses per trace.
     for (const t of traces) {
@@ -290,6 +286,12 @@ async function init() {
   }
 
   function start() {
+    if (prefersStatic) {
+      // Reduced-motion: paint the topology once and don't schedule a RAF loop.
+      stop();
+      renderStaticOnce();
+      return;
+    }
     if (running) return;
     running = true;
     lastTs = 0;
@@ -297,14 +299,31 @@ async function init() {
   }
   function stop() {
     running = false;
-    if (rafId) cancelAnimationFrame(rafId);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
   }
+
+  // Honor runtime prefers-reduced-motion changes: when the user enables it,
+  // exit the animation loop; when they disable it, restart it.
+  reducedMotion.addEventListener?.('change', (e) => {
+    prefersStatic = e.matches;
+    if (prefersStatic) {
+      stop();
+      renderStaticOnce();
+    } else if (document.visibilityState !== 'hidden') {
+      start();
+    }
+  });
 
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       resize();
+      // In reduced-motion mode the RAF loop isn't running, so repaint static.
+      if (prefersStatic) renderStaticOnce();
     }, 100);
   });
 
