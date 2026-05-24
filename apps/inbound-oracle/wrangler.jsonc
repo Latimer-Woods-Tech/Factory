@@ -27,7 +27,7 @@
 
   "vars": {
     "ENVIRONMENT": "development",
-    "TELNYX_FROM_NUMBER": "+1XXXXXXXXXX",
+    "TELNYX_FROM_NUMBER": "+15045204977",
     "ELEVENLABS_VOICE_ID": "21m00Tcm4TlvDq8ikWAM",
     "AUDIO_PUBLIC_BASE_URL": "https://inbound-oracle.latwoodtech.work"
   },
@@ -53,7 +53,7 @@
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "TELNYX_FROM_NUMBER": "+1XXXXXXXXXX",
+        "TELNYX_FROM_NUMBER": "+15045204977",
         "ELEVENLABS_VOICE_ID": "21m00Tcm4TlvDq8ikWAM",
         "AUDIO_PUBLIC_BASE_URL": "https://inbound-oracle.latwoodtech.work"
       },
