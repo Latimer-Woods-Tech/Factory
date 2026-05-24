@@ -19,8 +19,9 @@ Each app gets a **unique** Cloudflare rate limiter namespace ID. IDs are integer
 | xico-city (prod) | `API_RATE_LIMITER` | 1009 | 600/m/user | `/v1/*` authed routes — closes BUILD_PLAN_v2 D-007 |
 | xico-city (staging) | `AUTH_RATE_LIMITER` | 1010 | 60/m/IP | Staging auth (separated from prod) |
 | xico-city (staging) | `API_RATE_LIMITER` | 1011 | 600/m/user | Staging `/v1/*` |
+| status-prober | `STATUS_RATE_LIMITER` | 1012 | 120/m | Public `/current` + `/health` read endpoints |
 
-**Next available ID: 1012**
+**Next available ID: 1013**
 
 Allocate **separate ids per environment** so a misconfigured staging worker
 cannot exhaust the prod rate-limit budget. Update this table every time a new
