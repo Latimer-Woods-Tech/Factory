@@ -146,6 +146,8 @@ export async function openSupervisorPR(
   }
 
   let response: Response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2000);
   try {
     response = await fetch(`${url}/api/supervisor/create-pr`, {
       method: 'POST',
@@ -154,11 +156,14 @@ export async function openSupervisorPR(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`[supervisor] factory-cross-repo fetch failed: ${msg}`);
     return { ok: false, error: `Network error: ${msg}` };
+  } finally {
+    clearTimeout(timeout);
   }
 
   // Parse response

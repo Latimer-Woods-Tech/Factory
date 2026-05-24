@@ -85,7 +85,7 @@ export const templateWithVerifier: Template = {
 export const templateEndToEnd: Template = {
   id: 'end-to-end',
   tier: 'yellow',
-  description: 'Complete flow: 2 mutations, approval on step 1, verifier passes → PR opens',
+  description: 'Complete flow: 2 mutations, approval on step 0 (first step), verifier passes → PR opens',
   steps: [
     {
       tool: 'github.create-branch',

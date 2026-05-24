@@ -25,16 +25,23 @@ function encodeSegment(obj: Record<string, unknown>): string {
 /**
  * Mint a scoped JWT for supervisor tool invocation.
  *
- * @param secret — The JWT_SECRET from env (typically 32+ bytes)
+ * @param secret — The JWT_SECRET from env (minimum 32 bytes for HMAC-SHA256 security)
  * @param scope — Space-delimited scope string (e.g., "supervisor.readonly")
  * @param opts — Optional claims: issuer, audience, expiresInSeconds (default 900=15min)
  * @returns A signed HS256 JWT
+ * @throws Error if secret is less than 32 bytes
  */
 export async function mintScopedJwt(
   secret: string,
   scope: string,
   opts?: { issuer?: string; audience?: string; expiresInSeconds?: number },
 ): Promise<string> {
+  if (secret.length < 32) {
+    throw new Error(
+      `JWT_SECRET must be at least 32 bytes (got ${secret.length}). ` +
+      'Use a cryptographically random string from a secure key generator.',
+    );
+  }
   const expiresIn = opts?.expiresInSeconds ?? 900; // 15 minutes
   const now = Math.floor(Date.now() / 1000);
 

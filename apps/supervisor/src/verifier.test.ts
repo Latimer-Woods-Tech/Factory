@@ -40,7 +40,7 @@ describe('runVerifier', () => {
 
     // Mock Env with memory writes
     mockEnv = {
-      JWT_SECRET: 'test-secret',
+      JWT_SECRET: 'test-secret-for-jwt-verification-test',
       MEMORY: {
         prepare: vi.fn(() => ({
           bind: vi.fn().mockReturnValue({

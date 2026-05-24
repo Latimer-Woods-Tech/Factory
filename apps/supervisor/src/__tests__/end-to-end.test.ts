@@ -47,7 +47,7 @@ function createMockEnv(): Env {
     VERTEX_ACCESS_TOKEN: 'test-token',
     VERTEX_PROJECT: 'test-project',
     VERTEX_LOCATION: 'us-central1',
-    JWT_SECRET: 'test-secret-key-for-jwt-signing',
+    JWT_SECRET: 'test-secret-key-for-jwt-signing-v2',
     FACTORY_APP_ID: 'test-app-id',
     FACTORY_APP_PRIVATE_KEY: 'test-key',
     FACTORY_APP_INSTALLATION_ID: 'test-installation-id',
@@ -639,8 +639,8 @@ describe('End-to-End Supervisor Scenarios', () => {
 
     it('JWT_SECRET is set for token minting', () => {
       const env = createMockEnv();
-      expect(env.JWT_SECRET).toBe('test-secret-key-for-jwt-signing');
-      expect(env.JWT_SECRET.length).toBeGreaterThan(10);
+      expect(env.JWT_SECRET).toBe('test-secret-key-for-jwt-signing-v2');
+      expect(env.JWT_SECRET.length).toBeGreaterThanOrEqual(32);
     });
   });
 });
