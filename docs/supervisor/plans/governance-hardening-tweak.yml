@@ -2,10 +2,10 @@ id: governance-hardening-tweak
 version: 1
 tier: green
 triggers:
-  labels_any_of: [hardening, governance, engineering]
-  title_pattern: "^(chore|feat|docs)[(](governance|triage|review|reliability|docs|security)[)]:"
+  labels_any_of: [hardening, governance]
+  title_pattern: "^(chore|docs)[(](governance|docs|security|review)[)]:"
   body_patterns:
-    - "(?i)(workflow|label|codeowner|readme|branch.?protect|hardening|playbook|triage|reviewer|flaky|drift|labeler)"
+    - "(workflow|label|CODEOWNERS|codeowner|readme|branch.?protect|labeler|AGENT_PROTOCOL|permissions:)"
 preconditions:
   - capability_exists: github.readFile
   - capability_exists: github.openPR
@@ -26,7 +26,7 @@ slots:
     source: issue_body
   - name: file_content
     type: string
-    validator: "(?s)^.{1,50000}$"
+    validator: "^[\\s\\S]{1,50000}$"
     source: issue_body
   - name: commit_message
     type: string

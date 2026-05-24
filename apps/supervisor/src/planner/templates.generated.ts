@@ -2,12 +2,85 @@
 // DO NOT EDIT DIRECTLY — edit docs/supervisor/plans/*.yml instead,
 // then run: node scripts/generate-supervisor-templates.mjs
 //
-// Generated: 2026-05-06T20:10:25.255Z
-// Source files: db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, feat-ci-workflow.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
+// Generated: 2026-05-19T21:44:19.962Z
+// Source files: branch-protection-hardening.yml, db-migration-gap-fix.yml, deps-bump-minor-patch.yml, docs-naming-convention.yml, extract-from-wordis-bond.yml, feat-call-room-implementation.yml, feat-ci-workflow.yml, feat-conversations-implementation.yml, feat-editor-effect-implementation.yml, feat-editor-web-implementation.yml, feat-flaky-detector.yml, feat-memory-single-writer.yml, feat-review-hints.yml, fix-analytics-event-whitelist.yml, fix-billing-portal-400.yml, fix-ci-package-auth.yml, fix-csp-hash.yml, fix-mobile-layout.yml, fix-stripe-price-id.yml, governance-branch-protection.yml, governance-hardening-tweak.yml, governance-hardening.yml, migration-drift-fix.yml, package-version-migration.yml, repo-governance-audit.yml, reusable-workflow-rollout.yml, security-codeql-fix.yml, sentry-stripe-error-triage.yml, sentry-triage-new-issue.yml, syn-package-migration.yml, user-account-suspend.yml, ux-regression-triage.yml, worker-health-degraded.yml, wrangler-config-drift-fix.yml
 
 import type { Template } from './load';
 
 export const GENERATED_TEMPLATES: Template[] = [
+  {
+    "id": "branch-protection-hardening",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "hardening",
+      "promote",
+      "branch",
+      "protection"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "hardening:promote"
+      ],
+      "title_pattern": "(branch.?protect|required.?check|promote.?check|hardening.?playbook|warn.?only)",
+      "body_patterns": [
+        "(promote|graduate|require).*(check|status)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.getBranchProtection",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "branch": "$slots.target_branch"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.listCheckRuns",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "check_name": "$slots.check_name",
+          "days": "$slots.observation_days"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue": "$slots.issue_number",
+          "body": "## Branch-protection promotion: signal quality report\n\n**Check:** `$slots.check_name`\n**Repo / branch:** `$slots.target_repo` / `$slots.target_branch`\n**Observation window:** $slots.observation_days days\n\n| Metric | Value | Threshold | Pass? |\n|---|---|---|---|\n| Total runs | $s2.total_runs | > 0 | $s2.total_runs > 0 |\n| False-positive rate | $s2.fp_rate% | < 5% | $s2.fp_rate < 5 |\n| Observation days elapsed | $s2.days_elapsed | ≥ $slots.observation_days | $s2.days_elapsed >= $slots.observation_days |\n\nCurrent required checks: `$s1.required_contexts`\n\nSupervisor will open a promotion PR only when all three conditions are met and a CODEOWNER reacts ✅ on this comment.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "$slots.target_repo",
+          "branch": "supervisor/hardening/promote-$slots.check_name",
+          "base": "$slots.target_branch",
+          "title": "chore(governance): promote `$slots.check_name` to required status check",
+          "body": "Promotes `$slots.check_name` from warn-only to a **required** status check\non `$slots.target_repo`:`$slots.target_branch`.\n\n## Signal quality (from supervisor s2)\n- Total runs in observation window: $s2.total_runs\n- False-positive rate: $s2.fp_rate%\n- Days observed: $s2.days_elapsed / $slots.observation_days required\n\n## What this PR changes\nAdds `$slots.check_name` to `required_status_checks.contexts` via the\nbranch-protection API.  No workflow files are modified.\n\n## Rollback\nRemove `$slots.check_name` from `required_status_checks` and re-open a\n`hardening:fp` issue to restart the 14-day observation window.\n\nCloses #$slots.issue_number\nParent rollout: #270\n\nPlaybook: `docs/supervisor/playbooks/branch-protection-hardening.md`\n",
+          "labels": [
+            "hardening:promote",
+            "hardening",
+            "supervisor"
+          ],
+          "changes": [
+            {
+              "op": "branch_protection_add_required_check",
+              "repo": "$slots.target_repo",
+              "branch": "$slots.target_branch",
+              "check_name": "$slots.check_name",
+              "current_contexts": "$s1.required_contexts"
+            }
+          ]
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
   {
     "id": "db-migration-gap-fix",
     "tier": "yellow",
@@ -143,6 +216,10 @@ export const GENERATED_TEMPLATES: Template[] = [
       "naming",
       "convention"
     ],
+    "pattern_check": [
+      3,
+      4
+    ],
     "triggers": {
       "labels_any_of": [
         "docs",
@@ -206,21 +283,173 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "extract-from-wordis-bond",
+    "tier": "yellow",
+    "description": "",
+    "trigger_keywords": [
+      "engineering",
+      "epic",
+      "wordis-bond-engine",
+      "extract",
+      "from",
+      "wordis",
+      "bond"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "engineering",
+        "epic:wordis-bond-engine"
+      ],
+      "title_pattern": "^WB-\\d+:\\s*\\[Extract\\]",
+      "body_patterns": [
+        "wordis-bond/(src/(handlers|workers|lib)|engine)",
+        "packages/[a-z\\-]+/src/"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/supervisor/FRIDGE.md",
+          "ref": "main"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "Supervisor plan for **$slots.wb_ticket**\n\n**Source (wordis-bond engine):** `$slots.source_file`\n**Target (Factory package):** `$slots.target_file`\n**Contract:** `$slots.export_contract`\n**Package:** `@latimer-woods-tech/$slots.target_package`\n\nPlanned execution (after CODEOWNER ✅):\n1. Audit source file for TCPA/FDCPA/PII compliance code — abort and re-classify Red if any found.\n2. Copy clean code to target path; rewrite imports to use `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`.\n3. Verify no `process.env`, no Node.js built-ins, no `Buffer`, no `require()` (Hard Constraints).\n4. Write unit tests (≥5 cases) and one integration test fixture.\n5. Run `npm run typecheck && npm test && npm run lint`.\n6. Open draft PR targeting `main` with scope `($slots.target_package)`; tag CODEOWNER.\n\n@adrper79-dot — React ✅ to proceed, or comment with changes needed.\n\n_FRIDGE rule 1: this template never touches wordis-bond UI/frontend files. Only `wordis-bond/src/{handlers,workers,lib}/**` is in scope._"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "supervisor/wb-extract-$slots.wb_ticket",
+          "title": "feat($slots.target_package): extract `$slots.source_file` into Factory ($slots.wb_ticket)",
+          "body": "Closes #$triggers.issue_number\n\nExtracts engine handler from wordis-bond into `$slots.target_file`.\n\n**Contract:** `$slots.export_contract`\n**Source:** wordis-bond engine — `$slots.source_file`\n**FRIDGE rule 1:** wordis-bond UI layer untouched. Engine-only extraction.\n\n## Acceptance gate\n- TypeScript strict passes\n- ≥5 unit tests + 1 integration test\n- No `process.env`, no Node built-ins, no `Buffer`, no `require()`\n- Uses `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`\n\nDraft for CODEOWNER review per Yellow-tier policy.",
+          "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-call-room-implementation",
+    "tier": "green",
+    "description": "Sprint 2 calling/live-broadcast feature work in capricast: DirectCallRoom Durable Object for 1:1 video calls, LiveBroadcastRoom DO for live-stream chat, and Cloudflare Stream Live Inputs Go-Live flow. Scaffolds a Durable Object class, Hono routes wiring it up, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER must add the DO binding to wrangler.jsonc and review WHIP/WHEP/CF Calls integration before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "call",
+      "calls",
+      "directcallroom",
+      "livebroadcastroom",
+      "whip",
+      "whep",
+      "rtmps",
+      "live",
+      "broadcast",
+      "stream",
+      "obs",
+      "hls",
+      "durable-object",
+      "hibernation",
+      "conference"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:2"
+      ],
+      "title_pattern": "(DirectCallRoom|LiveBroadcastRoom|Live Input|Live Inputs|live broadcast|Go Live|1:1 (call|video.?call)|CF Calls|Cloudflare Calls|Cloudflare Stream Live|conference recording|ringing screen|video-call endpoint|CALLS_APP_(ID|TOKEN))",
+      "body_patterns": [
+        "(DirectCallRoom|LiveBroadcastRoom|/calls/initiate|/calls/accept|/calls/decline|/calls/hangup|/live/start|RTMPS|WHIP|WHEP|live_input\\.connected|CALLS_APP_ID|CALLS_APP_TOKEN|Durable Object|hibernation|2-participant|HLS playback|CF Calls session|Stream Live Input)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/worker/src/durable-objects",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/worker/src/routes",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-call-room-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nDurable Object class: `$slots.do_class_name`\nDO file: `$slots.do_file_path`\nRoute file: `$slots.route_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds three files derived from the issue body:\n1. A Durable Object class extending the WebSocket Hibernation API base for the call/broadcast room state machine.\n2. A Hono route module wiring HTTP endpoints (`/calls/initiate`, `/calls/accept`, `/live/start`, etc.) to the DO via stub.\n3. A Vitest test file under `__tests__/` exercising the DO's happy path.\n\n🟢 Green tier — scaffold lands as a non-draft PR. A CODEOWNER must:\n- Add the DO binding to `wrangler.jsonc` (the supervisor cannot mutate wrangler config).\n- Review the WHIP/WHEP and CF Calls integration (these touch external SDKs).\n- Confirm the migration block matches the existing wrangler `migrations[]` numbering.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.do_file_path",
+              "content": "$slots.do_content"
+            },
+            {
+              "path": "$slots.route_file_path",
+              "content": "$slots.route_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-call-room-implementation`).\n\n**Scaffolds:**\n- Durable Object: `$slots.do_file_path` (class `$slots.do_class_name`)\n- Hono routes: `$slots.route_file_path`\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Add the DO binding + migration entry to `apps/worker/wrangler.jsonc`.\n2. Review WHIP/WHEP and Cloudflare Calls/Stream integration.\n3. Fill in additional handlers/tests for the full call flow.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:2",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "feat-ci-workflow",
     "tier": "yellow",
     "description": "",
     "trigger_keywords": [
       "engineering",
       "hardening",
-      "enhancement",
       "feat",
       "workflow"
     ],
     "triggers": {
       "labels_any_of": [
         "engineering",
-        "hardening",
-        "enhancement"
+        "hardening"
       ],
       "title_pattern": "(feat\\(ci\\)|feat\\(triage\\)|feat\\(review\\)|feat\\(reliability\\)|feat\\(process\\)|chore\\(ci\\)|chore\\(process\\)|chore\\(governance\\))",
       "body_patterns": [
@@ -254,6 +483,550 @@ export const GENERATED_TEMPLATES: Template[] = [
           "title": "feat(ci): add $slots.workflow_name workflow",
           "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` implementing: $slots.description\n\nFollows Factory App token pattern and COORDINATION.md conventions.\n\nGenerated by supervisor. Human review required before merge.",
           "draft": true
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-conversations-implementation",
+    "tier": "green",
+    "description": "Sprint 2 conversations/messaging feature work in capricast (compose/edit/delete/reactions/typing/read-receipts, R2 attachments). Scaffolds a Hono route file under apps/worker/src/routes/, a Drizzle migration adding required columns, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews handler logic + migration numbering before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "conversations",
+      "messages",
+      "chat",
+      "dm",
+      "inbox",
+      "reactions",
+      "typing",
+      "read-receipts",
+      "attachments",
+      "r2",
+      "vapid",
+      "vectorize",
+      "moderation"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:2"
+      ],
+      "title_pattern": "(conversation|conversations|ConversationRoom|/inbox|message_attachments|read receipts|message create|message search|messaging|chat thread|DM thread|compose.*edit|edit.*delete.*reactions|Web Push.*VAPID|Llama-Guard.*message|Vectorize.*message|Attachments via R2)",
+      "body_patterns": [
+        "(conversation_members|message_attachments|conversations\\(id|messages\\(id|/api/conversations|/inbox|last_read_at|edited_at|deleted_at|reactions|typing indicator|read receipts|presigned R2|VAPID|ServiceWorker.*push|llama-guard|Vectorize|broadcast to other members|message bodies)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/worker/src/routes",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "workers/src/db/migrations",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-conversations-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nRoute file: `$slots.route_file_path`\nMigration: `$slots.migration_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds three files derived from the issue body:\n1. A Hono route module wired into `apps/worker/src/routes/` covering the verbs described in the acceptance criteria.\n2. A Drizzle migration adding the columns/tables described in the issue (e.g. `conversations`, `conversation_members`, `messages`, `message_attachments`).\n3. A Vitest test file at `apps/worker/src/routes/__tests__/` exercising the happy path.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER review is still required before merge.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.route_file_path",
+              "content": "$slots.route_content"
+            },
+            {
+              "path": "$slots.migration_file_path",
+              "content": "$slots.migration_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-conversations-implementation`).\n\n**Scaffolds:**\n- Hono route: `$slots.route_file_path`\n- Drizzle migration: `$slots.migration_file_path`\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Review handler logic and add business rules.\n2. Verify migration numbering does not collide with PRs already in flight.\n3. Fill in additional test cases for failure paths.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:2",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-editor-effect-implementation",
+    "tier": "green",
+    "description": "Sprint 4 advanced editor effect modules in capricast: 12 LUT-shader filters (WebGL), beauty smoothing (MediaPipe + WebGL bilateral), greenscreen (MediaPipe selfie segmentation), AR face stickers (MediaPipe FaceLandmarker), voiceover, 6 voice FX (Web Audio), music drawer (Pixabay/Jamendo), beat detection + snap-to-beat, client-side render (WebCodecs + ffmpeg-wasm fallback), server render (RenderQueue DO + Cloud Run), render-path switchover heuristic, Stream upload pipeline, templates (duet/stitch/transformation), open editor from feed. Scaffolds a pure-function effect module under apps/web/src/effects/ + a colocated `node --test` test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews the WebGL/MediaPipe/WebAudio/WebCodecs wiring + (for #100) the DO binding before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "lut",
+      "shader",
+      "webgl",
+      "beauty",
+      "mediapipe",
+      "greenscreen",
+      "segmentation",
+      "facelandmarker",
+      "sticker",
+      "voiceover",
+      "voice",
+      "music",
+      "pixabay",
+      "jamendo",
+      "beat",
+      "onset",
+      "webcodecs",
+      "ffmpeg",
+      "render",
+      "renderqueue",
+      "duet",
+      "stitch"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:4"
+      ],
+      "title_pattern": "(LUT.?shader|LUT filter|WebGL filter|Beauty smoothing|MediaPipe|Greenscreen|background replace|selfie segmentation|AR face sticker|FaceLandmarker|Voiceover|voice FX|chipmunk|robot|telephone|hall reverb|autotune|Music drawer|Pixabay|Jamendo|Beat detection|onset|snap.?to.?beat|Client.?side render|WebCodecs|ffmpeg|@ffmpeg/ffmpeg|Server render —|RenderQueue|Cloud Run Remotion|Render.?path switchover|Editor → Cloudflare Stream|Templates? — duet|duet, stitch|stitch, transformation|Open editor from /feed|use.?this.?sound)",
+      "body_patterns": [
+        "(LUT cubes?|WebGL fragment shader|bilateral blur|ImageSegmenter|FaceLandmarker|face.?mesh|landmark indices|chroma composite|Web Audio API|AudioWorkletNode|onset detector|ConvolverNode|PhaseVocoder|Pixabay Music API|Jamendo|VideoEncoder|AudioEncoder|WebCodecs|mp4.?muxer|@ffmpeg/ffmpeg|RenderQueue|Remotion 4|Cloud Run Remotion|estimate client.?render|effects_complexity|duet template|stitch template|Use this sound|action rail on .?/feed)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/src",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "packages/types",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-editor-effect-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nEffect module: `$slots.effect_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds two files derived from the issue body:\n1. A browser-safe TypeScript effect module under `apps/web/src/effects/` implementing the algorithm described (LUT, MediaPipe, WebAudio, WebCodecs, render-path heuristic, etc.).\n2. A colocated `node --test` test file exercising the pure logic — no new test dependencies.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:\n- Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring for correctness against the issue's acceptance criteria.\n- For #100 (Server render — RenderQueue DO) port the Durable Object skeleton into `apps/worker/src/durable-objects/` — the effect module here only describes the upload payload + Cloud Run dispatch shape.\n- For #99 (Client render) confirm the WebCodecs feature-detection branch falls back to ffmpeg-wasm correctly.\n- For #101 (render-path heuristic) tune the cost-function constants once real PostHog data lands.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.effect_file_path",
+              "content": "$slots.effect_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-editor-effect-implementation`).\n\n**Scaffolds:**\n- Effect module: `$slots.effect_file_path`\n- `node --test` test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Review the WebGL / MediaPipe / WebAudio / WebCodecs wiring against the issue's acceptance criteria.\n2. For server-render issues (#100), port the Durable Object skeleton into `apps/worker/src/durable-objects/RenderQueue.ts` and add the binding to `apps/worker/wrangler.jsonc`.\n3. For client-render issues (#99), confirm the WebCodecs → ffmpeg-wasm fallback covers Safari < 17.\n4. For render-path heuristic (#101), tune constants once PostHog telemetry confirms real client render times.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:4",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-editor-web-implementation",
+    "tier": "green",
+    "description": "Sprint 3 mobile-editor web UI feature work in capricast: EditTimeline JSON schema, camera screen with multi-clip record, timeline scrubber with thumbnails, trim/split/reorder/speed presets, text overlays, sticker pack, drafts (IndexedDB + R2 sync), auto-captions (Workers AI Whisper), and caption styles. Scaffolds a React component under apps/web/src/app/edit/components/, a Vitest test file alongside it, and an optional Hono route for draft sync. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER must wire vitest+jsdom into apps/web devDependencies (web app currently has no in-app unit runner) and review the editor wiring before merge. Yellow would only post a plan comment and would not scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR.",
+    "trigger_keywords": [
+      "edittimeline",
+      "editor",
+      "timeline",
+      "scrubber",
+      "trim",
+      "split",
+      "reorder",
+      "speed",
+      "overlay",
+      "sticker",
+      "drafts",
+      "indexeddb",
+      "captions",
+      "whisper",
+      "camera",
+      "record",
+      "countdown"
+    ],
+    "pattern_check": [
+      3,
+      4
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "enhancement",
+        "sprint:3"
+      ],
+      "title_pattern": "(EditTimeline|Camera screen|multi.?clip record|Timeline (scrubber|strip)|frame thumbnails|Trim, split, reorder|speed presets|Text overlays|motion presets|Sticker pack|sticker drawer|Drafts in IndexedDB|R2 for cross.?device|Auto.?captions?|Whisper|caption styles|TikTok.?classic|Karaoke|per.?line edit|getUserMedia|hold.?to.?record|tap.?to.?record|countdown|front/back camera)",
+      "body_patterns": [
+        "(EditTimeline|@capricast/types|clips\\[\\]|audio_tracks\\[\\]|text_overlays\\[\\]|getUserMedia|facingMode|tap.?to.?record|hold.?to.?record|VideoFrame\\.copyTo|frame thumbnails|drag handles to trim|split.?at.?playhead|speed presets|Add.?text button|style picker|motion presets|sticker drawer|royalty.?free SVG|IndexedDB|debounce.?save|drafts/<user_id>|Workers AI|whisper|word.?level timestamps|TikTok.?classic|caption preset|Karaoke|3-2-1 countdown|/create route)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/src/app",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "path": "apps/web/package.json",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "body": "**Supervisor plan — `feat-editor-web-implementation` for `capricast`**\n\nFeature slug: `$slots.feature_slug`\nComponent: `$slots.component_name`\nComponent file: `$slots.component_file_path`\nTest: `$slots.test_file_path`\n\nThis template scaffolds two files derived from the issue body:\n1. A React 19 / Next.js 15 client component under `apps/web/src/app/edit/components/` covering the editor surface described in the acceptance criteria.\n2. A colocated Vitest + @testing-library/react test file exercising the component contract.\n\n🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER must:\n- Add `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, and `jsdom` to `apps/web/package.json` devDependencies (the web app currently has no in-app unit runner) and create `apps/web/vitest.config.ts`.\n- Move the component file if a different module layout fits the editor's IA — `apps/web/src/app/edit/` does not exist on main yet, this PR creates the convention.\n- Review the React + Tailwind wiring for the editor surface.\n\n_Run ID: $RUN_ID_\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "Latimer-Woods-Tech/capricast",
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.component_file_path",
+              "content": "$slots.component_content"
+            },
+            {
+              "path": "$slots.test_file_path",
+              "content": "$slots.test_content"
+            }
+          ],
+          "body": "Closes #$triggers.issue_number\n\nAuto-drafted by Factory Supervisor (`feat-editor-web-implementation`).\n\n**Scaffolds:**\n- React component: `$slots.component_file_path` (component `$slots.component_name`)\n- Vitest test: `$slots.test_file_path`\n\n🟢 Green tier — scaffold only. A CODEOWNER must:\n1. Add `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `jsdom` to `apps/web/package.json` and create `apps/web/vitest.config.ts` — the web app currently has no in-app unit runner.\n2. Review the React + Tailwind wiring and fill in any handlers the supervisor could not synthesize from the issue body.\n3. Confirm the chosen path under `apps/web/src/app/edit/components/` fits the editor's eventual information architecture.\n\nPlan comment: see source issue for details.\n",
+          "labels": [
+            "enhancement",
+            "sprint:3",
+            "supervisor",
+            "tier-green"
+          ],
+          "draft": false
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-flaky-detector",
+    "tier": "yellow",
+    "description": "Flaky check detector: tracks CI checks that fail then pass on re-run and publishes a weekly GitHub issue with a remediation report. Implements a new workflow file under .github/workflows/; no production code is changed.\n",
+    "trigger_keywords": [
+      "hardening",
+      "feat",
+      "flaky",
+      "detector",
+      "check",
+      "tracks",
+      "checks",
+      "that",
+      "fail",
+      "then",
+      "pass"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening"
+      ],
+      "title_pattern": "^feat[(]reliability[)]:.*flaky",
+      "body_patterns": [
+        "(?i)(flaky|flak|check.?fail.*re.?run|re.?run.*fail|intermittent.?check|weekly.?report|track.?fail|fail.?pass)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/COORDINATION.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/flaky-check-detector.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — flaky check detector plan (YELLOW tier)**\n\nWorkflow name: `$slots.workflow_name`\nReport schedule (cron): `$slots.report_schedule`\n\nThis plan adds a new `.github/workflows/$slots.workflow_name.yml` that:\n1. On `workflow_run` completion events, records checks that failed then passed on re-run.\n2. On a weekly schedule (`$slots.report_schedule` UTC), opens a GitHub issue listing\n   flaky check names, frequency counts, and recommended remediation.\n\nNo production code paths are modified. Will open a draft PR for review.\n\nReact ✅ to proceed, or comment with adjustments needed.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` — flaky check detector.\n\n**Behaviour:**\n- Listens on `workflow_run` events; records check names that fail then pass on re-run.\n- Weekly cron (`$slots.report_schedule`) opens a GitHub issue with the remediation report.\n\nNo runtime code changed. Only `.github/workflows/$slots.workflow_name.yml` added.\n\nYellow-tier: human review required before merge. Draft until approved.\n",
+          "labels": [
+            "engineering",
+            "hardening",
+            "supervisor",
+            "tier-yellow"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this flaky-check-detector PR (yellow tier).\n- Only `.github/workflows/$slots.workflow_name.yml` is added; no runtime paths touched.\n- Report cron: `$slots.report_schedule` UTC (Monday 09:00).\n- Source issue: #$triggers.issue_number (parent: #270)\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-memory-single-writer",
+    "tier": "yellow",
+    "description": "Memory single-writer policy (MA-8): adds a CI workflow that prevents concurrent memory/*.md edits by enforcing a file-lock check on PRs targeting memory/ paths. Implements the policy as a GitHub Actions workflow; no runtime code is changed.\n",
+    "trigger_keywords": [
+      "engineering",
+      "hardening",
+      "feat",
+      "memory",
+      "single",
+      "writer",
+      "singlewriter",
+      "policy",
+      "adds",
+      "workflow",
+      "that",
+      "prevents"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "engineering",
+        "hardening"
+      ],
+      "title_pattern": "^MA-8|memory.?single.?writer|concurrent.?memory|memory.*lock",
+      "body_patterns": [
+        "(?i)(memory.?single.?writer|memory/.*\\.md|concurrent.*edit|single.?writer|prevent.?concurrent|file.?lock|ma.?8)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/COORDINATION.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/memory-single-writer.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — memory single-writer policy plan (YELLOW tier)**\n\nMemory path glob: `$slots.memory_path_glob`\nWorkflow name: `$slots.workflow_name`\n\nThis plan adds `.github/workflows/$slots.workflow_name.yml` that:\n1. Triggers on `pull_request` events touching `$slots.memory_path_glob`.\n2. Checks that no other open PR is simultaneously modifying paths matching\n   `$slots.memory_path_glob`.\n3. Fails the check (blocks merge) if a concurrent memory-file edit is detected,\n   linking to the conflicting PR for resolution.\n\nNo runtime code is changed. Only the new CI workflow file is added.\n\nReact ✅ to confirm, or comment with adjustments needed.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\nAdds `.github/workflows/$slots.workflow_name.yml` — memory single-writer lock.\n\n**Policy enforced:**\n- On any PR touching `$slots.memory_path_glob`, fail CI if another open PR\n  is simultaneously modifying a file matching the same glob.\n- Prevents concurrent memory/*.md edits from diverging or overwriting each other.\n\nNo runtime code touched. Only `.github/workflows/$slots.workflow_name.yml` added.\n\nYellow-tier: human review required before merge. Draft until approved.\n",
+          "labels": [
+            "engineering",
+            "hardening",
+            "supervisor",
+            "tier-yellow"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this memory-single-writer PR (yellow tier).\n- Only `.github/workflows/$slots.workflow_name.yml` is added.\n- Memory path glob enforced: `$slots.memory_path_glob`\n- No runtime packages, migrations, or production config modified.\n- Source issue: #$triggers.issue_number (MA-8)\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "feat-review-hints",
+    "tier": "red",
+    "description": "Auto-request / notify relevant CODEOWNERS and platform/security reviewers when a PR touches sensitive paths. Implements reviewer-class hints via CODEOWNERS updates and/or a path-based labeler workflow. Changes go to a draft PR for human review.\n",
+    "trigger_keywords": [
+      "hardening",
+      "feat",
+      "review",
+      "hints",
+      "autorequest",
+      "notify",
+      "relevant",
+      "codeowners",
+      "platformsecurity",
+      "reviewers",
+      "when"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening"
+      ],
+      "title_pattern": "^feat[(]review[)]:.*reviewer",
+      "body_patterns": [
+        "(?i)(codeowner|reviewer.?class|reviewer.?hint|sensitive.?path|auto.?request|platform.?review|security.?review|path.?delta|path.?change)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/CODEOWNERS",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/labeler.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — reviewer-class hints plan (RED tier)**\n\nSensitive paths: `$slots.sensitive_paths`\nReviewer class: `$slots.reviewer_class`\nChange target: `$slots.change_target`\n\nThis is a **red-tier** plan because CODEOWNERS and labeler workflows gate all\nsensitive-path PRs. The supervisor will open a **draft PR** adding the reviewer\nhints; no auto-merge is permitted.\n\nExisting CODEOWNERS + labeler captured in steps s1/s2.\n\nReact ✅ to confirm the plan before the PR is drafted.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\n**Sensitive paths:** $slots.sensitive_paths\n**Reviewer class:** $slots.reviewer_class\n**Change target:** $slots.change_target\n\nDraft PR adding reviewer-class hints for sensitive path deltas.\nTouches only `.github/CODEOWNERS` and/or `.github/workflows/labeler.yml`.\n\nRed-tier: CODEOWNER must review before merge. Do NOT enable auto-merge.\n",
+          "labels": [
+            "hardening",
+            "engineering",
+            "supervisor",
+            "tier-red"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this reviewer-hints PR (red tier).\n- Only `.github/CODEOWNERS` and/or `.github/workflows/labeler.yml` are touched.\n- Existing assignments captured in s1/s2 to prevent accidental removals.\n- Source issue: #$triggers.issue_number (parent: #270)\n"
         },
         "side_effects": "none"
       }
@@ -616,6 +1389,154 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "governance-branch-protection",
+    "tier": "red",
+    "description": "Phased branch-protection hardening playbook: promotes checks from warn-only to required based on measured signal quality. Opens a PR to update the branch-protection runbook and/or the corresponding .github/workflows file; never applies rulesets directly.\n",
+    "trigger_keywords": [
+      "hardening",
+      "governance",
+      "engineering",
+      "branch",
+      "protection",
+      "phased",
+      "branchprotection",
+      "playbook",
+      "promotes",
+      "checks",
+      "from",
+      "warnonly",
+      "required"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "governance",
+        "engineering"
+      ],
+      "title_pattern": "^chore[(]governance[)]:.*branch.?protect",
+      "body_patterns": [
+        "(?i)(branch.?protect|required.?check|warn.?only|promote|policy.?promot|signal.?quality|phased|playbook)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/runbooks/github-secrets-and-tokens.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": ".github/workflows/apply-sec-hardening.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — branch-protection hardening plan (RED tier)**\n\nPhase: `$slots.phase`\nTarget check: `$slots.target_check`\n\nThis is a **red-tier** plan. The supervisor will open a **draft PR** updating\nthe branch-protection runbook and/or the `apply-sec-hardening.yml` workflow.\nNo ruleset is applied automatically — a CODEOWNER must merge and trigger\nthe promotion manually.\n\nExisting hardening workflow snapshot captured in step s2.\n\nReact ✅ to confirm the plan before the PR is drafted.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number\n\n**Phase:** $slots.phase\n**Target check:** $slots.target_check\n\nThis draft PR was generated by the supervisor to codify the branch-protection\nhardening step described in the linked issue.\n\nChanges are **docs/runbook only** or **workflow-only**; no ruleset is activated\nautomatically. A CODEOWNER must review the generated content and merge when\nthe signal quality threshold is confirmed.\n\nRed-tier: human approval required before merge. Do NOT use auto-merge.\n",
+          "labels": [
+            "hardening",
+            "governance",
+            "supervisor",
+            "tier-red"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this branch-protection hardening PR (red tier).\n- Only `docs/` or `.github/workflows/` files are touched — no rulesets applied.\n- Human CODEOWNER must verify signal quality before approving.\n- Source issue: #$triggers.issue_number (parent: #270)\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
+    "id": "governance-hardening-tweak",
+    "tier": "green",
+    "description": "",
+    "trigger_keywords": [
+      "hardening",
+      "governance",
+      "tweak"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "hardening",
+        "governance"
+      ],
+      "title_pattern": "^(chore|docs)[(](governance|docs|security|review)[)]:",
+      "body_patterns": [
+        "(workflow|label|CODEOWNERS|codeowner|readme|branch.?protect|labeler|AGENT_PROTOCOL|permissions:)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "path": "$slots.target_path",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "branch": "$slots.branch_name",
+          "base": "main",
+          "title": "$slots.commit_message",
+          "commit_message": "$slots.commit_message",
+          "files": [
+            {
+              "path": "$slots.target_path",
+              "content": "$slots.file_content"
+            }
+          ],
+          "body": "Auto-drafted by supervisor for cluster `governance-hardening-tweak`.\nChange type: $slots.change_type\nScope: $slots.scope\nTarget: $slots.target_path\nSource issue: see linked issue.\n\nThis is a low-risk governance/hardening artifact. Human review is required before merge.\nThe supervisor has captured the intent from the linked issue; please verify the generated\nfile content matches the desired policy before approving.\n",
+          "labels": [
+            "hardening",
+            "supervisor",
+            "tier-green"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s2.number",
+          "body": "Supervisor drafted this governance PR from the linked issue. Only `.github/`, `docs/`, or root-level `README.md` files are touched; no runtime code paths changed. Pre-existing file content (if any) was captured in step s1."
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "governance-hardening",
     "tier": "green",
     "description": "Small governance, process, or hardening change: adding/updating labels, branch-protection tweaks, README/CLAUDE.md edits, workflow permission tightening, or AGENT_PROTOCOL propagation.",
@@ -791,11 +1712,94 @@ export const GENERATED_TEMPLATES: Template[] = [
     ]
   },
   {
+    "id": "repo-governance-audit",
+    "tier": "yellow",
+    "description": "Repo governance audit: reads repository metadata for all Latimer-Woods-Tech repos and produces a structured audit comment listing merge-settings drift, missing descriptions, incorrect visibility, and missing SECURITY.md. Outputs a findings comment and optionally a docs PR with the audit report. No repos are archived or mutated automatically.\n",
+    "trigger_keywords": [
+      "area",
+      "ops",
+      "hardening",
+      "repo",
+      "governance",
+      "audit",
+      "reads",
+      "repository",
+      "metadata",
+      "latimerwoodstech",
+      "repos"
+    ],
+    "triggers": {
+      "labels_any_of": [
+        "area:ops",
+        "hardening"
+      ],
+      "title_pattern": "^OPS-2|repo.?governance|legacy.?cleanup|visibility.?audit",
+      "body_patterns": [
+        "(?i)(legacy.?cleanup|visibility.?audit|merge.?setting|squash.?only|SECURITY\\.md|archive|repo.?governance|pre.?factory)"
+      ]
+    },
+    "steps": [
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/runbooks/transfer.md",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.readFile",
+        "slots": {
+          "repo": "factory",
+          "path": "docs/service-registry.yml",
+          "ref": "main",
+          "allow_missing": true
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "issue_ref": "$triggers.issue_number",
+          "body": "**Supervisor — repo governance audit (YELLOW tier)**\n\nAudit scope: `$slots.audit_scope`\n\nThe supervisor will produce a structured audit report covering:\n- Merge settings drift (`squashMergeAllowed`, `rebaseMergeAllowed`, `deleteBranchOnMerge`)\n- Repos missing descriptions\n- Public repos without `SECURITY.md`\n- Legacy repos (`coh`, `The_Calling`, `focusbro`) — archive candidates\n\n**No repos will be archived or mutated automatically.**\nAll findings are report-only. Mutations require explicit human action per FRIDGE rule 8.\n\nWill open a draft PR adding `docs/governance/repo-audit-$(date +%Y-%m).md`.\nReact ✅ to proceed.\n"
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.openPR",
+        "slots": {
+          "repo": "factory",
+          "base": "main",
+          "head": "$slots.branch_name",
+          "title": "$slots.commit_message",
+          "draft": true,
+          "body": "Closes #$triggers.issue_number (or enables human to action sub-issues)\n\nAdds `docs/governance/repo-audit.md` — structured findings from the OPS-2\nrepo governance audit.\n\n**Scope:** $slots.audit_scope\n\n**Findings format:**\n| Repo | Issue | Required action |\n|------|-------|----------------|\n| (populated from audit) | ... | ... |\n\n**No repos are archived or mutated by this PR.**\nAll mutations are manual follow-ups per the transfer runbook.\n\nYellow-tier: human review required before merge.\n",
+          "labels": [
+            "area:ops",
+            "hardening",
+            "supervisor",
+            "tier-yellow"
+          ]
+        },
+        "side_effects": "none"
+      },
+      {
+        "tool": "github.comment",
+        "slots": {
+          "pr": "$s4.number",
+          "body": "Supervisor drafted this repo governance audit PR (yellow tier).\n- Only `docs/governance/repo-audit.md` is added (new doc, no existing files modified).\n- No repos archived, no settings changed — findings only.\n- Sub-issues OPS-2.1, OPS-2.2, OPS-2.3 require separate human-initiated actions.\n- Source issue: #$triggers.issue_number\n"
+        },
+        "side_effects": "none"
+      }
+    ]
+  },
+  {
     "id": "reusable-workflow-rollout",
     "tier": "yellow",
     "description": "",
     "trigger_keywords": [
-      "enhancement",
       "hardening",
       "reusable",
       "workflow",
@@ -803,7 +1807,6 @@ export const GENERATED_TEMPLATES: Template[] = [
     ],
     "triggers": {
       "labels_any_of": [
-        "enhancement",
         "hardening"
       ],
       "title_pattern": "(_app-ci|_app-deploy|reusable workflow|factory workflow)",

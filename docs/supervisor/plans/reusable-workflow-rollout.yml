@@ -2,7 +2,7 @@ id: reusable-workflow-rollout
 version: 1
 tier: yellow
 triggers:
-  labels_any_of: [enhancement, hardening]
+  labels_any_of: [hardening]
   title_pattern: "(_app-ci|_app-deploy|reusable workflow|factory workflow)"
   body_patterns:
     - "(?i)(replace|migrate|adopt|switch).*(workflow|deploy\\.yml|ci\\.yml)"
@@ -13,7 +13,7 @@ preconditions:
 slots:
   - name: target_repo
     type: enum
-    values: [HumanDesign, videoking, xico-city, ijustus, xpelevator, factory-admin]
+    values: [HumanDesign, capricast, xico-city, ijustus, xpelevator, factory-admin]
     referential_check: factory_admin.repo.health
     source: issue_title
   - name: workflow_kind

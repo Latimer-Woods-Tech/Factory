@@ -1,0 +1,528 @@
+name: Capricast Rename
+
+# Step-gated rename workflow: videoking / nichestream-api → capricast
+# FRIDGE rule 8: irreversible actions require explicit human approval.
+# Each step must be triggered manually. No automated progression.
+#
+# Before starting:
+#   1. Open a tracking issue and note its number (use as tracking_issue input)
+#   2. Run steps in order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+#   3. Verify the curl receipt posted to the tracking issue after each step
+#   4. Only trigger the next step once the previous one is confirmed working
+#
+# Required secrets: GH_TOKEN (or FACTORY_APP_*), CF_API_TOKEN, CF_ACCOUNT_ID
+# Optional secrets: PUSHOVER_TOKEN, PUSHOVER_USER
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: 'Which rename step to execute'
+        required: true
+        type: choice
+        options:
+          - 1-audit-and-fix-domain-outage
+          - 2-rename-github-repo
+          - 3-create-capricast-r2
+          - 4-rename-cloudflare-worker
+          - 5-attach-capricast-domains
+          - 6-update-factory-docs
+          - 7-update-service-registry
+          - 8-verify-all-endpoints
+      tracking_issue:
+        description: 'GitHub issue number to post receipts to'
+        required: true
+        type: string
+
+concurrency:
+  group: capricast-rename
+  cancel-in-progress: false   # never cancel in-flight rename steps
+
+jobs:
+
+  # ── Step 1: Confirm the current outage and restore api.itsjusus.com ─────────
+  step-1:
+    if: inputs.step == '1-audit-and-fix-domain-outage'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Audit endpoints
+        id: audit
+        run: |
+          check() {
+            local url=$1
+            local code
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
+            echo "$url → $code"
+          }
+          echo "## Endpoint audit" >> $GITHUB_STEP_SUMMARY
+          check "https://nichestream-api.adrper79.workers.dev/health" | tee -a $GITHUB_STEP_SUMMARY
+          check "https://api.itsjusus.com/health"                     | tee -a $GITHUB_STEP_SUMMARY
+          check "https://itsjusus.com"                                 | tee -a $GITHUB_STEP_SUMMARY
+          check "https://assets.itsjusus.com"                         | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Re-attach api.itsjusus.com via Cloudflare API
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          # Ensure custom domain route exists for nichestream-api worker
+          curl -s -X PUT "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/scripts/nichestream-api/domains" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '[{"hostname":"api.itsjusus.com","service":"nichestream-api","environment":"production"}]' \
+            | jq '{success,errors}'
+
+      - name: Verify recovery
+        id: verify
+        run: |
+          sleep 10
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "https://api.itsjusus.com/health")
+          echo "status=$CODE" >> $GITHUB_OUTPUT
+          echo "api.itsjusus.com/health → $CODE"
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 1 — Domain outage audit + recovery** ${{ steps.verify.outputs.status == '200' && '✓' || '⚠' }}
+
+          | Endpoint | Status |
+          |---|---|
+          | nichestream-api.adrper79.workers.dev/health | $(curl -s -o /dev/null -w "%{http_code}" https://nichestream-api.adrper79.workers.dev/health) |
+          | api.itsjusus.com/health | ${{ steps.verify.outputs.status }} |
+
+          ${{ steps.verify.outputs.status == '200' && '✓ Primary domain restored. Proceed to step 2.' || '⚠ Domain still unreachable. Investigate before continuing — do NOT proceed to step 2.' }}
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 2: Rename GitHub repo videoking → capricast ────────────────────────
+  step-2:
+    if: inputs.step == '2-rename-github-repo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Rename repo via GitHub API
+        id: rename
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          RESULT=$(gh api repos/Latimer-Woods-Tech/videoking \
+            -X PATCH \
+            -f name=capricast \
+            --jq '{name: .name, html_url: .html_url, message: .message}')
+          echo "$RESULT"
+          echo "result=$RESULT" >> $GITHUB_OUTPUT
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 2 — GitHub repo renamed** ✓
+
+          \`Latimer-Woods-Tech/videoking\` → \`Latimer-Woods-Tech/capricast\`
+
+          GitHub preserves history and redirects old URLs automatically.
+
+          **Next:** Proceed to step 3 (create capricast R2 bucket).
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 3: Create capricast-r2 bucket (videoking-r2 content migrated separately) ──
+  step-3:
+    if: inputs.step == '3-create-capricast-r2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Create capricast-r2 bucket
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/r2/buckets" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"name":"capricast-r2","locationHint":"WNAM"}' \
+            | jq '{success,errors,result}'
+
+      - name: Sync content from videoking-r2 (via wrangler r2 object list + copy)
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          # Use aws-cli with Cloudflare R2 S3-compatible endpoint
+          pip install awscli -q
+          aws configure set aws_access_key_id "$R2_ACCESS_KEY_ID"
+          aws configure set aws_secret_access_key "$R2_SECRET_ACCESS_KEY"
+          aws s3 sync \
+            s3://videoking-r2 \
+            s3://capricast-r2 \
+            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --no-progress
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 3 — R2 bucket created + content synced** ✓
+
+          - Created: \`capricast-r2\`
+          - Synced from: \`videoking-r2\`
+
+          **Manual action still required:**
+          1. In Cloudflare dashboard, set \`assets.capricast.com\` as the public domain for \`capricast-r2\`
+          2. Keep \`videoking-r2\` live until DNS cutover is complete (step 5)
+
+          **Next:** Proceed to step 4 (rename Worker).
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 4: Rename Worker nichestream-api → capricast-api ───────────────────
+  # Follows the CLAUDE.md Worker Rename Protocol.
+  # consumers: [] confirmed in service-registry so no consumer URL updates needed.
+  step-4:
+    if: inputs.step == '4-rename-cloudflare-worker'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Latimer-Woods-Tech/capricast
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Update worker name in wrangler.jsonc
+        run: |
+          # Rename name field: nichestream-api → capricast-api
+          node -e "
+            const fs = require('fs');
+            const path = 'wrangler.jsonc';
+            let content = fs.readFileSync(path, 'utf8');
+            content = content.replace(/\"name\":\s*\"nichestream-api\"/, '\"name\": \"capricast-api\"');
+            fs.writeFileSync(path, content);
+            console.log('Updated wrangler.jsonc');
+          "
+          grep '"name"' wrangler.jsonc
+
+      - name: Commit wrangler.jsonc update
+        run: |
+          git config user.name  "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+          git add wrangler.jsonc
+          git commit -m "chore(wrangler): rename worker nichestream-api → capricast-api"
+          git push
+
+      - name: Deploy worker under new name
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: wrangler deploy
+
+      - name: Verify new workers.dev URL
+        id: verify
+        run: |
+          sleep 15
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "https://capricast-api.adrper79.workers.dev/health")
+          echo "status=$CODE" >> $GITHUB_OUTPUT
+          echo "capricast-api.adrper79.workers.dev/health → $CODE"
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 4 — Worker renamed** ${{ steps.verify.outputs.status == '200' && '✓' || '✗' }}
+
+          - Old: \`nichestream-api.adrper79.workers.dev\`
+          - New: \`capricast-api.adrper79.workers.dev\` → HTTP ${{ steps.verify.outputs.status }}
+
+          ${{ steps.verify.outputs.status == '200' && '✓ New workers.dev URL is live.' || '✗ STOP — new URL not responding. Do not proceed.' }}
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 5: Attach capricast.com domains ───────────────────────────────────
+  step-5:
+    if: inputs.step == '5-attach-capricast-domains'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Attach api.capricast.com to Worker
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          curl -s -X PUT "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/scripts/capricast-api/domains" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '[{"hostname":"api.capricast.com","service":"capricast-api","environment":"production"}]' \
+            | jq '{success,errors}'
+
+      - name: Verify api.capricast.com
+        id: verify-api
+        run: |
+          sleep 30
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "https://api.capricast.com/health")
+          echo "api=$CODE" >> $GITHUB_OUTPUT
+          echo "api.capricast.com/health → $CODE"
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 5 — Capricast domains attached** ${{ steps.verify-api.outputs.api == '200' && '✓' || '⚠' }}
+
+          | Domain | HTTP |
+          |---|---|
+          | api.capricast.com/health | ${{ steps.verify-api.outputs.api }} |
+
+          **Manual actions still needed (Cloudflare dashboard):**
+          - Set \`capricast.com\` as custom domain for Pages project
+          - Set \`assets.capricast.com\` as public domain for \`capricast-r2\` bucket
+          - Point DNS CNAME records for capricast.com → Pages, assets.capricast.com → R2
+
+          **Next:** Proceed to step 6 (update Factory docs).
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 6: Update Factory docs ─────────────────────────────────────────────
+  step-6:
+    if: inputs.step == '6-update-factory-docs'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Replace videoking/nichestream references in docs
+        run: |
+          # Targeted replacements — docs, scripts, workflow files only.
+          # Never touches src/ code; the capricast repo owns those.
+          FILES=$(git ls-files -- 'docs/' 'scripts/' 'apps/supervisor/' '.github/workflows/' \
+            | grep -v 'capricast-rename.yml')
+
+          echo "Scanning $(echo "$FILES" | wc -l) files..."
+
+          echo "$FILES" | xargs sed -i \
+            -e 's|nichestream-api\.adrper79\.workers\.dev|capricast-api.adrper79.workers.dev|g' \
+            -e 's|api\.itsjusus\.com|api.capricast.com|g' \
+            -e 's|assets\.itsjusus\.com|assets.capricast.com|g' \
+            -e 's|itsjusus\.com|capricast.com|g' \
+            -e 's|nichestream-api|capricast-api|g' \
+            -e 's|Latimer-Woods-Tech/videoking|Latimer-Woods-Tech/capricast|g'
+
+          # Rename docs/videoking/ folder contents (file renames, not sed)
+          if [ -d "docs/videoking" ]; then
+            git mv docs/videoking docs/capricast || true
+          fi
+
+          echo "Changed files:"
+          git diff --name-only
+
+      - name: Commit doc updates
+        run: |
+          git config user.name  "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "docs(rename): videoking/nichestream-api → capricast across Factory docs"
+          git push
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          CHANGED=$(git diff HEAD~1 --name-only 2>/dev/null | wc -l || echo "0")
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 6 — Factory docs updated** ✓
+
+          Updated references across docs/, scripts/, apps/supervisor/, .github/workflows/.
+
+          **Next:** Proceed to step 7 (update service-registry.yml).
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 7: Update service-registry.yml ─────────────────────────────────────
+  step-7:
+    if: inputs.step == '7-update-service-registry'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Update service-registry.yml entry
+        run: |
+          node -e "
+            const fs = require('fs');
+            let reg = fs.readFileSync('docs/service-registry.yml', 'utf8');
+            // Update the videoking entry fields
+            reg = reg
+              .replace(/id: videoking/, 'id: capricast')
+              .replace(/name: nichestream-api/, 'name: capricast-api')
+              .replace(/repo: Latimer-Woods-Tech\/videoking/, 'repo: Latimer-Woods-Tech/capricast')
+              .replace(/url: https:\/\/api\.itsjusus\.com/, 'url: https://api.capricast.com')
+              .replace(/custom_domain: api\.itsjusus\.com/, 'custom_domain: api.capricast.com')
+              .replace(/deployment_status:.*/, 'deployment_status: live')
+              .replace(/legacy_names:.*/, 'legacy_names: [videoking, nichestream-api]');
+            fs.writeFileSync('docs/service-registry.yml', reg);
+            console.log('service-registry.yml updated');
+          "
+
+      - name: Commit registry update
+        run: |
+          git config user.name  "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+          git add docs/service-registry.yml
+          git commit -m "chore(registry): rename videoking → capricast in service-registry.yml"
+          git push
+
+      - name: Post receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<'EOF'
+          **Step 7 — service-registry.yml updated** ✓
+
+          Entry updated: \`id: capricast\`, \`name: capricast-api\`, \`url: https://api.capricast.com\`
+          Legacy names preserved: \`[videoking, nichestream-api]\`
+
+          **Next:** Proceed to step 8 — final verification of all endpoints.
+
+          _Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+  # ── Step 8: Final end-to-end verification ───────────────────────────────────
+  step-8:
+    if: inputs.step == '8-verify-all-endpoints'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - name: Verify all capricast endpoints
+        id: verify
+        run: |
+          check() {
+            local label=$1 url=$2
+            local code
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "$url" || echo "000")
+            echo "| $label | $code | $([ "$code" = "200" ] && echo '✓' || echo '✗') |"
+          }
+          {
+            echo "| Endpoint | HTTP | Status |"
+            echo "|---|---|---|"
+            check "api.capricast.com/health"                              "https://api.capricast.com/health"
+            check "capricast.com"                                         "https://capricast.com"
+            check "assets.capricast.com"                                  "https://assets.capricast.com"
+            check "capricast-api.adrper79.workers.dev/health (fallback)"  "https://capricast-api.adrper79.workers.dev/health"
+          } | tee /tmp/verify-table.txt
+
+      - name: Post final receipt
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          TABLE=$(cat /tmp/verify-table.txt)
+          gh issue comment ${{ inputs.tracking_issue }} --repo Latimer-Woods-Tech/Factory --body "$(cat <<EOF
+          **Step 8 — Final verification** ✓
+
+          ${TABLE}
+
+          **Rename complete.** If all rows show ✓, close this tracking issue.
+
+          **Post-rename cleanup (manual, low-urgency):**
+          - Rename Sentry project \`videoking\` → \`capricast\` in Sentry dashboard
+          - Update any external links in marketing/docs pointing to itsjusus.com
+          - Archive \`videoking-r2\` once assets.capricast.com is confirmed stable (≥ 48h)
+          - Update any GitHub Actions secrets named \`VIDEOKING_*\` in the capricast repo
+
+          _Rename workflow complete — Run ID: ${{ github.run_id }}_
+          EOF
+          )"
+
+      - name: Notify completion
+        run: |
+          curl -s --form-string "token=${{ secrets.PUSHOVER_TOKEN }}" \
+               --form-string "user=${{ secrets.PUSHOVER_USER }}" \
+               --form-string "title=Capricast rename complete" \
+               --form-string "message=All endpoints verified. Rename from videoking/nichestream to capricast is done." \
+               https://api.pushover.net/1/messages.json || true

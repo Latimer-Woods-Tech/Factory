@@ -1,5 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
+// process.env is correct here: this is a Playwright test running in Node.js on
+// GitHub Actions, not a Cloudflare Worker. Factory's "no process.env" constraint
+// applies to Worker source files only, not to Playwright test infrastructure.
 const BASE = process.env.BASE_URL ?? 'https://selfprime.net';
 const API_BASE = process.env.API_BASE_URL ?? 'https://api.selfprime.net';
 const smokeUserEmail = process.env.SMOKE_USER_EMAIL ?? '';
@@ -63,12 +66,18 @@ test.describe('Homepage', () => {
     await expect(page.locator('body')).toContainText('Prime Self');
   });
 
-  test('hero CTA "Get your free chart" is visible and routes to the auth overlay entry', async ({ page }) => {
+  test('hero CTA "Get your free chart" is visible and scrolls to the in-page chart calculator', async ({ page }) => {
+    // Production homepage moved the free-chart entry point from the auth
+    // overlay (/?start=1 or /pricing#free-chart) to an in-page anonymous
+    // calculator anchored at #landing-chart-calc. The hero CTA is now a
+    // same-page anchor link — no auth required to compute a chart.
+    // Triage 2026-05-23: smoke regression RC-4 / Test A.
     await page.goto('/');
     const cta = page.getByRole('link', { name: /get your free chart/i }).first();
     await expect(cta).toBeVisible();
     await cta.click();
-    await expect(page).toHaveURL(/(start=1|pricing#free-chart)/);
+    await expect(page).toHaveURL(/#landing-chart-calc$/);
+    await expect(page.locator('#landing-chart-calc')).toBeVisible();
   });
 
   test('auth entry renders the sign-in overlay contract at /?start=1', async ({ page }) => {
@@ -150,6 +159,90 @@ test.describe('API health', () => {
     const body = await response.json();
     expect(body.status).toBe('ok');
     expect(body.env).toBe('production');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CSP / SRI / static-asset integrity
+// ---------------------------------------------------------------------------
+
+/**
+ * Patterns that indicate a browser-blocked CSP or SRI violation in the
+ * console.  Matches Chrome/Firefox/Safari wording.
+ */
+const CSP_VIOLATION_RE =
+  /refused to (load|execute|apply|connect)|content security policy|violates the following|sri.*integrity|integrity.*sha|blocked by.*csp/i;
+
+/** First-party JS files that must exist on the pricing page. */
+const REQUIRED_PRICING_JS = ['/js/pricing-schema.js', '/js/trust-proof-content.js'];
+
+/** Normalised origin of BASE (e.g. "https://selfprime.net") for exact-origin comparison. */
+const BASE_ORIGIN = new URL(BASE).origin;
+
+function attachCspListener(page: Page): () => string[] {
+  const blockedMessages: string[] = [];
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (CSP_VIOLATION_RE.test(text)) {
+      blockedMessages.push(`[${msg.type()}] ${text}`);
+    }
+  });
+  // SecurityError thrown when a blocked script body is evaluated
+  page.on('pageerror', (err) => {
+    if (CSP_VIOLATION_RE.test(err.message)) {
+      blockedMessages.push(`[pageerror] ${err.message}`);
+    }
+  });
+  return () => blockedMessages;
+}
+
+function assertNoViolations(violations: string[], label: string): void {
+  expect(violations, `${label}:\n  ${violations.join('\n  ')}`).toHaveLength(0);
+}
+
+test.describe('CSP and static-asset integrity', () => {
+  test('/ — no CSP/SRI blocked-script console errors', async ({ page }) => {
+    const getBlocked = attachCspListener(page);
+    await page.goto('/');
+    // networkidle may never fire on pages with long-poll/SSE — domcontentloaded
+    // guarantees all synchronously-loaded scripts have been evaluated.
+    await page.waitForLoadState('domcontentloaded');
+    assertNoViolations(getBlocked(), 'CSP/SRI violation(s) on /');
+  });
+
+  test('/pricing — no CSP/SRI blocked-script console errors', async ({ page }) => {
+    const getBlocked = attachCspListener(page);
+    await page.goto('/pricing');
+    await page.waitForLoadState('domcontentloaded');
+    assertNoViolations(getBlocked(), 'CSP/SRI violation(s) on /pricing');
+  });
+
+  test('pricing page — required first-party JS assets return 200 (no 404)', async ({ page }) => {
+    const notFound: string[] = [];
+
+    page.on('response', (response) => {
+      // Guard against subdomain-bypass: compare origin strictly, not startsWith on the raw URL.
+      const parsed = new URL(response.url());
+      if (parsed.origin === BASE_ORIGIN && response.status() === 404) {
+        if (REQUIRED_PRICING_JS.includes(parsed.pathname)) {
+          notFound.push(`${parsed.pathname} → 404`);
+        }
+      }
+    });
+
+    await page.goto('/pricing');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Explicitly probe each required asset so the test fails even when the
+    // <script> tag referencing it has already been removed from the page.
+    for (const asset of REQUIRED_PRICING_JS) {
+      const response = await page.request.get(`${BASE_ORIGIN}${asset}`);
+      if (response.status() === 404) {
+        notFound.push(`${asset} → 404 (direct probe)`);
+      }
+    }
+
+    assertNoViolations(notFound, 'First-party JS 404s on /pricing');
   });
 });
 

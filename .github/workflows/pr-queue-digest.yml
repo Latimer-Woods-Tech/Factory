@@ -11,10 +11,10 @@
 #   Using 13:00 UTC; shift to 14:00 after DST ends.
 #
 # SECRETS USED
-#   FACTORY_APP_ID       — GitHub App ID for `factory-cross-repo`
+#   FACTORY_APP_ID          — GitHub App client-id for `factory-cross-repo`
 #   FACTORY_APP_PRIVATE_KEY — PEM private key for the same App
-#   PUSHOVER_USER_KEY    — recipient user key
-#   PUSHOVER_APP_TOKEN   — videoking-alerts app token (via factory's conn)
+#   PUSHOVER_USER           — recipient user key
+#   PUSHOVER_TOKEN          — app token
 #
 # RELATED
 #   factory#84 (MA-6)
@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Mint factory App token
         id: app-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
@@ -46,24 +46,23 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          set -euo pipefail
+          set -eu
           # All open PRs across org
           PRS=$(gh search prs --owner Latimer-Woods-Tech --state open --json number,title,repository,author,createdAt,updatedAt,isDraft,labels,url --limit 100)
           COUNT=$(echo "$PRS" | jq 'length')
           NOW=$(date -u +%s)
 
-          # Categorize
-          STALE=$(echo "$PRS" | jq -r --argjson now "$NOW" \
-            '.[] | select(((now - (.createdAt | fromdateiso8601)) / 3600) > 48) | "  - \(.repository.nameWithOwner)#\(.number): \(.title) (\((now - (.createdAt | fromdateiso8601)) / 3600 | floor)h)"' | head -10)
-          CLAIMED=$(echo "$PRS" | jq -r '.[] | select(.labels | any(.name | startswith("agent:claimed:"))) | "  - \(.repository.nameWithOwner)#\(.number): \(.title)"' | head -10)
-          UNCLAIMED=$(echo "$PRS" | jq -r '.[] | select((.labels | any(.name | startswith("agent:claimed:"))) | not) | select(.isDraft | not) | "  - \(.repository.nameWithOwner)#\(.number): \(.title)"' | head -10)
-          BLOCKED=$(echo "$PRS" | jq -r '.[] | select(.labels | any(.name == "blocked" or .name == "status:blocked")) | "  - \(.repository.nameWithOwner)#\(.number): \(.title)"' | head -10)
+          # Categorize — || true prevents broken-pipe exit from head -10
+          STALE=$(echo "$PRS" | jq -r --argjson now "$NOW" '.[] | select(((now - (.createdAt | fromdateiso8601)) / 3600) > 48) | "  - \(.repository.nameWithOwner)#\(.number): \(.title) (\((now - (.createdAt | fromdateiso8601)) / 3600 | floor)h)"' | head -10 || true)
+          CLAIMED=$(echo "$PRS" | jq -r '.[] | select(.labels | any(.name | startswith("agent:claimed:"))) | "  - \(.repository.nameWithOwner)#\(.number): \(.title)"' | head -10 || true)
+          UNCLAIMED=$(echo "$PRS" | jq -r '.[] | select((.labels | any(.name | startswith("agent:claimed:"))) | not) | select(.isDraft | not) | "  - \(.repository.nameWithOwner)#\(.number): \(.title)"' | head -10 || true)
+          BLOCKED=$(echo "$PRS" | jq -r '.[] | select(.labels | any(.name == "blocked" or .name == "status:blocked")) | "  - \(.repository.nameWithOwner)#\(.number): \(.title)"' | head -10 || true)
 
           # By repo
-          BY_REPO=$(echo "$PRS" | jq -r 'group_by(.repository.nameWithOwner) | map("  \(.[0].repository.nameWithOwner): \(length)") | .[]')
+          BY_REPO=$(echo "$PRS" | jq -r 'group_by(.repository.nameWithOwner) | map("  \(.[0].repository.nameWithOwner): \(length)") | .[]' || true)
 
           DATE=$(date -u +%Y-%m-%d)
-          BODY=$(cat <<EOF
+          BODY=$(cat <<DIGEST_BODY
           LatWood PR Queue — $DATE 9:00 ET
 
           Total open: $COUNT
@@ -71,20 +70,20 @@ jobs:
           By repo:
           $BY_REPO
 
-          🟡 Stale (>48h):
+          Stale (>48h):
           ${STALE:-  (none)}
 
-          🟢 Claimed by an agent:
+          Claimed by agent:
           ${CLAIMED:-  (none)}
 
-          🔵 Unclaimed (ready to pick up):
+          Unclaimed:
           ${UNCLAIMED:-  (none)}
 
-          🔴 Blocked:
+          Blocked:
           ${BLOCKED:-  (none)}
 
           Board: https://github.com/orgs/Latimer-Woods-Tech/projects/1
-          EOF
+          DIGEST_BODY
           )
           echo "body<<DIGEST_EOF" >> "$GITHUB_OUTPUT"
           echo "$BODY" >> "$GITHUB_OUTPUT"
@@ -94,17 +93,17 @@ jobs:
 
       - name: Post to Pushover
         env:
-          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
-          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
+          PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           BODY: ${{ steps.build.outputs.body }}
         run: |
-          if [ -z "${PUSHOVER_USER_KEY:-}" ] || [ -z "${PUSHOVER_APP_TOKEN:-}" ]; then
+          if [ -z "${PUSHOVER_USER:-}" ] || [ -z "${PUSHOVER_TOKEN:-}" ]; then
             echo "::warning::Pushover secrets missing; skipping push"
             exit 0
           fi
           curl -fsS -X POST https://api.pushover.net/1/messages.json \
-            --data-urlencode "token=$PUSHOVER_APP_TOKEN" \
-            --data-urlencode "user=$PUSHOVER_USER_KEY" \
+            --data-urlencode "token=$PUSHOVER_TOKEN" \
+            --data-urlencode "user=$PUSHOVER_USER" \
             --data-urlencode "title=LatWood PR Queue" \
             --data-urlencode "message=$BODY" \
             --data-urlencode "priority=0"

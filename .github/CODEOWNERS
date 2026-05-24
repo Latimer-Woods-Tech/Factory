@@ -35,6 +35,7 @@ memory/**                               @adrper79-dot
 # merge without requiring @adrper79-dot on every PR.
 # ===========================================================================
 apps/*/src/**                           @adrper79-dot @factory-cross-repo[bot]
+apps/*/src/components/ui/**             @adrper79-dot @factory-cross-repo[bot]
 client/**                               @adrper79-dot @factory-cross-repo[bot]
 tests/**                                @adrper79-dot @factory-cross-repo[bot]
 
@@ -48,6 +49,10 @@ tests/**                                @adrper79-dot @factory-cross-repo[bot]
 
 # CI / workflows — any change here multiplies across all apps
 .github/workflows/**                    @adrper79-dot @factory-cross-repo[bot]
+# Workflow registry is the canonical tier classification — human-only.
+# Bot cannot move workflows between tiers; tier changes need a CODEOWNER PR.
+# Reference: docs/decisions/2026-05-23-workflow-lifecycle.md (Pillar 1)
+.github/workflows/REGISTRY.md           @adrper79-dot
 .github/CODEOWNERS                      @adrper79-dot @factory-cross-repo[bot]
 .github/settings.yml                    @adrper79-dot @factory-cross-repo[bot]
 

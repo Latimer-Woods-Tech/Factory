@@ -1,730 +1,809 @@
 name: Render Video
 
-# ---------------------------------------------------------------------------
-# World-class content quality pipeline for Prime Self video automation.
-# All LLM calls use the Prime Self SYSTEM_CONTEXT.md + optional content brief
-# for brand-accurate, hallucination-resistant script generation.
-# ---------------------------------------------------------------------------
+# End-to-end render pipeline. Dispatched by apps/video-cron on every cron
+# tick once a render job is queued in schedule-worker. Each dispatch:
+#
+#   1. Generate headline + narration script (LLM chain)
+#   2. Synthesise narration audio (ElevenLabs)
+#   3. Upload narration MP3 to R2
+#   4. Render MP4 with Remotion
+#   5. ffmpeg re-encode (H.264 baseline + AAC)
+#   6. Upload MP4 to R2
+#   7. Register with Cloudflare Stream and wait for `ready`
+#   8. POST to Capricast admin import endpoint
+#   9. PATCH schedule-worker job → status=done (or status=failed on any step)
+#
+# Two jobs share the workflow file:
+#   * `render`  — runs only on `workflow_dispatch` (cron-initiated). Touches
+#                 real external APIs.
+#   * `dry-run` — runs on every PR change. Walks the same shape using local
+#                 fixtures so we exercise the workflow + scripts in CI
+#                 without burning ElevenLabs / R2 / Stream / Capricast budget.
 
 on:
-  # Manual dispatch — also called programmatically by the cron Worker
   workflow_dispatch:
     inputs:
       job_id:
-        description: 'video_calendar UUID (used as idempotency key)'
+        description: 'schedule-worker job id'
         required: true
         type: string
       composition_id:
-        description: 'Remotion composition to render'
+        description: 'Remotion composition'
         required: true
         type: choice
+        default: 'MarketingVideo'
         options:
-          - MarketingVideo
-          - TrainingVideo
-          - WalkthroughVideo
+          - 'EnergyBlueprintVideo'
+          - 'MarketingVideo'
+          - 'TrainingVideo'
+          - 'WalkthroughVideo'
       app_id:
-        description: 'Factory application identifier (e.g. prime_self)'
+        description: 'Factory application id (e.g. prime_self)'
         required: true
         type: string
       topic:
-        description: 'Short topic label (used when brief_key is not provided)'
+        description: 'Topic / title seed for the render'
         required: true
         type: string
       brief_key:
-        description: 'Content brief filename key (e.g. getting-started-first-week). Loads from apps/video-studio/content-briefs/{app_id}/{key}.json'
+        description: 'Optional named content brief under apps/video-studio/content-briefs/{app-id}/ (without .json)'
         required: false
-        default: ''
         type: string
+        default: ''
       brand_color:
-        description: 'Primary brand hex colour — defaults to Prime Self purple'
+        description: 'Primary brand hex colour'
         required: false
-        default: '#8B5CF6'
         type: string
+        default: '#6366f1'
       brand_accent:
-        description: 'Accent hex colour — defaults to Prime Self green'
+        description: 'Accent brand hex colour'
         required: false
-        default: '#10B981'
         type: string
+        default: '#a5b4fc'
       logo_url:
-        description: 'Logo image URL (leave blank to use APP_LOGO_URL env default)'
+        description: 'Logo image URL (may be empty)'
         required: false
-        default: ''
         type: string
+        default: ''
+      dry_run:
+        description: 'Dry run — walk pipeline shape using fixtures, no external calls'
+        required: false
+        type: choice
+        default: 'false'
+        options:
+          - 'false'
+          - 'true'
+  pull_request:
+    paths:
+      - '.github/workflows/render-video.yml'
+      - 'apps/video-studio/**'
+      - 'apps/video-cron/**'
+  # Also run on push to non-main branches so dry-run executes from the PR
+  # branch's own workflow file (pull_request events use the BASE branch's
+  # workflow file, which means a brand-new render-video.yml only validates
+  # against main *after* merge). Push lets us validate on the PR branch.
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - '.github/workflows/render-video.yml'
+      - 'apps/video-studio/**'
+      - 'apps/video-cron/**'
 
-concurrency:
-  group: render-${{ github.event.inputs.job_id }}
-  cancel-in-progress: false
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 permissions:
   contents: read
 
+concurrency:
+  # Real renders parallel-safe by job_id; PR/branch dry-runs serialised per ref.
+  group: render-video-${{ github.event_name == 'workflow_dispatch' && inputs.job_id || github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  render:
-    name: Generate narration + render MP4
+  # ---------------------------------------------------------------------------
+  # dry-run — runs on every PR. No external API calls.
+  # ---------------------------------------------------------------------------
+  dry-run:
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    outputs:
-      real_job_id: ${{ steps.register_job.outputs.real_job_id }}
-
-    # Opt into Node.js 24 action runtime before the June 2026 forced migration.
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
+    timeout-minutes: 10
+    name: Dry-run pipeline (fixtures)
     steps:
-      # -----------------------------------------------------------------------
-      # 1. Checkout
-      # -----------------------------------------------------------------------
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v6
 
-      # -----------------------------------------------------------------------
-      # 2. Authenticate to GitHub Packages
-      # -----------------------------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Validate workflow inputs shape (dispatch contract)
+        env:
+          JOB_ID: ${{ inputs.job_id || 'dryrun-job' }}
+          COMPOSITION_ID: ${{ inputs.composition_id || 'MarketingVideo' }}
+          APP_ID: ${{ inputs.app_id || 'prime_self' }}
+          TOPIC: ${{ inputs.topic || 'Your Free Energy Blueprint' }}
+          BRIEF_KEY: ${{ inputs.brief_key || '' }}
+          BRAND_COLOR: ${{ inputs.brand_color || '#6366f1' }}
+          BRAND_ACCENT: ${{ inputs.brand_accent || '#a5b4fc' }}
+          LOGO_URL: ${{ inputs.logo_url || '' }}
+        run: |
+          set -euo pipefail
+          echo "job_id=$JOB_ID"
+          echo "composition_id=$COMPOSITION_ID"
+          echo "app_id=$APP_ID"
+          echo "topic=$TOPIC"
+          echo "brief_key=$BRIEF_KEY"
+          echo "brand_color=$BRAND_COLOR"
+          echo "brand_accent=$BRAND_ACCENT"
+          echo "logo_url=$LOGO_URL"
+          case "$COMPOSITION_ID" in
+            MarketingVideo|TrainingVideo|WalkthroughVideo|EnergyBlueprintVideo) ;;
+            *) echo "::error::Unknown composition_id: $COMPOSITION_ID"; exit 1 ;;
+          esac
+
+      - name: Validate publish-to-capricast.mjs is parseable
+        run: node --check apps/video-studio/scripts/publish-to-capricast.mjs
+
+      - name: Validate generate-script.mjs is parseable
+        run: node --check apps/video-studio/scripts/generate-script.mjs
+
+      - name: Validate render.ts entry exists
+        run: |
+          set -euo pipefail
+          test -f apps/video-studio/src/render.ts
+          test -f apps/video-studio/src/Root.tsx
+
+      - name: Install jq
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends jq
+
+      - name: Load fixtures and emit step outputs
+        id: fixtures
+        env:
+          JOB_ID: ${{ inputs.job_id || 'dryrun-job' }}
+          TOPIC: ${{ inputs.topic || 'Your Free Energy Blueprint' }}
+        run: |
+          set -euo pipefail
+          SCRIPT_FX="apps/video-studio/scripts/fixtures/dry-run-script.json"
+          STREAM_FX="apps/video-studio/scripts/fixtures/dry-run-stream.json"
+          test -f "$SCRIPT_FX"
+          test -f "$STREAM_FX"
+          HEADLINE=$(jq -r '.headline' "$SCRIPT_FX")
+          NARRATION=$(jq -r '.narration' "$SCRIPT_FX")
+          STREAM_UID=$(jq -r '.result.uid' "$STREAM_FX")
+          STREAM_STATE=$(jq -r '.result.status.state' "$STREAM_FX")
+          [ "$STREAM_STATE" = "ready" ] || { echo "fixture stream not ready"; exit 1; }
+          echo "headline=$HEADLINE"
+          echo "narration_len=${#NARRATION}"
+          echo "stream_uid=$STREAM_UID"
+          # Synthesise the URLs the real pipeline would compute
+          NARRATION_URL="https://dryrun.example.com/narrations/${JOB_ID}.mp3"
+          VIDEO_URL="https://dryrun.example.com/videos/${JOB_ID}.mp4"
+          THUMB_URL="https://customer-dryrun.cloudflarestream.com/${STREAM_UID}/thumbnails/thumbnail.jpg"
+          {
+            echo "headline=$HEADLINE"
+            echo "stream_uid=$STREAM_UID"
+            echo "narration_url=$NARRATION_URL"
+            echo "video_url=$VIDEO_URL"
+            echo "thumbnail_url=$THUMB_URL"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write Capricast stub server
+        run: |
+          cat > /tmp/capricast-stub.cjs <<'EOF'
+          const http = require('http');
+          const { spawn } = require('child_process');
+          const srv = http.createServer((req, res) => {
+            if (req.method === 'POST' && req.url === '/api/admin/videos/import') {
+              let body = '';
+              req.on('data', (c) => { body += c; });
+              req.on('end', () => {
+                try {
+                  const json = JSON.parse(body);
+                  if (!json.streamUid || !json.title || !json.creatorId || typeof json.durationSeconds !== 'number') {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'BadRequest', got: Object.keys(json) }));
+                    return;
+                  }
+                  res.writeHead(201, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ id: 'dryrun-video-1', url: 'https://capricast.example.com/v/dryrun-video-1' }));
+                } catch {
+                  res.writeHead(400, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: 'InvalidJSON' }));
+                }
+              });
+            } else {
+              res.writeHead(404); res.end();
+            }
+          });
+          srv.listen(8787, '127.0.0.1', () => {
+            console.error('dry-run capricast stub listening on :8787');
+            // Spawn publish-to-capricast.mjs as a child of the stub so the
+            // server is guaranteed to be ready before the publish runs.
+            const child = spawn(process.execPath, [process.argv[2]], {
+              env: process.env,
+              stdio: 'inherit',
+            });
+            child.on('exit', (code) => {
+              console.error('publish-to-capricast exited with code', code);
+              srv.close(() => process.exit(code || 0));
+            });
+          });
+          EOF
+
+      - name: Dry-run publish-to-capricast.mjs against a local stub server
+        env:
+          STREAM_UID: ${{ steps.fixtures.outputs.stream_uid }}
+          HEADLINE: ${{ steps.fixtures.outputs.headline }}
+          THUMBNAIL_URL: ${{ steps.fixtures.outputs.thumbnail_url }}
+        run: |
+          set -euo pipefail
+          export CAPRICAST_API_URL="http://127.0.0.1:8787"
+          export CAPRICAST_PUBLISH_TOKEN="dryrun-token"
+          export CAPRICAST_CREATOR_ID="dryrun-creator"
+          export TITLE="$HEADLINE"
+          export DESCRIPTION="$HEADLINE"
+          export DURATION_SECONDS="15"
+          export TRANSCRIPT="dryrun transcript"
+          export TRANSCRIPT_LANGUAGE="en"
+          node /tmp/capricast-stub.cjs apps/video-studio/scripts/publish-to-capricast.mjs
+
+      - name: Dry-run summary
+        env:
+          STREAM_UID: ${{ steps.fixtures.outputs.stream_uid }}
+          NARRATION_URL: ${{ steps.fixtures.outputs.narration_url }}
+          VIDEO_URL: ${{ steps.fixtures.outputs.video_url }}
+        run: |
+          echo "dry-run OK — stream_uid=$STREAM_UID narration=$NARRATION_URL video=$VIDEO_URL"
+
+  # ---------------------------------------------------------------------------
+  # render — real pipeline. Only triggered by the cron worker (workflow_dispatch).
+  # ---------------------------------------------------------------------------
+  render:
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    name: Render and publish video
+    environment: production
+
+    steps:
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.FACTORY_APP_ID }}
+          client-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
+          skip-token-revoke: true
 
-      # -----------------------------------------------------------------------
-      # 3. Node.js + npm auth
-      # -----------------------------------------------------------------------
-      - name: Set up Node.js
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@latimer-woods-tech'
-        env:
-          NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
+          node-version: '24'
+          # `cache: 'npm'` removed — actions/setup-node looks for
+          # package-lock.json at the repo root, but Factory uses per-app
+          # lockfiles (apps/video-cron/package-lock.json,
+          # apps/video-studio/package-lock.json). The cache miss isn't
+          # worth the workflow-level breakage; render runs are infrequent
+          # enough that cold installs are acceptable.
 
-      # Build @latimer-woods-tech/llm and its dep chain from source so the
-      # video-studio can import it via the file: reference in package.json.
-      # Order matches the dependency graph: errors → monitoring → logger → llm.
-      # Use local tarballs to avoid GitHub Packages authentication issues.
-      - name: Build @latimer-woods-tech/llm from source
+      - name: Install system dependencies (ffmpeg + jq)
+        # awscli removed from this apt install — Ubuntu 24.04 (ubuntu-latest)
+        # has retired the awscli package. AWS CLI v2 is pre-installed at
+        # /usr/local/bin/aws on GitHub-hosted runners (verified by `aws
+        # --version`). Pipeline uses `aws s3 cp --endpoint-url=...` to push
+        # to R2 (S3-compatible).
         run: |
-          # Build errors (no @latimer-woods-tech deps)
-          echo "--- Building errors ---"
-          cd packages/errors
-          npm ci
-          npm run build
-          npm pack
-          cd ../..
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg jq
+          ffmpeg -version | head -1
+          aws --version
 
-          # Build monitoring (devDep: errors)
-          echo "--- Building monitoring ---"
-          cd packages/monitoring
-          npm install ../errors/*.tgz
-          npm install
-          npm run build
-          npm pack
-          cd ../..
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
 
-          # Build logger (deps: errors, monitoring)
-          echo "--- Building logger ---"
-          cd packages/logger
-          npm install ../errors/*.tgz ../monitoring/*.tgz
-          npm install
-          npm run build
-          npm pack
-          cd ../..
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
 
-          # Build llm (deps: errors, logger; devDep: monitoring)
-          echo "--- Building llm ---"
-          cd packages/llm
-          npm install ../errors/*.tgz ../logger/*.tgz ../monitoring/*.tgz
-          npm install
-          npm run build
-        env:
-          NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env ANTHROPIC_API_KEY               ANTHROPIC_API_KEY anthropic-api-key
+          fetch_to_env GROQ_API_KEY                    GROQ_API_KEY groq-api-key
+          fetch_to_env ELEVENLABS_API_KEY              ELEVENLABS_API_KEY elevenlabs-api-key
+          fetch_to_env ELEVENLABS_VOICE_PRIME_SELF     ELEVENLABS_VOICE_PRIME_SELF elevenlabs-voice-prime-self
+          fetch_to_env ELEVENLABS_VOICE_CYPHER         ELEVENLABS_VOICE_CYPHER elevenlabs-voice-cypher
+          fetch_to_env ELEVENLABS_VOICE_DEFAULT        ELEVENLABS_VOICE_DEFAULT elevenlabs-voice-default
+          fetch_to_env CF_ACCOUNT_ID                   CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env CF_STREAM_TOKEN                 CF_STREAM_TOKEN cf-stream-token
+          fetch_to_env CF_STREAM_CUSTOMER_DOMAIN       CF_STREAM_CUSTOMER_DOMAIN cf-stream-customer-domain
+          fetch_to_env R2_ACCESS_KEY_ID                R2_ACCESS_KEY_ID r2-access-key-id
+          fetch_to_env R2_SECRET_ACCESS_KEY            R2_SECRET_ACCESS_KEY r2-secret-access-key
+          fetch_to_env R2_BUCKET_NAME                  R2_BUCKET_NAME r2-bucket-name
+          fetch_to_env R2_PUBLIC_DOMAIN                R2_PUBLIC_DOMAIN r2-public-domain
+          fetch_to_env SCHEDULE_WORKER_URL             SCHEDULE_WORKER_URL schedule-worker-url
+          fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
+          fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
+          fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
+          # YouTube upload (optional — pipeline continues if not configured)
+          fetch_to_env YOUTUBE_CLIENT_ID               YOUTUBE_CLIENT_ID youtube-client-id || true
+          fetch_to_env YOUTUBE_CLIENT_SECRET           YOUTUBE_CLIENT_SECRET youtube-client-secret || true
+          fetch_to_env YOUTUBE_REFRESH_TOKEN           YOUTUBE_REFRESH_TOKEN youtube-refresh-token || true
+          # AI_GATEWAY_URL is the canonical GCP secret name (no _BASE_ infix).
+          # `@latimer-woods-tech/llm@0.3.0+` requires the env var
+          # AI_GATEWAY_BASE_URL (note the _BASE_) — fetch_to_env's first arg
+          # is the local env var name, subsequent args are GCP secret aliases.
+          fetch_to_env AI_GATEWAY_BASE_URL             AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
+
+      - name: Build local package dependencies
+        # `llm` added: apps/video-studio/scripts/generate-script.mjs imports
+        # `@latimer-woods-tech/llm`. The package's npm install resolves to the
+        # workspace dir but the `dist/index.mjs` isn't generated until
+        # `npm run build` runs there. Without this step the import fails with
+        # ERR_MODULE_NOT_FOUND on dist/index.mjs. Per CLAUDE.md package order
+        # (#8), llm's deps are errors + logger, both already in the loop.
+        run: |
+          set -euo pipefail
+          for package in errors monitoring logger neon llm video schedule; do
+            echo "=== ${package} ==="
+            cd "packages/${package}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
 
       - name: Install video-studio dependencies
         working-directory: apps/video-studio
-        run: npm ci
+        run: npm install
+
+      - name: Resolve ElevenLabs voice id
+        id: voice
         env:
-          NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-      # -----------------------------------------------------------------------
-      # 3. Register job in database (idempotent — cron pre-creates; manual dispatch creates here)
-      # -----------------------------------------------------------------------
-      - name: Register job in database
-        id: register_job
+          APP_ID: ${{ inputs.app_id }}
         run: |
-          # Map composition_id → schedule-worker type string
-          case "$COMPOSITION_ID" in
-            MarketingVideo)   TYPE="marketing" ;;
-            TrainingVideo)    TYPE="training" ;;
-            WalkthroughVideo) TYPE="walkthrough" ;;
-            *)                TYPE="marketing" ;;
-          esac
-
-          RESPONSE=$(curl -s -X POST "${SCHEDULE_WORKER_URL}/jobs" \
-            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"appId\":         \"${APP_ID}\",
-              \"type\":          \"${TYPE}\",
-              \"topic\":         \"${TOPIC}\",
-              \"triggerSource\": \"manual\",
-              \"idempotencyKey\": \"wf-${{ github.event.inputs.job_id }}\"
-            }")
-
-          REAL_JOB_ID=$(echo "$RESPONSE" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).data?.id ?? '')")
-          if [ -z "$REAL_JOB_ID" ]; then
-            echo "Failed to register job: $RESPONSE"
-            exit 1
-          fi
-          echo "real_job_id=$REAL_JOB_ID" >> "$GITHUB_OUTPUT"
-          echo "Registered DB job: $REAL_JOB_ID"
-        env:
-          SCHEDULE_WORKER_URL: ${{ secrets.SCHEDULE_WORKER_URL }}
-          WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
-          APP_ID: ${{ github.event.inputs.app_id }}
-          TOPIC: ${{ github.event.inputs.topic }}
-          COMPOSITION_ID: ${{ github.event.inputs.composition_id }}
-
-      # -----------------------------------------------------------------------
-      # 4. System dependencies (ffmpeg + Chrome for Remotion)
-      # -----------------------------------------------------------------------
-      - name: Install ffmpeg
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg
-
-      # -----------------------------------------------------------------------
-      # 5. Load content brief (optional — enriches LLM with approved keyPoints)
-      # If brief_key is provided, reads from apps/video-studio/content-briefs/{app_id}/{brief_key}.json
-      # Outputs: brief_topic, brief_learning_goal, brief_key_points, brief_forbidden_claims, brief_tone_notes
-      # -----------------------------------------------------------------------
-      - name: Load content brief
-        id: load_brief
-        run: |
-          BRIEF_KEY="${{ github.event.inputs.brief_key }}"
-          APP_ID="${{ github.event.inputs.app_id }}"
-          TOPIC="${{ github.event.inputs.topic }}"
-
-          if [ -z "$BRIEF_KEY" ]; then
-            echo "No brief_key provided — using free-form topic."
-            echo "brief_topic=$TOPIC" >> "$GITHUB_OUTPUT"
-            echo "brief_learning_goal=" >> "$GITHUB_OUTPUT"
-            echo "brief_key_points=[]" >> "$GITHUB_OUTPUT"
-            echo "brief_forbidden_claims=[]" >> "$GITHUB_OUTPUT"
-            echo "brief_tone_notes=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          BRIEF_PATH="apps/video-studio/content-briefs/${APP_ID}/${BRIEF_KEY}.json"
-          if [ ! -f "$BRIEF_PATH" ]; then
-            echo "Brief file not found: $BRIEF_PATH — falling back to free-form topic."
-            echo "brief_topic=$TOPIC" >> "$GITHUB_OUTPUT"
-            echo "brief_learning_goal=" >> "$GITHUB_OUTPUT"
-            echo "brief_key_points=[]" >> "$GITHUB_OUTPUT"
-            echo "brief_forbidden_claims=[]" >> "$GITHUB_OUTPUT"
-            echo "brief_tone_notes=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          BRIEF=$(cat "$BRIEF_PATH")
-          BRIEF_TOPIC=$(echo "$BRIEF" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).topic ?? '')")
-          LEARNING_GOAL=$(echo "$BRIEF" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).learningGoal ?? '')")
-          KEY_POINTS=$(echo "$BRIEF" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.stringify(JSON.parse(d).keyPoints ?? []))")
-          FORBIDDEN=$(echo "$BRIEF" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.stringify(JSON.parse(d).forbiddenClaims ?? []))")
-          TONE=$(echo "$BRIEF" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).toneNotes ?? '')")
-
-          echo "brief_topic=$BRIEF_TOPIC" >> "$GITHUB_OUTPUT"
-          echo "brief_learning_goal=$LEARNING_GOAL" >> "$GITHUB_OUTPUT"
-          echo "brief_key_points=$KEY_POINTS" >> "$GITHUB_OUTPUT"
-          echo "brief_forbidden_claims=$FORBIDDEN" >> "$GITHUB_OUTPUT"
-          echo "brief_tone_notes=$TONE" >> "$GITHUB_OUTPUT"
-          echo "Loaded brief: $BRIEF_PATH (topic: $BRIEF_TOPIC)"
-
-      # -----------------------------------------------------------------------
-      # 6. Generate narration script
-      #    Uses @latimer-woods-tech/llm: Anthropic → Grok → Groq failover chain.
-      #    System context, brief data, and block helpers are passed as env vars
-      #    to apps/video-studio/scripts/generate-script.mjs which writes
-      #    `script` and `steps` to GITHUB_OUTPUT.
-      # -----------------------------------------------------------------------
-      - name: Generate narration script
-        id: generate_script
-        run: |
-          SYSTEM_CONTEXT=$(cat apps/video-studio/content-briefs/prime-self/SYSTEM_CONTEXT.md)
-
-          KEY_POINTS_BLOCK=""
-          if [ "$BRIEF_KEY_POINTS" != "[]" ] && [ -n "$BRIEF_KEY_POINTS" ]; then
-            KEY_POINTS_BLOCK=$(node -e "
-              const pts = JSON.parse(process.env.BRIEF_KEY_POINTS);
-              const block = pts.map((p, i) => \`\${i+1}. \${p}\`).join('\n');
-              process.stdout.write('APPROVED KEY POINTS (use these as the ground truth — rephrase into your script voice but do not add facts beyond these):\n' + block);
-            ")
-          fi
-
-          FORBIDDEN_BLOCK=""
-          if [ "$BRIEF_FORBIDDEN_CLAIMS" != "[]" ] && [ -n "$BRIEF_FORBIDDEN_CLAIMS" ]; then
-            FORBIDDEN_BLOCK=$(node -e "
-              const f = JSON.parse(process.env.BRIEF_FORBIDDEN_CLAIMS);
-              process.stdout.write('FORBIDDEN CLAIMS (never imply any of these):\n' + f.map(x => '- ' + x).join('\n'));
-            ")
-          fi
-
-          TONE_BLOCK=""
-          if [ -n "$BRIEF_TONE_NOTES" ]; then
-            TONE_BLOCK="TONE DIRECTION: ${BRIEF_TONE_NOTES}"
-          fi
-
-          # Delegate to the standalone script — handles all composition types
-          # and writes script/steps directly to GITHUB_OUTPUT.
-          SYSTEM_CONTEXT="$SYSTEM_CONTEXT" \
-          KEY_POINTS_BLOCK="$KEY_POINTS_BLOCK" \
-          FORBIDDEN_BLOCK="$FORBIDDEN_BLOCK" \
-          TONE_BLOCK="$TONE_BLOCK" \
-          node apps/video-studio/scripts/generate-script.mjs
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          RESOLVED_TOPIC: ${{ steps.load_brief.outputs.brief_topic }}
-          COMPOSITION_TYPE: ${{ github.event.inputs.composition_id }}
-          BRIEF_KEY_POINTS: ${{ steps.load_brief.outputs.brief_key_points }}
-          BRIEF_FORBIDDEN_CLAIMS: ${{ steps.load_brief.outputs.brief_forbidden_claims }}
-          BRIEF_LEARNING_GOAL: ${{ steps.load_brief.outputs.brief_learning_goal }}
-          BRIEF_TONE_NOTES: ${{ steps.load_brief.outputs.brief_tone_notes }}
-
-      # -----------------------------------------------------------------------
-      # 7. Validate script word count — ensures pacing matches video duration
-      # MarketingVideo: 30-48 words (15s at ~130 WPM)
-      # TrainingVideo:  60-90 words (30s at ~130 WPM)
-      # WalkthroughVideo: 80-120 words (40s at ~130 WPM)
-      # Hard failure: a script that is too short ships broken audio/video sync.
-      # The generator uses a cold retry so this gate catches genuine failures.
-      # -----------------------------------------------------------------------
-      - name: Validate script length
-        run: |
-          WORD_COUNT=$(echo "$SCRIPT" | wc -w | tr -d ' ')
-          echo "Script word count: $WORD_COUNT"
-
-          case "$COMPOSITION_TYPE" in
-            MarketingVideo)
-              MIN=30; MAX=48
-              ;;
-            TrainingVideo)
-              MIN=60; MAX=90
-              ;;
-            WalkthroughVideo)
-              MIN=80; MAX=120
-              ;;
-            *)
-              MIN=30; MAX=120
-              ;;
-          esac
-
-          if [ "$WORD_COUNT" -lt "$MIN" ] || [ "$WORD_COUNT" -gt "$MAX" ]; then
-            echo "::error::Script word count $WORD_COUNT is out of range [$MIN, $MAX] for $COMPOSITION_TYPE."
-            echo "Script content: $SCRIPT"
-            exit 1
-          fi
-          echo "Word count $WORD_COUNT is within acceptable range [$MIN, $MAX]. Proceeding."
-        env:
-          SCRIPT: ${{ steps.generate_script.outputs.script }}
-          COMPOSITION_TYPE: ${{ github.event.inputs.composition_id }}
-
-      # -----------------------------------------------------------------------
-      # 7b. Validate forbidden claims are absent from the generated script
-      # Brief-level guardrail: ensures no forbidden phrases appear in output.
-      # -----------------------------------------------------------------------
-      - name: Validate forbidden claims
-        run: |
-          node --input-type=module << 'EOF'
-          const script   = (process.env.SCRIPT   ?? '').toLowerCase();
-          const forbidden = JSON.parse(process.env.BRIEF_FORBIDDEN_CLAIMS || '[]');
-
-          if (forbidden.length === 0) {
-            console.log('No forbidden claims configured — skipping check.');
-            process.exit(0);
-          }
-
-          const violations = forbidden.filter(phrase => script.includes(phrase.toLowerCase()));
-          if (violations.length > 0) {
-            console.error('Forbidden claim violations detected in generated script:');
-            for (const v of violations) console.error('  -', v);
-            process.exit(1);
-          }
-          console.log(`Forbidden claims check passed (${forbidden.length} phrases checked, 0 violations).`);
-          EOF
-        env:
-          SCRIPT: ${{ steps.generate_script.outputs.script }}
-          BRIEF_FORBIDDEN_CLAIMS: ${{ steps.load_brief.outputs.brief_forbidden_claims }}
-
-      # -----------------------------------------------------------------------
-      # 8. Generate narration audio via ElevenLabs
-      # -----------------------------------------------------------------------
-      - name: Generate narration audio (ElevenLabs)
-        id: generate_narration
-        run: |
-          # Select voice ID based on app_id
+          set -euo pipefail
           case "$APP_ID" in
-            prime_self)     VOICE_ID="$ELEVENLABS_VOICE_PRIME_SELF" ;;
-            cypher_healing) VOICE_ID="$ELEVENLABS_VOICE_CYPHER" ;;
-            *)              VOICE_ID="$ELEVENLABS_VOICE_DEFAULT" ;;
+            prime_self) VOICE_ID="$ELEVENLABS_VOICE_PRIME_SELF" ;;
+            cypher)     VOICE_ID="$ELEVENLABS_VOICE_CYPHER" ;;
+            *)          VOICE_ID="$ELEVENLABS_VOICE_DEFAULT" ;;
           esac
+          if [ -z "${VOICE_ID:-}" ]; then
+            echo "::error::No ElevenLabs voice id resolved for app_id=$APP_ID"
+            exit 1
+          fi
+          echo "::add-mask::$VOICE_ID"
+          echo "voice_id=$VOICE_ID" >> "$GITHUB_OUTPUT"
 
-          NARRATION_PATH="/tmp/narration_${{ github.event.inputs.job_id }}.mp3"
+      # -----------------------------------------------------------------------
+      # Step 2.5 — Load optional JSON content brief
+      # -----------------------------------------------------------------------
+      - name: Resolve content brief
+        id: brief
+        env:
+          APP_ID: ${{ inputs.app_id }}
+          INPUT_TOPIC: ${{ inputs.topic }}
+          INPUT_BRIEF_KEY: ${{ inputs.brief_key }}
+          INPUT_BRAND_COLOR: ${{ inputs.brand_color }}
+          INPUT_BRAND_ACCENT: ${{ inputs.brand_accent }}
+        run: |
+          set -euo pipefail
 
-          # Build JSON body via Node to safely handle quotes, $ signs, and any
-          # special characters that would corrupt a bash-interpolated string.
-          ELEVENLABS_BODY=$(node -e "
-            process.stdout.write(JSON.stringify({
-              text: process.env.SCRIPT,
-              model_id: 'eleven_multilingual_v2',
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                style: 0.3,
-                use_speaker_boost: true,
-              },
-            }));
-          ")
+          brief_dir="apps/video-studio/content-briefs/${APP_ID//_/-}"
+          brief_json=''
+          topic="$INPUT_TOPIC"
+          brand_color="$INPUT_BRAND_COLOR"
+          brand_accent="$INPUT_BRAND_ACCENT"
+          learning_goal=''
+          tone_notes=''
+          script_override=''
+          key_points='[]'
+          forbidden_claims='[]'
+          screenshot_urls='[]'
 
-          curl -s -X POST \
-            "https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}" \
-            -H "xi-api-key: ${ELEVENLABS_API_KEY}" \
-            -H "Content-Type: application/json" \
-            --data-binary "$ELEVENLABS_BODY" \
-            --output "$NARRATION_PATH"
+          if [ -n "$INPUT_BRIEF_KEY" ]; then
+            brief_json="$brief_dir/$INPUT_BRIEF_KEY.json"
+            if [ ! -f "$brief_json" ]; then
+              echo "::error::Content brief not found: $brief_json"
+              exit 1
+            fi
 
-          # Verify file was created and has content
-          if [ ! -s "$NARRATION_PATH" ]; then
-            echo "ERROR: narration file empty or not created"
+            topic="$(jq -r '.topic // empty' "$brief_json")"
+            brand_color="$(jq -r '.brandColor // empty' "$brief_json")"
+            brand_accent="$(jq -r '.brandAccent // empty' "$brief_json")"
+            learning_goal="$(jq -r '.learningGoal // empty' "$brief_json")"
+            tone_notes="$(jq -r '.toneNotes // empty' "$brief_json")"
+            script_override="$(jq -r '.script // empty' "$brief_json")"
+            key_points="$(jq -c '.keyPoints // []' "$brief_json")"
+            forbidden_claims="$(jq -c '.forbiddenClaims // []' "$brief_json")"
+            screenshot_urls="$(jq -c '.screenshotUrls // []' "$brief_json")"
+          fi
+
+          if [ -z "$topic" ]; then
+            echo '::error::Resolved topic is empty after content brief resolution'
             exit 1
           fi
 
-          echo "narration_path=$NARRATION_PATH" >> "$GITHUB_OUTPUT"
-          echo "Narration generated: $(du -h "$NARRATION_PATH" | cut -f1)"
-        env:
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          ELEVENLABS_VOICE_PRIME_SELF: ${{ secrets.ELEVENLABS_VOICE_PRIME_SELF }}
-          ELEVENLABS_VOICE_CYPHER: ${{ secrets.ELEVENLABS_VOICE_CYPHER }}
-          ELEVENLABS_VOICE_DEFAULT: ${{ secrets.ELEVENLABS_VOICE_DEFAULT }}
-          APP_ID: ${{ github.event.inputs.app_id }}
-          SCRIPT: ${{ steps.generate_script.outputs.script }}
+          {
+            echo "topic=$topic"
+            echo "brand_color=$brand_color"
+            echo "brand_accent=$brand_accent"
+            echo "learning_goal=$learning_goal"
+            echo "tone_notes=$tone_notes"
+            echo "script_override<<EOF"
+            echo "$script_override"
+            echo "EOF"
+            echo "key_points=$key_points"
+            echo "forbidden_claims=$forbidden_claims"
+            echo "screenshot_urls=$screenshot_urls"
+          } >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # 9. Upload narration audio to Cloudflare R2
+      # Step 3 — Generate LLM script (headline + narration)
+      # -----------------------------------------------------------------------
+      - name: Generate LLM script
+        id: script
+        env:
+          COMPOSITION_TYPE: ${{ inputs.composition_id }}
+          RESOLVED_TOPIC: ${{ steps.brief.outputs.topic }}
+          # SYSTEM_CONTEXT is loaded from the per-app brief directory.
+          APP_ID: ${{ inputs.app_id }}
+          BRIEF_LEARNING_GOAL: ${{ steps.brief.outputs.learning_goal }}
+          BRIEF_KEY_POINTS: ${{ steps.brief.outputs.key_points }}
+          BRIEF_FORBIDDEN_CLAIMS: ${{ steps.brief.outputs.forbidden_claims }}
+          BRIEF_TONE_NOTES: ${{ steps.brief.outputs.tone_notes }}
+          STATIC_SCRIPT_OVERRIDE: ${{ steps.brief.outputs.script_override }}
+        run: |
+          set -euo pipefail
+          BRIEF_DIR="apps/video-studio/content-briefs/${APP_ID//_/-}"
+          if [ -f "$BRIEF_DIR/SYSTEM_CONTEXT.md" ]; then
+            SYSTEM_CONTEXT="$(cat "$BRIEF_DIR/SYSTEM_CONTEXT.md")"
+          else
+            SYSTEM_CONTEXT="You are generating narration for a Factory application video."
+          fi
+          export SYSTEM_CONTEXT
+
+          if [ "$BRIEF_KEY_POINTS" = '[]' ]; then
+            export KEY_POINTS_BLOCK=""
+          else
+            export KEY_POINTS_BLOCK="$(echo "$BRIEF_KEY_POINTS" | jq -r '.[]' | sed 's/^/- /')"
+          fi
+
+          if [ "$BRIEF_FORBIDDEN_CLAIMS" = '[]' ]; then
+            export FORBIDDEN_BLOCK=""
+          else
+            export FORBIDDEN_BLOCK="$(echo "$BRIEF_FORBIDDEN_CLAIMS" | jq -r '.[]' | sed 's/^/- /')"
+          fi
+
+          export TONE_BLOCK="$BRIEF_TONE_NOTES"
+          export BRIEF_LEARNING_GOAL
+          export BRIEF_KEY_POINTS
+
+          if [ -n "$STATIC_SCRIPT_OVERRIDE" ]; then
+            {
+              echo "headline<<EOF"
+              echo "$RESOLVED_TOPIC"
+              echo "EOF"
+              echo "script<<EOF"
+              echo "$STATIC_SCRIPT_OVERRIDE"
+              echo "EOF"
+              echo "narration<<EOF"
+              echo "$STATIC_SCRIPT_OVERRIDE"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          node apps/video-studio/scripts/generate-script.mjs
+
+      # -----------------------------------------------------------------------
+      # Step 4 — Generate ElevenLabs narration MP3
+      # -----------------------------------------------------------------------
+      - name: Generate ElevenLabs narration
+        id: narration
+        env:
+          NARRATION_TEXT: ${{ steps.script.outputs.narration }}
+          VOICE_ID: ${{ steps.voice.outputs.voice_id }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NARRATION_TEXT" ]; then
+            echo "::error::generate-script produced no narration"
+            exit 1
+          fi
+          # Build the request body via jq so newlines/quotes in the script are
+          # JSON-encoded safely (no manual escaping in bash).
+          jq -n --arg text "$NARRATION_TEXT" '{
+            text: $text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          }' > /tmp/eleven-body.json
+
+          HTTP_CODE=$(curl -sS -w '%{http_code}' -o /tmp/narration.mp3 \
+            -X POST "https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}" \
+            -H "xi-api-key: ${ELEVENLABS_API_KEY}" \
+            -H 'accept: audio/mpeg' \
+            -H 'content-type: application/json' \
+            --data @/tmp/eleven-body.json)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::ElevenLabs returned HTTP $HTTP_CODE"
+            # body was written to /tmp/narration.mp3 — may be JSON error, may be binary
+            head -c 400 /tmp/narration.mp3 2>/dev/null | tr -d '\000' || true
+            exit 1
+          fi
+          ls -la /tmp/narration.mp3
+
+      # -----------------------------------------------------------------------
+      # Step 5 — Upload narration MP3 to R2
       # -----------------------------------------------------------------------
       - name: Upload narration to R2
-        id: upload_narration
-        run: |
-          NARRATION_KEY="narration/${{ github.event.inputs.job_id }}.mp3"
-          NARRATION_PATH="${{ steps.generate_narration.outputs.narration_path }}"
-
-          # R2 uses Cloudflare API token for S3-compatible access
-          aws s3 cp "$NARRATION_PATH" "s3://${R2_BUCKET_NAME}/${NARRATION_KEY}" \
-            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --region "auto"
-
-          # Generate a presigned URL (7200s / 2h) — wide enough to survive slow
-          # runners where Chrome install + Remotion bundle + ffmpeg encode can
-          # consume over an hour before Cloudflare Stream pulls the file.
-          NARRATION_URL=$(aws s3 presign "s3://${R2_BUCKET_NAME}/${NARRATION_KEY}" \
-            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --region "auto" \
-            --expires-in 7200)
-          echo "narration_url=$NARRATION_URL" >> "$GITHUB_OUTPUT"
-          echo "narration_key=$NARRATION_KEY" >> "$GITHUB_OUTPUT"
+        id: narration_upload
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.FACTORY_R2_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.FACTORY_R2_SECRET_KEY }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-          R2_PUBLIC_DOMAIN: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          JOB_ID: ${{ inputs.job_id }}
+        run: |
+          set -euo pipefail
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 cp /tmp/narration.mp3 \
+            "s3://${R2_BUCKET_NAME}/narrations/${JOB_ID}.mp3" \
+            --endpoint-url "$ENDPOINT" \
+            --content-type audio/mpeg
+          PUBLIC_URL="https://${R2_PUBLIC_DOMAIN}/narrations/${JOB_ID}.mp3"
+          echo "narration_url=$PUBLIC_URL" >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # 10. Render MP4 via Remotion
+      # Step 6 — Render MP4 with Remotion
       # -----------------------------------------------------------------------
-      - name: Build composition props JSON
-        id: build_props
-        run: |
-          PROPS=$(node -e "
-            // Resolve logo: explicit input → app-specific secret default → empty
-            const logoUrl = process.env.LOGO_URL_INPUT
-              || (process.env.APP_ID === 'prime_self' ? (process.env.PRIME_SELF_LOGO_URL || '') : '');
-
-            const props = JSON.stringify({
-              appId:          process.env.APP_ID,
-              topic:          process.env.RESOLVED_TOPIC,
-              script:         process.env.SCRIPT,
-              narrationUrl:   process.env.NARRATION_URL,
-              brandColor:     process.env.BRAND_COLOR,
-              brandAccent:    process.env.BRAND_ACCENT,
-              logoUrl:        logoUrl,
-              steps:          JSON.parse(process.env.STEPS || '[]'),
-              screenshotUrls: [],
-            });
-            process.stdout.write(props);
-          ")
-
-          echo "props=$PROPS" >> "$GITHUB_OUTPUT"
-        env:
-          APP_ID: ${{ github.event.inputs.app_id }}
-          RESOLVED_TOPIC: ${{ steps.load_brief.outputs.brief_topic }}
-          SCRIPT: ${{ steps.generate_script.outputs.script }}
-          STEPS: ${{ steps.generate_script.outputs.steps }}
-          NARRATION_URL: ${{ steps.upload_narration.outputs.narration_url }}
-          BRAND_COLOR: ${{ github.event.inputs.brand_color }}
-          BRAND_ACCENT: ${{ github.event.inputs.brand_accent }}
-          LOGO_URL_INPUT: ${{ github.event.inputs.logo_url }}
-          PRIME_SELF_LOGO_URL: ${{ secrets.PRIME_SELF_LOGO_URL }}
-
       - name: Render MP4
         id: render
-        working-directory: apps/video-studio
-        run: |
-          OUTPUT_PATH="/tmp/video_${{ github.event.inputs.job_id }}.mp4"
-
-          PUPPETEER_EXECUTABLE_PATH=$(which google-chrome-stable || which google-chrome || which chromium) \
-          npx ts-node --transpile-only src/render.ts \
-            --composition "$COMPOSITION_ID" \
-            --props "$PROPS_JSON" \
-            --output "$OUTPUT_PATH"
-
-          if [ ! -s "$OUTPUT_PATH" ]; then
-            echo "ERROR: render output empty or not created"
-            exit 1
-          fi
-
-          echo "video_path=$OUTPUT_PATH" >> "$GITHUB_OUTPUT"
-          echo "Rendered: $(du -h "$OUTPUT_PATH" | cut -f1)"
+        timeout-minutes: 15
         env:
-          COMPOSITION_ID: ${{ github.event.inputs.composition_id }}
-          PROPS_JSON: ${{ steps.build_props.outputs.props }}
-
-      # -----------------------------------------------------------------------
-      # 8. Encode with ffmpeg (normalise audio, H.264 baseline for max compat)
-      # -----------------------------------------------------------------------
-      - name: Encode final MP4 with ffmpeg
-        id: encode
+          COMPOSITION_ID: ${{ inputs.composition_id }}
+          APP_ID: ${{ inputs.app_id }}
+          TOPIC: ${{ steps.brief.outputs.topic }}
+          BRAND_COLOR: ${{ steps.brief.outputs.brand_color }}
+          BRAND_ACCENT: ${{ steps.brief.outputs.brand_accent }}
+          LOGO_URL: ${{ inputs.logo_url }}
+          NARRATION_URL: ${{ steps.narration_upload.outputs.narration_url }}
+          SCRIPT_TEXT: ${{ steps.script.outputs.narration }}
+          SCREENSHOT_URLS_JSON: ${{ steps.brief.outputs.screenshot_urls }}
         run: |
-          INPUT="${{ steps.render.outputs.video_path }}"
-          OUTPUT="/tmp/encoded_${{ github.event.inputs.job_id }}.mp4"
-
-          ffmpeg -i "$INPUT" \
-            -c:v libx264 -profile:v baseline -level 3.1 \
-            -preset slow -crf 22 \
-            -c:a aac -b:a 128k -ar 44100 \
-            -movflags +faststart \
-            -y "$OUTPUT"
-
-          echo "encoded_path=$OUTPUT" >> "$GITHUB_OUTPUT"
-          echo "Encoded: $(du -h "$OUTPUT" | cut -f1)"
+          set -euo pipefail
+          # Build props JSON with jq so multi-line scripts survive cleanly.
+          PROPS=$(jq -n \
+            --arg composition  "$COMPOSITION_ID" \
+            --arg appId        "$APP_ID" \
+            --arg topic        "$TOPIC" \
+            --arg script       "$SCRIPT_TEXT" \
+            --arg narrationUrl "$NARRATION_URL" \
+            --arg brandColor   "$BRAND_COLOR" \
+            --arg brandAccent  "$BRAND_ACCENT" \
+            --arg logoUrl      "$LOGO_URL" \
+            --argjson screenshotUrls "$SCREENSHOT_URLS_JSON" \
+            'if $composition == "WalkthroughVideo"
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls}
+             else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl}
+             end')
+          cd apps/video-studio
+          node -r ts-node/register src/render.ts \
+            --composition "$COMPOSITION_ID" \
+            --props "$PROPS" \
+            --output /tmp/output.mp4
+          ls -la /tmp/output.mp4
 
       # -----------------------------------------------------------------------
-      # 9. Upload MP4 to Cloudflare R2
+      # Step 7 — ffmpeg re-encode for max Stream + browser compatibility
+      # -----------------------------------------------------------------------
+      - name: ffmpeg re-encode (H.264 baseline + AAC)
+        run: |
+          set -euo pipefail
+          ffmpeg -y -i /tmp/output.mp4 \
+            -c:v libx264 -profile:v baseline -level 3.0 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k \
+            /tmp/output-final.mp4
+          ls -la /tmp/output-final.mp4
+
+      # -----------------------------------------------------------------------
+      # Step 8 — Upload MP4 to R2
       # -----------------------------------------------------------------------
       - name: Upload MP4 to R2
-        id: upload_video
-        run: |
-          VIDEO_KEY="renders/${{ github.event.inputs.job_id }}.mp4"
-          aws s3 cp "${{ steps.encode.outputs.encoded_path }}" \
-            "s3://${R2_BUCKET_NAME}/${VIDEO_KEY}" \
-            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --region "auto" \
-            --content-type "video/mp4"
-
-          # Generate a presigned URL (7200s / 2h) — Cloudflare Stream pulls
-          # asynchronously and may start several minutes after registration.
-          VIDEO_URL=$(aws s3 presign "s3://${R2_BUCKET_NAME}/${VIDEO_KEY}" \
-            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --region "auto" \
-            --expires-in 7200)
-          echo "video_url=$VIDEO_URL" >> "$GITHUB_OUTPUT"
-          echo "video_key=$VIDEO_KEY" >> "$GITHUB_OUTPUT"
+        id: video_upload
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.FACTORY_R2_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.FACTORY_R2_SECRET_KEY }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-          R2_PUBLIC_DOMAIN: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
-
-      # -----------------------------------------------------------------------
-      # 10. Register with Cloudflare Stream
-      # -----------------------------------------------------------------------
-      - name: Register video with Cloudflare Stream
-        id: register_stream
+          JOB_ID: ${{ inputs.job_id }}
         run: |
-          RESPONSE=$(curl -s -X POST \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/copy" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"url\": \"${VIDEO_URL}\",
-              \"meta\": {
-                \"jobId\": \"${{ github.event.inputs.job_id }}\",
-                \"appId\": \"${{ github.event.inputs.app_id }}\",
-                \"topic\": \"${{ github.event.inputs.topic }}\"
-              }
-            }")
+          set -euo pipefail
+          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
+          export AWS_DEFAULT_REGION="auto"
+          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 cp /tmp/output-final.mp4 \
+            "s3://${R2_BUCKET_NAME}/videos/${JOB_ID}.mp4" \
+            --endpoint-url "$ENDPOINT" \
+            --content-type video/mp4
+          PUBLIC_URL="https://${R2_PUBLIC_DOMAIN}/videos/${JOB_ID}.mp4"
+          echo "video_url=$PUBLIC_URL" >> "$GITHUB_OUTPUT"
 
-          SUCCESS=$(echo "$RESPONSE" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).success ? 'true' : 'false')")
-          if [ "$SUCCESS" != "true" ]; then
-            echo "Stream registration failed: $RESPONSE"
+      # -----------------------------------------------------------------------
+      # Step 9 — Register with Cloudflare Stream + poll until ready
+      # -----------------------------------------------------------------------
+      - name: Register with Cloudflare Stream and poll
+        id: stream
+        env:
+          VIDEO_URL: ${{ steps.video_upload.outputs.video_url }}
+          TOPIC: ${{ steps.brief.outputs.topic }}
+          APP_ID: ${{ inputs.app_id }}
+        run: |
+          set -euo pipefail
+          REQ=$(jq -n --arg url "$VIDEO_URL" --arg name "$TOPIC" --arg appId "$APP_ID" \
+            '{url:$url, meta:{name:$name, appId:$appId}}')
+          RESP=$(curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/copy" \
+            -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$REQ")
+          # NOTE: `UID` is a bash readonly variable (the running user's uid).
+          # Assigning to it fails with "UID: readonly variable". Use a renamed
+          # local instead. STREAM_UID matches the dry-run job's naming + the
+          # step's output key.
+          STREAM_UID=$(echo "$RESP" | jq -r '.result.uid // empty')
+          if [ -z "$STREAM_UID" ]; then
+            echo "::error::Cloudflare Stream copy did not return uid: $RESP"
             exit 1
           fi
-
-          STREAM_UID=$(echo "$RESPONSE" | node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).result?.uid ?? '')")
-          echo "stream_uid=$STREAM_UID" >> "$GITHUB_OUTPUT"
-          echo "Registered Stream UID: $STREAM_UID"
-        env:
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          VIDEO_URL: ${{ steps.upload_video.outputs.video_url }}
-
-      # -----------------------------------------------------------------------
-      # 10b. Poll until Cloudflare Stream marks the video readyToStream
-      # The copy API returns a UID immediately but the video isn’t playable
-      # until Stream finishes pulling from R2 (typically 30–120 seconds).
-      # 24 attempts × 10s = up to 4 minutes. Non-blocking warning on timeout.
-      # -----------------------------------------------------------------------
-      - name: Wait for stream to be ready
-        run: |
-          STREAM_UID="${{ steps.register_stream.outputs.stream_uid }}"
-          echo "Polling Cloudflare Stream for UID: $STREAM_UID"
-          READY="false"
-          for i in $(seq 1 24); do
-            READY=$(curl -s \
+          echo "Stream uid: $STREAM_UID"
+          # Poll for ready (max 10 min, 10s interval).
+          for i in $(seq 1 60); do
+            STATE=$(curl -sS \
               "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${STREAM_UID}" \
-              -H "Authorization: Bearer ${CF_API_TOKEN}" | \
-              node -e "const d=require('fs').readFileSync('/dev/stdin','utf8'); process.stdout.write(JSON.parse(d).result?.readyToStream ? 'true' : 'false')")
-            if [ "$READY" = "true" ]; then
-              echo "Stream is ready to play (attempt $i/24)."
+              -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+              | jq -r '.result.status.state // "unknown"')
+            echo "[$i/60] stream state: $STATE"
+            if [ "$STATE" = "ready" ]; then
               break
             fi
-            if [ "$i" = "24" ]; then
-              echo "::warning::Stream UID ${STREAM_UID} is registered but not yet ready after 4 minutes. The video will become available shortly."
-            else
-              echo "Attempt $i/24: not yet ready, waiting 10s..."
-              sleep 10
+            if [ "$STATE" = "error" ]; then
+              echo "::error::Stream encoding failed"
+              exit 1
             fi
+            sleep 10
           done
-        env:
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-      - name: Update job status in database
-        if: always()
-        run: |
-          curl -s -X PATCH \
-            "${SCHEDULE_WORKER_URL}/jobs/${REAL_JOB_ID}" \
-            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"status\": \"done\",
-              \"streamUid\": \"${STREAM_UID}\",
-              \"videoUrl\": \"${VIDEO_URL}\",
-              \"narrationUrl\": \"${NARRATION_URL}\"
-            }" \
-            --fail-with-body
-        env:
-          SCHEDULE_WORKER_URL: ${{ secrets.SCHEDULE_WORKER_URL }}
-          WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
-          REAL_JOB_ID: ${{ steps.register_job.outputs.real_job_id }}
-          STREAM_UID: ${{ steps.register_stream.outputs.stream_uid }}
-          VIDEO_URL: ${{ steps.upload_video.outputs.video_url }}
-          NARRATION_URL: ${{ steps.upload_narration.outputs.narration_url }}
+          if [ "$STATE" != "ready" ]; then
+            echo "::error::Stream did not reach ready within 10 minutes (last state: $STATE)"
+            exit 1
+          fi
+          DURATION=$(curl -sS \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${STREAM_UID}" \
+            -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+            | jq -r '.result.duration // 0')
+          THUMB_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${STREAM_UID}/thumbnails/thumbnail.jpg"
+          {
+            echo "stream_uid=$STREAM_UID"
+            echo "duration_seconds=$DURATION"
+            echo "thumbnail_url=$THUMB_URL"
+          } >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # 13. Track video_published event in PostHog for priority scoring
-      # Feeds scorePriority() in @latimer-woods-tech/schedule so the engine avoids
-      # re-generating topics that are already live.
-      # continue-on-error: PostHog is observability, not a hard dependency.
+      # Step 11 — Publish to Capricast
       # -----------------------------------------------------------------------
-      - name: Track video published event
+      - name: Publish to Capricast
+        id: capricast
+        env:
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          DURATION_SECONDS: ${{ steps.stream.outputs.duration_seconds }}
+          THUMBNAIL_URL: ${{ steps.stream.outputs.thumbnail_url }}
+          TITLE: ${{ steps.script.outputs.headline }}
+          DESCRIPTION: ${{ steps.brief.outputs.topic }}
+          TRANSCRIPT: ${{ steps.script.outputs.narration }}
+          TRANSCRIPT_LANGUAGE: 'en'
+          CAPRICAST_API_URL: 'https://api.capricast.com'
+        run: |
+          set -euo pipefail
+          # CAPRICAST_PUBLISH_TOKEN + CAPRICAST_SYSTEM_CREATOR_ID were loaded
+          # into the environment by the "Fetch secrets" step. The publish
+          # script reads CAPRICAST_CREATOR_ID — alias it here so the
+          # workflow lints cleanly without referencing the env context.
+          export CAPRICAST_CREATOR_ID="$CAPRICAST_SYSTEM_CREATOR_ID"
+          node apps/video-studio/scripts/publish-to-capricast.mjs
+
+      # -----------------------------------------------------------------------
+      # Step 11b — Upload to YouTube (non-blocking; skipped if no credentials)
+      # Uploads to YouTube AFTER Capricast to maintain Capricast as primary.
+      # Requires: YOUTUBE_REFRESH_TOKEN, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET
+      # in GCP Secret Manager. Safe to skip — missing secrets result in a warning.
+      # -----------------------------------------------------------------------
+      - name: Upload to YouTube
+        id: youtube
         continue-on-error: true
-        if: steps.register_stream.outputs.stream_uid != ''
-        run: |
-          node --input-type=module << 'EOF'
-          const key = process.env.POSTHOG_PROJECT_API_KEY;
-          if (!key) { console.log('POSTHOG_PROJECT_API_KEY not set — skipping.'); process.exit(0); }
-
-          const payload = {
-            api_key: key,
-            event: 'video_published',
-            distinct_id: 'system',
-            properties: {
-              job_id:        process.env.JOB_ID,
-              app_id:        process.env.APP_ID,
-              composition:   process.env.COMPOSITION_TYPE,
-              stream_uid:    process.env.STREAM_UID,
-              topic:         process.env.TOPIC,
-              brief_key:     process.env.BRIEF_KEY,
-              embed_url:     `https://iframe.cloudflarestream.com/${process.env.STREAM_UID}`,
-              produced_at:   new Date().toISOString(),
-            },
-          };
-
-          const resp = await fetch('https://app.posthog.com/capture/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          const result = await resp.json().catch(() => ({}));
-          if (result.status === 1) {
-            console.log('PostHog: video_published captured successfully.');
-          } else {
-            console.log('PostHog response:', JSON.stringify(result));
-          }
-          EOF
         env:
-          POSTHOG_PROJECT_API_KEY: ${{ secrets.POSTHOG_PROJECT_API_KEY }}
-          JOB_ID:           ${{ github.event.inputs.job_id }}
-          APP_ID:           ${{ github.event.inputs.app_id }}
-          COMPOSITION_TYPE: ${{ github.event.inputs.composition_id }}
-          STREAM_UID:       ${{ steps.register_stream.outputs.stream_uid }}
-          TOPIC:            ${{ github.event.inputs.topic }}
-          BRIEF_KEY:        ${{ github.event.inputs.brief_key }}
-      - name: Render summary
-        if: always()
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          VIDEO_URL: ${{ steps.upload_r2.outputs.video_url }}
+          TOPIC: ${{ steps.brief.outputs.topic }}
+          NARRATION: ${{ steps.script.outputs.narration }}
+          KEY_POINTS: ${{ steps.brief.outputs.key_points }}
+          APP_ID: ${{ inputs.app_id }}
+          BRIEF_KEY: ${{ inputs.brief_key }}
         run: |
-          echo "### Video Render Complete" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Workflow Job ID | \`${{ github.event.inputs.job_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| DB Job ID | \`${{ steps.register_job.outputs.real_job_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Composition | \`${{ github.event.inputs.composition_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| App | \`${{ github.event.inputs.app_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Stream UID | \`${{ steps.register_stream.outputs.stream_uid }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Embed URL | https://iframe.videodelivery.net/${{ steps.register_stream.outputs.stream_uid }} |" >> "$GITHUB_STEP_SUMMARY"
-
-  # ---------------------------------------------------------------------------
-  # Failure handler — marks the job as failed in the database
-  # ---------------------------------------------------------------------------
-  on_failure:
-    name: Mark job as failed
-    needs: render
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    if: failure()
-    steps:
-      - name: Update job status to failed
-        run: |
-          # Guard: if register_job failed, real_job_id is empty — skip the PATCH
-          # to avoid sending a malformed request to /jobs/ with no ID segment.
-          if [ -z "$REAL_JOB_ID" ]; then
-            echo "No real_job_id available (register_job step failed). Skipping failure update."
+          set -euo pipefail
+          # Skip if credentials are not configured
+          if [ -z "${YOUTUBE_REFRESH_TOKEN:-}" ] || [ -z "${YOUTUBE_CLIENT_ID:-}" ]; then
+            echo "::notice::YouTube credentials not configured — skipping YouTube upload"
+            echo "youtube_url=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          curl -s -X PATCH \
-            "${SCHEDULE_WORKER_URL}/jobs/${REAL_JOB_ID}" \
-            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"status\": \"failed\",
-              \"error\": \"GitHub Actions render workflow failed — check run ${{ github.run_id }}\"
-            }" \
-            --fail-with-body || true
+          # Build description from key points
+          DESCRIPTION="${NARRATION:-$TOPIC}"$'\n\n'
+          if [ -n "${KEY_POINTS:-}" ]; then
+            DESCRIPTION+=$(echo "$KEY_POINTS" | jq -r '.[] | "• \(.)"' 2>/dev/null || true)$'\n\n'
+          fi
+          DESCRIPTION+="Learn more at https://selfprime.net"
+          # Download from R2 then upload to YouTube
+          curl -sL "$VIDEO_URL" -o /tmp/yt_upload.mp4
+          RESULT=$(node scripts/youtube-upload.mjs \
+            --file /tmp/yt_upload.mp4 \
+            --title "$TOPIC" \
+            --description "$DESCRIPTION" \
+            --tags "prime self,human design,energy blueprint,$APP_ID" \
+            --category "27")
+          YOUTUBE_URL=$(echo "$RESULT" | jq -r '.url // empty')
+          echo "youtube_url=$YOUTUBE_URL" >> "$GITHUB_OUTPUT"
+          echo "::notice::YouTube upload complete: $YOUTUBE_URL"
+
+      # -----------------------------------------------------------------------
+      # Step 12 — PATCH schedule-worker → status=done
+      # -----------------------------------------------------------------------
+      - name: Mark schedule-worker job done
         env:
-          SCHEDULE_WORKER_URL: ${{ secrets.SCHEDULE_WORKER_URL }}
-          WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
-          REAL_JOB_ID: ${{ needs.render.outputs.real_job_id }}
+          JOB_ID: ${{ inputs.job_id }}
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          CAPRICAST_URL: ${{ steps.capricast.outputs.capricastUrl }}
+        run: |
+          set -euo pipefail
+          BODY=$(jq -n \
+            --arg streamUid "$STREAM_UID" \
+            --arg videoUrl  "$CAPRICAST_URL" \
+            '{status:"done", streamUid:$streamUid, videoUrl:$videoUrl}')
+          HTTP_CODE=$(curl -sS -o /tmp/patch-resp.txt -w '%{http_code}' \
+            -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${JOB_ID}" \
+            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$BODY")
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+            echo "::error::schedule-worker PATCH returned HTTP $HTTP_CODE"
+            head -c 400 /tmp/patch-resp.txt || true
+            exit 1
+          fi
+          echo "✅ schedule-worker job $JOB_ID marked done"
+
+      # -----------------------------------------------------------------------
+      # On any failure, PATCH the job to status=failed so it stops blocking the cron.
+      # -----------------------------------------------------------------------
+      - name: Mark schedule-worker job failed (on-failure handler)
+        if: failure()
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          FAILED_STEP: ${{ github.action }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SCHEDULE_WORKER_URL:-}" ] || [ -z "${WORKER_API_TOKEN:-}" ]; then
+            echo "::warning::Secrets not loaded — cannot PATCH schedule-worker"
+            exit 0
+          fi
+          REASON="render-video.yml failed in step: ${FAILED_STEP:-unknown}"
+          BODY=$(jq -n --arg error "$REASON" '{status:"failed", script:$error}')
+          curl -sS -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${JOB_ID}" \
+            -H "Authorization: Bearer ${WORKER_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data "$BODY" || true
+          echo "schedule-worker job $JOB_ID marked failed"

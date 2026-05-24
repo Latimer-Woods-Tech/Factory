@@ -1,6 +1,6 @@
 name: Sync Security Policy
 # SEC-1.4 — Pushes SECURITY.md from factory to all public sibling repos
-# (ijustus, xpelevator, videoking) whenever it changes on main, or on demand.
+# (ijustus, xpelevator, capricast) whenever it changes on main, or on demand.
 # Uses the factory-cross-repo GitHub App for cross-repo write access.
 
 on:
@@ -9,6 +9,10 @@ on:
     paths:
       - 'SECURITY.md'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # security.md sync is idempotent but better not to race the fan-out
 
 permissions:
   contents: read
@@ -19,7 +23,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        repo: [ijustus, xpelevator, videoking]
+        repo: [ijustus, xpelevator, capricast]
       fail-fast: false
     steps:
       - uses: actions/checkout@v6

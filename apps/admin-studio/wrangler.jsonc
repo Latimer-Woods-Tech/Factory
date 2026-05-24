@@ -13,9 +13,12 @@
   "env": {
     "staging": {
       "name": "admin-studio-staging",
+      "routes": [
+        { "pattern": "admin-staging.latwoodtech.work", "custom_domain": true }
+      ],
       "vars": {
         "STUDIO_ENV": "staging",
-        "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,http://localhost:5173",
+        "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,https://admin-staging.latwoodtech.work,http://localhost:5173",
         // Digest non-secret vars
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
         "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
@@ -107,7 +110,6 @@
       }
     }
   },
-  "flagship": { "binding": "FLAGS" },
   "d1_databases": [
     { "binding": "FLAG_TELEMETRY", "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4", "database_name": "flag-meter" }
   ],

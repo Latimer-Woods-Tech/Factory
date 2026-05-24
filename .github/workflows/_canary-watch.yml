@@ -1,0 +1,158 @@
+# =============================================================================
+# Reusable canary watcher — runs for 5 minutes after a prod Worker deploy.
+#
+# WHAT IT DOES
+#   1. Captures a Sentry error-rate baseline from the hour preceding deploy.
+#   2. Polls Sentry + a synthetic smoke endpoint for 5 minutes.
+#   3. If error rate > baseline * 5 OR synthetic fails:
+#        - Skips rollback if the same Sentry error fingerprint is firing on
+#          >=2 other Latimer-Woods-Tech prod apps (likely upstream incident).
+#        - Skips rollback if the deploy included DB migrations (flags human).
+#        - Otherwise calls `wrangler rollback` to the previous version_id.
+#   4. Opens a P0 incident issue in Latimer-Woods-Tech/factory and pages
+#      Pushover. If rollback itself fails, pages Pushover at priority=2
+#      (emergency, bypasses quiet hours).
+#
+# HOW TO CALL  (from a per-app deploy workflow)
+#   jobs:
+#     deploy:
+#       # ... your deploy steps; must output previous_version_id + new_version_id
+#     canary-watch:
+#       needs: deploy
+#       if: needs.deploy.outputs.environment == 'production'
+#       uses: Latimer-Woods-Tech/factory/.github/workflows/_canary-watch.yml@main
+#       with:
+#         app_name: admin-studio
+#         worker_name: admin-studio-production
+#         sentry_project: admin-studio
+#         sentry_org: latimer-woods-tech
+#         base_url: https://admin.latwoodtech.work
+#         smoke_path: /healthz
+#         previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
+#         new_version_id:      ${{ needs.deploy.outputs.new_version_id }}
+#         commit_sha:          ${{ github.sha }}
+#         has_migrations:      ${{ needs.deploy.outputs.has_migrations }}
+#       secrets: inherit
+#
+# REQUIRED SECRETS (org-level, all already provisioned)
+#   SENTRY_AUTH_TOKEN          - Sentry API token (project:read, event:read)
+#   CF_API_TOKEN               - Cloudflare API token (Workers Scripts:Edit)
+#   CF_ACCOUNT_ID              - Cloudflare account id
+#   PUSHOVER_USER_KEY          - Pushover user key
+#   PUSHOVER_APP_TOKEN         - Pushover application token
+#   FACTORY_APP_ID             - factory-cross-repo[bot] App id (for gh api)
+#   FACTORY_APP_PRIVATE_KEY    - factory-cross-repo[bot] private key
+#
+# RELATED
+#   .github/scripts/canary-watch.mjs   - watcher logic
+#   docs/runbooks/DEPLOY_ROLLBACK.md   - operator runbook
+#   factory#535                         - originating issue
+# =============================================================================
+
+name: _canary-watch
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        type: string
+        required: true
+      worker_name:
+        type: string
+        required: true
+      sentry_project:
+        type: string
+        required: true
+      sentry_org:
+        type: string
+        default: latimer-woods-tech
+      base_url:
+        type: string
+        required: true
+      smoke_path:
+        type: string
+        default: /healthz
+      previous_version_id:
+        type: string
+        required: true
+      new_version_id:
+        type: string
+        required: true
+      commit_sha:
+        type: string
+        required: true
+      has_migrations:
+        type: boolean
+        default: false
+      watch_seconds:
+        type: number
+        default: 300
+      poll_interval_seconds:
+        type: number
+        default: 30
+      error_rate_multiplier:
+        type: number
+        default: 5
+      # Sibling prod projects in Sentry; if the same fingerprint fires on >=2
+      # of these concurrently, treat as upstream and skip rollback.
+      sibling_sentry_projects:
+        type: string
+        default: 'admin-studio,capricast-api,itsjusus-api,factory-web'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canary-watch-${{ inputs.worker_name }}
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    # 5-min watch + ~3 min slack for setup, rollback, issue creation, paging.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate factory[bot] token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: factory
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Run canary watcher
+        id: watch
+        env:
+          # Inputs
+          APP_NAME:               ${{ inputs.app_name }}
+          WORKER_NAME:            ${{ inputs.worker_name }}
+          SENTRY_PROJECT:         ${{ inputs.sentry_project }}
+          SENTRY_ORG:             ${{ inputs.sentry_org }}
+          BASE_URL:               ${{ inputs.base_url }}
+          SMOKE_PATH:             ${{ inputs.smoke_path }}
+          PREVIOUS_VERSION_ID:    ${{ inputs.previous_version_id }}
+          NEW_VERSION_ID:         ${{ inputs.new_version_id }}
+          COMMIT_SHA:             ${{ inputs.commit_sha }}
+          HAS_MIGRATIONS:         ${{ inputs.has_migrations }}
+          WATCH_SECONDS:          ${{ inputs.watch_seconds }}
+          POLL_INTERVAL_SECONDS:  ${{ inputs.poll_interval_seconds }}
+          ERROR_RATE_MULTIPLIER:  ${{ inputs.error_rate_multiplier }}
+          SIBLING_SENTRY_PROJECTS: ${{ inputs.sibling_sentry_projects }}
+          GITHUB_REPOSITORY:      ${{ github.repository }}
+          GITHUB_RUN_ID:          ${{ github.run_id }}
+          GITHUB_SERVER_URL:      ${{ github.server_url }}
+          # Secrets
+          SENTRY_AUTH_TOKEN:      ${{ secrets.SENTRY_AUTH_TOKEN }}
+          CLOUDFLARE_API_TOKEN:   ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID:  ${{ secrets.CF_ACCOUNT_ID }}
+          PUSHOVER_USER_KEY:      ${{ secrets.PUSHOVER_USER_KEY }}
+          PUSHOVER_APP_TOKEN:     ${{ secrets.PUSHOVER_APP_TOKEN }}
+          GH_TOKEN:               ${{ steps.app-token.outputs.token }}
+        run: node .github/scripts/canary-watch.mjs

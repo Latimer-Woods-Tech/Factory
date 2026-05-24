@@ -1,5 +1,12 @@
 > 📘 **Canonical architecture:** [`docs/architecture/FACTORY_V1.md`](./docs/architecture/FACTORY_V1.md). Read it to understand the system. [`docs/supervisor/FRIDGE.md`](./docs/supervisor/FRIDGE.md) overrides these Standing Orders.
 
+> 🗺️ **Where to look first** (in order):
+> 1. [`docs/STATE.md`](./docs/STATE.md) — auto-generated daily; current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding.
+> 2. This file (CLAUDE.md) — norms + hard constraints
+> 3. [`docs/architecture/PATTERNS.md`](./docs/architecture/PATTERNS.md) — operational know-how (gcloud auth, workflow patterns, merge escape hatches) captured from production debugging
+> 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — what we build (the 10 conformance dimensions)
+> 5. [`docs/GAP_REGISTER.md`](./docs/GAP_REGISTER.md) — known debt with severity tiers
+
 # Factory Core — Standing Orders
 
 ## Mission
@@ -26,6 +33,7 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - Language: TypeScript strict with zero `any` in public APIs
 
 ## Hard Constraints
+**These constraints apply to production code (Cloudflare Workers runtime only).** GitHub Actions scripts (`.github/scripts/**/*.mjs`) run on Node.js and are exempt from these Cloudflare constraints.
 - No `process.env` anywhere; use Hono or Worker bindings (`c.env.VAR` / `env.VAR`)
 - No Node.js built-ins such as `fs`, `path`, or `crypto`; use platform-safe APIs
 - No CommonJS `require()`; use ESM `import` / `export` only
@@ -33,6 +41,15 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - No raw `fetch` without explicit error handling
 - No secrets in source code or in `wrangler.jsonc` `vars`
 - No `*.workers.dev` URLs in any user-facing HTML, JS, or API client code — every user-facing worker endpoint must have a branded custom domain (e.g. `api.selfprime.net`, `api.itsjusus.com`). The `.workers.dev` URL is the CF infrastructure fallback and must never be exposed to end users or hardcoded in frontend assets. Check `docs/service-registry.yml` for the canonical `url` field; use that, never `workers_dev_url`.
+
+## Sub-Agent Isolation (STOP — read before invoking the Agent tool)
+**Any sub-agent invoked via the `Agent` tool that does anything beyond pure read-only research MUST be spawned with `isolation: "worktree"`.** Without it, parallel agents share the same working tree — they will `git checkout` over each other's edits, `git reset --hard` will wipe another agent's in-flight uncommitted work, and background processes (wrangler deploys, builds) get killed mid-flight by another agent's branch operation.
+
+Read-only exceptions (no isolation needed): `Explore`, `claude-code-guide`, `Plan`, `statusline-setup`. Everything else — including `general-purpose` and the default `claude` agent when given write tasks — must isolate.
+
+Pattern: `Agent({ subagent_type: "general-purpose", isolation: "worktree", description: "...", prompt: "..." })`.
+
+This rule exists because of repeated, expensive failures: see `docs/runbooks/git-hooks.md` for the local safety net that catches the wrong-branch commit class of errors, and enable it per-clone with `git config core.hooksPath .githooks`.
 
 ## Worker Rename Protocol (STOP — read this before changing any wrangler.jsonc `name`)
 Never rename a worker without completing this checklist in order:
@@ -79,38 +96,36 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 21. `@latimer-woods-tech/video` (deps: errors) — Cloudflare Stream + R2 wrappers
 22. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
 23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
+24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
 
 ## Video Production Pipeline
-The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg):
+
+The automated video engine runs **outside Workers** (needs real Chromium + ffmpeg). End-to-end pipeline is operational as of 2026-05-20; first live video at https://capricast.com/watch/5209dd21-71a8-4ee4-afeb-0c030ade1a70.
 
 ```
 PostHog engagement signals
-  → scorePriority() → video_calendar row
-  → Cloudflare cron Worker: getPendingJobs() → dispatch workflow_dispatch
-  → GitHub Actions render-video.yml:
-      1. LLM script (Anthropic)
+  → scorePriority() → schedule-worker video_calendar row
+  → apps/video-cron (hourly cron Worker) → workflow_dispatch
+  → .github/workflows/render-video.yml:
+      1. LLM headline + narration script (Anthropic Claude Haiku 4.5)
       2. ElevenLabs narration (MP3 → R2)
       3. Remotion render (MP4)
       4. ffmpeg encode (H.264 baseline + AAC)
-      5. R2 upload
-      6. Cloudflare Stream registration
-      7. updateJobStatus('done', { streamUid })
-  → getStreamEmbedUrl(uid) → landing page iframe
+      5. MP4 → R2
+      6. Cloudflare Stream `/copy` + poll until ready
+      7. POST /api/admin/videos/import on Capricast worker
+      8. PATCH schedule-worker job → status=done
+  → Capricast watch page renders enriched VideoObject JSON-LD with
+    transcript, twitter:player card, author/publisher/interactionStatistic
 ```
 
-**Required GitHub Secrets for render-video.yml:**
-- `ANTHROPIC_API_KEY` — LLM script generation
-- `ELEVENLABS_API_KEY` — narration audio generation
-- `ELEVENLABS_VOICE_PRIME_SELF`, `ELEVENLABS_VOICE_CYPHER`, `ELEVENLABS_VOICE_DEFAULT` — voice IDs
-- `CF_STREAM_TOKEN` — Cloudflare Stream API token (Stream:Edit + Stream:Read)
-- `CF_ACCOUNT_ID` — Cloudflare account ID
-- `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — R2 S3-compatible credentials
-- `R2_BUCKET_NAME` — R2 bucket for video storage
-- `R2_PUBLIC_DOMAIN` — R2 public URL domain
-- `SCHEDULE_WORKER_URL` — cron Worker HTTPS endpoint
-- `WORKER_API_TOKEN` — secret for cron Worker PATCH /jobs/:id
+**Operational runbook (read this before debugging):** [`docs/runbooks/video-pipeline.md`](./docs/runbooks/video-pipeline.md) — full secret matrix, manual test recipe, and the load-bearing gotchas list (GCP secret UTF-8 BOM trap, broken Drizzle ledger, Capricast Pages project named `videoking`, dead `ANTHROPIC_API_KEY` aliasing live `LATIMER_ANTHROPIC_API`, etc.).
 
-**Never** run Remotion or ffmpeg in a Cloudflare Worker — they require Node.js + real compute.
+**Secrets are sourced from GCP Secret Manager via WIF**, NOT GitHub Actions repo secrets. The render-video.yml workflow runs `scripts/fetch_gcp_secrets.sh` after authenticating with `google-github-actions/auth@v3`. All workflow env vars are populated from GCP at runtime. New secrets must be created in factory-495015 with `printf '%s'` (NOT `echo`) to avoid the trailing-newline trap, and granted to the `factory-sa@factory-495015.iam.gserviceaccount.com` WIF identity. See the runbook for the full matrix.
+
+Local package dependencies the render step builds (in order): `errors`, `monitoring`, `logger`, `neon`, `llm`, `video`, `schedule`. The `llm` package is what supplies `complete()` — the workflow's `generate-script.mjs` shims `withSystem` locally since the package doesn't export that helper.
+
+**Never** run Remotion or ffmpeg in a Cloudflare Worker — they require Node.js + real compute. The video-cron Worker only dispatches; the actual render runs on `ubuntu-latest` in GitHub Actions.
 
 ## Quality Gates
 - TypeScript strict: zero errors

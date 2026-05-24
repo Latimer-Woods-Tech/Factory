@@ -1,0 +1,83 @@
+name: Launch Readiness Scorecard
+
+# Stage 2 M3 — Daily composite scorecard. Pure aggregator over the
+# shadow-mode snapshots that already land daily on main:
+#   • docs/conformance/summary.json
+#   • docs/completion-tracker.json
+#   • docs/cost/summary.json
+#   • docs/revenue/summary.json (when revenue digest #727 lands)
+# No external API calls; reads files only. Runs after revenue digest so
+# the inputs are fresh.
+on:
+  schedule:
+    - cron: '37 7 * * *' # daily 07:37 UTC (after revenue digest at 07:07)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD UTC). Empty = today.'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: launch-readiness
+  cancel-in-progress: false
+
+jobs:
+  scorecard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          # Use a long-lived PAT instead of GITHUB_TOKEN so the auto-merge PR
+          # the workflow opens triggers required-status workflows on PRs.
+          # Events authored by GITHUB_TOKEN do not retrigger workflow runs.
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Run scorecard aggregator
+        run: |
+          set -euo pipefail
+          args=""
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            args="$args --date ${{ github.event.inputs.date }}"
+          fi
+          python scripts/launch_readiness.py $args
+
+      - name: Open auto-merge PR for scorecard snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          git add docs/scorecard/ 2>/dev/null || true
+          if git diff --quiet --cached docs/scorecard/; then
+            echo "No scorecard changes to commit."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/scorecard-snapshot-$DATE-$(date -u +%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Belt-and-braces: even though actions/checkout persisted credentials
+          # for GH_PAT above, force the remote URL to embed the token so a
+          # fresh `git push` from a new branch cannot fall back to interactive
+          # prompts (RC-3 in the 2026-05-23 scheduled-workflow triage).
+          git remote set-url origin \
+            "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${GITHUB_REPOSITORY}.git"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(scorecard): daily launch readiness ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(scorecard): daily launch readiness ($DATE)" \
+            --body "Automated daily Stage 2 Launch Readiness Scorecard from \`launch-readiness.yml\`. Pure aggregator over conformance, completion, cost, revenue snapshots already on main." \
+            --label automation \
+            --label documentation \
+            --label auto-merge

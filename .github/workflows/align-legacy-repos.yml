@@ -1,0 +1,56 @@
+name: Align Legacy Repos (OPS-2.1)
+
+# One-time (re-runnable) workflow that:
+#   1. Archives The_Calling (duplicate of the Factory-managed the-calling app)
+#   2. Applies Factory merge policy, branch-deletion, and SECURITY.md to coh and focusbro
+#
+# Requires a GitHub App token (FACTORY_APP_ID / FACTORY_APP_PRIVATE_KEY) with
+# admin:repo access to Latimer-Woods-Tech/coh, Latimer-Woods-Tech/focusbro,
+# and Latimer-Woods-Tech/The_Calling.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — print planned changes without applying them'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Align legacy repos
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="--dry-run"
+          fi
+          node scripts/align-legacy-repos.mjs $ARGS

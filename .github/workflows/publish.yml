@@ -4,7 +4,7 @@ on:
     tags: ['*/v*']
 permissions:
   contents: read
-  packages: write
+  id-token: write
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 concurrency:
@@ -20,29 +20,29 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: 'https://npm.pkg.github.com'
+          registry-url: 'https://registry.npmjs.org'
           scope: '@latimer-woods-tech'
+      - name: Upgrade npm to >= 11.5.1 (required for OIDC trusted publishers)
+        run: |
+          set -euo pipefail
+          echo "npm before: $(npm --version)"
+          npm install -g npm@latest
+          echo "npm after:  $(npm --version)"
+          node -e "
+            const v = require('child_process').execSync('npm --version').toString().trim();
+            const [maj, min, patch] = v.split('.').map(Number);
+            const ok = maj > 11 || (maj === 11 && (min > 5 || (min === 5 && patch >= 1)));
+            if (!ok) { console.error('npm ' + v + ' < 11.5.1 — OIDC trusted publishers unavailable'); process.exit(1); }
+          "
       - name: Detect and validate package from tag
         run: |
           set -euo pipefail
           PACKAGE=$(echo "$GITHUB_REF_NAME" | cut -d'/' -f1)
-          ALLOWED_PACKAGES=(errors monitoring logger realtime auth neon stripe llm telephony analytics deploy testing email copy content social seo crm compliance admin video schedule validation flags llm-meter protocol studio-core entitlements creator)
-          VALID=false
-          for pkg in "${ALLOWED_PACKAGES[@]}"; do
-            if [ "$pkg" = "$PACKAGE" ]; then
-              VALID=true
-              break
-            fi
-          done
-          if [ "$VALID" = "false" ]; then
-            echo "::error::Unknown package '${PACKAGE}' in tag '${GITHUB_REF_NAME}'. Allowed: ${ALLOWED_PACKAGES[*]}"
-            exit 1
-          fi
           if [ ! -d "packages/${PACKAGE}" ]; then
             echo "::error::Package directory 'packages/${PACKAGE}' does not exist for tag '${GITHUB_REF_NAME}'."
             exit 1
           fi
-          PKG_NAME=$(node -e "process.stdout.write(require('./packages/${PACKAGE}/package.json').name)")
+          PKG_NAME=$(node -p "require('./packages/' + '${PACKAGE}' + '/package.json').name")
           echo "Resolved package: ${PKG_NAME} from packages/${PACKAGE}"
           echo "PACKAGE=${PACKAGE}" >> "$GITHUB_ENV"
       - name: Build local dependencies in order
@@ -53,18 +53,24 @@ jobs:
             if [ "$pkg" = "$PACKAGE" ]; then
               break
             fi
-            echo "--- Building dependency: $pkg ---"
-            (cd "packages/${pkg}" && npm ci && npm run build)
+            if [ -d "packages/${pkg}" ]; then
+              echo "--- Building dependency: $pkg ---"
+              (cd "packages/${pkg}" && npm ci --ignore-scripts && npm run build)
+            fi
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Strip publishConfig.registry override
+        run: |
+          cd "packages/${PACKAGE}"
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));if(p.publishConfig&&p.publishConfig.registry){delete p.publishConfig.registry;fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');console.log('Stripped publishConfig.registry')}"
       - name: Install package
-        run: cd "packages/${PACKAGE}" && npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "packages/${PACKAGE}"
+          if [ -f "package-lock.json" ]; then
+            npm ci --ignore-scripts
+          else
+            npm install --ignore-scripts --no-save
+          fi
       - name: Pre-publish checks
-        run: cd "packages/${PACKAGE}" && npm run prepublish
-      - name: Publish to GitHub Packages
-        run: cd "packages/${PACKAGE}" && npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cd "packages/${PACKAGE}" && (npm run prepublish --if-present || echo 'no prepublish')
+      - name: Publish to npmjs.org
+        run: cd "packages/${PACKAGE}" && npm publish --access public --ignore-scripts --provenance

@@ -1,57 +1,71 @@
-name: Update Stack Manifest
+name: Update STACK Manifest
 
+# Triggers:
+# - Every successful publish (workflow_run of Publish Package)
+# - Manual dispatch
+# - Daily safety net (catches missed updates if workflow_run fires before main is updated)
 on:
-  # Fires after a successful package publish
   workflow_run:
-    workflows: ["Publish Package"]
+    workflows: ['Publish Package']
     types: [completed]
-  # Manual trigger for initial setup or forced refresh
-  workflow_dispatch:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17 4 * * *' # daily 04:17 UTC
 
+# Need write access for branch+commit and pull-requests:write for PR creation.
+# Direct push to main is blocked by branch protection — must go through a PR
+# that hits the existing auto-merge path.
 permissions:
   contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  pull-requests: write
 
 concurrency:
   group: update-stack-manifest
   cancel-in-progress: false
 
 jobs:
-  update-stack:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+  update:
+    # Only run on successful publish (or manual / scheduled).
+    if: |
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
         with:
+          # Need full history for git diff + commit back.
+          fetch-depth: 0
+          # Use a PAT or default token with contents:write.
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
 
-      - name: Update STACK.md package versions
+      - name: Run update-stack-manifest.js
         run: node scripts/update-stack-manifest.js
 
-      - name: Check for changes
-        id: changes
+      - name: Open auto-merge PR if STACK.md changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if git diff --quiet docs/STACK.md; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No version changes detected — STACK.md is already current."
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "Version changes detected:"
-            git diff docs/STACK.md
-          fi
-
-      - name: Commit and push updated STACK.md
-        if: steps.changes.outputs.changed == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
           git add docs/STACK.md
-          git commit -m "chore(docs): auto-update STACK.md package versions [skip ci]"
-          git push
+          if git diff --quiet --cached docs/STACK.md; then
+            echo "STACK.md is already up to date — nothing to commit."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/stack-manifest-$DATE-$(date -u +%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(stack): auto-update STACK.md package versions ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(stack): auto-update STACK.md ($DATE)" \
+            --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`)." \
+            --label automation \
+            --label documentation \
+            --label auto-merge

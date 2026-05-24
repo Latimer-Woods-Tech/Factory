@@ -1,0 +1,8 @@
+{
+  "result": {
+    "uid": "dryrun0000000000000000000000abcd",
+    "status": { "state": "ready" },
+    "duration": 15,
+    "thumbnail": "https://customer-dryrun.cloudflarestream.com/dryrun0000000000000000000000abcd/thumbnails/thumbnail.jpg"
+  }
+}

@@ -315,27 +315,27 @@ The concrete frontend implementation currently visible in the workspace is:
 
 Current frontend config there uses:
 
-- `NEXT_PUBLIC_APP_URL = "https://itsjusus.com"`
-- `NEXT_PUBLIC_API_BASE_URL = "https://api.itsjusus.com"`
-- `NEXT_PUBLIC_ASSET_BASE_URL = "https://assets.itsjusus.com"`
+- `NEXT_PUBLIC_APP_URL = "https://capricast.com"`
+- `NEXT_PUBLIC_API_BASE_URL = "https://api.capricast.com"`
+- `NEXT_PUBLIC_ASSET_BASE_URL = "https://assets.capricast.com"`
 
 The paired Worker config currently uses:
 
 - `_external_reviews/videoking/apps/worker/wrangler.toml`
-- route pattern: `api.itsjusus.com/*`
+- route pattern: `api.capricast.com/*`
 
 ### Two possible domain strategies
 
 #### Strategy A — frontend alias only
 
-Use `capricast.com` as an additional frontend domain, but keep the backend/API on `api.itsjusus.com`.
+Use `capricast.com` as an additional frontend domain, but keep the backend/API on `api.capricast.com`.
 
 This is the smallest change.
 
 What to do:
 
 1. Add `capricast.com` as a Cloudflare Pages custom domain for the web app.
-2. Keep `NEXT_PUBLIC_API_BASE_URL` pointing to `https://api.itsjusus.com` unless you also want an API domain change.
+2. Keep `NEXT_PUBLIC_API_BASE_URL` pointing to `https://api.capricast.com` unless you also want an API domain change.
 3. Update `NEXT_PUBLIC_APP_URL` if the product should generate canonical links using `capricast.com`.
 4. Verify `curl https://capricast.com/` returns `200`.
 

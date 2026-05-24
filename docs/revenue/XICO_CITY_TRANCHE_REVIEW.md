@@ -1,41 +1,48 @@
-# Xico City — Tranche Opportunity Review
+# DJMEXXICO (xico-city) — Tranche Opportunity Review
 
-**Date:** 2026-04-29  
-**Reviewed repo:** `Latimer-Woods-Tech/xico-city`  
+**Date:** 2026-04-29
+**Updated:** 2026-05-05 — product identity corrected to DJMEXXICO per `BUILD_PLAN_v2.md`.
+**Reviewed repo:** `Latimer-Woods-Tech/xico-city`
 **Verdict:** promising tranche asset and now committed to the full World Class 360 build, but not ready until the foundation is repaired first.
 
-> **April 29 decision:** Build Xico City all the way through the World Class 360 plan. The earlier tranche-MVP framing is superseded for this iteration. The transaction-ready MVP remains the first proof gate, not the final target.
+Canonical technical design reference: `docs/architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md`.
+
+> **Product identity note:** This repo was previously described in Factory docs as a "Mexico City experiences marketplace." That description was incorrect. The canonical product is **DJMEXXICO — a creative economy operating system for artists** (11 roles: Producer, Vocalist, DJ, VJ, Songwriter, Engineer, Visual Artist, Curator, A&R, Supervisor, Promoter). See `BUILD_PLAN_v2.md` §1.2 in the xico-city repo for the explicit correction.
+
+> **April 29 decision:** Build DJMEXXICO (xico-city) all the way through the World Class 360 plan. The transaction-ready MVP (S-00→S-01: audio upload → slice → asset → marketplace) remains the first proof gate, not the final target.
 
 ---
 
 ## 1. Executive verdict
 
-Xico City is promising because it can become the **local-experience marketplace vertical** in the Factory tranche:
+DJMEXXICO is promising because it can become the **creative economy vertical** in the Factory tranche:
 
-- travelers and locals discover curated Mexico City experiences,
-- hosts list and sell experiences,
+- artists upload raw material (audio, video, image) → platform processes → production-ready assets → marketplace,
+- buyers discover rights-declared assets via search (FTS, Camelot key, pgvector similarity),
 - Stripe Checkout and Stripe Connect create real transaction flow,
-- Factory video automation can generate listing promo videos,
-- Factory analytics/CRM can measure supply, demand, bookings, and LTV,
-- Admin Studio can eventually operate disputes, moderation, payouts, and health.
+- Factory video automation can generate artist promo and asset preview videos,
+- Factory analytics/CRM can measure asset publish rates, sales, and LTV,
+- Admin Studio can operate moderation, DMCA handling, payouts, and health.
 
-However, Xico City is **less ADHD/introvert-friendly than Practitioner Video Studio** because marketplaces need supply acquisition, trust, safety, customer support, refunds, and local operations. That risk is accepted for World Class 360, so the build must lean hard on self-serve host onboarding, automation, seeded/demo content, operator tooling, and strict quality gates.
+Audio/image/video processing runs on a Hetzner CX32 Python worker (librosa, Demucs, Pillow, ffmpeg) — outside the Cloudflare Worker. This is a documented deviation from Factory Workers-only standing orders; the compute requirement physically cannot run in a Worker.
 
 Recommended tranche role:
 
-> Xico City should be the final app completed before tranche build-up, and completion now means the full 12-slice plan: foundations, identity, host onboarding, catalog, discovery, bookings, reviews/trust, subscriptions, payouts, curator tooling, compliance, and PWA polish.
+> DJMEXXICO (xico-city) should be the creative-economy platform completed before tranche build-up. Completion means the full 11-slice plan: foundations, auth (Lucia v3), asset upload pipeline, marketplace discovery, Stripe payments, audio/visual processing, role subscriptions, payouts, compliance, and PWA polish.
 
 ---
 
 ## 2. How it fits the Factory portfolio
 
-| Factory asset | Xico City use |
+| Factory asset | DJMEXXICO use |
 |---|---|
-| `@latimer-woods-tech/auth` | traveler, host, curator, admin roles |
-| `@latimer-woods-tech/stripe` | booking checkout, subscriptions, Connect payouts |
-| `@latimer-woods-tech/neon` | marketplace data, audit ledger, bookings, hosts |
-| `@latimer-woods-tech/analytics` | discovery → booking funnel, host activation, LTV |
-| `@latimer-woods-tech/email` | booking confirmation, reminders, cancellation notices |
+| `@latimer-woods-tech/errors` | Worker error boundary and typed API responses |
+| `@latimer-woods-tech/monitoring` | Sentry Worker instrumentation |
+| `@latimer-woods-tech/logger` | Structured JSON logging |
+| `@latimer-woods-tech/stripe` | asset checkout, subscriptions, Connect payouts |
+| `@latimer-woods-tech/neon` | asset/job data, audit ledger, sessions |
+| `@latimer-woods-tech/analytics` | upload → purchase funnel, artist activation, LTV |
+| `@latimer-woods-tech/email` | purchase confirmation, job status, payout notices |
 | `@latimer-woods-tech/content` / `copy` / `seo` | experience pages, neighborhood pages, programmatic SEO |
 | `@latimer-woods-tech/video` / `schedule` | AI-generated listing videos and neighborhood guides |
 | `@latimer-woods-tech/compliance` | consent, deletion, DMCA, dispute/audit trail |

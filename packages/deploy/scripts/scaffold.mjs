@@ -49,8 +49,13 @@ const CLI_RATE_LIMITER_ID = (() => {
   return idx !== -1 ? process.argv[idx + 1] : null;
 })();
 
+const CLI_HANDOFF_PATH = (() => {
+  const idx = process.argv.indexOf('--handoff');
+  return idx !== -1 ? process.argv[idx + 1] : null;
+})();
+
 if (!APP_NAME) {
-  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy]');
+  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy] [--handoff <path>]');
   process.exit(1);
 }
 
@@ -89,6 +94,117 @@ function write(relPath, content) {
   if (dir) mkdirSync(dir, { recursive: true });
   writeFileSync(full, content, 'utf8');
   console.log(`  📄 ${relPath}`);
+}
+
+// ── Capability handoff loader (optional, --handoff <path>) ───────────────────
+//
+// When --handoff is supplied, the script consumes a handoff package emitted
+// by /capabilities/handoff (admin-studio). The handoff's compiled plan is
+// the single seam between the design studio and the scaffold layer; we
+// augment the generated files with:
+//
+//   1. plan.packages → package.json dependencies (versionRange preserved)
+//   2. plan.env.secrets → .dev.vars.example entries
+//   3. plan.env.vars   → wrangler.jsonc vars block
+//   4. plan.smokeChecks + plan.expectedSurfaces → factory/SMOKE.md
+//   5. the full handoff → factory/handoff.json (audit trail in the new repo)
+
+function loadHandoff(path) {
+  if (!path) return null;
+  let body;
+  try {
+    body = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (err) {
+    console.error(`\n❌ Cannot read handoff at ${path}: ${err.message}`);
+    process.exit(1);
+  }
+  // Accept either the raw handoff body or the route envelope { handoff: ... }
+  const handoff = body?.handoff ?? body;
+  const errors = [];
+  if (handoff?.schemaVersion !== '1.0.0') errors.push(`schemaVersion must be "1.0.0" (got ${handoff?.schemaVersion})`);
+  if (handoff?.kind !== 'scaffold-handoff') errors.push(`kind must be "scaffold-handoff" (got ${handoff?.kind})`);
+  if (!handoff?.recipeId) errors.push('recipeId is required');
+  if (!handoff?.plan?.scaffold?.stagingFirst) errors.push('plan.scaffold.stagingFirst must be true');
+  if (errors.length > 0) {
+    console.error(`\n❌ Invalid handoff package:`);
+    for (const e of errors) console.error(`   - ${e}`);
+    process.exit(1);
+  }
+  console.log(`\n📦 Capability handoff loaded:`);
+  console.log(`   recipe: ${handoff.recipeId}`);
+  console.log(`   concept: ${handoff.conceptId}`);
+  if (handoff.hash) console.log(`   hash: ${handoff.hash}`);
+  return handoff;
+}
+
+const HANDOFF = loadHandoff(CLI_HANDOFF_PATH);
+
+function applyHandoffToScaffold(handoff) {
+  if (!handoff) return;
+  console.log('\n🧬 Applying capability handoff to scaffold...');
+  const plan = handoff.plan;
+
+  // 1. Merge plan.packages into package.json dependencies.
+  const pkgPath = join(TARGET, 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  pkg.dependencies ??= {};
+  for (const entry of plan.packages ?? []) {
+    if (!pkg.dependencies[entry.package]) {
+      pkg.dependencies[entry.package] = entry.versionRange;
+      console.log(`  📦 +dep ${entry.package}@${entry.versionRange}`);
+    }
+  }
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+
+  // 2. Append plan.env.secrets to .dev.vars.example (idempotent).
+  const devVarsPath = join(TARGET, '.dev.vars.example');
+  if (existsSync(devVarsPath)) {
+    const existing = readFileSync(devVarsPath, 'utf8');
+    const additions = (plan.env?.secrets ?? [])
+      .filter((secret) => !existing.includes(`${secret}=`))
+      .map((secret) => `${secret}=`);
+    if (additions.length > 0) {
+      const block = `\n# Added from capability handoff (${handoff.recipeId})\n${additions.join('\n')}\n`;
+      writeFileSync(devVarsPath, existing.trimEnd() + '\n' + block, 'utf8');
+      console.log(`  🔐 +${additions.length} secret stub(s) → .dev.vars.example`);
+    }
+  }
+
+  // 3. Persist the handoff itself as factory/handoff.json (audit trail).
+  write('factory/handoff.json', JSON.stringify(handoff, null, 2) + '\n');
+
+  // 4. Emit factory/SMOKE.md so the new app ships with documented expectations.
+  const smokeLines = [
+    `# ${APP_NAME} — Smoke Expectations`,
+    '',
+    `Generated from capability handoff for recipe \`${handoff.recipeId}\` (concept \`${handoff.conceptId}\`).`,
+    handoff.hash ? `Handoff hash: \`${handoff.hash}\`` : '',
+    '',
+    '## Expected surfaces',
+    '',
+    ...(plan.expectedSurfaces ?? []).map((surface) => `- \`${surface}\``),
+    '',
+    '## Smoke checks',
+    '',
+    ...(plan.smokeChecks ?? []).map((check) =>
+      `- \`${check.path}\` → expect ${check.expectedStatus}${check.expectContains ? `, contains \`${check.expectContains}\`` : ''}`,
+    ),
+    '',
+    '## Required env',
+    '',
+    `- Secrets: ${(plan.env?.secrets ?? []).join(', ') || '_none_'}`,
+    `- Vars: ${(plan.env?.vars ?? []).join(', ') || '_none_'}`,
+    `- Bindings (required): ${(plan.bindings?.required ?? []).join(', ') || '_none_'}`,
+    `- Bindings (optional): ${(plan.bindings?.optional ?? []).join(', ') || '_none_'}`,
+    '',
+    '## Constraints',
+    '',
+    ...(plan.constraints ?? []).map((c) => `- ${c}`),
+    '',
+  ].filter((line) => line !== '');
+  write('factory/SMOKE.md', smokeLines.join('\n') + '\n');
+
+  console.log('  ✅ Handoff applied. See factory/handoff.json and factory/SMOKE.md.');
 }
 
 // ── Prerequisites ─────────────────────────────────────────────────────────────
@@ -706,6 +822,11 @@ async function main() {
   // Create directory + all files
   mkdirSync(TARGET, { recursive: true });
   generateFiles(hyperdriveId, rateLimiterId);
+
+  // Apply capability handoff if --handoff was supplied. Must run AFTER
+  // generateFiles so package.json/.dev.vars.example exist, and BEFORE
+  // npm install so the augmented dependency set is what gets installed.
+  applyHandoffToScaffold(HANDOFF);
 
   // Append app-specific flags to Factory Core flag registry
   console.log('\n🏳️  Wiring Flagship flags...');

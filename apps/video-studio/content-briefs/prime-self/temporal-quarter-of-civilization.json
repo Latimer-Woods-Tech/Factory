@@ -1,0 +1,49 @@
+{
+  "briefKey": "temporal-quarter-of-civilization",
+  "key": "temporal-quarter-of-civilization",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "temporal",
+  "title": "The Four Quarters of the Wheel",
+  "description": "The wheel of sixty-four gates divides into four quarters — Initiation, Civilization, Duality, Mutation. How they map to your incarnation cross.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "chronos",
+  "forgeTheme": "chronos",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "The four quarters of the wheel and the incarnation cross",
+  "learningGoal": "User understands the structural division of the gate wheel into four developmental quarters and can locate their own incarnation cross within that frame.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "The wheel of sixty-four gates divides into four quarters of sixteen gates each",
+    "Initiation, Civilization, Duality, and Mutation are the four developmental purposes",
+    "Your incarnation cross is the four gates of your Sun and Earth at conscious and unconscious activation",
+    "The quarter your cross falls in tells you the developmental purpose your design is here to carry"
+  ],
+  "forbiddenClaims": [
+    "your quarter is your fate",
+    "one quarter is higher than another",
+    "guaranteed life purpose insight",
+    "the cross dictates your career"
+  ],
+  "toneNotes": "Architectural and historical. The four quarters are a structural frame — present them as geography, not prophecy.",
+  "narration_script": "The wheel of sixty-four gates divides into four quarters.\n\nNot evenly by accident, but structurally. Sixteen gates each. Each quarter named for the developmental purpose it carries. Each quarter, in the great cycle of human becoming, doing a specific kind of work.\n\nThe first quarter is Initiation. The work of beginning. The mind that asks the first question. The gates here carry the energy of inquiry, of pressure, of new mental possibility.\n\nThe second quarter is Civilization. The work of structure. The gates here carry the energy of role, of relationship, of how individuals organize into the shared forms that make human life possible.\n\nThe third quarter is Duality. The work of differentiation. The gates here carry the energy of partnership, of bond, of the way one self meets another and is changed by the meeting.\n\nThe fourth quarter is Mutation. The work of transformation. The gates here carry the energy of cycle, of completion, of the death that makes the next beginning possible.\n\nFour quarters. One wheel. The full arc of becoming.\n\nYour incarnation cross is the four gates of your Sun and Earth at the moment of birth, and the same four gates eighty-eight degrees earlier. Conscious and unconscious. Personality and design.\n\nThose four gates fall within the quarters. The quarter your cross falls in tells you the developmental purpose your design is here to carry.\n\nThis is not destiny. It is geography. Where you stand on the wheel.",
+  "script": "The wheel of sixty-four gates divides into four quarters.\n\nNot evenly by accident, but structurally. Sixteen gates each. Each quarter named for the developmental purpose it carries. Each quarter, in the great cycle of human becoming, doing a specific kind of work.\n\nThe first quarter is Initiation. The work of beginning. The mind that asks the first question. The gates here carry the energy of inquiry, of pressure, of new mental possibility.\n\nThe second quarter is Civilization. The work of structure. The gates here carry the energy of role, of relationship, of how individuals organize into the shared forms that make human life possible.\n\nThe third quarter is Duality. The work of differentiation. The gates here carry the energy of partnership, of bond, of the way one self meets another and is changed by the meeting.\n\nThe fourth quarter is Mutation. The work of transformation. The gates here carry the energy of cycle, of completion, of the death that makes the next beginning possible.\n\nFour quarters. One wheel. The full arc of becoming.\n\nYour incarnation cross is the four gates of your Sun and Earth at the moment of birth, and the same four gates eighty-eight degrees earlier. Conscious and unconscious. Personality and design.\n\nThose four gates fall within the quarters. The quarter your cross falls in tells you the developmental purpose your design is here to carry.\n\nThis is not destiny. It is geography. Where you stand on the wheel.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "The wheel of sixty-four gates divides into four quarters. Sixteen gates each. Each carrying a developmental purpose.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Initiation. Civilization. Duality. Mutation. The four quarters of becoming.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "Your incarnation cross is four gates — Sun and Earth, conscious and unconscious. They fall within the quarters and tell you where you stand.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Wheel", "Quarter", "Cross"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "This is not destiny. It is geography. Where you stand on the wheel.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "The Four Quarters and Your Incarnation Cross",
+    "description": "The wheel divides into four developmental quarters. Your cross tells you which one your design is here to carry."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

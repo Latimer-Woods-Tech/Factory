@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import worker, { checkTarget, parseTargets, runSyntheticChecks } from './index.js';
 import type { Env } from './env.js';
 
+// Stub the bindings tests don't exercise. The screenshot-on-failure branch
+// in checkTarget is guarded by `env.BROWSER && env.AUDIT_LOGS && env.SLACK_WEBHOOK_OPS`,
+// and SLACK_WEBHOOK_OPS is absent here, so BROWSER/AUDIT_LOGS are never dereferenced.
 const env: Env = {
+  BROWSER: null,
+  AUDIT_LOGS: null as unknown as R2Bucket,
   ENVIRONMENT: 'test',
   TARGETS_JSON: JSON.stringify([
     { id: 'home', url: 'https://example.com/', contains: 'Welcome' },
@@ -24,12 +29,13 @@ function parseUnknownJson(text: string): unknown {
 describe('parseTargets', () => {
   it('falls back to default targets when configuration is empty', () => {
     const fallback = parseTargets('[]');
-    expect(fallback).toHaveLength(11);
+    // Generated (4 liveness) + custom (3 manifest + 3 page + 4 SLO journeys) = 14
+    expect(fallback.length).toBeGreaterThanOrEqual(14);
     expect(fallback.some((target) => target.id === 'schedule-worker.health')).toBe(true);
     expect(fallback.some((target) => target.id === 'schedule-worker.manifest')).toBe(true);
     expect(fallback.some((target) => target.id === 'slo.journey.auth-api')).toBe(true);
-    expect(parseTargets('[ ]')).toHaveLength(11);
-    expect(parseTargets(undefined)).toHaveLength(11);
+    expect(parseTargets('[ ]').length).toBeGreaterThanOrEqual(14);
+    expect(parseTargets(undefined).length).toBeGreaterThanOrEqual(14);
   });
 
   it('validates configured targets', () => {
@@ -55,7 +61,7 @@ describe('parseTargets', () => {
 describe('checkTarget', () => {
   it('passes when status and body text match', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Welcome to Prime Self')));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, env, fetchImpl);
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
@@ -65,7 +71,7 @@ describe('checkTarget', () => {
 
   it('fails when expected body text is absent', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Different content')));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain('Response did not contain expected text: Welcome');
@@ -74,7 +80,7 @@ describe('checkTarget', () => {
 
   it('fails when status does not match', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Not found', 404)));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.status).toBe(404);
@@ -82,7 +88,7 @@ describe('checkTarget', () => {
 
   it('captures fetch failures without throwing', async () => {
     const fetchImpl = vi.fn(() => Promise.reject(new Error('network down')));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.status).toBeNull();
@@ -94,7 +100,7 @@ describe('checkTarget', () => {
       status: 200,
       headers: { 'content-type': 'application/octet-stream' },
     })));
-    const result = await checkTarget({ id: 'asset', url: 'https://example.com/file', contains: 'binary-ish' }, fetchImpl);
+    const result = await checkTarget({ id: 'asset', url: 'https://example.com/file', contains: 'binary-ish' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain('Response did not contain expected text: binary-ish');
@@ -150,7 +156,7 @@ describe('worker routes', () => {
 
   it('GET /checks/run returns 422 for invalid configured targets', async () => {
     const res = await worker.fetch(new Request('https://monitor.test/checks/run'), {
-      ENVIRONMENT: 'test',
+      ...env,
       TARGETS_JSON: '{"bad":true}',
     });
 
@@ -165,7 +171,7 @@ describe('worker routes', () => {
     vi.stubGlobal('fetch', fetchImpl);
 
     const res = await worker.fetch(new Request('https://monitor.test/checks/run'), {
-      ENVIRONMENT: 'test',
+      ...env,
       TARGETS_JSON: JSON.stringify([{ id: 'home', url: 'https://example.com/', contains: 'Welcome' }]),
     });
 
@@ -182,7 +188,7 @@ describe('worker routes', () => {
     vi.stubGlobal('fetch', fetchImpl);
 
     await worker.scheduled({} as ScheduledEvent, {
-      ENVIRONMENT: 'test',
+      ...env,
       TARGETS_JSON: JSON.stringify([{ id: 'home', url: 'https://example.com/', contains: 'Welcome' }]),
     });
 

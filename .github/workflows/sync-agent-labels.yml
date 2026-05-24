@@ -7,6 +7,10 @@ on:
       - '.github/workflows/sync-agent-labels.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   issues: write
@@ -15,10 +19,10 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: label-config
         run: echo "labels=$(jq -c '.labels' .github/agent-labels.json)" >> "$GITHUB_OUTPUT"
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             const labels = ${{ steps.label-config.outputs.labels }};

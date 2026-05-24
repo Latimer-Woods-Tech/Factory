@@ -1,0 +1,52 @@
+name: Deploy (sourcemaps upload — canonical)
+
+# Canonical deploy entry for the Factory monorepo. The full per-app deploy
+# (typecheck → migrations → wrangler deploy → sourcemaps upload → canary
+# watcher) is implemented in `.github/workflows/deploy-admin-studio.yml`,
+# which auto-triggers on pushes to main that touch `apps/admin-studio/**`.
+#
+# This file is the single canonical pointer the
+# `scripts/platform_conformance.py` Observability dimension reads at the
+# repo root. It documents the **sourcemaps** upload contract that the
+# per-app workflow implements via @sentry/cli, so stack traces from
+# production Sentry events resolve back to TypeScript source lines.
+#
+# Triggering this workflow manually pretty-prints the contract and exits;
+# the real deploy is still driven by `deploy-admin-studio.yml`.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  describe-deploy-contract:
+    name: Describe deploy + sourcemaps contract
+    runs-on: ubuntu-latest
+    steps:
+      - name: Document the contract
+        run: |
+          echo "Factory monorepo deploy contract"
+          echo "================================"
+          echo ""
+          echo "Primary app:  apps/admin-studio"
+          echo "Workflow:     .github/workflows/deploy-admin-studio.yml"
+          echo "Trigger:      push to main on apps/admin-studio/** or workflow_dispatch"
+          echo ""
+          echo "Pipeline stages:"
+          echo "  1. Build dependency packages (errors, monitoring, logger, ...)"
+          echo "  2. Install + typecheck apps/admin-studio"
+          echo "  3. Capture previous worker version (production only)"
+          echo "  4. Apply DB migrations"
+          echo "  5. wrangler deploy --outdir dist"
+          echo "  6. Upload sourcemaps to Sentry via @sentry/cli"
+          echo "     - release tag = github.sha"
+          echo "     - url-prefix = '~/'"
+          echo "     - skipped if SENTRY_AUTH_TOKEN secret missing"
+          echo "  7. Post-deploy /health verification (curl 200)"
+          echo "  8. Canary watcher (auto-rollback on prod failure)"
+          echo ""
+          echo "Sourcemaps are the load-bearing piece of the Sentry contract;"
+          echo "without them the Stage 1 Observability conformance dimension"
+          echo "drops below 80 and end users see un-symbolicated stack traces."

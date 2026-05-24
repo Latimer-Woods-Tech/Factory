@@ -20,6 +20,7 @@ on:
 #   SELFPRIME_CONNECTION_STRING
 #   KAIROSCOUNCIL_CONNECTION_STRING
 #   THECALLING_CONNECTION_STRING
+#   XICOCITY_CONNECTION_STRING
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -48,6 +49,8 @@ jobs:
             conn_secret: KAIROSCOUNCIL_CONNECTION_STRING
           - app: the-calling
             conn_secret: THECALLING_CONNECTION_STRING
+          - app: xico-city
+            conn_secret: XICOCITY_CONNECTION_STRING
     steps:
       - name: Generate GitHub App token
         id: app-token

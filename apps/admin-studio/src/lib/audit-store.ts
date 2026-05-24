@@ -24,6 +24,7 @@ import {
  * request lifecycle is cheap. We memoise on the binding identity.
  */
 const dbCache = new WeakMap<HyperdriveBinding, FactoryDb>();
+const schemaInitCache = new WeakMap<HyperdriveBinding, Promise<void>>();
 
 function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
   let db = dbCache.get(hyperdrive);
@@ -32,6 +33,63 @@ function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
     dbCache.set(hyperdrive, db);
   }
   return db;
+}
+
+/**
+ * Run a DB op against the cached FactoryDb; if it throws, drop the cache,
+ * rebuild a fresh client, and retry once. Postgres-js connections in the
+ * cache can get poisoned by partially-aborted queries and every subsequent
+ * borrow from that pool then fails until the isolate restarts. Observed as
+ * ~50% 500-rate on /audit before this wrapper.
+ */
+async function withDbRetry<T>(
+  hyperdrive: HyperdriveBinding,
+  op: (db: FactoryDb) => Promise<T>,
+): Promise<T> {
+  try {
+    return await op(getDb(hyperdrive));
+  } catch (err) {
+    console.error('[audit-store] DB query failed; evicting cache and retrying:', (err as Error).message);
+    dbCache.delete(hyperdrive);
+    return await op(getDb(hyperdrive));
+  }
+}
+
+async function ensureAuditSchema(hyperdrive: HyperdriveBinding): Promise<void> {
+  let init = schemaInitCache.get(hyperdrive);
+  if (!init) {
+    const db = getDb(hyperdrive);
+    init = (async () => {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS studio_audit_log (
+          id UUID PRIMARY KEY,
+          occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          user_id TEXT NOT NULL,
+          user_email TEXT NOT NULL,
+          user_role TEXT NOT NULL,
+          session_id TEXT NOT NULL,
+          env TEXT NOT NULL CHECK (env IN ('local','staging','production')),
+          action TEXT NOT NULL,
+          resource TEXT,
+          resource_id TEXT,
+          reversibility TEXT NOT NULL CHECK (reversibility IN ('trivial','reversible','manual-rollback','irreversible')),
+          payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+          result TEXT NOT NULL CHECK (result IN ('success','failure','dry-run')),
+          result_detail JSONB,
+          ip_address TEXT,
+          user_agent TEXT,
+          request_id TEXT NOT NULL
+        )
+      `);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_occurred_at ON studio_audit_log (occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_user ON studio_audit_log (user_id, occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_action ON studio_audit_log (action, occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_env ON studio_audit_log (env, occurred_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_studio_audit_request ON studio_audit_log (request_id)`);
+    })();
+    schemaInitCache.set(hyperdrive, init);
+  }
+  await init;
 }
 
 /**
@@ -45,6 +103,7 @@ export async function insertAuditEntry(
   entry: AuditEntry,
 ): Promise<boolean> {
   try {
+    await ensureAuditSchema(hyperdrive);
     const db = getDb(hyperdrive);
     await db.execute(sql`
       INSERT INTO studio_audit_log (
@@ -88,7 +147,7 @@ export async function queryAuditEntries(
   hyperdrive: HyperdriveBinding,
   query: AuditQuery,
 ): Promise<AuditPage<AuditEntry>> {
-  const db = getDb(hyperdrive);
+  await ensureAuditSchema(hyperdrive);
   const limit = clamp(query.limit ?? 50, 1, 200);
 
   // Build WHERE incrementally to keep parameters bound and avoid string concat.
@@ -118,7 +177,7 @@ export async function queryAuditEntries(
   }
   const whereSql = sql.join(whereChunks, sql` `);
 
-  const result = await db.execute(sql`
+  const result = await withDbRetry(hyperdrive, (db) => db.execute(sql`
     SELECT
       id, occurred_at, user_id, user_email, user_role, session_id, env,
       action, resource, resource_id, reversibility, payload, result,
@@ -127,10 +186,12 @@ export async function queryAuditEntries(
     ${whereSql}
     ORDER BY occurred_at DESC
     LIMIT ${limit + 1}
-  `);
+  `));
 
-  // drizzle/neon-http returns an array directly for SELECT.
-  const rows = (result as unknown as AuditRow[]) ?? [];
+  // FactoryDb.execute (from @latimer-woods-tech/neon) returns
+  // { rows, rowCount }. The previous comment + cast pre-dated that
+  // package change and was the root cause of /audit 500s in production.
+  const rows = result.rows as unknown as AuditRow[];
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
   const last = page[page.length - 1];

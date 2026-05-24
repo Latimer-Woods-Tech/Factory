@@ -5,7 +5,7 @@ import type {
   TestRun,
   TestRunStatus,
 } from '@latimer-woods-tech/studio-core';
-import { apiFetch } from '../../lib/api.js';
+import { apiFetch, getApiBase } from '../../lib/api.js';
 import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { useSession } from '../../stores/session.js';
 
@@ -30,8 +30,6 @@ const STATUS_COLOUR: Record<TestRunStatus, string> = {
   cancelled: 'bg-slate-500',
   'timed-out': 'bg-rose-700',
 };
-
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api') as string;
 
 export function TestsTab() {
   const [suites, setSuites] = useState<Suite[]>([]);
@@ -99,7 +97,7 @@ export function TestsTab() {
   function openStream(runId: string) {
     closeStream();
     if (!token) return;
-    const url = `${API_BASE}/tests/runs/${runId}/events?access_token=${encodeURIComponent(token)}`;
+    const url = `${getApiBase()}/tests/runs/${runId}/events?access_token=${encodeURIComponent(token)}`;
     const es = new EventSource(url);
     sourceRef.current = es;
 

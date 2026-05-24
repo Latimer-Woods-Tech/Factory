@@ -1,0 +1,49 @@
+{
+  "briefKey": "philosophy-4-pentad",
+  "key": "philosophy-4-pentad",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "philosophy",
+  "title": "Pentad: The Fourth Overtone",
+  "description": "The five Forges as the topological completion of channel work. The structural pivot from struggle to mastery.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Pentad — Major Third 5:4 — K-one-four to C-five",
+  "learningGoal": "Deep user can read the five Forges as the topological structure that completes channel work, and understand the K-one-four to C-five pivot as the structural moment of mastery.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "Pentad is the fourth overtone — the major third, 5:4",
+    "Five Forges — Chronos, Eros, Aether, Lux, Phoenix — name the five atmospheres of becoming",
+    "K-one-four is the star topology: one center radiating outward to four others, the structure of dependence",
+    "C-five is the closed cycle: each Forge feeding the next, the structure of self-sustaining mastery"
+  ],
+  "forbiddenClaims": [
+    "the pentad gives you mastery automatically",
+    "K-one-four is bad and C-five is good",
+    "guaranteed transformation",
+    "the Forges are deities"
+  ],
+  "toneNotes": "The deepest video so far. Topology language is intentional — let it be a little dense. The viewer who reaches this brief is ready.",
+  "narration_script": "The fourth overtone is the major third. Five to four.\n\nFive is the number of life. Five fingers. Five points of the pentagram. Five Forges.\n\nThe Forges are not states. They are atmospheres of becoming.\n\nChronos is the Forge of time and depth. The slow grind that compresses carbon into structure.\n\nEros is the Forge of passion and connection. The current that pulls one thing toward another.\n\nAether is the Forge of universal connection. The space in which the others move.\n\nLux is the Forge of illumination. The light that reveals what was already there.\n\nPhoenix is the Forge of rebirth. The fire that consumes one form so another can rise.\n\nFive Forges. Five atmospheres. Five ways your channel work moves.\n\nThe structural question is how they connect.\n\nIn the early work, the topology is a star. One center radiating outward to four. The mathematicians call this K-one-four. One Forge carries the others. You are dependent. You burn out.\n\nMastery is the pivot to C-five. The closed cycle. Each Forge feeding the next. Chronos into Eros into Aether into Lux into Phoenix and back to Chronos. No center. No dependence. Self-sustaining motion.\n\nThis is the structural moment your channel work becomes whole.\n\nThis is the fourth overtone of your design.",
+  "script": "The fourth overtone is the major third. Five to four.\n\nFive is the number of life. Five fingers. Five points of the pentagram. Five Forges.\n\nThe Forges are not states. They are atmospheres of becoming.\n\nChronos is the Forge of time and depth. The slow grind that compresses carbon into structure.\n\nEros is the Forge of passion and connection. The current that pulls one thing toward another.\n\nAether is the Forge of universal connection. The space in which the others move.\n\nLux is the Forge of illumination. The light that reveals what was already there.\n\nPhoenix is the Forge of rebirth. The fire that consumes one form so another can rise.\n\nFive Forges. Five atmospheres. Five ways your channel work moves.\n\nThe structural question is how they connect.\n\nIn the early work, the topology is a star. One center radiating outward to four. The mathematicians call this K-one-four. One Forge carries the others. You are dependent. You burn out.\n\nMastery is the pivot to C-five. The closed cycle. Each Forge feeding the next. Chronos into Eros into Aether into Lux into Phoenix and back to Chronos. No center. No dependence. Self-sustaining motion.\n\nThis is the structural moment your channel work becomes whole.\n\nThis is the fourth overtone of your design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "The fourth overtone is the major third. Five to four. Five is the number of life.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Chronos. Eros. Aether. Lux. Phoenix. Five Forges. Five atmospheres of becoming.", "showBodyGraph": false },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Early work is a star — one center, four arms. Mastery is the closed cycle. Each Forge feeding the next. Self-sustaining motion.", "showBodyGraph": false },
+    { "type": "triad", "durationFrames": 420, "triad": ["Star", "Pivot", "Cycle"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "This is the structural moment your channel work becomes whole.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Pentad: The Five Forges and the Structure of Mastery",
+    "description": "The fourth overtone — five Forges, five atmospheres of becoming, and the topological pivot from dependence to self-sustaining wholeness."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -117,6 +117,21 @@ gh secret set GH_PAT --repo Latimer-Woods-Tech/{app} --body "..."
 
 Or via GitHub web: **Repo → Settings → Secrets and variables → Actions**.
 
+### `NPM_TOKEN` (deprecated after Trusted Publishers migration)
+
+Factory package publishing uses npm Trusted Publishers (GitHub Actions OIDC), so `NPM_TOKEN` is no longer required for publish workflows.
+
+Before revoking the legacy npm token, validate OIDC publish works:
+
+- Trigger publish workflow once and confirm logs show npm publishing via GitHub Actions OIDC trusted publisher.
+- Expected log indicators include `via GitHub Actions OIDC trusted publisher` and a provenance line (`npm notice Provenance statement`).
+- Confirm the published package version has GitHub provenance in npmjs.com package details.
+
+After OIDC validation, revoke the legacy npm token:
+
+1. npmjs.com → **Access Tokens** → revoke the old automation token.
+2. Remove `NPM_TOKEN` from GitHub Actions secrets in this repo (and app repos using OIDC publish).
+
 ## Post-rotation verification checklist
 
 - [ ] Worker `/health` returns 200

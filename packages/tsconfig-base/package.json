@@ -1,0 +1,14 @@
+{
+  "name": "@latimer-woods-tech/tsconfig-base",
+  "version": "0.1.0",
+  "description": "Shared TypeScript configs for Latimer-Woods-Tech Cloudflare Workers monorepo.",
+  "license": "UNLICENSED",
+  "publishConfig": { "access": "public" },
+  "type": "module",
+  "exports": {
+    "./base.json": "./base.json",
+    "./worker.json": "./worker.json",
+    "./lib.json": "./lib.json"
+  },
+  "files": ["base.json", "worker.json", "lib.json", "README.md"]
+}

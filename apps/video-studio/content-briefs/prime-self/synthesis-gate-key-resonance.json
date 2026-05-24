@@ -1,0 +1,49 @@
+{
+  "briefKey": "synthesis-gate-key-resonance",
+  "key": "synthesis-gate-key-resonance",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "synthesis-moments",
+  "title": "When the Gate and the Frequency Key Tell the Same Story",
+  "description": "Two independent systems naming the same theme. The structural confirmation that builds trust in the reading.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Gate Forty-One and Frequency Key Forty-One — the same archetype, two systems",
+  "learningGoal": "User sees a concrete example of cross-system convergence: when a Human Design gate and its corresponding Frequency Key independently describe the same energetic territory.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Gate Forty-One in Human Design names the energy of contraction, limitation, and fantasy",
+    "Frequency Key Forty-One in the Gene Keys system maps the same hexagram with three octaves — shadow Fantasy, gift Anticipation, siddhi Emanation",
+    "The two systems were developed independently; their convergence is documented, not invented",
+    "When two maps point to the same territory, you stop needing to choose between them — you read both"
+  ],
+  "forbiddenClaims": [
+    "Human Design and Gene Keys are the same system",
+    "this proves the reading is true",
+    "guaranteed alignment",
+    "this is mystical confirmation"
+  ],
+  "toneNotes": "Detective-clear. The synthesis is a structural observation, not an act of faith. Walk the viewer through the convergence step by step.",
+  "narration_script": "Two systems. One territory.\n\nIn Human Design, Gate Forty-One sits at the bottom of the Root center. It carries the energy of contraction. The pulse that initiates a feeling cycle. The fantasy that pulls you forward into experience. The hunger before the meal.\n\nIn the Gene Keys, the same hexagram is named Frequency Key Forty-One. It is described in three octaves. The shadow is Fantasy — the loop of imagined futures that never arrive. The gift is Anticipation — the readiness that meets life as it actually shows up. The siddhi is Emanation — the radiant source from which all anticipation flows.\n\nNotice what just happened.\n\nTwo systems, developed in different decades, by different people, with different vocabularies, looking at the same I Ching hexagram. And what do they describe? The same energetic territory. Contraction. Fantasy. The pulse that initiates.\n\nThis is not coincidence. It is convergence.\n\nWhen two independent maps point to the same place on the ground, you stop arguing about which map is more accurate. You start using both. The Human Design gate tells you where the energy lives in your body graph. The Frequency Key tells you what the work is — the shadow to notice, the gift to cultivate, the siddhi to remember.\n\nThis is the structural source of trust in your reading.\n\nWhen the maps agree, the territory is real.",
+  "script": "Two systems. One territory.\n\nIn Human Design, Gate Forty-One sits at the bottom of the Root center. It carries the energy of contraction. The pulse that initiates a feeling cycle. The fantasy that pulls you forward into experience. The hunger before the meal.\n\nIn the Gene Keys, the same hexagram is named Frequency Key Forty-One. It is described in three octaves. The shadow is Fantasy — the loop of imagined futures that never arrive. The gift is Anticipation — the readiness that meets life as it actually shows up. The siddhi is Emanation — the radiant source from which all anticipation flows.\n\nNotice what just happened.\n\nTwo systems, developed in different decades, by different people, with different vocabularies, looking at the same I Ching hexagram. And what do they describe? The same energetic territory. Contraction. Fantasy. The pulse that initiates.\n\nThis is not coincidence. It is convergence.\n\nWhen two independent maps point to the same place on the ground, you stop arguing about which map is more accurate. You start using both. The Human Design gate tells you where the energy lives in your body graph. The Frequency Key tells you what the work is — the shadow to notice, the gift to cultivate, the siddhi to remember.\n\nThis is the structural source of trust in your reading.\n\nWhen the maps agree, the territory is real.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "Two systems. One territory.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Gate Forty-One in Human Design. Frequency Key Forty-One in the Gene Keys. The same hexagram, named twice.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "Shadow Fantasy. Gift Anticipation. Siddhi Emanation. Two independent systems pointing to the same energetic territory.", "showBodyGraph": false },
+    { "type": "triad", "durationFrames": 360, "triad": ["Fantasy", "Anticipation", "Emanation"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "When the maps agree, the territory is real.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Gate Forty-One and Frequency Key Forty-One: When Two Maps Agree",
+    "description": "A worked example of cross-system convergence — Human Design and the Gene Keys naming the same archetype from different vantage points."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}
