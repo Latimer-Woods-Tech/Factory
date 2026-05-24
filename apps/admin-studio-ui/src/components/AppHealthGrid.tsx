@@ -4,9 +4,10 @@
  * Polls /apps/health every `intervalMs`, sorted by status severity from the
  * server. Operators see broken apps at the top.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../lib/api.js';
 import { statusBadgeClass, statusDotClass } from '../lib/status.js';
+import { LastUpdated } from './LastUpdated.js';
 import type { AppHealth } from '@latimer-woods-tech/studio-core';
 
 interface Props {
@@ -23,45 +24,43 @@ export function AppHealthGrid({ env, intervalMs = 30_000 }: Props) {
   const [data, setData] = useState<AppHealth[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loadedAt, setLoadedAt] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const controllerRef = useRef<AbortController | null>(null);
+
+  const load = useCallback(async (background = false) => {
+    if (background) setIsRefreshing(true);
+    controllerRef.current?.abort();
+    controllerRef.current = new AbortController();
+    try {
+      const r = await apiFetch<Resp>(`/apps/health?env=${encodeURIComponent(env)}`, {
+        signal: controllerRef.current.signal,
+      });
+      setData(r.results);
+      setLoadedAt(Date.now());
+      setErr(null);
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') {
+        setErr((e as Error).message);
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [env]);
 
   useEffect(() => {
-    let cancelled = false;
-    let controller = new AbortController();
-
-    async function load() {
-      if (cancelled) return;
-      controller = new AbortController();
-      try {
-        const r = await apiFetch<Resp>(`/apps/health?env=${encodeURIComponent(env)}`, {
-          signal: controller.signal,
-        });
-        if (!cancelled) {
-          setData(r.results);
-          setLoadedAt(Date.now());
-          setErr(null);
-        }
-      } catch (e) {
-        if (!cancelled && (e as Error).name !== 'AbortError') {
-          setErr((e as Error).message);
-        }
-      }
-    }
-    load();
-    const t = setInterval(load, intervalMs);
+    void load(false);
+    const t = setInterval(() => void load(true), intervalMs);
     return () => {
-      cancelled = true;
       clearInterval(t);
-      controller.abort();
+      controllerRef.current?.abort();
     };
-  }, [env, intervalMs]);
+  }, [env, intervalMs, load]);
 
   return (
     <div className="@container rounded border border-slate-800 bg-slate-900 [container-type:inline-size] [container-name:app-health-grid]">
       <header className="flex flex-col gap-1 border-b border-slate-800 px-4 py-2 @[20rem]:flex-row @[20rem]:items-center @[20rem]:justify-between">
         <h2 className="text-sm font-semibold text-slate-200">App Health — {env}</h2>
-        <span className="text-xs text-slate-500">
-          {loadedAt ? `updated ${new Date(loadedAt).toLocaleTimeString()}` : 'loading…'}
-        </span>
+        <LastUpdated at={loadedAt} isRefreshing={isRefreshing} onRefresh={() => void load(false)} />
       </header>
       {err && <p className="px-4 py-3 text-sm text-red-400">{err}</p>}
       <ul className="divide-y divide-slate-800">
