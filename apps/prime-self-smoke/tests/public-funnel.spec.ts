@@ -66,12 +66,18 @@ test.describe('Homepage', () => {
     await expect(page.locator('body')).toContainText('Prime Self');
   });
 
-  test('hero CTA "Get your free chart" is visible and routes to the auth overlay entry', async ({ page }) => {
+  test('hero CTA "Get your free chart" is visible and scrolls to the in-page chart calculator', async ({ page }) => {
+    // Production homepage moved the free-chart entry point from the auth
+    // overlay (/?start=1 or /pricing#free-chart) to an in-page anonymous
+    // calculator anchored at #landing-chart-calc. The hero CTA is now a
+    // same-page anchor link — no auth required to compute a chart.
+    // Triage 2026-05-23: smoke regression RC-4 / Test A.
     await page.goto('/');
     const cta = page.getByRole('link', { name: /get your free chart/i }).first();
     await expect(cta).toBeVisible();
     await cta.click();
-    await expect(page).toHaveURL(/(start=1|pricing#free-chart)/);
+    await expect(page).toHaveURL(/#landing-chart-calc$/);
+    await expect(page.locator('#landing-chart-calc')).toBeVisible();
   });
 
   test('auth entry renders the sign-in overlay contract at /?start=1', async ({ page }) => {
