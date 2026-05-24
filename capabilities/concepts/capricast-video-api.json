@@ -5,8 +5,6 @@
   "status": "approved",
   "maturity": "stable",
   "tags": ["video", "media", "llm", "api"],
-  "menuVisible": true,
-  "approvalTier": "golden",
   "parameters": [
     {
       "id": "workerDomain",

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "golden-path",
+  "generatedAt": "2026-05-22T22:34:56.392Z",
+  "recipe": {
+    "id": "outbound-dialer",
+    "version": "0.1.0",
+    "maturity": "experimental",
+    "summary": "Outbound call-bank service pattern for compliant campaign dialing and disposition capture.",
+    "goal": "Provision a staging-first outbound calling service with lead targeting, consent-aware controls, and delivery telemetry."
+  },
+  "planPath": "capabilities\\compiled\\outbound-dialer.plan.json",
+  "proofGate": [
+    "Compiled plan exists for recipe outbound-dialer.",
+    "Plan includes required secrets: AI_GATEWAY_BASE_URL, ANTHROPIC_API_KEY, DEEPGRAM_API_KEY, ELEVENLABS_API_KEY, GROQ_API_KEY, JWT_SECRET, POSTHOG_KEY, TELNYX_API_KEY, VERTEX_ACCESS_TOKEN, VERTEX_LOCATION, VERTEX_PROJECT",
+    "Plan includes required vars: ENVIRONMENT, WORKER_NAME",
+    "Plan includes required bindings: AUTH_RATE_LIMITER, DB, FLAG_TELEMETRY, FLAGS",
+    "Plan expects surfaces: /health, /manifest, /api/campaigns, /api/campaigns/:id/start, /api/dispositions",
+    "Plan includes smoke checks: /health => 200, /manifest => 200",
+    "Scaffold contract points to packages/deploy/scripts/scaffold.mjs and declares staging-first provisioning: true"
+  ],
+  "summary": {
+    "requiredSecrets": [
+      "AI_GATEWAY_BASE_URL",
+      "ANTHROPIC_API_KEY",
+      "DEEPGRAM_API_KEY",
+      "ELEVENLABS_API_KEY",
+      "GROQ_API_KEY",
+      "JWT_SECRET",
+      "POSTHOG_KEY",
+      "TELNYX_API_KEY",
+      "VERTEX_ACCESS_TOKEN",
+      "VERTEX_LOCATION",
+      "VERTEX_PROJECT"
+    ],
+    "requiredVars": [
+      "ENVIRONMENT",
+      "WORKER_NAME"
+    ],
+    "requiredBindings": [
+      "AUTH_RATE_LIMITER",
+      "DB",
+      "FLAG_TELEMETRY",
+      "FLAGS"
+    ],
+    "expectedSurfaces": [
+      "/health",
+      "/manifest",
+      "/api/campaigns",
+      "/api/campaigns/:id/start",
+      "/api/dispositions"
+    ],
+    "smokeChecks": [
+      {
+        "path": "/health",
+        "expectedStatus": 200,
+        "expectContains": "status"
+      },
+      {
+        "path": "/manifest",
+        "expectedStatus": 200,
+        "expectContains": "manifestVersion"
+      }
+    ],
+    "scaffold": {
+      "entryScript": "packages/deploy/scripts/scaffold.mjs",
+      "stagingFirst": true,
+      "requiredSecrets": [
+        "JWT_SECRET"
+      ],
+      "requiredBindings": [
+        "AUTH_RATE_LIMITER",
+        "DB",
+        "FLAG_TELEMETRY",
+        "FLAGS"
+      ],
+      "requiredVars": [
+        "ENVIRONMENT",
+        "WORKER_NAME"
+      ]
+    }
+  },
+  "implementationNotes": [
+    "Treat this artifact as the first golden-path delivery contract.",
+    "Do not build the visual composer before the plan preview and staging proof gate are complete.",
+    "Use the compiled plan contract as the shared seam between registry, compile, and provisioner."
+  ]
+}

@@ -5,8 +5,6 @@
   "status": "approved",
   "maturity": "experimental",
   "tags": ["telephony", "voice", "intake", "llm"],
-  "menuVisible": true,
-  "approvalTier": "experimental",
   "parameters": [
     {
       "id": "workerDomain",
