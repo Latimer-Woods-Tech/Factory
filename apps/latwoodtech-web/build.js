@@ -53,31 +53,29 @@ async function probeSurface(surface, timeoutMs = 8000) {
 		});
 		return response.status;
 	};
+	const startedAt = Date.now();
 	try {
 		let status = await attempt('HEAD');
 		if (status === 405 || status === 501) status = await attempt('GET');
 		clearTimeout(timer);
-		return { surface, alive: status < 400, status };
+		return { surface, alive: status < 400, status, durationMs: Date.now() - startedAt };
 	} catch (error) {
 		clearTimeout(timer);
-		return { surface, alive: false, error: error.message };
+		return { surface, alive: false, error: error.message, durationMs: Date.now() - startedAt };
 	}
 }
 
-async function filterLiveSurfaces(surfaces) {
+async function probeAllSurfaces(surfaces) {
 	const results = await Promise.all(surfaces.map((s) => probeSurface(s)));
-	const live = [];
 	for (const result of results) {
-		if (result.alive) {
-			live.push(result.surface);
-		} else {
+		if (!result.alive) {
 			const detail = result.error ? `error=${result.error}` : `status=${result.status}`;
 			console.warn(
 				`[pulse] dropping surface ${result.surface.name} (${result.surface.url}) — ${detail}`,
 			);
 		}
 	}
-	return live;
+	return results;
 }
 
 const REPO_LABELS = {
@@ -108,7 +106,17 @@ async function buildPulseSnapshot() {
 	const tracker = JSON.parse(await readFile(trackerPath, 'utf8'));
 	const rows = Array.isArray(tracker.rows) ? tracker.rows : [];
 	const verifiedRows = rows.filter((row) => row.status === '✅').length;
-	const liveSurfaces = await filterLiveSurfaces(PUBLIC_SURFACES);
+	const probeResults = await probeAllSurfaces(PUBLIC_SURFACES);
+	const liveSurfaces = probeResults.filter((r) => r.alive).map((r) => r.surface);
+	const surfaceHealth = probeResults.map((r) => ({
+		name: r.surface.name,
+		url: r.surface.url,
+		category: r.surface.category,
+		alive: r.alive,
+		status: r.status ?? null,
+		durationMs: r.durationMs,
+		error: r.error ?? null,
+	}));
 	const attentionRepos = unique([...(tracker.ci_red ?? []), ...(tracker.smoke_red ?? [])]);
 	const measuredRepos = Object.keys(tracker.repo_weighted ?? {}).length;
 	const repoNames = Object.fromEntries(
@@ -202,6 +210,7 @@ async function buildPulseSnapshot() {
 				'Every visible metric is intentionally curated to communicate craft, readiness, and velocity with minimal risk surface.',
 			],
 			surfaces: liveSurfaces,
+			surfaceHealth,
 			vectors,
 			provenance: [
 				'docs/completion-tracker.json',
@@ -219,6 +228,8 @@ async function buildPulseSnapshot() {
 await mkdir(distDir, { recursive: true });
 await rm(join(distDir, 'assets'), { recursive: true, force: true, maxRetries: 3 });
 await rm(join(distDir, 'stack'), { recursive: true, force: true, maxRetries: 3 });
+await rm(join(distDir, 'status'), { recursive: true, force: true, maxRetries: 3 });
+await rm(join(distDir, '.well-known'), { recursive: true, force: true, maxRetries: 3 });
 await rm(join(distDir, 'data'), { recursive: true, force: true, maxRetries: 3 });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
@@ -226,6 +237,16 @@ await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 await mkdir(join(distDir, 'stack'), { recursive: true });
 await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
+await mkdir(join(distDir, 'status'), { recursive: true });
+await copyFile(join(srcDir, 'status', 'index.html'), join(distDir, 'status', 'index.html'));
+
+// Credibility signals: humans.txt (humanstxt.org) at root; security.txt
+// (RFC 9116) under /.well-known/. Both are 1-2 KB and absence reads
+// "not yet a real platform" to senior engineers / security researchers.
+await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
+await mkdir(join(distDir, '.well-known'), { recursive: true });
+await copyFile(join(srcDir, '.well-known', 'security.txt'), join(distDir, '.well-known', 'security.txt'));
+
 await mkdir(join(distDir, 'data'), { recursive: true });
 await writeFile(
 	join(distDir, 'data', 'pulse.json'),

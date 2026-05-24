@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Latimer Woods system status — live HTTP probe results across every branded product surface, snapshotted at each deploy." />
+    <meta property="og:title" content="Status — Latimer Woods" />
+    <meta property="og:description" content="Build-time HTTP probe across every brand surface." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://latwoodtech.com/status/" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#05070a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234f7bff' width='100' height='100'/><text x='50' y='60' font-size='70' font-weight='700' fill='white' text-anchor='middle'>L</text></svg>" />
+    <title>Status — Latimer Woods</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="page-shell">
+      <header class="stack-hero">
+        <a class="stack-back" href="/">← Latimer Woods</a>
+        <p class="eyebrow">Status</p>
+        <h1>Brand surfaces, last probed at this build.</h1>
+        <p class="subtitle">
+          Every entry below was HTTP-probed at deploy time. <code>alive</code> means the URL responded with a status &lt; 400 within an 8-second timeout, following redirects. This snapshot refreshes on each deploy of <code>apps/latwoodtech-web</code>; for sub-deploy granularity, use the brand surface's own health endpoint or wait for the next deploy.
+        </p>
+      </header>
+
+      <main id="main">
+        <section class="stack-diagram" aria-labelledby="status-title" style="margin-top:8px">
+          <div class="status-overall" data-status-overall>
+            <span class="status-overall-dot" data-status-dot></span>
+            <strong data-status-summary>Loading status snapshot…</strong>
+            <span class="status-overall-meta" data-status-meta>Probed at — / —</span>
+          </div>
+          <div class="status-grid" data-status-grid>
+            <article class="status-card status-card-placeholder">
+              <p class="card-label">Loading</p>
+              <strong>Awaiting snapshot</strong>
+              <span>—</span>
+            </article>
+          </div>
+          <p class="pulse-footnote" style="margin-top:24px">
+            <strong>What this is, exactly:</strong> a JSON-driven readout of HTTP probes the
+            build script ran against every entry in <code>PUBLIC_SURFACES</code> (see
+            <a href="/stack/">Stack</a>). Probes use HEAD with GET fallback on 405/501,
+            <code>redirect: 'follow'</code>, and an 8-second timeout.
+            Source: <a href="/data/pulse.json"><code>/data/pulse.json</code></a> &middot;
+            <code>pulse.surfaceHealth[]</code>.
+          </p>
+          <p class="pulse-footnote">
+            <strong>What this is not:</strong> a live uptime dashboard. The snapshot only
+            refreshes on deploy. A continuous prober (cron Worker writing to R2) is on the
+            roadmap; until then this page is honest about its staleness rather than
+            pretending to be real-time.
+          </p>
+        </section>
+
+        <section class="section section-footnote" style="margin-top:48px">
+          <p>
+            <a class="stack-back" href="/">← Back to Latimer Woods</a>
+            &nbsp;·&nbsp;
+            <a class="stack-back" href="/stack/">Stack →</a>
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      function statusToneAndLabel(entry) {
+        if (entry.alive) return { tone: 'good', label: 'Operational' };
+        if (entry.error) return { tone: 'warning', label: 'Unreachable' };
+        return { tone: 'warning', label: `HTTP ${entry.status ?? '?'}` };
+      }
+
+      function fmtDuration(ms) {
+        if (typeof ms !== 'number') return '—';
+        if (ms < 1000) return `${ms} ms`;
+        return `${(ms / 1000).toFixed(2)} s`;
+      }
+
+      function renderCard(entry) {
+        const { tone, label } = statusToneAndLabel(entry);
+        const detail = entry.alive
+          ? `HTTP ${entry.status ?? '?'} · ${fmtDuration(entry.durationMs)}`
+          : entry.error
+            ? `Error: ${entry.error}`
+            : `HTTP ${entry.status ?? '?'} · ${fmtDuration(entry.durationMs)}`;
+        return `
+          <article class="status-card" data-tone="${tone}">
+            <p class="card-label">${entry.category ?? 'Surface'}</p>
+            <strong>${entry.name}</strong>
+            <span class="status-card-detail">${detail}</span>
+            <a href="${entry.url}" target="_blank" rel="noreferrer">${new URL(entry.url).hostname}</a>
+            <span class="status-card-pill" data-tone="${tone}">${label}</span>
+          </article>`;
+      }
+
+      async function hydrate() {
+        try {
+          const res = await fetch('/data/pulse.json', { headers: { Accept: 'application/json' } });
+          if (!res.ok) throw new Error(`pulse.json returned ${res.status}`);
+          const payload = await res.json();
+          const health = payload.pulse?.surfaceHealth ?? [];
+          const grid = document.querySelector('[data-status-grid]');
+          const summary = document.querySelector('[data-status-summary]');
+          const meta = document.querySelector('[data-status-meta]');
+          const dot = document.querySelector('[data-status-dot]');
+
+          if (!health.length) {
+            if (summary) summary.textContent = 'No surfaces tracked';
+            return;
+          }
+
+          const liveCount = health.filter((h) => h.alive).length;
+          const totalCount = health.length;
+          const allOk = liveCount === totalCount;
+
+          if (summary) summary.textContent = allOk
+            ? `All systems operational (${liveCount}/${totalCount})`
+            : `${liveCount}/${totalCount} surfaces operational`;
+          if (dot) dot.setAttribute('data-tone', allOk ? 'good' : 'warning');
+          if (meta) meta.textContent = `Probed at ${new Date(payload.generatedAt).toLocaleString()}`;
+          if (grid) grid.innerHTML = health.map(renderCard).join('');
+        } catch (err) {
+          const summary = document.querySelector('[data-status-summary]');
+          if (summary) summary.textContent = 'Status snapshot unavailable';
+          console.error('status hydrate failed', err);
+        }
+      }
+
+      hydrate();
+    </script>
+  </body>
+</html>
