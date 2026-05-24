@@ -222,6 +222,37 @@ export async function listHandoffs(
   }
 }
 
+export async function findProvisionRequestById(
+  hyperdrive: HyperdriveBinding,
+  id: string,
+): Promise<ProvisionRequestRecord | null> {
+  try {
+    await ensureSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const result = await db.execute(sql`
+      SELECT id, handoff_id, status, proof_gates, requested_by, requested_at, env, notes
+      FROM capability_provision_requests
+      WHERE id = ${id}
+      LIMIT 1
+    `);
+    const row = (result.rows as unknown as ProvisionRequestRow[])[0];
+    if (!row) return null;
+    return {
+      id: row.id,
+      handoffId: row.handoff_id,
+      status: row.status,
+      proofGates: row.proof_gates,
+      requestedBy: row.requested_by,
+      requestedAt: row.requested_at,
+      env: row.env,
+      notes: row.notes,
+    };
+  } catch (err) {
+    console.error('[handoff-store] provision-request lookup failed:', (err as Error).message);
+    return null;
+  }
+}
+
 export async function listProvisionRequests(
   hyperdrive: HyperdriveBinding,
   filter: {

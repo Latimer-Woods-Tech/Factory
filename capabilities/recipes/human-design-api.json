@@ -1,0 +1,28 @@
+{
+  "id": "human-design-api",
+  "version": "1.0.0",
+  "maturity": "stable",
+  "summary": "Human Design reading API with JWT auth, Stripe ACS fulfillment, and LLM synthesis.",
+  "goal": "Serve signed-in users their Human Design readings, handle Stripe webhook-driven fulfillment, and synthesize personalized content via LLM.",
+  "primitives": ["auth", "llm", "analytics", "stripe"],
+  "optionalPrimitives": ["email", "compliance"],
+  "expectedSurfaces": ["/health", "/api/auth/login", "/api/auth/me", "/api/readings", "/api/commerce/checkout", "/api/commerce/webhooks"],
+  "smokeChecks": [
+    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" },
+    { "path": "/api/auth/login", "expectedStatus": 401 }
+  ],
+  "constraints": [
+    "Use a branded custom domain.",
+    "JWT_SECRET must be at least 256 bits.",
+    "Stripe webhooks must be verified before fulfillment actions.",
+    "Verify staging smoke checks before production."
+  ],
+  "envContract": {
+    "secrets": ["JWT_SECRET", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+    "vars": ["WORKER_DOMAIN", "JWT_AUDIENCE"]
+  },
+  "bindingContract": {
+    "required": ["DB"],
+    "optional": ["ANALYTICS"]
+  }
+}

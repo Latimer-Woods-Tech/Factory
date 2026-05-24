@@ -188,46 +188,66 @@ That handoff package must be consumable by:
 
 ## Maturity Path
 
-### Stage A — Governed Resolver
+### Stage A — Governed Resolver ✅ Complete (PR #910, 2026-05-23)
 
-Already real or in progress:
+Delivered:
 
 1. concept catalog
 2. parameter form generation
 3. rule-based recipe selection
 4. plan preview route
 
-### Stage B — Confirmed Handoff
+### Stage B — Confirmed Handoff ✅ Complete (PR #910, 2026-05-23)
 
-Add:
+Delivered:
 
 1. scaffold handoff endpoint
 2. explicit confirmation UX
 3. audit record for design-to-handoff transition
 
-### Stage C — Staging Provision Control ✅ Complete (PR #910, 2026-05-23)
+### Stage C — Staging Provision Control ✅ Complete (PRs #910 + feat/studio-stage-d, 2026-05-23)
 
 Delivered:
 
 1. `POST /capabilities/provision-staging` — inserts `capability_provision_requests` row with proof-gate validation; returns 201
 2. proof-gate checklist panel in the UI (five gates: `reviewedPlan`, `reviewedEnvContract`, `reviewedSmokeChecks`, `acknowledgedStagingFirst`, `acknowledgedCustomDomain`)
-3. `GET /capabilities/handoffs` + `GET /capabilities/provision-requests` lineage endpoints
-4. `POST /capabilities/provision-requests/:id/transition` lifecycle state machine
-5. `.github/workflows/dispatch-capability-provision.yml` — operator-triggered `workflow_dispatch` that fetches the handoff, transitions the request to `dispatched`, runs `scaffold.mjs`, and uploads the scaffolded tree as a GitHub Actions artifact
+3. `GET /capabilities/handoffs` + `GET /capabilities/handoffs/:id` — lineage and direct lookup
+4. `GET /capabilities/provision-requests` + `GET /capabilities/provision-requests/:id` — lineage and direct lookup for evidence polling
+5. `POST /capabilities/provision-requests/:id/transition` lifecycle state machine
+6. `.github/workflows/dispatch-capability-provision.yml` — operator-triggered `workflow_dispatch` that fetches the handoff via the dedicated `/handoffs/:id` endpoint, transitions the request to `dispatched`, runs `scaffold.mjs`, and uploads the scaffolded tree as a GitHub Actions artifact
+7. **Deployment Evidence Panel** in Studio UI — polls `GET /capabilities/provision-requests/:id` every 8 seconds and renders live status, lifecycle timeline, and scaffold notes after a provision request is submitted. Transitions stop on terminal states (`succeeded`, `failed`, `withdrawn`). This closes the Stage C proof gate: staging provision evidence is now visible in Studio.
 
-**dispatch-capability-provision.yml is the Stage C → Stage D bridge.** It is intentionally manual. An operator confirms the proof gates in Admin Studio, triggering the `requested` row; then manually invokes this workflow with the `provision_request_id` and `handoff_id`. The scaffold artifact is uploaded for review before any deploy step runs. Stage D will replace the manual `workflow_dispatch` invocation with a scheduled poller.
+**dispatch-capability-provision.yml is the intentional Stage C bridge.** An operator confirms proof gates in Admin Studio, triggering the `requested` row; then manually invokes this workflow with the `provision_request_id` and `handoff_id`. The scaffold artifact is uploaded for review before any deploy step runs. Stage D adds a scheduled poller to replace the manual invocation.
 
 Required secrets (set via `wrangler secret put` or GitHub Secrets):
 - `STUDIO_API_BASE` — e.g. `https://admin-staging.latwoodtech.work`
 - `STUDIO_DISPATCH_TOKEN` — admin-tier JWT (short-lived, rotated)
 
-### Stage D — Constrained Visual Authoring
+### Stage D — Constrained Visual Authoring ✅ Approved and In Progress (feat/studio-stage-d, 2026-05-23)
 
-Only after Stage C is stable:
+The Stage C proof gate is closed. Stage D is approved:
 
-1. visual grouping and layout affordances
-2. guided composition over supported concepts
-3. no freeform primitive graph authoring unless separately approved
+1. the concept registry is validated in CI ✅
+2. the compiled catalog is regenerated deterministically ✅
+3. Studio can resolve and preview at least one concept end to end ✅
+4. scaffold handoff uses the same compiled plan contract ✅
+5. staging provision evidence is visible in Studio ✅ (Deployment Evidence Panel)
+6. route and UI regressions exist for the design surface ✅
+
+Delivered in Stage D (feat/studio-stage-d, commits df0ee836 + 884f1056):
+
+1. **Tag-based concept filtering** — filter rail above the concept list lets operators narrow by tag (`telephony`, `llm`, `video`, etc.) without leaving the studio
+2. **Guided composition templates** — each concept ships pre-configured parameter sets in the registry JSON; templates pass through `compile.mjs` into the catalog; UI reads from catalog, removing the hardcoded `CONCEPT_TEMPLATES` constant
+3. **Maturity badges** — color-coded tier badges (`stable` green, `beta` blue, `experimental` amber) on every concept card and in the detail header for at-a-glance upgrade posture
+4. **Recipe version badges** — `compile.mjs` cross-references recipe files to inject `version` into concept recipe summaries; concept list cards and detail header show `vX.Y.Z`
+5. **Expanded concept registry** — three new production concepts covering the actual portfolio: `prime-self-api` (Human Design API), `capricast-video-api` (video publishing), `cypher-healing-api` (healing voice agent), with three new recipes and three new primitives (`auth`, `stripe`, `video`)
+6. **Deployment Evidence Panel** — closes Stage C proof gate; auto-polls and renders lifecycle timeline, status badge, and scaffold notes
+7. **Concept lineage history panel** — collapsible `ConceptHistoryPanel` fetches `GET /capabilities/handoffs?conceptId=X&limit=5` on expand and renders past handoffs with recipe id and creation date
+8. **Auto-dispatch scheduled poller** — `.github/workflows/auto-dispatch-provision.yml` runs every 15 minutes, fetches pending provision rows, resolves concept id via `/capabilities/handoffs/:id`, and calls `gh workflow run dispatch-capability-provision.yml` — replaces the manual `workflow_dispatch` step
+
+Remaining Stage D work (no council approval needed — expansion unlocked):
+
+1. concept upgrade lifecycle signal when a recipe version advances
 
 ## Non-Goals
 

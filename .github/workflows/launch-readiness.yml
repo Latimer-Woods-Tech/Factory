@@ -33,7 +33,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use a long-lived PAT instead of GITHUB_TOKEN so the auto-merge PR
+          # the workflow opens triggers required-status workflows on PRs.
+          # Events authored by GITHUB_TOKEN do not retrigger workflow runs.
+          token: ${{ secrets.GH_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -51,7 +54,7 @@ jobs:
 
       - name: Open auto-merge PR for scorecard snapshot
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
           git add docs/scorecard/ 2>/dev/null || true
@@ -63,6 +66,12 @@ jobs:
           BRANCH="chore/scorecard-snapshot-$DATE-$(date -u +%H%M)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Belt-and-braces: even though actions/checkout persisted credentials
+          # for GH_PAT above, force the remote URL to embed the token so a
+          # fresh `git push` from a new branch cannot fall back to interactive
+          # prompts (RC-3 in the 2026-05-23 scheduled-workflow triage).
+          git remote set-url origin \
+            "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${GITHUB_REPOSITORY}.git"
           git checkout -b "$BRANCH"
           git commit -m "chore(scorecard): daily launch readiness ($DATE)"
           git push --set-upstream origin "$BRANCH"

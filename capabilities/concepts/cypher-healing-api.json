@@ -1,0 +1,79 @@
+{
+  "id": "cypher-healing-api",
+  "displayName": "Healing Voice API (Cypher of Healing)",
+  "summary": "Inbound healing voice agent for cypherofhealing.com — LLM-guided intake triage, CRM routing, and optional email follow-up.",
+  "status": "approved",
+  "maturity": "beta",
+  "tags": ["telephony", "voice", "llm", "crm"],
+  "menuVisible": true,
+  "approvalTier": "golden",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Branded custom domain for the deployed worker.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "api.cipherofhealing.com"
+    },
+    {
+      "id": "intakePhoneNumber",
+      "type": "string",
+      "description": "Telnyx inbound number to route healing intake calls from.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "+15551234567"
+    },
+    {
+      "id": "enableEmailFollowUp",
+      "type": "boolean",
+      "description": "Send email follow-up after each intake session.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    },
+    {
+      "id": "enableCompliance",
+      "type": "boolean",
+      "description": "Enable compliance primitive for HIPAA-adjacent transcript redaction.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": null,
+  "recipes": [
+    {
+      "id": "healing-voice-agent",
+      "summary": "Inbound healing voice agent with LLM-guided intake, CRM routing, and optional email follow-up.",
+      "maturity": "beta",
+      "primitives": ["telephony", "llm", "crm", "analytics"],
+      "optionalPrimitives": ["compliance", "email"]
+    }
+  ],
+  "sourcePrimitives": ["analytics", "compliance", "crm", "email", "llm", "telephony"],
+  "templates": [
+    {
+      "id": "cypher-full",
+      "label": "Full — email + compliance",
+      "hint": "Email follow-up enabled with compliance transcript redaction.",
+      "values": { "enableEmailFollowUp": true, "enableCompliance": true }
+    },
+    {
+      "id": "cypher-minimal",
+      "label": "Minimal — intake only",
+      "hint": "Intake triage only; no email or compliance layer.",
+      "values": { "enableEmailFollowUp": false, "enableCompliance": false }
+    }
+  ],
+  "qualification": {
+    "menuVisible": true,
+    "approvalTier": "golden",
+    "requiredCapabilities": ["custom-domain", "telnyx-inbound-number", "neon-database"],
+    "disallowedEnvironments": ["local"]
+  }
+}

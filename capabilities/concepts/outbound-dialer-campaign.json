@@ -65,6 +65,20 @@
     }
   ],
   "sourcePrimitives": ["analytics", "compliance", "crm", "telephony"],
+  "templates": [
+    {
+      "id": "crm-segment-default",
+      "label": "CRM Segment — standard",
+      "hint": "Targets a CRM segment with voice synthesis enabled.",
+      "values": { "campaignSource": "crm-segment", "enableVoiceSynthesis": true }
+    },
+    {
+      "id": "csv-import-default",
+      "label": "CSV Import — batch",
+      "hint": "Targets a CSV-imported contact list, no voice synthesis.",
+      "values": { "campaignSource": "csv-import", "enableVoiceSynthesis": false }
+    }
+  ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "golden",
