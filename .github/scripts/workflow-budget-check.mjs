@@ -213,18 +213,21 @@ function gh(args, opts = {}) {
 function fetchPrFilesWithStatus(prNumber) {
   // `gh pr view --json files` returns [{path, additions, deletions, ...}].
   // We need status (added/removed/modified). Use the REST API instead.
-  const json = gh(`api repos/Latimer-Woods-Tech/Factory/pulls/${prNumber}/files --paginate -q '[.[] | {path:.filename, status}]'`).trim();
+  const n = String(parseInt(prNumber, 10));
+  const json = gh(`api repos/Latimer-Woods-Tech/Factory/pulls/${n}/files --paginate -q '[.[] | {path:.filename, status}]'`).trim();
   return JSON.parse(json || '[]');
 }
 
 function fetchPrBody(prNumber) {
-  return gh(`pr view ${prNumber} --json body -q '.body'`).trim();
+  const n = String(parseInt(prNumber, 10));
+  return gh(`pr view ${n} --json body -q '.body'`).trim();
 }
 
 function postOrUpdateComment(prNumber, body, marker) {
+  const n = String(parseInt(prNumber, 10));
   let existing = null;
   try {
-    const out = gh(`api repos/Latimer-Woods-Tech/Factory/issues/${prNumber}/comments --jq '[.[] | select(.body | startswith("${marker}")) | .id] | .[0] // ""'`).trim();
+    const out = gh(`api repos/Latimer-Woods-Tech/Factory/issues/${n}/comments --jq '[.[] | select(.body | startswith("${marker}")) | .id] | .[0] // ""'`).trim();
     existing = out ? Number(out) : null;
   } catch { /* swallow */ }
   if (existing) {
@@ -233,7 +236,7 @@ function postOrUpdateComment(prNumber, body, marker) {
     return { id: existing, action: 'updated' };
   }
   // Pass body via --body-file - (stdin) to avoid shell injection from markdown backticks.
-  execSync(`gh pr comment ${prNumber} --body-file -`, { input: body, encoding: 'utf-8' });
+  execSync(`gh pr comment ${n} --body-file -`, { input: body, encoding: 'utf-8' });
   return { id: null, action: 'created' };
 }
 

@@ -312,7 +312,8 @@ function gh(args, opts = {}) {
 }
 
 function fetchPrMetadata(prNumber) {
-  const out = gh(`pr view ${prNumber} --json title,body,headRefName,author -q '{title,body,branch:.headRefName,author:.author.login}'`).trim();
+  const n = String(parseInt(prNumber, 10));
+  const out = gh(`pr view ${n} --json title,body,headRefName,author -q '{title,body,branch:.headRefName,author:.author.login}'`).trim();
   return JSON.parse(out);
 }
 
@@ -330,12 +331,13 @@ function findExistingComment(prNumber, marker) {
 }
 
 function postOrUpdateComment(prNumber, body, marker) {
-  const existing = findExistingComment(prNumber, marker);
+  const n = String(parseInt(prNumber, 10));
+  const existing = findExistingComment(n, marker);
   if (existing) {
     execSync(`gh api --method PATCH repos/Latimer-Woods-Tech/Factory/issues/comments/${existing} --field "body=@-"`, { input: body, encoding: 'utf-8' });
     return { id: existing, action: 'updated' };
   }
-  execSync(`gh pr comment ${prNumber} --body-file -`, { input: body, encoding: 'utf-8' });
+  execSync(`gh pr comment ${n} --body-file -`, { input: body, encoding: 'utf-8' });
   return { id: null, action: 'created' };
 }
 

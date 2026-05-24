@@ -242,12 +242,11 @@ test('notify — invalid input (empty title) → no fetch call', async () => {
 test('notify — kill switch present → no fetch call, returns automation-paused', async () => {
   // Create the .github/automation-paused file in cwd. notify() checks this path via
   // isAutomationPaused() (inlined in pushover-notify.mjs with a fixed default path).
-  //
-  // Save current state.
   const flagPath = '.github/automation-paused';
-  const { existsSync } = await import('node:fs');
-  const wasPresent = existsSync(flagPath);
-  if (!wasPresent) writeFileSync(flagPath, '');
+  // Use wx flag (exclusive create) to avoid check-then-write TOCTOU: if the file already
+  // exists the write fails and we know we did NOT create it, so cleanup is skipped.
+  let created = false;
+  try { writeFileSync(flagPath, '', { flag: 'wx' }); created = true; } catch { /* pre-existing */ }
 
   try {
     const fetchImpl = mockFetch([]);
@@ -262,7 +261,7 @@ test('notify — kill switch present → no fetch call, returns automation-pause
     assert.equal(result.reason, 'automation-paused');
     assert.equal(fetchImpl.calls.length, 0);
   } finally {
-    if (!wasPresent) unlinkSync(flagPath);
+    if (created) unlinkSync(flagPath);
   }
 });
 
@@ -271,9 +270,8 @@ test('notify — kill switch + no secrets → secrets-missing wins (skip pause c
   // is irrelevant. This prevents dev/test envs from going through pause
   // logic they have no way to observe.
   const flagPath = '.github/automation-paused';
-  const { existsSync } = await import('node:fs');
-  const wasPresent = existsSync(flagPath);
-  if (!wasPresent) writeFileSync(flagPath, '');
+  let created = false;
+  try { writeFileSync(flagPath, '', { flag: 'wx' }); created = true; } catch { /* pre-existing */ }
 
   try {
     const fetchImpl = mockFetch([]);
@@ -287,6 +285,6 @@ test('notify — kill switch + no secrets → secrets-missing wins (skip pause c
     assert.equal(result.sent, false);
     assert.equal(result.reason, 'secrets-missing');
   } finally {
-    if (!wasPresent) unlinkSync(flagPath);
+    if (created) unlinkSync(flagPath);
   }
 });
