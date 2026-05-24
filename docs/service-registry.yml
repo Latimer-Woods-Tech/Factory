@@ -170,6 +170,38 @@ workers:
       - TARGETS_JSON
     consumers: []
 
+  - id: status-prober
+    name: status-prober                                    # matches apps/status-prober/wrangler.jsonc `name`
+    repo: Latimer-Woods-Tech/factory
+    url: https://status.latwoodtech.work                   # canonical custom domain
+    workers_dev_url: https://status-prober.adrper79.workers.dev
+    custom_domain: status.latwoodtech.work
+    health_endpoint: /health
+    telemetry_required: false                              # infra-class — no /api/admin/* contract required
+    deployment_status: provisioned_2026-05-23
+    notes: >
+      Cron-driven (`*/5 * * * *`) uptime prober that HEAD-checks the four brand
+      surfaces (selfprime.net, capricast.com, cypherofhealing.com,
+      apunlimited.com) and writes the latest envelope to KV under key `current`.
+      `GET /current` returns the envelope with `Access-Control-Allow-Origin: *`
+      so the static `https://latwoodtech.com/status/` page can fetch near-live
+      data with a graceful fall-back to the build-time pulse snapshot.
+    critical_endpoints:
+      - /
+      - /health
+      - /current
+    required_bindings:
+      - STATUS_KV
+    required_secrets: []
+    required_vars:
+      - ENVIRONMENT
+    consumers:
+      - repo: Latimer-Woods-Tech/factory
+        file: apps/latwoodtech-web/src/status/index.html
+        line: ~0
+        pattern: "fetch('https://status.latwoodtech.work/current'"
+        note: live-data fetch with timeout + fall-back to /data/pulse.json
+
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
     repo: Latimer-Woods-Tech/factory
