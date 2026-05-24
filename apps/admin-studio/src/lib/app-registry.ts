@@ -25,6 +25,8 @@ export interface FactoryApp {
   stagingWorkerName: string;
   /** Optional custom domain for the production health check. */
   productionCustomDomain?: string;
+  /** Optional custom domain for the staging health check (use when workers.dev returns 404). */
+  stagingCustomDomain?: string;
 }
 
 export const FACTORY_APPS: readonly FactoryApp[] = [
@@ -34,6 +36,7 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     productionWorkerName: 'admin-studio-production',
     stagingWorkerName: 'admin-studio-staging',
     productionCustomDomain: 'admin.latwoodtech.work',
+    stagingCustomDomain: 'admin-staging.latwoodtech.work',
   },
   {
     id: 'prime-self',
@@ -92,7 +95,10 @@ export function healthUrlFor(app: FactoryApp, env: Environment): string | null {
     }
     return `https://${app.productionWorkerName}.${ACCOUNT_SUBDOMAIN}.workers.dev/health`;
   }
-  // staging
+  // staging: prefer explicit custom domain when defined, else fall back to workers.dev
+  if (app.stagingCustomDomain) {
+    return `https://${app.stagingCustomDomain}/health`;
+  }
   return `https://${app.stagingWorkerName}.${ACCOUNT_SUBDOMAIN}.workers.dev/health`;
 }
 

@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "plan.schema.json",
+  "title": "Compiled Capability Plan",
+  "description": "Deterministic provisioning plan emitted by the capability compiler.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "recipe",
+    "packages",
+    "env",
+    "bindings",
+    "expectedSurfaces",
+    "smokeChecks",
+    "constraints",
+    "scaffold"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "kind": { "const": "plan" },
+    "recipe": {
+      "type": "object",
+      "required": ["id", "version", "maturity", "summary", "goal"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "maturity": { "type": "string" },
+        "summary": { "type": "string" },
+        "goal": { "type": "string" }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["primitiveId", "package", "versionRange"],
+        "additionalProperties": false,
+        "properties": {
+          "primitiveId": { "type": "string" },
+          "package": { "type": "string" },
+          "versionRange": { "type": "string" }
+        }
+      }
+    },
+    "env": {
+      "type": "object",
+      "required": ["secrets", "vars", "policyTags"],
+      "additionalProperties": false,
+      "properties": {
+        "secrets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "vars": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "policyTags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "bindings": {
+      "type": "object",
+      "required": ["required", "optional"],
+      "additionalProperties": false,
+      "properties": {
+        "required": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "optional": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "expectedSurfaces": { "type": "array", "items": { "type": "string" } },
+    "smokeChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "expectedStatus"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "expectedStatus": { "type": "integer" },
+          "expectContains": { "type": "string" }
+        }
+      }
+    },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "scaffold": {
+      "type": "object",
+      "required": ["entryScript", "stagingFirst", "requiredSecrets", "requiredBindings", "requiredVars"],
+      "additionalProperties": false,
+      "properties": {
+        "entryScript": { "type": "string" },
+        "stagingFirst": { "const": true },
+        "requiredSecrets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "requiredBindings": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "requiredVars": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    }
+  }
+}

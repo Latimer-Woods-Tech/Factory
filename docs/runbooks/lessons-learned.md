@@ -1027,6 +1027,20 @@ for (const factory of candidates) {
 
 **Lesson:** A probe that reports "all clear" while doing nothing is worse than one that throws. Whenever an automated check appears to pass with zero work, audit the workload — duration per step is a good tell. If every tab took the timeout duration exactly, no real navigation happened. Add a positive assertion at the end of each step (e.g. `expect URL change` or `expect named element to appear`) so silent no-ops surface as failures, not as success.
 
+### Factory canonical reviewer CHANGES_REQUESTED for "No secrets in wrangler vars" when none are present
+
+**Problem:** `factory-cross-repo[bot]` posts CHANGES_REQUESTED — "No secrets in wrangler vars: Use wrangler secret put — never put secrets in the vars block" — but the PR adds no secret-looking keys to any wrangler config.
+
+**Root cause:** The deterministic check in `.github/scripts/pr-review.mjs` previously ran the pattern `/vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im` over **all** added lines from all files in the PR concatenated. A TypeScript type definition (`vars: string[]`) in a capability plan type provides the `vars:` anchor; a GitHub Actions workflow env block (`STUDIO_DISPATCH_TOKEN: ${{ secrets.X }}`) provides the `TOKEN:` match. The cross-file blob match fires even though no wrangler file was modified.
+
+**Fix (already applied):** The check is scoped to added lines from wrangler config files only. If you see the false positive again, verify the fix is in place at line ~395 of `.github/scripts/pr-review.mjs`.
+
+**When the check is correct:** If a wrangler config file genuinely adds a `vars:` block containing a key named `*_KEY`, `*_SECRET`, `*_TOKEN`, or `*_PASSWORD`, the check is not a false positive — move the value to `wrangler secret put`.
+
+**Reference:** PATTERNS.md §9 · PR [#910](https://github.com/Latimer-Woods-Tech/Factory/pull/910)
+
+---
+
 ### Playwright fires `requestfailed` on the source side of a redirect chain
 
 **Problem:** Even after the worker properly redirected `/timeline/` to `/timeline` with CORS headers, the smoke probe kept reporting `failed GET https://api.apunlimited.com/timeline/` with reason `net::ERR_FAILED`. The actual fetch returned 200; the user's browser saw the redirected response.

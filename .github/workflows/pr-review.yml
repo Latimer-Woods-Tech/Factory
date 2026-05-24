@@ -33,6 +33,8 @@ jobs:
     # re-running the LLM review in a merge group has no useful target to post to.
     steps:
       - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Mint the factory-cross-repo App token so reviews are attributed to the
       # bot account (a CODEOWNER on apps/*/src/**). On Dependabot PRs this can

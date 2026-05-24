@@ -1,0 +1,11 @@
+{
+  "id": "llm",
+  "package": "@latimer-woods-tech/llm",
+  "versionRange": "^0.1.0",
+  "requirements": {
+    "secrets": ["ANTHROPIC_API_KEY"]
+  },
+  "contracts": {
+    "policyTags": ["llm"]
+  }
+}

@@ -15,6 +15,10 @@ on:
       - 'packages/design-tokens/**'
       - '.github/workflows/factory-admin-ui-ci.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -70,6 +74,49 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-mobile-${{ matrix.project }}-${{ github.run_id }}
+          path: |
+            apps/admin-studio-ui/playwright-report/
+            apps/admin-studio-ui/test-results/
+          retention-days: 7
+
+  capabilities-e2e:
+    name: Playwright capabilities flow (desktop)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            apps/admin-studio-ui/package-lock.json
+            packages/studio-core/package-lock.json
+
+      - name: Install + build studio-core
+        working-directory: packages/studio-core
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+
+      - name: Install admin-studio-ui dependencies
+        working-directory: apps/admin-studio-ui
+        run: npm ci
+
+      - name: Install Playwright browser
+        working-directory: apps/admin-studio-ui
+        run: npx playwright install --with-deps chromium
+
+      - name: Run capabilities e2e
+        working-directory: apps/admin-studio-ui
+        run: npx playwright test e2e/capabilities.spec.ts --project=desktop-chrome
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-capabilities-${{ github.run_id }}
           path: |
             apps/admin-studio-ui/playwright-report/
             apps/admin-studio-ui/test-results/

@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "recipe.schema.json",
+  "title": "Capability Recipe",
+  "description": "An approved deployable composition of primitives.",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "maturity",
+    "summary",
+    "goal",
+    "primitives",
+    "optionalPrimitives",
+    "expectedSurfaces",
+    "smokeChecks",
+    "constraints",
+    "envContract",
+    "bindingContract"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "maturity": {
+      "type": "string",
+      "enum": ["draft", "experimental", "beta", "stable", "deprecated", "retired"]
+    },
+    "summary": { "type": "string", "minLength": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "primitives": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "optionalPrimitives": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+      "uniqueItems": true
+    },
+    "expectedSurfaces": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^/" },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "smokeChecks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "expectedStatus"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "pattern": "^/" },
+          "expectedStatus": { "type": "integer", "minimum": 100, "maximum": 599 },
+          "expectContains": { "type": "string", "minLength": 1 }
+        }
+      },
+      "minItems": 1
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "envContract": {
+      "type": "object",
+      "required": ["secrets", "vars"],
+      "additionalProperties": false,
+      "properties": {
+        "secrets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "vars": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "bindingContract": {
+      "type": "object",
+      "required": ["required", "optional"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        },
+        "optional": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

@@ -16,6 +16,7 @@ on:
       - 'scripts/sync_labels_to_matrix.py'
       - 'scripts/platform_conformance.py'
       - 'scripts/tests/**'
+      - '.github/scripts/**'
       - '.github/workflows/scripts-tests.yml'
   push:
     branches: [main]
@@ -25,6 +26,7 @@ on:
       - 'scripts/sync_labels_to_matrix.py'
       - 'scripts/platform_conformance.py'
       - 'scripts/tests/**'
+      - '.github/scripts/**'
   schedule:
     - cron: '47 3 * * *' # daily 03:47 UTC
 
@@ -48,6 +50,11 @@ jobs:
       - name: Install pytest + script deps
         run: pip install --quiet pytest pytest-cov pyyaml
 
+      - name: Configure git identity for scaffold tests
+        run: |
+          git config --global user.email "[email protected]"
+          git config --global user.name "Factory CI"
+
       - name: Run tests
         working-directory: scripts/tests
         run: python -m pytest -v --cov --cov-report=term
@@ -57,3 +64,28 @@ jobs:
         working-directory: scripts/tests
         run: |
           python -m pytest --cov --cov-report=term-missing -q 2>&1 | tail -10 || true
+
+  node-tests:
+    # Tests for Node.js helpers under .github/scripts/ — e.g. the snapshot-pr
+    # auto-merge helper added in workflow lifecycle Phase 2.
+    # Discovered via the convention `.github/scripts/*.test.mjs`.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Discover and run Node tests
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          tests=( .github/scripts/*.test.mjs )
+          if [ ${#tests[@]} -eq 0 ]; then
+            echo "No Node test files found under .github/scripts/ — skipping."
+            exit 0
+          fi
+          echo "Running ${#tests[@]} Node test file(s):"
+          for t in "${tests[@]}"; do echo "  - $t"; done
+          node --test "${tests[@]}"
