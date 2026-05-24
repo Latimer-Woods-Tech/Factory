@@ -1,7 +1,4 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "recipe",
-  "owner": "latimer-woods-tech",
   "id": "human-design-api",
   "version": "1.0.0",
   "maturity": "stable",

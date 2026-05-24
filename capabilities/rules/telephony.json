@@ -1,10 +1,7 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "rules",
   "rules": [
     {
       "id": "telephony-requires-crm",
-      "description": "Enforce crm when telephony is present.",
       "ifAllPrimitives": [
         "telephony"
       ],

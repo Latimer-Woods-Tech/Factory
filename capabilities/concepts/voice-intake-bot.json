@@ -1,79 +1,70 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "concept",
   "id": "voice-intake-bot",
   "displayName": "Voice Intake Bot",
-  "owner": "latimer-woods-tech",
-  "maturity": "experimental",
-  "status": "approved",
   "summary": "Inbound voice triage bot with optional email confirmations and CRM routing.",
-  "tags": [
-    "telephony",
-    "voice",
-    "intake",
-    "llm"
-  ],
-  "sourcePrimitives": [
-    "analytics",
-    "compliance",
-    "crm",
-    "email",
-    "llm",
-    "telephony"
-  ],
-  "recipeCandidates": [
-    "voice-intake-agent"
-  ],
-  "parameterSchema": {
-    "properties": {
-      "workerDomain": {
-        "type": "string",
-        "description": "Custom domain for the deployed worker.",
-        "formatHint": "intake.example.com"
-      },
-      "intakePhoneNumber": {
-        "type": "string",
-        "description": "Telnyx inbound number to route calls from.",
-        "formatHint": "+15551234567"
-      },
-      "emailConfirmations": {
-        "type": "boolean",
-        "description": "Send email confirmations after each intake.",
-        "default": false
-      }
+  "status": "approved",
+  "maturity": "experimental",
+  "tags": ["telephony", "voice", "intake", "llm"],
+  "menuVisible": true,
+  "approvalTier": "experimental",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Custom domain for the deployed worker.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "intake.example.com"
     },
-    "required": [
-      "workerDomain",
-      "intakePhoneNumber"
-    ]
-  },
+    {
+      "id": "intakePhoneNumber",
+      "type": "string",
+      "description": "Telnyx inbound number to route calls from.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "+15551234567"
+    },
+    {
+      "id": "emailConfirmations",
+      "type": "boolean",
+      "description": "Send email confirmations after each intake.",
+      "required": false,
+      "enum": [],
+      "default": false,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": null,
+  "recipes": [
+    {
+      "id": "voice-intake-agent",
+      "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations.",
+      "maturity": "experimental",
+      "primitives": ["telephony", "crm", "analytics", "llm"],
+      "optionalPrimitives": ["compliance", "email"]
+    }
+  ],
+  "sourcePrimitives": ["analytics", "compliance", "crm", "email", "llm", "telephony"],
   "templates": [
     {
       "id": "intake-with-email",
       "label": "Intake + email confirmation",
       "hint": "Triage inbound calls and send email receipts to callers.",
-      "values": {
-        "emailConfirmations": true
-      }
+      "values": { "emailConfirmations": true }
     },
     {
       "id": "intake-silent",
       "label": "Intake — silent (no email)",
       "hint": "Triage only; no outbound email.",
-      "values": {
-        "emailConfirmations": false
-      }
+      "values": { "emailConfirmations": false }
     }
   ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "experimental",
-    "requiredCapabilities": [
-      "custom-domain",
-      "telnyx-inbound-number"
-    ],
-    "disallowedEnvironments": [
-      "local"
-    ]
+    "requiredCapabilities": ["custom-domain", "telnyx-inbound-number"],
+    "disallowedEnvironments": ["local"]
   }
 }

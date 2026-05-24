@@ -1,7 +1,4 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "recipe",
-  "owner": "latimer-woods-tech",
   "id": "outbound-dialer-importer",
   "version": "1.0.0",
   "maturity": "beta",

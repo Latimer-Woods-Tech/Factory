@@ -1,7 +1,4 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "recipe",
-  "owner": "latimer-woods-tech",
   "id": "outbound-dialer",
   "version": "1.0.0",
   "maturity": "beta",
@@ -17,14 +14,21 @@
   ],
   "expectedSurfaces": [
     "/health",
+    "/manifest",
     "/api/campaigns",
-    "/api/leads"
+    "/api/campaigns/:id/start",
+    "/api/dispositions"
   ],
   "smokeChecks": [
     {
       "path": "/health",
       "expectedStatus": 200,
       "expectContains": "ok"
+    },
+    {
+      "path": "/manifest",
+      "expectedStatus": 200,
+      "expectContains": "manifestVersion"
     }
   ],
   "constraints": [
@@ -33,6 +37,7 @@
   ],
   "envContract": {
     "secrets": [
+      "ANTHROPIC_API_KEY",
       "CRM_API_KEY"
     ],
     "vars": [

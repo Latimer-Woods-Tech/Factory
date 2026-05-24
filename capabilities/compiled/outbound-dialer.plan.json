@@ -3,72 +3,67 @@
   "kind": "plan",
   "recipe": {
     "id": "outbound-dialer",
-    "version": "0.1.0",
-    "maturity": "experimental",
-    "summary": "Outbound call-bank service pattern for compliant campaign dialing and disposition capture.",
-    "goal": "Provision a staging-first outbound calling service with lead targeting, consent-aware controls, and delivery telemetry."
+    "version": "1.0.0",
+    "maturity": "beta",
+    "summary": "CRM-segment driven outbound dialer workflow.",
+    "goal": "Launch governed outbound calling for CRM-selected contacts."
   },
   "packages": [
     {
       "primitiveId": "analytics",
       "package": "@latimer-woods-tech/analytics",
-      "versionRange": "^0.2.0"
+      "versionRange": "^0.1.0"
     },
     {
       "primitiveId": "compliance",
       "package": "@latimer-woods-tech/compliance",
-      "versionRange": "^0.3.0"
+      "versionRange": "^0.1.0"
     },
     {
       "primitiveId": "crm",
       "package": "@latimer-woods-tech/crm",
-      "versionRange": "^0.3.0"
+      "versionRange": "^0.1.0"
     },
     {
       "primitiveId": "telephony",
       "package": "@latimer-woods-tech/telephony",
-      "versionRange": "^0.3.0"
+      "versionRange": "^0.1.0"
     }
   ],
   "env": {
     "secrets": [
-      "AI_GATEWAY_BASE_URL",
       "ANTHROPIC_API_KEY",
+      "CRM_API_KEY",
       "DEEPGRAM_API_KEY",
       "ELEVENLABS_API_KEY",
-      "GROQ_API_KEY",
       "JWT_SECRET",
-      "POSTHOG_KEY",
-      "TELNYX_API_KEY",
-      "VERTEX_ACCESS_TOKEN",
-      "VERTEX_LOCATION",
-      "VERTEX_PROJECT"
+      "TELNYX_API_KEY"
     ],
     "vars": [
       "ENVIRONMENT",
+      "WORKER_DOMAIN",
       "WORKER_NAME"
     ],
     "policyTags": [
-      "audit",
-      "communications",
+      "analytics",
       "compliance",
-      "customer-data",
-      "observability",
-      "outbound-communications",
-      "outbound-sensitive",
-      "pii",
-      "telemetry",
-      "voice"
+      "crm",
+      "telephony"
     ]
   },
   "bindings": {
     "required": [
+      "ANALYTICS",
       "AUTH_RATE_LIMITER",
+      "CALL_QUEUE",
+      "CRM_SEGMENTS",
       "DB",
       "FLAG_TELEMETRY",
       "FLAGS"
     ],
-    "optional": []
+    "optional": [
+      "ANALYTICS"
+    ]
   },
   "expectedSurfaces": [
     "/health",
@@ -81,7 +76,7 @@
     {
       "path": "/health",
       "expectedStatus": 200,
-      "expectContains": "status"
+      "expectContains": "ok"
     },
     {
       "path": "/manifest",
@@ -90,9 +85,8 @@
     }
   ],
   "constraints": [
-    "Outbound dialing must not be provisioned without compliance and consent-aware auditability.",
-    "Provisioning is staging-first; no direct production bootstrap path is supported.",
-    "Generated service must expose /health and /manifest before promotion is allowed."
+    "Use a branded custom domain.",
+    "Verify staging smoke checks before production."
   ],
   "scaffold": {
     "entryScript": "packages/deploy/scripts/scaffold.mjs",
@@ -101,13 +95,17 @@
       "JWT_SECRET"
     ],
     "requiredBindings": [
+      "ANALYTICS",
       "AUTH_RATE_LIMITER",
+      "CALL_QUEUE",
+      "CRM_SEGMENTS",
       "DB",
       "FLAG_TELEMETRY",
       "FLAGS"
     ],
     "requiredVars": [
       "ENVIRONMENT",
+      "WORKER_DOMAIN",
       "WORKER_NAME"
     ]
   }

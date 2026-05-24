@@ -1,35 +1,12 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "primitive",
   "id": "telephony",
   "package": "@latimer-woods-tech/telephony",
   "versionRange": "^0.1.0",
-  "maturity": "beta",
-  "owner": "latimer-woods-tech",
-  "category": "communication",
-  "summary": "Inbound/outbound voice via Telnyx with Deepgram ASR and ElevenLabs TTS.",
-  "provides": [
-    "inbound-voice",
-    "outbound-dialer",
-    "asr",
-    "tts"
-  ],
-  "contracts": {
-    "inputs": [],
-    "outputs": [],
-    "policyTags": [
-      "telephony"
-    ]
-  },
   "requirements": {
-    "secrets": [
-      "TELNYX_API_KEY",
-      "DEEPGRAM_API_KEY",
-      "ELEVENLABS_API_KEY"
-    ],
-    "bindings": [
-      "CALL_QUEUE"
-    ],
-    "upstreamPackages": []
+    "secrets": ["TELNYX_API_KEY", "DEEPGRAM_API_KEY", "ELEVENLABS_API_KEY"],
+    "bindings": ["CALL_QUEUE"]
+  },
+  "contracts": {
+    "policyTags": ["telephony"]
   }
 }

@@ -1,29 +1,11 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "primitive",
   "id": "analytics",
   "package": "@latimer-woods-tech/analytics",
   "versionRange": "^0.1.0",
-  "maturity": "stable",
-  "owner": "latimer-woods-tech",
-  "category": "data",
-  "summary": "PostHog-backed event tracking and funnel analytics.",
-  "provides": [
-    "event-tracking",
-    "funnel-analysis"
-  ],
-  "contracts": {
-    "inputs": [],
-    "outputs": [],
-    "policyTags": [
-      "analytics"
-    ]
-  },
   "requirements": {
-    "secrets": [],
-    "bindings": [
-      "ANALYTICS"
-    ],
-    "upstreamPackages": []
+    "bindings": ["ANALYTICS"]
+  },
+  "contracts": {
+    "policyTags": ["analytics"]
   }
 }

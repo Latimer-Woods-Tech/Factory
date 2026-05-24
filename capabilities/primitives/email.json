@@ -1,29 +1,11 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "primitive",
   "id": "email",
   "package": "@latimer-woods-tech/email",
   "versionRange": "^0.1.0",
-  "maturity": "stable",
-  "owner": "latimer-woods-tech",
-  "category": "communication",
-  "summary": "Transactional email via Resend with template and attachment support.",
-  "provides": [
-    "transactional-email",
-    "template-rendering"
-  ],
-  "contracts": {
-    "inputs": [],
-    "outputs": [],
-    "policyTags": [
-      "email"
-    ]
-  },
   "requirements": {
-    "secrets": [
-      "RESEND_API_KEY"
-    ],
-    "bindings": [],
-    "upstreamPackages": []
+    "secrets": ["RESEND_API_KEY"]
+  },
+  "contracts": {
+    "policyTags": ["email"]
   }
 }

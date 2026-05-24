@@ -1,29 +1,11 @@
 {
-  "schemaVersion": "1.0.0",
-  "kind": "primitive",
   "id": "crm",
   "package": "@latimer-woods-tech/crm",
   "versionRange": "^0.1.0",
-  "maturity": "beta",
-  "owner": "latimer-woods-tech",
-  "category": "data",
-  "summary": "Contact and segment management for outbound and relational workflows.",
-  "provides": [
-    "contact-management",
-    "segment-queries"
-  ],
-  "contracts": {
-    "inputs": [],
-    "outputs": [],
-    "policyTags": [
-      "crm"
-    ]
-  },
   "requirements": {
-    "secrets": [],
-    "bindings": [
-      "CRM_SEGMENTS"
-    ],
-    "upstreamPackages": []
+    "bindings": ["CRM_SEGMENTS"]
+  },
+  "contracts": {
+    "policyTags": ["crm"]
   }
 }
