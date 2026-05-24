@@ -8,6 +8,7 @@ import { GENERATED_CAPABILITIES } from './capabilities.generated';
 import { getTemplateStats, recordRun } from './stats';
 import { executePlan } from './executor';
 import { runVerifier } from './verifier';
+import { openSupervisorPR } from './pr-opening';
 // All GitHub API helpers (fetchApprovedIssues, postPlanComment, addLabel,
 // getPlanApproval) use AbortSignal.timeout(10_000) — see tools/github.ts.
 // sendDigest uses AbortSignal.timeout(5_000) — see tools/pushover.ts.
@@ -519,11 +520,6 @@ export class SupervisorDO {
         receipt.awaiting_approval ?? null,
       );
       await stmt.all();
-    }
-
-    // Record final run status
-    if (allSucceeded) {
-      await recordRun(this.env.MEMORY, templateId, version, 'passed');
     }
 
     return Response.json({
