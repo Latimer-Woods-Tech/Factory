@@ -716,10 +716,14 @@ pages:
 packages:
   - name: "@latimer-woods-tech/errors"
     status: "Foundation"
-    version: "1.0.0"
+    version: "0.1.0"
     main_use: "Error types, FactoryBaseError, error handling"
     videoking_used: true
     depends_on: []
+    # oss_status: "ready-to-publish" — first public release prepped 2026-05-23
+    # (LICENSE, README, CHANGELOG, publishConfig.access=public). User to run
+    # `npm publish` from packages/errors. See docs/runbooks/oss-publishing.md.
+    oss_status: "ready-to-publish"
     
   - name: "@latimer-woods-tech/monitoring"
     status: "Foundation"

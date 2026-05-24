@@ -1,14 +1,30 @@
 {
   "name": "@latimer-woods-tech/errors",
-  "version": "0.2.0",
-  "private": false,
+  "version": "0.1.0",
+  "description": "Typed, retryable-aware error classes and a Hono error-boundary middleware for Cloudflare Workers, Bun, Deno, and Node.",
+  "license": "MIT",
+  "author": "Adrian Perry <aperry@latwoodtech.com>",
+  "homepage": "https://github.com/Latimer-Woods-Tech/Factory/tree/main/packages/errors",
+  "bugs": {
+    "url": "https://github.com/Latimer-Woods-Tech/Factory/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
     "directory": "packages/errors"
   },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "errors",
+    "typescript",
+    "esm",
+    "operational-errors",
+    "hono",
+    "http"
+  ],
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
@@ -21,6 +37,7 @@
   },
   "files": [
     "dist",
+    "LICENSE",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -29,7 +46,7 @@
     "test": "vitest run --coverage",
     "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "prepublish": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "hono": "^4.12.18"
