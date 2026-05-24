@@ -59,6 +59,10 @@
       const grid = document.querySelector('[data-status-grid]');
       const meta = document.querySelector('[data-status-meta]');
 
+      const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ESC_MAP[c]); }
+      function safeHref(url) { return typeof url === 'string' && url.startsWith('https://') ? esc(url) : '#'; }
+
       function formatRelative(iso) {
         if (!iso) return 'unknown time';
         const then = new Date(iso).getTime();
@@ -91,8 +95,8 @@
             const url = entry.url ?? '';
             return `
               <article class="status-card">
-                <p class="name">${name}</p>
-                <p class="url"><a href="${url}" target="_blank" rel="noopener">${url}</a></p>
+                <p class="name">${esc(name)}</p>
+                <p class="url"><a href="${safeHref(url)}" target="_blank" rel="noopener">${esc(url)}</a></p>
                 <div class="row">
                   <span class="status-pill" data-alive="${alive}">${pillText}</span>
                   <span>${status}${duration ? ' · ' + duration : ''}</span>
