@@ -1,0 +1,11 @@
+{
+  "id": "stripe",
+  "package": "@latimer-woods-tech/stripe",
+  "versionRange": "^0.1.0",
+  "requirements": {
+    "secrets": ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]
+  },
+  "contracts": {
+    "policyTags": ["payments"]
+  }
+}

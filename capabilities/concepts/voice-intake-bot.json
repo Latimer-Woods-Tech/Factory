@@ -47,6 +47,20 @@
     }
   ],
   "sourcePrimitives": ["analytics", "compliance", "crm", "email", "llm", "telephony"],
+  "templates": [
+    {
+      "id": "intake-with-email",
+      "label": "Intake + email confirmation",
+      "hint": "Triage inbound calls and send email receipts to callers.",
+      "values": { "emailConfirmations": true }
+    },
+    {
+      "id": "intake-silent",
+      "label": "Intake — silent (no email)",
+      "hint": "Triage only; no outbound email.",
+      "values": { "emailConfirmations": false }
+    }
+  ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "experimental",
