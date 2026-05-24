@@ -318,12 +318,14 @@ function fetchPrMetadata(prNumber) {
 }
 
 function fetchPrDiff(prNumber) {
-  return gh(`pr diff ${prNumber}`);
+  const n = String(parseInt(prNumber, 10));
+  return gh(`pr diff ${n}`);
 }
 
 function findExistingComment(prNumber, marker) {
+  const n = String(parseInt(prNumber, 10));
   try {
-    const out = gh(`api repos/Latimer-Woods-Tech/Factory/issues/${prNumber}/comments --jq '[.[] | select(.body | startswith("${marker}")) | .id] | .[0] // ""'`).trim();
+    const out = gh(`api repos/Latimer-Woods-Tech/Factory/issues/${n}/comments --jq '[.[] | select(.body | startswith("${marker}")) | .id] | .[0] // ""'`).trim();
     return out ? Number(out) : null;
   } catch {
     return null;
