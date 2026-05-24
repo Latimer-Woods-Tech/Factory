@@ -318,6 +318,7 @@ const catalog = {
             "analytics"
           ],
           "summary": "CRM-segment driven outbound dialer workflow.",
+          "tradeoffs": "Best for recurring campaigns where the audience already lives in the CRM. No import step means faster setup and lower operational overhead. Choose this when your contact list is maintained continuously in the CRM and segments are already defined.",
           "version": "1.0.0"
         },
         {
@@ -332,6 +333,7 @@ const catalog = {
             "analytics"
           ],
           "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+          "tradeoffs": "Adds a CSV landing and ingestion step before dialing. Best for one-time or externally-sourced contact lists that do not exist in the CRM. Introduces an additional surface to maintain (import endpoint, file validation, ingestion errors) but gives full control over the contact payload.",
           "version": "1.0.0"
         }
       ],
