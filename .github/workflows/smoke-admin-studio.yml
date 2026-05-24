@@ -44,8 +44,8 @@ jobs:
           # org Actions secrets. Without them probe-factory-admin.mjs exits 2
           # at startup (RC-2 in the 2026-05-23 scheduled-workflow triage).
           BASE_URL: ${{ github.event.inputs.base_url || 'https://apunlimited.com' }}
-          STUDIO_EMAIL: ${{ secrets.STUDIO_EMAIL }}
-          STUDIO_PASSWORD: ${{ secrets.STUDIO_PASSWORD }}
+          STUDIO_EMAIL: ${{ secrets.FACTORY_USER }}
+          STUDIO_PASSWORD: ${{ secrets.FACTORY_PW }}
           STUDIO_ENV: production
           OUT_DIR: probe-output
         run: node scripts/probe-factory-admin.mjs
