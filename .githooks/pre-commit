@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Pre-commit branch guard for Factory.
+#
+# Catches the class of errors where commits land on the wrong branch because
+# the user (or an automation agent) didn't notice a `git checkout` had
+# silently failed or a working-tree state had moved them somewhere else.
+#
+# This hook is non-interactive and runs in a few milliseconds. It NEVER
+# rewrites your commit; it can only block or pass.
+#
+# To activate (per clone, not committed in .git/config by default):
+#
+#     git config core.hooksPath .githooks
+#
+# To bypass for a single commit (use sparingly; the hook exists for a reason):
+#
+#     git commit --no-verify ...
+#
+# Activation is intentionally per-clone (not enforced by repo policy) — the
+# hook is a safety net, not a gate. CI provides the real enforcement.
+# =============================================================================
+
+set -euo pipefail
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
+
+# -----------------------------------------------------------------------------
+# Hard fails — these errors must NOT result in a commit.
+# -----------------------------------------------------------------------------
+
+if [ -z "$branch" ]; then
+  echo "❌ pre-commit: detached HEAD detected. Create a branch first:" >&2
+  echo "     git switch -C <branch-name>" >&2
+  exit 1
+fi
+
+if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+  echo "❌ pre-commit: refusing to commit directly to '$branch'." >&2
+  echo "     Use a feature branch:" >&2
+  echo "         git switch -C feat/<name> origin/main" >&2
+  echo "     If you really mean to do this, bypass with --no-verify." >&2
+  exit 1
+fi
+
+# -----------------------------------------------------------------------------
+# Visibility — print branch + staged scope. Always-on banner makes
+# wrong-branch commits caught visually after the fact.
+# -----------------------------------------------------------------------------
+
+staged_count="$(git diff --cached --name-only | wc -l | tr -d ' ')"
+
+# `git diff --cached --name-only` can be empty if a commit is empty (e.g., `--allow-empty`)
+# Let it through — that's not our concern.
+
+echo "🌿 pre-commit: branch='${branch}' · staged=${staged_count} file(s)"
+
+if [ "$staged_count" -gt 0 ] && [ "$staged_count" -le 15 ]; then
+  git diff --cached --name-only | sed 's/^/    · /'
+elif [ "$staged_count" -gt 15 ]; then
+  git diff --cached --name-only | head -10 | sed 's/^/    · /'
+  remaining=$((staged_count - 10))
+  echo "    · … (${remaining} more)"
+fi
+
+# -----------------------------------------------------------------------------
+# Soft warnings — these don't block, but they print loudly for review.
+# -----------------------------------------------------------------------------
+
+# Warn if staging files outside a "scope" inferred from the branch name.
+# Example: branch `feat/admin-studio-foo` shouldn't normally stage
+# `apps/capricast/**`. The rule: if branch starts with feat/, fix/, chore/,
+# docs/, refactor/ — check that staged paths share at least one segment
+# with the branch suffix. This is a heuristic, not a hard rule.
+
+case "$branch" in
+  feat/*|fix/*|chore/*|docs/*|refactor/*|test/*|perf/*)
+    suffix="${branch#*/}"
+    # First "word" of the suffix (alphanumerics + dashes until next /, -, or _)
+    word="$(echo "$suffix" | sed -E 's/^([a-z0-9]+(-[a-z0-9]+)*).*/\1/')"
+    if [ -n "$word" ] && [ "$word" != "$suffix" ]; then
+      # We have a multi-word suffix; the first word is the focus area
+      :  # No-op for now — heuristic is noisy and we want to validate the hook before adding strict rules
+    fi
+    ;;
+esac
+
+# Loud warning for suspicious patterns in staged content.
+if git diff --cached -G '^\+.*(TODO|FIXME|XXX|DEBUG).*REMOVE.*BEFORE.*MERGE' --quiet 2>/dev/null; then
+  : # silent — no matches
+else
+  echo "⚠  pre-commit: staged content contains 'REMOVE BEFORE MERGE' marker(s). Continuing, but you've been warned." >&2
+fi
+
+# Loud warning for committing to a tracking-only branch (HEAD detached + named after origin).
+if [[ "$branch" == origin/* ]]; then
+  echo "⚠  pre-commit: branch name '${branch}' starts with 'origin/' — this is unusual." >&2
+  echo "     Did you mean to create a local branch from a remote ref?" >&2
+fi
+
+exit 0
