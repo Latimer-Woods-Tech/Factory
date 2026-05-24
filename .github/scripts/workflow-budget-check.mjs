@@ -228,10 +228,12 @@ function postOrUpdateComment(prNumber, body, marker) {
     existing = out ? Number(out) : null;
   } catch { /* swallow */ }
   if (existing) {
-    gh(`api --method PATCH repos/Latimer-Woods-Tech/Factory/issues/comments/${existing} --field body=${JSON.stringify(body)}`);
+    // Pass body via stdin (--field body=@-) to avoid shell injection from markdown backticks.
+    execSync(`gh api --method PATCH repos/Latimer-Woods-Tech/Factory/issues/comments/${existing} --field "body=@-"`, { input: body, encoding: 'utf-8' });
     return { id: existing, action: 'updated' };
   }
-  gh(`pr comment ${prNumber} --body ${JSON.stringify(body)}`);
+  // Pass body via --body-file - (stdin) to avoid shell injection from markdown backticks.
+  execSync(`gh pr comment ${prNumber} --body-file -`, { input: body, encoding: 'utf-8' });
   return { id: null, action: 'created' };
 }
 
