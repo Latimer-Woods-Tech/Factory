@@ -50,14 +50,31 @@ export function LoginPage() {
       return;
     }
 
-    // Clear any previously rendered button
-    googleButtonRef.current.innerHTML = '';
+    // Fetch client_id from backend (it's a Cloudflare Worker secret, not baked into build)
+    async function initGSI() {
+      let googleClientId: string;
+      try {
+        const cfgRes = await fetch(`${getApiBase(env)}/auth/config`);
+        const cfg = await cfgRes.json() as { googleClientId?: string | null };
+        if (!cfg.googleClientId) {
+          addNotification({ type: 'error', title: 'Google Sign-In not configured', message: 'GOOGLE_CLIENT_ID is missing on the worker. Set it via wrangler secret put.' });
+          return;
+        }
+        googleClientId = cfg.googleClientId;
+      } catch {
+        addNotification({ type: 'error', title: 'Google Sign-In unavailable', message: 'Could not reach auth config endpoint.' });
+        return;
+      }
 
-    try {
-      google.accounts.id.initialize({
-        callback: handleGoogleCallback,
-        hosted_domain: 'apunlimited.com',
-      });
+      // Clear any previously rendered button
+      googleButtonRef.current!.innerHTML = '';
+
+      try {
+        google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCallback,
+          hosted_domain: 'apunlimited.com',
+        });
 
       google.accounts.id.renderButton(googleButtonRef.current, {
         theme: 'outline',
@@ -78,6 +95,8 @@ export function LoginPage() {
         title: 'Google Sign-In Issue',
         message: 'Could not fully initialize Google Sign-In. Using fallback login.',
       });
+    }
+      void initGSI();
     }
   }, [env, addNotification]);
 
