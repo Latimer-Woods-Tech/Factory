@@ -1,4 +1,4 @@
-import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -211,11 +211,21 @@ async function buildPulseSnapshot() {
 	};
 }
 
+// Clean build: wipe the subtrees we are about to recreate so removed source
+// files don't linger in the deployed bundle (cp doesn't delete extraneous
+// destination files). We avoid removing distDir itself because Windows
+// frequently holds a handle on the directory inode (explorer thumbnails,
+// editors), which makes a top-level rmdir fail with EBUSY.
 await mkdir(distDir, { recursive: true });
+await rm(join(distDir, 'assets'), { recursive: true, force: true, maxRetries: 3 });
+await rm(join(distDir, 'stack'), { recursive: true, force: true, maxRetries: 3 });
+await rm(join(distDir, 'data'), { recursive: true, force: true, maxRetries: 3 });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
+await mkdir(join(distDir, 'stack'), { recursive: true });
+await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
 await mkdir(join(distDir, 'data'), { recursive: true });
 await writeFile(
 	join(distDir, 'data', 'pulse.json'),
