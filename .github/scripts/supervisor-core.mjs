@@ -1054,6 +1054,13 @@ async function main() {
       } catch { /* label may already be gone */ }
     }
 
+    const hasPR = await hasOpenLinkedPR(repo, issue.number);
+    if (hasPR) {
+      console.log(`[Idempotency] ${repo}#${issue.number}: has open PR — skipping`);
+      outcomes.push(`⏭️ ${repo}#${issue.number}: has open PR — skipped`);
+      continue;
+    }
+
     const recentPlan = await findRecentBotComment(
       repo,
       issue.number,
@@ -1061,12 +1068,9 @@ async function main() {
       PLAN_COMMENT_MARKER,
     );
     if (recentPlan) {
-      const hasPR = await hasOpenLinkedPR(repo, issue.number);
-      if (!hasPR) {
-        console.log(`[Idempotency] ${repo}#${issue.number}: bot plan posted within ${REPLAN_COOLDOWN_HOURS}h, no open PR — skipping`);
-        outcomes.push(`⏭️ ${repo}#${issue.number}: existing plan within ${REPLAN_COOLDOWN_HOURS}h — skipped`);
-        continue;
-      }
+      console.log(`[Idempotency] ${repo}#${issue.number}: bot plan posted within ${REPLAN_COOLDOWN_HOURS}h — skipping`);
+      outcomes.push(`⏭️ ${repo}#${issue.number}: existing plan within ${REPLAN_COOLDOWN_HOURS}h — skipped`);
+      continue;
     }
     gated.push(issue);
   }
