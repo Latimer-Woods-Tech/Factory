@@ -1,0 +1,98 @@
+# =============================================================================
+# Snapshot PR Auto-Merge — Phase 2 of the workflow lifecycle decision
+# (docs/decisions/2026-05-23-workflow-lifecycle.md, Pillar 3).
+#
+# WHY THIS EXISTS
+#   Snapshot-generating crons (cost-observability, generate-state, revenue-
+#   digest, completion-tracker, etc.) open PRs that touch ONLY generated
+#   documentation. Branch protection requires CODEOWNER review. Bot review of
+#   bot-generated digest data is theater — it always sits unmerged until a
+#   human burns time clicking through.
+#
+#   Pre-Phase 2 we accumulated 20 stale snapshot PRs in 2 days. This workflow
+#   converts the pattern from "manual review required forever" to "auto-merge
+#   IFF the PR is bounded by .github/snapshot-paths.yml."
+#
+# THE CONTRACT
+#   A PR is auto-approved + auto-merged ONLY IF all three hold:
+#     1. PR author ∈ snapshot-paths.yml `authors:`
+#     2. PR branch starts with one of snapshot-paths.yml `branch_prefixes:`
+#     3. EVERY changed file matches one of snapshot-paths.yml `paths:`
+#
+#   Any mixed PR (one snapshot file + one out-of-allowlist file) is REJECTED
+#   with an explanatory comment. The contract is conservative on purpose —
+#   the bot must never approve a PR it can't fully reason about.
+#
+# ROLLBACK
+#   Disable the workflow's schedule: `gh workflow disable snapshot-pr-auto-merge.yml`
+#   Snapshot PRs revert to manual review.
+# =============================================================================
+name: Snapshot PR Auto-Merge
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    # Fast pre-filter: only consider PRs whose branch name has the snapshot
+    # shape. Saves a token mint + API calls for the 90%+ of PR events that
+    # are unrelated (manual feature PRs, etc.).
+    if: |
+      !github.event.pull_request.draft &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'chore/state-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/cost-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/revenue-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/conformance-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/scorecard-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/morning-digest-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/kpis-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'completion-tracker/')
+      )
+    name: Validate + auto-merge snapshot PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write   # comment on PRs
+    steps:
+      # Use base-branch checkout (not the PR head) so allowlist/helper are
+      # always sourced from main, never from PR-author-controlled content.
+      # This is the same pattern that makes pull_request_target safe.
+      - name: Checkout main (for allowlist + helper)
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      # Mint a factory-cross-repo App token. Two reasons:
+      #   1. factory-cross-repo[bot] is a CODEOWNER for the snapshot paths
+      #      (docs/**, *.md) per .github/CODEOWNERS, so its APPROVE counts.
+      #   2. It is a bypass actor on ruleset 15843812, so its auto-merge
+      #      enable survives `dismiss_stale_reviews_on_push: true` on
+      #      subsequent synchronize events.
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - name: Validate + auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          ALLOWLIST_PATH: .github/snapshot-paths.yml
+        run: node .github/scripts/snapshot-pr-helper.mjs
