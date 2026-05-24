@@ -1,10 +1,58 @@
 import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { generateTopology } from './scripts/generate-topology.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(__dirname, 'src');
 const distDir = join(__dirname, 'dist');
+
+const BRAND_SURFACES = [
+	{ name: 'Prime Self', url: 'https://selfprime.net', category: 'Practitioner intelligence' },
+	{ name: 'Capricast', url: 'https://capricast.com', category: 'Interactive creator video' },
+	{ name: 'Cypher of Healing', url: 'https://cypherofhealing.com', category: 'Restoration ecosystem' },
+	{ name: 'AP Unlimited', url: 'https://apunlimited.com', category: 'Governance studio' },
+];
+
+async function probeSurface(surface) {
+	const start = Date.now();
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), 6000);
+	try {
+		const res = await fetch(surface.url, {
+			method: 'GET',
+			redirect: 'follow',
+			signal: controller.signal,
+			headers: { 'user-agent': 'latwoodtech-web-build-probe/1.0' },
+		});
+		const durationMs = Date.now() - start;
+		return {
+			name: surface.name,
+			url: surface.url,
+			category: surface.category,
+			alive: res.ok,
+			status: res.status,
+			durationMs,
+			error: null,
+		};
+	} catch (error) {
+		return {
+			name: surface.name,
+			url: surface.url,
+			category: surface.category,
+			alive: false,
+			status: 0,
+			durationMs: Date.now() - start,
+			error: error?.message || String(error),
+		};
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+async function probeSurfaces() {
+	return Promise.all(BRAND_SURFACES.map(probeSurface));
+}
 
 const PUBLIC_SURFACES = [
 	{
@@ -62,7 +110,7 @@ function summarizeRepoRows(rows, repoKey) {
 	return { verifiedCount, trackedCount };
 }
 
-async function buildPulseSnapshot() {
+async function buildPulseSnapshot(surfaceHealth) {
 	const trackerPath = join(__dirname, '..', '..', 'docs', 'completion-tracker.json');
 	const tracker = JSON.parse(await readFile(trackerPath, 'utf8'));
 	const rows = Array.isArray(tracker.rows) ? tracker.rows : [];
@@ -160,25 +208,42 @@ async function buildPulseSnapshot() {
 				'Every visible metric is intentionally curated to communicate craft, readiness, and velocity with minimal risk surface.',
 			],
 			surfaces: PUBLIC_SURFACES,
+			surfaceHealth,
 			vectors,
 			provenance: [
 				'docs/completion-tracker.json',
-				'Curated public-domain allowlist in build.js',
+				'Curated public-domain allowlist in build.js (filtered by build-time liveness probe)',
 			],
 		},
 	};
 }
 
+// Regenerate the deterministic topology before we copy src/ -> dist/ so the
+// fresh JSON is included in the dist payload.
+const { topology } = await generateTopology();
+
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
+await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 await mkdir(join(distDir, 'data'), { recursive: true });
+await copyFile(
+	join(srcDir, 'data', 'circuit-topology.json'),
+	join(distDir, 'data', 'circuit-topology.json'),
+);
+
+// Liveness probes run in parallel; on CI without outbound network they all
+// degrade and the runtime still renders a static topology.
+const surfaceHealth = await probeSurfaces();
 await writeFile(
 	join(distDir, 'data', 'pulse.json'),
-	`${JSON.stringify(await buildPulseSnapshot(), null, 2)}\n`,
+	`${JSON.stringify(await buildPulseSnapshot(surfaceHealth), null, 2)}\n`,
 	'utf8',
 );
 
-console.log('Built static site to dist/');
+const brandTraceCount = topology.traces.filter((t) => t.brand).length;
+console.log(
+	`Built static site to dist/ — topology: ${topology.nodes.length} nodes / ${topology.traces.length} traces (${brandTraceCount} branded).`,
+);
