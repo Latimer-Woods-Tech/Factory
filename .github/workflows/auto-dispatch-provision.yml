@@ -37,7 +37,7 @@ jobs:
 
       - name: Fetch pending provision requests
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_API_BASE: ${{ secrets.ADMIN_STUDIO_PROD_URL }}
           STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
         run: |
           set -euo pipefail
@@ -59,7 +59,7 @@ jobs:
 
       - name: Dispatch each pending request
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
+          STUDIO_API_BASE: ${{ secrets.ADMIN_STUDIO_PROD_URL }}
           STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
