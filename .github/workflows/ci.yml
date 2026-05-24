@@ -128,10 +128,30 @@ jobs:
       - name: Enforce JSDoc coverage ≥90% on exported symbols (FRH-DOC-001)
         run: node scripts/check-jsdoc-coverage.mjs
 
+      - name: Detect capability registry changes
+        id: cap-changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            changed=$(git diff --name-only "$BASE" HEAD 2>/dev/null \
+              | grep -E '^capabilities/' | head -1 || true)
+            if [ -n "$changed" ]; then
+              echo "has_capabilities=true" >> "$GITHUB_OUTPUT"
+              echo "Capability registry changes detected — running FRH-CAP-001 and FRH-CAP-002."
+            else
+              echo "has_capabilities=false" >> "$GITHUB_OUTPUT"
+              echo "No capability registry changes — skipping FRH-CAP-001 and FRH-CAP-002."
+            fi
+          else
+            echo "has_capabilities=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Validate capability registry (FRH-CAP-001)
+        if: steps.cap-changes.outputs.has_capabilities == 'true'
         run: node scripts/capabilities/validate.mjs
 
       - name: Enforce capability registry compile-determinism (FRH-CAP-002)
+        if: steps.cap-changes.outputs.has_capabilities == 'true'
         run: |
           node scripts/capabilities/compile.mjs
           git diff --exit-code -- capabilities/dist apps/admin-studio/src/lib/capability-data.generated.ts \
