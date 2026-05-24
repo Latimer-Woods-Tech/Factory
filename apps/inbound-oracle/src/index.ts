@@ -128,11 +128,11 @@ async function generateReading(
     },
   );
 
-  if (!result.ok) {
+  if (result.error || !result.data) {
     throw new Error(`LLM completion failed: ${result.error.message}`);
   }
 
-  return result.data.content.trim();
+  return result.data!.content.trim();
 }
 
 // ── ElevenLabs: TTS synthesis ─────────────────────────────────────────────────
