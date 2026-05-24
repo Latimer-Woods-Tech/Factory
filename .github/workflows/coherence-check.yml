@@ -1,0 +1,112 @@
+# =============================================================================
+# Coherence Check — Phase 6 of the workflow lifecycle.
+#
+# Daily drift-detection workflow. Answers the question: "Does the Factory
+# automation surface still match the design we wrote down?"
+#
+# Every PR-time gate (concurrency check, snapshot allowlist, budget gate)
+# and every runtime monitor (Workflow Health Warden) is POINT-IN-TIME. None
+# of them check whether the gates themselves still apply correctly. The
+# Coherence Check fills that gap.
+#
+# INVARIANTS (each as a separate check function in coherence-check.mjs):
+#   I1  Every .github/workflows/*.yml is classified in REGISTRY.md
+#   I2  Every REGISTRY.md row points to a real workflow file
+#   I3  Every push/PR workflow has a top-level concurrency: block
+#   I4  Every state-mutating script consults the kill switch
+#   I5  Every state-mutating script imports notify() / has its own pager
+#   I6  Markdown links in docs/decisions + docs/runbooks all resolve
+#   I7  .github/automation-paused MUST NOT exist on main
+#
+# DEFENSES INHERITED (see docs/decisions/2026-05-23-governance-of-governance.md)
+#   #1 Kill switch       — first action: if .github/automation-paused exists, exit 0
+#   #2 External alerting — one Pushover P0 per run summarizing all drift
+#   #3 Bounded blast     — `permissions:` below is minimum-viable;
+#                          script source is scanned for forbidden gh subcommands
+#                          (see coherence-check.test.mjs blast-radius tests)
+#   #4 Monthly audit     — COHERENCE_AUDIT: log lines rolled up monthly
+#
+# Triggered:
+#   - Daily at 14:14 UTC (after Warden 13:13)
+#   - On PR touching the directories the checks watch (catch drift at PR time)
+#   - Manual workflow_dispatch (with dry-run input)
+# =============================================================================
+name: Coherence Check
+
+on:
+  schedule:
+    - cron: '14 14 * * *'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/scripts/**'
+      - '.github/snapshot-paths.yml'
+      - '.github/CODEOWNERS'
+      - 'docs/decisions/**'
+      - 'docs/runbooks/**'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run: report violations but do not open issues / page'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: coherence-check-${{ github.ref }}
+  cancel-in-progress: true
+
+# BOUNDED BLAST RADIUS — minimum-viable permissions.
+# - contents: read   → read everything under the repo
+# - issues: write    → open / comment on drift tracking issues
+# Notably absent: actions:write (cannot disable workflows), pull-requests:write
+# (cannot approve/merge), contents:write (cannot modify), packages, deployments.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - name: Run coherence checks
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          # On PRs, run in dry-mode — surface drift in the PR check, don't
+          # open tracking issues from PR-time runs (those are for scheduled
+          # runs against main).
+          COHERENCE_DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || (github.event.inputs.dry_run || 'false') }}
+        run: node .github/scripts/coherence-check.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Coherence Check"
+            echo ""
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Dry run: ${{ env.COHERENCE_DRY_RUN || 'false' }}"
+            echo ""
+            echo "See workflow log for COHERENCE_AUDIT: lines (rolled up by monthly governance audit)."
+          } >> "$GITHUB_STEP_SUMMARY"
