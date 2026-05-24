@@ -332,10 +332,10 @@ function findExistingComment(prNumber, marker) {
 function postOrUpdateComment(prNumber, body, marker) {
   const existing = findExistingComment(prNumber, marker);
   if (existing) {
-    gh(`api --method PATCH repos/Latimer-Woods-Tech/Factory/issues/comments/${existing} --field body=${JSON.stringify(body)}`);
+    execSync(`gh api --method PATCH repos/Latimer-Woods-Tech/Factory/issues/comments/${existing} --field "body=@-"`, { input: body, encoding: 'utf-8' });
     return { id: existing, action: 'updated' };
   }
-  gh(`pr comment ${prNumber} --body ${JSON.stringify(body)}`);
+  execSync(`gh pr comment ${prNumber} --body-file -`, { input: body, encoding: 'utf-8' });
   return { id: null, action: 'created' };
 }
 
@@ -343,14 +343,15 @@ function postOrUpdateComment(prNumber, body, marker) {
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
-  const PR_NUMBER = process.env.PR_NUMBER;
+  const rawPrNumber = process.env.PR_NUMBER;
   const DRY_RUN = process.env.FRIDGE_DRY_RUN === 'true';
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
-  if (!PR_NUMBER) {
-    console.error('FATAL: PR_NUMBER env var required.');
+  if (!rawPrNumber || !/^\d+$/.test(rawPrNumber)) {
+    console.error('FATAL: PR_NUMBER must be a positive integer.');
     process.exit(2);
   }
+  const PR_NUMBER = rawPrNumber;
 
   if (isAutomationPaused()) {
     logAudit({ event: 'paused-skip-run', pr: PR_NUMBER });

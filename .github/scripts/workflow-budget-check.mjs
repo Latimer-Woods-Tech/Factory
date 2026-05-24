@@ -241,13 +241,14 @@ function postOrUpdateComment(prNumber, body, marker) {
 // Main
 // ---------------------------------------------------------------------------
 async function main() {
-  const PR_NUMBER = process.env.PR_NUMBER;
+  const rawPrNumber = process.env.PR_NUMBER;
   const DRY_RUN = process.env.BUDGET_DRY_RUN === 'true';
 
-  if (!PR_NUMBER) {
-    console.error('FATAL: PR_NUMBER required.');
+  if (!rawPrNumber || !/^\d+$/.test(rawPrNumber)) {
+    console.error('FATAL: PR_NUMBER must be a positive integer.');
     process.exit(2);
   }
+  const PR_NUMBER = rawPrNumber;
 
   if (isAutomationPaused()) {
     logAudit({ event: 'paused-skip-fail-open', pr: PR_NUMBER });

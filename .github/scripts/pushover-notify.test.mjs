@@ -14,9 +14,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, unlinkSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { writeFileSync, unlinkSync } from 'node:fs';
 import {
   truncate,
   buildRequestBody,
@@ -242,10 +240,8 @@ test('notify — invalid input (empty title) → no fetch call', async () => {
 // Kill switch interaction
 // ---------------------------------------------------------------------------
 test('notify — kill switch present → no fetch call, returns automation-paused', async () => {
-  // Create a temp .github/automation-paused-like file and point isAutomationPaused at it
-  // via injection. Since notify() imports isAutomationPaused() directly from snapshot-pr-
-  // helper.mjs and that uses a fixed default path, the cleanest test is to actually
-  // create the default file in cwd.
+  // Create the .github/automation-paused file in cwd. notify() checks this path via
+  // isAutomationPaused() (inlined in pushover-notify.mjs with a fixed default path).
   //
   // Save current state.
   const flagPath = '.github/automation-paused';

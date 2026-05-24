@@ -115,7 +115,7 @@ export function hasNotifyImport(source) {
   // Any relative path ending in pushover-notify(.mjs)? — works for './', '../',
   // '../../scripts/', etc.
   if (/from\s+['"`][^'"`]*pushover-notify(\.mjs)?['"`]/.test(source)) return true;
-  if (/api\.pushover\.net/.test(source)) return true;  // direct caller counts as its own pager
+  if (/['"`]https:\/\/api\.pushover\.net/.test(source)) return true;  // direct caller counts as its own pager
   return false;
 }
 
@@ -265,7 +265,7 @@ function gh(args, opts = {}) {
 }
 
 async function findExistingOpenIssue(title) {
-  const escaped = title.replace(/"/g, '\\"');
+  const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   try {
     const json = gh(`search issues --repo Latimer-Woods-Tech/Factory "${escaped}" in:title state:open --json number,title --limit 5`);
     return JSON.parse(json).filter((i) => i.title === title)[0]?.number ?? null;

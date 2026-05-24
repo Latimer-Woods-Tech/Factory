@@ -283,7 +283,7 @@ async function openOrUpdateMonthlyIssue({ label, body, dryRun }) {
     console.log(body);
     return { number: null, action: 'dry-run' };
   }
-  const escaped = title.replace(/"/g, '\\"');
+  const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   let existing = null;
   try {
     const json = gh(`search issues --repo Latimer-Woods-Tech/Factory "${escaped}" in:title state:open --json number,title --limit 5`).trim();

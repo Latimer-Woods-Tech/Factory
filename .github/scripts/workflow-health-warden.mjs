@@ -233,7 +233,7 @@ async function fetchRunsForWorkflow(workflowFilename, limit = 20) {
 
 async function findExistingOpenIssueByTitle(title) {
   // gh search returns issue numbers if there's an open issue with this exact title.
-  const escaped = title.replace(/"/g, '\\"');
+  const escaped = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
   try {
     const json = gh(`search issues --repo Latimer-Woods-Tech/Factory "${escaped}" in:title state:open --json number,title --limit 5`);
     const matches = JSON.parse(json).filter((i) => i.title === title);

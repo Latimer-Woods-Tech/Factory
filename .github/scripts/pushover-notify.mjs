@@ -99,10 +99,10 @@ export function validateInputs({ title, message, userKey, appToken }) {
   if (!userKey || !appToken) {
     return { ok: false, reason: 'secrets-missing' };
   }
-  if (!title || !title.trim()) {
+  if (typeof title !== 'string' || !title.trim()) {
     return { ok: false, reason: 'title-empty' };
   }
-  if (!message || !message.trim()) {
+  if (typeof message !== 'string' || !message.trim()) {
     return { ok: false, reason: 'message-empty' };
   }
   return { ok: true };
@@ -155,17 +155,20 @@ export async function notify(opts = {}) {
     fetchImpl = globalThis.fetch,
   } = opts;
 
+  // Clamp priority before any logging so the audit trail records the effective value.
+  const effectivePriority = Math.max(-2, Math.min(1, Number(priority) || 0));
+
   // Kill switch — Defense #1. If automation is paused, do not page.
   // Skip when PUSHOVER_USER_KEY isn't set anyway (avoids a meaningless
   // pause-check in dev where the kill switch isn't even reachable).
   if (userKey && appToken && isAutomationPaused()) {
-    logAudit({ sent: false, reason: 'automation-paused', title, priority });
+    logAudit({ sent: false, reason: 'automation-paused', title, priority: effectivePriority });
     return { sent: false, reason: 'automation-paused' };
   }
 
   const validation = validateInputs({ title, message, userKey, appToken });
   if (!validation.ok) {
-    logAudit({ sent: false, reason: validation.reason, title, priority });
+    logAudit({ sent: false, reason: validation.reason, title, priority: effectivePriority });
     if (validation.reason === 'secrets-missing') {
       console.warn(`pushover-notify: secrets missing; notification not sent (title="${title}")`);
     } else {
@@ -184,17 +187,17 @@ export async function notify(opts = {}) {
     });
     const status = res.status;
     if (status >= 200 && status < 300) {
-      logAudit({ sent: true, reason: null, title, priority });
+      logAudit({ sent: true, reason: null, title, priority: effectivePriority });
       return { sent: true, status };
     }
     let detail = '';
     try { detail = (await res.text()).slice(0, 200); } catch { /* swallow */ }
-    logAudit({ sent: false, reason: `http-${status}`, title, priority });
+    logAudit({ sent: false, reason: `http-${status}`, title, priority: effectivePriority });
     console.error(`pushover-notify: HTTP ${status} from Pushover API: ${detail}`);
     return { sent: false, reason: `http-${status}`, status };
   } catch (err) {
-    logAudit({ sent: false, reason: 'network-error', title, priority });
-    console.error(`pushover-notify: network error: ${err.message}`);
+    logAudit({ sent: false, reason: 'network-error', title, priority: effectivePriority });
+    console.error(`pushover-notify: network error: ${err instanceof Error ? err.message : String(err)}`);
     return { sent: false, reason: 'network-error' };
   }
 }
@@ -209,8 +212,8 @@ async function cliMain() {
     url: process.env.PUSHOVER_URL,
     priority: process.env.PUSHOVER_PRIORITY ? Number(process.env.PUSHOVER_PRIORITY) : 0,
   });
-  // Exit 0 on success OR on graceful no-op (secrets-missing, paused).
-  // Exit 1 ONLY on actual delivery failure that callers should be aware of.
+  // Exit 0 on success or graceful no-op (secrets-missing, automation-paused).
+  // Exit 1 on any failure that prevented delivery: invalid inputs, HTTP error, network error.
   if (!result.sent && !['secrets-missing', 'automation-paused'].includes(result.reason)) {
     process.exit(1);
   }
