@@ -112,6 +112,17 @@
 
           if (!health.length) {
             if (summary) summary.textContent = 'No surfaces tracked';
+            if (meta) meta.textContent = `Probed at ${new Date(payload.generatedAt).toLocaleString()} · 0 tracked surfaces`;
+            if (dot) dot.setAttribute('data-tone', 'warning');
+            if (grid) {
+              grid.innerHTML = `
+                <article class="status-card" data-tone="warning">
+                  <p class="card-label">Empty</p>
+                  <strong>No surfaces currently tracked</strong>
+                  <span class="status-card-detail">PUBLIC_SURFACES is empty for this build</span>
+                  <span class="status-card-pill" data-tone="warning">No data</span>
+                </article>`;
+            }
             return;
           }
 

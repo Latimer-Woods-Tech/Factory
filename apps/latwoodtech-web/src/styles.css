@@ -1366,15 +1366,24 @@ h3 {
 }
 
 /* Domain label inside the hero visual-card. Sits below the reactor/sigil
-   stack as a quiet attribution of the live URL — not a CTA. */
-.visual-label {
+   stack as a quiet attribution of the live URL — not a CTA.
+   Selector chain `.visual-card strong.visual-label` beats the existing
+   `.visual-card strong` rule (which sets padding/background/border/font-size
+   for the big footer block) so this label renders as a quiet absolutely
+   positioned overlay instead. Every conflicting property is explicitly reset. */
+.visual-card strong.visual-label {
+  display: block;
   position: absolute;
   left: 0;
   right: 0;
   bottom: 18px;
+  padding: 0;
+  background: none;
+  border: none;
   text-align: center;
   font-family: var(--font-ui);
   font-size: 0.72rem;
+  font-weight: 700;
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: rgba(240, 207, 122, 0.78);
