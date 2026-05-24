@@ -97,6 +97,23 @@
       "items": { "type": "string" },
       "uniqueItems": true
     },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "hint", "values"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "label": { "type": "string", "minLength": 1 },
+          "hint": { "type": "string", "minLength": 1 },
+          "values": {
+            "type": "object",
+            "additionalProperties": { "type": ["string", "number", "boolean"] }
+          }
+        }
+      }
+    },
     "qualification": {
       "type": "object",
       "required": ["menuVisible", "approvalTier"],

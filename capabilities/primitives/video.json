@@ -1,0 +1,12 @@
+{
+  "id": "video",
+  "package": "@latimer-woods-tech/video",
+  "versionRange": "^0.1.0",
+  "requirements": {
+    "secrets": ["CLOUDFLARE_STREAM_TOKEN"],
+    "bindings": ["VIDEO_BUCKET"]
+  },
+  "contracts": {
+    "policyTags": ["video", "media"]
+  }
+}
