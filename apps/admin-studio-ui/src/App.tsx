@@ -5,6 +5,7 @@ import { useEntitlements } from './stores/entitlements.js';
 import { EnvironmentBanner } from './components/EnvironmentBanner.js';
 import { ThemeToggle } from './components/ThemeToggle.js';
 import { LoginPage } from './pages/LoginPage.js';
+import { NotificationsContainer } from './components/NotificationsContainer.js';
 import { Dashboard } from './pages/Dashboard.js';
 
 function LoginRedirect() {
@@ -28,6 +29,7 @@ export default function App() {
   if (!isAuthed()) {
     return (
       <>
+        <NotificationsContainer />
         <div className="fixed right-3 top-3 z-50">
           <ThemeToggle />
         </div>
@@ -40,9 +42,12 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <>
+      <NotificationsContainer />
+      <Routes>
       <Route path="/login" element={<AuthedLoginRedirect />} />
       <Route path="/*" element={<Dashboard />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
