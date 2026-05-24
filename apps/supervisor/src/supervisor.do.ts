@@ -6,6 +6,8 @@ import { readMemory, writeMemory } from './memory/d1';
 import { ToolRegistry } from './tools/registry';
 import { GENERATED_CAPABILITIES } from './capabilities.generated';
 import { getTemplateStats, recordRun } from './stats';
+import { executePlan } from './executor';
+import { runVerifier } from './verifier';
 // All GitHub API helpers (fetchApprovedIssues, postPlanComment, addLabel,
 // getPlanApproval) use AbortSignal.timeout(10_000) — see tools/github.ts.
 // sendDigest uses AbortSignal.timeout(5_000) — see tools/pushover.ts.
@@ -366,6 +368,8 @@ export class SupervisorDO {
     const body = (await request.json()) as {
       template_id?: string;
       version?: number;
+      description?: string;
+      source?: string;
       dry_run?: boolean;
     };
 
@@ -375,6 +379,8 @@ export class SupervisorDO {
 
     const templateId = body.template_id;
     const version = body.version ?? 1;
+    const description = body.description ?? '';
+    const source = body.source ?? 'supervisor/run';
 
     await recordRun(this.env.MEMORY, templateId, version, 'attempted');
     await writeMemory(this.env.MEMORY, 'last_run', { templateId, version, at: Date.now() });
@@ -386,19 +392,151 @@ export class SupervisorDO {
         template_id: templateId,
         version,
         stats,
-        note: 'Execution engine wired in SUP-4 — dry_run records the attempt counter only.',
+        note: 'Dry-run recorded attempt count. Set dry_run: false for full execution.',
       });
     }
 
-    return Response.json(
-      {
-        error: 'EXECUTION_NOT_IMPLEMENTED',
-        template_id: templateId,
-        version,
-        note: 'Set dry_run: true to test stats wiring. Full execution ships with SUP-4.',
-      },
-      { status: 501 },
+    // Load templates and find the matching one
+    const templates = await loadTemplates();
+    const template = templates.find((t) => t.id === templateId && (t as unknown as { version?: number }).version === version);
+    if (!template) {
+      return Response.json(
+        { error: `Template not found: ${templateId}@${version}` },
+        { status: 404 },
+      );
+    }
+
+    // Parameterize the template
+    const plan = parameterize(template, { description, source });
+
+    // Execute the parameterized plan
+    const receipts = await executePlan(plan.steps, this.tools, this.env);
+
+    // Check if all steps succeeded
+    const allSucceeded = receipts.every((r) => r.result.ok);
+    const now = Date.now();
+    const runId = `${templateId}-${version}-${now}`;
+
+    // If execution succeeded and acceptance_gate is set, run verifier
+    if (allSucceeded && template.acceptance_gate) {
+      const verifyResult = await runVerifier(
+        template.acceptance_gate,
+        receipts,
+        this.tools,
+        this.env,
+        runId,
+      );
+
+      if (!verifyResult.ok) {
+        // Verification failed — log run status and return error without logging receipts
+        await writeMemory(this.env.MEMORY, `run:${runId}:status`, { status: 'failed_verification', reason: verifyResult.reason });
+        return Response.json(
+          {
+            ok: false,
+            template_id: templateId,
+            version,
+            run_id: runId,
+            failed_verification: true,
+            reason: verifyResult.reason ?? 'Verification failed',
+            description: description.slice(0, 200),
+          },
+          { status: 422 },
+        );
+      }
+    }
+
+    // Insert run record into supervisor_runs
+    const runStatus = allSucceeded ? 'passed' : 'failed_execution';
+    const runStmt = this.env.MEMORY.prepare(
+      `INSERT INTO supervisor_runs
+       (id, template_id, template_version, description, source, status, dry_run, started_at, finished_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
+    runStmt.bind(
+      runId,
+      templateId,
+      version,
+      description.slice(0, 500),
+      source,
+      runStatus,
+      0, // not a dry run (checked earlier)
+      now,
+      Date.now(),
+    );
+    await runStmt.all();
+
+    // Attempt to open a PR post-verification (if there are mutating steps)
+    let prUrl: string | null = null;
+    let prOpenError: string | null = null;
+    if (allSucceeded) {
+      const prResult = await openSupervisorPR(
+        receipts,
+        templateId,
+        runId,
+        description,
+        this.tools,
+        this.env,
+      );
+
+      if (prResult.ok && prResult.pr_url) {
+        prUrl = prResult.pr_url;
+        // Update supervisor_runs with PR URL
+        const updateStmt = this.env.MEMORY.prepare(
+          `UPDATE supervisor_runs SET pr_url = ?, pr_opened_at = ? WHERE id = ?`,
+        );
+        updateStmt.bind(prUrl, Date.now(), runId);
+        await updateStmt.all();
+      } else if (!prResult.ok && prResult.error) {
+        prOpenError = prResult.error.slice(0, 500);
+        // Log gracefully (don't fail the run)
+        const updateStmt = this.env.MEMORY.prepare(
+          `UPDATE supervisor_runs SET pr_open_error = ? WHERE id = ?`,
+        );
+        updateStmt.bind(prOpenError, runId);
+        await updateStmt.all();
+      }
+    }
+
+    // Log all receipts to D1 (only if execution succeeded and verification passed if applicable)
+    for (const receipt of receipts) {
+      const stmt = this.env.MEMORY.prepare(
+        `INSERT INTO supervisor_steps
+         (run_id, template_id, template_version, step_index, tool_name, side_effects, slots_json, result_json, jwt_scope, execution_ms, executed_at, awaiting_approval)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      );
+      stmt.bind(
+        runId,
+        templateId,
+        version,
+        receipt.step_index,
+        receipt.tool_name,
+        receipt.side_effects,
+        JSON.stringify(receipt.slots_provided),
+        JSON.stringify(receipt.result),
+        receipt.jwt_scope,
+        receipt.execution_ms,
+        receipt.executed_at,
+        receipt.awaiting_approval ?? null,
+      );
+      await stmt.all();
+    }
+
+    // Record final run status
+    if (allSucceeded) {
+      await recordRun(this.env.MEMORY, templateId, version, 'passed');
+    }
+
+    return Response.json({
+      ok: allSucceeded,
+      template_id: templateId,
+      version,
+      run_id: runId,
+      steps_executed: receipts.length,
+      receipts,
+      description: description.slice(0, 200),
+      pr_url: prUrl,
+      pr_open_error: prOpenError,
+    });
   }
 
   private async acquireLock(holder: string): Promise<boolean> {
