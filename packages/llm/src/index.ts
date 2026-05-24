@@ -271,50 +271,6 @@ async function recordOrgCostUsage(
   }
 }
 
-/**
- * USD cost per 1 million tokens for each model.
- * Source: Anthropic / Google pricing pages as of 2025-05.
- * Keep these model names in sync with the default routing constants in
- * {@link MODELS}; unknown models fall back to Opus rates (conservative upper bound).
- */
-const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
-  // Anthropic Haiku 4
-  'claude-haiku-4-20250514': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
-  // Anthropic Sonnet 4
-  'claude-sonnet-4-6': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
-  // Anthropic Opus 4
-  'claude-opus-4-7': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
-  // Gemini 2.5 Pro
-  'gemini-2.5-pro': { input: 1.25, output: 10.00, cacheRead: 0.31, cacheWrite: 4.50 },
-  // Groq Llama 4 Maverick
-  'llama-4-maverick': { input: 0.50, output: 0.77, cacheRead: 0.05, cacheWrite: 0.50 },
-  // Grok models — opt-in only
-  'grok-4-fast': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
-  'grok-3-mini-latest': { input: 0.30, output: 0.50, cacheRead: 0.03, cacheWrite: 0.30 },
-};
-
-/** Fallback pricing used for unrecognised models (Opus rates — conservative upper bound). */
-const PRICE_FALLBACK = MODEL_PRICE_PER_1M['claude-opus-4-7']!;
-
-/**
- * Estimates the USD cost of a single LLM completion from token counts.
- * Returns 0 for zero-token results. Uses {@link MODEL_PRICE_PER_1M} with
- * {@link PRICE_FALLBACK} for unknown models.
- */
-function estimateCostUsd(
-  tokens: { input: number; output: number; cacheRead?: number; cacheWrite?: number },
-  model: string,
-): number {
-  const price = MODEL_PRICE_PER_1M[model] ?? PRICE_FALLBACK;
-  return (
-    (tokens.input * price.input +
-      tokens.output * price.output +
-      (tokens.cacheRead ?? 0) * price.cacheRead +
-      (tokens.cacheWrite ?? 0) * price.cacheWrite) /
-    1_000_000
-  );
-}
-
 /** Returns `YYYY-MM` from a Unix timestamp (ms). Used for monthly KV cost keys. */
 function isoMonth(nowMs: number): string {
   return new Date(nowMs).toISOString().slice(0, 7);

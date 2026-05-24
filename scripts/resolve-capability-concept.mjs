@@ -30,7 +30,8 @@ if (!concept) {
 }
 
 const providedParams = await loadParams(paramsInput);
-const validationErrors = validateParams(concept.parameterSchema ?? {}, providedParams);
+const parameterSchema = concept.parameterSchema ?? buildParameterSchema(concept.parameters ?? []);
+const validationErrors = validateParams(parameterSchema, providedParams);
 if (validationErrors.length > 0) {
   for (const error of validationErrors) {
     console.error(`[resolve-capability-concept] ${error}`);
@@ -38,7 +39,7 @@ if (validationErrors.length > 0) {
   process.exit(1);
 }
 
-const normalizedParams = normalizeParams(concept.parameterSchema ?? {}, providedParams);
+const normalizedParams = normalizeParams(parameterSchema, providedParams);
 const selection = selectRecipe(concept, normalizedParams);
 const selectedRecipeId = selection.recipeId;
 const recipe = recipes.get(selectedRecipeId);
@@ -66,7 +67,7 @@ const resolution = {
   parameters: normalizedParams,
   resolution: {
     strategy: selection.strategy,
-    candidateCount: Array.isArray(concept.recipeCandidates) ? concept.recipeCandidates.length : 0,
+    candidateCount: selection.candidateCount ?? 0,
     matchedRuleId: selection.matchedRuleId,
   },
 };
@@ -191,8 +192,10 @@ function validateParamType(key, type, value) {
 }
 
 function selectRecipe(concept, params) {
-  const recipeCandidates = concept.recipeCandidates;
-  if (!Array.isArray(recipeCandidates) || recipeCandidates.length === 0) {
+  // Support both legacy recipeCandidates (string[]) and recipes ({id,...}[])
+  const recipeCandidates = concept.recipeCandidates
+    ?? (Array.isArray(concept.recipes) ? concept.recipes.map((r) => r.id) : []);
+  if (recipeCandidates.length === 0) {
     throw new Error('Concept has no recipe candidates');
   }
 
@@ -205,6 +208,7 @@ function selectRecipe(concept, params) {
           recipeId: rule.recipeId,
           strategy: 'parameter-rules',
           matchedRuleId: rule.id,
+          candidateCount: recipeCandidates.length,
         };
       }
     }
@@ -212,6 +216,7 @@ function selectRecipe(concept, params) {
       recipeId: selection.defaultRecipeId,
       strategy: 'parameter-rules',
       matchedRuleId: null,
+      candidateCount: recipeCandidates.length,
     };
   }
 
@@ -219,7 +224,22 @@ function selectRecipe(concept, params) {
     recipeId: [...recipeCandidates].sort((left, right) => left.localeCompare(right))[0],
     strategy: 'first-approved-recipe-candidate',
     matchedRuleId: null,
+    candidateCount: recipeCandidates.length,
   };
+}
+
+function buildParameterSchema(parameters) {
+  const properties = {};
+  const required = [];
+  for (const param of parameters) {
+    properties[param.id] = {
+      type: param.type,
+      ...(Array.isArray(param.enum) && param.enum.length ? { enum: param.enum } : {}),
+      ...(Object.prototype.hasOwnProperty.call(param, 'default') ? { default: param.default } : {}),
+    };
+    if (param.required) required.push(param.id);
+  }
+  return { properties, required };
 }
 
 function getFlagValue(flag) {

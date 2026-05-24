@@ -1,79 +1,89 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "concept",
   "id": "capricast-video-api",
   "displayName": "Video Publishing API (Capricast)",
-  "summary": "Video publishing and watch API with Cloudflare Stream ingest, R2 storage, LLM-enriched metadata, and structured JSON-LD.",
-  "status": "approved",
+  "owner": "latimer-woods-tech",
   "maturity": "stable",
-  "tags": ["video", "media", "llm", "api"],
-  "menuVisible": true,
-  "approvalTier": "golden",
-  "parameters": [
-    {
-      "id": "workerDomain",
-      "type": "string",
-      "description": "Branded custom domain for the deployed worker.",
-      "required": true,
-      "enum": [],
-      "default": null,
-      "formatHint": "api.capricast.com"
-    },
-    {
-      "id": "cfAccountId",
-      "type": "string",
-      "description": "Cloudflare account ID for Stream and R2 operations.",
-      "required": true,
-      "enum": [],
-      "default": null,
-      "formatHint": "abc123def456"
-    },
-    {
-      "id": "streamStorage",
-      "type": "string",
-      "description": "Primary video storage strategy.",
-      "required": false,
-      "enum": ["cloudflare-stream", "r2-only"],
-      "default": "cloudflare-stream",
-      "formatHint": null
-    },
-    {
-      "id": "enableAnalytics",
-      "type": "boolean",
-      "description": "Emit watch events to the Factory analytics pipeline.",
-      "required": false,
-      "enum": [],
-      "default": true,
-      "formatHint": null
-    }
+  "status": "approved",
+  "summary": "Video publishing and watch API with Cloudflare Stream ingest, R2 storage, LLM-enriched metadata, and structured JSON-LD.",
+  "tags": [
+    "video",
+    "media",
+    "llm",
+    "api"
   ],
-  "recipeSelection": null,
-  "recipes": [
-    {
-      "id": "capricast-video-api",
-      "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata.",
-      "maturity": "stable",
-      "primitives": ["video", "llm", "analytics"],
-      "optionalPrimitives": ["compliance"]
-    }
+  "sourcePrimitives": [
+    "analytics",
+    "compliance",
+    "llm",
+    "video"
   ],
-  "sourcePrimitives": ["analytics", "compliance", "llm", "video"],
+  "recipeCandidates": [
+    "capricast-video-api"
+  ],
+  "parameterSchema": {
+    "properties": {
+      "workerDomain": {
+        "type": "string",
+        "description": "Branded custom domain for the deployed worker.",
+        "formatHint": "api.capricast.com"
+      },
+      "cfAccountId": {
+        "type": "string",
+        "description": "Cloudflare account ID for Stream and R2 operations.",
+        "formatHint": "abc123def456"
+      },
+      "streamStorage": {
+        "type": "string",
+        "description": "Primary video storage strategy.",
+        "enum": [
+          "cloudflare-stream",
+          "r2-only"
+        ],
+        "default": "cloudflare-stream"
+      },
+      "enableAnalytics": {
+        "type": "boolean",
+        "description": "Emit watch events to the Factory analytics pipeline.",
+        "default": true
+      }
+    },
+    "required": [
+      "workerDomain",
+      "cfAccountId"
+    ]
+  },
   "templates": [
     {
       "id": "capricast-stream",
       "label": "Cloudflare Stream",
       "hint": "Full Stream pipeline with adaptive bitrate delivery.",
-      "values": { "streamStorage": "cloudflare-stream", "enableAnalytics": true }
+      "values": {
+        "streamStorage": "cloudflare-stream",
+        "enableAnalytics": true
+      }
     },
     {
       "id": "capricast-r2",
       "label": "R2-only storage",
       "hint": "Direct R2 delivery; no Stream transcoding.",
-      "values": { "streamStorage": "r2-only", "enableAnalytics": true }
+      "values": {
+        "streamStorage": "r2-only",
+        "enableAnalytics": true
+      }
     }
   ],
   "qualification": {
     "menuVisible": true,
     "approvalTier": "golden",
-    "requiredCapabilities": ["custom-domain", "neon-database", "cloudflare-stream"],
-    "disallowedEnvironments": ["local"]
+    "requiredCapabilities": [
+      "custom-domain",
+      "neon-database",
+      "cloudflare-stream"
+    ],
+    "disallowedEnvironments": [
+      "local"
+    ]
   }
 }

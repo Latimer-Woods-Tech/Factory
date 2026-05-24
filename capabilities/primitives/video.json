@@ -1,12 +1,33 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "primitive",
   "id": "video",
   "package": "@latimer-woods-tech/video",
   "versionRange": "^0.1.0",
-  "requirements": {
-    "secrets": ["CLOUDFLARE_STREAM_TOKEN"],
-    "bindings": ["VIDEO_BUCKET"]
-  },
+  "maturity": "beta",
+  "owner": "latimer-woods-tech",
+  "category": "media",
+  "summary": "Cloudflare Stream ingest, R2 storage, and watch-page publishing.",
+  "provides": [
+    "video-ingest",
+    "video-delivery",
+    "r2-storage"
+  ],
   "contracts": {
-    "policyTags": ["video", "media"]
+    "inputs": [],
+    "outputs": [],
+    "policyTags": [
+      "video",
+      "media"
+    ]
+  },
+  "requirements": {
+    "secrets": [
+      "CLOUDFLARE_STREAM_TOKEN"
+    ],
+    "bindings": [
+      "VIDEO_BUCKET"
+    ],
+    "upstreamPackages": []
   }
 }

@@ -1,11 +1,31 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "primitive",
   "id": "stripe",
   "package": "@latimer-woods-tech/stripe",
   "versionRange": "^0.1.0",
-  "requirements": {
-    "secrets": ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]
-  },
+  "maturity": "stable",
+  "owner": "latimer-woods-tech",
+  "category": "payments",
+  "summary": "Stripe payment intents, subscriptions, webhook verification, and ACS fulfillment.",
+  "provides": [
+    "payment-intents",
+    "subscriptions",
+    "webhook-verification"
+  ],
   "contracts": {
-    "policyTags": ["payments"]
+    "inputs": [],
+    "outputs": [],
+    "policyTags": [
+      "payments"
+    ]
+  },
+  "requirements": {
+    "secrets": [
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET"
+    ],
+    "bindings": [],
+    "upstreamPackages": []
   }
 }

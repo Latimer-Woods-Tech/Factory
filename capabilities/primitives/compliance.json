@@ -1,9 +1,28 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "primitive",
   "id": "compliance",
   "package": "@latimer-woods-tech/compliance",
   "versionRange": "^0.1.0",
-  "requirements": {},
+  "maturity": "stable",
+  "owner": "latimer-woods-tech",
+  "category": "governance",
+  "summary": "Consent, GDPR/CCPA data subject request handling, and audit logging.",
+  "provides": [
+    "consent-management",
+    "data-subject-requests",
+    "audit-log"
+  ],
   "contracts": {
-    "policyTags": ["compliance"]
+    "inputs": [],
+    "outputs": [],
+    "policyTags": [
+      "compliance"
+    ]
+  },
+  "requirements": {
+    "secrets": [],
+    "bindings": [],
+    "upstreamPackages": []
   }
 }

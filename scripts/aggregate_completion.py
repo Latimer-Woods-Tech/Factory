@@ -594,7 +594,7 @@ def render_pushover(
     """Rich morning digest: completion, velocity, CI, Sentry, revenue, PRs."""
     try:
         et = now.astimezone(timezone(timedelta(hours=-4)))
-        day_str = et.strftime("%a %b %-d · %-I:%M %p ET")
+        day_str = et.strftime("%Y-%m-%d · %a %b %-d · %-I:%M %p ET")
     except Exception:
         day_str = now.strftime("%Y-%m-%d %H:%M UTC")
 

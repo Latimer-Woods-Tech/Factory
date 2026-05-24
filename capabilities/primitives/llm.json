@@ -1,11 +1,30 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "primitive",
   "id": "llm",
   "package": "@latimer-woods-tech/llm",
   "versionRange": "^0.1.0",
-  "requirements": {
-    "secrets": ["ANTHROPIC_API_KEY"]
-  },
+  "maturity": "stable",
+  "owner": "latimer-woods-tech",
+  "category": "ai",
+  "summary": "Multi-provider LLM chain with cost caps, backoff, and token accounting.",
+  "provides": [
+    "text-generation",
+    "structured-extraction",
+    "cost-metering"
+  ],
   "contracts": {
-    "policyTags": ["llm"]
+    "inputs": [],
+    "outputs": [],
+    "policyTags": [
+      "llm"
+    ]
+  },
+  "requirements": {
+    "secrets": [
+      "ANTHROPIC_API_KEY"
+    ],
+    "bindings": [],
+    "upstreamPackages": []
   }
 }

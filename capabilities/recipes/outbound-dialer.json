@@ -1,25 +1,50 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "recipe",
+  "owner": "latimer-woods-tech",
   "id": "outbound-dialer",
   "version": "1.0.0",
   "maturity": "beta",
   "summary": "CRM-segment driven outbound dialer workflow.",
   "goal": "Launch governed outbound calling for CRM-selected contacts.",
-  "primitives": ["telephony", "crm", "analytics"],
-  "optionalPrimitives": ["compliance"],
-  "expectedSurfaces": ["/health", "/api/campaigns", "/api/leads"],
+  "primitives": [
+    "telephony",
+    "crm",
+    "analytics"
+  ],
+  "optionalPrimitives": [
+    "compliance"
+  ],
+  "expectedSurfaces": [
+    "/health",
+    "/api/campaigns",
+    "/api/leads"
+  ],
   "smokeChecks": [
-    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" }
+    {
+      "path": "/health",
+      "expectedStatus": 200,
+      "expectContains": "ok"
+    }
   ],
   "constraints": [
     "Use a branded custom domain.",
     "Verify staging smoke checks before production."
   ],
   "envContract": {
-    "secrets": ["CRM_API_KEY"],
-    "vars": ["WORKER_DOMAIN"]
+    "secrets": [
+      "CRM_API_KEY"
+    ],
+    "vars": [
+      "WORKER_DOMAIN"
+    ]
   },
   "bindingContract": {
-    "required": ["CRM_SEGMENTS"],
-    "optional": ["ANALYTICS"]
+    "required": [
+      "CRM_SEGMENTS"
+    ],
+    "optional": [
+      "ANALYTICS"
+    ]
   }
 }

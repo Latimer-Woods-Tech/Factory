@@ -295,6 +295,71 @@ function loadCapabilityPlan() {
   return null;
 }
 
+// ── File Generation Helpers ────────────────────────────────────────────────────
+
+function buildPackageDependencies(plan) {
+  const base = {
+    '@latimer-woods-tech/errors': '^0.2.0',
+    '@latimer-woods-tech/logger': '^0.2.0',
+    '@latimer-woods-tech/monitoring': '^0.2.0',
+    '@latimer-woods-tech/auth': '^0.2.0',
+    '@latimer-woods-tech/neon': '^0.2.0',
+    '@latimer-woods-tech/flags': '^0.1.0',
+    '@latimer-woods-tech/deploy': '^0.2.0',
+    hono: '^4.12.15',
+  };
+  const packages = plan?.packages ?? [];
+  for (const pkg of packages) {
+    base[pkg.package] = pkg.versionRange;
+  }
+  return base;
+}
+
+function renderWranglerJson(plan, hyperdriveId, rateLimiterId) {
+  const bindings = plan?.bindings ?? {};
+  const config = {
+    name: APP_NAME,
+    main: 'src/index.ts',
+    compatibility_date: '2025-01-01',
+    compatibility_flags: ['nodejs_compat'],
+    hyperdrive: [{ binding: 'DB', id: hyperdriveId }],
+    ...(rateLimiterId ? {
+      rate_limiting: [{ binding: 'RATE_LIMITER', namespace_id: rateLimiterId }],
+    } : {}),
+    ...(bindings.kv?.length ? {
+      kv_namespaces: bindings.kv.map((b) => ({ binding: b, id: 'REPLACE_WITH_KV_ID' })),
+    } : {}),
+  };
+  return JSON.stringify(config, null, 2) + '\n';
+}
+
+function renderDevVarsExample(plan) {
+  const secrets = plan?.env?.secrets ?? [];
+  const vars = plan?.env?.vars ?? [];
+  const lines = [
+    '# Local dev secrets — copy to .dev.vars and fill in values.',
+    '# Never commit .dev.vars to git.',
+    '',
+    ...secrets.map((s) => `${s}=`),
+    ...vars.map((v) => `${v}=`),
+  ];
+  return lines.join('\n') + '\n';
+}
+
+function renderIndexSource(appName, plan) {
+  const primitives = plan?.packages ?? [];
+  const imports = primitives.map((p) => `// import { ... } from '${p.package}';`).join('\n');
+  return `import { Hono } from 'hono';
+import type { Env } from './env.js';
+
+${imports ? imports + '\n\n' : ''}const app = new Hono<{ Bindings: Env }>();
+
+app.get('/health', (c) => c.json({ status: 'ok', app: '${appName}' }));
+
+export default app;
+`;
+}
+
 // ── File Generation ───────────────────────────────────────────────────────────
 
 function generateFiles(hyperdriveId, rateLimiterId, capabilityPlan = null) {

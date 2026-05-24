@@ -1,15 +1,37 @@
 {
+  "schemaVersion": "1.0.0",
+  "kind": "recipe",
+  "owner": "latimer-woods-tech",
   "id": "voice-intake-agent",
   "version": "1.0.0",
   "maturity": "experimental",
   "summary": "Inbound voice agent that triages calls and routes to CRM with optional email confirmations.",
   "goal": "Triage inbound voice calls, capture structured intent, and route to CRM segments.",
-  "primitives": ["telephony", "crm", "analytics", "llm"],
-  "optionalPrimitives": ["compliance", "email"],
-  "expectedSurfaces": ["/health", "/api/calls", "/api/intake"],
+  "primitives": [
+    "telephony",
+    "crm",
+    "analytics",
+    "llm"
+  ],
+  "optionalPrimitives": [
+    "compliance",
+    "email"
+  ],
+  "expectedSurfaces": [
+    "/health",
+    "/api/calls",
+    "/api/intake"
+  ],
   "smokeChecks": [
-    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" },
-    { "path": "/api/intake", "expectedStatus": 200 }
+    {
+      "path": "/health",
+      "expectedStatus": 200,
+      "expectContains": "ok"
+    },
+    {
+      "path": "/api/intake",
+      "expectedStatus": 200
+    }
   ],
   "constraints": [
     "Use a branded custom domain.",
@@ -17,11 +39,20 @@
     "Voice transcripts must be redacted before storage."
   ],
   "envContract": {
-    "secrets": ["TELNYX_INBOUND_TOKEN"],
-    "vars": ["WORKER_DOMAIN", "INTAKE_PHONE_NUMBER"]
+    "secrets": [
+      "TELNYX_INBOUND_TOKEN"
+    ],
+    "vars": [
+      "WORKER_DOMAIN",
+      "INTAKE_PHONE_NUMBER"
+    ]
   },
   "bindingContract": {
-    "required": ["INTAKE_QUEUE"],
-    "optional": ["ANALYTICS"]
+    "required": [
+      "INTAKE_QUEUE"
+    ],
+    "optional": [
+      "ANALYTICS"
+    ]
   }
 }
