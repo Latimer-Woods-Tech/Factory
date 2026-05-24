@@ -55,6 +55,7 @@
   "env": {
     "production": {
       "name": "status-prober",
+      "workers_dev": true,
       "triggers": {
         "crons": ["*/5 * * * *"]
       },
