@@ -83,7 +83,7 @@ jobs:
           SMOKE_USER_PASSWORD: ${{ secrets.SMOKE_USER_PASSWORD }}
           SMOKE_PRACTITIONER_EMAIL: ${{ secrets.SMOKE_PRACTITIONER_EMAIL }}
           SMOKE_PRACTITIONER_PASSWORD: ${{ secrets.SMOKE_PRACTITIONER_PASSWORD }}
-        run: npx playwright test tests/public-funnel.spec.ts tests/workspace-contract.spec.ts --project=${{ matrix.project }}
+        run: npx playwright test tests/public-funnel.spec.ts tests/workspace-contract.spec.ts --project=${{ matrix.project }} --debug
 
       - name: Upload test artifacts on failure
         if: failure()
