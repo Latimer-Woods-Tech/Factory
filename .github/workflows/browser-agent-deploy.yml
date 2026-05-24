@@ -8,6 +8,10 @@ on:
       - 'apps/browser-agent/**'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # never cancel an in-flight production deploy
+
 permissions:
   contents: read
   id-token: write   # Required for Workload Identity Federation
