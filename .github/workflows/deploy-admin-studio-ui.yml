@@ -37,7 +37,7 @@ jobs:
           node-version: '24'
 
       - name: Install + build studio-core
-        run: npm ci --ignore-scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: packages/studio-core
 
       - name: Build studio-core
@@ -45,7 +45,7 @@ jobs:
         working-directory: packages/studio-core
 
       - name: Install admin-studio-ui
-        run: npm ci
+        run: npm install --no-audit --no-fund
         working-directory: apps/admin-studio-ui
 
       - name: Test admin-studio-ui
