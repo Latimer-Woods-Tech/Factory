@@ -119,7 +119,7 @@ async function generateReading(
     ],
     env,
     {
-      tier: 'fast',
+      tier: 'balanced',
       maxTokens: 300,
       temperature: 0.8,
       runId: requestId,
