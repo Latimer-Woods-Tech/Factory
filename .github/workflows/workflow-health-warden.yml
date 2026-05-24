@@ -1,0 +1,105 @@
+# =============================================================================
+# Workflow Health Warden — Phase 3 of the workflow lifecycle.
+#
+# Daily monitor for the Factory automation surface. Reads
+# .github/workflows/REGISTRY.md to learn each workflow's tier, fetches recent
+# run history, and applies a tier-appropriate response when a workflow is
+# unhealthy:
+#
+#   T1 (Load-bearing)  — red >1h        → Pushover P1 + open priority/p0 issue
+#   T2 (Operational)   — red >24h       → open priority/p1 issue
+#   T3 (Informational) — ≥10 fails      → `gh workflow disable` + workflow-quarantined issue + Pushover P2
+#
+# DEFENSES INHERITED (see docs/decisions/2026-05-23-governance-of-governance.md)
+#   #1 Kill switch       — first action: if .github/automation-paused exists, exit 0
+#   #2 External alerting — Pushover audit lines on every state-mutating action
+#   #3 Bounded blast     — `permissions:` below is the minimum viable set;
+#                          script source is scanned for forbidden gh subcommands
+#                          (see workflow-health-warden.test.mjs blast-radius tests)
+#   #4 Monthly audit     — WARDEN_AUDIT: / PUSHOVER_AUDIT: log lines rolled up
+#                          monthly by the governance-audit workflow
+#
+# ROLLBACK
+#   `gh workflow disable workflow-health-warden.yml` — the Warden becomes
+#   inactive until re-enabled. CODEOWNER must `gh workflow enable` to resume.
+# =============================================================================
+name: Workflow Health Warden
+
+on:
+  schedule:
+    # 13:13 UTC daily — chosen to land after morning-digest (08:17) and
+    # before EOD review, on a minute unlikely to collide with other crons.
+    - cron: '13 13 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run: evaluate but do not page, file issues, or disable workflows'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: workflow-health-warden
+  cancel-in-progress: false  # never cancel a Warden mid-evaluation; race-free dedup depends on it
+
+# BOUNDED BLAST RADIUS — minimum-viable permissions.
+# - contents: read   → checkout the repo (needs REGISTRY.md)
+# - actions: write   → ONLY to call `gh workflow disable` on quarantine
+# - issues: write    → open / comment on quarantine + paging issues
+# Notably absent: pull-requests, contents:write, packages, deployments, etc.
+permissions:
+  contents: read
+  actions: write
+  issues: write
+
+jobs:
+  warden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - name: Run Workflow Health Warden
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          # DRY-RUN DEFAULT for the shakeout period after first merge to main.
+          # Scheduled runs produce WARDEN_AUDIT log lines but make no state
+          # changes (no issues opened, no Pushover paging, no workflow disables).
+          # The operator can review actual evaluations before letting the Warden
+          # act. To go live: change 'true' to 'false' in a follow-up PR after
+          # observing 7+ days of clean dry-run output. Manual workflow_dispatch
+          # can override per-run via the dry_run input.
+          WARDEN_DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+        run: node .github/scripts/workflow-health-warden.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Workflow Health Warden"
+            echo ""
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Dry run: ${{ github.event.inputs.dry_run || 'false' }}"
+            echo ""
+            echo "See workflow log for WARDEN_AUDIT: lines (rolled up by monthly governance audit)."
+          } >> "$GITHUB_STEP_SUMMARY"
