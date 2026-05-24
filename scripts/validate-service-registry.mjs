@@ -140,7 +140,11 @@ const CONTRACT_RULES = [
   },
 ];
 
-const EXPLICIT_EXEMPTIONS = new Map();
+const EXPLICIT_EXEMPTIONS = new Map([
+  // Pages site for latwoodtech.com — service-registry entry + WORKFLOW_RULES coverage
+  // tracked in the latwoodtech-web onboarding work; exempted here until that lands.
+  ['.github/workflows/deploy-latwoodtech-web.yml', 'latwoodtech.com Pages site — pending service-registry registration'],
+]);
 
 const registry = await loadRegistry(REGISTRY_PATH);
 const localDeployWorkflows = await listLocalDeployWorkflows(WORKFLOWS_DIR);
