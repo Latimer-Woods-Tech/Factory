@@ -1,0 +1,61 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // factory-core-api — read-layer ingestion + auth API (Admin Build Plan P1.1).
+  // Phase A walking skeleton: /health, /version, and the OIDC->JWT token
+  // exchange (/v1/auth/token). Ingestion endpoints (/v1/gates, /v1/artifacts,
+  // /v1/audit, /v1/runs/mirror) land in P1.2+.
+  // Tech guide: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §1.5, §2.0
+  "name": "factory-core-api",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-04-01",
+  // nodejs_compat is required by @sentry/cloudflare (AsyncLocalStorage).
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": {
+    "enabled": true
+  },
+
+  "vars": {
+    "ENVIRONMENT": "development",
+    // Expected GitHub OIDC issuer for the token-exchange endpoint.
+    "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
+    // Expected `aud` claim GitHub Actions mints into the OIDC token. Workflows
+    // request this via `core.getIDToken('factory-core-api')`.
+    "OIDC_AUDIENCE": "factory-core-api",
+    // Only OIDC tokens from this repository_owner may exchange for scoped JWTs.
+    "GITHUB_OWNER": "Latimer-Woods-Tech"
+  },
+
+  // Required secrets (set via `wrangler secret put <NAME>`):
+  //   JWT_SIGNING_KEY — root HS256 signing key for minted scoped JWTs.
+  //                     Rotated quarterly per tech guide §1.5.2.
+  // Optional secrets:
+  //   SENTRY_DSN      — error reporting via @latimer-woods-tech/monitoring.
+  //
+  // BUILD_SHA is injected as a var by the deploy workflow (surfaced by /version).
+
+  "env": {
+    "production": {
+      "name": "factory-core-api",
+      // Custom domain (api.factory.latwood-tech.internal) + service-registry
+      // entry are added with the deploy workflow in the Phase A targeting step.
+      "vars": {
+        "ENVIRONMENT": "production",
+        "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
+        "OIDC_AUDIENCE": "factory-core-api",
+        "GITHUB_OWNER": "Latimer-Woods-Tech"
+      }
+    },
+    "staging": {
+      "name": "factory-core-api-staging",
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
+        "OIDC_AUDIENCE": "factory-core-api",
+        "GITHUB_OWNER": "Latimer-Woods-Tech"
+      }
+    }
+  }
+}
