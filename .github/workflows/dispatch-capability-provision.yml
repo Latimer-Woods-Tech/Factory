@@ -136,6 +136,8 @@ jobs:
           NPM_BIN="$(npm config get prefix)/bin"
           echo "$NPM_BIN" >> "$GITHUB_PATH"
           "$NPM_BIN/wrangler" --version
+          git config --global user.email "factory-dispatcher@latwoodtech.work"
+          git config --global user.name  "Factory Capability Dispatcher"
 
       - name: Run scaffold against handoff
         id: scaffold
