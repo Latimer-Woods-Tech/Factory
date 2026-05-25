@@ -68,17 +68,17 @@ export class SupervisorDO {
     try {
       switch (`${request.method} ${url.pathname}`) {
         case 'GET /health':
-          return this.handleHealth();
+          return await this.handleHealth();
         case 'GET /state':
-          return this.handleState();
+          return await this.handleState();
         case 'GET /capabilities':
-          return this.handleCapabilities();
+          return await this.handleCapabilities();
         case 'POST /scheduled':
-          return this.handleScheduled();
+          return await this.handleScheduled();
         case 'POST /plan':
-          return this.handlePlan(request);
+          return await this.handlePlan(request);
         case 'POST /run':
-          return this.handleRun(request);
+          return await this.handleRun(request);
         default:
           return new Response('not found', { status: 404 });
       }
@@ -399,7 +399,10 @@ export class SupervisorDO {
 
     // Load templates and find the matching one
     const templates = await loadTemplates();
-    const template = templates.find((t) => t.id === templateId && (t as unknown as { version?: number }).version === version);
+    const template = templates.find((t) => {
+      const tVersion = (t as unknown as { version?: number }).version ?? 1;
+      return t.id === templateId && tVersion === version;
+    });
     if (!template) {
       return Response.json(
         { error: `Template not found: ${templateId}@${version}` },
@@ -448,23 +451,23 @@ export class SupervisorDO {
 
     // Insert run record into supervisor_runs
     const runStatus = allSucceeded ? 'passed' : 'failed_execution';
-    const runStmt = this.env.MEMORY.prepare(
+    await this.env.MEMORY.prepare(
       `INSERT INTO supervisor_runs
        (id, template_id, template_version, description, source, status, dry_run, started_at, finished_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    runStmt.bind(
-      runId,
-      templateId,
-      version,
-      description.slice(0, 500),
-      source,
-      runStatus,
-      0, // not a dry run (checked earlier)
-      now,
-      Date.now(),
-    );
-    await runStmt.all();
+    )
+      .bind(
+        runId,
+        templateId,
+        version,
+        description.slice(0, 500),
+        source,
+        runStatus,
+        0,
+        now,
+        Date.now(),
+      )
+      .all();
 
     // Attempt to open a PR post-verification (if there are mutating steps)
     let prUrl: string | null = null;
@@ -482,44 +485,44 @@ export class SupervisorDO {
       if (prResult.ok && prResult.pr_url) {
         prUrl = prResult.pr_url;
         // Update supervisor_runs with PR URL
-        const updateStmt = this.env.MEMORY.prepare(
+        await this.env.MEMORY.prepare(
           `UPDATE supervisor_runs SET pr_url = ?, pr_opened_at = ? WHERE id = ?`,
-        );
-        updateStmt.bind(prUrl, Date.now(), runId);
-        await updateStmt.all();
+        )
+          .bind(prUrl, Date.now(), runId)
+          .all();
       } else if (!prResult.ok && prResult.error) {
         prOpenError = prResult.error.slice(0, 500);
         // Log gracefully (don't fail the run)
-        const updateStmt = this.env.MEMORY.prepare(
+        await this.env.MEMORY.prepare(
           `UPDATE supervisor_runs SET pr_open_error = ? WHERE id = ?`,
-        );
-        updateStmt.bind(prOpenError, runId);
-        await updateStmt.all();
+        )
+          .bind(prOpenError, runId)
+          .all();
       }
     }
 
     // Log all receipts to D1 (only if execution succeeded and verification passed if applicable)
     for (const receipt of receipts) {
-      const stmt = this.env.MEMORY.prepare(
+      await this.env.MEMORY.prepare(
         `INSERT INTO supervisor_steps
          (run_id, template_id, template_version, step_index, tool_name, side_effects, slots_json, result_json, jwt_scope, execution_ms, executed_at, awaiting_approval)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      stmt.bind(
-        runId,
-        templateId,
-        version,
-        receipt.step_index,
-        receipt.tool_name,
-        receipt.side_effects,
-        JSON.stringify(receipt.slots_provided),
-        JSON.stringify(receipt.result),
-        receipt.jwt_scope,
-        receipt.execution_ms,
-        receipt.executed_at,
-        receipt.awaiting_approval ?? null,
-      );
-      await stmt.all();
+      )
+        .bind(
+          runId,
+          templateId,
+          version,
+          receipt.step_index,
+          receipt.tool_name,
+          receipt.side_effects,
+          JSON.stringify(receipt.slots_provided),
+          JSON.stringify(receipt.result),
+          receipt.jwt_scope,
+          receipt.execution_ms,
+          receipt.executed_at,
+          receipt.awaiting_approval ?? null,
+        )
+        .all();
     }
 
     return Response.json({

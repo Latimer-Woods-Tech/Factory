@@ -2,8 +2,8 @@
 // DO NOT EDIT DIRECTLY — edit docs/capabilities/*.yml instead,
 // then run: node scripts/generate-supervisor-capabilities.mjs
 //
-// Generated: 2026-05-06T03:48:10.496Z
-// Source files: factory-admin.yml, humandesign.yml, videoking.yml, xico-city.yml
+// Generated: 2026-05-25T00:20:12.802Z
+// Source files: factory-admin.yml, humandesign.yml, videoking.yml, webhook-fanout.yml, xico-city.yml
 
 export interface Capability {
   id: string;
@@ -375,6 +375,76 @@ export const GENERATED_CAPABILITIES: AppCapabilities[] = [
         "route": "GET /health",
         "side_effects": "none",
         "required_scope": "supervisor.readonly"
+      }
+    ]
+  },
+  {
+    "app": "webhook-fanout",
+    "base_url": "https://webhooks.latwoodtech.com",
+    "auth": "none",
+    "supervisor_access": "read-only",
+    "tiers_allowed": [
+      "green"
+    ],
+    "description": "Cloudflare Worker that ingests Stripe webhook events, verifies HMAC-SHA256 signatures, deduplicates via KV (7-day TTL), filters synthetic customers, and fans out to PostHog + factory_events (analytics) and Resend (lifecycle emails).\n",
+    "routed_events": [
+      {
+        "stripe": "customer.created",
+        "analytics_event": "stripe.customer.created",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "customer.updated",
+        "analytics_event": "stripe.customer.updated",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "customer.subscription.created",
+        "analytics_event": "stripe.customer.subscription.created",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "customer.subscription.updated",
+        "analytics_event": "stripe.customer.subscription.updated",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "customer.subscription.deleted",
+        "analytics_event": "stripe.customer.subscription.deleted",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "customer.subscription.trial_will_end",
+        "analytics_event": "stripe.customer.subscription.trial_will_end",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "invoice.paid",
+        "analytics_event": "stripe.invoice.paid",
+        "lifecycle_email": "resend"
+      },
+      {
+        "stripe": "invoice.payment_failed",
+        "analytics_event": "stripe.invoice.payment_failed",
+        "lifecycle_email": "resend"
+      }
+    ],
+    "capabilities": [
+      {
+        "id": "health.check",
+        "desc": "Worker liveness check.",
+        "route": "GET /health",
+        "side_effects": "none",
+        "required_scope": "supervisor.readonly"
+      },
+      {
+        "id": "stripe.webhook.receive",
+        "desc": "Receive and process a Stripe webhook event. Verifies HMAC signature, deduplicates, filters synthetic customers, and fans out to PostHog, factory_events, and Resend.\n",
+        "route": "POST /stripe",
+        "side_effects": "write-external",
+        "reversibility": "idempotent",
+        "required_scope": "none",
+        "notes": "Called exclusively by Stripe. Not for direct invocation by the Supervisor. Returns 200 immediately; fan-out continues in waitUntil().\n"
       }
     ]
   },
