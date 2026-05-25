@@ -1,0 +1,40 @@
+{
+  "id": "media-room-orchestrator",
+  "version": "1.0.0",
+  "maturity": "experimental",
+  "summary": "Council assembly line: chains specialized LLMs (Gemini trend-spot + Sonnet HD analyst + Grok creative) and production APIs (Replicate image, ElevenLabs audio) into a daily multimodal marketing campaign artifact.",
+  "goal": "Autonomously produce a publish-ready marketing campaign (X thread + image + audio + QR-coded composite) every day from trending social signals, with operator one-click approval.",
+  "primitives": ["llm", "analytics"],
+  "optionalPrimitives": [],
+  "expectedSurfaces": ["/health", "/api/trigger", "/api/runs", "/api/runs/:id"],
+  "smokeChecks": [
+    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" }
+  ],
+  "constraints": [
+    "Use a branded custom domain for any embedded artifact URLs (QR target).",
+    "Each run must produce a content-hashed receipt logged via @latimer-woods-tech/analytics.",
+    "Zod schema validation MUST gate every seam transition; no untyped handoffs.",
+    "LLM calls route through @latimer-woods-tech/llm so AI Gateway caching + cost ledger apply.",
+    "Operator approval (Pushover ack or /api/runs/:id/approve) required before any publish action."
+  ],
+  "envContract": {
+    "secrets": [
+      "GROK_API_KEY",
+      "VERTEX_ACCESS_TOKEN",
+      "REPLICATE_API_TOKEN",
+      "ELEVENLABS_API_KEY",
+      "SCRAPE_CREATORS_API_KEY",
+      "PUSHOVER_TOKEN",
+      "PUSHOVER_USER_KEY"
+    ],
+    "vars": [
+      "WORKER_DOMAIN",
+      "QR_TARGET_URL",
+      "RUN_CADENCE_CRON"
+    ]
+  },
+  "bindingContract": {
+    "required": [],
+    "optional": ["ANALYTICS"]
+  }
+}

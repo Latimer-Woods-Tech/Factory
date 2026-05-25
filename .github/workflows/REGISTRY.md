@@ -55,7 +55,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `deploy-webhook-fanout.yml` | push, dispatch | Production deploy — webhook-fanout Worker |
 | `browser-agent-deploy.yml` | push, dispatch | Production deploy — Cloud Run browser-agent |
 
-### T2 — Operational (28)
+### T2 — Operational (29)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -67,6 +67,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `copilot-auto-approve.yml` | PR, workflow_run | Auto-approve Copilot agent PRs |
 | `copilot-pr-poller.yml` | schedule (10min), dispatch | Polling for Copilot agent PR state |
 | `dead-mans-switch.yml` | schedule, dispatch | Liveness signal |
+| `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
 | `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
