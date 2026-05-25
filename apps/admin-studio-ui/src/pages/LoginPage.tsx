@@ -76,28 +76,29 @@ export function LoginPage() {
           hosted_domain: 'apunlimited.com',
         });
 
-      google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: 'outline',
-        size: 'large',
-        text: 'continue_with',
-        shape: 'pill',
-        width: '320',
-      });
+        google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'pill',
+          width: '320',
+        });
 
-      // Try to render the One Tap experience
-      google.accounts.id.prompt(() => {
-        // Prompt callback (notification is shown by Google)
-      });
-    } catch (err) {
-      console.warn('Failed to initialize Google Sign-In:', err);
-      addNotification({
-        type: 'warning',
-        title: 'Google Sign-In Issue',
-        message: 'Could not fully initialize Google Sign-In. Using fallback login.',
-      });
+        // Try to render the One Tap experience
+        google.accounts.id.prompt(() => {
+          // Prompt callback (notification is shown by Google)
+        });
+      } catch (err) {
+        console.warn('Failed to initialize Google Sign-In:', err);
+        addNotification({
+          type: 'warning',
+          title: 'Google Sign-In Issue',
+          message: 'Could not fully initialize Google Sign-In. Using fallback login.',
+        });
+      }
     }
-      void initGSI();
-    }
+
+    void initGSI();
   }, [env, addNotification]);
 
   async function handleGoogleCallback(response: any) {
