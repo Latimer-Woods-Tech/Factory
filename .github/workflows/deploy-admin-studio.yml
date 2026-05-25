@@ -20,11 +20,16 @@ concurrency:
   group: admin-studio-${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    # Use workflow-scoped environment keys to avoid the shared production/staging
+    # environment scheduler wedge (0-job pending runs) seen in May 2026.
+    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'admin-studio-production' || 'admin-studio-staging' }}
     permissions:
       contents: read
     outputs:
@@ -33,11 +38,11 @@ jobs:
       new_version_id:      ${{ steps.capture-new.outputs.new_version_id }}
       has_migrations:      ${{ steps.migrations.outputs.has_migrations }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 2
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '22'
 
@@ -159,6 +164,8 @@ jobs:
 
           put_optional_secret STUDIO_WEBHOOK_SECRET "$SECRET_STUDIO_WEBHOOK_SECRET"
           put_optional_secret WORKER_API_TOKEN "$SECRET_WORKER_API_TOKEN"
+          put_optional_secret GOOGLE_CLIENT_ID "$SECRET_GOOGLE_CLIENT_ID"
+          put_optional_secret STUDIO_ALLOWED_USERS_JSON "$SECRET_STUDIO_ALLOWED_USERS_JSON"
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -170,6 +177,8 @@ jobs:
           SECRET_GH_PAT: ${{ secrets.GH_PAT }}
           SECRET_STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
           SECRET_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+          SECRET_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
+          SECRET_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
 
       - name: Apply database migrations
         run: |
@@ -200,16 +209,15 @@ jobs:
       # SENTRY_AUTH_TOKEN secret is not configured.
       - name: Upload sourcemaps to Sentry
         # Sourcemap upload is nice-to-have (stack-trace symbolication) — it must
-        # never gate a deploy. Today's Sentry project slug "admin-studio" under
-        # org "latwood-tech" returns 400 "Invalid project ids or slugs"; the
-        # canary-watch reusable workflow uses org slug "latimer-woods-tech",
-        # so one of these is stale. Tracked separately; for now, soft-fail.
+        # never gate a deploy. Verified slugs via Sentry API 2026-05-24: org
+        # `latwood-tech`, Worker project `factory-admin-worker`. (The Pages
+        # project `admin-studio-ui` is uploaded by the sibling deploy workflow.)
         continue-on-error: true
         working-directory: apps/admin-studio
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: latwood-tech
-          SENTRY_PROJECT: admin-studio
+          SENTRY_PROJECT: factory-admin-worker
           SENTRY_RELEASE: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -264,8 +272,8 @@ jobs:
     with:
       app_name:            admin-studio
       worker_name:         admin-studio-production
-      sentry_project:      admin-studio
-      sentry_org:          latimer-woods-tech
+      sentry_project:      factory-admin-worker
+      sentry_org:          latwood-tech
       base_url:            https://admin.latwoodtech.work
       smoke_path:          /healthz
       previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}

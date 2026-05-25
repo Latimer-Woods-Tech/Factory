@@ -7,6 +7,10 @@ export interface Env extends Record<string, unknown> {
   RESEND_API_KEY: string;
   /** Resend sender address — set via wrangler vars */
   RESEND_FROM: string;
+  /** Contact notification inbox for public landing-page intake */
+  CONTACT_NOTIFY_EMAIL?: string;
+  /** Optional Slack incoming-webhook URL for contact notifications */
+  SLACK_WEBHOOK_URL?: string;
   /** First-party analytics event store */
   FACTORY_EVENTS_DB: D1Database;
   /** KV namespace for 7-day event idempotency */

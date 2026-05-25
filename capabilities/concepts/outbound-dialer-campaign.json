@@ -1,0 +1,90 @@
+{
+  "id": "outbound-dialer-campaign",
+  "displayName": "Outbound Dialer Campaign",
+  "summary": "Governed outbound dialer setup with routing for CRM segment or CSV import audiences.",
+  "status": "approved",
+  "maturity": "beta",
+  "tags": ["telephony", "crm", "campaigns"],
+  "menuVisible": true,
+  "approvalTier": "golden",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Custom domain for the deployed worker.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "dialer.example.com"
+    },
+    {
+      "id": "campaignSource",
+      "type": "string",
+      "description": "Audience source for the campaign.",
+      "required": true,
+      "enum": ["crm-segment", "csv-import"],
+      "default": "crm-segment",
+      "formatHint": null
+    },
+    {
+      "id": "enableVoiceSynthesis",
+      "type": "boolean",
+      "description": "Enable synthesized voice prompts.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": {
+    "defaultRecipeId": "outbound-dialer",
+    "rules": [
+      {
+        "id": "csv-import-uses-importer",
+        "recipeId": "outbound-dialer-importer",
+        "matchAll": [
+          { "parameter": "campaignSource", "equals": "csv-import" }
+        ]
+      }
+    ]
+  },
+  "recipes": [
+    {
+      "id": "outbound-dialer",
+      "summary": "CRM-segment driven outbound dialer workflow.",
+      "maturity": "beta",
+      "primitives": ["telephony", "crm", "analytics"],
+      "optionalPrimitives": ["compliance"],
+      "tradeoffs": "Best for recurring campaigns where the audience already lives in the CRM. No import step means faster setup and lower operational overhead. Choose this when your contact list is maintained continuously in the CRM and segments are already defined."
+    },
+    {
+      "id": "outbound-dialer-importer",
+      "summary": "Outbound dialer workflow with CSV import landing and ingestion flow.",
+      "maturity": "beta",
+      "primitives": ["telephony", "crm", "analytics"],
+      "optionalPrimitives": ["compliance"],
+      "tradeoffs": "Adds a CSV landing and ingestion step before dialing. Best for one-time or externally-sourced contact lists that do not exist in the CRM. Introduces an additional surface to maintain (import endpoint, file validation, ingestion errors) but gives full control over the contact payload."
+    }
+  ],
+  "sourcePrimitives": ["analytics", "compliance", "crm", "telephony"],
+  "templates": [
+    {
+      "id": "crm-segment-default",
+      "label": "CRM Segment — standard",
+      "hint": "Targets a CRM segment with voice synthesis enabled.",
+      "values": { "campaignSource": "crm-segment", "enableVoiceSynthesis": true }
+    },
+    {
+      "id": "csv-import-default",
+      "label": "CSV Import — batch",
+      "hint": "Targets a CSV-imported contact list, no voice synthesis.",
+      "values": { "campaignSource": "csv-import", "enableVoiceSynthesis": false }
+    }
+  ],
+  "qualification": {
+    "menuVisible": true,
+    "approvalTier": "golden",
+    "requiredCapabilities": ["custom-domain"],
+    "disallowedEnvironments": ["local"]
+  }
+}

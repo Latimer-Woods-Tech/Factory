@@ -66,6 +66,8 @@ function makeEnv(kv: KVNamespace = makeKV(), db: D1Database = makeD1().db): Reco
     POSTHOG_KEY: 'test-posthog-key',
     RESEND_API_KEY: 'test-resend-key',
     RESEND_FROM: 'Factory <noreply@latwoodtech.com>',
+    CONTACT_NOTIFY_EMAIL: 'aperry@latwoodtech.com',
+    SLACK_WEBHOOK_URL: 'https://hooks.slack.com/services/test/webhook',
     FACTORY_EVENTS_DB: db,
     IDEMPOTENCY_KV: kv,
     ENVIRONMENT: 'test',
@@ -114,6 +116,22 @@ async function postStripe(
   return app.fetch(req, env, ctx);
 }
 
+async function postContact(
+  body: Record<string, unknown>,
+  env: Record<string, unknown>,
+  ctx: ExecutionContext = makeCtx(),
+): Promise<Response> {
+  const req = new Request('https://webhooks.latwoodtech.work/contact', {
+    method: 'POST',
+    headers: {
+      origin: 'http://127.0.0.1:4173',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  return app.fetch(req, env, ctx);
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -132,6 +150,85 @@ describe('webhook-fanout Worker', () => {
     const body = await res.json() as Record<string, unknown>;
     expect(body['status']).toBe('ok');
     expect(body['worker']).toBe('webhook-fanout');
+  });
+
+  it('OPTIONS /contact returns CORS headers for allowed origins', async () => {
+    const req = new Request('https://webhooks.latwoodtech.work/contact', {
+      method: 'OPTIONS',
+      headers: { origin: 'http://127.0.0.1:4173' },
+    });
+    const res = await app.fetch(req, makeEnv(), makeCtx());
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://127.0.0.1:4173');
+  });
+
+  it('POST /contact fans out to Resend and Slack and rate-limits repeated submissions', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
+    const kvStore = new Map<string, string>();
+    const waitUntilPromises: Promise<unknown>[] = [];
+    const env = makeEnv(makeKV(kvStore));
+
+    const res = await postContact(
+      {
+        name: 'Andre Perry',
+        email: 'andre@example.com',
+        message: 'Need to talk about Factory.',
+        phone: '706-267-7235',
+        website: '',
+      },
+      env,
+      makeCtx(waitUntilPromises),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://127.0.0.1:4173');
+    await Promise.all(waitUntilPromises);
+    expect(fetchSpy.mock.calls.map(([url]) => String(url))).toEqual([
+      'https://api.resend.com/emails',
+      'https://hooks.slack.com/services/test/webhook',
+    ]);
+
+    const secondRes = await postContact(
+      {
+        name: 'Andre Perry',
+        email: 'andre@example.com',
+        message: 'Need to talk about Factory.',
+        website: '',
+      },
+      env,
+    );
+    expect(secondRes.status).toBe(429);
+  });
+
+  it('POST /contact validates required fields and ignores honeypot submissions', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
+
+    const invalidRes = await postContact(
+      {
+        name: '',
+        email: 'bad-email',
+        message: '',
+        website: '',
+      },
+      makeEnv(),
+    );
+    expect(invalidRes.status).toBe(400);
+
+    const honeypotRes = await postContact(
+      {
+        name: 'Bot',
+        email: 'bot@example.com',
+        message: 'spam',
+        website: 'https://spam.invalid',
+      },
+      makeEnv(),
+    );
+    expect(honeypotRes.status).toBe(200);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   // ---------- Signature verification ----------

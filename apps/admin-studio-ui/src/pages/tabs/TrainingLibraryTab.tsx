@@ -20,7 +20,16 @@ interface TrainingLibraryResponse {
   modules: TrainingLibraryModule[];
 }
 
+const APPS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: 'prime_self', label: 'Prime Self (selfprime.net)' },
+  { id: 'capricast', label: 'Capricast' },
+  { id: 'xico_city', label: 'DJMEXXICO / xico-city' },
+  { id: 'the_calling', label: 'The Calling' },
+  { id: 'ijustus', label: 'iJustus / Kairos Council' },
+];
+
 export function TrainingLibraryTab() {
+  const [appId, setAppId] = useState('prime_self');
   const [library, setLibrary] = useState<TrainingLibraryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +40,7 @@ export function TrainingLibraryTab() {
     setError(null);
     setLoading(true);
     try {
-      const result = await apiFetch<TrainingLibraryResponse>('/training-library?appId=prime_self');
+      const result = await apiFetch<TrainingLibraryResponse>(`/training-library?appId=${appId}`);
       setLibrary(result);
     } catch (err) {
       setError((err as Error).message);
@@ -42,7 +51,7 @@ export function TrainingLibraryTab() {
 
   useEffect(() => {
     void loadLibrary();
-  }, [loadLibrary]);
+  }, [loadLibrary, appId]);
 
   async function scheduleModule(briefKey: string) {
     setError(null);
@@ -65,7 +74,18 @@ export function TrainingLibraryTab() {
     <div className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h1 className="text-2xl font-semibold text-white">Training Library</h1>
+          <select
+            value={appId}
+            onChange={(e) => { setAppId(e.target.value); setLibrary(null); }}
+            className="rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 min-h-[2.5rem]"
+          >
+            {APPS.map(a => (
+              <option key={a.id} value={a.id}>{a.label}</option>
+            ))}
+          </select>
+        </div>
           <p className="mt-1 max-w-2xl text-sm text-slate-400">
             View Prime Self training modules and schedule video renders for ready briefs.
             Ready modules can be sent directly to the render pipeline from here.

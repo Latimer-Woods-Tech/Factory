@@ -8,6 +8,10 @@ on:
       - 'apps/browser-agent/**'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # never cancel an in-flight production deploy
+
 permissions:
   contents: read
   id-token: write   # Required for Workload Identity Federation
@@ -18,16 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
           workload_identity_provider: projects/891842778224/locations/global/workloadIdentityPools/github-factory/providers/github
           service_account: factory-sa@factory-495015.iam.gserviceaccount.com
 
       - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
 
       - name: Submit Cloud Build
         run: |

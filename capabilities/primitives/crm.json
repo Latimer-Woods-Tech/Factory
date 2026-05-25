@@ -1,0 +1,11 @@
+{
+  "id": "crm",
+  "package": "@latimer-woods-tech/crm",
+  "versionRange": "^0.1.0",
+  "requirements": {
+    "bindings": ["CRM_SEGMENTS"]
+  },
+  "contracts": {
+    "policyTags": ["crm"]
+  }
+}
