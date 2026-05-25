@@ -30,7 +30,7 @@
 #   required secrets, required vars, or required bindings must stay aligned with
 #   both the deploy workflow and the Worker's `wrangler.jsonc` contract.
 
-# ─── AUTOMATION DENYLIST ──────────────────────────────────────────────────────
+# ─── AUTOMATION DENYLIST ──────────────────────────────────────────────
 #
 # Repos and workers listed here are FORBIDDEN to automation at the registry level.
 # This is layer 2 of the 3-layer lockout described in docs/supervisor/FRIDGE.md rule 1.
@@ -169,6 +169,38 @@ workers:
       - ENVIRONMENT
       - TARGETS_JSON
     consumers: []
+
+  - id: status-prober
+    name: status-prober                                    # matches apps/status-prober/wrangler.jsonc `name`
+    repo: Latimer-Woods-Tech/factory
+    url: https://status.latwoodtech.work                   # canonical custom domain
+    workers_dev_url: https://status-prober.adrper79.workers.dev
+    custom_domain: status.latwoodtech.work
+    health_endpoint: /health
+    telemetry_required: false                              # infra-class — no /api/admin/* contract required
+    deployment_status: provisioned_2026-05-23
+    notes: >
+      Cron-driven (`*/5 * * * *`) uptime prober that HEAD-checks the four brand
+      surfaces (selfprime.net, capricast.com, cypherofhealing.com,
+      apunlimited.com) and writes the latest envelope to KV under key `current`.
+      `GET /current` returns the envelope with `Access-Control-Allow-Origin: *`
+      so the static `https://latwoodtech.com/status/` page can fetch near-live
+      data with a graceful fall-back to the build-time pulse snapshot.
+    critical_endpoints:
+      - /
+      - /health
+      - /current
+    required_bindings:
+      - STATUS_KV
+    required_secrets: []
+    required_vars:
+      - ENVIRONMENT
+    consumers:
+      - repo: Latimer-Woods-Tech/factory
+        file: apps/latwoodtech-web/src/status/index.html
+        line: ~0
+        pattern: "fetch('https://status.latwoodtech.work/current'"
+        note: live-data fetch with timeout + fall-back to /data/pulse.json
 
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
@@ -558,6 +590,36 @@ workers:
       - VERTEX_LOCATION
     consumers: []
 
+  - id: linkedin-publisher
+    name: linkedin-publisher-production                    # wrangler default = name + env suffix; production env has no explicit `name`
+    repo: Latimer-Woods-Tech/factory
+    url: null                                              # production has workers_dev: false; cron-only, no public surface
+    workers_dev_url: https://linkedin-publisher.adrper79.workers.dev   # dev env only
+    custom_domain: null
+    health_endpoint: null                                  # /health exists in src but unreachable in production (no public route)
+    telemetry_required: false
+    deployment_status: deployed_via_actions_2026-05-25
+    notes: >
+      Cron-driven (`0 14 * * 2,4` — Tue/Thu 14:00 UTC) Worker that
+      composes a LinkedIn post via the Anthropic LLM and delivers it to
+      Pushover for manual posting. Has no public route; production env
+      sets `workers_dev: false`. App scaffold landed in PR #978 (paired
+      with the orphaned deploy workflow from #994).
+    critical_endpoints: []
+    required_bindings: []
+    required_secrets:
+      - CF_API_TOKEN
+      - CLOUDFLARE_ACCOUNT_ID
+      - ANTHROPIC_API_KEY
+      - PUSHOVER_TOKEN
+      - PUSHOVER_USER_KEY
+    required_vars:
+      - ENVIRONMENT
+      - AI_GATEWAY_BASE_URL
+      - VERTEX_PROJECT
+      - VERTEX_LOCATION
+    consumers: []
+
   - id: xico-city
     name: xico-city
     repo: Latimer-Woods-Tech/xico-city
@@ -720,7 +782,7 @@ pages:
     #   - Original NS (still active): ns-cloud-e{1-4}.googledomains.com
     #   - Pages custom-domain attachment will be re-created post-NS-cutover
     notes: "Apex domain. NS swap at Squarespace Domains required before deploy workflow's custom-domain verify step can pass."
-# ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────
+# ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────────────────────────────
 #
 # Shared npm packages published to @adrper79-dot scope.
 # See docs/packages/factory-capabilities-matrix.mdx for full documentation.
@@ -897,7 +959,7 @@ packages:
     main_use: "Studio/builder core (shared UI)"
     videoking_used: false
     depends_on: []
-# ─── RENAME PROCEDURE ──────────────────────────────────────────────────────────
+# ─── RENAME PROCEDURE ──────────────────────────────────────────────
 #
 # To rename a worker (e.g. prime-self → prime-self-v2):
 #
@@ -910,9 +972,9 @@ packages:
 #   Step 7: Deploy the worker → verify /health returns 200
 #   Step 8: Update this registry (name + url fields)
 #
-# ─── DO NOT SKIP STEPS ─────────────────────────────────────────────────────────
+# ─── DO NOT SKIP STEPS ──────────────────────────────────────────────
 
-# ─── IMPLEMENTATION TRACKS ──────────────────────────────────────────────────────
+# ─── IMPLEMENTATION TRACKS ──────────────────────────────────────────────
 #
 # The Factory implementation is organized into 7 coordinated tracks.
 # See docs/WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md for full strategy.
