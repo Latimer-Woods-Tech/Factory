@@ -580,7 +580,11 @@ export function CapabilitiesTab() {
           <span>{catalog.summary.conceptCount} concepts</span>
           <span>{catalog.summary.recipeCount} recipes</span>
           <span>{catalog.summary.primitiveCount} primitives</span>
-          <span>Generated {new Date(catalog.generatedAt).toLocaleString()}</span>
+          <span>
+            {catalog.generatedAt.startsWith('sha256:')
+              ? `Bundle ${catalog.generatedAt}`
+              : `Generated ${new Date(catalog.generatedAt).toLocaleString()}`}
+          </span>
         </div>
       )}
 
