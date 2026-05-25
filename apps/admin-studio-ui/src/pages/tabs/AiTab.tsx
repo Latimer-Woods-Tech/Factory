@@ -99,6 +99,13 @@ function useStickyBottom(appendSignal: number, thresholdPx = 64) {
 
 export function AiTab() {
   const active = useActiveFile();
+
+  // ADM-9.3: Pin composer when software keyboard is open (iOS Safari / Android Chrome)
+  useEffect(() => {
+    if ('virtualKeyboard' in navigator) {
+      (navigator as unknown as { virtualKeyboard: { overlaysContent: boolean } }).virtualKeyboard.overlaysContent = true;
+    }
+  }, []);
   const [history, setHistory] = useState<AIChatTurn[]>([]);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<AIChatMode>('generate');
@@ -282,7 +289,7 @@ export function AiTab() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-92px)] gap-4">
+    <div className="flex flex-col md:flex-row h-auto md:h-[calc(100dvh-92px)] gap-3">
       <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
         <header className="border-b border-slate-800 px-3 py-2 flex items-center gap-2">
           <div className="flex gap-1">
@@ -291,7 +298,7 @@ export function AiTab() {
                 key={m.id}
                 onClick={() => setMode(m.id)}
                 title={m.hint}
-                className={`text-xs px-2 py-1 rounded border ${
+                className={`text-xs px-2 py-2 min-h-[2.5rem] rounded border ${
                   mode === m.id
                     ? 'bg-emerald-700 border-emerald-600 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -307,7 +314,7 @@ export function AiTab() {
                 key={s.id}
                 onClick={() => setModelStrategy(s.id)}
                 title={s.hint}
-                className={`text-xs px-2 py-1 rounded border ${
+                className={`text-xs px-2 py-2 min-h-[2.5rem] rounded border ${
                   modelStrategy === s.id
                     ? 'bg-indigo-700 border-indigo-600 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -343,7 +350,7 @@ export function AiTab() {
             role="log"
             aria-live="polite"
             aria-relevant="additions"
-            className="h-full overflow-auto p-3 space-y-3 text-sm"
+            className="h-[45vh] md:h-full overflow-auto p-3 space-y-3 text-sm"
           >
             {history.length === 0 && !partial && (
               <p className="text-slate-500">
@@ -372,7 +379,7 @@ export function AiTab() {
           )}
         </div>
 
-        <footer className="border-t border-slate-800 p-2">
+        <footer className="border-t border-slate-800 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -385,21 +392,21 @@ export function AiTab() {
             disabled={streaming}
             placeholder="Ask… (Cmd/Ctrl+Enter to send chat; click Propose for a diff)"
             rows={3}
-            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm font-mono text-slate-100 resize-none disabled:opacity-50"
+            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-base md:text-sm font-mono text-slate-100 resize-none disabled:opacity-50"
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
               onClick={() => void requestProposal()}
               disabled={proposalBusy || streaming || !prompt.trim() || !active.path}
               title={!active.path ? 'Open a file in the Code tab first' : 'Generate a code diff'}
-              className="text-xs px-3 py-1.5 rounded bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40"
+              className="text-xs px-3 py-2 min-h-[2.5rem] rounded bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40"
             >
               {proposalBusy ? 'Proposing…' : 'Propose diff'}
             </button>
             <button
               onClick={() => void send()}
               disabled={streaming || !prompt.trim()}
-              className="text-xs px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-40"
+              className="text-xs px-3 py-2 min-h-[2.5rem] rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-40"
             >
               {streaming ? 'Streaming…' : 'Send'}
             </button>
@@ -407,7 +414,7 @@ export function AiTab() {
         </footer>
       </section>
 
-      <aside className="w-96 shrink-0 flex flex-col rounded border border-slate-800 bg-slate-900 p-3 gap-3 overflow-auto">
+      <aside className="w-full max-h-[35vh] md:max-h-none md:w-96 shrink-0 flex flex-col rounded border border-slate-800 bg-slate-900 p-3 gap-3 overflow-auto">
         <h3 className="text-xs uppercase tracking-wide text-slate-500">Active file</h3>
         {active.path ? (
           <div className="text-xs space-y-1">

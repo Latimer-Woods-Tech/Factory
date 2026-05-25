@@ -15,6 +15,13 @@ import type { CapabilityPlan } from './capability-plan.js';
 
 export interface HandoffRecord {
   id: string;
+  /**
+   * Constant 'scaffold-handoff' — the only kind ever persisted today.
+   * Reconstructed from the row (not stored in its own column) so the
+   * shape matches the in-memory body produced by /capabilities/handoff
+   * and the validator in packages/deploy/scripts/scaffold.mjs.
+   */
+  kind: 'scaffold-handoff';
   hash: string;
   schemaVersion: '1.0.0';
   conceptId: string;
@@ -122,50 +129,55 @@ async function ensureSchema(hyperdrive: HyperdriveBinding): Promise<void> {
  * hash already exists, returns the existing record. Otherwise inserts a fresh
  * row and returns it.
  *
- * Best-effort: a DB outage returns the in-memory record so the response stays
- * useful — the caller's audit middleware still records the attempt.
+ * Throws on real DB failures so the caller can surface them (HTTP 500 with
+ * an audited error). The previous "swallow + return in-memory record"
+ * behaviour masked storage outages: clients received a handoff_id that
+ * pointed at nothing, then 404'd on the immediate follow-up call to
+ * /provision-staging. Surfacing the failure is the correct behaviour.
  */
 export async function persistHandoff(
   hyperdrive: HyperdriveBinding,
-  record: Omit<HandoffRecord, 'id' | 'createdAt'> & { id?: string; createdAt?: string },
+  record: Omit<HandoffRecord, 'id' | 'createdAt' | 'kind'> & {
+    id?: string;
+    createdAt?: string;
+  },
 ): Promise<HandoffRecord> {
   const id = record.id ?? crypto.randomUUID();
   const createdAt = record.createdAt ?? new Date().toISOString();
-  const fullRecord: HandoffRecord = { ...record, id, createdAt };
 
-  try {
-    await ensureSchema(hyperdrive);
-    const db = getDb(hyperdrive);
+  await ensureSchema(hyperdrive);
+  const db = getDb(hyperdrive);
 
-    const existing = await db.execute(sql`
-      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
-      FROM capability_handoffs
-      WHERE hash = ${record.hash}
-      LIMIT 1
-    `);
-    const existingRow = (existing.rows as unknown[])[0] as HandoffRow | undefined;
-    if (existingRow) {
-      return rowToRecord(existingRow);
-    }
-
-    await db.execute(sql`
-      INSERT INTO capability_handoffs (
-        id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
-      ) VALUES (
-        ${id}, ${record.hash}, ${record.schemaVersion}, ${record.conceptId}, ${record.recipeId},
-        ${JSON.stringify(record.parameters)}::jsonb,
-        ${JSON.stringify(record.plan)}::jsonb,
-        ${record.preview},
-        ${JSON.stringify(record.nextAction)}::jsonb,
-        ${createdAt}, ${record.createdBy}, ${record.env}
-      )
-      ON CONFLICT (hash) DO NOTHING
-    `);
-    return fullRecord;
-  } catch (err) {
-    console.error('[handoff-store] persist failed:', (err as Error).message);
-    return fullRecord;
+  const existing = await db.execute(sql`
+    SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+    FROM capability_handoffs
+    WHERE hash = ${record.hash}
+    LIMIT 1
+  `);
+  const existingRow = (existing.rows as unknown[])[0] as HandoffRow | undefined;
+  if (existingRow) {
+    return rowToRecord(existingRow);
   }
+
+  await db.execute(sql`
+    INSERT INTO capability_handoffs (
+      id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+    ) VALUES (
+      ${id}, ${record.hash}, ${record.schemaVersion}, ${record.conceptId}, ${record.recipeId},
+      ${JSON.stringify(record.parameters)}::jsonb,
+      ${JSON.stringify(record.plan)}::jsonb,
+      ${record.preview},
+      ${JSON.stringify(record.nextAction)}::jsonb,
+      ${createdAt}, ${record.createdBy}, ${record.env}
+    )
+    ON CONFLICT (hash) DO NOTHING
+  `);
+  return {
+    ...record,
+    id,
+    kind: 'scaffold-handoff',
+    createdAt,
+  };
 }
 
 export async function findHandoffById(
@@ -185,6 +197,34 @@ export async function findHandoffById(
     return row ? rowToRecord(row) : null;
   } catch (err) {
     console.error('[handoff-store] lookup failed:', (err as Error).message);
+    return null;
+  }
+}
+
+/**
+ * Hash-based handoff lookup. Used by /provision-staging as a fallback when
+ * the id-based lookup misses — closes the Hyperdrive read-after-write race
+ * where a just-inserted row isn't yet visible to the pooled connection
+ * the follow-up call lands on. Since the handoff hash is content-addressable
+ * (returned by POST /handoff), the client always has it.
+ */
+export async function findHandoffByHash(
+  hyperdrive: HyperdriveBinding,
+  hash: string,
+): Promise<HandoffRecord | null> {
+  try {
+    await ensureSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const result = await db.execute(sql`
+      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+      FROM capability_handoffs
+      WHERE hash = ${hash}
+      LIMIT 1
+    `);
+    const row = (result.rows as unknown[])[0] as HandoffRow | undefined;
+    return row ? rowToRecord(row) : null;
+  } catch (err) {
+    console.error('[handoff-store] hash lookup failed:', (err as Error).message);
     return null;
   }
 }
@@ -416,6 +456,7 @@ interface HandoffRow {
 function rowToRecord(row: HandoffRow): HandoffRecord {
   return {
     id: row.id,
+    kind: 'scaffold-handoff',
     hash: row.hash,
     schemaVersion: row.schema_version as '1.0.0',
     conceptId: row.concept_id,

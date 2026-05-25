@@ -34,7 +34,6 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 
 ## Hard Constraints
 **These constraints apply to production code (Cloudflare Workers runtime only).** GitHub Actions scripts (`.github/scripts/**/*.mjs`) run on Node.js and are exempt from these Cloudflare constraints.
-
 - No `process.env` anywhere; use Hono or Worker bindings (`c.env.VAR` / `env.VAR`)
 - No Node.js built-ins such as `fs`, `path`, or `crypto`; use platform-safe APIs
 - No CommonJS `require()`; use ESM `import` / `export` only
@@ -42,6 +41,15 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - No raw `fetch` without explicit error handling
 - No secrets in source code or in `wrangler.jsonc` `vars`
 - No `*.workers.dev` URLs in any user-facing HTML, JS, or API client code — every user-facing worker endpoint must have a branded custom domain (e.g. `api.selfprime.net`, `api.itsjusus.com`). The `.workers.dev` URL is the CF infrastructure fallback and must never be exposed to end users or hardcoded in frontend assets. Check `docs/service-registry.yml` for the canonical `url` field; use that, never `workers_dev_url`.
+
+## Sub-Agent Isolation (STOP — read before invoking the Agent tool)
+**Any sub-agent invoked via the `Agent` tool that does anything beyond pure read-only research MUST be spawned with `isolation: "worktree"`.** Without it, parallel agents share the same working tree — they will `git checkout` over each other's edits, `git reset --hard` will wipe another agent's in-flight uncommitted work, and background processes (wrangler deploys, builds) get killed mid-flight by another agent's branch operation.
+
+Read-only exceptions (no isolation needed): `Explore`, `claude-code-guide`, `Plan`, `statusline-setup`. Everything else — including `general-purpose` and the default `claude` agent when given write tasks — must isolate.
+
+Pattern: `Agent({ subagent_type: "general-purpose", isolation: "worktree", description: "...", prompt: "..." })`.
+
+This rule exists because of repeated, expensive failures: see `docs/runbooks/git-hooks.md` for the local safety net that catches the wrong-branch commit class of errors, and enable it per-clone with `git config core.hooksPath .githooks`.
 
 ## Worker Rename Protocol (STOP — read this before changing any wrangler.jsonc `name`)
 Never rename a worker without completing this checklist in order:

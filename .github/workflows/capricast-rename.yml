@@ -38,6 +38,9 @@ concurrency:
   group: capricast-rename
   cancel-in-progress: false   # never cancel in-flight rename steps
 
+permissions:
+  contents: read
+
 jobs:
 
   # ── Step 1: Confirm the current outage and restore api.itsjusus.com ─────────

@@ -1,19 +1,27 @@
-name: PR Size Guard (Hard Blocking)
+name: PR Size Guard (G9 — Hard-block)
 
-# Phase 1 enforcement — hard-blocks PRs that exceed ADR-0005 diff size budgets.
-# Different tiers have different limits:
-#  - Green (docs/**, *.md, generated): ≤50 lines
-#  - Yellow (apps/*, client/*, tests/*, non-critical routes): ≤200 lines
-#  - Red (.github/workflows/**, packages/**, migrations/**, billing, auth): ≤500 lines
+# G9 implementation — ADR-0005 diff-size budget enforcement.
+# Hard-blocks PRs that exceed tier budgets. Skips bot senders and draft PRs.
+# Posts a summary table comment with per-file breakdown.
 #
-# Exception: files matching patterns in .github/pr-size-exclusions.txt are not counted.
+# Tier budgets (lines changed = additions + deletions, excluding patterns
+# listed in .github/pr-size-exclusions.txt):
+#   Green  ≤  50 lines — self-service merge
+#   Yellow ≤ 200 lines — standard review
+#   Red    ≤ 500 lines — senior review required
+#   Over   > 500 lines — BLOCKED; must split or file budget-exception
 #
-# Reference: ADR-0005 (docs/adr/0005-pr-size-budget.md)
-# Parent issue: #270 (phase-1-diff-enforcement) / #273 (pr-size-guard)
+# Budget exception: add a line in the PR body:
+#   budget-exception: <reason>
+# This signals that the author has acknowledged the size and the check
+# will pass (but the comment will note the exception).
+#
+# Parent ADR: docs/adr/0005-pr-size-budget.md
+# Implementing issue: #273   Tracking gap: G9 in docs/GAP_REGISTER.md
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: pr-size-guard-${{ github.event.pull_request.number }}
@@ -22,255 +30,169 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
-  checks: write
+  statuses: write
+
+# ── Tier thresholds ──────────────────────────────────────────────────────────
+env:
+  LINES_GREEN:  50
+  LINES_YELLOW: 200
+  LINES_RED:    500
 
 jobs:
   size-guard:
-    name: Enforce diff-size budgets (ADR-0005)
+    name: PR diff-size guard (ADR-0005)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: ${{ github.event.sender.type != 'Bot' && !github.event.pull_request.draft }}
+    timeout-minutes: 5
+    # Skip bot senders and draft PRs
+    if: >-
+      ${{ github.event.sender.type != 'Bot' &&
+          !github.event.pull_request.draft }}
 
     steps:
-      - name: Checkout repo for exclusions list
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.base_ref }}
-
-      - name: Load exclusion patterns
+      - name: Fetch exclusion list
         id: exclusions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          if [[ -f .github/pr-size-exclusions.txt ]]; then
-            # Remove comments and blank lines; format as pipe-separated regex
-            PATTERNS=$(grep -v '^#' .github/pr-size-exclusions.txt | grep -v '^\s*$' | sed 's/^\s*//g' | paste -sd '|' - | sed 's/|$//')
-            echo "patterns=$PATTERNS" >> "$GITHUB_OUTPUT"
-            echo "Loaded exclusion patterns: $PATTERNS"
-          else
-            echo "patterns=" >> "$GITHUB_OUTPUT"
-            echo "No exclusion file found; proceeding without exclusions."
-          fi
+          set -euo pipefail
+          # Fetch the exclusions file from the base branch (not head — avoids
+          # head-branch injection of permissive patterns on pull_request_target).
+          EXCL=$(gh api \
+            "/repos/${REPO}/contents/.github/pr-size-exclusions.txt?ref=${SHA}" \
+            --jq '.content' 2>/dev/null \
+            | base64 --decode 2>/dev/null \
+            || echo "")
+          # Build a jq select expression to filter out matching paths
+          EXCL_PATTERNS=$(echo "$EXCL" \
+            | grep -v '^\s*#' | grep -v '^\s*$' \
+            | sed 's|[.+^${}()|]|\\&|g; s|\*\*|GLOBSTAR|g; s|\*|[^/]*|g; s|GLOBSTAR|.*|g' \
+            | paste -sd '|' -)
+          echo "patterns=${EXCL_PATTERNS}" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch PR diff and calculate size
-        id: calculate
+      - name: Collect PR diff metrics
+        id: metrics
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-          EXCLUSION_PATTERNS: ${{ steps.exclusions.outputs.patterns }}
+          EXCL_PATTERNS: ${{ steps.exclusions.outputs.patterns }}
         run: |
           set -euo pipefail
 
-          # Use `gh pr diff` to get the raw unified diff
-          DIFF=$(gh pr diff "$PR_NUMBER" --repo "$REPO")
+          # Fetch full file list with per-file additions+deletions
+          FILES_JSON=$(gh pr view "$PR_NUMBER" --repo "$REPO" \
+            --json files --jq '.files')
 
-          # Parse the diff to count changed lines per file
-          declare -A file_changes
-          current_file=""
-
-          while IFS= read -r line; do
-            if [[ "$line" =~ ^diff\ --git\ a/.*\ b/(.*)$ ]]; then
-              current_file="${BASH_REMATCH[1]}"
-              file_changes["$current_file"]=0
-            elif [[ "$line" =~ ^[\+\-][^\+\-] && -n "$current_file" ]]; then
-              # Count actual content changes: lines starting with + or -, but not +++ or ---
-              ((file_changes["$current_file"]++))
-            fi
-          done <<< "$DIFF"
-
-          # Determine tier for each file and sum per-tier
-          GREEN_TOTAL=0
-          YELLOW_TOTAL=0
-          RED_TOTAL=0
-
-          declare -a green_files yellow_files red_files
-          declare -a excluded_files
-
-          for file in "${!file_changes[@]}"; do
-            changes=${file_changes[$file]}
-
-            # Check exclusions first
-            EXCLUDED=0
-            if [[ -n "$EXCLUSION_PATTERNS" ]]; then
-              if [[ "$file" =~ $EXCLUSION_PATTERNS ]]; then
-                EXCLUDED=1
-              fi
-            fi
-
-            if [[ $EXCLUDED -eq 1 ]]; then
-              excluded_files+=("$file (+$changes)")
-              continue
-            fi
-
-            # Classify by tier using ADR-0005 tier definitions
-            # Green: docs/**, *.md, session/**, generated docs
-            if [[ "$file" =~ ^docs/ || "$file" =~ \.md$ || "$file" =~ ^session/ ]]; then
-              GREEN_TOTAL=$((GREEN_TOTAL + changes))
-              green_files+=("$file (+$changes)")
-            # Yellow: apps/*/src/**, client/**, tests/**, non-critical routes
-            # (but not if they match Red tier patterns)
-            elif [[ "$file" =~ ^apps/[^/]+/src/ || "$file" =~ ^client/ || "$file" =~ ^tests?/ ]] && \
-                 ! [[ "$file" =~ ^\.github || "$file" =~ ^packages/ || "$file" =~ ^migrations/ ]]; then
-              YELLOW_TOTAL=$((YELLOW_TOTAL + changes))
-              yellow_files+=("$file (+$changes)")
-            # Red: .github/workflows/**, packages/**, migrations/**, auth/billing/wrangler
-            else
-              RED_TOTAL=$((RED_TOTAL + changes))
-              red_files+=("$file (+$changes)")
-            fi
-          done
-
-          # Write outputs
-          echo "green_total=$GREEN_TOTAL" >> "$GITHUB_OUTPUT"
-          echo "yellow_total=$YELLOW_TOTAL" >> "$GITHUB_OUTPUT"
-          echo "red_total=$RED_TOTAL" >> "$GITHUB_OUTPUT"
-
-          # Format file lists (limit to 30 files per tier for readability)
-          GREEN_LIST=$(printf '%s\n' "${green_files[@]:-}" | head -30 | paste -sd '|' -)
-          YELLOW_LIST=$(printf '%s\n' "${yellow_files[@]:-}" | head -30 | paste -sd '|' -)
-          RED_LIST=$(printf '%s\n' "${red_files[@]:-}" | head -30 | paste -sd '|' -)
-          EXCLUDED_LIST=$(printf '%s\n' "${excluded_files[@]:-}" | head -30 | paste -sd '|' -)
-
-          echo "green_files=$GREEN_LIST" >> "$GITHUB_OUTPUT"
-          echo "yellow_files=$YELLOW_LIST" >> "$GITHUB_OUTPUT"
-          echo "red_files=$RED_LIST" >> "$GITHUB_OUTPUT"
-          echo "excluded_files=$EXCLUDED_LIST" >> "$GITHUB_OUTPUT"
-
-          # Determine pass/fail
-          PASS=1
-          FAILED_TIERS=""
-
-          if [[ $GREEN_TOTAL -gt 50 ]]; then
-            PASS=0
-            FAILED_TIERS="${FAILED_TIERS}green(${GREEN_TOTAL}/50) "
-          fi
-          if [[ $YELLOW_TOTAL -gt 200 ]]; then
-            PASS=0
-            FAILED_TIERS="${FAILED_TIERS}yellow(${YELLOW_TOTAL}/200) "
-          fi
-          if [[ $RED_TOTAL -gt 500 ]]; then
-            PASS=0
-            FAILED_TIERS="${FAILED_TIERS}red(${RED_TOTAL}/500) "
+          # Filter out excluded paths and sum
+          if [[ -n "$EXCL_PATTERNS" ]]; then
+            FILTERED=$(echo "$FILES_JSON" \
+              | jq --arg pat "$EXCL_PATTERNS" \
+                '[.[] | select(.path | test($pat) | not)]')
+          else
+            FILTERED="$FILES_JSON"
           fi
 
-          echo "pass=$PASS" >> "$GITHUB_OUTPUT"
-          echo "failed_tiers=$FAILED_TIERS" >> "$GITHUB_OUTPUT"
+          TOTAL=$(echo "$FILTERED" \
+            | jq '[.[] | (.additions + .deletions)] | add // 0')
+          FILE_COUNT=$(echo "$FILTERED" | jq 'length')
 
-      - name: Post check result comment
+          # Build a per-file markdown table (top 20 by line count)
+          PER_FILE_TABLE=$(echo "$FILTERED" \
+            | jq -r 'sort_by(.additions + .deletions) | reverse | .[0:20]
+              | ["| File | +lines | -lines |", "|---|---:|---:|"]
+                + [.[] | "| `\(.path)` | +\(.additions) | -\(.deletions) |"]
+              | join("\n")')
+
+          # Determine tier
+          TIER="green"
+          if   [[ $TOTAL -gt ${{ env.LINES_RED }} ]];    then TIER="over"
+          elif [[ $TOTAL -gt ${{ env.LINES_YELLOW }} ]]; then TIER="red"
+          elif [[ $TOTAL -gt ${{ env.LINES_GREEN }} ]];  then TIER="yellow"
+          fi
+
+          echo "total=$TOTAL"            >> "$GITHUB_OUTPUT"
+          echo "file_count=$FILE_COUNT"  >> "$GITHUB_OUTPUT"
+          echo "tier=$TIER"             >> "$GITHUB_OUTPUT"
+          # Write multi-line output using heredoc delimiter
+          {
+            echo "per_file_table<<EOF_TABLE"
+            echo "$PER_FILE_TABLE"
+            echo "EOF_TABLE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check for budget-exception in PR body
+        id: exception
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if echo "$PR_BODY" | grep -qiE '^budget-exception:'; then
+            REASON=$(echo "$PR_BODY" \
+              | grep -iE '^budget-exception:' \
+              | head -1 \
+              | sed 's/^budget-exception:\s*//i')
+            echo "has_exception=true"  >> "$GITHUB_OUTPUT"
+            echo "reason=${REASON}"    >> "$GITHUB_OUTPUT"
+          else
+            echo "has_exception=false" >> "$GITHUB_OUTPUT"
+            echo "reason="             >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post or update size guard comment
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
-          GREEN: ${{ steps.calculate.outputs.green_total }}
-          YELLOW: ${{ steps.calculate.outputs.yellow_total }}
-          RED: ${{ steps.calculate.outputs.red_total }}
-          GREEN_FILES: ${{ steps.calculate.outputs.green_files }}
-          YELLOW_FILES: ${{ steps.calculate.outputs.yellow_files }}
-          RED_FILES: ${{ steps.calculate.outputs.red_files }}
-          EXCLUDED_FILES: ${{ steps.calculate.outputs.excluded_files }}
-          PASS: ${{ steps.calculate.outputs.pass }}
-          FAILED_TIERS: ${{ steps.calculate.outputs.failed_tiers }}
+          TIER: ${{ steps.metrics.outputs.tier }}
+          TOTAL: ${{ steps.metrics.outputs.total }}
+          FILE_COUNT: ${{ steps.metrics.outputs.file_count }}
+          PER_FILE_TABLE: ${{ steps.metrics.outputs.per_file_table }}
+          HAS_EXCEPTION: ${{ steps.exception.outputs.has_exception }}
+          EXCEPTION_REASON: ${{ steps.exception.outputs.reason }}
         run: |
           set -euo pipefail
+          MARKER="<!-- pr-size-guard-g9 -->"
 
-          MARKER="<!-- pr-size-guard -->"
+          case "$TIER" in
+            green)
+              EMOJI="🟢"; HEADLINE="PR is within the **Green** budget (≤${{ env.LINES_GREEN }} lines). No action needed.";;
+            yellow)
+              EMOJI="🟡"; HEADLINE="PR is in the **Yellow** tier (${{ env.LINES_GREEN }}–${{ env.LINES_YELLOW }} lines). Standard review required.";;
+            red)
+              EMOJI="🔴"; HEADLINE="PR is in the **Red** tier (${{ env.LINES_YELLOW }}–${{ env.LINES_RED }} lines). Senior review required.";;
+            over)
+              EMOJI="⛔"; HEADLINE="PR **exceeds the Red budget** (>${{ env.LINES_RED }} lines) — split this PR or add a \`budget-exception:\` line to the body.";;
+          esac
 
-          # Determine status icon and message
-          if [[ "$PASS" == "1" ]]; then
-            STATUS_EMOJI="✅"
-            STATUS_MSG="**This PR passes the diff-size budget.**"
+          if [[ "$HAS_EXCEPTION" == "true" ]]; then
+            EXCEPTION_NOTE="**Budget exception acknowledged:** \`${EXCEPTION_REASON}\`"
           else
-            STATUS_EMOJI="🚫"
-            STATUS_MSG="**This PR exceeds the diff-size budget** (${FAILED_TIERS})."
+            EXCEPTION_NOTE=""
           fi
 
-          # Determine per-tier status
-          GREEN_STATUS=$([ "$GREEN" -le 50 ] && echo '✓' || echo '✗ FAIL')
-          YELLOW_STATUS=$([ "$YELLOW" -le 200 ] && echo '✓' || echo '✗ FAIL')
-          RED_STATUS=$([ "$RED" -le 500 ] && echo '✓' || echo '✗ FAIL')
+          BODY="${MARKER}
+          ## ${EMOJI} PR Size Guard — ADR-0005
 
-          # Format file lists for display
-          if [[ -n "$GREEN_FILES" ]]; then
-            GREEN_LIST=$(echo "$GREEN_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
-          else
-            GREEN_LIST="(none)"
-          fi
+          ${HEADLINE}
 
-          if [[ -n "$YELLOW_FILES" ]]; then
-            YELLOW_LIST=$(echo "$YELLOW_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
-          else
-            YELLOW_LIST="(none)"
-          fi
+          | Metric | Value | Green | Yellow | Red | Blocked |
+          |--------|------:|------:|-------:|----:|---------|
+          | Lines changed (excl.) | **${TOTAL}** | ≤${{ env.LINES_GREEN }} | ≤${{ env.LINES_YELLOW }} | ≤${{ env.LINES_RED }} | >${{ env.LINES_RED }} |
+          | Files changed | ${FILE_COUNT} | — | — | — | — |
 
-          if [[ -n "$RED_FILES" ]]; then
-            RED_LIST=$(echo "$RED_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
-          else
-            RED_LIST="(none)"
-          fi
+          ${EXCEPTION_NOTE}
 
-          if [[ -n "$EXCLUDED_FILES" ]]; then
-            EXCLUDED_LIST=$(echo "$EXCLUDED_FILES" | tr '|' '\n' | head -30 | sed 's/^/- /')
-          else
-            EXCLUDED_LIST="(none)"
-          fi
+          <details><summary>Per-file breakdown (top 20)</summary>
 
-          # Create markdown comment
-          BODY=$(cat <<'EOFCOMMENT'
-          <!-- pr-size-guard -->
-          ## STATUSEMOJI PR Size Guard (ADR-0005)
+          ${PER_FILE_TABLE}
 
-          STATUSMSG
-
-          | Tier | Changed | Budget | Status |
-          |------|---------|--------|--------|
-          | 🟢 Green (docs, *.md) | GREENTOTAL | ≤50 | GREENSTATUS |
-          | 🟡 Yellow (apps, client, tests) | YELLOWTOTAL | ≤200 | YELLOWSTATUS |
-          | 🔴 Red (.github, packages, migrations) | REDTOTAL | ≤500 | REDSTATUS |
-
-          ### Per-tier breakdown
-
-          **Green tier** (GREENTOTAL lines):
-          GREENLIST
-
-          **Yellow tier** (YELLOWTOTAL lines):
-          YELLOWLIST
-
-          **Red tier** (REDTOTAL lines):
-          REDLIST
-
-          **Excluded** (not counted):
-          EXCLUDEDLIST
+          </details>
 
           ---
+          _ADR-0005 · [G9](https://github.com/${REPO}/blob/main/docs/GAP_REGISTER.md) · [pr-size-guard.yml](https://github.com/${REPO}/blob/main/.github/workflows/pr-size-guard.yml)_"
 
-          ### Resolution
-
-          If this PR exceeds the budget:
-          1. **Split by concern**: scaffolding → implementation → tests → docs (separate PRs)
-          2. **Split by file**: each file/package → its own atomic PR if independent
-          3. **Stack PRs**: use `[stack: N of M]` in PR title to declare merge sequence
-          4. **Exception label**: CODEOWNER can apply `size-exception-approved` with explanation (rare)
-
-          For details, see [ADR-0005: PR Size Budget](https://github.com/REPO/blob/main/docs/adr/0005-pr-size-budget.md).
-          EOFCOMMENT
-          )
-
-          # Perform substitutions
-          BODY="${BODY//STATUSEMOJI/$STATUS_EMOJI}"
-          BODY="${BODY//STATUSMSG/$STATUS_MSG}"
-          BODY="${BODY//GREENTOTAL/$GREEN}"
-          BODY="${BODY//YELLOWTOTAL/$YELLOW}"
-          BODY="${BODY//REDTOTAL/$RED}"
-          BODY="${BODY//GREENSTATUS/$GREEN_STATUS}"
-          BODY="${BODY//YELLOWSTATUS/$YELLOW_STATUS}"
-          BODY="${BODY//REDSTATUS/$RED_STATUS}"
-          BODY="${BODY//GREENLIST/$GREEN_LIST}"
-          BODY="${BODY//YELLOWLIST/$YELLOW_LIST}"
-          BODY="${BODY//REDLIST/$RED_LIST}"
-          BODY="${BODY//EXCLUDEDLIST/$EXCLUDED_LIST}"
-          BODY="${BODY//REPO/$REPO}"
-
-          # Upsert comment
           EXISTING_ID=$(gh api \
             "/repos/${REPO}/issues/${PR_NUMBER}/comments" \
             --paginate \
@@ -284,11 +206,11 @@ jobs:
             gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$BODY"
           fi
 
-      - name: Fail check if budget exceeded
-        if: ${{ steps.calculate.outputs.pass == '0' }}
+      - name: Enforce size budget (fail if over Red and no exception)
+        if: >-
+          ${{ steps.metrics.outputs.tier == 'over' &&
+              steps.exception.outputs.has_exception != 'true' }}
         run: |
-          echo "❌ PR exceeds diff-size budget:"
-          echo "   - Green: ${{ steps.calculate.outputs.green_total }}/50"
-          echo "   - Yellow: ${{ steps.calculate.outputs.yellow_total }}/200"
-          echo "   - Red: ${{ steps.calculate.outputs.red_total }}/500"
+          echo "::error::PR exceeds the Red diff-size budget (${{ steps.metrics.outputs.total }} lines > ${{ env.LINES_RED }})."
+          echo "::error::Split this PR into smaller pieces, or add 'budget-exception: <reason>' to the PR body."
           exit 1
