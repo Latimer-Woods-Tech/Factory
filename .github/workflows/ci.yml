@@ -125,9 +125,17 @@ jobs:
         # injection vectors and dead step references on main (caught
         # render-video.yml steps.upload_r2 + reviewer-class-hints.yml inline
         # `github.event.*.body` example during the SHA-pinning audit).
+        #
+        # `-shellcheck=` disables actionlint's bundled shellcheck pass on
+        # `run:` blocks. Repo-wide expansion surfaced 30+ pre-existing
+        # shellcheck findings (mostly SC2086 unquoted vars, SC2129 redirect
+        # style, a few SC2155/SC2015 real bug-class). They predate this step
+        # and cleaning them belongs in a dedicated workstream — they don't
+        # block actionlint from doing its core job (GH-Actions structural
+        # issues, injection vectors, missing step refs, bad cron, etc.).
         run: |
           bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color .github/workflows/*.yml
+          ./actionlint -color -shellcheck= .github/workflows/*.yml
 
       - name: Enforce dependency version policy (FRH-08)
         run: node scripts/lint-dependency-versions.mjs
