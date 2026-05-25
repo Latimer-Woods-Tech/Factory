@@ -11,6 +11,8 @@
     "status",
     "maturity",
     "tags",
+    "menuVisible",
+    "approvalTier",
     "parameters",
     "recipes",
     "sourcePrimitives",
@@ -28,6 +30,8 @@
       "items": { "type": "string", "minLength": 1 },
       "uniqueItems": true
     },
+    "menuVisible": { "type": "boolean" },
+    "approvalTier": { "type": "string", "enum": ["golden", "supported", "experimental"] },
     "parameters": {
       "type": "array",
       "items": { "$ref": "#/definitions/parameter" }
@@ -84,7 +88,8 @@
           "summary": { "type": "string" },
           "maturity": { "type": "string" },
           "primitives": { "type": "array", "items": { "type": "string" } },
-          "optionalPrimitives": { "type": "array", "items": { "type": "string" } }
+          "optionalPrimitives": { "type": "array", "items": { "type": "string" } },
+          "tradeoffs": { "type": "string" }
         }
       }
     },

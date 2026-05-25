@@ -5,6 +5,8 @@
   "status": "approved",
   "maturity": "beta",
   "tags": ["telephony", "voice", "llm", "crm"],
+  "menuVisible": true,
+  "approvalTier": "golden",
   "parameters": [
     {
       "id": "workerDomain",

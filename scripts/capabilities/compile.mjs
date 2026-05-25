@@ -71,13 +71,9 @@ function buildCatalog() {
   const generatedAt = deterministicTimestamp();
 
   // Cross-reference: enrich concept recipe summaries with version from recipe files.
-  // Also normalize governance fields from qualification → top level so downstream
-  // TypeScript code can read concept.approvalTier / concept.menuVisible directly.
   const recipeVersionMap = new Map(recipes.map((r) => [r.id, r.version ?? null]));
   const enrichedConcepts = concepts.map((c) => ({
     ...c,
-    menuVisible: Boolean(c.qualification?.menuVisible),
-    approvalTier: c.qualification?.approvalTier ?? 'unreviewed',
     recipes: (c.recipes ?? []).map((rs) => ({
       ...rs,
       version: recipeVersionMap.get(rs.id) ?? null,
