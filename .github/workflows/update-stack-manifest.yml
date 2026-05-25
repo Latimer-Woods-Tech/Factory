@@ -41,8 +41,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
-
+          node-version-file: .nvmrc
       - name: Run update-stack-manifest.js
         run: node scripts/update-stack-manifest.js
 

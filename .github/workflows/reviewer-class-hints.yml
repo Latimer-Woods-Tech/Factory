@@ -106,7 +106,7 @@ jobs:
           - ❌ Never auto-merge; human must confirm after bot approval
 
           **Red-tier checks (hardcoded):**
-          - Actions injection safety (no \`\${{ github.event.*.body }}\` in \`run:\` steps)
+          - Actions injection safety (don't reference issue/PR/comment body fields from \`github.event\` directly in \`run:\` steps — pass them through an env var first)
           - Migration reversibility
           - Billing idempotency
           - CODEOWNERS self-modification guard"

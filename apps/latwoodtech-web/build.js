@@ -228,6 +228,9 @@ await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
+// /status/ — near-live brand surface health page that fetches the
+// status-prober Worker with graceful fall-back to data/pulse.json.
+await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
 await mkdir(join(distDir, 'data'), { recursive: true });
 await copyFile(
 	join(srcDir, 'data', 'circuit-topology.json'),

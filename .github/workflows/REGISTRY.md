@@ -22,7 +22,7 @@
 
 CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
-### T1 — Load-bearing (24)
+### T1 — Load-bearing (25)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -36,6 +36,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `policy-drift-guard.yml` | schedule, dispatch | Detects branch-protection drift (paired with `apply-sec-hardening`) |
 | `pr-quality-check.yml` | PR | PR-level gate (shadow mode) |
 | `pr-review.yml` | PR, merge_group | 2-party bot review (Grok→Claude consensus) |
+| `pr-size-guard.yml` | pull_request_target | Hard-blocks PRs exceeding ADR-0005 diff-size budgets (G9) |
 | `publish.yml` | push | npm package publishing |
 | `refresh-vertex-token.yml` | schedule (45min), dispatch | Vertex AI token refresh — pipeline depends on this |
 | `render-video.yml` | push, PR, dispatch | Video pipeline (Capricast) |
@@ -54,7 +55,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `deploy-webhook-fanout.yml` | push, dispatch | Production deploy — webhook-fanout Worker |
 | `browser-agent-deploy.yml` | push, dispatch | Production deploy — Cloud Run browser-agent |
 
-### T2 — Operational (28)
+### T2 — Operational (29)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -66,6 +67,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `copilot-auto-approve.yml` | PR, workflow_run | Auto-approve Copilot agent PRs |
 | `copilot-pr-poller.yml` | schedule (10min), dispatch | Polling for Copilot agent PR state |
 | `dead-mans-switch.yml` | schedule, dispatch | Liveness signal |
+| `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
 | `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
