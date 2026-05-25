@@ -1,0 +1,36 @@
+# PR diff-size exclusions
+# Files matching these patterns are excluded from the line-change count
+# enforced by .github/workflows/pr-size-guard.yml (ADR-0005).
+#
+# Syntax: one glob per line; lines starting with # are comments.
+# Patterns are matched against the file path relative to repo root.
+
+# ── Lockfiles ────────────────────────────────────────────────────────────────
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# ── Generated dist / build outputs ───────────────────────────────────────────
+**/dist/**
+**/build/**
+**/.next/**
+**/.output/**
+
+# ── Auto-generated snapshots and cost/revenue reports ────────────────────────
+docs/cost/**
+docs/revenue/**
+docs/completion-tracker.json
+docs/STATE.md
+docs/STACK.md
+
+# ── Capability JSON catalog (machine-generated from registry) ────────────────
+capabilities/**/*.json
+
+# ── Database migration SQL (line-count grows monotonically) ──────────────────
+**/migrations/*.sql
+
+# ── Vendor / third-party copies ──────────────────────────────────────────────
+**/vendor/**

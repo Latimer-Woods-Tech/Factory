@@ -22,7 +22,7 @@
 
 CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
-### T1 — Load-bearing (24)
+### T1 — Load-bearing (25)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -36,6 +36,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `policy-drift-guard.yml` | schedule, dispatch | Detects branch-protection drift (paired with `apply-sec-hardening`) |
 | `pr-quality-check.yml` | PR | PR-level gate (shadow mode) |
 | `pr-review.yml` | PR, merge_group | 2-party bot review (Grok→Claude consensus) |
+| `pr-size-guard.yml` | pull_request_target | Hard-blocks PRs exceeding ADR-0005 diff-size budgets (G9) |
 | `publish.yml` | push | npm package publishing |
 | `refresh-vertex-token.yml` | schedule (45min), dispatch | Vertex AI token refresh — pipeline depends on this |
 | `render-video.yml` | push, PR, dispatch | Video pipeline (Capricast) |

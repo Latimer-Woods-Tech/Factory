@@ -1,0 +1,42 @@
+name: Lighthouse CI — admin-studio-ui
+on:
+  pull_request:
+    paths:
+      - 'apps/admin-studio-ui/**'
+
+concurrency:
+  group: lighthouse-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: Lighthouse mobile budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@latimer-woods-tech'
+      - name: Install deps
+        working-directory: apps/admin-studio-ui
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        working-directory: apps/admin-studio-ui
+        run: npm run build
+        env:
+          VITE_API_BASE: https://admin-studio-staging.latwoodtech.com
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Lighthouse CI
+        continue-on-error: true
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          configPath: apps/admin-studio-ui/lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
