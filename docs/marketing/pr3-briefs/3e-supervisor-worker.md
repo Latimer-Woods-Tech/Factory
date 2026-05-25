@@ -43,7 +43,7 @@ Files the executor MUST read:
 - [`CONSTITUTION.md`](../CONSTITUTION.md) — §2 voice, §3 budget, §4 tiers, §5 channels, §6 consent, §7 tripwires
 - [`BUDGET_CAPS.md`](../BUDGET_CAPS.md) · [`ESCALATION_TIERS.md`](../ESCALATION_TIERS.md) · [`CAMPAIGN_TAGGING.md`](../CAMPAIGN_TAGGING.md) · [`ICP_MATRIX.md`](../ICP_MATRIX.md) · [`KPI_DECOMPOSITION.md`](../KPI_DECOMPOSITION.md) · [`LIFECYCLE.md`](../LIFECYCLE.md)
 - [`CLAUDE.md`](../../../CLAUDE.md) — Workers runtime, no Node built-ins, no `process.env`, ESM only, JWT via Web Crypto, no `*.workers.dev` in user-facing URLs (the `/control` endpoint needs a branded domain in production)
-- [`docs/runbooks/add-new-app.md`](../../runbooks/add-new-app.md) — rate-limiter ID registry (next: **1009**), Hyperdrive UUID extraction
+- [`docs/runbooks/add-new-app.md`](../../runbooks/add-new-app.md) — rate-limiter ID registry (next free at planning time: **1013** prod / **1014** staging — IDs 1001–1012 are allocated; verify still free before deploying), Hyperdrive UUID extraction
 - [`docs/runbooks/environment-isolation-and-verification.md`](../../runbooks/environment-isolation-and-verification.md) — `/health` patterns
 - Memory: [`project_supervisor_architecture.md`](../../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_supervisor_architecture.md) — kanban ID, labels, stale-claim mechanics
 
@@ -146,7 +146,7 @@ export interface Env {
   DB: Hyperdrive;
   MARKETING_ARTEFACTS: R2Bucket;
   MARKETING_EVENTS: Queue<MarketingEvent>;
-  RATE_LIMITER: RateLimit;                 // namespace 1009
+  RATE_LIMITER: RateLimit;                 // namespace 1013 (prod) / 1014 (staging) — per add-new-app.md "Allocate separate ids per environment"
   ANTHROPIC_API_KEY: string; GROK_API_KEY?: string; GROQ_API_KEY: string;
   FACTORY_APP_ID: string; FACTORY_APP_PRIVATE_KEY: string; FACTORY_APP_INSTALLATION_ID: string;
   PUSHOVER_TOKEN: string; PUSHOVER_USER_KEY: string;
@@ -315,7 +315,7 @@ curl -X POST -H "$H" $BASE/sequencer/enroll \
 
 ## 8. Acceptance criteria
 
-- [ ] `apps/marketing-supervisor/` scaffolded; `wrangler.jsonc` registers D1, Hyperdrive (`DB`), R2 `marketing-artefacts`, Queue `marketing-events`, Rate Limiter namespace 1009, two DOs, three crons (`*/15 * * * *`, `0 6 * * *`, `0 */6 * * *`)
+- [ ] `apps/marketing-supervisor/` scaffolded; `wrangler.jsonc` registers D1, Hyperdrive (`DB`), R2 `marketing-artefacts`, Queue `marketing-events`, Rate Limiter namespace 1013 (prod) + 1014 (staging), two DOs, three crons (`*/15 * * * *`, `0 6 * * *`, `0 */6 * * *`)
 - [ ] Production uses a branded custom domain (no `*.workers.dev` outside staging); CI lint enforces
 - [ ] 10 agent files exist: 7 full (ContentDrafter, CopyEditor, OutreachSender, RetroWriter, BudgetWatcher, DigestComposer + ChannelPublisher gate stack); 3 stubs that escalate (TopicScout→3g, TripwireMonitor→3m, ExperimentRunner→sibling)
 - [ ] 4 gates ordered per [`§2`](../MARKETING_SUPERVISOR.md#2-architecture-overview); state machine matches [`§5`](../MARKETING_SUPERVISOR.md#5-campaign-state-machine) verbatim
@@ -334,7 +334,7 @@ curl -X POST -H "$H" $BASE/sequencer/enroll \
 ```
 apps/marketing-supervisor/
   package.json · tsconfig.json · README.md
-  wrangler.jsonc                       # crons, DOs, D1, Hyperdrive, R2, Queue, Rate Limiter 1009, branded domain
+  wrangler.jsonc                       # crons, DOs, D1, Hyperdrive, R2, Queue, Rate Limiter 1013/1014, branded domain
   src/
     index.ts                           # fetch/scheduled/queue handlers
     supervisor.do.ts                   # MarketingSupervisorDO — orchestration
@@ -364,7 +364,7 @@ docs/service-registry.yml              # MODIFY — add marketing-supervisor ent
 | Risk | Mitigation |
 |---|---|
 | Supervisor crash leaves campaigns wedged | DO singleton + auto-redeploy per [`§8`](../MARKETING_SUPERVISOR.md#8-failure-modes--recovery); `releaseStaleClaimedIssues` after 7d |
-| LLM spend runaway | `BudgetWatcher.preflight` blocks past daily cap; Rate Limiter (1009) caps LLM calls/sec; every run records `llm_cost_cents` |
+| LLM spend runaway | `BudgetWatcher.preflight` blocks past daily cap; Rate Limiter (1013 prod / 1014 staging) caps LLM calls/sec; every run records `llm_cost_cents` |
 | Voice gate blocks every artefact | TripwireMonitor cell-pauses on >5% block rate; auto-PR against `BRAND_PROFILES` per [`VOICES.md §5`](../VOICES.md#5-voice-drift-detection) |
 | Queue backlog grows | DLQ + Sentry alert on depth > 1000; `BudgetWatcher` throttles producers |
 | Concurrent tick fan-out | LockDO serialises per-issue claims; cron is single-instance; queue is at-least-once with idempotency via `external_id` |

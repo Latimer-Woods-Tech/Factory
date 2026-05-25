@@ -173,7 +173,7 @@ export async function buildWeeklyShareableDigest(
 ): Promise<WeeklyShareableDigest>;
 ```
 
-`apps/shareables-worker/` (Hono, custom domain `r.selfprime.net`):
+`apps/shareables-worker/` (Hono, bound to `selfprime.net/r/*` via CF Worker Route per [`reference_selfprime_worker_routes`](../../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_selfprime_worker_routes.md) — staging routes to `staging.selfprime.net/r/*`). The canonical public URL is path-based (`https://selfprime.net/r/{slug}/{id}`); never use a subdomain like `r.selfprime.net`:
 
 - `GET /r/:practitionerSlug/:readingSlug` — 200 server-rendered HTML; 410 if `revoked_at`; 404 if `private`.
 - `GET /r/:practitionerSlug` — brand landing.
@@ -238,7 +238,7 @@ Worker `/health`: `200` with `{"status":"ok","render":"ok"}`.
 - [ ] `publishReading` rejects without `consent.consentObtained === true`.
 - [ ] Default `displayMode` is `first_name_last_initial`; `full_name` requires explicit consent-language opt-in.
 - [ ] Reserved + unsafe slugs rejected per [`CAMPAIGN_TAGGING.md §5`](../CAMPAIGN_TAGGING.md#5-reserved-keys-dont-use-these-as-values).
-- [ ] Worker on custom domain (`r.selfprime.net` / `r.staging.selfprime.net`); no `*.workers.dev` in any rendered HTML or service-registry consumer files.
+- [ ] Worker bound to `selfprime.net/r/*` (prod) and `staging.selfprime.net/r/*` (staging) via CF Worker Routes API; no `*.workers.dev` in any rendered HTML or service-registry consumer files.
 - [ ] OG meta + JSON-LD on every render (curl-verified).
 - [ ] Every outbound CTA carries the 5-tuple as UTM params.
 - [ ] `recordReadingView` rate-limited per `(published_reading_id, ip_hash)` to 1 view per 30s.
@@ -253,7 +253,7 @@ Worker `/health`: `200` with `{"status":"ok","render":"ok"}`.
 ```
 apps/shareables-worker/                          # NEW
   src/{index.ts,render.ts,middleware-utm.ts}
-  wrangler.jsonc                                 # custom domain r.selfprime.net
+  wrangler.jsonc                                 # routes: selfprime.net/r/* (prod), staging.selfprime.net/r/* (staging)
   test/{render.test.ts,routes.integration.test.ts}
 
 packages/content/

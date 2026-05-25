@@ -163,6 +163,14 @@ export async function pauseSequence(
   sequenceName: string,
 ): Promise<void>;
 
+/** Resume a paused sequence; re-sets `next_send_at` to `now() + delay_days` from the current step. */
+export async function resumeSequence(
+  db: FactoryDb,
+  tenantId: string,
+  userId: string,
+  sequenceName: string,
+): Promise<{ resumed: boolean; reason?: 'not_paused' | 'not_enrolled' | 'suppressed' }>;
+
 /** Add to suppression list; any active sequences cancel. */
 export async function suppress(
   db: FactoryDb,

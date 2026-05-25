@@ -17,7 +17,7 @@ All four route through one entry point `postToChannel(db, config, payload, conte
 
 ## 2. Non-goals
 
-- DM sending, comment moderation, reply automation (3h owns Reddit/X reply mode)
+- DM sending, comment moderation, reply automation (Reddit reply automation lives in `apps/lead-gen` via PR #976; X reply automation is out of scope for now)
 - Cross-posting orchestration — supervisor (3e) decides which channels share a post
 - Analytics / impressions reads — 3k attribution scope
 - Stories / Fleets / Live — feed posts + Reels/Shorts only

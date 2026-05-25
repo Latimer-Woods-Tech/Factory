@@ -34,7 +34,7 @@ Files the executor MUST read:
 - [`MARKETING_SUPERVISOR.md`](../MARKETING_SUPERVISOR.md) — TopicScout role (this queue is its persistence)
 - [`CLAUDE.md`](../../../CLAUDE.md) — Workers runtime; **note** Google Trends runs in a GitHub Action (Python + pytrends), not Worker, per the video-pipeline pattern
 
-**Architecture decision:** new package `@latimer-woods-tech/topics`, not folded into `@lwt/schedule`. Schedule owns *video production state*; topics owns *signal mining + scoring* — different domain, different retry/backoff isolation. Slot 24 in [`CLAUDE.md`](../../../CLAUDE.md) Package Dependency Order, after `validation`.
+**Architecture decision:** new package `@latimer-woods-tech/topics`, not folded into `@lwt/schedule`. Schedule owns *video production state*; topics owns *signal mining + scoring* — different domain, different retry/backoff isolation. Slot **25** in [`CLAUDE.md`](../../../CLAUDE.md) Package Dependency Order, after `@latimer-woods-tech/browser` (slot 24).
 
 ## 4. Migrations
 
@@ -255,7 +255,7 @@ curl -X POST .../topics/sweep
 
 ## 8. Acceptance criteria
 
-- [ ] New package `@latimer-woods-tech/topics` created (slot 24, after `validation`); listed in [`CLAUDE.md`](../../../CLAUDE.md) Package Dependency Order
+- [ ] New package `@latimer-woods-tech/topics` created (slot 25, after `@latimer-woods-tech/browser`); listed in [`CLAUDE.md`](../../../CLAUDE.md) Package Dependency Order
 - [ ] DDL migrations land + idempotent; cross-tenant RLS verified
 - [ ] All six sources implemented (TikTok soft-fail acceptable; Google Trends via GH Action POSTing to `/topics/ingest`)
 - [ ] `swisseph-wasm` vendored; deterministic 90-day calendar emits ≥30 distinct aspect-topic proposals

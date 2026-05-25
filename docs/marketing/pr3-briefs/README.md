@@ -31,7 +31,7 @@
 | 3c | [3c-voice-matrix.md](./3c-voice-matrix.md) | Voice profile matrix in `@lwt/copy` | 3b | 2 days |
 | 3d | [3d-surface-registry.md](./3d-surface-registry.md) | Surface registry — URL → cell routing | 3b | 2 days |
 | 3e | [3e-supervisor-worker.md](./3e-supervisor-worker.md) | Marketing supervisor Worker | 3a, 3b, 3c | 5 days |
-| 3f | [3f-social-adapters.md](./3f-social-adapters.md) | LinkedIn + YouTube adapters in `@lwt/social` | 3c | 3 days |
+| 3f | [3f-social-adapters.md](./3f-social-adapters.md) | LinkedIn + YouTube + TikTok + Instagram adapters in `@lwt/social` | 3c | 3 days |
 | 3g | [3g-topic-queue.md](./3g-topic-queue.md) | Topic queue generator (transit + signal mining) | 3c, 3e | 4 days |
 | 3h | [3h-shareables.md](./3h-shareables.md) | Practitioner-branded shareables | 3b, 3c | 4 days |
 | 3i | [3i-embed-worker.md](./3i-embed-worker.md) | Embed-worker (chart calc widgets) | 3b | 3 days |

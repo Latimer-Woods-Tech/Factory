@@ -31,7 +31,7 @@ Files the executor MUST read:
 - [`docs/marketing/CONSTITUTION.md §3`](../CONSTITUTION.md#3-budget-caps), [`BUDGET_CAPS.md`](../BUDGET_CAPS.md) — LLM cost budget + cap headroom per cell
 - [`docs/marketing/ESCALATION_TIERS.md §6`](../ESCALATION_TIERS.md#6-special-escalations) — rank-drop alert routing
 - [`docs/marketing/icp/selfprime-practitioner.md §3.2`](../icp/selfprime-practitioner.md#32-earned) — earned channel context
-- [`docs/runbooks/add-new-app.md`](../../runbooks/add-new-app.md) — rate-limiter registry; **1009** taken by [PR 3e marketing-supervisor](./3e-supervisor-worker.md); this PR claims **1010**
+- [`docs/runbooks/add-new-app.md`](../../runbooks/add-new-app.md) — rate-limiter registry; IDs 1001–1012 are allocated and [PR 3e marketing-supervisor](./3e-supervisor-worker.md) claims **1013** (prod) + **1014** (staging); this PR claims **1015** (prod) + **1016** (staging) per the "separate ids per environment" rule. Verify still free before deploying.
 - [`CLAUDE.md`](../../../CLAUDE.md) — hard constraints (no `process.env`, no Node built-ins, ESM, Workers only, no `*.workers.dev` user-facing)
 
 ## 4. Migrations
@@ -248,7 +248,7 @@ curl -X POST https://llm-rank-worker.adrper79.workers.dev/run?dryRun=true \
 - [ ] Cost stays ≤$25/mo (verified via dry-run report); budget check refuses spend past per-cell `llm-rank` cap → Tier-3
 - [ ] Test coverage ≥90% lines, ≥85% branches; zero `any`; no `console.*`; no `process.env`
 - [ ] `/health` returns 200 via `curl` in staging (per [`CLAUDE.md`](../../../CLAUDE.md) Verification Requirement)
-- [ ] Worker registered in [`docs/service-registry.yml`](../../service-registry.yml) with custom domain; rate-limiter ID `1010` claimed
+- [ ] Worker registered in [`docs/service-registry.yml`](../../service-registry.yml) with custom domain; rate-limiter IDs `1015` (prod) + `1016` (staging) claimed
 - [ ] `BUDGET_CAPS.md` updated with `llm-rank` channel lines per cell
 
 ## 9. File list
