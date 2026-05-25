@@ -85,10 +85,10 @@
 
 The merger is responsible for this section. Subagents do not merge — see [AGENT_PROTOCOL.md](.github/AGENT_PROTOCOL.md).
 
-- [ ] Deploy workflow(s) for the merge SHA queued (`deploy-frontend`, `deploy-workers`, or repo equivalent)
-- [ ] Both deploys completed successfully (not just queued)
-- [ ] Production smoke check returns expected response from the new SHA
-- [ ] If anything failed: triggered `deploy-recovery.yml` or rolled back; did NOT start the next merge
+- [ ] Per-app deploy workflow(s) for the merge SHA queued (see [docs/service-registry.yml](../docs/service-registry.yml) — each Worker/Pages has its own `deploy-*.yml`)
+- [ ] All triggered deploys completed successfully (not just queued)
+- [ ] Production smoke check returns expected response from the new SHA via `curl` against the canonical custom domain (not `*.workers.dev`)
+- [ ] If anything failed: rolled back via `wrangler rollback` or canary-watch auto-revert; did NOT start the next merge
 
 If you skipped this section, you are inside the failure mode that broke main on May 1 2026. Don't.
 

@@ -206,16 +206,15 @@ jobs:
       # SENTRY_AUTH_TOKEN secret is not configured.
       - name: Upload sourcemaps to Sentry
         # Sourcemap upload is nice-to-have (stack-trace symbolication) — it must
-        # never gate a deploy. Today's Sentry project slug "admin-studio" under
-        # org "latwood-tech" returns 400 "Invalid project ids or slugs"; the
-        # canary-watch reusable workflow uses org slug "latimer-woods-tech",
-        # so one of these is stale. Tracked separately; for now, soft-fail.
+        # never gate a deploy. Verified slugs via Sentry API 2026-05-24: org
+        # `latwood-tech`, Worker project `factory-admin-worker`. (The Pages
+        # project `admin-studio-ui` is uploaded by the sibling deploy workflow.)
         continue-on-error: true
         working-directory: apps/admin-studio
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: latwood-tech
-          SENTRY_PROJECT: admin-studio
+          SENTRY_PROJECT: factory-admin-worker
           SENTRY_RELEASE: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -270,8 +269,8 @@ jobs:
     with:
       app_name:            admin-studio
       worker_name:         admin-studio-production
-      sentry_project:      admin-studio
-      sentry_org:          latimer-woods-tech
+      sentry_project:      factory-admin-worker
+      sentry_org:          latwood-tech
       base_url:            https://admin.latwoodtech.work
       smoke_path:          /healthz
       previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
