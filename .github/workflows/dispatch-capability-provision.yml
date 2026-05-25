@@ -121,7 +121,17 @@ jobs:
             "${STUDIO_API_BASE}/capabilities/provision-requests/${PROVISION_REQUEST_ID}/transition"
 
       - name: Install scaffold prerequisites (wrangler)
-        run: npm install -g wrangler@latest
+        # actions/setup-node sets a custom npm prefix so global installs don't
+        # need sudo; the resulting bin/ isn't on PATH by default in the next
+        # step. Add it to $GITHUB_PATH so the scaffold call can resolve
+        # `wrangler`. Verify accessible inline so we fail fast if install
+        # actually went wrong.
+        run: |
+          set -euo pipefail
+          npm install -g wrangler@latest
+          NPM_BIN="$(npm config get prefix)/bin"
+          echo "$NPM_BIN" >> "$GITHUB_PATH"
+          "$NPM_BIN/wrangler" --version
 
       - name: Run scaffold against handoff
         id: scaffold
