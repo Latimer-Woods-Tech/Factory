@@ -117,17 +117,6 @@ auth.post('/login', async (c) => {
 });
 
 /**
- * GET /auth/providers
- *
- * Returns the configured authentication providers for this worker instance.
- * The UI calls this on env selection to determine which sign-in methods to show.
- */
-auth.get('/providers', (c) => {
-  const googleClientId = c.env.GOOGLE_CLIENT_ID ?? null;
-  return c.json({ googleClientId });
-});
-
-/**
  * POST /auth/google
  *
  * Body: { credential: "<Google ID token>", env: "production" | "staging" | "local" }
@@ -215,6 +204,17 @@ auth.post('/google', async (c) => {
  * POST /auth/logout — client-side discards token; we just acknowledge.
  * In Phase B we add a session blocklist table for forced logouts.
  */
+/**
+ * GET /auth/config — public endpoint returning non-secret GSI config.
+ * client_id is a public OAuth identifier (safe to expose in responses).
+ */
+auth.get('/config', (c) => {
+  return c.json({
+    googleClientId: c.env.GOOGLE_CLIENT_ID || null,
+    hostedDomain: 'apunlimited.com',
+  });
+});
+
 auth.post('/logout', (c) => c.json({ ok: true }));
 
 export default auth;
