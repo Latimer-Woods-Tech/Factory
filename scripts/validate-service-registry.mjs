@@ -50,6 +50,12 @@ const WORKFLOW_RULES = [
     targets: [{ id: 'schedule-worker', key: 'default' }],
   },
   {
+    path: '.github/workflows/deploy-status-prober.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'status-prober', key: 'default' }],
+  },
+  {
     path: '.github/workflows/deploy-supervisor.yml',
     section: 'workers',
     verifier: 'curl -s -o /dev/null',
