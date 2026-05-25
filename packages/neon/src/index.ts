@@ -32,7 +32,7 @@ export type FactoryDb = Omit<HyperdriveDrizzleDb, 'execute'> & {
   ): Promise<FactoryQueryResult<TRow>>;
 };
 
-export { sql } from 'drizzle-orm';
+export { sql, eq } from 'drizzle-orm';
 
 /**
  * Minimal Cloudflare Hyperdrive-compatible binding shape.
