@@ -140,7 +140,7 @@ export async function handleSlackEvents(request: Request, env: Env): Promise<Res
       const text = String(event['text'] ?? '').trim();
       if (text) {
         const lines = text.split('\n');
-        const title = lines[0].slice(0, 120);
+        const title = (lines[0] ?? '').slice(0, 120);
         const issueBody = `_Received via Slack DM · ${new Date().toISOString()}_\n\n${text}`;
 
         // Fire-and-forget — Slack requires a 200 within 3 seconds.

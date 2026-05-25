@@ -54,7 +54,6 @@ tests/**                                @adrper79-dot @factory-cross-repo[bot]
 # Reference: docs/decisions/2026-05-23-workflow-lifecycle.md (Pillar 1)
 .github/workflows/REGISTRY.md           @adrper79-dot
 .github/CODEOWNERS                      @adrper79-dot @factory-cross-repo[bot]
-.github/settings.yml                    @adrper79-dot @factory-cross-repo[bot]
 
 # Shared packages — every consumer app is affected on bump
 packages/**                             @adrper79-dot @factory-cross-repo[bot]

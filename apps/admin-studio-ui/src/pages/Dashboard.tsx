@@ -59,7 +59,7 @@ const MOBILE_MORE_TABS = TABS.slice(4);
 export function Dashboard() {
   const location = useLocation();
   const activeTab = '/' + (location.pathname.split('/')[1] || 'overview');
-  const currentTabObj = TABS.find(t => t.to === activeTab) || TABS[0];
+  const currentTabObj = TABS.find(t => t.to === activeTab) || TABS[0]!;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
