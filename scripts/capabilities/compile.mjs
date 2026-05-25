@@ -6,13 +6,15 @@
 //   2. apps/admin-studio/src/lib/capability-data.generated.ts — typed bundle
 //
 // Output is deterministic: keys are sorted, arrays are stable-sorted, and
-// generatedAt is derived from the latest git mtime of any registry file
-// (falls back to the file's mtime when not in a git checkout).
+// generatedAt is a content-derived signature ("sha256:<16hex>") of the
+// catalog payload itself. This makes the bundle byte-stable for any given
+// set of source files, regardless of git history. Squash-merges no longer
+// cause drift between pre-merge and post-merge regens.
 //
 // CI also runs `validate.mjs && compile.mjs && git diff --exit-code` to
 // guarantee the committed dist artifacts match HEAD.
 
-import { execSync } from 'child_process';
+import { createHash } from 'crypto';
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -43,18 +45,22 @@ function deepSort(value) {
   return value;
 }
 
-function deterministicTimestamp() {
-  try {
-    const output = execSync('git log -1 --format=%cI -- capabilities/concepts capabilities/primitives capabilities/recipes capabilities/rules', {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-    }).trim();
-    if (output) return new Date(output).toISOString();
-  } catch {
-    // Not in a git checkout, or no commits yet — fall through.
-  }
-  return '2026-05-23T00:00:00.000Z';
+/**
+ * Build a content-derived identifier for the catalog. We hash everything that
+ * goes INTO the catalog (deep-sorted, JSON-serialised) except the signature
+ * itself and the derivable `summary`, then return a `sha256:<16hex>` opaque
+ * version string. Consumers treat this as a stable bundle id; the semver
+ * `schemaVersion` field continues to carry compatibility information.
+ *
+ * Why not a git timestamp? Squash-merges rewrite commit times on the merged
+ * paths, so a regen run pre-squash differs from a regen run post-squash by
+ * exactly the squash timestamp — breaking the CI `git diff --exit-code`
+ * gate on every PR after a capabilities change merges (see PR #1009).
+ */
+function buildContentSignature(catalogParts) {
+  const canonical = JSON.stringify(deepSort(catalogParts));
+  const hash = createHash('sha256').update(canonical).digest('hex');
+  return `sha256:${hash.slice(0, 16)}`;
 }
 
 function buildCatalog() {
@@ -68,8 +74,6 @@ function buildCatalog() {
     .flatMap((bundle) => bundle.rules ?? [])
     .sort((a, b) => a.id.localeCompare(b.id));
 
-  const generatedAt = deterministicTimestamp();
-
   // Cross-reference: enrich concept recipe summaries with version from recipe files.
   const recipeVersionMap = new Map(recipes.map((r) => [r.id, r.version ?? null]));
   const enrichedConcepts = concepts.map((c) => ({
@@ -79,6 +83,27 @@ function buildCatalog() {
       version: recipeVersionMap.get(rs.id) ?? null,
     })),
   }));
+
+  const sortedConcepts = enrichedConcepts
+    .map((c) => deepSort(c))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const sortedRecipes = recipes
+    .map((r) => deepSort(r))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const sortedPrimitives = primitives
+    .map((p) => deepSort(p))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const ruleBundle = { rules: allRules };
+
+  // Content signature is derived from the load-bearing payload only:
+  // concepts, recipes, primitives, and rules. We intentionally exclude the
+  // `summary` (derivable) and `generatedAt` itself (would be self-referential).
+  const generatedAt = buildContentSignature({
+    concepts: sortedConcepts,
+    recipes: sortedRecipes,
+    primitives: sortedPrimitives,
+    ruleBundle,
+  });
 
   return {
     schemaVersion: '1.0.0',
@@ -90,18 +115,10 @@ function buildCatalog() {
       recipeCount: recipes.length,
       ruleFileCount: rules.length,
     },
-    concepts: enrichedConcepts
-      .map((c) => deepSort(c))
-      .sort((a, b) => a.id.localeCompare(b.id)),
-    recipes: recipes
-      .map((r) => deepSort(r))
-      .sort((a, b) => a.id.localeCompare(b.id)),
-    primitives: primitives
-      .map((p) => deepSort(p))
-      .sort((a, b) => a.id.localeCompare(b.id)),
-    ruleBundle: {
-      rules: allRules,
-    },
+    concepts: sortedConcepts,
+    recipes: sortedRecipes,
+    primitives: sortedPrimitives,
+    ruleBundle,
   };
 }
 
@@ -148,4 +165,11 @@ function main() {
   console.log('\n✅ Compiled.');
 }
 
-main();
+// Exports for tests — keep below `main()` so the CLI shape is unchanged.
+export { buildCatalog, buildContentSignature, emitTypeScript };
+
+// Only run main() when invoked directly (allow imports for testing).
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (invokedDirectly) {
+  main();
+}
