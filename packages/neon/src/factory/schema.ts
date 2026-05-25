@@ -23,10 +23,12 @@ export const SOURCE_SYSTEMS = [
   'manual',
 ] as const;
 
+/** Union of allowed source system strings. */
 export type SourceSystem = (typeof SOURCE_SYSTEMS)[number];
 
 /** Derivation lifecycle states for a raw ingest event. */
 export const DERIVATION_STATUSES = ['pending', 'derived', 'failed', 'replayed'] as const;
+/** Union of valid derivation status strings. */
 export type DerivationStatus = (typeof DERIVATION_STATUSES)[number];
 
 /**
@@ -61,7 +63,9 @@ export const factoryEventsIngest = pgTable('factory_events_ingest', {
   ingestedAt: timestamp('ingested_at', { withTimezone: true }).notNull().default(sql`now()`),
 });
 
+/** Drizzle inferred select type for `factory_events_ingest`. */
 export type FactoryEventIngest = typeof factoryEventsIngest.$inferSelect;
+/** Drizzle inferred insert type for `factory_events_ingest`. */
 export type NewFactoryEventIngest = typeof factoryEventsIngest.$inferInsert;
 
 // ── factory_gates ────────────────────────────────────────────────────────────
@@ -81,6 +85,7 @@ export const GATE_TYPES = [
   'stuck-detection',
 ] as const;
 
+/** Union of valid gate type strings. */
 export type GateType = (typeof GATE_TYPES)[number];
 
 /** Valid gate source systems. */
@@ -95,14 +100,17 @@ export const GATE_SOURCE_SYSTEMS = [
   'factory-stuck-watcher',
 ] as const;
 
+/** Union of valid gate source system strings. */
 export type GateSourceSystem = (typeof GATE_SOURCE_SYSTEMS)[number];
 
 /** Subject types a gate can apply to. */
 export const SUBJECT_TYPES = ['pr', 'issue', 'deploy', 'supervisor-run', 'video-render'] as const;
+/** Union of valid subject type strings. */
 export type SubjectType = (typeof SUBJECT_TYPES)[number];
 
 /** Possible gate states. */
 export const GATE_STATES = ['pending', 'passed', 'failed', 'skipped', 'override', 'expired'] as const;
+/** Union of valid gate state strings. */
 export type GateState = (typeof GATE_STATES)[number];
 
 /**
@@ -132,7 +140,9 @@ export const factoryGates = pgTable('factory_gates', {
   ingestedAt: timestamp('ingested_at', { withTimezone: true }).notNull().default(sql`now()`),
 });
 
+/** Drizzle inferred select type for `factory_gates`. */
 export type FactoryGate = typeof factoryGates.$inferSelect;
+/** Drizzle inferred insert type for `factory_gates`. */
 export type NewFactoryGate = typeof factoryGates.$inferInsert;
 
 // ── factory_artifacts ────────────────────────────────────────────────────────
@@ -152,6 +162,7 @@ export const ARTIFACT_TYPES = [
   'report',
 ] as const;
 
+/** Union of valid artifact type strings. */
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number];
 
 /** Valid artifact producer types. */
@@ -163,6 +174,7 @@ export const PRODUCER_TYPES = [
   'manual',
 ] as const;
 
+/** Union of valid artifact producer type strings. */
 export type ProducerType = (typeof PRODUCER_TYPES)[number];
 
 /**
@@ -195,5 +207,7 @@ export const factoryArtifacts = pgTable('factory_artifacts', {
   expiresAt: timestamp('expires_at', { withTimezone: true }),
 });
 
+/** Drizzle inferred select type for `factory_artifacts`. */
 export type FactoryArtifact = typeof factoryArtifacts.$inferSelect;
+/** Drizzle inferred insert type for `factory_artifacts`. */
 export type NewFactoryArtifact = typeof factoryArtifacts.$inferInsert;
