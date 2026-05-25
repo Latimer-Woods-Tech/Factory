@@ -11,12 +11,12 @@ import type {
 const catalog = {
   "schemaVersion": "1.0.0",
   "kind": "capability-catalog",
-  "generatedAt": "2026-05-24T13:18:32.000Z",
+  "generatedAt": "2026-05-25T03:46:29.000Z",
   "summary": {
-    "conceptCount": 5,
+    "conceptCount": 6,
     "primitiveCount": 9,
-    "recipeCount": 6,
-    "ruleFileCount": 2
+    "recipeCount": 7,
+    "ruleFileCount": 1
   },
   "concepts": [
     {
@@ -238,6 +238,124 @@ const catalog = {
           "values": {
             "enableCompliance": false,
             "enableEmailFollowUp": false
+          }
+        }
+      ]
+    },
+    {
+      "approvalTier": "experimental",
+      "displayName": "Arts & Media Room (Council Orchestrator)",
+      "id": "media-room",
+      "maturity": "experimental",
+      "menuVisible": true,
+      "parameters": [
+        {
+          "default": null,
+          "description": "Custom domain for the deployed worker (artifact URLs embed this).",
+          "enum": [],
+          "formatHint": "media-room.example.com",
+          "id": "workerDomain",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": null,
+          "description": "URL the composited QR code points at on each campaign image.",
+          "enum": [],
+          "formatHint": "https://selfprime.net/trending",
+          "id": "qrTargetUrl",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "default": "0 14 * * *",
+          "description": "Cron expression controlling automatic campaign generation cadence (UTC).",
+          "enum": [],
+          "formatHint": "0 14 * * *  (daily 09:00 ET)",
+          "id": "runCadenceCron",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "default": true,
+          "description": "Require operator Pushover acknowledgement before any publish action.",
+          "enum": [],
+          "formatHint": null,
+          "id": "pushoverApprovalRequired",
+          "required": false,
+          "type": "boolean"
+        }
+      ],
+      "qualification": {
+        "approvalTier": "experimental",
+        "disallowedEnvironments": [
+          "local"
+        ],
+        "menuVisible": true,
+        "requiredCapabilities": [
+          "custom-domain",
+          "anthropic-api-key",
+          "grok-api-key",
+          "vertex-access-token",
+          "replicate-api-token",
+          "elevenlabs-api-key",
+          "scrape-creators-api-key",
+          "pushover-credentials"
+        ]
+      },
+      "recipeSelection": null,
+      "recipes": [
+        {
+          "id": "media-room-orchestrator",
+          "maturity": "experimental",
+          "optionalPrimitives": [],
+          "primitives": [
+            "llm",
+            "analytics"
+          ],
+          "summary": "Council assembly line: chains specialized LLMs and production APIs into a daily multimodal marketing campaign artifact.",
+          "version": "1.0.0"
+        }
+      ],
+      "sourcePrimitives": [
+        "analytics",
+        "llm"
+      ],
+      "status": "approved",
+      "summary": "Daily LLM-driven assembly line that turns trending social signals into a publish-ready multimodal campaign (X thread + image + audio + QR composite) with operator one-click approval.",
+      "tags": [
+        "llm",
+        "council",
+        "marketing",
+        "orchestrator",
+        "campaign"
+      ],
+      "templates": [
+        {
+          "hint": "Default cadence — fires once daily at 09:00 America/New_York (14:00 UTC).",
+          "id": "daily-9am-et",
+          "label": "Daily 09:00 ET cadence",
+          "values": {
+            "pushoverApprovalRequired": true,
+            "runCadenceCron": "0 14 * * *"
+          }
+        },
+        {
+          "hint": "Skips weekends — cron fires Mon–Fri at 14:00 UTC.",
+          "id": "weekday-only",
+          "label": "Weekdays only 09:00 ET",
+          "values": {
+            "pushoverApprovalRequired": true,
+            "runCadenceCron": "0 14 * * 1-5"
+          }
+        },
+        {
+          "hint": "No cron — operator fires via POST /api/trigger when desired.",
+          "id": "manual-only",
+          "label": "Manual trigger only",
+          "values": {
+            "pushoverApprovalRequired": true,
+            "runCadenceCron": "0 0 31 2 *"
           }
         }
       ]
@@ -695,6 +813,7 @@ const catalog = {
           "path": "/health"
         },
         {
+          "expectContains": "ok",
           "expectedStatus": 200,
           "path": "/api/intake"
         }
@@ -769,6 +888,60 @@ const catalog = {
         "optional": [
           "ANALYTICS"
         ],
+        "required": []
+      },
+      "constraints": [
+        "Use a branded custom domain for any embedded artifact URLs (QR target).",
+        "Each run must produce a content-hashed receipt logged via @latimer-woods-tech/analytics.",
+        "Zod schema validation MUST gate every seam transition; no untyped handoffs.",
+        "LLM calls route through @latimer-woods-tech/llm so AI Gateway caching + cost ledger apply.",
+        "Operator approval (Pushover ack or /api/runs/:id/approve) required before any publish action."
+      ],
+      "envContract": {
+        "secrets": [
+          "GROK_API_KEY",
+          "VERTEX_ACCESS_TOKEN",
+          "REPLICATE_API_TOKEN",
+          "ELEVENLABS_API_KEY",
+          "SCRAPE_CREATORS_API_KEY",
+          "PUSHOVER_TOKEN",
+          "PUSHOVER_USER_KEY"
+        ],
+        "vars": [
+          "WORKER_DOMAIN",
+          "QR_TARGET_URL",
+          "RUN_CADENCE_CRON"
+        ]
+      },
+      "expectedSurfaces": [
+        "/health",
+        "/api/trigger",
+        "/api/runs",
+        "/api/runs/:id"
+      ],
+      "goal": "Autonomously produce a publish-ready marketing campaign (X thread + image + audio + QR-coded composite) every day from trending social signals, with operator one-click approval.",
+      "id": "media-room-orchestrator",
+      "maturity": "experimental",
+      "optionalPrimitives": [],
+      "primitives": [
+        "llm",
+        "analytics"
+      ],
+      "smokeChecks": [
+        {
+          "expectContains": "ok",
+          "expectedStatus": 200,
+          "path": "/health"
+        }
+      ],
+      "summary": "Council assembly line: chains specialized LLMs (Gemini trend-spot + Sonnet HD analyst + Grok creative) and production APIs (Replicate image, ElevenLabs audio) into a daily multimodal marketing campaign artifact.",
+      "version": "1.0.0"
+    },
+    {
+      "bindingContract": {
+        "optional": [
+          "ANALYTICS"
+        ],
         "required": [
           "CRM_SEGMENTS"
         ]
@@ -779,7 +952,6 @@ const catalog = {
       ],
       "envContract": {
         "secrets": [
-          "ANTHROPIC_API_KEY",
           "CRM_API_KEY"
         ],
         "vars": [
@@ -788,10 +960,8 @@ const catalog = {
       },
       "expectedSurfaces": [
         "/health",
-        "/manifest",
         "/api/campaigns",
-        "/api/campaigns/:id/start",
-        "/api/dispositions"
+        "/api/leads"
       ],
       "goal": "Launch governed outbound calling for CRM-selected contacts.",
       "id": "outbound-dialer",
@@ -809,11 +979,6 @@ const catalog = {
           "expectContains": "ok",
           "expectedStatus": 200,
           "path": "/health"
-        },
-        {
-          "expectContains": "manifestVersion",
-          "expectedStatus": 200,
-          "path": "/manifest"
         }
       ],
       "summary": "CRM-segment driven outbound dialer workflow.",
@@ -1073,15 +1238,6 @@ const catalog = {
   ],
   "ruleBundle": {
     "rules": [
-      {
-        "id": "outbound-telephony-requires-compliance",
-        "ifAllPrimitives": [
-          "telephony"
-        ],
-        "thenRequirePrimitives": [
-          "compliance"
-        ]
-      },
       {
         "id": "telephony-requires-crm",
         "ifAllPrimitives": [
