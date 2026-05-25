@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           # Node 24 is the current Active LTS (since Oct 2025; Maintenance
           # through Oct 2026). Node 20 hit EOL 2026-04-30. Wrangler 4.x
