@@ -1,28 +1,20 @@
 name: Dispatch capability provision
 
-# Operator-triggered dispatcher for staging provision requests recorded by
-# the Capability Design Studio (see docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md).
+# Operator-triggered (or auto-dispatch-provision.yml triggered) dispatcher for
+# staging provision requests recorded by the Capability Design Studio.
+# See docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md.
 #
 # Flow:
-#   1. Operator confirms the proof gates in admin-studio and a row is inserted
-#      into capability_provision_requests with status='requested'.
-#   2. Operator (or a scheduled poller) calls this workflow_dispatch with the
-#      provision_request_id and the persisted handoff_id.
-#   3. This workflow:
-#        a. fetches the handoff package from admin-studio
-#        b. transitions the request to 'dispatched'
-#        c. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
-#        d. uploads the scaffolded tree as a workflow artifact for review
-#        e. on success, transitions the request to 'succeeded'; on failure,
-#           transitions to 'failed' with the error captured in notes.
-#
-# Two secrets are required:
-#   - STUDIO_API_BASE       — e.g. https://admin-staging.latwoodtech.work
-#   - STUDIO_DISPATCH_TOKEN — admin-tier JWT (short-lived, rotated)
-#
-# The workflow stays manual on purpose. Stage D could replace workflow_dispatch
-# with a schedule that polls /capabilities/provision-requests?status=requested,
-# but that's a separate council inquiry.
+#   1. Operator (or auto-dispatcher) calls this workflow_dispatch with
+#      provision_request_id, handoff_id, app_name.
+#   2. This workflow:
+#        a. authenticates to GCP (WIF) and pulls bootstrap creds from Secret Manager
+#        b. mints a fresh studio JWT via /auth/login (4h TTL)
+#        c. fetches the handoff package from admin-studio
+#        d. transitions the request to 'dispatched'
+#        e. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
+#        f. uploads the scaffolded tree as a workflow artifact for review
+#        g. on success, transitions to 'succeeded'; on failure, 'failed' with notes.
 
 on:
   workflow_dispatch:
@@ -47,6 +39,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -54,10 +47,45 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env STUDIO_API_BASE     ADMIN_STUDIO_PROD_URL
+          fetch_to_env BOOTSTRAP_EMAIL     ADMIN_STUDIO_BOOTSTRAP_EMAIL
+          fetch_to_env BOOTSTRAP_PASSWORD  ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+
+      - name: Mint fresh dispatch JWT via /auth/login
+        run: |
+          set -euo pipefail
+          if [ -z "${STUDIO_API_BASE:-}" ] || [ -z "${BOOTSTRAP_EMAIL:-}" ] || [ -z "${BOOTSTRAP_PASSWORD:-}" ]; then
+            echo "::error::GCP-sourced creds missing — cannot mint dispatch JWT"
+            exit 1
+          fi
+          BODY=$(jq -n \
+            --arg e "$BOOTSTRAP_EMAIL" \
+            --arg p "$BOOTSTRAP_PASSWORD" \
+            '{email:$e,password:$p,env:"production"}')
+          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" | jq -r .token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Login returned no token"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "STUDIO_DISPATCH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
       - name: Fetch handoff package
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           HANDOFF_ID: ${{ inputs.handoff_id }}
         run: |
           set -euo pipefail
@@ -83,8 +111,6 @@ jobs:
 
       - name: Transition provision request → dispatched
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
@@ -122,8 +148,6 @@ jobs:
       - name: Transition provision request → succeeded
         if: success()
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
@@ -136,8 +160,6 @@ jobs:
       - name: Transition provision request → failed
         if: failure()
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
