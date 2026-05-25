@@ -1,25 +1,27 @@
 name: Auto-dispatch capability provision
 
-# Scheduled poller that replaces the manual workflow_dispatch in
-# dispatch-capability-provision.yml (Stage D remaining work).
+# Scheduled poller for capability provision requests (Stage D dispatcher).
 #
-# Runs every 15 minutes, queries /capabilities/provision-requests?status=requested,
-# and calls `gh workflow run dispatch-capability-provision.yml` for each pending
-# row. This eliminates the manual trigger step from the Stage C flow.
+# Every 15 minutes: GETs /capabilities/provision-requests?status=requested
+# from admin-studio, then fires `dispatch-capability-provision.yml` for each
+# pending row. Eliminates the manual workflow_dispatch trigger from Stage C.
 #
-# Required secrets (same as dispatch-capability-provision.yml):
-#   - STUDIO_API_BASE       — e.g. https://admin-staging.latwoodtech.work
-#   - STUDIO_DISPATCH_TOKEN — admin-tier JWT (short-lived, rotated)
+# Auth: fetches ADMIN_STUDIO_BOOTSTRAP_EMAIL + ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+# from GCP Secret Manager via WIF and mints a fresh 4h JWT each run via
+# /auth/login. Workflow cadence is 15min so the token always has >=3h45m
+# headroom against the production envLockedAt session-age policy
+# (packages/studio-core/src/env-context.ts:124 maxSessionAge).
 #
-# The workflow derives app_name from the provision request's conceptId by
-# stripping any trailing "-api" suffix (e.g. "prime-self-api" → "prime-self").
-#
-# See docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md — Stage D remaining work.
+# Replaces the previous static-STUDIO_DISPATCH_TOKEN approach which was
+# unmaintainable: production session policy expires the token every 4h.
 
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch: {}
+
+permissions:
+  contents: read
 
 jobs:
   poll-and-dispatch:
@@ -28,6 +30,7 @@ jobs:
     permissions:
       contents: read
       actions: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -35,10 +38,44 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env STUDIO_API_BASE              ADMIN_STUDIO_PROD_URL
+          fetch_to_env BOOTSTRAP_EMAIL              ADMIN_STUDIO_BOOTSTRAP_EMAIL
+          fetch_to_env BOOTSTRAP_PASSWORD           ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+
+      - name: Mint fresh dispatch JWT via /auth/login
+        run: |
+          set -euo pipefail
+          if [ -z "${STUDIO_API_BASE:-}" ] || [ -z "${BOOTSTRAP_EMAIL:-}" ] || [ -z "${BOOTSTRAP_PASSWORD:-}" ]; then
+            echo "::error::GCP-sourced creds missing — cannot mint dispatch JWT"
+            exit 1
+          fi
+          BODY=$(jq -n \
+            --arg e "$BOOTSTRAP_EMAIL" \
+            --arg p "$BOOTSTRAP_PASSWORD" \
+            '{email:$e,password:$p,env:"production"}')
+          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" | jq -r .token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Login returned no token"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "STUDIO_DISPATCH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
       - name: Fetch pending provision requests
-        env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p .auto-dispatch
@@ -59,8 +96,6 @@ jobs:
 
       - name: Dispatch each pending request
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail

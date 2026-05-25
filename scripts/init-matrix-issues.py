@@ -25,14 +25,30 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, Callable
+
+# Type alias for dependency-injected fetch function (used in testing)
+FetchFn = Callable[[str], tuple[int, bytes, dict[str, str]]]
 
 ID_RE = re.compile(r"^[A-Z]+-[A-Z0-9]+-\d+$")
 LEGEND = {"✅": "passing", "⚠️": "issues", "❌": "fail", "🔍": "unknown"}
 HEADER_RE = re.compile(r"^\|\s*ID\s*\|", re.IGNORECASE)
 
 
-def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None) -> tuple[int, Any]:
+def http_request_default(url: str) -> tuple[int, bytes, dict[str, str]]:
+    """Default HTTP request implementation using urllib."""
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read()
+            return resp.status, raw, {}
+    except urllib.error.HTTPError as e:
+        return e.code, e.read() if e.fp else b"", {}
+    except Exception:
+        return 599, b"", {}
+
+
+def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None, fetch_fn: FetchFn | None = None) -> tuple[int, Any]:
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -42,7 +58,15 @@ def gh(method: str, path: str, token: str, body: dict[str, Any] | None = None) -
     data = json.dumps(body).encode() if body is not None else None
     if data is not None:
         headers["Content-Type"] = "application/json"
-    req = urllib.request.Request(f"https://api.github.com{path}", method=method, headers=headers, data=data)
+    url = f"https://api.github.com{path}"
+
+    # If fetch_fn provided, use it directly (ignoring method/body for simplicity in tests)
+    if fetch_fn is not None:
+        status, resp_body, _ = fetch_fn(url)
+        return status, json.loads(resp_body) if resp_body else None
+
+    # Default behavior with retries
+    req = urllib.request.Request(url, method=method, headers=headers, data=data)
     for attempt in range(5):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
@@ -93,17 +117,17 @@ def parse_rows(content: str) -> list[dict[str, str]]:
     return rows
 
 
-def ensure_labels(repo: str, token: str, labels: list[tuple[str, str]]) -> None:
+def ensure_labels(repo: str, token: str, labels: list[tuple[str, str]], fetch_fn: FetchFn | None = None) -> None:
     """Create labels if missing. labels = [(name, color_hex)]."""
     for name, color in labels:
-        status, _ = gh("POST", f"/repos/{repo}/labels", token, {"name": name, "color": color})
+        status, _ = gh("POST", f"/repos/{repo}/labels", token, {"name": name, "color": color}, fetch_fn=fetch_fn)
         if status not in (201, 422):  # 422 = already exists
             print(f"[warn] label create {name} → {status}", file=sys.stderr)
 
 
-def find_issue_by_feature_label(repo: str, token: str, feature_id: str) -> dict[str, Any] | None:
+def find_issue_by_feature_label(repo: str, token: str, feature_id: str, fetch_fn: FetchFn | None = None) -> dict[str, Any] | None:
     q = urllib.parse.quote(f'repo:{repo} is:issue label:"feature:{feature_id}"')
-    status, body = gh("GET", f"/search/issues?q={q}&per_page=1", token)
+    status, body = gh("GET", f"/search/issues?q={q}&per_page=1", token, fetch_fn=fetch_fn)
     if status != 200 or not body:
         return None
     items = body.get("items") or []
@@ -127,22 +151,22 @@ _Row tracked from `{matrix_path}` in `{repo}`. Edit the `status:*` label here to
 """
 
 
-def reconcile_labels(repo: str, token: str, number: int, want: list[str], remove_prefixes: tuple[str, ...]) -> None:
-    status, body = gh("GET", f"/repos/{repo}/issues/{number}/labels", token)
+def reconcile_labels(repo: str, token: str, number: int, want: list[str], remove_prefixes: tuple[str, ...], fetch_fn: FetchFn | None = None) -> None:
+    status, body = gh("GET", f"/repos/{repo}/issues/{number}/labels", token, fetch_fn=fetch_fn)
     if status != 200:
         return
     current = {lbl["name"] for lbl in (body or [])}
     # remove anything in the managed prefixes that we don't want
     for name in current:
         if any(name.startswith(p) for p in remove_prefixes) and name not in want:
-            gh("DELETE", f"/repos/{repo}/issues/{number}/labels/{urllib.parse.quote(name)}", token)
+            gh("DELETE", f"/repos/{repo}/issues/{number}/labels/{urllib.parse.quote(name)}", token, fetch_fn=fetch_fn)
     # add anything missing
     missing = [w for w in want if w not in current]
     if missing:
-        gh("POST", f"/repos/{repo}/issues/{number}/labels", token, {"labels": missing})
+        gh("POST", f"/repos/{repo}/issues/{number}/labels", token, {"labels": missing}, fetch_fn=fetch_fn)
 
 
-def main() -> int:
+def main(fetch_fn: FetchFn | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True, help="owner/name, e.g. Latimer-Woods-Tech/HumanDesign")
     ap.add_argument("--matrix", required=True, help="path to FUNCTIONS_MATRIX.md in the repo")
@@ -158,7 +182,7 @@ def main() -> int:
     if args.file:
         content = open(args.file).read()
     else:
-        status, body = gh("GET", f"/repos/{args.repo}/contents/{args.matrix}", token)
+        status, body = gh("GET", f"/repos/{args.repo}/contents/{args.matrix}", token, fetch_fn=fetch_fn)
         if status != 200 or not body or "content" not in body:
             print(f"failed to fetch matrix: {status}", file=sys.stderr)
             return 3
@@ -179,13 +203,13 @@ def main() -> int:
         ("weight:3", "BFD4F2"),
         ("weight:4", "FEF2C0"),
         ("weight:5", "F9D0C4"),
-    ])
+    ], fetch_fn=fetch_fn)
 
     created = 0
     updated = 0
     for row in rows:
         feature_label = f"feature:{row['id']}"
-        ensure_labels(args.repo, token, [(feature_label, "5319E7")])
+        ensure_labels(args.repo, token, [(feature_label, "5319E7")], fetch_fn=fetch_fn)
         status_label = f"status:{LEGEND[row['status']]}"
         weight_label = f"weight:{row['weight']}"
         wants = [feature_label, status_label, weight_label]
@@ -193,7 +217,7 @@ def main() -> int:
         if owner.startswith("@"):
             wants.append(f"owner:{owner}")
 
-        existing = find_issue_by_feature_label(args.repo, token, row["id"])
+        existing = find_issue_by_feature_label(args.repo, token, row["id"], fetch_fn=fetch_fn)
         title = f"[{row['id']}] {row['feature']}"
         body = issue_body(row, args.repo, args.matrix)
         if existing:
@@ -201,8 +225,8 @@ def main() -> int:
             if args.dry_run:
                 print(f"would update #{number} ({row['id']})")
                 continue
-            reconcile_labels(args.repo, token, number, wants, ("status:", "weight:", "owner:"))
-            gh("PATCH", f"/repos/{args.repo}/issues/{number}", token, {"title": title, "body": body})
+            reconcile_labels(args.repo, token, number, wants, ("status:", "weight:", "owner:"), fetch_fn=fetch_fn)
+            gh("PATCH", f"/repos/{args.repo}/issues/{number}", token, {"title": title, "body": body}, fetch_fn=fetch_fn)
             updated += 1
         else:
             if args.dry_run:
@@ -211,14 +235,14 @@ def main() -> int:
             initial_state = "closed" if row["status"] == "✅" else "open"
             if row["status"] == "✅":
                 wants.append("already-built")
-                ensure_labels(args.repo, token, [("already-built", "0E8A16")])
+                ensure_labels(args.repo, token, [("already-built", "0E8A16")], fetch_fn=fetch_fn)
             status, created_issue = gh("POST", f"/repos/{args.repo}/issues", token,
-                           {"title": title, "body": body, "labels": wants})
+                           {"title": title, "body": body, "labels": wants}, fetch_fn=fetch_fn)
             if status == 201:
                 created += 1
                 if initial_state == "closed" and isinstance(created_issue, dict):
                     gh("PATCH", f"/repos/{args.repo}/issues/{created_issue['number']}", token,
-                       {"state": "closed", "state_reason": "completed"})
+                       {"state": "closed", "state_reason": "completed"}, fetch_fn=fetch_fn)
             else:
                 print(f"[warn] create failed {row['id']} → {status}", file=sys.stderr)
 
