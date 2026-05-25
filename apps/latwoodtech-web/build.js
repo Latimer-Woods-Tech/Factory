@@ -234,20 +234,18 @@ await rm(join(distDir, 'data'), { recursive: true, force: true, maxRetries: 3 })
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
-await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 await mkdir(join(distDir, 'stack'), { recursive: true });
 await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
-// /status/ — near-live brand surface health page that fetches the
-// status-prober Worker with graceful fall-back to data/pulse.json.
-await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
-
 // Credibility signals: humans.txt (humanstxt.org) at root; security.txt
 // (RFC 9116) under /.well-known/. Both are 1-2 KB and absence reads
 // "not yet a real platform" to senior engineers / security researchers.
 await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
 await mkdir(join(distDir, '.well-known'), { recursive: true });
 await copyFile(join(srcDir, '.well-known', 'security.txt'), join(distDir, '.well-known', 'security.txt'));
-
+await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
+// /status/ — near-live brand surface health page that fetches the
+// status-prober Worker with graceful fall-back to data/pulse.json.
+await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
 await mkdir(join(distDir, 'data'), { recursive: true });
 await writeFile(
 	join(distDir, 'data', 'pulse.json'),
