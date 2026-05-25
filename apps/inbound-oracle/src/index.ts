@@ -111,10 +111,7 @@ async function generateReading(
         role: 'user',
         content:
           `You are Forge, the Human Design reading voice for selfprime.net. ` +
-          `Write exactly 3 sentences — a vivid, personalised Human Design reading ` +
-          `for someone with ${birthInfo}. ` +
-          `Identify their likely energy type and one key life theme. ` +
-          `Tone: warm, grounded, empowering. No disclaimers. Respond with only the 3 sentences.`,
+          `Write exactly 1 short sentence identifying their likely Human Design energy type and one key life theme based on their birth info. Then, write 2 sentences of heavy, persuasive marketing copy telling them that their full chart holds the exact mechanics to stop their burnout, bypass resistance, and unlock their operational leverage. Tone: direct, sharp, highly persuasive. No disclaimers. Respond with only the 3 sentences.`,
       },
     ],
     env,
@@ -319,7 +316,7 @@ app.post('/webhook/telnyx', async (c) => {
         'Authorization': `Bearer ${c.env.TELNYX_API_KEY}`
       },
       body: JSON.stringify({
-        payload: 'Welcome to Selfprime. This is an automated oracle. Please hang up and text your birth date, time, and city to this number to receive your reading.',
+        payload: 'Welcome to Selfprime. Your energetic blueprint holds the exact mechanics to stop your burnout and unlock your leverage. To get your personalized Human Design reading, hang up and text your birth date, time, and city to this number. I will text you back a free audio reading and a private link to your full chart.',
         voice: 'female',
         language: 'en-US',
         client_state: 'spoken_welcome'
