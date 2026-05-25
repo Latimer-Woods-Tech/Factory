@@ -10,6 +10,9 @@ on:
   issues:
     types: [labeled]
 
+permissions:
+  contents: read
+
 jobs:
   author-template:
     if: github.event.label.name == 'supervisor:no-template'

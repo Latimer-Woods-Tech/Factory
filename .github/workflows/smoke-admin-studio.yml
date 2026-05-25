@@ -16,6 +16,9 @@ concurrency:
   group: smoke-admin-studio
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest

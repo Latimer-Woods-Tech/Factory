@@ -8,6 +8,9 @@ on:
         required: true
         default: 'cypher-of-healing-api'
 
+permissions:
+  contents: read
+
 jobs:
   push-secrets:
     runs-on: ubuntu-latest
