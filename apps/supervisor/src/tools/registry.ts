@@ -16,13 +16,19 @@ export interface Tool {
 
 export class ToolRegistry {
   private byName = new Map<string, Tool>();
+  private byId = new Map<string, Tool>();
 
-  register(tool: Tool): void {
+  register(tool: Tool, id?: string): void {
     this.byName.set(tool.name, tool);
+    // If an ID is provided (for test fixtures), also register by ID
+    if (id) {
+      this.byId.set(id, tool);
+    }
   }
 
   get(name: string): Tool | undefined {
-    return this.byName.get(name);
+    // Try by name first, then by ID
+    return this.byName.get(name) ?? this.byId.get(name);
   }
 
   list(): Tool[] {
