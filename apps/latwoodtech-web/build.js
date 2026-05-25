@@ -237,8 +237,9 @@ await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 await mkdir(join(distDir, 'stack'), { recursive: true });
 await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
-await mkdir(join(distDir, 'status'), { recursive: true });
-await copyFile(join(srcDir, 'status', 'index.html'), join(distDir, 'status', 'index.html'));
+// /status/ — near-live brand surface health page that fetches the
+// status-prober Worker with graceful fall-back to data/pulse.json.
+await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
 
 // Credibility signals: humans.txt (humanstxt.org) at root; security.txt
 // (RFC 9116) under /.well-known/. Both are 1-2 KB and absence reads

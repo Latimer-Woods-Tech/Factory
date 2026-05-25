@@ -3,147 +3,174 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Latimer Woods system status — live HTTP probe results across every branded product surface, snapshotted at each deploy." />
-    <meta property="og:title" content="Status — Latimer Woods" />
-    <meta property="og:description" content="Build-time HTTP probe across every brand surface." />
-    <meta property="og:type" content="article" />
-    <meta property="og:url" content="https://latwoodtech.com/status/" />
-    <meta name="robots" content="noindex" />
+    <meta name="description" content="Live uptime probes for Latimer Woods brand surfaces. Refreshed every 5 minutes by the status-prober Worker." />
     <meta name="theme-color" content="#05070a" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234f7bff' width='100' height='100'/><text x='50' y='60' font-size='70' font-weight='700' fill='white' text-anchor='middle'>L</text></svg>" />
-    <title>Status — Latimer Woods</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <title>Status — Latimer Woods Surfaces</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .status-shell { padding: 3rem 1.5rem; max-width: 960px; margin: 0 auto; }
+      .status-shell h1 { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; margin: 0 0 0.5rem; }
+      .status-meta { color: #8a93a6; font-size: 0.95rem; margin: 0 0 2rem; }
+      .status-meta[data-tone="stale"] { color: #d4a14a; }
+      .status-meta[data-tone="error"] { color: #d46a6a; }
+      .status-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .status-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem; background: rgba(255,255,255,0.02); }
+      .status-card .name { font-weight: 600; font-size: 1.1rem; margin: 0 0 0.35rem; }
+      .status-card .url { font-family: 'Space Grotesk', monospace; font-size: 0.85rem; color: #8a93a6; margin: 0 0 0.75rem; word-break: break-all; }
+      .status-card .row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+      .status-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+      .status-pill[data-alive="true"] { background: rgba(86, 196, 130, 0.15); color: #56c482; }
+      .status-pill[data-alive="false"] { background: rgba(212, 106, 106, 0.15); color: #d46a6a; }
+      .status-pill[data-alive="unknown"] { background: rgba(138, 147, 166, 0.15); color: #8a93a6; }
+      .status-back { display: inline-block; margin-top: 2.5rem; color: #4f7bff; text-decoration: none; }
+      .status-back:hover { text-decoration: underline; }
+    </style>
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to main content</a>
-    <div class="page-shell">
-      <header class="stack-hero">
-        <a class="stack-back" href="/">← Latimer Woods</a>
-        <p class="eyebrow">Status</p>
-        <h1>Brand surfaces, last probed at this build.</h1>
-        <p class="subtitle">
-          Every entry below was HTTP-probed at deploy time. <code>alive</code> means the URL responded with a status &lt; 400 within an 8-second timeout, following redirects. This snapshot refreshes on each deploy of <code>apps/latwoodtech-web</code>; for sub-deploy granularity, use the brand surface's own health endpoint or wait for the next deploy.
-        </p>
-      </header>
+    <main id="main" class="status-shell">
+      <p class="eyebrow">Live status</p>
+      <h1>Brand surface health</h1>
+      <p class="status-meta" data-status-meta>Loading…</p>
 
-      <main id="main">
-        <section class="stack-diagram" aria-labelledby="status-title" style="margin-top:8px">
-          <div class="status-overall" data-status-overall>
-            <span class="status-overall-dot" data-status-dot></span>
-            <strong data-status-summary>Loading status snapshot…</strong>
-            <span class="status-overall-meta" data-status-meta>Probed at — / —</span>
+      <div class="status-grid" data-status-grid>
+        <article class="status-card">
+          <p class="name">—</p>
+          <p class="url">awaiting probe data</p>
+          <div class="row">
+            <span class="status-pill" data-alive="unknown">UNKNOWN</span>
+            <span>—</span>
           </div>
-          <div class="status-grid" data-status-grid>
-            <article class="status-card status-card-placeholder">
-              <p class="card-label">Loading</p>
-              <strong>Awaiting snapshot</strong>
-              <span>—</span>
-            </article>
-          </div>
-          <p class="pulse-footnote" style="margin-top:24px">
-            <strong>What this is, exactly:</strong> a JSON-driven readout of HTTP probes the
-            build script ran against every entry in <code>PUBLIC_SURFACES</code> (see
-            <a href="/stack/">Stack</a>). Probes use HEAD with GET fallback on 405/501,
-            <code>redirect: 'follow'</code>, and an 8-second timeout.
-            Source: <a href="/data/pulse.json"><code>/data/pulse.json</code></a> &middot;
-            <code>pulse.surfaceHealth[]</code>.
-          </p>
-          <p class="pulse-footnote">
-            <strong>What this is not:</strong> a live uptime dashboard. The snapshot only
-            refreshes on deploy. A continuous prober (cron Worker writing to R2) is on the
-            roadmap; until then this page is honest about its staleness rather than
-            pretending to be real-time.
-          </p>
-        </section>
+        </article>
+      </div>
 
-        <section class="section section-footnote" style="margin-top:48px">
-          <p>
-            <a class="stack-back" href="/">← Back to Latimer Woods</a>
-            &nbsp;·&nbsp;
-            <a class="stack-back" href="/stack/">Stack →</a>
-          </p>
-        </section>
-      </main>
-    </div>
+      <a class="status-back" href="/">← Back to latwoodtech.com</a>
+    </main>
 
     <script type="module">
-      function statusToneAndLabel(entry) {
-        if (entry.alive) return { tone: 'good', label: 'Operational' };
-        if (entry.error) return { tone: 'warning', label: 'Unreachable' };
-        return { tone: 'warning', label: `HTTP ${entry.status ?? '?'}` };
+      const LIVE_ENDPOINT = 'https://status.latwoodtech.work/current';
+      const FALLBACK_ENDPOINT = '/data/pulse.json';
+      const LIVE_TIMEOUT_MS = 8000;
+
+      const grid = document.querySelector('[data-status-grid]');
+      const meta = document.querySelector('[data-status-meta]');
+
+      const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ESC_MAP[c]); }
+      function safeHref(url) { return typeof url === 'string' && url.startsWith('https://') ? esc(url) : '#'; }
+
+      function formatRelative(iso) {
+        if (!iso) return 'unknown time';
+        const then = new Date(iso).getTime();
+        if (Number.isNaN(then)) return iso;
+        const delta = Math.max(0, Date.now() - then);
+        const seconds = Math.round(delta / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        const minutes = Math.round(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.round(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.round(hours / 24);
+        return `${days}d ago`;
       }
 
-      function fmtDuration(ms) {
-        if (typeof ms !== 'number') return '—';
-        if (ms < 1000) return `${ms} ms`;
-        return `${(ms / 1000).toFixed(2)} s`;
-      }
-
-      function renderCard(entry) {
-        const { tone, label } = statusToneAndLabel(entry);
-        const detail = entry.alive
-          ? `HTTP ${entry.status ?? '?'} · ${fmtDuration(entry.durationMs)}`
-          : entry.error
-            ? `Error: ${entry.error}`
-            : `HTTP ${entry.status ?? '?'} · ${fmtDuration(entry.durationMs)}`;
-        return `
-          <article class="status-card" data-tone="${tone}">
-            <p class="card-label">${entry.category ?? 'Surface'}</p>
-            <strong>${entry.name}</strong>
-            <span class="status-card-detail">${detail}</span>
-            <a href="${entry.url}" target="_blank" rel="noreferrer">${new URL(entry.url).hostname}</a>
-            <span class="status-card-pill" data-tone="${tone}">${label}</span>
-          </article>`;
-      }
-
-      async function hydrate() {
-        try {
-          const res = await fetch('/data/pulse.json', { headers: { Accept: 'application/json' } });
-          if (!res.ok) throw new Error(`pulse.json returned ${res.status}`);
-          const payload = await res.json();
-          const health = payload.pulse?.surfaceHealth ?? [];
-          const grid = document.querySelector('[data-status-grid]');
-          const summary = document.querySelector('[data-status-summary]');
-          const meta = document.querySelector('[data-status-meta]');
-          const dot = document.querySelector('[data-status-dot]');
-
-          if (!health.length) {
-            if (summary) summary.textContent = 'No surfaces tracked';
-            if (meta) meta.textContent = `Probed at ${new Date(payload.generatedAt).toLocaleString()} · 0 tracked surfaces`;
-            if (dot) dot.setAttribute('data-tone', 'warning');
-            if (grid) {
-              grid.innerHTML = `
-                <article class="status-card" data-tone="warning">
-                  <p class="card-label">Empty</p>
-                  <strong>No surfaces currently tracked</strong>
-                  <span class="status-card-detail">PUBLIC_SURFACES is empty for this build</span>
-                  <span class="status-card-pill" data-tone="warning">No data</span>
-                </article>`;
-            }
-            return;
-          }
-
-          const liveCount = health.filter((h) => h.alive).length;
-          const totalCount = health.length;
-          const allOk = liveCount === totalCount;
-
-          if (summary) summary.textContent = allOk
-            ? `All systems operational (${liveCount}/${totalCount})`
-            : `${liveCount}/${totalCount} surfaces operational`;
-          if (dot) dot.setAttribute('data-tone', allOk ? 'good' : 'warning');
-          if (meta) meta.textContent = `Probed at ${new Date(payload.generatedAt).toLocaleString()}`;
-          if (grid) grid.innerHTML = health.map(renderCard).join('');
-        } catch (err) {
-          const summary = document.querySelector('[data-status-summary]');
-          if (summary) summary.textContent = 'Status snapshot unavailable';
-          console.error('status hydrate failed', err);
+      function renderResults(results, generatedAt, source) {
+        if (!Array.isArray(results) || results.length === 0) {
+          grid.innerHTML = '<p>No surfaces reported.</p>';
+          meta.textContent = 'No data available.';
+          meta.dataset.tone = 'error';
+          return;
         }
+        grid.innerHTML = results
+          .map((entry) => {
+            const alive = entry.alive === true ? 'true' : entry.alive === false ? 'false' : 'unknown';
+            const pillText = alive === 'true' ? 'UP' : alive === 'false' ? 'DOWN' : 'UNKNOWN';
+            const status = entry.status != null ? `HTTP ${entry.status}` : entry.error ? 'no response' : '—';
+            const duration = typeof entry.durationMs === 'number' ? `${entry.durationMs}ms` : '';
+            const name = entry.name ?? 'Unknown';
+            const url = entry.url ?? '';
+            return `
+              <article class="status-card">
+                <p class="name">${esc(name)}</p>
+                <p class="url"><a href="${safeHref(url)}" target="_blank" rel="noopener">${esc(url)}</a></p>
+                <div class="row">
+                  <span class="status-pill" data-alive="${alive}">${pillText}</span>
+                  <span>${status}${duration ? ' · ' + duration : ''}</span>
+                </div>
+              </article>`;
+          })
+          .join('');
+        const probedLabel = formatRelative(generatedAt);
+        const sourceLabel = source === 'live' ? 'live probe' : 'build-time snapshot';
+        meta.textContent = `Probed ${probedLabel} (${sourceLabel}).`;
+        meta.dataset.tone = source === 'live' ? '' : 'stale';
       }
 
-      hydrate();
+      function fetchLive() {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), LIVE_TIMEOUT_MS);
+        return fetch(LIVE_ENDPOINT, {
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error('live endpoint returned ' + response.status);
+            return response.json();
+          })
+          .finally(() => clearTimeout(timer));
+      }
+
+      function fetchFallback() {
+        return fetch(FALLBACK_ENDPOINT, { headers: { Accept: 'application/json' } })
+          .then((response) => {
+            if (!response.ok) throw new Error('fallback returned ' + response.status);
+            return response.json();
+          });
+      }
+
+      function normalizeFallback(payload) {
+        const pulse = payload && payload.pulse ? payload.pulse : {};
+        const generatedAt = (payload && payload.generatedAt) || (pulse && pulse.generatedAt) || null;
+        const fromSurfaceHealth = Array.isArray(pulse.surfaceHealth) ? pulse.surfaceHealth : null;
+        const fromSurfaces = Array.isArray(pulse.surfaces)
+          ? pulse.surfaces.map((surface) => ({
+              name: surface.name,
+              url: surface.url,
+              alive: null,
+              status: null,
+              durationMs: null,
+            }))
+          : [];
+        const results = fromSurfaceHealth ?? fromSurfaces;
+        return { generatedAt, results };
+      }
+
+      fetchLive()
+        .then((envelope) => {
+          if (!envelope || !Array.isArray(envelope.results)) {
+            throw new Error('live envelope malformed');
+          }
+          renderResults(envelope.results, envelope.generatedAt, 'live');
+        })
+        .catch((liveError) => {
+          console.warn('status-prober live fetch failed; falling back to pulse.json', liveError);
+          fetchFallback()
+            .then((payload) => {
+              const normalized = normalizeFallback(payload);
+              renderResults(normalized.results, normalized.generatedAt, 'fallback');
+            })
+            .catch((fallbackError) => {
+              console.error('fallback fetch failed', fallbackError);
+              grid.innerHTML = '<p>Status data temporarily unavailable.</p>';
+              meta.textContent = 'Unable to load status data.';
+              meta.dataset.tone = 'error';
+            });
+        });
     </script>
   </body>
 </html>
