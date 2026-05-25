@@ -240,6 +240,42 @@ describe('createCapabilityMiddleware', () => {
     expect(r.status).toBe(401);
     expect(audit.records[0]!.status).toBe('denied');
   });
+
+  it('handles malformed JSON body gracefully', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'admin', scope: 'admin:write', exp: Math.floor(Date.now()/1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      checkCodeownerApproval: () => Promise.resolve({ approved: true }),
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 422));
+    const r = await request(app, '/admin/users/u_123/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: 'not valid json{',
+    });
+    expect(r.status).toBe(422);
+    expect(audit.records[0]!.status).toBe('denied');
+  });
+
+  it('audits with custom actor from actorFromPayload hook', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'bot_123', scope: 'admin:write', exp: Math.floor(Date.now()/1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      checkCodeownerApproval: () => Promise.resolve({ approved: true }),
+      actorFromPayload: (p) => `${p.sub}-via-hook`,
+    }), (c) => c.json({ ok: true }));
+    const r = await request(app, '/admin/users/u_123/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(200);
+    expect(audit.records[0]!.actor).toBe('bot_123-via-hook');
+  });
 });
 
 describe('createAdminRouter', () => {
@@ -351,6 +387,28 @@ describe('createAdminRouter', () => {
     expect(r.status).toBe(200);
     const body = await r.json() as { events: Array<{ event: string }> };
     expect(body.events[0]!.event).toBe('click');
+  });
+
+  it('GET /events passes through already-parsed properties object', async () => {
+    const db = dbExecute([{ event: 'view', user_id: 'u_2', occurred_at: '2024-01-02', properties: { y: 2 } }]);
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin/events');
+    expect(r.status).toBe(200);
+    const body = await r.json() as { events: Array<{ properties: { y: number } }> };
+    expect(body.events[0]!.properties.y).toBe(2);
+  });
+
+  it('GET / returns 500 on non-FactoryBaseError via onError handler', async () => {
+    const db = dbReject(new Error('plain crash'));
+    const router = createAdminRouter({ db, analytics: null as never, appId: 'app' });
+    const app = new Hono();
+    app.route('/admin', router);
+    const r = await app.request('http://test/admin');
+    expect(r.status).toBe(500);
+    const body = await r.json() as { error: string };
+    expect(body.error).toBe('Internal server error');
   });
 
   it('GET /health returns ok when db is connected', async () => {

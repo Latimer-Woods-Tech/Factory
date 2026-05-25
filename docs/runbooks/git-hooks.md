@@ -76,6 +76,59 @@ chmod +x .githooks/pre-commit
 
 (Windows users running Git for Windows / WSL don't need this; the Bash shim handles it.)
 
+## Companion enforcement: Claude Code agent isolation
+
+The pre-commit hook catches *commits* that landed on the wrong branch. It does **not** catch the upstream cause: parallel Claude Code sub-agents sharing one working tree and doing `git checkout` / `git reset --hard` over each other's in-flight edits.
+
+Today's primary defense for that is a sentence in [`CLAUDE.md`](../../CLAUDE.md) ("Sub-Agent Isolation") instructing every write-capable `Agent` invocation to pass `isolation: "worktree"`. That converts the agent's work into a temporary `git worktree`, separate from the parent tree.
+
+### Optional third-layer enforcement (PreToolUse hook)
+
+If the soft rule keeps getting bypassed, install a Claude Code `PreToolUse` hook that hard-rejects `Agent` calls missing `isolation: "worktree"` when the prompt mentions branch-altering or deploy operations. Sketch:
+
+`scripts/claude-hooks/check-agent-isolation.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+input=$(cat)
+tool=$(printf '%s' "$input" | jq -r '.tool_name // ""')
+[ "$tool" = "Agent" ] || exit 0
+
+iso=$(printf '%s' "$input" | jq -r '.tool_input.isolation // ""')
+[ "$iso" = "worktree" ] && exit 0
+
+subtype=$(printf '%s' "$input" | jq -r '.tool_input.subagent_type // ""')
+case "$subtype" in
+  Explore|claude-code-guide|Plan|statusline-setup) exit 0 ;;
+esac
+
+prompt=$(printf '%s' "$input" | jq -r '.tool_input.prompt // ""')
+if echo "$prompt" | grep -qiE 'git (checkout|switch|reset|rebase|push|commit)|wrangler (pages )?deploy|gh pr create'; then
+  echo "❌ Agent call writes to branch/deploy state without isolation:'worktree'." >&2
+  echo "   Add isolation: 'worktree' to this Agent({...}) call, or use subagent_type=Explore for read-only work." >&2
+  exit 2
+fi
+exit 0
+```
+
+Wire it into `.claude/settings.json` (project-shared) or `.claude/settings.local.json` (just your clone):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [{ "type": "command", "command": "bash ./scripts/claude-hooks/check-agent-isolation.sh" }]
+      }
+    ]
+  }
+}
+```
+
+This is **opt-in by the same logic as the pre-commit hook** — a safety net, not a gate. It's documented here rather than installed by default so you can evaluate whether it produces too many false positives in your specific multi-agent workflow before turning it on.
+
 ## Future iterations
 
 Possible additions, NOT in this PR:

@@ -19,8 +19,27 @@
 // has node and gh CLI; that's all we use.
 // =============================================================================
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+
+// ---------------------------------------------------------------------------
+// Kill switch — global emergency-stop for Factory automation. Defense layer
+// #1 from the workflow lifecycle decision's "governance of governance"
+// recommendations. Any automation that mutates external state (approve,
+// merge, comment, disable a workflow) MUST consult this before acting.
+//
+// To pause: commit an empty file at .github/automation-paused (via PR, since
+//   .github/** is CODEOWNER-gated). Any automation that consults this on its
+//   next event will skip-cleanly with an explanatory comment.
+// To resume: delete the file in another PR.
+//
+// Strictly file-existence — no content parsing. Reduces the failure modes of
+// the kill switch itself to "present" (paused) or "absent" (run). No need
+// to read, parse, or interpret the file. Less surface area = harder to break.
+// ---------------------------------------------------------------------------
+export function isAutomationPaused(pausePath = '.github/automation-paused') {
+  return existsSync(pausePath);
+}
 
 // ---------------------------------------------------------------------------
 // Minimal YAML reader — only handles the subset we use: top-level lists of
@@ -166,10 +185,25 @@ function main() {
   const PR_AUTHOR = process.env.PR_AUTHOR;
   const PR_BRANCH = process.env.PR_BRANCH;
   const ALLOWLIST_PATH = process.env.ALLOWLIST_PATH || '.github/snapshot-paths.yml';
+  const PAUSE_FLAG_PATH = process.env.PAUSE_FLAG_PATH || '.github/automation-paused';
 
   if (!PR_NUMBER || !PR_AUTHOR || !PR_BRANCH) {
     console.error('FATAL: PR_NUMBER, PR_AUTHOR, PR_BRANCH must all be set in env.');
     process.exit(2);
+  }
+
+  // Kill switch — checked FIRST, before allowlist parsing or any external
+  // call. If paused, exit cleanly (status 0) with a one-line comment on the
+  // PR so the operator sees why nothing happened. Exit 0 (not 1) because
+  // paused is a deliberate operational state, not an error.
+  if (isAutomationPaused(PAUSE_FLAG_PATH)) {
+    console.log(`⏸  Automation paused (${PAUSE_FLAG_PATH} present). Skipping evaluation of PR #${PR_NUMBER}.`);
+    try {
+      gh(`pr comment ${PR_NUMBER} --body ${JSON.stringify(`⏸ **Snapshot PR auto-merge paused** — \`${PAUSE_FLAG_PATH}\` is present on main. This PR will be re-evaluated on the next \`synchronize\` event after the kill switch is cleared. See [\`docs/runbooks/snapshot-pr-contract.md\`](../blob/main/docs/runbooks/snapshot-pr-contract.md#kill-switch).`)}`);
+    } catch (err) {
+      console.warn(`Could not post pause comment (likely already posted): ${err.message}`);
+    }
+    process.exit(0);
   }
 
   const allowlist = parseAllowlist(readFileSync(ALLOWLIST_PATH, 'utf-8'));

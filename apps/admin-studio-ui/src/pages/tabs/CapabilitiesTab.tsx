@@ -33,6 +33,7 @@ interface CapabilityRecipeSummary {
   primitives: string[];
   optionalPrimitives: string[];
   version?: string | null;
+  tradeoffs?: string;
 }
 
 interface CapabilityPlan {
@@ -715,6 +716,29 @@ export function CapabilitiesTab() {
                 />
               )}
 
+              {/* Recipe variant comparison — only shown when multiple recipes exist and any carry tradeoffs */}
+              {selectedConcept.recipes.length > 1 && selectedConcept.recipes.some((r) => r.tradeoffs) && (
+                <div className="rounded border border-slate-700 bg-slate-900/40 p-4">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Recipe Variants
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {selectedConcept.recipes.map((recipe) => (
+                      <div key={recipe.id} className="rounded border border-slate-700/60 bg-slate-950/60 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs text-slate-200">{recipe.id}</span>
+                          <MaturityBadge maturity={recipe.maturity} />
+                        </div>
+                        <p className="mt-1 text-xs text-slate-400">{recipe.summary}</p>
+                        {recipe.tradeoffs && (
+                          <p className="mt-2 text-xs text-amber-300/80">{recipe.tradeoffs}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
                 <div className="space-y-4">
                   <div>
@@ -759,7 +783,14 @@ export function CapabilitiesTab() {
                 </div>
               </div>
 
-              {resolution && <ResolutionPanel resolution={resolution} />}
+              {resolution && (
+                <ResolutionPanel
+                  resolution={resolution}
+                  tradeoffs={
+                    selectedConcept.recipes.find((r) => r.id === resolution.recipe.id)?.tradeoffs
+                  }
+                />
+              )}
 
               {preview && <PreviewPanel preview={preview} />}
 
@@ -924,7 +955,13 @@ function WorkflowStageIndicator({ current }: { current: WorkflowStage }) {
   );
 }
 
-function ResolutionPanel({ resolution }: { resolution: CapabilityResolutionResponse }) {
+function ResolutionPanel({
+  resolution,
+  tradeoffs,
+}: {
+  resolution: CapabilityResolutionResponse;
+  tradeoffs?: string;
+}) {
   return (
     <div className="rounded border border-emerald-800/60 bg-emerald-950/20 p-4">
       <div className="flex items-center justify-between gap-3">
@@ -949,6 +986,12 @@ function ResolutionPanel({ resolution }: { resolution: CapabilityResolutionRespo
           {resolution.recipe.maturity}
         </span>
       </div>
+      {tradeoffs && (
+        <div className="mt-3 rounded border border-amber-800/40 bg-amber-950/20 px-3 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">When to choose this recipe</p>
+          <p className="mt-1 text-xs text-slate-300">{tradeoffs}</p>
+        </div>
+      )}
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div>
           <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
