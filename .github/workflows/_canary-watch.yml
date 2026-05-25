@@ -24,8 +24,8 @@
 #       with:
 #         app_name: admin-studio
 #         worker_name: admin-studio-production
-#         sentry_project: admin-studio
-#         sentry_org: latimer-woods-tech
+#         sentry_project: factory-admin-worker
+#         sentry_org: latwood-tech
 #         base_url: https://admin.latwoodtech.work
 #         smoke_path: /healthz
 #         previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
@@ -65,7 +65,7 @@ on:
         required: true
       sentry_org:
         type: string
-        default: latimer-woods-tech
+        default: latwood-tech
       base_url:
         type: string
         required: true
