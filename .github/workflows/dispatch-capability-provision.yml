@@ -45,7 +45,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 24 is the current Active LTS (since Oct 2025; Maintenance
+          # through Oct 2026). Node 20 hit EOL 2026-04-30. Wrangler 4.x
+          # refuses to start below node 22, so anything < 22 breaks the
+          # scaffold prereq check.
+          node-version: '24'
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
