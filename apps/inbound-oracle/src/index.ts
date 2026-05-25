@@ -282,6 +282,74 @@ app.post('/webhook/telnyx', async (c) => {
   }
 
   const eventType = body.data?.event_type;
+  
+  // --- Voice Intercept Logic ---
+  if (eventType === 'call.initiated') {
+    const callControlId = body.data?.payload?.call_control_id;
+    if (!callControlId) return c.json({ ok: false, error: 'missing_call_control_id' }, 400);
+    
+    logger.info({ callControlId }, 'Answering incoming call');
+    
+    // Answer the call
+    await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/answer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${c.env.TELNYX_API_KEY}`
+      },
+      body: JSON.stringify({
+        client_state: 'answered_by_oracle'
+      })
+    });
+    
+    return c.json({ ok: true });
+  }
+
+  if (eventType === 'call.answered') {
+    const callControlId = body.data?.payload?.call_control_id;
+    if (!callControlId) return c.json({ ok: false, error: 'missing_call_control_id' }, 400);
+    
+    logger.info({ callControlId }, 'Speaking welcome message');
+    
+    // Speak the message
+    await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/speak`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${c.env.TELNYX_API_KEY}`
+      },
+      body: JSON.stringify({
+        payload: 'Welcome to Selfprime. This is an automated oracle. Please hang up and text your birth date, time, and city to this number to receive your reading.',
+        voice: 'female',
+        language: 'en-US',
+        client_state: 'spoken_welcome'
+      })
+    });
+    
+    return c.json({ ok: true });
+  }
+
+  if (eventType === 'call.speak.ended') {
+    const callControlId = body.data?.payload?.call_control_id;
+    if (!callControlId) return c.json({ ok: false, error: 'missing_call_control_id' }, 400);
+    
+    logger.info({ callControlId }, 'Hanging up call');
+    
+    // Hang up
+    await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/hangup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${c.env.TELNYX_API_KEY}`
+      },
+      body: JSON.stringify({
+        client_state: 'hung_up'
+      })
+    });
+    
+    return c.json({ ok: true });
+  }
+
   if (eventType !== 'message.received') {
     logger.info({ eventType }, 'Skipping non-message event');
     return c.json({ ok: true, ignored: true, eventType });
