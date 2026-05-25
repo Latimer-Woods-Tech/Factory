@@ -26,11 +26,53 @@ Walking skeleton first means the **shape** of every piece is exercisable end-to-
 
 | Pass | Theme | What's "done enough" | Effort estimate |
 |---|---|---|---|
-| **1 — Walking Skeleton** | One ingestion path per surface; one rendered Admin UI screen | Composite query at §5.1 of tech guide returns rows | 3 effort-days |
-| **2 — Functional Completeness** | All ingestion paths; all Admin UI screens; Tier 1 items begun | Every gate type populating, every artifact type cataloged, capabilities.yml in 2 apps | 5 effort-days |
-| **3 — Hardening + Tier 2 prep** | Coverage gates pass; latency budgets met; capabilities everywhere; templates blessed | All acceptance criteria from tech guide §2-§3 ✅ | 6 effort-days |
+| **1 — Walking Skeleton** | One ingestion path per surface; one rendered Admin UI screen | Composite query at §5.1 of tech guide returns rows | 4-5 effort-days |
+| **2 — Functional Completeness** | All ingestion paths; all Admin UI screens; Tier 1 items begun | Every gate type populating, every artifact type cataloged, capabilities.yml in 2 apps | 6-8 effort-days |
+| **3 — Hardening + Tier 2 prep** | Coverage gates pass; latency budgets met; capabilities everywhere; templates blessed | All acceptance criteria from tech guide §2-§3 ✅ | 8-10 effort-days |
 
 **Effort-day** = ~6 hours of focused work. Calendar time scales with availability.
+
+### 1.2.5 Phase view — natural stopping points
+
+The three passes above plus Tier 2 prep map onto four executive **phases**, each with a deliberate "stop, breathe, verify" gate. This is the operational view: each phase is a coherent goal you can declare done.
+
+```
+Phase A — Visibility               (Pass 1)
+   Goal: prove the read-layer wiring works end-to-end
+   Stop here. Confirm composite query returns rows. Use the system for 24h.
+   Then decide whether to continue to B.
+
+Phase B — Supply-chain parity      (subset of Pass 2)
+   Goal: SHA pinning across all repos + Dependabot parity
+   Stop here. All actions SHA-pinned, sha_pinning_required=true on each repo,
+   next Dependabot bump runs cleanly.
+
+Phase C — Admin + marketing hardening   (rest of Pass 2 + start of Pass 3)
+   Goal: audit logs, Stripe idempotency, CSP, SRI, Lighthouse budgets
+   Stop here. /admin/* writes audit rows; marketing surfaces pass Lighthouse.
+
+Phase D — Tier 2 depth             (rest of Pass 3)
+   Goal: llm-meter, template library, sourcemaps, reliability gates
+   Stop here. Templates blessed; llm@0.3.0 shipped; sourcemaps current.
+```
+
+**Sequencing discipline.** Phases are sequential, not concurrent. Do not fan out work across phases — the read layer (Phase A) underpins every gate write in B/C/D, and supply-chain hardening (B) reduces the blast radius of every change in C/D.
+
+The reviewer's priority order maps cleanly onto Phase A:
+
+```
+1. factory-core-api walking skeleton   → P1.1   ┐
+2. factory_events_ingest               → P1.2-3 │
+3. factory_gates                       → P1.6   │  Phase A
+4. factory_artifacts                   → P1.7   │
+5. factory_runs_mirror                 → P1.8-9 │
+6. Command Center                      → P1.11  ┘
+7. SHA pinning sweep                   → P2.13d-e   ─ Phase B
+8. Admin audit + idempotency           → P2.13f-h   ┐
+9. Marketing CSP + SRI + Lighthouse    → P3.17-18   ┘ Phase C
+```
+
+If you finish Phase A and stop forever, you've still genuinely improved the system. Each phase is independently valuable.
 
 ### 1.3 Mature-engineering defaults applied to every PR
 

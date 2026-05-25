@@ -27,17 +27,28 @@ Write systems (truth — distributed, unchanged):
   ├─ Stripe                             → canonical billing
   └─ Neon per-app project DBs           → canonical app business state
 
-Read system (aggregated view — Neon factory-core project):
-  ├─ factory_events     (already exists, business events log)
-  ├─ factory_gates      (NEW — read-only ingest of gate states)
-  ├─ factory_artifacts  (NEW — read-only catalog of outputs)
-  ├─ factory_runs_mirror (NEW — read-only mirror of supervisor D1)
-  └─ factory_signals    (NEW — read-only ingest of webhook signals)
+Read layer (aggregated view — Neon factory-core project):
+  ├─ factory_events       (pre-existing — business event log from @lwt/analytics)
+  ├─ factory_events_ingest (NEW — immutable raw event log for platform ingestion, §2.0)
+  ├─ factory_gates        (NEW — derived gate states from ingested events, §2.2)
+  ├─ factory_artifacts    (NEW — derived catalog of run outputs, §2.3)
+  ├─ factory_runs_mirror  (NEW — periodic mirror of supervisor D1, §2.4)
+  └─ factory_audit_log    (NEW — admin-route audit trail, §1.8.3)
 
 Admin Studio UI joins across the read layer. Never writes to it directly.
 ```
 
+**Three event-prefixed tables, distinct purposes** — easy to confuse, so resolved explicitly here:
+
+| Table | Source | What lives in it | Written by |
+|---|---|---|---|
+| `factory_events` (pre-existing) | App business surfaces | `signup`, `payment_succeeded`, `practitioner_invited` etc. — user-facing business events | `@lwt/analytics.track()` from app code |
+| `factory_events_ingest` (NEW Tier 0) | Platform internals | Raw inbound webhook payloads, supervisor state transitions, render-pipeline completions — the immutable "what arrived" log | `factory-core-api` ingest endpoints |
+| `factory_audit_log` (NEW Tier 1) | Admin route invocations | `actor + action + target + result` rows for every `/admin/*` call across every app | `@lwt/compliance.auditLog()` middleware |
+
 **Rule.** No table in the read layer is authoritative. If it disagrees with its source-of-truth, the source wins. The read layer is a queryable cache; rebuild it from sources at any time.
+
+**`factory_signals`** is referenced in some sections as a future read-layer table for "what triggered what." It is **deferred to Tier 1+** (per [`docs/decisions/2026-05-25-factory-alignment.md`](../decisions/2026-05-25-factory-alignment.md) — Tier 3 deferral, build only when admin UI demands it). It does not appear in Tier 0 schemas.
 
 ### 1.2 Why this shape
 
@@ -64,9 +75,11 @@ Five rules every implementer must respect. These came out of the 2026-05-25 revi
 
 **The Admin UI never triggers side effects directly.** The UI is a query surface only.
 
-When the UI surfaces "PR #298 is blocked on CI" and the operator clicks "rerun CI," the UI calls a Factory orchestrator endpoint (e.g. `POST /v1/runs/:id/rerun-ci` on `factory-core-api`) which performs the side effect against the source-of-truth (GitHub Actions). The UI never POSTs to `/v1/gates`, never writes to Neon, never invokes a Worker that mutates state.
+When the UI surfaces "PR #298 is blocked on CI" and the operator clicks anything, the click goes through a separate Factory orchestrator endpoint that authenticates the request, validates the requested action against `capabilities.yml`, writes a `factory_audit_log` row, then performs the side effect against the source-of-truth. The UI never POSTs to `/v1/gates`, never writes to Neon directly, never invokes a Worker that mutates state.
 
-**Enforcement.** The Admin UI Worker has read-only DB credentials (Hyperdrive binding scoped to `SELECT` only). Any side effect goes through a separate orchestrator endpoint authenticated with a write-scoped JWT.
+**Concrete example.** When the operator clicks "view the failing workflow run," the UI follows the `evidence_url` link out to GitHub Actions — read-only navigation. The Admin UI does not yet have action-triggering buttons; orchestrator endpoints will be specced individually before any are exposed in the UI (out of Tier 0/1 scope).
+
+**Enforcement.** The Admin UI Worker has read-only DB credentials (Hyperdrive binding scoped to `SELECT` only). Any action-triggering endpoint, when introduced, lives on `factory-core-api` not on the UI Worker, authenticated with a write-scoped JWT.
 
 ### 1.4.2 Append-first, derive-latest
 
@@ -75,6 +88,8 @@ When the UI surfaces "PR #298 is blocked on CI" and the operator clicks "rerun C
 The "current state" of any gate is computed by a view (`factory_gates_latest`) that selects the most recent row per `(subject_ref, gate_type, source_ref)`. History is preserved; truth is derived.
 
 **Why this matters.** Overwrite-first means a CI re-run silently destroys evidence of the first failure. Audits become impossible. Append-first means the timeline reads forward; you can replay it.
+
+**Precision on the two terms (they're related but distinct).** *Append-first* is the **rule** for ingestion code: write the new row before considering the operation complete; never UPDATE in place. *Append-only* is the **schema property** enforced by the table: no UPDATEs allowed on prior rows. The first describes how callers must behave; the second is the database guarantee that makes the rule unbreakable. Both apply to `factory_gates`, `factory_artifacts`, `factory_events_ingest`, and `factory_audit_log`.
 
 ### 1.4.3 Raw-event log as foundation
 
@@ -291,7 +306,7 @@ The Admin UI defined in §2.5 is one consumer of admin surfaces. Every app expos
 |---|---|
 | **Auth** | JWT via Web Crypto (`@lwt/auth`); short-lived (1h); scope claim limits which routes |
 | **Authorization** | CODEOWNER check OR explicit `requires_codeowner_oob: true` in `capabilities.yml` (FRIDGE rule 4) |
-| **Audit logging** | `@lwt/compliance.auditLog()` middleware writes to `factory_events` with actor + target + action + metadata |
+| **Audit logging** | `@lwt/compliance.auditLog()` middleware writes to `factory_audit_log` (§1.8.3) via `POST /v1/audit` (§1.8.6) with actor + target + action + result |
 | **Rate limit** | `@lwt/rate-limit` middleware; default 30 req/min/user; lower for mutation routes |
 | **Declared in `capabilities.yml`** | Route + method + `supervisor_access` tier; lint workflow rejects PRs adding undeclared routes |
 | **Tier path** | All `/admin/*` paths are at least Yellow tier; mutation routes are Red |
@@ -342,6 +357,36 @@ CREATE INDEX ix_audit_action_ts ON factory_audit_log (action, ts DESC);
 
 Closes [GAP_REGISTER](../GAP_REGISTER.md) G-36 (no audit logging for payout/admin mutating operations).
 
+#### 1.8.6 `/v1/audit` ingest endpoint
+
+`@lwt/compliance.auditLog()` middleware writes audit rows by POSTing to `factory-core-api` (same two-step ingest pattern as gates and artifacts):
+
+```
+POST https://api.factory.latwood-tech.internal/v1/audit
+Authorization: Bearer <scoped-JWT, aud: audit-{app}>
+Content-Type: application/json
+
+{
+  "app": "humandesign",
+  "surface": "admin",
+  "actor": "user:42",
+  "action": "admin.users.grant-credits",
+  "target": "user:99",
+  "ip_address": "203.0.113.42",
+  "user_agent": "...",
+  "metadata": { "credits": 100 },
+  "result": "success"
+}
+```
+
+**Auth.** Per §1.5.1, the bearer is a scoped JWT with `aud: audit-<app>` minted via OIDC token exchange. The endpoint validates `aud` matches `app` in the body.
+
+**Two-step ingest** (per §2.0.2): the endpoint writes a `factory_events_ingest` row (`source_event_type='audit.<app>'`) BEFORE deriving the `factory_audit_log` row. Failed derivations leave the raw event for replay.
+
+**Idempotency.** The middleware generates `metadata.request_id = crypto.randomUUID()` per request; the endpoint dedupes on `(app, actor, action, target, request_id)` within a 24h window.
+
+**Failure mode.** If `factory-core-api` is unreachable, the middleware **logs locally to the app's existing structured logger** (`@lwt/logger`) AND returns normally — audit logging never blocks the request. A `factory-stuck-watcher` rule (§2.2.6) catches the missing audit row.
+
 ### 1.8.4 Stripe-handling admin routes — additional rule
 
 Per FRIDGE rule 8 (irreversible actions require explicit human approval), any `/admin/*` route that mutates Stripe state must additionally:
@@ -375,6 +420,76 @@ Per app:
 
 ---
 
+## 1.9 Targeting / portfolio surface (the executive layer)
+
+The 15th platform surface and the only one that's not currently anywhere in code: **which app gets attention this week, and why.** Without this, the system becomes excellent at doing too many things.
+
+### 1.9.1 What it answers
+
+A single document that, when read, tells you:
+- The current portfolio priority order
+- The week's primary focus
+- The trigger that would change priorities
+- What's deliberately on hold and why
+
+This is the executive lens. It's not a roadmap (too granular) and not a backlog (those live in GitHub Issues). It's the *prioritization* that selects from the backlog.
+
+### 1.9.2 Where it lives
+
+`docs/PORTFOLIO_FOCUS.md` — a short, weekly-updated doc with this shape:
+
+```markdown
+# Portfolio focus — week of YYYY-MM-DD
+
+## Priority order (this week)
+1. Selfprime (HumanDesign) — revenue anchor
+2. Factory — platform stability
+3. Capricast — beta operations
+4. Cipher of Healing — design-stage, deferred
+5. Xico City — design-stage, deferred
+
+## Primary focus
+<one paragraph: what's the single most important thing this week>
+
+## Triggers that change this
+- A paying customer signs → resume acquisition (per 2026-05-15 op checkpoint)
+- A P0 incident on selfprime → drop everything
+- Specific deadline: <date> / <event>
+
+## Deliberately on hold
+- wordis-bond: TCPA/FDCPA risk, FRIDGE rule 1
+- focusbro: AdWords approval pending
+- ...
+
+## What I'm NOT working on this week
+<one sentence explicitly: the temptations I'm refusing>
+```
+
+### 1.9.3 Cadence
+
+- **Author/update Monday morning** as part of the weekly review
+- **Read by every agent and operator on session start** — Claude Code prompts, supervisor templates, fresh contributors all reference this before deciding what to work on
+- **Revisit immediately if a trigger fires** — don't wait for next Monday
+
+### 1.9.4 Why it lives here, not in `docs/decisions/`
+
+Decisions are immutable once accepted. Portfolio focus is **mutable every week**. They're different kinds of artifact. Keeping them separate prevents the "decisions doc bloated with stale priorities" failure mode.
+
+### 1.9.5 Acceptance criteria
+
+- [ ] `docs/PORTFOLIO_FOCUS.md` exists with the §1.9.2 shape
+- [ ] Referenced from [`docs/STATE.md`](../STATE.md) (auto-generated) as a standing read
+- [ ] Referenced from [`CLAUDE.md`](../../CLAUDE.md) as a session-start read
+- [ ] Updated within 7 days of every Monday for at least 4 consecutive weeks (proves the cadence)
+
+### 1.9.6 Build-back-inward connections
+
+- The supervisor's planner can prefer issues whose `subject_app` matches the current priority-1 app — automatic focus
+- Cost digests can attribute spend per-app and flag mismatches ("priority-3 app got 60% of LLM spend")
+- Stuck-detection thresholds can be tighter on priority-1 surfaces — what matters most gets watched closest
+
+---
+
 ## 2. Tier 0 — this week
 
 ### 2.0 `factory_events_ingest` — the immutable raw-event log
@@ -404,7 +519,7 @@ CREATE TABLE factory_events_ingest (
   -- DERIVATION status (what fan-out has been applied)
   derivation_status TEXT NOT NULL DEFAULT 'pending'
     CHECK (derivation_status IN ('pending', 'derived', 'failed', 'replayed')),
-  derivation_targets TEXT[],      -- ['factory_gates', 'factory_artifacts', 'factory_signals']
+  derivation_targets TEXT[],      -- ['factory_gates', 'factory_artifacts', 'factory_audit_log']
   derivation_error TEXT,          -- error if status=failed
   derivation_at TIMESTAMPTZ,
 
@@ -732,16 +847,21 @@ That's the audit trail. Overwrite-first would have destroyed the failed row when
 
 #### 2.2.2 Ingestion paths
 
+All 11 gate types and how they're written. All ingestion paths POST to `factory-core-api/v1/gates`; the differences are *who* posts and *when*.
+
 | Gate type | Source | Ingestion mechanism |
 |---|---|---|
-| `ci` | GitHub Actions `check_run` events | `webhook-fanout` Worker → POST to `factory-core/api/gates` |
-| `canary` | `_app-prod-canary.yml` completion | Workflow step at end posts to `factory-core/api/gates` via `gh api` |
-| `codeowner-review` | GitHub `pull_request_review` events | `webhook-fanout` Worker ingests on `submitted` |
-| `budget` | `@lwt/llm-meter` budget breach | llm-meter Worker writes directly |
-| `verifier` | `supervisor_verifications` D1 table | Sync Worker (cron, 5 min) mirrors to `factory_gates` |
-| `claude-review` | `pr-review.mjs` decision | Script POSTs `{gate_type:'claude-review', state:passed/failed, evidence_url:<review URL>}` |
-| `constraints` | Layer 1 constraint check | Workflow step posts on completion |
-| `reliability` | `_app-reliability-gate.yml` completion | Same pattern as `canary` |
+| `ci` | GitHub Actions `check_run.completed` event | `webhook-fanout` Worker; HMAC-verified; auth via App installation token |
+| `canary` | `_app-prod-canary.yml` completion | Workflow step at end uses OIDC→JWT (`aud: gates-canary`) and POSTs via `curl` |
+| `codeowner-review` | GitHub `pull_request_review.submitted` event | `webhook-fanout` Worker; HMAC-verified |
+| `budget` | `@lwt/llm-meter` cap breach | `@lwt/llm-meter` Worker writes directly with `aud: gates-budget` JWT |
+| `verifier` | `supervisor_verifications` D1 table | `apps/supervisor-mirror` cron Worker (5 min) writes with `aud: gates-verifier` JWT |
+| `claude-review` | `.github/scripts/pr-review.mjs` decision | Script uses workflow OIDC→JWT (`aud: gates-claude-review`); POSTs review URL as `evidence_url` |
+| `constraints` | `_app-constraints-gate.yml` step | Workflow step uses OIDC→JWT (`aud: gates-constraints`); posts pass/fail per check |
+| `reliability` | `_app-reliability-gate.yml` completion | Same pattern as `canary` (OIDC→JWT, `aud: gates-reliability`) |
+| `capability-check` | Supervisor planner refusal | `apps/supervisor` Worker writes directly with `aud: gates-capability-check` JWT when planner rejects a route not in `capabilities.yml` |
+| `migration-drift` | `_migration-drift-guard.yml` (Tier 1) | Workflow step uses OIDC→JWT (`aud: gates-migration-drift`); fires when repo migration count differs from prod |
+| `stuck-detection` | `apps/factory-stuck-watcher` cron | Worker writes with `aud: gates-stuck-detection` JWT (§2.2.6) |
 
 #### 2.2.3 Ingest API endpoint
 
@@ -1041,7 +1161,7 @@ Idempotent. 5-minute staleness ceiling is fine for Admin UI; for real-time, the 
 | **Runs** | "what has the supervisor done lately" | `factory_runs_v` with filters by template, status, time window |
 | **Gates** | "gate history for $subject" | `factory_gates WHERE subject_ref = $1` |
 | **Artifacts** | "what has been produced" | `factory_artifacts` grouped by `subject_app` + `artifact_type` |
-| **Signals** | "what triggered what" | `factory_signals` (Tier 1) joined to spawned runs |
+| **Signals** *(Tier 1+ — deferred)* | "what triggered what" | `factory_signals` — schema not yet defined; ships when admin UI explicitly needs it per alignment doc Tier 3 deferral |
 
 #### 2.5.2 API surface (read-only)
 
