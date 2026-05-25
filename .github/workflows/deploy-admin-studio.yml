@@ -20,11 +20,16 @@ concurrency:
   group: admin-studio-${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    # Use workflow-scoped environment keys to avoid the shared production/staging
+    # environment scheduler wedge (0-job pending runs) seen in May 2026.
+    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'admin-studio-production' || 'admin-studio-staging' }}
     permissions:
       contents: read
     outputs:
@@ -33,11 +38,11 @@ jobs:
       new_version_id:      ${{ steps.capture-new.outputs.new_version_id }}
       has_migrations:      ${{ steps.migrations.outputs.has_migrations }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 2
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '22'
 
@@ -125,36 +130,55 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
-      - name: Provision studio credentials
+      - name: Provision required runtime secrets
         run: |
-          if [ -z "${{ secrets.FACTORY_USER }}" ] || [ -z "${{ secrets.FACTORY_PW }}" ]; then
-            echo "::warning::FACTORY_USER or FACTORY_PW missing; using placeholder credentials"
-            exit 0
-          fi
-          password_hash=$(echo -n "${{ secrets.FACTORY_PW }}" | sha256sum | cut -d' ' -f1)
-          echo "${{ secrets.FACTORY_USER }}" | npx wrangler secret put STUDIO_ADMIN_EMAIL --env "${{ steps.target.outputs.env }}"
-          echo "$password_hash" | npx wrangler secret put STUDIO_ADMIN_PASSWORD_SHA256 --env "${{ steps.target.outputs.env }}"
-        working-directory: apps/admin-studio
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          set -euo pipefail
 
-      - name: Push self-improvement secrets
-        run: |
-          echo "${{ secrets.ANTHROPIC_API_KEY }}" | npx wrangler secret put ANTHROPIC_API_KEY --env "${{ steps.target.outputs.env }}"
-          echo "${{ secrets.GH_PAT }}" | npx wrangler secret put GITHUB_TOKEN --env "${{ steps.target.outputs.env }}"
-          if [ -n "${{ secrets.STUDIO_WEBHOOK_SECRET }}" ]; then
-            echo "${{ secrets.STUDIO_WEBHOOK_SECRET }}" | npx wrangler secret put STUDIO_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
-          else
-            echo "::warning::STUDIO_WEBHOOK_SECRET missing; /tests/runs and /webhooks/studio-tests will return 503 until configured"
-          fi
-          if [ -n "${{ secrets.WORKER_API_TOKEN }}" ]; then
-            echo "${{ secrets.WORKER_API_TOKEN }}" | npx wrangler secret put WORKER_API_TOKEN --env "${{ steps.target.outputs.env }}"
-          fi
+          put_required_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "::error::$name is required for admin-studio deploy"
+              exit 1
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name" --env "${{ steps.target.outputs.env }}"
+          }
+
+          put_optional_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "::warning::Skipping optional secret $name — value not configured"
+              return 0
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name" --env "${{ steps.target.outputs.env }}"
+          }
+
+          password_hash=$(printf '%s' "$SECRET_FACTORY_PW" | sha256sum | cut -d' ' -f1)
+
+          put_required_secret JWT_SECRET "$SECRET_JWT_SECRET"
+          put_required_secret STUDIO_ADMIN_EMAIL "$SECRET_FACTORY_USER"
+          put_required_secret STUDIO_ADMIN_PASSWORD_SHA256 "$password_hash"
+          put_required_secret ANTHROPIC_API_KEY "$SECRET_ANTHROPIC_API_KEY"
+          put_required_secret GITHUB_TOKEN "$SECRET_GH_PAT"
+
+          put_optional_secret STUDIO_WEBHOOK_SECRET "$SECRET_STUDIO_WEBHOOK_SECRET"
+          put_optional_secret WORKER_API_TOKEN "$SECRET_WORKER_API_TOKEN"
+          put_optional_secret GOOGLE_CLIENT_ID "$SECRET_GOOGLE_CLIENT_ID"
+          put_optional_secret STUDIO_ALLOWED_USERS_JSON "$SECRET_STUDIO_ALLOWED_USERS_JSON"
         working-directory: apps/admin-studio
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          SECRET_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SECRET_FACTORY_USER: ${{ secrets.FACTORY_USER }}
+          SECRET_FACTORY_PW: ${{ secrets.FACTORY_PW }}
+          SECRET_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SECRET_GH_PAT: ${{ secrets.GH_PAT }}
+          SECRET_STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
+          SECRET_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+          SECRET_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
+          SECRET_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
 
       - name: Apply database migrations
         run: |
@@ -185,16 +209,15 @@ jobs:
       # SENTRY_AUTH_TOKEN secret is not configured.
       - name: Upload sourcemaps to Sentry
         # Sourcemap upload is nice-to-have (stack-trace symbolication) — it must
-        # never gate a deploy. Today's Sentry project slug "admin-studio" under
-        # org "latwood-tech" returns 400 "Invalid project ids or slugs"; the
-        # canary-watch reusable workflow uses org slug "latimer-woods-tech",
-        # so one of these is stale. Tracked separately; for now, soft-fail.
+        # never gate a deploy. Verified slugs via Sentry API 2026-05-24: org
+        # `latwood-tech`, Worker project `factory-admin-worker`. (The Pages
+        # project `admin-studio-ui` is uploaded by the sibling deploy workflow.)
         continue-on-error: true
         working-directory: apps/admin-studio
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: latwood-tech
-          SENTRY_PROJECT: admin-studio
+          SENTRY_PROJECT: factory-admin-worker
           SENTRY_RELEASE: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -249,8 +272,8 @@ jobs:
     with:
       app_name:            admin-studio
       worker_name:         admin-studio-production
-      sentry_project:      admin-studio
-      sentry_org:          latimer-woods-tech
+      sentry_project:      factory-admin-worker
+      sentry_org:          latwood-tech
       base_url:            https://admin.latwoodtech.work
       smoke_path:          /healthz
       previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}

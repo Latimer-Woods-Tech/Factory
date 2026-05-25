@@ -33,6 +33,7 @@ on:
         type: choice
         default: 'MarketingVideo'
         options:
+          - 'EnergyBlueprintVideo'
           - 'MarketingVideo'
           - 'TrainingVideo'
           - 'WalkthroughVideo'
@@ -111,13 +112,12 @@ jobs:
     name: Dry-run pipeline (fixtures)
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
-
+          node-version-file: .nvmrc
       - name: Validate workflow inputs shape (dispatch contract)
         env:
           JOB_ID: ${{ inputs.job_id || 'dryrun-job' }}
@@ -139,7 +139,7 @@ jobs:
           echo "brand_accent=$BRAND_ACCENT"
           echo "logo_url=$LOGO_URL"
           case "$COMPOSITION_ID" in
-            MarketingVideo|TrainingVideo|WalkthroughVideo) ;;
+            MarketingVideo|TrainingVideo|WalkthroughVideo|EnergyBlueprintVideo) ;;
             *) echo "::error::Unknown composition_id: $COMPOSITION_ID"; exit 1 ;;
           esac
 
@@ -273,7 +273,7 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
@@ -281,12 +281,12 @@ jobs:
           skip-token-revoke: true
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           # `cache: 'npm'` removed — actions/setup-node looks for
           # package-lock.json at the repo root, but Factory uses per-app
           # lockfiles (apps/video-cron/package-lock.json,
@@ -308,12 +308,12 @@ jobs:
           aws --version
 
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           credentials_json: ${{ secrets.VERTEX_SA_KEY }}
 
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v3
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Fetch secrets from GCP Secret Manager
         run: |
@@ -336,6 +336,10 @@ jobs:
           fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
           fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
           fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
+          # YouTube upload (optional — pipeline continues if not configured)
+          fetch_to_env YOUTUBE_CLIENT_ID               YOUTUBE_CLIENT_ID youtube-client-id || true
+          fetch_to_env YOUTUBE_CLIENT_SECRET           YOUTUBE_CLIENT_SECRET youtube-client-secret || true
+          fetch_to_env YOUTUBE_REFRESH_TOKEN           YOUTUBE_REFRESH_TOKEN youtube-refresh-token || true
           # AI_GATEWAY_URL is the canonical GCP secret name (no _BASE_ infix).
           # `@latimer-woods-tech/llm@0.3.0+` requires the env var
           # AI_GATEWAY_BASE_URL (note the _BASE_) — fetch_to_env's first arg
@@ -711,6 +715,49 @@ jobs:
           # workflow lints cleanly without referencing the env context.
           export CAPRICAST_CREATOR_ID="$CAPRICAST_SYSTEM_CREATOR_ID"
           node apps/video-studio/scripts/publish-to-capricast.mjs
+
+      # -----------------------------------------------------------------------
+      # Step 11b — Upload to YouTube (non-blocking; skipped if no credentials)
+      # Uploads to YouTube AFTER Capricast to maintain Capricast as primary.
+      # Requires: YOUTUBE_REFRESH_TOKEN, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET
+      # in GCP Secret Manager. Safe to skip — missing secrets result in a warning.
+      # -----------------------------------------------------------------------
+      - name: Upload to YouTube
+        id: youtube
+        continue-on-error: true
+        env:
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          VIDEO_URL: ${{ steps.video_upload.outputs.video_url }}
+          TOPIC: ${{ steps.brief.outputs.topic }}
+          NARRATION: ${{ steps.script.outputs.narration }}
+          KEY_POINTS: ${{ steps.brief.outputs.key_points }}
+          APP_ID: ${{ inputs.app_id }}
+          BRIEF_KEY: ${{ inputs.brief_key }}
+        run: |
+          set -euo pipefail
+          # Skip if credentials are not configured
+          if [ -z "${YOUTUBE_REFRESH_TOKEN:-}" ] || [ -z "${YOUTUBE_CLIENT_ID:-}" ]; then
+            echo "::notice::YouTube credentials not configured — skipping YouTube upload"
+            echo "youtube_url=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Build description from key points
+          DESCRIPTION="${NARRATION:-$TOPIC}"$'\n\n'
+          if [ -n "${KEY_POINTS:-}" ]; then
+            DESCRIPTION+=$(echo "$KEY_POINTS" | jq -r '.[] | "• \(.)"' 2>/dev/null || true)$'\n\n'
+          fi
+          DESCRIPTION+="Learn more at https://selfprime.net"
+          # Download from R2 then upload to YouTube
+          curl -sL "$VIDEO_URL" -o /tmp/yt_upload.mp4
+          RESULT=$(node scripts/youtube-upload.mjs \
+            --file /tmp/yt_upload.mp4 \
+            --title "$TOPIC" \
+            --description "$DESCRIPTION" \
+            --tags "prime self,human design,energy blueprint,$APP_ID" \
+            --category "27")
+          YOUTUBE_URL=$(echo "$RESULT" | jq -r '.url // empty')
+          echo "youtube_url=$YOUTUBE_URL" >> "$GITHUB_OUTPUT"
+          echo "::notice::YouTube upload complete: $YOUTUBE_URL"
 
       # -----------------------------------------------------------------------
       # Step 12 — PATCH schedule-worker → status=done

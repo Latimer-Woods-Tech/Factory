@@ -1,0 +1,49 @@
+{
+  "briefKey": "user-guide-the-life-diary",
+  "key": "user-guide-the-life-diary",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "user-guide",
+  "title": "The Life Diary: Why Your Story Deepens the Reading",
+  "description": "Adding life events to your blueprint lets the engine read your story against the transits that shaped it.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "The Life Diary and Temporal Validation",
+  "learningGoal": "User understands what the life diary captures, how the engine cross-references it against transits, and why this layer transforms generic interpretation into lived recognition.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Add the events that shaped you — moves, beginnings, endings, awakenings, losses",
+    "The engine cross-references each event against the transits active that day",
+    "When the transit theme matches the event, the blueprint becomes lived evidence, not theory",
+    "This is the temporal validation layer — your own history is the strongest confirmation of your design"
+  ],
+  "forbiddenClaims": [
+    "the system predicts your future events",
+    "your past determines your future",
+    "guaranteed insight from your diary",
+    "diagnoses trauma"
+  ],
+  "toneNotes": "Tender and serious. The life diary is intimate. Acknowledge the weight of what users may add without being heavy or therapeutic.",
+  "narration_script": "Your blueprint is a map of architecture. Your life is the proof.\n\nThe life diary is where the two meet. When you add an event — the day you left, the day you began, the day something broke open, the day you said yes — the engine notes the date and reads the transits that were active that day.\n\nIt looks at which gates were illuminated by the planets. It looks at which centers were under pressure. It looks at where those activations touched your own design.\n\nThen it tells you what it found.\n\nWhen the transit theme matches the texture of the event, something happens that no generic reading can produce. The blueprint stops being a description of architecture in the abstract. It becomes the story of your own life, told in the language of design.\n\nThis is the temporal validation layer.\n\nYour history is the strongest confirmation of your blueprint. Theory you can question. Lived evidence is harder to argue with.\n\nAdd the moments that shaped you. The moves. The beginnings and endings. The thresholds you remember. You do not need to explain them. You only need to mark them with a date.\n\nThe engine reads the rest.\n\nWhat the system gives back is not prediction. It is recognition. The pattern of your own becoming, made visible in your own design.",
+  "script": "Your blueprint is a map of architecture. Your life is the proof.\n\nThe life diary is where the two meet. When you add an event — the day you left, the day you began, the day something broke open, the day you said yes — the engine notes the date and reads the transits that were active that day.\n\nIt looks at which gates were illuminated by the planets. It looks at which centers were under pressure. It looks at where those activations touched your own design.\n\nThen it tells you what it found.\n\nWhen the transit theme matches the texture of the event, something happens that no generic reading can produce. The blueprint stops being a description of architecture in the abstract. It becomes the story of your own life, told in the language of design.\n\nThis is the temporal validation layer.\n\nYour history is the strongest confirmation of your blueprint. Theory you can question. Lived evidence is harder to argue with.\n\nAdd the moments that shaped you. The moves. The beginnings and endings. The thresholds you remember. You do not need to explain them. You only need to mark them with a date.\n\nThe engine reads the rest.\n\nWhat the system gives back is not prediction. It is recognition. The pattern of your own becoming, made visible in your own design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "Your blueprint is a map of architecture. Your life is the proof.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Add an event. The engine reads the transits that were active that day. It looks for where those activations touched your design.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "When the transit matches the event, the blueprint becomes lived evidence. Theory you can question. History is harder to argue with.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Mark", "Match", "Recognition"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "Add the moments that shaped you. The engine reads the rest.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "The Life Diary: How Your Story Deepens the Reading",
+    "description": "The temporal validation layer — your own history cross-referenced with the transits of those days, in the language of your blueprint."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

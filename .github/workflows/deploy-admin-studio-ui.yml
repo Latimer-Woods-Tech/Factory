@@ -22,6 +22,10 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -30,14 +34,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
-
+          node-version-file: .nvmrc
       - name: Install + build studio-core
-        run: npm ci --ignore-scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: packages/studio-core
 
       - name: Build studio-core
@@ -45,7 +48,11 @@ jobs:
         working-directory: packages/studio-core
 
       - name: Install admin-studio-ui
-        run: npm ci
+        run: npm install --no-audit --no-fund
+        working-directory: apps/admin-studio-ui
+
+      - name: Test admin-studio-ui
+        run: npm test
         working-directory: apps/admin-studio-ui
 
       - name: Build UI
@@ -61,7 +68,7 @@ jobs:
           VITE_API_BASE_PROD: "https://api.apunlimited.com"
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}

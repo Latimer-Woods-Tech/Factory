@@ -1,0 +1,164 @@
+name: Auto-dispatch capability provision
+
+# Scheduled poller for capability provision requests (Stage D dispatcher).
+#
+# Every 15 minutes: GETs /capabilities/provision-requests?status=requested
+# from admin-studio, then fires `dispatch-capability-provision.yml` for each
+# pending row. Eliminates the manual workflow_dispatch trigger from Stage C.
+#
+# Auth: fetches ADMIN_STUDIO_BOOTSTRAP_EMAIL + ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+# from GCP Secret Manager via WIF and mints a fresh 4h JWT each run via
+# /auth/login. Workflow cadence is 15min so the token always has >=3h45m
+# headroom against the production envLockedAt session-age policy
+# (packages/studio-core/src/env-context.ts:124 maxSessionAge).
+#
+# Replaces the previous static-STUDIO_DISPATCH_TOKEN approach which was
+# unmaintainable: production session policy expires the token every 4h.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  poll-and-dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env STUDIO_API_BASE              ADMIN_STUDIO_PROD_URL
+          fetch_to_env BOOTSTRAP_EMAIL              ADMIN_STUDIO_BOOTSTRAP_EMAIL
+          fetch_to_env BOOTSTRAP_PASSWORD           ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+
+      - name: Mint fresh dispatch JWT via /auth/login
+        run: |
+          set -euo pipefail
+          if [ -z "${STUDIO_API_BASE:-}" ] || [ -z "${BOOTSTRAP_EMAIL:-}" ] || [ -z "${BOOTSTRAP_PASSWORD:-}" ]; then
+            echo "::error::GCP-sourced creds missing — cannot mint dispatch JWT"
+            exit 1
+          fi
+          BODY=$(jq -n \
+            --arg e "$BOOTSTRAP_EMAIL" \
+            --arg p "$BOOTSTRAP_PASSWORD" \
+            '{email:$e,password:$p,env:"production"}')
+          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" | jq -r .token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Login returned no token"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "STUDIO_DISPATCH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Fetch pending provision requests
+        run: |
+          set -euo pipefail
+          mkdir -p .auto-dispatch
+          curl -fsSL \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            "${STUDIO_API_BASE}/capabilities/provision-requests?status=requested" \
+            | node -e "
+              const fs = require('fs');
+              let body = '';
+              process.stdin.on('data', (c) => (body += c));
+              process.stdin.on('end', () => {
+                const payload = JSON.parse(body);
+                const rows = payload.requests ?? [];
+                console.log('Pending requests: ' + rows.length);
+                fs.writeFileSync('.auto-dispatch/pending.json', JSON.stringify(rows, null, 2));
+              });
+            "
+
+      - name: Dispatch each pending request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node << 'DISPATCH_EOF'
+          const fs = require('fs');
+          const https = require('https');
+          const { execSync } = require('child_process');
+
+          const apiBase = process.env.STUDIO_API_BASE;
+          const token = process.env.STUDIO_DISPATCH_TOKEN;
+
+          function apiFetch(path) {
+            return new Promise((resolve, reject) => {
+              const url = new URL(path, apiBase);
+              const req = https.get(url.toString(), {
+                headers: { Authorization: 'Bearer ' + token },
+              }, (res) => {
+                let body = '';
+                res.on('data', (c) => (body += c));
+                res.on('end', () => {
+                  if (res.statusCode < 200 || res.statusCode >= 300) {
+                    reject(new Error('HTTP ' + res.statusCode + ' from ' + path + ': ' + body));
+                  } else {
+                    resolve(JSON.parse(body));
+                  }
+                });
+              });
+              req.on('error', reject);
+            });
+          }
+
+          async function main() {
+            const rows = JSON.parse(fs.readFileSync('.auto-dispatch/pending.json', 'utf8'));
+            if (rows.length === 0) {
+              console.log('No pending provision requests — nothing to dispatch.');
+              return;
+            }
+            for (const row of rows) {
+              const handoffId = row.handoffId;
+              const requestId = row.id;
+              if (!handoffId || !requestId) {
+                console.warn('Skipping row missing handoffId or id:', JSON.stringify(row));
+                continue;
+              }
+              let conceptId = 'unknown-concept';
+              try {
+                const payload = await apiFetch('/capabilities/handoffs/' + handoffId);
+                conceptId = payload.handoff?.conceptId ?? conceptId;
+              } catch (err) {
+                console.warn('Could not fetch handoff ' + handoffId + ':', err.message);
+              }
+              const appName = conceptId.replace(/-api$/, '');
+              const cmd = [
+                'gh workflow run dispatch-capability-provision.yml',
+                '--field provision_request_id=' + requestId,
+                '--field handoff_id=' + handoffId,
+                '--field app_name=' + appName,
+                '--field no_deploy=true',
+              ].join(' ');
+              console.log('Dispatching:', appName, '(request=' + requestId + ')');
+              execSync(cmd, { stdio: 'inherit' });
+            }
+          }
+
+          main().catch((err) => { console.error(err); process.exit(1); });
+          DISPATCH_EOF

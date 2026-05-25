@@ -56,7 +56,7 @@ jobs:
           # endpoint requires an admin key. Script will skip Anthropic line if the
           # endpoint returns 401; provision an admin key separately when ready.
           fetch_to_env ANTHROPIC_ADMIN_KEY    ANTHROPIC_ADMIN_KEY LATIMER_ANTHROPIC_API ANTHROPIC_API_KEY
-          fetch_to_env SENTRY_AUTH_TOKEN      LATIMERWOODS_SENTRY_AUTH FACTORY_SENTRY_API SENTRY_AUTH_TOKEN
+          fetch_to_env SENTRY_AUTH_TOKEN      FACTORY_SENTRY_API LATIMERWOODS_SENTRY_AUTH SENTRY_AUTH_TOKEN
           fetch_to_env STRIPE_API_KEY         STRIPE_SECRET_KEY stripe-api-key-readonly STRIPE_API_KEY
           # GCP billing — placeholder; needs BQ billing export setup.
           fetch_to_env GCP_BILLING_TOKEN      gcp-billing-token GCP_BILLING_TOKEN

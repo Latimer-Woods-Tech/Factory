@@ -31,28 +31,31 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
     permissions:
       contents: read
       packages: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: '22'
 
@@ -105,6 +108,8 @@ jobs:
           SECRET_FACTORY_APP_INSTALLATION_ID: ${{ secrets.FACTORY_APP_INSTALLATION_ID }}
           SECRET_PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           SECRET_PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          SECRET_SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
+          SECRET_SLACK_OWNER_USER_ID: ${{ secrets.SLACK_OWNER_USER_ID }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
           # Only provision secrets that are actually set — skip empties with a warning.
@@ -130,6 +135,36 @@ jobs:
           put_secret FACTORY_APP_INSTALLATION_ID "${SECRET_FACTORY_APP_INSTALLATION_ID}"
           put_secret PUSHOVER_TOKEN             "${SECRET_PUSHOVER_TOKEN}"
           put_secret PUSHOVER_USER_KEY          "${SECRET_PUSHOVER_USER_KEY}"
+          put_secret SLACK_SIGNING_SECRET       "${SECRET_SLACK_SIGNING_SECRET}"
+          put_secret SLACK_OWNER_USER_ID        "${SECRET_SLACK_OWNER_USER_ID}"
+
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/supervisor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+        run: |
+          mkdir -p .sentry-dist
+          ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+          npx wrangler deploy --dry-run --outdir .sentry-dist ${ENV_FLAG}
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/supervisor
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/supervisor
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.FACTORY_SENTRY_API }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+        run: |
+          sentry-cli sourcemaps upload \
+            --project factory-supervisor \
+            .sentry-dist/
 
       - name: Deploy
         working-directory: apps/supervisor
@@ -138,13 +173,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
-          # Staging: deploy top-level config (workers_dev: true, all bindings including DO/D1)
-          # Production: deploy --env production (adds custom routes, disables workers_dev)
-          if [ "${TARGET_ENV}" = "production" ]; then
-            npx wrangler deploy --env production
-          else
-            npx wrangler deploy
-          fi
+          ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" ${ENV_FLAG}
 
       - name: Post-deploy health check (staging)
         if: ${{ (github.event.inputs.env != 'production') && (github.event_name != 'push' || github.ref != 'refs/heads/main') }}
@@ -165,7 +197,7 @@ jobs:
       - name: Post-deploy health check (production)
         if: ${{ github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
         run: |
-          URL="https://supervisor.apunlimited.com"
+          URL="https://supervisor.latwoodtech.work"
           for i in 1 2 3 4 5; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
             if [ "$STATUS" = "200" ]; then

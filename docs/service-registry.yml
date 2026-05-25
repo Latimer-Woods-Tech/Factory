@@ -20,6 +20,15 @@
 #   When you add a new worker: add an entry here.
 #   When you add a new hardcoded URL in a frontend: add it to the consumers list.
 #   When you rename a worker: update both the name and the url here after the migration.
+#   When a deploy workflow must verify a URL different from the canonical public URL,
+#   record the exact health-check target under `verification_targets` with a note.
+#
+# EXECUTABLE GUARDRAIL:
+#   This file is validated by `scripts/validate-service-registry.mjs` and
+#   `.github/workflows/validate-service-registry.yml`.
+#   For the currently covered local Workers, changes to verification targets,
+#   required secrets, required vars, or required bindings must stay aligned with
+#   both the deploy workflow and the Worker's `wrangler.jsonc` contract.
 
 # ─── AUTOMATION DENYLIST ──────────────────────────────────────────────────────
 #
@@ -44,8 +53,8 @@ automation_denylist:
 
 workers:
   - id: prime-self
-    name: prime-self                                       # matches wrangler.jsonc `name`
-    repo: Latimer-Woods-Tech/prime-self
+    name: prime-self                                       # legacy worker name retained in registry; live repo is HumanDesign
+    repo: Latimer-Woods-Tech/HumanDesign
     url: https://api.selfprime.net                         # canonical public URL (branded custom domain)
     workers_dev_url: https://prime-self.adrper79.workers.dev  # internal/CF fallback; never hardcode in frontend
     custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
@@ -60,14 +69,21 @@ workers:
       - /api/admin/events
     consumers:
       # Files that hardcode this worker's URL — must be updated before any rename
-      - repo: Latimer-Woods-Tech/prime-self-ui
+      - repo: Latimer-Woods-Tech/HumanDesign
         file: public/landing.html
         line: ~537
         pattern: "fetch('https://prime-self.adrper79.workers.dev/auth/login'"
-      - repo: Latimer-Woods-Tech/prime-self-ui
+      - repo: Latimer-Woods-Tech/HumanDesign
         file: public/index.html
         line: ~537
         pattern: "fetch('https://prime-self.adrper79.workers.dev/auth/login'"
+    notes: >
+      Prime Self now deploys from the `HumanDesign` repository. The older
+      `prime-self` / `prime-self-ui` repo names are stale documentation labels.
+      Current CI/CD lives in HumanDesign's `deploy-workers.yml` and
+      `deploy-frontend.yml`. `api.selfprime.net/health` returned 404 during the
+      2026-05-21 audit even though the app itself is live, so do not treat that
+      route as a verified health contract without updating the worker.
 
   - id: schedule-worker
     name: schedule-worker                                  # matches apps/schedule-worker/wrangler.jsonc `name`
@@ -154,6 +170,38 @@ workers:
       - TARGETS_JSON
     consumers: []
 
+  - id: status-prober
+    name: status-prober                                    # matches apps/status-prober/wrangler.jsonc `name`
+    repo: Latimer-Woods-Tech/factory
+    url: https://status.latwoodtech.work                   # canonical custom domain
+    workers_dev_url: https://status-prober.adrper79.workers.dev
+    custom_domain: status.latwoodtech.work
+    health_endpoint: /health
+    telemetry_required: false                              # infra-class — no /api/admin/* contract required
+    deployment_status: provisioned_2026-05-23
+    notes: >
+      Cron-driven (`*/5 * * * *`) uptime prober that HEAD-checks the four brand
+      surfaces (selfprime.net, capricast.com, cypherofhealing.com,
+      apunlimited.com) and writes the latest envelope to KV under key `current`.
+      `GET /current` returns the envelope with `Access-Control-Allow-Origin: *`
+      so the static `https://latwoodtech.com/status/` page can fetch near-live
+      data with a graceful fall-back to the build-time pulse snapshot.
+    critical_endpoints:
+      - /
+      - /health
+      - /current
+    required_bindings:
+      - STATUS_KV
+    required_secrets: []
+    required_vars:
+      - ENVIRONMENT
+    consumers:
+      - repo: Latimer-Woods-Tech/factory
+        file: apps/latwoodtech-web/src/status/index.html
+        line: ~0
+        pattern: "fetch('https://status.latwoodtech.work/current'"
+        note: live-data fetch with timeout + fall-back to /data/pulse.json
+
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
     repo: Latimer-Woods-Tech/factory
@@ -162,6 +210,8 @@ workers:
     custom_domain_status: pending_attach                   # attaches on next admin-studio staging deploy
     workers_dev_url: https://admin-studio-staging.adrper79.workers.dev  # CF fallback; never hardcode in user-facing code
     health_endpoint: /health
+    verification_targets:
+      default: https://admin-staging.latwoodtech.work/health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
@@ -207,6 +257,8 @@ workers:
     custom_domain: api.apunlimited.com
     custom_domain_alternate: admin.latwoodtech.work        # second custom domain on the same worker (attached 2026-05-08)
     health_endpoint: /health
+    verification_targets:
+      default: https://admin.latwoodtech.work/health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-05-06
     notes: >
@@ -390,9 +442,182 @@ workers:
     url: https://supervisor.latwoodtech.work                   # internal infra domain
     workers_dev_url: https://factory-supervisor.adrper79.workers.dev
     custom_domain: supervisor.latwoodtech.work
-    custom_domain_status: attached                             # CF custom domain attached 2026-05-08
+    custom_domain_alternate: supervisor.apunlimited.com        # legacy/secondary domain retained in production routes
+    custom_domain_status: attached_live_verified_2026-05-21
+    health_endpoint: /health
+    verification_targets:
+      staging: https://factory-supervisor.adrper79.workers.dev/health
+      production: https://supervisor.latwoodtech.work/health
+    telemetry_required: false
+    notes: >
+      Canonical production health verification moved back to
+      `supervisor.latwoodtech.work` on 2026-05-21 after direct curl validation
+      returned `200` there while `supervisor.apunlimited.com` did not resolve.
+      Production routes now declare both hostnames in wrangler so the canonical
+      infra domain and the alternate branded hostname are managed declaratively.
+    required_bindings:
+      - SUPERVISOR
+      - LOCK
+      - MEMORY
+      - LLM_LEDGER
+    required_secrets:
+      - ANTHROPIC_API_KEY
+      - GROQ_API_KEY
+      - JWT_SECRET
+      - VERTEX_ACCESS_TOKEN
+      - GROK_API_KEY
+      - FACTORY_APP_ID
+      - FACTORY_APP_PRIVATE_KEY
+      - FACTORY_APP_INSTALLATION_ID
+      - PUSHOVER_TOKEN
+      - PUSHOVER_USER_KEY
+      - SLACK_SIGNING_SECRET
+      - SLACK_OWNER_USER_ID
+    required_vars:
+      - AI_GATEWAY_BASE_URL
+      - VERTEX_PROJECT
+      - VERTEX_LOCATION
+      - PER_RUN_CAP_CENTS
+    consumers: []
+
+  - id: lead-gen
+    name: lead-gen
+    repo: Latimer-Woods-Tech/factory
+    url: https://lead-gen.adrper79.workers.dev
+    custom_domain: null
+    health_endpoint: /health
+    verification_targets:
+      default: https://lead-gen.adrper79.workers.dev/health
+    telemetry_required: false
+    deployment_status: deploy_contract_repaired_pending_live_verify_2026-05-21
+    notes: >
+      Worker is deployable from `apps/lead-gen` via
+      `.github/workflows/deploy-lead-gen.yml`. The workflow now provisions
+      required secrets before deploy and verifies `/health`; treat this entry
+      as pending live verification until the next successful production run is
+      observed. No custom domain is documented yet.
+    critical_endpoints:
+      - /health
+      - /run
+    required_bindings:
+      - LEAD_GEN_QUEUE
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+      - SCRAPE_CREATORS_API_KEY
+      - LOOPS_API_KEY
+      - VERTEX_ACCESS_TOKEN
+      - ANTHROPIC_API_KEY
+      - GROQ_API_KEY
+    required_vars:
+      - ENVIRONMENT
+      - AI_GATEWAY_BASE_URL
+      - VERTEX_PROJECT
+      - VERTEX_LOCATION
+    consumers: []
+
+  - id: webhook-fanout
+    name: webhook-fanout
+    repo: Latimer-Woods-Tech/factory
+    url: https://webhooks.latwoodtech.work/stripe
+    workers_dev_url: https://webhook-fanout.adrper79.workers.dev
+    custom_domain: webhooks.latwoodtech.work
+    custom_domain_status: attached_resolver_inconsistent_2026-05-21
+    health_endpoint: /health
+    verification_targets:
+      default: https://webhook-fanout.adrper79.workers.dev/health
+    telemetry_required: false
+    deployment_status: deployed_verified_2026-05-21
+    notes: >
+      The worker now targets the existing `latwoodtech.work` Cloudflare zone.
+      KV + D1 bindings were provisioned on 2026-05-21, required secrets were
+      uploaded, and `https://webhook-fanout.adrper79.workers.dev/health`
+      returned `200` after deploy. Public DNS for
+      `webhooks.latwoodtech.work` resolves via `1.1.1.1`, and
+      `curl --resolve ... https://webhooks.latwoodtech.work/health` returned
+      `200` in the same validation pass. Plain `curl` on the local machine still
+      showed a resolver-path inconsistency, so the workflow keeps verifying the
+      `workers.dev` fallback for now.
+    critical_endpoints:
+      - /health
+      - /stripe
+    required_bindings:
+      - IDEMPOTENCY_KV
+      - FACTORY_EVENTS_DB
+    required_secrets:
+      - STRIPE_WEBHOOK_SECRET
+      - POSTHOG_KEY
+      - RESEND_API_KEY
+    required_vars:
+      - ENVIRONMENT
+      - RESEND_FROM
+    consumers: []
+
+  - id: daily-brief
+    name: daily-brief
+    repo: Latimer-Woods-Tech/factory
+    url: https://daily-brief.adrper79.workers.dev
+    custom_domain: null
     health_endpoint: /health
     telemetry_required: false
+    deployment_status: deploy_workflow_added_2026-05-21
+    notes: >
+      Worker config exists in `apps/daily-brief/wrangler.jsonc` and deploy
+      automation now lives in `.github/workflows/deploy-daily-brief.yml`.
+    critical_endpoints:
+      - /health
+      - /trigger
+    required_bindings:
+      - AUDIO_BUCKET
+    required_secrets:
+      - CF_API_TOKEN
+      - CLOUDFLARE_ACCOUNT_ID
+      - ANTHROPIC_API_KEY
+      - GROQ_API_KEY
+      - VERTEX_ACCESS_TOKEN
+      - ELEVENLABS_API_KEY
+      - ELEVENLABS_VOICE_ID
+      - RESEND_API_KEY
+      - GITHUB_TOKEN
+      - NEWS_API_KEY
+    required_vars:
+      - GITHUB_ORG
+      - ZIP_CODE
+      - RECIPIENTS
+      - AUDIO_PUBLIC_BASE_URL
+      - AI_GATEWAY_BASE_URL
+      - VERTEX_PROJECT
+      - VERTEX_LOCATION
+    consumers: []
+
+  - id: linkedin-publisher
+    name: linkedin-publisher-production                    # wrangler default = name + env suffix; production env has no explicit `name`
+    repo: Latimer-Woods-Tech/factory
+    url: null                                              # production has workers_dev: false; cron-only, no public surface
+    workers_dev_url: https://linkedin-publisher.adrper79.workers.dev   # dev env only
+    custom_domain: null
+    health_endpoint: null                                  # /health exists in src but unreachable in production (no public route)
+    telemetry_required: false
+    deployment_status: deployed_via_actions_2026-05-25
+    notes: >
+      Cron-driven (`0 14 * * 2,4` — Tue/Thu 14:00 UTC) Worker that
+      composes a LinkedIn post via the Anthropic LLM and delivers it to
+      Pushover for manual posting. Has no public route; production env
+      sets `workers_dev: false`. App scaffold landed in PR #978 (paired
+      with the orphaned deploy workflow from #994).
+    critical_endpoints: []
+    required_bindings: []
+    required_secrets:
+      - CF_API_TOKEN
+      - CLOUDFLARE_ACCOUNT_ID
+      - ANTHROPIC_API_KEY
+      - PUSHOVER_TOKEN
+      - PUSHOVER_USER_KEY
+    required_vars:
+      - ENVIRONMENT
+      - AI_GATEWAY_BASE_URL
+      - VERTEX_PROJECT
+      - VERTEX_LOCATION
     consumers: []
 
   - id: xico-city
@@ -440,18 +665,17 @@ workers:
   - id: xico-city-staging
     name: xico-city-staging
     repo: Latimer-Woods-Tech/xico-city
-    url: https://xico-city-staging.adrper79.workers.dev
+    url: https://staging.xicocity.com
+    workers_dev_url: https://xico-city-staging.adrper79.workers.dev
     custom_domain: staging.xicocity.com
-    custom_domain_status: pending_dns                          # DNS record not yet created (2026-05-06)
+    custom_domain_status: attached                             # verified live 2026-05-21
     health_endpoint: /health
     telemetry_required: false                                  # /health + /ready only; no /api/admin/* contract
-    deployment_status: live_health_verified_2026-05-06
+    deployment_status: custom_domain_live_verified_2026-05-21
     notes: >
-      Deployed 2026-05-06: /health 200, /ready 200. AUTH_RATE_LIMITER binding
-      NOT present (namespace 1008 is production-only; provision namespace_id
-      1009 for staging — next available per docs/runbooks/add-new-app.md).
-      staging.xicocity.com custom domain registered in wrangler but DNS record
-      not yet created.
+      Deployed 2026-05-06: /health 200, /ready 200. The staging custom domain
+      `staging.xicocity.com` also returned `200` during the 2026-05-21 audit,
+      so the previous `pending_dns` note was stale.
     critical_endpoints:
       - /health
       - /ready
@@ -476,11 +700,11 @@ workers:
 
 pages:
   - id: prime-self-ui
-    repo: Latimer-Woods-Tech/prime-self-ui
+    repo: Latimer-Woods-Tech/HumanDesign
     project_name: prime-self-ui                            # Cloudflare Pages project name
     custom_domain: selfprime.net
-    root_file: public/index.html                          # must exist for root URL to serve
-    deploy_dir: public
+    root_file: client/index.html                          # current frontend source lives in HumanDesign/client
+    deploy_dir: dist
     worker_dependencies:
       - prime-self                                        # must be deployed and healthy first
     required_secrets:
@@ -501,6 +725,44 @@ pages:
     required_secrets:
       - CF_API_TOKEN
       - CF_ACCOUNT_ID
+
+  - id: admin-studio-ui-storybook
+    repo: Latimer-Woods-Tech/factory
+    project_name: admin-studio-ui-storybook
+    custom_domain: null
+    staging_url: https://admin-ui-storybook.pages.dev
+    root_file: apps/admin-studio-ui/.storybook
+    deploy_dir: apps/admin-studio-ui/storybook-static
+    worker_dependencies: []
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+
+  - id: capricast-web
+    repo: Latimer-Woods-Tech/capricast
+    project_name: videoking                               # legacy project name still used by deploy workflow
+    custom_domain: capricast.com
+    custom_domain_alternate: www.capricast.com
+    root_file: apps/web/index.html
+    deploy_dir: apps/web/.vercel/output/static
+    worker_dependencies:
+      - capricast-api
+    required_secrets:
+      - CLOUDFLARE_API_TOKEN
+      - CLOUDFLARE_ACCOUNT_ID
+
+  - id: coh-web
+    repo: Latimer-Woods-Tech/coh
+    project_name: coh
+    custom_domain: cypherofhealing.com
+    custom_domain_alternate: cipherofhealing.com
+    root_file: web/index.html
+    deploy_dir: web/dist
+    worker_dependencies:
+      - coh
+    required_secrets:
+      - CLOUDFLARE_API_TOKEN
+      - CLOUDFLARE_ACCOUNT_ID
 # ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────
 #
 # Shared npm packages published to @adrper79-dot scope.
@@ -516,10 +778,14 @@ pages:
 packages:
   - name: "@latimer-woods-tech/errors"
     status: "Foundation"
-    version: "1.0.0"
+    version: "0.1.0"
     main_use: "Error types, FactoryBaseError, error handling"
     videoking_used: true
     depends_on: []
+    # oss_status: "ready-to-publish" — first public release prepped 2026-05-23
+    # (LICENSE, README, CHANGELOG, publishConfig.access=public). User to run
+    # `npm publish` from packages/errors. See docs/runbooks/oss-publishing.md.
+    oss_status: "ready-to-publish"
     
   - name: "@latimer-woods-tech/monitoring"
     status: "Foundation"

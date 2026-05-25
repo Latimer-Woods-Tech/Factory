@@ -1,0 +1,9 @@
+{
+  "id": "compliance",
+  "package": "@latimer-woods-tech/compliance",
+  "versionRange": "^0.1.0",
+  "requirements": {},
+  "contracts": {
+    "policyTags": ["compliance"]
+  }
+}

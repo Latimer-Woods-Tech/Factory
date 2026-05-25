@@ -11,6 +11,19 @@ import type { Env } from './env.js';
 const SYNTHETIC_EMAIL_RE = /(?:gatecheck_|test_|smoke_|@example\.com)/i;
 const KV_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const FETCH_TIMEOUT_MS = 10_000;
+const CONTACT_RATE_LIMIT_SECONDS = 60;
+const CONTACT_ALLOWED_ORIGINS = new Set([
+  'https://latwoodtech.com',
+  'https://main.latwoodtech-com.pages.dev',
+  'http://127.0.0.1:4173',
+]);
+
+interface ContactSubmission {
+  name: string;
+  email: string;
+  message: string;
+  phone?: string;
+}
 
 async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
   const controller = new AbortController();
@@ -202,6 +215,120 @@ async function sendResendLifecycleEmail(
   }
 }
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function corsHeaders(origin: string | undefined): Record<string, string> {
+  if (!origin || !CONTACT_ALLOWED_ORIGINS.has(origin)) {
+    return {
+      Vary: 'Origin',
+    };
+  }
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'content-type',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    Vary: 'Origin',
+  };
+}
+
+async function sendContactEmail(apiKey: string, from: string, to: string, submission: ContactSubmission): Promise<void> {
+  const html = [
+    `<p><strong>Name:</strong> ${submission.name}</p>`,
+    `<p><strong>Email:</strong> ${submission.email}</p>`,
+    submission.phone ? `<p><strong>Phone:</strong> ${submission.phone}</p>` : '',
+    `<p><strong>Message:</strong></p><p>${submission.message.replace(/\n/g, '<br />')}</p>`,
+  ].join('');
+
+  const text = [
+    `Name: ${submission.name}`,
+    `Email: ${submission.email}`,
+    submission.phone ? `Phone: ${submission.phone}` : '',
+    '',
+    submission.message,
+  ].filter(Boolean).join('\n');
+
+  const res = await fetchWithTimeout('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      reply_to: submission.email,
+      subject: `Latwoodtech contact: ${submission.name}`,
+      html,
+      text,
+      tags: [{ name: 'surface', value: 'latwoodtech-contact' }],
+      metadata: {
+        source: 'latwoodtech-web',
+        email: submission.email,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const textBody = await res.text();
+    throw new Error(`Resend contact email failed (${String(res.status)}): ${textBody}`);
+  }
+}
+
+async function postSlackContact(webhookUrl: string, submission: ContactSubmission): Promise<void> {
+  const res = await fetchWithTimeout(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text: `New latwoodtech contact from ${submission.name}`,
+      blocks: [
+        {
+          type: 'header',
+          text: { type: 'plain_text', text: 'New latwoodtech contact' },
+        },
+        {
+          type: 'section',
+          fields: [
+            { type: 'mrkdwn', text: `*Name*\n${submission.name}` },
+            { type: 'mrkdwn', text: `*Email*\n${submission.email}` },
+            { type: 'mrkdwn', text: `*Phone*\n${submission.phone ?? 'Not provided'}` },
+            { type: 'mrkdwn', text: '*Source*\nlatwoodtech.com' },
+          ],
+        },
+        {
+          type: 'section',
+          text: { type: 'mrkdwn', text: `*Message*\n${submission.message}` },
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Slack contact webhook failed (${String(res.status)}): ${text}`);
+  }
+}
+
+async function fanOutContact(env: Env, submission: ContactSubmission): Promise<void> {
+  const tasks: Promise<void>[] = [];
+
+  if (env.CONTACT_NOTIFY_EMAIL) {
+    tasks.push(sendContactEmail(env.RESEND_API_KEY, env.RESEND_FROM, env.CONTACT_NOTIFY_EMAIL, submission));
+  }
+
+  if (env.SLACK_WEBHOOK_URL) {
+    tasks.push(postSlackContact(env.SLACK_WEBHOOK_URL, submission));
+  }
+
+  if (tasks.length === 0) {
+    throw new Error('No contact sinks configured');
+  }
+
+  await Promise.all(tasks);
+}
+
 // ---------------------------------------------------------------------------
 // Stripe event routing
 // ---------------------------------------------------------------------------
@@ -305,7 +432,7 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
   const distinctId = customerId ?? email;
 
   tasks.push(
-    capturePostHogEvent(env.POSTHOG_API_KEY, distinctId, eventName, eventProps)
+    capturePostHogEvent(env.POSTHOG_KEY, distinctId, eventName, eventProps)
       .catch(err => {
         console.error(
           JSON.stringify({ level: 'error', msg: '[posthog] fan-out error', error: err instanceof Error ? err.message : String(err) }),
@@ -367,6 +494,57 @@ app.get('/health', c =>
     env: c.env.ENVIRONMENT ?? 'production',
   }),
 );
+
+app.options('/contact', c => new Response(null, { status: 204, headers: corsHeaders(c.req.header('origin')) }));
+
+app.post('/contact', async c => {
+  const headers = corsHeaders(c.req.header('origin'));
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const rateLimitKey = `contact:${ip}`;
+  if (await c.env.IDEMPOTENCY_KV.get(rateLimitKey)) {
+    return c.json({ error: 'Rate limited' }, 429, headers);
+  }
+
+  const body = await c.req.json().catch(() => null) as Record<string, unknown> | null;
+  if (!body) {
+    return c.json({ error: 'Invalid JSON body' }, 400, headers);
+  }
+
+  const website = typeof body.website === 'string' ? body.website.trim() : '';
+  if (website) {
+    return c.json({ ok: true }, 200, headers);
+  }
+
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const email = typeof body.email === 'string' ? body.email.trim() : '';
+  const message = typeof body.message === 'string' ? body.message.trim() : '';
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : undefined;
+
+  if (!name || name.length > 80) {
+    return c.json({ error: 'Valid name is required' }, 400, headers);
+  }
+  if (!isValidEmail(email)) {
+    return c.json({ error: 'Valid email is required' }, 400, headers);
+  }
+  if (!message || message.length > 2000) {
+    return c.json({ error: 'Message is required' }, 400, headers);
+  }
+
+  await c.env.IDEMPOTENCY_KV.put(rateLimitKey, '1', { expirationTtl: CONTACT_RATE_LIMIT_SECONDS });
+  const submission: ContactSubmission = { name, email, message, phone };
+
+  c.executionCtx.waitUntil(
+    fanOutContact(c.env, submission).catch(err =>
+      console.error(JSON.stringify({
+        level: 'error',
+        msg: '[contact] fan-out error',
+        error: err instanceof Error ? err.message : String(err),
+      })),
+    ),
+  );
+
+  return c.json({ ok: true }, 200, headers);
+});
 
 app.post('/stripe', async c => {
   const requestId = c.get('requestId') ?? generateRequestId();

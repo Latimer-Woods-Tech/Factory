@@ -311,9 +311,64 @@ UPDATE users SET role='creator' WHERE id='0194b4cc-ce46-4441-99af-937a20dca00a';
 
 Any new factory-managed creator account needs the same promotion.
 
+## Training/Marketing Videos (Non-Capricast)
+
+The `render-video.yml` workflow is not limited to Capricast news content. It can
+produce training and marketing videos for any `app_id` by choosing the right
+`composition_id` and `brief_key`.
+
+### Prime Self example — MarketingVideo
+
+```bash
+gh workflow run render-video.yml \
+  -f job_id=manual-$(date +%s) \
+  -f composition_id=MarketingVideo \
+  -f app_id=prime_self \
+  -f brief_key=homepage-welcome \
+  -f brand_color='#8B5CF6' \
+  -f brand_accent='#10B981'
+```
+
+Produces a 15-second branded marketing video. Stream UID (2026-05-21 run):
+`961578b45ca8e5ee39b461a426f58bac`.
+
+### Training videos
+
+Dispatch with `composition_id=TrainingVideo` and a `brief_key` from
+`apps/video-studio/content-briefs/prime-self/`. Available briefs:
+
+| brief_key | Stream UID (2026-05-21) |
+|---|---|
+| `energy-type-overview` | `d8048e55fd36f45e3e3b9a388a419245` |
+| `blueprint-reading-guide` | `0030a44d55dab8fb35d05f6d1b0e896f` |
+| `daily-transits-guide` | `bfbb4c772fff7bd8412367c979e79c41` |
+
+### Gotcha: "Publish to Capricast" step always runs, always fails for non-Capricast content
+
+The workflow has no `if: app_id == 'capricast'` guard on the publish and
+PATCH steps. For manually dispatched prime-self (or any non-Capricast)
+renders, two terminal steps will fail:
+
+1. **POST `/api/admin/videos/import`** on Capricast — will 401 because
+   `CAPRICAST_PUBLISH_TOKEN` is scoped to the Capricast worker, not to
+   prime-self.
+2. **PATCH schedule-worker job → `status=done`** — will 404/401 because the
+   synthetic `job_id` (e.g. `manual-1716330000`) has no matching row in the
+   schedule-worker DB.
+
+**Both failures are expected and non-fatal for non-Capricast dispatches.**
+The video is already fully uploaded to Cloudflare Stream by the time these
+steps run. The Stream UID is emitted in the `render` step logs — grab it
+there and record it in the relevant content brief JSON (set `status=published`
+and `stream_uid=<uid>`).
+
+Do NOT treat these two GHA step failures as a broken pipeline; they are
+a known limitation of the single-workflow design.
+
 ## Related
 
 - `apps/video-cron/src/index.ts` — dispatch source
 - `apps/schedule-worker/src/index.ts` — PATCH endpoint shape
 - `packages/schedule/` — `RenderJob` type and `scorePriority()`
 - `packages/video/` — Cloudflare Stream + R2 wrappers
+- `apps/video-studio/content-briefs/prime-self/` — prime-self brief library

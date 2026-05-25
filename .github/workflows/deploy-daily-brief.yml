@@ -1,0 +1,166 @@
+name: Deploy Daily Brief
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/daily-brief/**'
+      - '.github/workflows/deploy-daily-brief.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-daily-brief-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    name: Deploy daily-brief to Cloudflare
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env CLOUDFLARE_API_TOKEN   CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          fetch_to_env CLOUDFLARE_ACCOUNT_ID  CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env ANTHROPIC_API_KEY      ANTHROPIC_API_KEY
+          fetch_to_env GROQ_API_KEY           GROQ_API_KEY
+          fetch_to_env GROK_API_KEY           GROK_API_KEY
+          fetch_to_env VERTEX_ACCESS_TOKEN    VERTEX_ACCESS_TOKEN
+          fetch_to_env ELEVENLABS_API_KEY     ELEVENLABS_API_KEY
+          fetch_to_env ELEVENLABS_VOICE_ID    ELEVENLABS_VOICE_ID
+          fetch_to_env RESEND_API_KEY         RESEND_API_KEY FACTORY_RESEND_API_KEY
+          fetch_to_env GITHUB_TOKEN           GITHUB_TOKEN FACTORY_GITHUB_TOKEN
+          fetch_to_env NEWS_API_KEY           NEWS_API_KEY
+          fetch_to_env STRIPE_SECRET_KEY      STRIPE_SECRET_KEY
+          fetch_to_env POSTHOG_API_KEY        POSTHOG_API_KEY POSTHOG_KEY POSTHOG_API
+          fetch_to_env POSTHOG_PROJECT_ID     POSTHOG_PROJECT_ID
+          fetch_to_env SENTRY_AUTH_TOKEN      SENTRY_AUTH_TOKEN FACTORY_SENTRY_API sentry-auth-token
+          fetch_to_env SENTRY_ORG            SENTRY_ORG sentry-org
+          fetch_to_env TRIGGER_TOKEN          TRIGGER_TOKEN DAILY_BRIEF_TRIGGER_TOKEN daily-brief-trigger-token
+
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for package in errors monitoring logger llm telephony email; do
+            echo "=== ${package} ==="
+            cd "packages/${package}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: apps/daily-brief
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: apps/daily-brief
+
+      - name: Test
+        run: npm test
+        working-directory: apps/daily-brief
+
+      - name: Provision runtime secrets
+        working-directory: apps/daily-brief
+        run: |
+          set -euo pipefail
+
+          put_required_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "::error::$name is required for daily-brief deploy"
+              exit 1
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name" --env production
+          }
+
+          put_optional_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "$value" ]; then
+              echo "ℹ️ Skipping optional secret $name"
+              return 0
+            fi
+            printf '%s' "$value" | npx wrangler secret put "$name" --env production
+          }
+
+          put_required_secret ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
+          put_required_secret GROQ_API_KEY "$GROQ_API_KEY"
+          put_required_secret VERTEX_ACCESS_TOKEN "$VERTEX_ACCESS_TOKEN"
+          put_required_secret ELEVENLABS_API_KEY "$ELEVENLABS_API_KEY"
+          put_required_secret ELEVENLABS_VOICE_ID "$ELEVENLABS_VOICE_ID"
+          put_required_secret RESEND_API_KEY "$RESEND_API_KEY"
+          put_required_secret GITHUB_TOKEN "$GITHUB_TOKEN"
+          put_required_secret NEWS_API_KEY "$NEWS_API_KEY"
+          put_optional_secret GROK_API_KEY "$GROK_API_KEY"
+          put_optional_secret STRIPE_SECRET_KEY "$STRIPE_SECRET_KEY"
+          put_optional_secret POSTHOG_API_KEY "$POSTHOG_API_KEY"
+          put_optional_secret POSTHOG_PROJECT_ID "$POSTHOG_PROJECT_ID"
+          put_optional_secret SENTRY_AUTH_TOKEN "$SENTRY_AUTH_TOKEN"
+          put_optional_secret SENTRY_ORG "$SENTRY_ORG"
+          put_optional_secret TRIGGER_TOKEN "$TRIGGER_TOKEN"
+
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/daily-brief
+        run: |
+          mkdir -p .sentry-dist
+          npx wrangler deploy --env production --dry-run --outdir .sentry-dist
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/daily-brief
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/daily-brief
+        run: |
+          sentry-cli sourcemaps upload \
+            --project daily-brief \
+            .sentry-dist/
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: apps/daily-brief
+        run: |
+          set -euo pipefail
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" --env production
+
+      - name: Verify deployment
+        run: |
+          echo "Daily Brief deployment complete"
+          node scripts/verify-http-endpoint.mjs \
+            --url https://daily-brief.adrper79.workers.dev/health \
+            --status 200 \
+            --json-field status \
+            --json-equals ok \
+            --retries 8 \
+            --delay-ms 5000

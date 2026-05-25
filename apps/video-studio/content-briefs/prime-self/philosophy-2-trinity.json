@@ -1,0 +1,49 @@
+{
+  "briefKey": "philosophy-2-trinity",
+  "key": "philosophy-2-trinity",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "philosophy",
+  "title": "Trinity: The Second Overtone",
+  "description": "Type, Strategy, Authority. The three-fold structure that gives the blueprint its dynamic stability — the perfect fifth.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Trinity — Perfect Fifth 3:2",
+  "learningGoal": "User understands Type, Strategy, and Authority as a triadic structure that produces dynamic stability — not a checklist but a relationship.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "Trinity is the second overtone — the perfect fifth, 3:2",
+    "Type is what you are; Strategy is how you move; Authority is how you decide",
+    "Each one alone is incomplete; together they triangulate the living self",
+    "Three points make a plane — Trinity is what gives the blueprint its dynamic stability"
+  ],
+  "forbiddenClaims": [
+    "follow your strategy and life will be perfect",
+    "your authority is always right",
+    "guaranteed outcomes",
+    "the trinity is a fixed formula"
+  ],
+  "toneNotes": "Architectural and clear. Establish that Type, Strategy, and Authority are not three separate features but one triadic structure. Use the metaphor of a tripod — any two will fall over.",
+  "narration_script": "Two points define a line. Three points define a plane.\n\nThis is why the second overtone is the perfect fifth. Three to two. The first interval that stabilizes the octave. The first sound that introduces structure into pure polarity.\n\nIn your blueprint, the trinity is Type, Strategy, and Authority.\n\nType is what you are. The shape of your energy. Generator, Manifesting Generator, Projector, Manifestor, Reflector. It is your structural class, the way your design moves through the world before you decide anything.\n\nStrategy is how you move. Respond. Inform. Wait for invitation. Wait the lunar cycle. Each type has one. The strategy is not advice — it is the actual mechanics of how life works for you when you stop forcing it.\n\nAuthority is how you decide. Sacral, Emotional, Splenic, Self-Projected, Ego, Mental, Lunar. Your authority is the inner faculty that knows before the mind gets involved. It is the signal under the noise.\n\nEach one alone is incomplete.\n\nType without Strategy is identity without movement. Strategy without Authority is movement without decision. Authority without Type is decision without context.\n\nThree points make a plane. The trinity is what gives your blueprint its dynamic stability. It is the structure that holds while you live inside it.\n\nThis is the second overtone of your design.",
+  "script": "Two points define a line. Three points define a plane.\n\nThis is why the second overtone is the perfect fifth. Three to two. The first interval that stabilizes the octave. The first sound that introduces structure into pure polarity.\n\nIn your blueprint, the trinity is Type, Strategy, and Authority.\n\nType is what you are. The shape of your energy. Generator, Manifesting Generator, Projector, Manifestor, Reflector. It is your structural class, the way your design moves through the world before you decide anything.\n\nStrategy is how you move. Respond. Inform. Wait for invitation. Wait the lunar cycle. Each type has one. The strategy is not advice — it is the actual mechanics of how life works for you when you stop forcing it.\n\nAuthority is how you decide. Sacral, Emotional, Splenic, Self-Projected, Ego, Mental, Lunar. Your authority is the inner faculty that knows before the mind gets involved. It is the signal under the noise.\n\nEach one alone is incomplete.\n\nType without Strategy is identity without movement. Strategy without Authority is movement without decision. Authority without Type is decision without context.\n\nThree points make a plane. The trinity is what gives your blueprint its dynamic stability. It is the structure that holds while you live inside it.\n\nThis is the second overtone of your design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "Two points define a line. Three points define a plane. The perfect fifth, three to two.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Type is what you are. Strategy is how you move. Authority is how you decide. Each one alone is incomplete.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "Type without Strategy is identity without movement. Strategy without Authority is movement without decision.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Type", "Strategy", "Authority"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "Three points make a plane. The trinity is what gives your blueprint its dynamic stability.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Trinity: Type, Strategy, Authority — The Second Overtone",
+    "description": "The perfect fifth 3:2 — three points define a plane. Why your blueprint's stability requires all three, never any two alone."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

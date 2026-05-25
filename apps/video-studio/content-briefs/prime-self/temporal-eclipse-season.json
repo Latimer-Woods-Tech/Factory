@@ -1,0 +1,49 @@
+{
+  "briefKey": "temporal-eclipse-season",
+  "key": "temporal-eclipse-season",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "temporal",
+  "title": "Eclipse Season Through Your Chart",
+  "description": "What eclipses do collectively, and how to read them through the specific gates of your own blueprint.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Eclipse season and the gates it activates",
+  "learningGoal": "User understands what eclipses are mechanically, why they have outsized collective effect, and how to read their personal impact through the gates the eclipse touches in their own chart.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Eclipses occur when the Sun, Moon, and Earth align so the field temporarily collapses or amplifies",
+    "Eclipses come in pairs — a solar and a lunar — six months between cycles",
+    "An eclipse activates the gate at the exact degree of the Sun or Moon at the moment of the alignment",
+    "Read the eclipse through your own chart by locating that gate and noticing which of your centers it touches"
+  ],
+  "forbiddenClaims": [
+    "eclipses cause specific events",
+    "eclipses are dangerous",
+    "guaranteed transformation during eclipses",
+    "you must do rituals during eclipses"
+  ],
+  "toneNotes": "Sober and structural. Eclipses are often surrounded by fear-language elsewhere. Strip that out. Treat them as collective activations of specific gates.",
+  "narration_script": "Twice a year, the Sun, the Moon, and the Earth fall into a brief line.\n\nWhen the Moon passes between the Sun and the Earth, light is interrupted. We call it a solar eclipse. When the Earth passes between the Sun and the Moon, the Moon goes dark in our sky. We call it a lunar eclipse.\n\nThe alignment is mechanical. The effect is collective.\n\nDuring an eclipse, the field that planetary transits create across the wheel of gates becomes briefly concentrated. Whatever gate is being activated at the exact degree of the Sun or Moon during the alignment receives an intensified pulse. The theme of that gate amplifies in the collective consciousness for the days surrounding the event.\n\nThis is not destiny. It is amplification.\n\nTo read an eclipse through your own blueprint, do one thing. Find the gate at the eclipse degree. Look at where it sits on your body graph. If it activates one of your defined gates, the theme of that gate is amplified in you. If it touches an open center, you feel the field pressing on the place where you receive.\n\nEclipses come in pairs. Solar and lunar, separated by two weeks. Their effects unfold across the six months between cycles.\n\nThe practice is to notice, not to brace.\n\nThe eclipse is a long exhale of the field. Your design will breathe with it.",
+  "script": "Twice a year, the Sun, the Moon, and the Earth fall into a brief line.\n\nWhen the Moon passes between the Sun and the Earth, light is interrupted. We call it a solar eclipse. When the Earth passes between the Sun and the Moon, the Moon goes dark in our sky. We call it a lunar eclipse.\n\nThe alignment is mechanical. The effect is collective.\n\nDuring an eclipse, the field that planetary transits create across the wheel of gates becomes briefly concentrated. Whatever gate is being activated at the exact degree of the Sun or Moon during the alignment receives an intensified pulse. The theme of that gate amplifies in the collective consciousness for the days surrounding the event.\n\nThis is not destiny. It is amplification.\n\nTo read an eclipse through your own blueprint, do one thing. Find the gate at the eclipse degree. Look at where it sits on your body graph. If it activates one of your defined gates, the theme of that gate is amplified in you. If it touches an open center, you feel the field pressing on the place where you receive.\n\nEclipses come in pairs. Solar and lunar, separated by two weeks. Their effects unfold across the six months between cycles.\n\nThe practice is to notice, not to brace.\n\nThe eclipse is a long exhale of the field. Your design will breathe with it.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "Twice a year, the Sun, the Moon, and the Earth fall into a brief line.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "An eclipse activates the gate at the exact degree of the Sun or Moon at the moment of alignment. The theme amplifies in the collective.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "Find the gate. Locate it on your chart. If it activates a defined gate, you feel amplification. If it touches an open center, you feel the field press.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Alignment", "Amplification", "Breath"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "The practice is to notice, not to brace. Your design will breathe with it.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Reading Eclipse Season Through Your Blueprint",
+    "description": "What eclipses do collectively, and how to read them through the specific gates of your own chart."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useSession } from './stores/session.js';
+import { useEntitlements } from './stores/entitlements.js';
 import { EnvironmentBanner } from './components/EnvironmentBanner.js';
 import { ThemeToggle } from './components/ThemeToggle.js';
 import { LoginPage } from './pages/LoginPage.js';
+import { NotificationsContainer } from './components/NotificationsContainer.js';
 import { Dashboard } from './pages/Dashboard.js';
 
 function LoginRedirect() {
@@ -11,14 +13,23 @@ function LoginRedirect() {
   return <Navigate to={`/login?next=${encodeURIComponent(pathname + search)}`} replace />;
 }
 
+function AuthedLoginRedirect() {
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next') ?? '/';
+  return <Navigate to={next} replace />;
+}
+
 export default function App() {
   const { hydrate, isAuthed } = useSession();
+  const { load: loadEntitlements } = useEntitlements();
+  useEffect(() => { if (isAuthed()) void loadEntitlements(); }, [isAuthed, loadEntitlements]);
 
   useEffect(() => { hydrate(); }, [hydrate]);
 
   if (!isAuthed()) {
     return (
       <>
+        <NotificationsContainer />
         <div className="fixed right-3 top-3 z-50">
           <ThemeToggle />
         </div>
@@ -32,13 +43,10 @@ export default function App() {
 
   return (
     <>
-      <EnvironmentBanner />
-      <div className="fixed right-3 top-14 z-50">
-        <ThemeToggle />
-      </div>
+      <NotificationsContainer />
       <Routes>
-        <Route path="/login" element={<Navigate to="/" replace />} />
-        <Route path="/*" element={<Dashboard />} />
+      <Route path="/login" element={<AuthedLoginRedirect />} />
+      <Route path="/*" element={<Dashboard />} />
       </Routes>
     </>
   );

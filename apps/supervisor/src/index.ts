@@ -30,6 +30,10 @@ export interface Env {
   SLACK_SIGNING_SECRET: string;
   /** Slack user ID of the workspace owner — only DMs from this user create GitHub issues. */
   SLACK_OWNER_USER_ID: string;
+  /** factory-cross-repo worker base URL (e.g., https://factory-cross-repo-worker.example.com). Set via `wrangler secret put FACTORY_CROSS_REPO_URL`. */
+  FACTORY_CROSS_REPO_URL?: string;
+  /** factory-cross-repo Bearer token for authentication. Set via `wrangler secret put FACTORY_CROSS_REPO_TOKEN`. */
+  FACTORY_CROSS_REPO_TOKEN?: string;
 }
 
 /**

@@ -16,6 +16,9 @@ concurrency:
   group: smoke-admin-studio
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -40,9 +43,12 @@ jobs:
       - name: Probe
         id: probe
         env:
+          # NOTE: FACTORY_USER / FACTORY_PW must be populated as repo or
+          # org Actions secrets. Without them probe-factory-admin.mjs exits 2
+          # at startup (RC-2 in the 2026-05-23 scheduled-workflow triage).
           BASE_URL: ${{ github.event.inputs.base_url || 'https://apunlimited.com' }}
-          STUDIO_EMAIL: ${{ secrets.STUDIO_EMAIL }}
-          STUDIO_PASSWORD: ${{ secrets.STUDIO_PASSWORD }}
+          STUDIO_EMAIL: ${{ secrets.FACTORY_USER }}
+          STUDIO_PASSWORD: ${{ secrets.FACTORY_PW }}
           STUDIO_ENV: production
           OUT_DIR: probe-output
         run: node scripts/probe-factory-admin.mjs
@@ -53,5 +59,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: probe-output-${{ github.run_id }}
+          # OUT_DIR=probe-output is created relative to the working-directory
+          # of the Probe step (apps/prime-self-smoke). The historical "missing
+          # dir" warning was downstream of the credentials check exiting 2
+          # before probe-factory-admin.mjs ever created OUT_DIR — once secrets
+          # are wired, this path resolves correctly.
           path: apps/prime-self-smoke/probe-output/
           retention-days: 14

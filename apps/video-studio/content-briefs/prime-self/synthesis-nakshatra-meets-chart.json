@@ -1,0 +1,49 @@
+{
+  "briefKey": "synthesis-nakshatra-meets-chart",
+  "key": "synthesis-nakshatra-meets-chart",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "synthesis-moments",
+  "title": "When the Vedic Nakshatra Confirms the Chart",
+  "description": "The Vedic Moon Nakshatra and the Human Design emotional signature pointing to the same lunar truth.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Mrigashira Nakshatra and the Open Solar Plexus",
+  "learningGoal": "User sees how the twenty-seven Vedic lunar mansions independently confirm Human Design emotional signatures when read together.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "The Vedic system divides the lunar zodiac into twenty-seven nakshatras, each with a distinct archetypal signature",
+    "Your Moon's nakshatra describes the texture of your emotional body — what feeds it, what shapes it",
+    "When the nakshatra signature aligns with your Human Design emotional definition or openness, the reading deepens",
+    "Mrigashira — the seeking deer — confirms the Open Solar Plexus pattern of searching for emotional clarity"
+  ],
+  "forbiddenClaims": [
+    "Vedic astrology is more accurate",
+    "this proves your emotions",
+    "guaranteed emotional insight",
+    "the nakshatra controls your feelings"
+  ],
+  "toneNotes": "Cross-cultural and respectful. Acknowledge Vedic astrology as its own complete tradition. Do not collapse it into Human Design.",
+  "narration_script": "The Vedic tradition watches the Moon, not the Sun.\n\nWhile Western astrology divides the zodiac into twelve signs, the Vedic tradition divides the same circle into twenty-seven lunar mansions. Each one is called a nakshatra. Each one is named for a star cluster the Moon visits as she travels her monthly cycle.\n\nEach nakshatra carries a distinct archetypal signature. Krittika is the cutting flame. Rohini is the red cow, abundance and patience. Mrigashira is the seeking deer — the gentle, restless search for something just out of reach.\n\nYour Moon falls in one of these twenty-seven. It describes the texture of your emotional body. Not what you feel, but how feeling moves through you.\n\nNow read your Human Design.\n\nImagine your Solar Plexus center is open. Undefined. You do not carry a consistent emotional wave of your own. You feel the room. You amplify whatever the field is broadcasting. There is a particular searching quality to your inner life — looking for emotional clarity that does not stay still.\n\nNow look at your Vedic Moon. Mrigashira. The seeking deer.\n\nThe same pattern, named twice. The Vedic tradition saw it in the stars two thousand years ago. The Human Design chart sees it in the body graph today. Two systems, one signal.\n\nThe nakshatra is not the cause. It is the confirmation.",
+  "script": "The Vedic tradition watches the Moon, not the Sun.\n\nWhile Western astrology divides the zodiac into twelve signs, the Vedic tradition divides the same circle into twenty-seven lunar mansions. Each one is called a nakshatra. Each one is named for a star cluster the Moon visits as she travels her monthly cycle.\n\nEach nakshatra carries a distinct archetypal signature. Krittika is the cutting flame. Rohini is the red cow, abundance and patience. Mrigashira is the seeking deer — the gentle, restless search for something just out of reach.\n\nYour Moon falls in one of these twenty-seven. It describes the texture of your emotional body. Not what you feel, but how feeling moves through you.\n\nNow read your Human Design.\n\nImagine your Solar Plexus center is open. Undefined. You do not carry a consistent emotional wave of your own. You feel the room. You amplify whatever the field is broadcasting. There is a particular searching quality to your inner life — looking for emotional clarity that does not stay still.\n\nNow look at your Vedic Moon. Mrigashira. The seeking deer.\n\nThe same pattern, named twice. The Vedic tradition saw it in the stars two thousand years ago. The Human Design chart sees it in the body graph today. Two systems, one signal.\n\nThe nakshatra is not the cause. It is the confirmation.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "The Vedic tradition watches the Moon, not the Sun. Twenty-seven lunar mansions.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Mrigashira. The seeking deer. The gentle, restless search for something just out of reach.", "showBodyGraph": false },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "Open Solar Plexus. The searching quality of emotional life. The same pattern, named twice — once in the stars, once in the body graph.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Search", "Mirror", "Confirmation"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "The nakshatra is not the cause. It is the confirmation.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "When the Vedic Nakshatra Confirms the Chart",
+    "description": "Two thousand years of lunar observation meeting the modern body graph — the same pattern, named twice."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -1,0 +1,49 @@
+{
+  "briefKey": "philosophy-1-polarity",
+  "key": "philosophy-1-polarity",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "philosophy",
+  "title": "Polarity: The First Overtone",
+  "description": "The first structural pattern. Defined and undefined as two sides of one architecture — the octave that holds the chart together.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Polarity — Octave 2:1",
+  "learningGoal": "Committed user understands polarity as a structural frame: not opposition but the two sides of one organism, with the dynamic between them as the generative ground.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "Polarity is the first overtone — the simplest harmonic, the octave 2:1",
+    "Defined and undefined are not opposites; they are the two sides of the same architecture",
+    "The dance between them is the generative ground of self-knowledge",
+    "Polarity is not resolved; it is inhabited"
+  ],
+  "forbiddenClaims": [
+    "polarity creates balance through opposition",
+    "one side cancels the other",
+    "the goal is to remove polarity",
+    "polarity is a problem to fix"
+  ],
+  "toneNotes": "Philosophical and patient. This is the first video in the deep series. Establish the structural frame without becoming abstract. Ground every claim in the body graph.",
+  "narration_script": "Before there is structure, there is polarity.\n\nThe simplest harmonic in music is the octave. The same note, twice. One vibrating at half the frequency of the other. Two to one. Same song, different register.\n\nThis is the first overtone. The pattern that makes structure possible.\n\nIn your blueprint, polarity is everywhere. Defined and undefined. Conscious and unconscious. Personality and design. The black side of your chart and the red side. Every part of your architecture has two registers, one inside the other, both vibrating the same essential note.\n\nThis is not opposition.\n\nOpposition cancels. Polarity completes. A magnet does not work by one pole defeating the other. It works because both poles are present. The current flows because the difference holds.\n\nYour defined centers are one register of your design. Your undefined centers are the same design, in the other register. The signal you broadcast and the field you receive are not separate selves. They are the two sides of one architecture.\n\nThe practice is not to resolve the polarity.\n\nThe practice is to inhabit it.\n\nWhen you stop trying to make the undefined become defined, when you stop fighting the open places, the dance begins. The signal speaks. The reception listens. The current flows.\n\nThis is the first overtone of your design.",
+  "script": "Before there is structure, there is polarity.\n\nThe simplest harmonic in music is the octave. The same note, twice. One vibrating at half the frequency of the other. Two to one. Same song, different register.\n\nThis is the first overtone. The pattern that makes structure possible.\n\nIn your blueprint, polarity is everywhere. Defined and undefined. Conscious and unconscious. Personality and design. The black side of your chart and the red side. Every part of your architecture has two registers, one inside the other, both vibrating the same essential note.\n\nThis is not opposition.\n\nOpposition cancels. Polarity completes. A magnet does not work by one pole defeating the other. It works because both poles are present. The current flows because the difference holds.\n\nYour defined centers are one register of your design. Your undefined centers are the same design, in the other register. The signal you broadcast and the field you receive are not separate selves. They are the two sides of one architecture.\n\nThe practice is not to resolve the polarity.\n\nThe practice is to inhabit it.\n\nWhen you stop trying to make the undefined become defined, when you stop fighting the open places, the dance begins. The signal speaks. The reception listens. The current flows.\n\nThis is the first overtone of your design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "Before there is structure, there is polarity. The first overtone. The octave, two to one.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Defined and undefined are the same design in two registers. The signal you broadcast and the field you receive.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "Opposition cancels. Polarity completes. A magnet works because both poles are present. The current flows because the difference holds.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Signal", "Reception", "Current"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "The practice is not to resolve the polarity. The practice is to inhabit it.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Polarity: The First Overtone of Your Design",
+    "description": "The octave 2:1 — the structural frame that holds defined and undefined as two registers of one architecture."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -1,19 +1,28 @@
 version: 2
 updates:
   # GitHub Actions
+  # T1 workflows (see .github/workflows/REGISTRY.md) pin third-party actions
+  # by commit SHA with a trailing `# vX.Y.Z` comment, per GitHub's hardening
+  # guide (https://docs.github.com/actions/security-guides/security-hardening-for-github-actions).
+  # Dependabot's github-actions ecosystem reads BOTH the SHA and the comment
+  # and opens PRs that bump them together when the action ships a new release.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
     groups:
-      actions-updates:
+      actions-minor-patch:
         patterns: ["*"]
+        update-types:
+          - minor
+          - patch
     labels:
       - dependencies
       - supervisor:approved-source
     commit-message:
       prefix: chore(actions)
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
 # Note:
 # npm version updates are handled by Renovate. Keeping Dependabot scoped to
 # GitHub Actions avoids duplicate bot traffic and stale root-level npm config.
+# Major-version bumps are kept ungrouped so they get individual review.

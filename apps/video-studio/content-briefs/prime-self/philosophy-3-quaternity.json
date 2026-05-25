@@ -1,0 +1,49 @@
+{
+  "briefKey": "philosophy-3-quaternity",
+  "key": "philosophy-3-quaternity",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "philosophy",
+  "title": "Quaternity: The Third Overtone",
+  "description": "Four motors. Four awareness centers. Four types. And the fifth that emerges from four — the quintaEssentia.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "chronos",
+  "forgeTheme": "chronos",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Quaternity — Fourth 4:3 and the Fifth That Emerges",
+  "learningGoal": "User understands the four-fold structures embedded in the blueprint and recognizes the emergent fifth that completes them.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "Quaternity is the third overtone — the fourth, 4:3",
+    "Four motors generate energy; four awareness centers process it; four pure types carry it",
+    "From four, a fifth emerges — the quintaEssentia, the wholeness that arises from the parts",
+    "Reflectors complete the typology not by adding a motor but by mirroring all four"
+  ],
+  "forbiddenClaims": [
+    "the number four is magical",
+    "four types are better than five",
+    "the quintaEssentia is supernatural",
+    "guaranteed structural insight"
+  ],
+  "toneNotes": "Geometric and contemplative. Lean into the architecture of four. The fifth is named but not over-explained — it is felt, not catalogued.",
+  "narration_script": "The third overtone is the fourth. Four to three.\n\nFour is the number of structure. Four corners make a square. Four directions make a world. Four elements make matter.\n\nIn your blueprint, four appears everywhere.\n\nFour motors generate energy. The Sacral, the Heart, the Solar Plexus, and the Root. Each one a different kind of power. Each one a different rhythm of generation.\n\nFour awareness centers process information. The Head, the Ajna, the Spleen, and the Solar Plexus. Each one a different way of knowing. Pressure to inspire. Conceptualization. Instinct. Emotional wave.\n\nFour pure types carry the architecture. Generator. Manifesting Generator. Projector. Manifestor. Each one a structural class. Each one a different way energy moves through the body.\n\nAnd then there is the fifth.\n\nReflectors. Without a defined motor of their own. Without a fixed signature. They complete the typology not by adding a fifth motor but by mirroring all four. The fifth emerges from the four, not as an addition, but as a completion.\n\nThis is the quintaEssentia. The wholeness that arises when the four are seen together.\n\nFour points define a tetrahedron. The simplest three-dimensional structure. Solid. Stable. Whole.\n\nThis is the third overtone of your design.",
+  "script": "The third overtone is the fourth. Four to three.\n\nFour is the number of structure. Four corners make a square. Four directions make a world. Four elements make matter.\n\nIn your blueprint, four appears everywhere.\n\nFour motors generate energy. The Sacral, the Heart, the Solar Plexus, and the Root. Each one a different kind of power. Each one a different rhythm of generation.\n\nFour awareness centers process information. The Head, the Ajna, the Spleen, and the Solar Plexus. Each one a different way of knowing. Pressure to inspire. Conceptualization. Instinct. Emotional wave.\n\nFour pure types carry the architecture. Generator. Manifesting Generator. Projector. Manifestor. Each one a structural class. Each one a different way energy moves through the body.\n\nAnd then there is the fifth.\n\nReflectors. Without a defined motor of their own. Without a fixed signature. They complete the typology not by adding a fifth motor but by mirroring all four. The fifth emerges from the four, not as an addition, but as a completion.\n\nThis is the quintaEssentia. The wholeness that arises when the four are seen together.\n\nFour points define a tetrahedron. The simplest three-dimensional structure. Solid. Stable. Whole.\n\nThis is the third overtone of your design.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "The third overtone is the fourth. Four to three. Four is the number of structure.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Four motors generate. Four awareness centers process. Four pure types carry the architecture.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "Reflectors mirror all four. The fifth emerges from the four. The quintaEssentia — the wholeness that arises when the four are seen together.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Four", "Mirror", "Wholeness"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "Four points define the simplest solid. Solid. Stable. Whole.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Quaternity: The Four-Fold Architecture and the Fifth That Emerges",
+    "description": "Four motors, four awareness centers, four types — and the quintaEssentia that completes the structure."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "email",
+  "package": "@latimer-woods-tech/email",
+  "versionRange": "^0.1.0",
+  "requirements": {
+    "secrets": ["RESEND_API_KEY"]
+  },
+  "contracts": {
+    "policyTags": ["email"]
+  }
+}

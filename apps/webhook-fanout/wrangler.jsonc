@@ -1,10 +1,11 @@
 {
   "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
   // webhook-fanout — Stripe → PostHog/factory_events + Resend fan-out Worker
-  // Deployed at: https://webhooks.latwoodtech.com/stripe
+  // Deployed at: https://webhooks.latwoodtech.work/stripe
   // Issue: Latimer-Woods-Tech/factory#641
   "name": "webhook-fanout",
   "main": "src/index.ts",
+  "workers_dev": true,
   "compatibility_date": "2026-04-01",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -20,53 +21,57 @@
   "kv_namespaces": [
     {
       "binding": "IDEMPOTENCY_KV",
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID",
-      "preview_id": "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
+      "id": "eb85796a56304eaebd4a269ee6965b7c",
+      "preview_id": "b71c5823855c42598f32cb67f167c3e3"
     }
   ],
 
   "vars": {
     "ENVIRONMENT": "development",
-    "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+    "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
+    "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com"
   },
 
   "d1_databases": [
     {
       "binding": "FACTORY_EVENTS_DB",
       "database_name": "factory-events",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_id": "c4823386-8860-490b-88da-187fbb4aba84"
     }
   ],
 
   // Required secrets (set via `wrangler secret put <NAME>` or org-level GitHub secrets):
   //   STRIPE_WEBHOOK_SECRET   — from Stripe dashboard after endpoint registration
-  //   POSTHOG_API_KEY         — PostHog project API key
+  //   POSTHOG_KEY             — PostHog project API key
   //   RESEND_API_KEY          — Resend API key
+  // Optional secrets:
+  //   SLACK_WEBHOOK_URL       — Slack incoming webhook for landing-page contact intake
 
   "env": {
     "production": {
       "name": "webhook-fanout",
       "routes": [
         {
-          "pattern": "webhooks.latwoodtech.com/stripe",
+          "pattern": "webhooks.latwoodtech.work",
           "custom_domain": true
         }
       ],
       "kv_namespaces": [
         {
           "binding": "IDEMPOTENCY_KV",
-          "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+          "id": "eb85796a56304eaebd4a269ee6965b7c"
         }
       ],
       "vars": {
         "ENVIRONMENT": "production",
-        "RESEND_FROM": "Factory <noreply@latwoodtech.com>"
+        "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
+        "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com"
       },
       "d1_databases": [
         {
           "binding": "FACTORY_EVENTS_DB",
           "database_name": "factory-events",
-          "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+          "database_id": "c4823386-8860-490b-88da-187fbb4aba84"
         }
       ]
     }
