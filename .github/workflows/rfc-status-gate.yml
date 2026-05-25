@@ -6,6 +6,10 @@ on:
     paths:
       - 'docs/rfc/*.md'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions: {}
 
 jobs:

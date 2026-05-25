@@ -29,6 +29,47 @@ The contract is built on three independent layers of defense:
 
 Going forward, PRs touching ONLY that path (and matching the other gates) will auto-merge.
 
+## Kill switch
+
+**The single fastest way to stop all snapshot auto-merge activity is to create the file `.github/automation-paused` on `main`.**
+
+```bash
+# Pause — opens a PR that adds the empty flag file
+gh api repos/Latimer-Woods-Tech/Factory/contents/.github/automation-paused \
+  -X PUT \
+  -f message="freeze automation: <reason>" \
+  -f content="$(printf '' | base64)" \
+  -f branch=chore/automation-pause
+
+gh pr create --base main --head chore/automation-pause \
+  --title "🛑 PAUSE automation" \
+  --body "Reason: <what triggered the freeze>"
+
+# CODEOWNER review + merge. Once on main, the next `synchronize` event on any
+# snapshot PR will trigger snapshot-pr-helper, which will:
+#   1. See the flag file exists
+#   2. Post a one-line "paused" comment on the PR
+#   3. Exit cleanly without approving or merging
+```
+
+To resume: open a PR deleting `.github/automation-paused`, get CODEOWNER review, merge. Snapshot PRs re-evaluate on their next `synchronize` event.
+
+**Why presence-only (not a YAML toggle):**
+- Fewer failure modes — the kill switch itself cannot misinterpret its own content
+- Cannot be partially broken by a typo (`PAUSED=fasle`, etc.)
+- Reviewable in one glance from `gh pr view` — "is this file added or removed"
+
+**What else respects the kill switch:**
+Phase 3 (Workflow Health Warden) and Phase 4 (budget gate) are explicitly designed to consult `isAutomationPaused()` before any state-mutating action. The kill switch is a single chokepoint for the entire automation surface — Defense Layer #1 from the lifecycle decision's "governance of governance" section.
+
+**What the kill switch does NOT pause:**
+- Branch protection enforcement (GitHub-side)
+- `apply-sec-hardening` (security-critical; intentionally always-on)
+- `credential-scrub` and `codeql` (PR gates that must keep working even during a freeze)
+- Manual `gh` CLI actions by a human
+
+Use it freely during incident response, deploy freezes, or when you suspect automation has drifted. False positives are cheap; missed pauses are expensive.
+
 ## Removing a snapshot workflow / retiring a path
 
 1. Open a PR removing the pattern from `snapshot-paths.yml`

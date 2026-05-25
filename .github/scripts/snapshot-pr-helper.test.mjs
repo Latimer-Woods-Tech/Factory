@@ -11,15 +11,20 @@
 //   - globToRegex semantics (single-segment vs **; anchored matching)
 //   - pathMatches against realistic allowlist
 //   - evaluatePr three-gate AND logic + violation reporting
+//   - isAutomationPaused kill switch (presence-only)
 // =============================================================================
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { writeFileSync, unlinkSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   parseAllowlist,
   globToRegex,
   pathMatches,
   evaluatePr,
+  isAutomationPaused,
 } from './snapshot-pr-helper.mjs';
 
 // ---------------------------------------------------------------------------
@@ -229,6 +234,48 @@ test('evaluatePr — historic real PR #915 (state snapshot) would be auto-merged
     allowlist,
   });
   assert.equal(result.ok, true, `PR #915 should pass; violations: ${JSON.stringify(result.violations)}`);
+});
+
+// ---------------------------------------------------------------------------
+// Kill switch — isAutomationPaused
+// ---------------------------------------------------------------------------
+test('isAutomationPaused — returns false when the flag file does not exist', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'snapshot-helper-test-'));
+  const nonExistent = join(tmp, 'does-not-exist');
+  assert.equal(isAutomationPaused(nonExistent), false);
+});
+
+test('isAutomationPaused — returns true when the flag file exists (empty)', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'snapshot-helper-test-'));
+  const flagPath = join(tmp, 'automation-paused');
+  writeFileSync(flagPath, '');
+  try {
+    assert.equal(isAutomationPaused(flagPath), true);
+  } finally {
+    unlinkSync(flagPath);
+  }
+});
+
+test('isAutomationPaused — returns true regardless of file content', () => {
+  // Presence-only semantics — content is intentionally ignored. This guards
+  // against accidental "the file says PAUSED=false so it's not really
+  // paused" misinterpretations downstream.
+  const tmp = mkdtempSync(join(tmpdir(), 'snapshot-helper-test-'));
+  const flagPath = join(tmp, 'automation-paused');
+  writeFileSync(flagPath, 'PAUSED=false\nRESUME=true\nlol');
+  try {
+    assert.equal(isAutomationPaused(flagPath), true);
+  } finally {
+    unlinkSync(flagPath);
+  }
+});
+
+test('isAutomationPaused — defaults to .github/automation-paused', () => {
+  // In production with no file present, the default path should yield false.
+  // Repo invariant: .github/automation-paused MUST NOT exist on main except
+  // during a deliberate freeze. If this test fails, someone shipped a
+  // permanent kill switch — investigate.
+  assert.equal(isAutomationPaused(), false);
 });
 
 test('evaluatePr — Phase 2 PR itself would be REJECTED (workflows + scripts not in allowlist)', async () => {

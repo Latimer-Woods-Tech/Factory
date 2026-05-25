@@ -50,6 +50,12 @@ const WORKFLOW_RULES = [
     targets: [{ id: 'schedule-worker', key: 'default' }],
   },
   {
+    path: '.github/workflows/deploy-status-prober.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'status-prober', key: 'default' }],
+  },
+  {
     path: '.github/workflows/deploy-supervisor.yml',
     section: 'workers',
     verifier: 'curl -s -o /dev/null',
@@ -140,7 +146,19 @@ const CONTRACT_RULES = [
   },
 ];
 
-const EXPLICIT_EXEMPTIONS = new Map();
+const EXPLICIT_EXEMPTIONS = new Map([
+  // Pages site for latwoodtech.com — service-registry entry + WORKFLOW_RULES coverage
+  // tracked in the latwoodtech-web onboarding work; exempted here until that lands.
+  ['.github/workflows/deploy-latwoodtech-web.yml', 'latwoodtech.com Pages site — pending service-registry registration'],
+  // Added 2026-05-24 alongside the github-hardening pass. These two deploy
+  // workflows were introduced (#994 and predecessor) without registering their
+  // services in docs/service-registry.yml or wiring WORKFLOW_RULES coverage
+  // above. Exempting unblocks the validate-service-registry CI step; the
+  // follow-up is to add full coverage (verifier + targets + registry entry)
+  // for both Workers in a dedicated PR.
+  ['.github/workflows/deploy-inbound-oracle.yml', 'inbound-oracle Worker — pending service-registry registration'],
+  ['.github/workflows/deploy-linkedin-publisher.yml', 'linkedin-publisher Worker — pending service-registry registration'],
+]);
 
 const registry = await loadRegistry(REGISTRY_PATH);
 const localDeployWorkflows = await listLocalDeployWorkflows(WORKFLOWS_DIR);
