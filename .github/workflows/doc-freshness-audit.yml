@@ -35,8 +35,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
-
+          node-version-file: .nvmrc
       - name: Run documentation freshness audit
         id: audit
         run: node scripts/doc-freshness-audit.js > audit-report.md
@@ -143,7 +142,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
       - name: Configure git
         run: |
           git config user.name  "factory-docs-bot"
