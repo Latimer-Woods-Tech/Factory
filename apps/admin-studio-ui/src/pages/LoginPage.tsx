@@ -23,6 +23,28 @@ const ENV_CARDS: Array<{ env: Environment; title: string; subtitle: string; clas
   { env: 'production', title: 'Production', subtitle: 'LIVE traffic. Type-to-confirm enforced.', classes: 'bg-red-900 hover:ring-red-400'      },
 ];
 
+/**
+ * Resolve the Google Identity Services global once its async script has
+ * loaded, polling up to `timeoutMs`. Resolves `null` if it never loads so
+ * callers can fall back to manual login instead of hanging.
+ */
+function waitForGoogleIdentity(timeoutMs = 10_000): Promise<any> {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const poll = () => {
+      const g = (window as any).google;
+      if (g?.accounts?.id) {
+        resolve(g);
+      } else if (Date.now() - start >= timeoutMs) {
+        resolve(null);
+      } else {
+        setTimeout(poll, 100);
+      }
+    };
+    poll();
+  });
+}
+
 export function LoginPage() {
   const [env, setEnv] = useState<Environment | null>(null);
   const [email, setEmail] = useState('');
@@ -39,19 +61,25 @@ export function LoginPage() {
   useEffect(() => {
     if (!env || !googleButtonRef.current) return;
 
-    const google = (window as any).google;
-    if (!google) {
-      addNotification({
-        type: 'error',
-        title: 'Google Sign-In Unavailable',
-        message: 'Google Sign-In script failed to load. Please use the fallback login.',
-        duration: 5000,
-      });
-      return;
-    }
+    let cancelled = false;
 
-    // Fetch client_id from backend (it's a Cloudflare Worker secret, not baked into build)
     async function initGSI() {
+      // The GSI script is loaded with `async`, so `window.google` may not be
+      // ready the moment an environment is selected. Wait for it (bounded)
+      // instead of giving up immediately, otherwise the button never renders.
+      const google = await waitForGoogleIdentity();
+      if (cancelled || !googleButtonRef.current) return;
+      if (!google) {
+        addNotification({
+          type: 'error',
+          title: 'Google Sign-In Unavailable',
+          message: 'Google Sign-In script failed to load. Please use the fallback login.',
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Fetch client_id from backend (it's a Cloudflare Worker secret, not baked into build)
       let googleClientId: string;
       try {
         const cfgRes = await fetch(`${getApiBase(env)}/auth/config`);
@@ -66,8 +94,9 @@ export function LoginPage() {
         return;
       }
 
+      if (cancelled || !googleButtonRef.current) return;
       // Clear any previously rendered button
-      googleButtonRef.current!.innerHTML = '';
+      googleButtonRef.current.innerHTML = '';
 
       try {
         google.accounts.id.initialize({
@@ -99,6 +128,10 @@ export function LoginPage() {
     }
 
     void initGSI();
+
+    return () => {
+      cancelled = true;
+    };
   }, [env, addNotification]);
 
   async function handleGoogleCallback(response: any) {
