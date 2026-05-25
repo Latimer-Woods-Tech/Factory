@@ -8,6 +8,9 @@ concurrency:
   group: lighthouse-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   lighthouse:
     name: Lighthouse mobile budget

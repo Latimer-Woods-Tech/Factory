@@ -33,6 +33,9 @@ on:
         required: false
         default: 'true'
 
+permissions:
+  contents: read
+
 jobs:
   dispatch:
     runs-on: ubuntu-latest

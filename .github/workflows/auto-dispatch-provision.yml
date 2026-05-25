@@ -20,6 +20,9 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   poll-and-dispatch:
     runs-on: ubuntu-latest
