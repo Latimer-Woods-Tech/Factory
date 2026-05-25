@@ -118,10 +118,16 @@ jobs:
       - name: Enforce monitor target generation is up-to-date (FRH-05)
         run: node scripts/generate-monitor-targets.mjs --check
 
-      - name: Lint publish workflow with actionlint (FRH-06)
+      - name: Lint all workflows with actionlint (FRH-06)
+        # Originally scoped to publish.yml only; expanded 2026-05-24 to cover
+        # every workflow file. With 108 workflows and active drift in pinning,
+        # permissions, and concurrency, single-file coverage was leaving
+        # injection vectors and dead step references on main (caught
+        # render-video.yml steps.upload_r2 + reviewer-class-hints.yml inline
+        # `github.event.*.body` example during the SHA-pinning audit).
         run: |
           bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint .github/workflows/publish.yml
+          ./actionlint -color .github/workflows/*.yml
 
       - name: Enforce dependency version policy (FRH-08)
         run: node scripts/lint-dependency-versions.mjs
