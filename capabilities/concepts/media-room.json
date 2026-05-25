@@ -1,0 +1,85 @@
+{
+  "id": "media-room",
+  "displayName": "Arts & Media Room (Council Orchestrator)",
+  "summary": "Daily LLM-driven assembly line that turns trending social signals into a publish-ready multimodal campaign (X thread + image + audio + QR composite) with operator one-click approval.",
+  "status": "approved",
+  "maturity": "experimental",
+  "tags": ["llm", "council", "marketing", "orchestrator", "campaign"],
+  "menuVisible": true,
+  "approvalTier": "experimental",
+  "parameters": [
+    {
+      "id": "workerDomain",
+      "type": "string",
+      "description": "Custom domain for the deployed worker (artifact URLs embed this).",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "media-room.example.com"
+    },
+    {
+      "id": "qrTargetUrl",
+      "type": "string",
+      "description": "URL the composited QR code points at on each campaign image.",
+      "required": true,
+      "enum": [],
+      "default": null,
+      "formatHint": "https://selfprime.net/trending"
+    },
+    {
+      "id": "runCadenceCron",
+      "type": "string",
+      "description": "Cron expression controlling automatic campaign generation cadence (UTC).",
+      "required": false,
+      "enum": [],
+      "default": "0 14 * * *",
+      "formatHint": "0 14 * * *  (daily 09:00 ET)"
+    },
+    {
+      "id": "pushoverApprovalRequired",
+      "type": "boolean",
+      "description": "Require operator Pushover acknowledgement before any publish action.",
+      "required": false,
+      "enum": [],
+      "default": true,
+      "formatHint": null
+    }
+  ],
+  "recipeSelection": null,
+  "recipes": [
+    {
+      "id": "media-room-orchestrator",
+      "summary": "Council assembly line: chains specialized LLMs and production APIs into a daily multimodal marketing campaign artifact.",
+      "maturity": "experimental",
+      "primitives": ["llm", "analytics"],
+      "optionalPrimitives": []
+    }
+  ],
+  "sourcePrimitives": ["analytics", "llm"],
+  "templates": [
+    {
+      "id": "daily-9am-et",
+      "label": "Daily 09:00 ET cadence",
+      "hint": "Default cadence — fires once daily at 09:00 America/New_York (14:00 UTC).",
+      "values": { "runCadenceCron": "0 14 * * *", "pushoverApprovalRequired": true }
+    },
+    {
+      "id": "weekday-only",
+      "label": "Weekdays only 09:00 ET",
+      "hint": "Skips weekends — cron fires Mon–Fri at 14:00 UTC.",
+      "values": { "runCadenceCron": "0 14 * * 1-5", "pushoverApprovalRequired": true }
+    },
+    {
+      "id": "manual-only",
+      "label": "Manual trigger only",
+      "hint": "No cron — operator fires via POST /api/trigger when desired.",
+      "values": { "runCadenceCron": "0 0 31 2 *", "pushoverApprovalRequired": true }
+    }
+  ],
+  "qualification": {
+    "menuVisible": true,
+    "approvalTier": "experimental",
+    "requiredCapabilities": ["custom-domain", "anthropic-api-key", "grok-api-key", "vertex-access-token", "replicate-api-token", "elevenlabs-api-key", "scrape-creators-api-key", "pushover-credentials"],
+    "disallowedEnvironments": ["local"]
+  }
+}
