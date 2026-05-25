@@ -10,7 +10,7 @@
     "skipLibCheck": true,
     "declaration": false,
     "noEmit": true,
-    "types": ["@cloudflare/workers-types", "vitest/globals"]
+    "types": ["@cloudflare/workers-types", "vitest/globals", "node"]
   },
   "include": ["src/**/*"]
 }

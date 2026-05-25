@@ -1,0 +1,85 @@
+name: Deploy Inbound Oracle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/inbound-oracle/**'
+      - '.github/workflows/deploy-inbound-oracle.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-inbound-oracle-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    name: Deploy inbound-oracle to Cloudflare
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for package in errors monitoring logger llm; do
+            echo "=== ${package} ==="
+            cd "packages/${package}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install dependencies
+        run: |
+          cd apps/inbound-oracle
+          npm install
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env ELEVENLABS_API_KEY ELEVENLABS_API_KEY
+          fetch_to_env TELNYX_API_KEY TELNYX_API_KEY
+          fetch_to_env ANTHROPIC_API_KEY ANTHROPIC_API_KEY
+          fetch_to_env FACTORY_R2_ACCESS_KEY FACTORY_R2_ACCESS_KEY R2_ACCESS_KEY_ID
+          fetch_to_env FACTORY_R2_SECRET_KEY FACTORY_R2_SECRET_KEY R2_SECRET_ACCESS_KEY
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: apps/inbound-oracle
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          
+          # Put secrets
+          printf '%s' "${ANTHROPIC_API_KEY:-${{ secrets.ANTHROPIC_API_KEY }}}" | npx wrangler secret put ANTHROPIC_API_KEY --env production
+          printf '%s' "${ELEVENLABS_API_KEY:-${{ secrets.ELEVENLABS_API_KEY }}}" | npx wrangler secret put ELEVENLABS_API_KEY --env production
+          printf '%s' "${TELNYX_API_KEY:-${{ secrets.TELNYX_API_KEY }}}" | npx wrangler secret put TELNYX_API_KEY --env production
+          printf '%s' "${FACTORY_R2_ACCESS_KEY:-${{ secrets.FACTORY_R2_ACCESS_KEY }}}" | npx wrangler secret put R2_ACCESS_KEY_ID --env production
+          printf '%s' "${FACTORY_R2_SECRET_KEY:-${{ secrets.FACTORY_R2_SECRET_KEY }}}" | npx wrangler secret put R2_SECRET_ACCESS_KEY --env production
+          
+          # Deploy
+          npx wrangler deploy --env production

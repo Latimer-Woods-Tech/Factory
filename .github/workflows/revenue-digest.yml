@@ -63,7 +63,7 @@ jobs:
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
           fetch_to_env STRIPE_API_KEY      STRIPE_SECRET_KEY stripe-api-key-readonly STRIPE_API_KEY
-          fetch_to_env SENTRY_AUTH_TOKEN   LATIMERWOODS_SENTRY_AUTH FACTORY_SENTRY_API SENTRY_AUTH_TOKEN
+          fetch_to_env SENTRY_AUTH_TOKEN   FACTORY_SENTRY_API LATIMERWOODS_SENTRY_AUTH SENTRY_AUTH_TOKEN
           fetch_to_env POSTHOG_API_KEY     posthog-api-key POSTHOG_API_KEY
           fetch_to_env POSTHOG_PROJECT_ID  posthog-project-id POSTHOG_PROJECT_ID
           fetch_to_env POSTHOG_FUNNEL_ID   posthog-funnel-id POSTHOG_FUNNEL_ID
