@@ -27,12 +27,15 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 from urllib.parse import urlencode
 
 import urllib.error
 import urllib.request
 import base64 as _b64
+
+# Type alias for dependency-injected fetch function (used in testing)
+FetchFn = Callable[[str], tuple[int, bytes, dict[str, str]]]
 
 # ---------- config ----------
 
@@ -126,6 +129,7 @@ class Row:
     id: str = ""
     feature: str = ""
     endpoint: str = ""
+    sentry_project: str = ""
     manual: str = ""
     automated: str = ""
     status: str = ""
@@ -176,10 +180,10 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
             continue
         # split on pipes — drop leading/trailing empties from outer pipes
         parts = [p.strip() for p in raw.split("|")[1:-1]]
-        if len(parts) != 11:
-            malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"expected 11 cells, got {len(parts)}"))
+        if len(parts) != 12:
+            malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"expected 12 cells, got {len(parts)}"))
             continue
-        rid, feat, ep, manual, auto, status, owner, lv, issue, weight, notes = parts
+        rid, feat, ep, sentry_proj, manual, auto, status, owner, lv, issue, weight, notes = parts
         if not ID_RE.match(rid):
             malformed.append(Malformed(repo_key, repo_name, line_no, raw, f"id '{rid}' does not match ^[A-Z]+-[A-Z]+-\\d+$"))
             continue
@@ -194,7 +198,7 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
             continue
         rows.append(Row(
             repo_key=repo_key, repo_name=repo_name, section=section, line_no=line_no, raw=raw,
-            id=rid, feature=feat, endpoint=ep, manual=manual, automated=auto,
+            id=rid, feature=feat, endpoint=ep, sentry_project=sentry_proj, manual=manual, automated=auto,
             status=status_emoji, owner=owner, last_verified=lv, issue_pr=issue,
             weight=w, notes=notes,
         ))
@@ -203,29 +207,32 @@ def parse_matrix(repo_key: str, repo_name: str, content: str) -> tuple[list[Row]
 
 # ---------- github ----------
 
-def github_get(path: str, token: str, *, raw: bool = False) -> tuple[int, bytes]:
+def github_get(path: str, token: str, *, raw: bool = False, fetch_fn: FetchFn | None = None) -> tuple[int, bytes]:
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.raw" if raw else "application/vnd.github+json",
         "User-Agent": "latwood-completion-aggregator",
         "X-GitHub-Api-Version": "2022-11-28",
     }
-    status, body, _ = http_request(f"https://api.github.com{path}", headers=headers)
+    if fetch_fn is None:
+        fetch_fn = http_request
+    status, body, _ = fetch_fn(f"https://api.github.com{path}")
     return status, body
 
 
-def fetch_matrix(repo: str, matrix_path: str, token: str) -> str | None:
-    status, body = github_get(f"/repos/{repo}/contents/{matrix_path}", token, raw=True)
+def fetch_matrix(repo: str, matrix_path: str, token: str, fetch_fn: FetchFn | None = None) -> str | None:
+    status, body = github_get(f"/repos/{repo}/contents/{matrix_path}", token, raw=True, fetch_fn=fetch_fn)
     if status != 200:
         jerr("fetch_matrix_fail", repo=repo, path=matrix_path, status=status)
         return None
     return body.decode("utf-8", errors="replace")
 
 
-def fetch_latest_main_run(repo: str, token: str) -> dict[str, Any] | None:
+def fetch_latest_main_run(repo: str, token: str, fetch_fn: FetchFn | None = None) -> dict[str, Any] | None:
     status, body = github_get(
         f"/repos/{repo}/actions/runs?{urlencode({'branch':'main','status':'completed','per_page':1})}",
         token,
+        fetch_fn=fetch_fn,
     )
     if status != 200:
         jerr("fetch_runs_fail", repo=repo, status=status)
@@ -238,9 +245,9 @@ def fetch_latest_main_run(repo: str, token: str) -> dict[str, Any] | None:
         return None
 
 
-def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
+def fetch_smoke_run(repo: str, token: str, fetch_fn: FetchFn | None = None) -> dict[str, Any] | None:
     """Find any workflow whose name contains 'smoke' and return latest main run."""
-    status, body = github_get(f"/repos/{repo}/actions/workflows?per_page=100", token)
+    status, body = github_get(f"/repos/{repo}/actions/workflows?per_page=100", token, fetch_fn=fetch_fn)
     if status != 200:
         return None
     try:
@@ -254,6 +261,7 @@ def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
     status, body = github_get(
         f"/repos/{repo}/actions/workflows/{wf['id']}/runs?{urlencode({'branch':'main','per_page':1})}",
         token,
+        fetch_fn=fetch_fn,
     )
     if status != 200:
         return None
@@ -270,15 +278,17 @@ def fetch_smoke_run(repo: str, token: str) -> dict[str, Any] | None:
 
 # ---------- extra signals ----------
 
-def fetch_stripe_data(stripe_key: str) -> dict[str, Any]:
+def fetch_stripe_data(stripe_key: str, fetch_fn: FetchFn | None = None) -> dict[str, Any]:
     if not stripe_key:
         jwarn("stripe_skipped_no_key")
         return {"mrr": 0.0, "trials": 0, "new_charges_24h": 0}
     creds = _b64.b64encode(f"{stripe_key}:".encode()).decode()
     hdrs = {"Authorization": f"Basic {creds}", "User-Agent": "latwood-completion-aggregator"}
+    if fetch_fn is None:
+        fetch_fn = http_request
 
     def sg(path: str) -> dict[str, Any]:
-        st, body, _ = http_request(f"https://api.stripe.com/v1{path}", headers=hdrs)
+        st, body, _ = fetch_fn(f"https://api.stripe.com/v1{path}")
         if st != 200:
             jerr("stripe_fail", path=path, status=st)
             return {}
@@ -300,10 +310,11 @@ def fetch_stripe_data(stripe_key: str) -> dict[str, Any]:
     return {"mrr": mrr, "trials": trials, "new_charges_24h": new_24h}
 
 
-def count_open_prs(token: str) -> int:
+def count_open_prs(token: str, fetch_fn: FetchFn | None = None) -> int:
     st, body = github_get(
         "/search/issues?" + urlencode({"q": "is:open is:pr org:Latimer-Woods-Tech", "per_page": 1}),
         token,
+        fetch_fn=fetch_fn,
     )
     if st == 200:
         try:
@@ -323,14 +334,20 @@ def count_gap_p0_p1() -> tuple[int, int]:
     return p0, p1
 
 
-def fetch_sentry_unresolved(token: str) -> list[dict[str, Any]]:
+def fetch_sentry_unresolved(token: str, project: str | None = None, fetch_fn: FetchFn | None = None) -> list[dict[str, Any]]:
     if not token:
         jwarn("sentry_skipped_no_token")
         return []
-    url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
-    status, body, _ = http_request(url, headers={"Authorization": f"Bearer {token}", "User-Agent": "latwood-completion-aggregator"})
+    if fetch_fn is None:
+        fetch_fn = http_request
+    # If project specified, query that project; otherwise query org-wide
+    if project:
+        url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/projects/{project}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
+    else:
+        url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
+    status, body, _ = fetch_fn(url)
     if status != 200:
-        jerr("sentry_fail", status=status)
+        jerr("sentry_fail", project=project, status=status)
         return []
     try:
         return json.loads(body)
@@ -354,22 +371,32 @@ def sentry_route_segments(issue: dict[str, Any]) -> list[str]:
 
 # ---------- overlays ----------
 
-def apply_sentry_overlay(rows: list[Row], issues: list[dict[str, Any]]) -> None:
-    if not issues:
-        return
-    segments: list[tuple[str, dict[str, Any]]] = []
-    for iss in issues:
-        for seg in sentry_route_segments(iss):
-            segments.append((seg.lower(), iss))
+def apply_sentry_overlay(rows: list[Row], sentry_token: str, fetch_fn: FetchFn | None = None) -> None:
+    # Group rows by sentry_project for per-project queries
+    by_project: dict[str, list[Row]] = {}
     for r in rows:
-        if r.status != "✅":
+        if r.sentry_project:
+            by_project.setdefault(r.sentry_project, []).append(r)
+
+    for project, project_rows in by_project.items():
+        issues = fetch_sentry_unresolved(sentry_token, project=project, fetch_fn=fetch_fn)
+        if not issues:
             continue
-        ep_lower = r.endpoint.lower()
-        for seg, _iss in segments:
-            if seg in ep_lower:
-                r.status = "⚠️"
-                r.overlays.append("sentry-open")
-                break
+        # Build segments from issues
+        segments: list[tuple[str, dict[str, Any]]] = []
+        for iss in issues:
+            for seg in sentry_route_segments(iss):
+                segments.append((seg.lower(), iss))
+        # Apply overlay to rows in this project
+        for r in project_rows:
+            if r.status != "✅":
+                continue
+            ep_lower = r.endpoint.lower()
+            for seg, _iss in segments:
+                if seg in ep_lower:
+                    r.status = "⚠️"
+                    r.overlays.append("sentry-open")
+                    break
 
 
 def apply_actions_overlay(rows: list[Row], red_repos: set[str]) -> None:
@@ -541,16 +568,15 @@ def render_markdown(
 
 # ---------- pushover ----------
 
-def send_pushover(text: str, user: str, token: str) -> None:
+def send_pushover(text: str, user: str, token: str, fetch_fn: FetchFn | None = None) -> None:
     if not user or not token:
         jwarn("pushover_skipped_no_creds")
         return
+    if fetch_fn is None:
+        fetch_fn = http_request
     body = urlencode({"user": user, "token": token, "message": text, "title": "Completion tracker"}).encode()
-    status, resp, _ = http_request(
-        "https://api.pushover.net/1/messages.json",
-        method="POST",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        body=body,
+    status, resp, _ = fetch_fn(
+        "https://api.pushover.net/1/messages.json"
     )
     if status != 200:
         jerr("pushover_fail", status=status, body=resp[:200].decode("utf-8", "replace"))
@@ -568,7 +594,7 @@ def render_pushover(
     """Rich morning digest: completion, velocity, CI, Sentry, revenue, PRs."""
     try:
         et = now.astimezone(timezone(timedelta(hours=-4)))
-        day_str = et.strftime("%a %b %-d · %-I:%M %p ET")
+        day_str = et.strftime("%Y-%m-%d · %a %b %-d · %-I:%M %p ET")
     except Exception:
         day_str = now.strftime("%Y-%m-%d %H:%M UTC")
 
@@ -639,7 +665,7 @@ def render_pushover(
 
 # ---------- main ----------
 
-def main() -> int:
+def main(fetch_fn: FetchFn | None = None) -> int:
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
         jerr("missing_github_token")
@@ -658,7 +684,7 @@ def main() -> int:
 
     for repo in REPOS:
         jlog("fetch_repo", repo=repo["repo"])
-        content = fetch_matrix(repo["repo"], repo["matrix_path"], token)
+        content = fetch_matrix(repo["repo"], repo["matrix_path"], token, fetch_fn=fetch_fn)
         if content is None:
             continue
         rows, malformed = parse_matrix(repo["key"], repo["name"], content)
@@ -669,20 +695,22 @@ def main() -> int:
         jlog("parsed", repo=repo["key"], rows=len(rows), malformed=len(malformed))
 
         # actions overlay
-        latest = fetch_latest_main_run(repo["repo"], token)
+        latest = fetch_latest_main_run(repo["repo"], token, fetch_fn=fetch_fn)
         if latest and latest.get("conclusion") == "failure":
             red_ci.add(repo["key"])
         # smoke overlay
-        smoke = fetch_smoke_run(repo["repo"], token)
+        smoke = fetch_smoke_run(repo["repo"], token, fetch_fn=fetch_fn)
         if smoke and smoke.get("conclusion") == "failure":
             red_smoke.add(repo["key"])
 
-    # sentry overlay
-    issues = fetch_sentry_unresolved(sentry_token)
-    apply_sentry_overlay(all_rows, issues)
+    # sentry overlay (per-project)
+    apply_sentry_overlay(all_rows, sentry_token, fetch_fn=fetch_fn)
     apply_actions_overlay(all_rows, red_ci)
     apply_smoke_overlay(all_rows, red_smoke)
     apply_decay_overlay(all_rows, now)
+
+    # fetch unresolved issues for digest rendering (org-wide)
+    issues = fetch_sentry_unresolved(sentry_token, fetch_fn=fetch_fn)
 
     # prev snapshot
     prev_path = out_dir / "completion-tracker.json"
@@ -690,7 +718,7 @@ def main() -> int:
 
     # write outputs
     md = render_markdown(all_rows, all_malformed, red_ci, red_smoke, prev, now)
-    (out_dir / "COMPLETION_TRACKER.md").write_text(md)
+    (out_dir / "COMPLETION_TRACKER.md").write_text(md, encoding='utf-8')
 
     overall = pass_pct(all_rows)
     by_repo_w: dict[str, float] = {}
@@ -709,7 +737,7 @@ def main() -> int:
         "rows": [asdict(r) for r in all_rows],
         "malformed": [asdict(m) for m in all_malformed],
     }
-    prev_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False))
+    prev_path.write_text(json.dumps(snapshot, indent=2, ensure_ascii=False), encoding='utf-8')
 
     # history append
     history_path = out_dir / "completion-tracker-history.jsonl"
@@ -726,8 +754,8 @@ def main() -> int:
 
     # extra signals for the rich digest
     stripe_key = os.environ.get("STRIPE_SECRET_KEY", "")
-    stripe_data = fetch_stripe_data(stripe_key)
-    open_prs = count_open_prs(token)
+    stripe_data = fetch_stripe_data(stripe_key, fetch_fn=fetch_fn)
+    open_prs = count_open_prs(token, fetch_fn=fetch_fn)
     p0_gaps, p1_gaps = count_gap_p0_p1()
     extra = {
         "mrr": stripe_data.get("mrr", 0.0),
@@ -743,6 +771,7 @@ def main() -> int:
         render_pushover(all_rows, prev, red_ci, red_smoke, issues, extra, now),
         pushover_user,
         pushover_token,
+        fetch_fn=fetch_fn,
     )
 
     jlog("done", overall=overall[2], rows=len(all_rows), malformed=len(all_malformed))

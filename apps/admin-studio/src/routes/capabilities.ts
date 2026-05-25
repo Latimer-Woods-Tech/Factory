@@ -32,6 +32,7 @@ import { compileCapabilityPlan, renderCapabilityPlanPreview } from '../lib/capab
 import { hashHandoffBody } from '../lib/handoff-hash.js';
 import {
   findHandoffById,
+  findHandoffByHash,
   findProvisionRequestById,
   listHandoffs,
   listProvisionRequests,
@@ -176,6 +177,7 @@ capabilities.post('/provision-staging', async (c) => {
 
   type ProvisionBody = {
     handoffId?: string;
+    handoffHash?: string;
     proofGates?: Partial<ProofGateState>;
     notes?: string;
   };
@@ -185,7 +187,22 @@ capabilities.post('/provision-staging', async (c) => {
     return c.json({ error: 'handoffId is required' }, 400);
   }
 
-  const handoff = await findHandoffById(c.env.DB, body.handoffId);
+  // Primary lookup by id; on miss, fall back to hash if provided. The hash
+  // fallback closes the Hyperdrive read-after-write race where a just-inserted
+  // row isn't yet visible to the pooled connection this call landed on.
+  // Different SQL → different cache key → fresh DB hit. The client always
+  // has the hash because POST /handoff returns it in the same response.
+  let handoff = await findHandoffById(c.env.DB, body.handoffId);
+  if (!handoff && body.handoffHash) {
+    handoff = await findHandoffByHash(c.env.DB, body.handoffHash);
+    if (handoff && handoff.id !== body.handoffId) {
+      // Hash matched but id differs — client is referencing a stale id.
+      // Treat as the canonical row found by hash.
+      console.warn(
+        `[capabilities] handoff id mismatch (client=${body.handoffId} canonical=${handoff.id}) — using hash-resolved row`,
+      );
+    }
+  }
   if (!handoff) {
     return c.json({ error: `Unknown handoff: ${body.handoffId}` }, 404);
   }

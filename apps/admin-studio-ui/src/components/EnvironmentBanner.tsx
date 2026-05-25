@@ -25,33 +25,35 @@ export function EnvironmentBanner() {
     <header
       role="banner"
       aria-label={`Active environment: ${env}`}
-      className={`${style.bg} ${style.ring} ring-1 ring-inset sticky top-0 z-50 px-3 py-2 flex flex-wrap items-center justify-between gap-y-1 text-white overflow-hidden`}
+      className={`${style.bg} ${style.ring} ring-1 ring-inset shrink-0 px-3 py-1.5 flex flex-wrap items-center justify-between gap-y-1 text-white overflow-hidden`}
     >
-      <div className="flex items-center gap-2 font-semibold text-sm tracking-wide min-w-0 shrink-0">
+      <div className="flex items-center gap-2 font-semibold text-xs tracking-wide min-w-0 shrink-0">
         <span className="truncate">{style.label}</span>
         {env === 'production' && (
-          <span className="hidden sm:inline text-xs font-normal opacity-90">
+          <span className="hidden sm:inline text-[10px] font-normal opacity-90">
             • mutating actions require type-to-confirm
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-xs min-w-0 flex-wrap">
+      <div className="flex items-center gap-3 text-[10px] min-w-0 flex-wrap">
         <span className="opacity-90 truncate max-w-[120px] sm:max-w-none">{user?.email}</span>
         <span className="hidden sm:inline opacity-75">role: {user?.role}</span>
         <span className="hidden sm:inline opacity-75">session: {remainingLabel}</span>
-        <button
-          onClick={() => { logout(); window.location.replace('/login'); }}
-          className="rounded bg-white/15 hover:bg-white/25 px-2 py-1 text-xs font-medium whitespace-nowrap"
-        >
-          Switch env
-        </button>
-        <button
-          onClick={logout}
-          className="rounded bg-white/15 hover:bg-white/25 px-2 py-1 text-xs font-medium whitespace-nowrap"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => { logout(); window.location.replace('/login'); }}
+            className="rounded bg-white/15 hover:bg-white/25 px-2 py-0.5 font-medium whitespace-nowrap transition-colors"
+          >
+            Switch env
+          </button>
+          <button
+            onClick={logout}
+            className="rounded bg-white/15 hover:bg-white/25 px-2 py-0.5 font-medium whitespace-nowrap transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </header>
   );
