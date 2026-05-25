@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://latimerwoods.tech/factory/capabilities/schema/rules.schema.json",
+  "title": "Capability Composition Rules",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "rules"],
+  "properties": {
+    "schemaVersion": { "type": "string" },
+    "kind": { "const": "rules" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "ifAllPrimitives", "thenRequirePrimitives"],
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string" },
+          "ifAllPrimitives": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "thenRequirePrimitives": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        }
+      }
+    }
+  }
+}
