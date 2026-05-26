@@ -10,6 +10,7 @@ import type { Env } from '../src/env.js';
 // ── Mock mirror module ───────────────────────────────────────────────────────
 
 const mockMirrorResult = { synced: 5, skipped: 0, errors: 0 };
+const mockVerifResult = { synced: 1, skipped: 0, errors: 0 };
 /** When set, mirrorSupervisorRuns throws this value instead of resolving. */
 let mirrorThrowValue: unknown = null;
 
@@ -21,6 +22,7 @@ vi.mock('../src/mirror.js', () => ({
     }
     return mockMirrorResult;
   }),
+  mirrorSupervisorVerifications: vi.fn(async () => mockVerifResult),
 }));
 
 // Imported after the mock is registered

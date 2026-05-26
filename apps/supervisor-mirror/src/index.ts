@@ -6,7 +6,7 @@
  * cross-table queries alongside `factory_gates` and `factory_artifacts`.
  */
 import type { Env } from './env.js';
-import { mirrorSupervisorRuns } from './mirror.js';
+import { mirrorSupervisorRuns, mirrorSupervisorVerifications } from './mirror.js';
 
 export default {
   /**
@@ -23,12 +23,16 @@ export default {
       }),
     );
     try {
-      const result = await mirrorSupervisorRuns(env);
+      const [runsResult, verifResult] = await Promise.all([
+        mirrorSupervisorRuns(env),
+        mirrorSupervisorVerifications(env),
+      ]);
       console.log(
         JSON.stringify({
           level: 'info',
           msg: 'supervisor-mirror complete',
-          ...result,
+          runs: runsResult,
+          verifications: verifResult,
         }),
       );
     } catch (err) {
