@@ -40,4 +40,10 @@ export interface Env extends Record<string, unknown> {
   ENVIRONMENT?: string;
   /** Sentry DSN for error reporting. wrangler secret SENTRY_DSN. */
   SENTRY_DSN?: string;
+  /**
+   * Dedicated service credential for compliance auditLog() middleware.
+   * Honoured ONLY on `POST /v1/audit`. wrangler secret AUDIT_INGEST_KEY.
+   * Unset causes the route to return 401.
+   */
+  AUDIT_INGEST_KEY?: string;
 }

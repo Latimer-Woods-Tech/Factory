@@ -33,6 +33,7 @@ import { isAllowedAudience, signScopedToken } from './jwt.js';
 import { createGatesRouter } from './routes/gates.js';
 import { createArtifactsRouter } from './routes/artifacts.js';
 import { createRunsMirrorRouter } from './routes/runs.js';
+import { createAuditRouter } from './routes/audit.js';
 
 const SERVICE = 'factory-core-api';
 const DEFAULT_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
@@ -155,6 +156,7 @@ app.post('/v1/auth/token', async (c) => {
 app.route('/v1/gates', createGatesRouter());
 app.route('/v1/artifacts', createArtifactsRouter());
 app.route('/v1/runs/mirror', createRunsMirrorRouter());
+app.route('/v1/audit', createAuditRouter());
 
 app.notFound((c) => c.json({ error: 'Not found', path: c.req.path }, 404));
 
