@@ -10,7 +10,7 @@
  * /migrations/0102_ingest_source_event_unique.sql (partial unique index for
  * race-safe ingest dedup).
  */
-import { pgTable, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ── factory_events_ingest ────────────────────────────────────────────────────
@@ -223,3 +223,56 @@ export const factoryArtifacts = pgTable('factory_artifacts', {
 export type FactoryArtifact = typeof factoryArtifacts.$inferSelect;
 /** Drizzle inferred insert type for `factory_artifacts`. */
 export type NewFactoryArtifact = typeof factoryArtifacts.$inferInsert;
+
+// ── factory_runs_mirror ──────────────────────────────────────────────────────
+
+/** Valid supervisor run source types (mirror of D1 supervisor_runs.source). */
+export const RUN_SOURCES = [
+  'github:issue',
+  'webhook',
+  'scheduled',
+  'human',
+] as const;
+
+/** Union of valid run source strings. */
+export type RunSource = (typeof RUN_SOURCES)[number];
+
+/** Valid supervisor run status values (mirror of D1 supervisor_runs.status). */
+export const RUN_STATUSES = [
+  'planned',
+  'running',
+  'passed',
+  'failed_verification',
+  'failed_execution',
+] as const;
+
+/** Union of valid run status strings. */
+export type RunStatus = (typeof RUN_STATUSES)[number];
+
+/**
+ * `factory_runs_mirror` — Neon read-layer mirror of D1 `supervisor_runs`.
+ *
+ * Written by the supervisor-mirror cron Worker (P1.8) via upsert every 5 min.
+ * D1 epoch-ms integers are cast to TIMESTAMPTZ; D1 TEXT id is stored as UUID.
+ * `mirrored_at` is DB-generated on each upsert to track freshness.
+ */
+export const factoryRunsMirror = pgTable('factory_runs_mirror', {
+  id: uuid('id').primaryKey(),
+
+  templateId: text('template_id').notNull(),
+  templateVersion: integer('template_version').notNull().default(1),
+  description: text('description').notNull(),
+  source: text('source').notNull(),
+  status: text('status').notNull(),
+  dryRun: boolean('dry_run').notNull().default(false),
+
+  prUrl: text('pr_url'),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  mirroredAt: timestamp('mirrored_at', { withTimezone: true }).notNull().default(sql`now()`),
+});
+
+/** Drizzle inferred select type for `factory_runs_mirror`. */
+export type FactoryRunsMirror = typeof factoryRunsMirror.$inferSelect;
+/** Drizzle inferred insert type for `factory_runs_mirror`. */
+export type NewFactoryRunsMirror = typeof factoryRunsMirror.$inferInsert;
