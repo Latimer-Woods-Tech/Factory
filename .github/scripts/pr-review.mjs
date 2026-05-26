@@ -12,6 +12,7 @@
 //   /admin mutations (any tier) → REQUEST_CHANGES (FRIDGE rule 4)
 
 import { readFileSync } from 'node:fs';
+import { buildConstraintSystemBlock } from './constraints-loader.mjs';
 
 const ORG = 'Latimer-Woods-Tech';
 const REVIEW_BOT_LOGIN = 'factory-cross-repo[bot]';
@@ -434,6 +435,14 @@ const MISSING_DOCS = [];
 
 function buildConstraintBlock(repoName) {
   const sections = [];
+
+  // Prepend the focused Hard Constraints block (parsed live from CLAUDE.md) so
+  // the LLM always sees it at the top of the context, before any truncation
+  // risk from the 8 000-char loading limit on the full CLAUDE.md below.
+  // For cross-repo reviews we still load from factory CLAUDE.md because that
+  // is the authoritative source; per-repo extensions are handled further down.
+  const hardConstraintsBlock = buildConstraintSystemBlock('CLAUDE.md');
+  sections.push(hardConstraintsBlock);
 
   const claudeMd = loadDoc('CLAUDE.md');
   if (claudeMd) {
