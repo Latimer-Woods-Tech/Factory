@@ -1,7 +1,12 @@
 /**
  * POST /v1/artifacts — two-step ingest for run output artifacts.
  *
- * Auth: Bearer scoped JWT where aud starts with 'artifacts-'.
+ * Auth: Bearer scoped JWT where aud starts with 'artifacts-'. Workflow runs
+ * (e.g. render-video.yml) obtain such a token by exchanging their GitHub OIDC
+ * token at `/v1/auth/token` with `{ "audience": "artifacts-video" }`.
+ * Idempotency: if `source_event_id` is provided and an event with that ID
+ * already exists, returns the existing event_id without re-inserting — so a
+ * retried workflow step (same run id / R2 key) dedupes server-side.
  */
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -21,6 +26,7 @@ const ArtifactBodySchema = z.object({
     { message: `producer_type must be one of: ${PRODUCER_TYPES.join(', ')}` },
   ),
   producer_ref: z.string().min(1),
+  source_event_id: z.string().optional(),
   subject_app: z.string().optional(),
   subject_repo: z.string().optional(),
   subject_ref: z.string().optional(),
@@ -59,11 +65,19 @@ export function createArtifactsRouter(): Hono<{ Bindings: Env }> {
 
     const db = createIngestDb(c.env.DB as { connectionString: string });
 
+    // Idempotency: if source_event_id already exists, return it. Lets a retried
+    // render workflow step POST the same artifact without creating duplicates.
+    if (body.source_event_id) {
+      const existing = await db.findEventBySourceId('video-pipeline', body.source_event_id);
+      if (existing) return c.json({ ok: true, event_id: existing.id });
+    }
+
     const eventId = await twoStepIngest(
       db,
       {
         sourceSystem: 'video-pipeline',
         sourceEventType: `artifact.${body.artifact_type}`,
+        sourceEventId: body.source_event_id,
         payload: body as Record<string, unknown>,
         ingestActor: `jwt-aud:${claims.aud}`,
         derivationStatus: 'pending',
