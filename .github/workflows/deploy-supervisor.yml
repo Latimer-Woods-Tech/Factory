@@ -72,6 +72,7 @@ jobs:
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
           fetch_to_env SUPERVISOR_PUSH_KEY  SUPERVISOR_PUSH_KEY
+          fetch_to_env SUPERVISOR_API_KEY   SUPERVISOR_API_KEY
 
       - name: Build dependency packages
         run: |
@@ -125,6 +126,7 @@ jobs:
           SECRET_SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
           SECRET_SLACK_OWNER_USER_ID: ${{ secrets.SLACK_OWNER_USER_ID }}
           SECRET_SUPERVISOR_PUSH_KEY: ${{ env.SUPERVISOR_PUSH_KEY }}
+          SECRET_SUPERVISOR_API_KEY: ${{ env.SUPERVISOR_API_KEY }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
           # Only provision secrets that are actually set — skip empties with a warning.
@@ -153,6 +155,7 @@ jobs:
           put_secret SLACK_SIGNING_SECRET       "${SECRET_SLACK_SIGNING_SECRET}"
           put_secret SLACK_OWNER_USER_ID        "${SECRET_SLACK_OWNER_USER_ID}"
           put_secret SUPERVISOR_PUSH_KEY        "${SECRET_SUPERVISOR_PUSH_KEY}"
+          put_secret SUPERVISOR_API_KEY         "${SECRET_SUPERVISOR_API_KEY}"
 
       - name: Install Sentry CLI
         run: npm install -g @sentry/cli

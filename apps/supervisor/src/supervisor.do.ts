@@ -68,17 +68,17 @@ export class SupervisorDO {
     try {
       switch (`${request.method} ${url.pathname}`) {
         case 'GET /health':
-          return this.handleHealth();
+          return await this.handleHealth();
         case 'GET /state':
-          return this.handleState();
+          return await this.handleState();
         case 'GET /capabilities':
-          return this.handleCapabilities();
+          return await this.handleCapabilities();
         case 'POST /scheduled':
-          return this.handleScheduled();
+          return await this.handleScheduled();
         case 'POST /plan':
-          return this.handlePlan(request);
+          return await this.handlePlan(request);
         case 'POST /run':
-          return this.handleRun(request);
+          return await this.handleRun(request);
         default:
           return new Response('not found', { status: 404 });
       }
