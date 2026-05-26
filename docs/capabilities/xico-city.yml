@@ -1,46 +1,131 @@
-app: xico-city
-repo: Latimer-Woods-Tech/xico-city
-base_url: https://xico-city.adrper79.workers.dev
-auth: admin_jwt
-supervisor_access: approved
-tiers_allowed: [green, yellow]
+# capabilities.yml — xico-city (P2.17)
+# Schema: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §3.1.1
+# Validated by: .github/workflows/_app-capability-lint.yml (P2.16)
+#
+# supervisor_access tiers:
+#   green   — supervisor may call without human review
+#   yellow  — supervisor may call; human confirms before execution
+#   red     — human must explicitly approve; supervisor may only plan, not execute
+#   denied  — never callable by supervisor
 
-capabilities:
-  - id: health.check
-    desc: "Worker liveness check — /health and /ready."
-    route: GET /health
+version: 1
+app:
+  id: xico-city
+  name: "xico-city"
+  repo: Latimer-Woods-Tech/xico-city
+  custom_domain: xicocity.com
+  product_tier: revenue
+
+routes:
+  # ── Admin telemetry (mandatory per service-registry.yml) ────────────────────
+  - path: /health
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
 
-  - id: compat.check
-    desc: "Verify factory-core package compatibility contract."
-    route: GET /factory/compat
+  - path: /api/admin/health
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
 
-  - id: user.me
-    desc: "Fetch the authenticated user's profile."
-    route: GET /api/me
+  - path: /api/admin/metrics
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
-
-  - id: admin.users.list
-    desc: "List users (artist roles)."
-    route: GET /admin/users
+    supervisor_access: green
     params_schema:
-      page: { type: integer, min: 1 }
-      limit: { type: integer, min: 1, max: 100 }
-      role: { type: string, validator: "^[a-z_]{3,40}$", optional: true }
-    side_effects: none
-    required_scope: supervisor.readonly
+      window: { type: enum, values: [1h, 6h, 24h, 7d], optional: true }
 
-  - id: admin.users.suspend
-    desc: "Suspend an artist account."
-    route: POST /admin/users/:id/suspend
+  - path: /api/admin/events
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      severity: { type: enum, values: [error, warn, info], optional: true }
+      limit:    { type: integer, min: 1, max: 100, optional: true }
+
+  # ── Users / Artists ───────────────────────────────────────────────────────────
+  - path: /api/admin/users
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      page:  { type: integer, min: 1, optional: true }
+      limit: { type: integer, min: 1, max: 100, optional: true }
+      role:  { type: string, validator: "^[a-z_]{3,40}$", optional: true }
+
+  - path: /api/admin/users/:id
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  - path: /api/admin/users/:id/suspend
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-app
+    supervisor_access: yellow
+    reversibility: reversible-with-effort
+    requires_codeowner_oob: true
     body_schema:
       reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
-    idempotency_key: "user_id + 'suspend'"
+
+  - path: /api/admin/users/:id/reinstate
+    method: POST
+    handler_class: mutate-internal
     side_effects: write-app
-    reversibility: reversible-with-effort
-    required_scope: supervisor.mutator-user-suspend
-    extra_guard: requires_codeowner_approval
+    supervisor_access: yellow
+    reversibility: idempotent
+    requires_codeowner_oob: true
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+
+  # ── Content ───────────────────────────────────────────────────────────────────
+  - path: /api/admin/content
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      page:   { type: integer, min: 1, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+      status: { type: enum, values: [draft, published, archived], optional: true }
+
+  # ── Auth (never callable by supervisor) ─────────────────────────────────────
+  - path: /auth/login
+    method: POST
+    handler_class: auth-internal
+    side_effects: none
+    supervisor_access: denied
+
+  - path: /auth/refresh
+    method: POST
+    handler_class: auth-internal
+    side_effects: none
+    supervisor_access: denied
+
+  # ── Webhooks (never callable by supervisor) ──────────────────────────────────
+  - path: /api/stripe/webhook
+    method: POST
+    handler_class: webhook-external
+    side_effects: write-external
+    supervisor_access: denied
+
+capabilities_exposed:
+  - user-management
+  - artist-directory
+  - content-moderation
+
+capabilities_required:
+  - "@latimer-woods-tech/auth@^0.2.0"
+  - "@latimer-woods-tech/neon@^0.2.0"
+  - "@latimer-woods-tech/stripe@^0.2.0"
+
+side_effects_summary:
+  read_external: ["sentry-api", "posthog"]
+  write_external: ["stripe", "resend"]
+  write_app: ["neon:xico-city"]

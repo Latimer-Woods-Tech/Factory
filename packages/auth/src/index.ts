@@ -109,11 +109,14 @@ async function parseToken(token: string, secret: string): Promise<TokenPayload> 
 
 /**
  * Issues a signed JWT with an HMAC SHA-256 signature.
+ * When `secretNext` is provided, new tokens are signed with the next secret —
+ * enabling zero-downtime rotation before the old secret is retired.
  */
 export async function issueToken(
   payload: Omit<TokenPayload, 'iat' | 'exp'>,
   secret: string,
   expiresIn = 3600,
+  secretNext?: string,
 ): Promise<string> {
   const iat = Math.floor(Date.now() / 1000);
   const tokenPayload: TokenPayload = {
@@ -127,27 +130,45 @@ export async function issueToken(
   };
   const encodedHeader = toBase64Url(JSON.stringify(header));
   const encodedPayload = toBase64Url(JSON.stringify(tokenPayload));
-  const signature = await signData(`${encodedHeader}.${encodedPayload}`, secret);
+  const signingSecret = secretNext ?? secret;
+  const signature = await signData(`${encodedHeader}.${encodedPayload}`, signingSecret);
 
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
 
 /**
  * Verifies a JWT signature and expiry.
+ * When `secretNext` is provided, tokens signed with either secret are accepted —
+ * enabling zero-downtime rotation of JWT_SECRET.
  */
-export async function verifyToken(token: string, secret: string): Promise<TokenPayload> {
-  return parseToken(token, secret);
+export async function verifyToken(
+  token: string,
+  secret: string,
+  secretNext?: string,
+): Promise<TokenPayload> {
+  try {
+    return await parseToken(token, secret);
+  } catch (err) {
+    // AuthError always carries code AUTH_TOKEN_INVALID; expiry is distinguished via context.code.
+    const contextCode = err instanceof AuthError ? (err.context?.['code'] as string | undefined) : undefined;
+    if (secretNext && err instanceof AuthError && contextCode !== ErrorCodes.AUTH_TOKEN_EXPIRED) {
+      return parseToken(token, secretNext);
+    }
+    throw err;
+  }
 }
 
 /**
  * Refreshes a valid token with a new expiry.
+ * When `secretNext` is provided, the refreshed token is signed with the next secret.
  */
 export async function refreshToken(
   token: string,
   secret: string,
   expiresIn = 3600,
+  secretNext?: string,
 ): Promise<string> {
-  const payload = await verifyToken(token, secret);
+  const payload = await verifyToken(token, secret, secretNext);
 
   return issueToken(
     {
@@ -157,13 +178,15 @@ export async function refreshToken(
     },
     secret,
     expiresIn,
+    secretNext,
   );
 }
 
 /**
  * Extracts and verifies a bearer token.
+ * Pass `opts.secretNext` to accept tokens signed with either secret during rotation.
  */
-export function jwtMiddleware(secret: string): MiddlewareHandler {
+export function jwtMiddleware(secret: string, opts: { secretNext?: string } = {}): MiddlewareHandler {
   return async (c, next) => {
     const authorization = c.req.header('authorization');
     if (!authorization?.startsWith('Bearer ')) {
@@ -176,7 +199,7 @@ export function jwtMiddleware(secret: string): MiddlewareHandler {
     }
 
     try {
-      const payload = await verifyToken(authorization.slice(7), secret);
+      const payload = await verifyToken(authorization.slice(7), secret, opts.secretNext);
       c.set('user', payload);
       await next();
     } catch (err) {

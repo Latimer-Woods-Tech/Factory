@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { initAnalytics, type AnalyticsConfig } from './index';
+import {
+  initAnalytics,
+  trackFunnelStep,
+  getFunnelPosition,
+  MONETIZATION_FUNNEL,
+  type AnalyticsConfig,
+  type FunnelStepId,
+} from './index';
 import type { FactoryDb } from '@latimer-woods-tech/neon';
 
 type FetchFn = (url: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -189,5 +196,119 @@ describe('initAnalytics', () => {
       expect(body.properties.source).toBe('email');
       expect(body.properties.app_id).toBe('test-app');
     });
+  });
+});
+
+describe('MONETIZATION_FUNNEL', () => {
+  it('has 5 steps in signup → day-30-retention order', () => {
+    expect(MONETIZATION_FUNNEL).toHaveLength(5);
+    const ids = MONETIZATION_FUNNEL.map((s) => s.id);
+    expect(ids).toEqual(['signup', 'first-action', 'paid', 'renewal', 'day-30-retention']);
+  });
+
+  it('every step has a funnel.* event name', () => {
+    for (const step of MONETIZATION_FUNNEL) {
+      expect(step.event).toMatch(/^funnel\./);
+      expect(step.description.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('trackFunnelStep', () => {
+  let fetchMock: Mock<FetchFn>;
+  let analytics: ReturnType<typeof initAnalytics>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn<FetchFn>(() => Promise.resolve(new Response('{}', { status: 200 })));
+    analytics = initAnalytics(makeConfig(), { fetch: fetchMock });
+  });
+
+  it('tracks paid step with funnel metadata enrichment', async () => {
+    await trackFunnelStep(analytics, 'paid', 'user-42', { product: 'humandesign' }, { plan: 'practitioner' });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [, init] = getCall(fetchMock, 0);
+    const body = JSON.parse(init.body as string) as { event: string; properties: Record<string, unknown> };
+    expect(body.event).toBe('funnel.paid');
+    expect(body.properties.funnel_step).toBe('paid');
+    expect(body.properties.funnel_product).toBe('humandesign');
+    expect(body.properties.funnel_order).toBe(2);
+    expect(body.properties.plan).toBe('practitioner');
+  });
+
+  it('uses event override when configured', async () => {
+    await trackFunnelStep(
+      analytics,
+      'signup',
+      'user-43',
+      { product: 'capricast', eventOverrides: { signup: 'creator.registered' } },
+    );
+    const [, init] = getCall(fetchMock, 0);
+    const body = JSON.parse(init.body as string) as { event: string };
+    expect(body.event).toBe('creator.registered');
+  });
+
+  it('tracks all 5 funnel steps without error', async () => {
+    const steps: FunnelStepId[] = ['signup', 'first-action', 'paid', 'renewal', 'day-30-retention'];
+    for (const step of steps) {
+      await trackFunnelStep(analytics, step, 'user-44', { product: 'test' });
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
+
+  it('is a no-op for unknown step id (type-safe guard)', async () => {
+    // Cast to bypass type check — simulates a runtime string that slips through
+    await trackFunnelStep(analytics, 'unknown' as FunnelStepId, 'user-45', { product: 'test' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('getFunnelPosition', () => {
+  function makeQueryDb(events: string[]): FactoryDb {
+    return {
+      execute: vi.fn(() =>
+        Promise.resolve({
+          rows: events.map((event) => ({ event })),
+        }) as unknown as ReturnType<FactoryDb['execute']>,
+      ),
+    } as unknown as FactoryDb;
+  }
+
+  it('returns null currentStep when user has no funnel events', async () => {
+    const db = makeQueryDb([]);
+    const pos = await getFunnelPosition(db, 'user-1', 'humandesign');
+    expect(pos.currentStep).toBeNull();
+    expect(pos.completedSteps).toEqual([]);
+  });
+
+  it('returns current step as the most advanced completed step', async () => {
+    const db = makeQueryDb(['funnel.signup', 'funnel.first_action', 'funnel.paid']);
+    const pos = await getFunnelPosition(db, 'user-2', 'humandesign');
+    expect(pos.currentStep).toBe('paid');
+    expect(pos.completedSteps).toEqual(['signup', 'first-action', 'paid']);
+  });
+
+  it('returns only signup when only signup is completed', async () => {
+    const db = makeQueryDb(['funnel.signup']);
+    const pos = await getFunnelPosition(db, 'user-3', 'humandesign');
+    expect(pos.currentStep).toBe('signup');
+    expect(pos.completedSteps).toEqual(['signup']);
+  });
+
+  it('respects eventOverrides in config', async () => {
+    const db = makeQueryDb(['creator.registered']);
+    const pos = await getFunnelPosition(db, 'user-4', 'capricast', {
+      product: 'capricast',
+      eventOverrides: { signup: 'creator.registered' },
+    });
+    expect(pos.currentStep).toBe('signup');
+    expect(pos.completedSteps).toEqual(['signup']);
+  });
+
+  it('handles full funnel completion', async () => {
+    const events = MONETIZATION_FUNNEL.map((s) => s.event);
+    const db = makeQueryDb(events);
+    const pos = await getFunnelPosition(db, 'user-5', 'humandesign');
+    expect(pos.currentStep).toBe('day-30-retention');
+    expect(pos.completedSteps).toHaveLength(5);
   });
 });

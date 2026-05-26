@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // factory-events-replay — replay cron Worker for failed derivations (P1.10).
+  // Fires every 15 minutes. Queries factory_events_ingest for rows with
+  // derivation_status='failed', re-derives them into factory_gates or
+  // factory_artifacts, and marks each as 'replayed' or updates the error.
+  "name": "factory-events-replay",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+
+  // Hyperdrive binding — proxies Neon Postgres connections via Cloudflare's
+  // connection pool. Replace the placeholder id with the real Hyperdrive config
+  // UUID before deploying. See docs/runbooks/add-new-app.md §Hyperdrive.
+  "hyperdrive": [
+    {
+      "binding": "DB",
+      "id": "efe957f404bb457593e6bd08b733b7c4"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+
+  "env": {
+    "production": {
+      "name": "factory-events-replay",
+      "workers_dev": false,
+      "vars": {
+        "ENVIRONMENT": "production"
+      }
+    },
+    "staging": {
+      "name": "factory-events-replay-staging",
+      "vars": {
+        "ENVIRONMENT": "staging"
+      }
+    }
+  }
+}

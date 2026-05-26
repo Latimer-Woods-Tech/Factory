@@ -14,6 +14,8 @@
   //   PUSHOVER_USER_KEY           — Pushover user/group key
   //   JWT_SECRET                  — Supervisor JWT signing secret
   //   GROQ_API_KEY                — Groq API key for LLM fallback
+  //   FACTORY_CORE_API_URL        — factory-core-api base URL for run push-on-write (P1.9; optional)
+  //   SUPERVISOR_PUSH_KEY         — service key for POST /v1/runs/mirror (P1.9; optional)
   "triggers": {
     "crons": ["0 11 * * 1-5"]
   },

@@ -187,6 +187,17 @@ describe('assertTenantBudget', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('accepts explicit yyyyMm override (covers opts.yyyyMm ?? branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 10 };
+    await expect(
+      assertTenantBudget(h.db, 'tenant-1', 'individual', { yyyyMm: '2026-01' }),
+    ).resolves.toBeUndefined();
+    // The SELECT should have been bound with the explicit month
+    const q = h.queries.find(q => q.sql.toLowerCase().includes('yyyy_mm') || q.sql.toLowerCase().includes('select'));
+    expect(q?.binds).toContain('2026-01');
+  });
+
   it('fires onBudgetAlert callback at 80% but does not throw', async () => {
     const h = makeDb();
     // individual cap = 300; 80% = 240
@@ -253,7 +264,7 @@ describe('assertTenantBudget', () => {
   });
 
 
-  it('swallows alerting errors and does not throw', async () => {
+  it('swallows alerting errors and does not throw (Error instance)', async () => {
     const h = makeDb();
     h.firstResult = { cost_cents: 240 }; // 80% of individual (300)
     const failingAlert = vi.fn<(ctx: BudgetAlertContext) => Promise<void>>().mockRejectedValue(new Error('email down'));
@@ -270,6 +281,76 @@ describe('assertTenantBudget', () => {
     // Give the async rejection a chance to propagate
     await new Promise(r => setTimeout(r, 0));
     expect(errorLog).toHaveBeenCalledOnce();
+  });
+
+  it('swallows alerting errors and does not throw (non-Error, covers String(e) branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 240 };
+    // Reject with a plain string to cover the String(e) branch in onBudgetAlert.catch()
+    const failingAlert = vi.fn<(ctx: BudgetAlertContext) => Promise<void>>().mockRejectedValue('smtp timeout');
+    const errorLog = vi.fn();
+    await expect(
+      assertTenantBudget(
+        h.db, 'tenant-1', 'individual',
+        { onBudgetAlert: failingAlert },
+        { logger: { error: errorLog } as unknown as import('@latimer-woods-tech/logger').Logger },
+      ),
+    ).resolves.toBeUndefined();
+    await new Promise(r => setTimeout(r, 0));
+    expect(errorLog).toHaveBeenCalledWith(
+      'llm-meter.budget.alert.failed',
+      expect.objectContaining({ error: 'smtp timeout' }),
+    );
+  });
+
+  it('swallows DB error on warning-row insert and logs it', async () => {
+    // DB where first() (SELECT) succeeds but run() (INSERT) rejects with an Error.
+    const errorLog = vi.fn();
+    const db: D1Like = {
+      prepare: () => ({
+        bind: () => ({
+          first: <T>() => Promise.resolve({ cost_cents: 240 } as T),
+          run: () => Promise.reject(new Error('disk full')),
+          all: <T>() => Promise.resolve({ results: [] as T[] }),
+        }),
+      }),
+    };
+    await expect(
+      assertTenantBudget(
+        db,
+        'tenant-1',
+        'individual',
+        {},
+        { logger: { error: errorLog } as unknown as import('@latimer-woods-tech/logger').Logger },
+      ),
+    ).resolves.toBeUndefined();
+    await new Promise(r => setTimeout(r, 0));
+    expect(errorLog).toHaveBeenCalledWith(
+      'llm-meter.budget.warning.insert.failed',
+      expect.objectContaining({ error: 'disk full', tenantId: 'tenant-1' }),
+    );
+  });
+
+  it('uses String(e) when non-Error is thrown on warning-row insert', async () => {
+    // Throw a plain string (not an Error) to cover the String(e) branch.
+    const errorLog = vi.fn();
+    const db: D1Like = {
+      prepare: () => ({
+        bind: () => ({
+          first: <T>() => Promise.resolve({ cost_cents: 240 } as T),
+          run: () => Promise.reject('write conflict'), // not an Error instance
+          all: <T>() => Promise.resolve({ results: [] as T[] }),
+        }),
+      }),
+    };
+    await assertTenantBudget(db, 'tenant-1', 'individual', {}, {
+      logger: { error: errorLog } as unknown as import('@latimer-woods-tech/logger').Logger,
+    });
+    await new Promise(r => setTimeout(r, 0));
+    expect(errorLog).toHaveBeenCalledWith(
+      'llm-meter.budget.warning.insert.failed',
+      expect.objectContaining({ error: 'write conflict' }),
+    );
   });
 });
 
@@ -384,5 +465,234 @@ describe('meteredComplete', () => {
     expect(res.error).not.toBeNull();
     const inserts = h.queries.filter(q => q.sql.includes('INSERT'));
     expect(inserts).toHaveLength(0);
+  });
+
+  it('wraps plain Error from assertRunBudget in InternalError (covers e.message branch)', async () => {
+    // DB whose first() rejects with a plain Error (not a FactoryBaseError)
+    const db: D1Like = {
+      prepare: () => ({
+        bind: () => ({
+          first: <T>() => Promise.reject(new Error('db timeout')),
+          run: () => Promise.resolve({ success: true }),
+          all: <T>() => Promise.resolve({ results: [] as T[] }),
+        }),
+      }),
+    };
+    const res = await meteredComplete(
+      db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'prime-self', actor: 'worker', runId: 'r-db-err', tier: 'balanced' },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    expect(res.data).toBeNull();
+    expect(res.error!.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('wraps non-Error from assertRunBudget in InternalError (covers String(e) branch)', async () => {
+    const db: D1Like = {
+      prepare: () => ({
+        bind: () => ({
+          first: <T>() => Promise.reject('db timeout'), // not an Error instance
+          run: () => Promise.resolve({ success: true }),
+          all: <T>() => Promise.resolve({ results: [] as T[] }),
+        }),
+      }),
+    };
+    const res = await meteredComplete(
+      db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'prime-self', actor: 'worker', runId: 'r-db-err2', tier: 'balanced' },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    expect(res.data).toBeNull();
+    expect(res.error!.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('wraps plain Error from assertTenantBudget in InternalError (covers e.message branch)', async () => {
+    const db: D1Like = {
+      prepare: () => ({
+        bind: () => ({
+          first: <T>() => Promise.reject(new Error('network error')),
+          run: () => Promise.resolve({ success: true }),
+          all: <T>() => Promise.resolve({ results: [] as T[] }),
+        }),
+      }),
+    };
+    const res = await meteredComplete(
+      db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'prime-self', actor: 'worker', tier: 'balanced', tenantId: 'tenant-err', tenantTier: 'individual' },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    expect(res.data).toBeNull();
+    expect(res.error!.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('wraps non-Error from assertTenantBudget in InternalError (covers String(e) branch)', async () => {
+    const db: D1Like = {
+      prepare: () => ({
+        bind: () => ({
+          first: <T>() => Promise.reject('network error'), // not an Error instance
+          run: () => Promise.resolve({ success: true }),
+          all: <T>() => Promise.resolve({ results: [] as T[] }),
+        }),
+      }),
+    };
+    const res = await meteredComplete(
+      db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'prime-self', actor: 'worker', tier: 'balanced', tenantId: 'tenant-err2', tenantTier: 'individual' },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    expect(res.data).toBeNull();
+    expect(res.error!.code).toBe('INTERNAL_ERROR');
+  });
+
+  it('fires onBudgetExceeded when run cap is hit', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 600, input_tokens: 0, output_tokens: 0, call_count: 5 };
+    const onBudgetExceeded = vi.fn().mockResolvedValue(undefined);
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-99', tier: 'balanced', budget: { perRunCapCents: 500, onBudgetExceeded } },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(onBudgetExceeded).toHaveBeenCalledOnce();
+    const ctx = onBudgetExceeded.mock.calls[0]![0];
+    expect(ctx.kind).toBe('run');
+    expect(ctx.runId).toBe('r-99');
+    expect(typeof ctx.spentCents).toBe('number');
+  });
+
+  it('fires onBudgetExceeded when tenant monthly cap is hit', async () => {
+    const h = makeDb();
+    // Spend > free cap (50 cents)
+    h.firstResult = { cost_cents: 60, input_tokens: 0, output_tokens: 0, call_count: 3 };
+    const onBudgetExceeded = vi.fn().mockResolvedValue(undefined);
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'p', actor: 'a', tier: 'balanced',
+        tenantId: 'tenant-cap', tenantTier: 'free',
+        budget: { onBudgetExceeded },
+      },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(onBudgetExceeded).toHaveBeenCalledOnce();
+    const ctx = onBudgetExceeded.mock.calls[0]![0];
+    expect(ctx.kind).toBe('tenant');
+    expect(ctx.tenantId).toBe('tenant-cap');
+    expect(ctx.tier).toBe('free');
+  });
+
+  it('swallows onBudgetExceeded Error and logs warning', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 600, input_tokens: 0, output_tokens: 0, call_count: 5 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue(new Error('gate write failed'));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-err', tier: 'balanced', budget: { perRunCapCents: 500, onBudgetExceeded } },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'gate write failed' }));
+  });
+
+  it('swallows non-Error from onBudgetExceeded (covers String(e) branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 600, input_tokens: 0, output_tokens: 0, call_count: 5 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue('network timeout');
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-str', tier: 'balanced', budget: { perRunCapCents: 500, onBudgetExceeded } },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'network timeout' }));
+  });
+
+  it('swallows tenant onBudgetExceeded Error and logs warning (covers tenant .catch branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 60, input_tokens: 0, output_tokens: 0, call_count: 3 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue(new Error('gate failed'));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'p', actor: 'a', tier: 'balanced',
+        tenantId: 'tenant-cb', tenantTier: 'free',
+        budget: { onBudgetExceeded },
+      },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'gate failed' }));
+  });
+
+  it('swallows non-Error from tenant onBudgetExceeded (covers tenant String(err) branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 60, input_tokens: 0, output_tokens: 0, call_count: 3 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue('cf timeout');
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'p', actor: 'a', tier: 'balanced',
+        tenantId: 'tenant-str', tenantTier: 'free',
+        budget: { onBudgetExceeded },
+      },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'cf timeout' }));
+  });
+
+  it('handles success with no cacheRead tokens (covers cacheRead ?? 0 false branches)', async () => {
+    const h = makeDb();
+    const noCacheResponse = new Response(
+      JSON.stringify({
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 100, output_tokens: 20 },
+        model: 'claude-sonnet-4-20250514',
+      }),
+      { status: 200, headers: { 'cf-aig-request-id': 'aig-nc' } },
+    );
+    const fetchImpl = vi.fn(() => Promise.resolve(noCacheResponse));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-nc', tier: 'balanced' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    const insertCall = h.queries.find(q => q.sql.includes('INSERT'));
+    expect(insertCall).toBeTruthy();
   });
 });

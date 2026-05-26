@@ -1,0 +1,191 @@
+# =============================================================================
+# _app-capability-lint — reusable workflow that validates capabilities.yml
+# against the ADMIN_TECHNICAL_GUIDE §3.1.1 schema and cross-references it
+# against Factory's service-registry.yml (P2.16).
+#
+# HOW TO CALL
+#   jobs:
+#     capability-lint:
+#       uses: Latimer-Woods-Tech/factory/.github/workflows/_app-capability-lint.yml@main
+#       with:
+#         app_id: humandesign         # service-registry.yml `id` key
+#         capabilities_file: capabilities.yml   # path relative to repo root
+#
+# WHAT IT CHECKS
+#   1. YAML is valid and parses without error
+#   2. `version: 1` present
+#   3. `app.id` matches the `app_id` input
+#   4. Every route has: path, method, handler_class, side_effects, supervisor_access
+#   5. `supervisor_access` values are in [green, yellow, red, denied]
+#   6. No route with `method: POST|PUT|PATCH|DELETE` has `supervisor_access: green`
+#      without also declaring `reversibility`
+#   7. `side_effects` values are in [none, read-external, write-app, write-external]
+#   8. `app.id` matches a known entry in Factory's `docs/service-registry.yml`
+#   9. All routes with `requires_codeowner_oob: true` have `supervisor_access: yellow|red`
+#  10. `capabilities_exposed` and `capabilities_required` are non-empty arrays
+#
+# OUTPUTS
+#   capability_count: number of declared routes
+# =============================================================================
+
+name: _app-capability-lint
+
+on:
+  workflow_call:
+    inputs:
+      app_id:
+        description: "service-registry.yml `id` key for this app"
+        type: string
+        required: true
+      capabilities_file:
+        description: "Path to capabilities.yml relative to the calling repo root"
+        type: string
+        default: "capabilities.yml"
+    outputs:
+      capability_count:
+        description: "Number of route capabilities declared"
+        value: ${{ jobs.lint.outputs.capability_count }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Validate capabilities.yml
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      capability_count: ${{ steps.lint.outputs.capability_count }}
+    steps:
+      - name: Checkout calling repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Checkout Factory (for service-registry.yml)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: Latimer-Woods-Tech/factory
+          ref: main
+          path: _factory_ref
+          # No token needed — public repo read
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+
+      - name: Install js-yaml
+        run: npm install --no-save js-yaml@4
+
+      - name: Lint capabilities.yml
+        id: lint
+        env:
+          APP_ID: ${{ inputs.app_id }}
+          CAPABILITIES_FILE: ${{ inputs.capabilities_file }}
+          SERVICE_REGISTRY: _factory_ref/docs/service-registry.yml
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+          const yaml = require('js-yaml');
+
+          const appId = process.env.APP_ID;
+          const capFile = process.env.CAPABILITIES_FILE;
+          const srFile = process.env.SERVICE_REGISTRY;
+
+          // ── Load capabilities.yml ─────────────────────────────────────────
+          let cap;
+          try {
+            cap = yaml.load(fs.readFileSync(capFile, 'utf8'));
+          } catch (e) {
+            console.error(`::error::Cannot parse ${capFile}: ${e.message}`);
+            process.exit(1);
+          }
+
+          const errors = [];
+
+          // Check 1: version
+          if (cap.version !== 1) errors.push('version must be 1');
+
+          // Check 2: app.id matches input
+          if (!cap.app?.id) errors.push('app.id is required');
+          else if (cap.app.id !== appId) {
+            errors.push(`app.id '${cap.app.id}' does not match expected '${appId}'`);
+          }
+
+          // Check 3: routes present and valid
+          const VALID_SUPERVISOR_ACCESS = ['green', 'yellow', 'red', 'denied'];
+          const VALID_SIDE_EFFECTS = ['none', 'read-external', 'write-app', 'write-external'];
+          const MUTATING_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+          const routes = cap.routes ?? [];
+          if (!Array.isArray(routes) || routes.length === 0) {
+            errors.push('routes must be a non-empty array');
+          }
+
+          for (const route of routes) {
+            const ctx = `${route.method} ${route.path}`;
+            if (!route.path) errors.push(`route missing path: ${JSON.stringify(route)}`);
+            if (!route.method) errors.push(`${route.path}: method is required`);
+            if (!route.handler_class) errors.push(`${ctx}: handler_class is required`);
+            if (!route.side_effects) errors.push(`${ctx}: side_effects is required`);
+            else if (!VALID_SIDE_EFFECTS.includes(route.side_effects)) {
+              errors.push(`${ctx}: invalid side_effects '${route.side_effects}'`);
+            }
+            if (!route.supervisor_access) errors.push(`${ctx}: supervisor_access is required`);
+            else if (!VALID_SUPERVISOR_ACCESS.includes(route.supervisor_access)) {
+              errors.push(`${ctx}: invalid supervisor_access '${route.supervisor_access}'`);
+            }
+            // Mutating routes marked green must declare reversibility
+            if (MUTATING_METHODS.includes(route.method) &&
+                route.supervisor_access === 'green' &&
+                !route.reversibility) {
+              errors.push(`${ctx}: green mutating route must declare reversibility`);
+            }
+            // codeowner_oob routes must be yellow or red
+            if (route.requires_codeowner_oob === true &&
+                !['yellow', 'red'].includes(route.supervisor_access)) {
+              errors.push(`${ctx}: requires_codeowner_oob route must be yellow or red`);
+            }
+          }
+
+          // Check 4: capabilities_exposed non-empty
+          if (!Array.isArray(cap.capabilities_exposed) || cap.capabilities_exposed.length === 0) {
+            errors.push('capabilities_exposed must be a non-empty array');
+          }
+
+          // Check 5: capabilities_required non-empty
+          if (!Array.isArray(cap.capabilities_required) || cap.capabilities_required.length === 0) {
+            errors.push('capabilities_required must be a non-empty array');
+          }
+
+          // Check 6: app.id in service-registry.yml
+          let srIds = [];
+          try {
+            const sr = yaml.load(fs.readFileSync(srFile, 'utf8'));
+            srIds = (sr.services ?? []).map(s => s.id);
+            if (!srIds.includes(appId)) {
+              errors.push(`app_id '${appId}' not found in service-registry.yml (known: ${srIds.join(', ')})`);
+            }
+          } catch (e) {
+            console.warn(`::warning::Could not validate against service-registry.yml: ${e.message}`);
+          }
+
+          if (errors.length > 0) {
+            for (const err of errors) console.error(`::error::${err}`);
+            process.exit(1);
+          }
+
+          const count = routes.length;
+          console.log(`capabilities.yml valid: ${count} routes declared for ${appId}`);
+          // GitHub Actions output
+          const outputFile = process.env.GITHUB_OUTPUT;
+          if (outputFile) {
+            fs.appendFileSync(outputFile, `capability_count=${count}\n`);
+          }
+          EOF
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Capability Lint — ${{ inputs.app_id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- File: \`${{ inputs.capabilities_file }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Routes declared: ${{ steps.lint.outputs.capability_count }}" >> "$GITHUB_STEP_SUMMARY"

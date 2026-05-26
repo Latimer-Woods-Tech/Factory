@@ -4,9 +4,9 @@
  * Uses dependency injection (the `ops` parameter) to avoid module mocking —
  * no live DB connections needed.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { mirrorSupervisorRuns } from '../src/mirror.js';
-import type { MirrorDbOps } from '../src/mirror.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { mirrorSupervisorRuns, mirrorSupervisorVerifications } from '../src/mirror.js';
+import type { MirrorDbOps, D1VerificationRow } from '../src/mirror.js';
 import type { Env } from '../src/env.js';
 
 // ── mock ops ──────────────────────────────────────────────────────────────────
@@ -41,6 +41,7 @@ function makeMockOps(): MirrorDbOps {
       if (auditShouldThrow) throw new Error('audit db error');
       auditCalls.push({ payload });
     },
+    async upsertVerificationGate() { /* no-op in run-mirror tests */ },
   };
 }
 
@@ -173,11 +174,96 @@ describe('mirrorSupervisorRuns', () => {
     const ops: MirrorDbOps = {
       async upsertRun() { throw 'string error'; },
       async insertAuditEvent(payload) { auditCalls.push({ payload }); },
+      async upsertVerificationGate() { /* no-op */ },
     };
 
     const result = await mirrorSupervisorRuns(makeEnv(D1_ROWS), undefined, ops);
 
     expect(result.errors).toBe(3);
     expect(result.synced).toBe(0);
+  });
+});
+
+// ─── mirrorSupervisorVerifications ────────────────────────────────────────────
+
+const VERIF_ROWS: D1VerificationRow[] = [
+  { id: 'v-1', run_id: 'run-1', verifier_query: 'intent-verifier', tool_response: JSON.stringify({ ok: true }), verified_at: Date.now() - 1000 },
+  { id: 'v-2', run_id: 'run-2', verifier_query: 'smoke-check', tool_response: JSON.stringify({ ok: false, error: 'assertion failed' }), verified_at: Date.now() - 2000 },
+];
+
+function makeVerifEnv(rows: unknown[] | undefined, d1Success = true): Env {
+  return {
+    DB: { connectionString: 'postgresql://ignored' },
+    SUPERVISOR_D1: makeD1(rows, d1Success),
+    ENVIRONMENT: 'test',
+  };
+}
+
+describe('mirrorSupervisorVerifications', () => {
+  it('syncs verification rows and calls upsertVerificationGate for each', async () => {
+    const upsertGate = vi.fn().mockResolvedValue(undefined);
+    const ops: MirrorDbOps = {
+      async upsertRun() { /* no-op */ },
+      async insertAuditEvent() { /* no-op */ },
+      upsertVerificationGate: upsertGate,
+    };
+    const result = await mirrorSupervisorVerifications(makeVerifEnv(VERIF_ROWS), undefined, ops);
+    expect(result).toEqual({ synced: 2, skipped: 0, errors: 0 });
+    expect(upsertGate).toHaveBeenCalledTimes(2);
+    expect(upsertGate.mock.calls[0][0].id).toBe('v-1');
+    expect(upsertGate.mock.calls[1][0].id).toBe('v-2');
+  });
+
+  it('returns empty result when D1 has no rows', async () => {
+    const ops: MirrorDbOps = {
+      async upsertRun() { /* no-op */ },
+      async insertAuditEvent() { /* no-op */ },
+      upsertVerificationGate: vi.fn().mockResolvedValue(undefined),
+    };
+    const result = await mirrorSupervisorVerifications(makeVerifEnv([]), undefined, ops);
+    expect(result).toEqual({ synced: 0, skipped: 0, errors: 0 });
+  });
+
+  it('counts errors when upsertVerificationGate throws', async () => {
+    const ops: MirrorDbOps = {
+      async upsertRun() { /* no-op */ },
+      async insertAuditEvent() { /* no-op */ },
+      async upsertVerificationGate() { throw new Error('neon error'); },
+    };
+    const result = await mirrorSupervisorVerifications(makeVerifEnv(VERIF_ROWS), undefined, ops);
+    expect(result.errors).toBe(2);
+    expect(result.synced).toBe(0);
+  });
+
+  it('counts errors when upsertVerificationGate throws non-Error (covers String(err) branch)', async () => {
+    const ops: MirrorDbOps = {
+      async upsertRun() { /* no-op */ },
+      async insertAuditEvent() { /* no-op */ },
+      async upsertVerificationGate() { throw 'write conflict'; },
+    };
+    const result = await mirrorSupervisorVerifications(makeVerifEnv(VERIF_ROWS), undefined, ops);
+    expect(result.errors).toBe(2);
+  });
+
+  it('throws when D1 query fails', async () => {
+    const ops: MirrorDbOps = {
+      async upsertRun() { /* no-op */ },
+      async insertAuditEvent() { /* no-op */ },
+      upsertVerificationGate: vi.fn(),
+    };
+    await expect(mirrorSupervisorVerifications(makeVerifEnv([], false), undefined, ops))
+      .rejects.toThrow('D1 supervisor_verifications query failed');
+  });
+
+  it('treats undefined D1 results as empty', async () => {
+    const upsertGate = vi.fn().mockResolvedValue(undefined);
+    const ops: MirrorDbOps = {
+      async upsertRun() { /* no-op */ },
+      async insertAuditEvent() { /* no-op */ },
+      upsertVerificationGate: upsertGate,
+    };
+    const result = await mirrorSupervisorVerifications(makeVerifEnv(undefined), undefined, ops);
+    expect(result).toEqual({ synced: 0, skipped: 0, errors: 0 });
+    expect(upsertGate).not.toHaveBeenCalled();
   });
 });
