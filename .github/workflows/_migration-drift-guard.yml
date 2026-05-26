@@ -89,9 +89,7 @@ jobs:
     steps:
       # Check out the calling app repo so migration files are available.
       - name: Checkout app repo
-        uses: actions/checkout@v6
-
-      # Resolve the exact factory ref that invoked this reusable workflow so
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       # the drift-check script version stays pinned to the same commit.
       - name: Resolve factory workflow ref
         id: factory-ref
@@ -111,7 +109,7 @@ jobs:
       # Sparse-checkout only the drift detection script — avoids cloning the
       # entire factory repo.
       - name: Checkout factory drift script
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: Latimer-Woods-Tech/factory
           ref: ${{ steps.factory-ref.outputs.ref }}
@@ -120,7 +118,7 @@ jobs:
             scripts/check-migration-drift.mjs
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
 
