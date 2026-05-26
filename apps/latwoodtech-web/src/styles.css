@@ -1099,6 +1099,23 @@ h3 {
   color: #f2afa2;
 }
 
+.contact-consent {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(248, 241, 222, 0.45);
+  line-height: 1.5;
+}
+
+.contact-consent a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.contact-consent a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+
 .contact-honeypot {
   position: absolute;
   left: -9999px;
