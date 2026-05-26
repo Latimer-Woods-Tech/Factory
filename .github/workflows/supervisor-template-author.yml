@@ -26,7 +26,7 @@ jobs:
       - name: Debounce rapid label bursts
         run: sleep 5
 
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
