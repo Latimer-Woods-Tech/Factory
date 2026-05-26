@@ -108,6 +108,10 @@ export function createIngestDb(binding: HyperdriveBinding): IngestDb {
         throw new Error('insertEvent returned no rows for a non-idempotent (null source_event_id) event');
       }
       const existing = await findEventBySourceId(event.sourceSystem, event.sourceEventId);
+      // Sub-millisecond read-after-write edge: ON CONFLICT fired so the winning
+      // writer's row IS committed at the DB level, but in rare cases the same
+      // connection hasn't returned it yet (e.g. read-replica lag). The resulting
+      // 500 is transient and safe to retry — no data was lost or duplicated.
       if (!existing) {
         throw new Error('insertEvent conflict but no existing event found');
       }

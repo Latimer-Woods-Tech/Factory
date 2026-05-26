@@ -20,6 +20,14 @@
 --
 -- ROLLBACK:
 --   DROP INDEX IF EXISTS ux_events_source_event_id;
+--
+-- NOTE for future operators on populated tables: the non-CONCURRENT form used
+-- above takes an exclusive lock for the full index build. For a table with live
+-- traffic, prefer:
+--   CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ux_events_source_event_id
+--     ON factory_events_ingest (source_system, source_event_id)
+--     WHERE source_event_id IS NOT NULL;
+-- (CONCURRENTLY cannot be used inside a transaction block.)
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_events_source_event_id
   ON factory_events_ingest (source_system, source_event_id)
