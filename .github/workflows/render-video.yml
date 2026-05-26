@@ -92,6 +92,12 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  # factory-core-api base URL for the read-layer artifact ingest (P1.7). When
+  # empty, the artifact ingest step is skipped — the render still succeeds.
+  # Set this to the branded factory-core-api domain once the worker is
+  # deployed and registered in docs/service-registry.yml. Do NOT use a
+  # *.workers.dev URL in committed code (CLAUDE.md Hard Constraints).
+  FACTORY_CORE_API_URL: ''
 
 permissions:
   contents: read
@@ -148,6 +154,9 @@ jobs:
 
       - name: Validate generate-script.mjs is parseable
         run: node --check apps/video-studio/scripts/generate-script.mjs
+
+      - name: Validate post-render-artifacts.mjs is parseable
+        run: node --check apps/video-studio/scripts/post-render-artifacts.mjs
 
       - name: Validate render.ts entry exists
         run: |
@@ -269,6 +278,12 @@ jobs:
     timeout-minutes: 30
     name: Render and publish video
     environment: production
+    permissions:
+      contents: read
+      # Required so the artifact-ingest step can request a GitHub OIDC token
+      # and exchange it at factory-core-api /v1/auth/token for a scoped JWT
+      # (aud: artifacts-video). Mirrors _app-constraints-gate.yml.
+      id-token: write
 
     steps:
       - name: Generate GitHub App token
@@ -758,6 +773,31 @@ jobs:
           YOUTUBE_URL=$(echo "$RESULT" | jq -r '.url // empty')
           echo "youtube_url=$YOUTUBE_URL" >> "$GITHUB_OUTPUT"
           echo "::notice::YouTube upload complete: $YOUTUBE_URL"
+
+      # -----------------------------------------------------------------------
+      # Step 11c — Record artifacts in the Factory admin read-layer (P1.7).
+      # Runs only after the render + upload + Capricast publish all succeeded,
+      # so a factory_artifacts row only ever describes a video that exists.
+      # Best-effort: continue-on-error keeps a read-layer hiccup from failing
+      # the render; the script also always exits 0 and surfaces any non-2xx.
+      # Skipped entirely when FACTORY_CORE_API_URL is unset.
+      # -----------------------------------------------------------------------
+      - name: Record artifacts in factory-core-api
+        id: artifacts
+        continue-on-error: true
+        env:
+          # ACTIONS_ID_TOKEN_REQUEST_TOKEN / _URL are injected automatically by
+          # GitHub because this job declares `id-token: write`.
+          JOB_ID: ${{ inputs.job_id }}
+          APP_ID: ${{ inputs.app_id }}
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          VIDEO_URL: ${{ steps.video_upload.outputs.video_url }}
+          NARRATION_URL: ${{ steps.narration_upload.outputs.narration_url }}
+          THUMBNAIL_URL: ${{ steps.stream.outputs.thumbnail_url }}
+          TRANSCRIPT: ${{ steps.script.outputs.narration }}
+          DURATION_SECONDS: ${{ steps.stream.outputs.duration_seconds }}
+        run: node apps/video-studio/scripts/post-render-artifacts.mjs
 
       # -----------------------------------------------------------------------
       # Step 12 — PATCH schedule-worker → status=done

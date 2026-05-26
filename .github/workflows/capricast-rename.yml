@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -220,7 +220,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -295,7 +295,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -349,7 +349,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -416,7 +416,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -475,7 +475,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
