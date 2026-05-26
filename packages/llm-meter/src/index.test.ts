@@ -551,4 +551,148 @@ describe('meteredComplete', () => {
     expect(res.data).toBeNull();
     expect(res.error!.code).toBe('INTERNAL_ERROR');
   });
+
+  it('fires onBudgetExceeded when run cap is hit', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 600, input_tokens: 0, output_tokens: 0, call_count: 5 };
+    const onBudgetExceeded = vi.fn().mockResolvedValue(undefined);
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-99', tier: 'balanced', budget: { perRunCapCents: 500, onBudgetExceeded } },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(onBudgetExceeded).toHaveBeenCalledOnce();
+    const ctx = onBudgetExceeded.mock.calls[0][0];
+    expect(ctx.kind).toBe('run');
+    expect(ctx.runId).toBe('r-99');
+    expect(typeof ctx.spentCents).toBe('number');
+  });
+
+  it('fires onBudgetExceeded when tenant monthly cap is hit', async () => {
+    const h = makeDb();
+    // Spend > free cap (50 cents)
+    h.firstResult = { cost_cents: 60, input_tokens: 0, output_tokens: 0, call_count: 3 };
+    const onBudgetExceeded = vi.fn().mockResolvedValue(undefined);
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'p', actor: 'a', tier: 'balanced',
+        tenantId: 'tenant-cap', tenantTier: 'free',
+        budget: { onBudgetExceeded },
+      },
+      { fetch: vi.fn() as unknown as typeof fetch },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(onBudgetExceeded).toHaveBeenCalledOnce();
+    const ctx = onBudgetExceeded.mock.calls[0][0];
+    expect(ctx.kind).toBe('tenant');
+    expect(ctx.tenantId).toBe('tenant-cap');
+    expect(ctx.tier).toBe('free');
+  });
+
+  it('swallows onBudgetExceeded Error and logs warning', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 600, input_tokens: 0, output_tokens: 0, call_count: 5 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue(new Error('gate write failed'));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-err', tier: 'balanced', budget: { perRunCapCents: 500, onBudgetExceeded } },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'gate write failed' }));
+  });
+
+  it('swallows non-Error from onBudgetExceeded (covers String(e) branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 600, input_tokens: 0, output_tokens: 0, call_count: 5 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue('network timeout');
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-str', tier: 'balanced', budget: { perRunCapCents: 500, onBudgetExceeded } },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'network timeout' }));
+  });
+
+  it('swallows tenant onBudgetExceeded Error and logs warning (covers tenant .catch branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 60, input_tokens: 0, output_tokens: 0, call_count: 3 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue(new Error('gate failed'));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'p', actor: 'a', tier: 'balanced',
+        tenantId: 'tenant-cb', tenantTier: 'free',
+        budget: { onBudgetExceeded },
+      },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'gate failed' }));
+  });
+
+  it('swallows non-Error from tenant onBudgetExceeded (covers tenant String(err) branch)', async () => {
+    const h = makeDb();
+    h.firstResult = { cost_cents: 60, input_tokens: 0, output_tokens: 0, call_count: 3 };
+    const warnSpy = vi.fn();
+    const onBudgetExceeded = vi.fn().mockRejectedValue('cf timeout');
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      {
+        project: 'p', actor: 'a', tier: 'balanced',
+        tenantId: 'tenant-str', tenantTier: 'free',
+        budget: { onBudgetExceeded },
+      },
+      { fetch: vi.fn() as unknown as typeof fetch, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(res.error!.code).toBe('BUDGET_EXCEEDED');
+    expect(warnSpy).toHaveBeenCalledWith('llm-meter.onBudgetExceeded.error', expect.objectContaining({ message: 'cf timeout' }));
+  });
+
+  it('handles success with no cacheRead tokens (covers cacheRead ?? 0 false branches)', async () => {
+    const h = makeDb();
+    const noCacheResponse = new Response(
+      JSON.stringify({
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 100, output_tokens: 20 },
+        model: 'claude-sonnet-4-20250514',
+      }),
+      { status: 200, headers: { 'cf-aig-request-id': 'aig-nc' } },
+    );
+    const fetchImpl = vi.fn(() => Promise.resolve(noCacheResponse));
+    const res = await meteredComplete(
+      h.db,
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { project: 'p', actor: 'a', runId: 'r-nc', tier: 'balanced' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    const insertCall = h.queries.find(q => q.sql.includes('INSERT'));
+    expect(insertCall).toBeTruthy();
+  });
 });

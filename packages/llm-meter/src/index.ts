@@ -49,6 +49,20 @@ export const TIER_BUDGET_CENTS: Record<TenantTier, number> = {
 };
 
 /**
+ * Context passed to {@link BudgetConfig.onBudgetExceeded}.
+ */
+export interface BudgetExceededContext {
+  /** Whether the run cap or the tenant monthly cap was breached. */
+  kind: 'run' | 'tenant';
+  tenantId?: string;
+  runId?: string;
+  tier?: TenantTier;
+  spentCents: number;
+  capCents: number;
+  yyyyMm?: string;
+}
+
+/**
  * Budget configuration for a metered call.
  */
 export interface BudgetConfig {
@@ -66,6 +80,12 @@ export interface BudgetConfig {
    * Errors thrown by this callback are swallowed — alerting must never block the request.
    */
   onBudgetAlert?: (ctx: BudgetAlertContext) => Promise<void> | void;
+  /**
+   * Callback invoked when a budget cap is exceeded and the call is short-circuited.
+   * Callers can use this to write a `budget` gate row to the Factory Core API.
+   * Errors are swallowed — gate ingest must never block the response path.
+   */
+  onBudgetExceeded?: (ctx: BudgetExceededContext) => Promise<void> | void;
 }
 
 /**
@@ -430,12 +450,31 @@ export async function meteredComplete(
 ): Promise<FactoryResponse<LLMResult>> {
   const cap = opts.budget?.perRunCapCents ?? DEFAULT_RUN_CAP_CENTS;
 
+  const onBudgetExceeded = opts.budget?.onBudgetExceeded;
+
   // Per-run budget check
   if (opts.runId) {
     try {
       await assertRunBudget(db, opts.runId, cap);
     } catch (e) {
-      if (e instanceof FactoryBaseError) return toErrorResponse(e);
+      if (e instanceof FactoryBaseError) {
+        if (onBudgetExceeded) {
+          const ctx = e.context as Record<string, unknown> | undefined;
+          Promise.resolve(
+            onBudgetExceeded({
+              kind: 'run',
+              runId: opts.runId,
+              spentCents: typeof ctx?.actual === 'number' ? ctx.actual : 0,
+              capCents: typeof ctx?.maxCents === 'number' ? ctx.maxCents : cap,
+            }),
+          ).catch((err: unknown) => {
+            deps.logger?.warn?.('llm-meter.onBudgetExceeded.error', {
+              message: err instanceof Error ? err.message : String(err),
+            });
+          });
+        }
+        return toErrorResponse(e);
+      }
       return toErrorResponse(
         new InternalError('budget check failed', { error: e instanceof Error ? e.message : String(e) }),
       );
@@ -455,7 +494,26 @@ export async function meteredComplete(
         deps,
       );
     } catch (e) {
-      if (e instanceof FactoryBaseError) return toErrorResponse(e);
+      if (e instanceof FactoryBaseError) {
+        if (onBudgetExceeded) {
+          const ctx = e.context as Record<string, unknown> | undefined;
+          Promise.resolve(
+            onBudgetExceeded({
+              kind: 'tenant',
+              tenantId: typeof ctx?.tenantId === 'string' ? ctx.tenantId : tenantId,
+              tier: typeof ctx?.tier === 'string' ? (ctx.tier as TenantTier) : tenantTier,
+              spentCents: typeof ctx?.spentCents === 'number' ? ctx.spentCents : 0,
+              capCents: typeof ctx?.capCents === 'number' ? ctx.capCents : 0,
+              yyyyMm: typeof ctx?.yyyyMm === 'string' ? ctx.yyyyMm : undefined,
+            }),
+          ).catch((err: unknown) => {
+            deps.logger?.warn?.('llm-meter.onBudgetExceeded.error', {
+              message: err instanceof Error ? err.message : String(err),
+            });
+          });
+        }
+        return toErrorResponse(e);
+      }
       return toErrorResponse(
         new InternalError('tenant budget check failed', { error: e instanceof Error ? e.message : String(e) }),
       );
