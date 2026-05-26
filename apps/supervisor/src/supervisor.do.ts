@@ -416,7 +416,8 @@ export class SupervisorDO {
     // Check if all steps succeeded
     const allSucceeded = receipts.every((r) => r.result.ok);
     const now = Date.now();
-    const runId = `${templateId}-${version}-${now}`;
+    // UUID run IDs so factory_runs_mirror (UUID PK) can store them verbatim.
+    const runId = crypto.randomUUID();
 
     // If execution succeeded and acceptance_gate is set, run verifier
     if (allSucceeded && template.acceptance_gate) {
@@ -448,6 +449,7 @@ export class SupervisorDO {
 
     // Insert run record into supervisor_runs
     const runStatus = allSucceeded ? 'passed' : 'failed_execution';
+    const finishedAt = Date.now();
     const runStmt = this.env.MEMORY.prepare(
       `INSERT INTO supervisor_runs
        (id, template_id, template_version, description, source, status, dry_run, started_at, finished_at)
@@ -462,7 +464,7 @@ export class SupervisorDO {
       runStatus,
       0, // not a dry run (checked earlier)
       now,
-      Date.now(),
+      finishedAt,
     );
     await runStmt.all();
 
@@ -497,6 +499,21 @@ export class SupervisorDO {
         await updateStmt.all();
       }
     }
+
+    // Push-on-write: best-effort notify factory-core-api of the terminal state.
+    // Never throws — a push failure does not mask the run result.
+    await pushRunToFactoryCoreApi(this.env, {
+      id: runId,
+      templateId,
+      templateVersion: version,
+      description,
+      source,
+      status: runStatus,
+      dryRun: false,
+      prUrl,
+      startedAt: now,
+      finishedAt,
+    });
 
     // Log all receipts to D1 (only if execution succeeded and verification passed if applicable)
     for (const receipt of receipts) {
@@ -569,5 +586,73 @@ export class SupervisorDO {
     } catch (err) {
       console.error('[supervisor] releaseLock error:', err);
     }
+  }
+}
+
+/**
+ * Best-effort push of a terminal run record to factory-core-api /v1/runs/mirror.
+ * Never throws — a push failure must never mask the run result.
+ */
+async function pushRunToFactoryCoreApi(
+  env: Env,
+  run: {
+    id: string;
+    templateId: string;
+    templateVersion: number;
+    description: string;
+    source: string;
+    status: string;
+    dryRun: boolean;
+    prUrl: string | null;
+    startedAt: number;
+    finishedAt: number;
+  },
+): Promise<void> {
+  const baseUrl = env.FACTORY_CORE_API_URL;
+  const pushKey = env.SUPERVISOR_PUSH_KEY;
+  if (!baseUrl || !pushKey) return;
+
+  try {
+    const resp = await fetch(`${baseUrl}/v1/runs/mirror`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${pushKey}`,
+      },
+      body: JSON.stringify({
+        id: run.id,
+        template_id: run.templateId,
+        template_version: run.templateVersion,
+        description: run.description,
+        source: run.source,
+        status: run.status,
+        dry_run: run.dryRun,
+        pr_url: run.prUrl,
+        started_at: new Date(run.startedAt).toISOString(),
+        finished_at: new Date(run.finishedAt).toISOString(),
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.warn(
+        JSON.stringify({
+          level: 'warn',
+          msg: 'push-on-write failed',
+          run_id: run.id,
+          http_status: resp.status,
+          body: text.slice(0, 200),
+        }),
+      );
+    }
+  } catch (err) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        msg: 'push-on-write error',
+        run_id: run.id,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
   }
 }

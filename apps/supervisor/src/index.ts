@@ -34,6 +34,10 @@ export interface Env {
   FACTORY_CROSS_REPO_URL?: string;
   /** factory-cross-repo Bearer token for authentication. Set via `wrangler secret put FACTORY_CROSS_REPO_TOKEN`. */
   FACTORY_CROSS_REPO_TOKEN?: string;
+  /** factory-core-api base URL for push-on-write run mirroring (P1.9). Set via `wrangler secret put FACTORY_CORE_API_URL`. */
+  FACTORY_CORE_API_URL?: string;
+  /** Service key for POST /v1/runs/mirror on factory-core-api. Set via `wrangler secret put SUPERVISOR_PUSH_KEY`. */
+  SUPERVISOR_PUSH_KEY?: string;
 }
 
 /**
