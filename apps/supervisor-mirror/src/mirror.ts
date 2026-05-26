@@ -152,14 +152,29 @@ export async function mirrorSupervisorRuns(
         finishedAt: row.finished_at != null ? new Date(row.finished_at) : undefined,
       });
       synced++;
-    } catch (_err) {
+    } catch (err) {
       errors++;
+      console.error(JSON.stringify({
+        level: 'error',
+        msg: 'upsert failed',
+        id: row.id,
+        error: err instanceof Error ? err.message : String(err),
+      }));
     }
   }
 
   // Audit trail: one ingest event per sync batch (only when D1 returned rows).
+  // Wrapped separately so an audit write failure does not mask successfully synced data.
   if (rows.length > 0) {
-    await ops.insertAuditEvent({ synced, errors, window_ms: windowMs, row_count: rows.length });
+    try {
+      await ops.insertAuditEvent({ synced, errors, window_ms: windowMs, row_count: rows.length });
+    } catch (err) {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        msg: 'audit event write failed',
+        error: err instanceof Error ? err.message : String(err),
+      }));
+    }
   }
 
   return { synced, skipped: rows.length - synced - errors, errors };

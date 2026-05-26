@@ -26,6 +26,7 @@ let upsertCalls: UpsertCall[] = [];
 let auditCalls: AuditCall[] = [];
 let upsertError: Error | null = null;
 let upsertErrorOnIndex = -1;
+let auditShouldThrow = false;
 
 function makeMockOps(): MirrorDbOps {
   return {
@@ -37,6 +38,7 @@ function makeMockOps(): MirrorDbOps {
       }
     },
     async insertAuditEvent(payload) {
+      if (auditShouldThrow) throw new Error('audit db error');
       auditCalls.push({ payload });
     },
   };
@@ -44,11 +46,11 @@ function makeMockOps(): MirrorDbOps {
 
 // ── D1 mock helpers ───────────────────────────────────────────────────────────
 
-function makeD1(rows: unknown[], success = true): Env['SUPERVISOR_D1'] {
+function makeD1(rows: unknown[] | undefined, success = true): Env['SUPERVISOR_D1'] {
   return {
     prepare: () => ({
       bind: () => ({
-        all: async <T>() => ({ success, results: rows as T[], meta: {} as never }),
+        all: async <T>() => ({ success, results: rows as T[] | undefined, meta: {} as never }),
       }),
       first: async () => null,
       run: async () => ({ success: true, meta: {} as never }),
@@ -61,7 +63,7 @@ function makeD1(rows: unknown[], success = true): Env['SUPERVISOR_D1'] {
   } as unknown as Env['SUPERVISOR_D1'];
 }
 
-function makeEnv(rows: unknown[], d1Success = true): Env {
+function makeEnv(rows: unknown[] | undefined, d1Success = true): Env {
   return {
     DB: { connectionString: 'postgresql://ignored' },
     SUPERVISOR_D1: makeD1(rows, d1Success),
@@ -80,6 +82,7 @@ beforeEach(() => {
   auditCalls = [];
   upsertError = null;
   upsertErrorOnIndex = -1;
+  auditShouldThrow = false;
 });
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -146,5 +149,35 @@ describe('mirrorSupervisorRuns', () => {
   it('accepts a custom windowMs without throwing', async () => {
     const result = await mirrorSupervisorRuns(makeEnv(D1_ROWS), 30 * 60 * 1000, makeMockOps());
     expect(result.synced).toBe(3);
+  });
+
+  it('returns synced rows even when the audit event write fails', async () => {
+    auditShouldThrow = true;
+
+    const result = await mirrorSupervisorRuns(makeEnv(D1_ROWS), undefined, makeMockOps());
+
+    // upserts succeed; audit failure is swallowed with a warn log
+    expect(result).toEqual({ synced: 3, skipped: 0, errors: 0 });
+    expect(upsertCalls).toHaveLength(3);
+    expect(auditCalls).toHaveLength(0);
+  });
+
+  it('treats undefined D1 results as empty (covers results ?? [] branch)', async () => {
+    const result = await mirrorSupervisorRuns(makeEnv(undefined), undefined, makeMockOps());
+
+    expect(result).toEqual({ synced: 0, skipped: 0, errors: 0 });
+    expect(upsertCalls).toHaveLength(0);
+  });
+
+  it('handles non-Error thrown by upsertRun (covers String(err) branch)', async () => {
+    const ops: MirrorDbOps = {
+      async upsertRun() { throw 'string error'; },
+      async insertAuditEvent(payload) { auditCalls.push({ payload }); },
+    };
+
+    const result = await mirrorSupervisorRuns(makeEnv(D1_ROWS), undefined, ops);
+
+    expect(result.errors).toBe(3);
+    expect(result.synced).toBe(0);
   });
 });
