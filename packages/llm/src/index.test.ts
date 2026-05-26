@@ -1259,7 +1259,7 @@ describe('onRecord metering callback', () => {
     );
     expect(result.error).toBeNull();
     expect(onRecord).toHaveBeenCalledOnce();
-    const row = onRecord.mock.calls[0][0] as LLMRecordRow;
+    const row = onRecord.mock.calls[0]![0] as LLMRecordRow;
     expect(row.project).toBe('test-proj');
     expect(row.actor).toBe('test-actor');
     expect(row.runId).toBe('run-1');
