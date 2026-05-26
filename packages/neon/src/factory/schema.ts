@@ -10,7 +10,7 @@
  * /migrations/0102_ingest_source_event_unique.sql (partial unique index for
  * race-safe ingest dedup).
  */
-import { pgTable, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, pgView, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ── factory_events_ingest ────────────────────────────────────────────────────
@@ -276,3 +276,40 @@ export const factoryRunsMirror = pgTable('factory_runs_mirror', {
 export type FactoryRunsMirror = typeof factoryRunsMirror.$inferSelect;
 /** Drizzle inferred insert type for `factory_runs_mirror`. */
 export type NewFactoryRunsMirror = typeof factoryRunsMirror.$inferInsert;
+
+// ── factory_runs_v (read-only join view) ─────────────────────────────────────
+
+/**
+ * `factory_runs_v` — supervisor runs enriched with gate counts and latest
+ * deploy-url artifact. Created by migration 0104_factory_runs_v.sql.
+ *
+ * Joins `factory_runs_mirror` with `factory_gates_latest` (gate aggregate
+ * counts per run) and `factory_artifacts` (most recent deploy-url).
+ * Use this view for the Command Center "Runs" list screen.
+ */
+export const factoryRunsV = pgView('factory_runs_v').as((qb) =>
+  qb
+    .select({
+      id: factoryRunsMirror.id,
+      templateId: factoryRunsMirror.templateId,
+      templateVersion: factoryRunsMirror.templateVersion,
+      description: factoryRunsMirror.description,
+      source: factoryRunsMirror.source,
+      status: factoryRunsMirror.status,
+      dryRun: factoryRunsMirror.dryRun,
+      prUrl: factoryRunsMirror.prUrl,
+      startedAt: factoryRunsMirror.startedAt,
+      finishedAt: factoryRunsMirror.finishedAt,
+      mirroredAt: factoryRunsMirror.mirroredAt,
+    })
+    .from(factoryRunsMirror),
+);
+
+/** TypeScript row shape for `factory_runs_v`. */
+export type FactoryRunsV = typeof factoryRunsV.$inferSelect & {
+  gatesPassed: number;
+  gatesFailed: number;
+  gatesPending: number;
+  lastGateObservedAt: Date | null;
+  deployUrl: string | null;
+};
