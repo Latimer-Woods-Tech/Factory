@@ -6,9 +6,11 @@
  *   - factory_gates          gate state transitions; latest/blocking views
  *   - factory_artifacts      catalog of run outputs
  *
- * Migrations live in /migrations/0101_factory_read_layer.sql.
+ * Migrations live in /migrations/0101_factory_read_layer.sql and
+ * /migrations/0102_ingest_source_event_unique.sql (partial unique index for
+ * race-safe ingest dedup).
  */
-import { pgTable, text, uuid, integer, bigint, jsonb, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ── factory_events_ingest ────────────────────────────────────────────────────
@@ -61,7 +63,17 @@ export const factoryEventsIngest = pgTable('factory_events_ingest', {
 
   observedAt: timestamp('observed_at', { withTimezone: true }).notNull(),
   ingestedAt: timestamp('ingested_at', { withTimezone: true }).notNull().default(sql`now()`),
-});
+}, (t) => [
+  // Partial unique index: race-safe idempotency backstop for the two-step
+  // ingest dedup. `source_event_id` is nullable and many rows legitimately
+  // carry NULL, so the constraint is partial (only enforced when an ID is
+  // present). This is the real guarantee behind the route-level
+  // check-then-insert fast path, which alone is a TOCTOU race under
+  // concurrent writers. Mirror SQL: migrations/0102_ingest_source_event_unique.sql.
+  uniqueIndex('ux_events_source_event_id')
+    .on(t.sourceSystem, t.sourceEventId)
+    .where(sql`source_event_id IS NOT NULL`),
+]);
 
 /** Drizzle inferred select type for `factory_events_ingest`. */
 export type FactoryEventIngest = typeof factoryEventsIngest.$inferSelect;
