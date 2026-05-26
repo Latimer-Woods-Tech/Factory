@@ -51,8 +51,15 @@
   "env": {
     "production": {
       "name": "factory-core-api",
-      // Custom domain (api.factory.latwood-tech.internal) + service-registry
-      // entry are added with the deploy workflow in the Phase A targeting step.
+      // Branded custom domain (zone latwoodtech.work). Reached server-to-server by
+      // the supervisor push-on-write (P1.9) and by GitHub Actions OIDC token exchange.
+      "routes": [
+        { "pattern": "core.latwoodtech.work", "custom_domain": true }
+      ],
+      // Hyperdrive is a non-inheritable binding — must be repeated per environment.
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
       "vars": {
         "ENVIRONMENT": "production",
         "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
@@ -62,6 +69,9 @@
     },
     "staging": {
       "name": "factory-core-api-staging",
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
       "vars": {
         "ENVIRONMENT": "staging",
         "OIDC_ISSUER": "https://token.actions.githubusercontent.com",

@@ -421,17 +421,68 @@ def dim_security(repo: str) -> DimensionScore:
     return DimensionScore("security", "Security", 15, score_from_checks(checks), checks)
 
 
-def dim_schema(repo: str) -> DimensionScore:
+def check_rollback_blocks(
+    migration_files: list[dict[str, Any]],
+    changed_files: set[str],
+    repo: str,
+) -> tuple[list[str], list[str]]:
+    """
+    Check every SQL migration file for a ``-- ROLLBACK:`` comment block.
+
+    Rules
+    -----
+    * The marker is ``-- ROLLBACK:`` (case-insensitive), anywhere in the file.
+    * ``-- ROLLBACK: NONE -- ADR-XXX`` is valid (irreversible migration documented
+      via an ADR reference).
+    * A migration whose *path* appears in ``changed_files`` is considered **new**
+      (added in the current PR).  New migrations without the block are **errors**
+      (the dimension check fails).
+    * Pre-existing migrations without the block are **warnings** (debt; not
+      blocking the conformance score, but surfaced in the report).
+
+    Returns
+    -------
+    errors   : list of file paths for new migrations missing the block
+    warnings : list of file paths for existing migrations missing the block
+    """
+    ROLLBACK_RE = re.compile(r"--\s*ROLLBACK\s*:", re.IGNORECASE)
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    sql_files = [m for m in migration_files if m.get("name", "").endswith(".sql")]
+    for item in sql_files:
+        path = item.get("path", "")
+        content = gh_get_file(repo, path) or ""
+        if ROLLBACK_RE.search(content):
+            continue  # block found — passes
+        if path in changed_files:
+            errors.append(path)
+        else:
+            warnings.append(path)
+
+    return errors, warnings
+
+
+def dim_schema(repo: str, changed_files: set[str] | None = None) -> DimensionScore:
+    if changed_files is None:
+        changed_files = set()
     migrations = gh_list_dir(repo, "migrations") + gh_list_dir(repo, "src/db/migrations")
-    sample = ""
-    if migrations:
-        sample_path = next((m["path"] for m in migrations if m.get("name", "").endswith(".sql")), None)
-        if sample_path:
-            sample = gh_get_file(repo, sample_path) or ""
+
+    rollback_errors, rollback_warnings = check_rollback_blocks(migrations, changed_files, repo)
+
+    rollback_passed = len(rollback_errors) == 0
+    rollback_detail = ""
+    if rollback_errors:
+        rollback_detail = f"New migrations missing -- ROLLBACK: block: {', '.join(rollback_errors)}"
+    elif rollback_warnings:
+        rollback_detail = (
+            f"WARN: {len(rollback_warnings)} existing migration(s) missing -- ROLLBACK: block "
+            f"(debt — not blocking): {', '.join(rollback_warnings)}"
+        )
 
     checks = [
         check("Migrations directory present",  len(migrations) > 0),
-        check("ROLLBACK block in sample",      "-- ROLLBACK" in sample if sample else False),
+        check("ROLLBACK block enforced",       rollback_passed, rollback_detail),
         check("Numbered file naming",          any(re.match(r"^\d{4}_", m.get("name", "")) for m in migrations)),
     ]
     return DimensionScore("schema", "Schema", 5, score_from_checks(checks), checks)
