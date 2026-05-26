@@ -143,4 +143,41 @@ describe('POST /v1/artifacts', () => {
     expect(mockDb.markFailed).toHaveBeenCalledWith('evt-art-456', 'unique constraint');
     expect(mockDb.markDerived).not.toHaveBeenCalled();
   });
+
+  describe('source_event_id idempotency', () => {
+    const BODY_WITH_ID = { ...VALID_BODY, source_event_id: 'render-run-12345-video' };
+
+    it('201 + ingests when source_event_id is new', async () => {
+      const token = await mintToken();
+      const res = await app.fetch(artifactRequest(token, BODY_WITH_ID), baseEnv(), makeCtx());
+      expect(res.status).toBe(201);
+      expect(mockDb.findEventBySourceId).toHaveBeenCalledWith(
+        'video-pipeline',
+        'render-run-12345-video',
+      );
+      expect(mockDb.insertEvent).toHaveBeenCalledOnce();
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceEventId: 'render-run-12345-video',
+      });
+    });
+
+    it('200 + returns existing event without re-inserting on duplicate source_event_id', async () => {
+      vi.mocked(mockDb.findEventBySourceId).mockResolvedValue({ id: 'evt-existing-999' });
+      const token = await mintToken();
+      const res = await app.fetch(artifactRequest(token, BODY_WITH_ID), baseEnv(), makeCtx());
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body['ok']).toBe(true);
+      expect(body['event_id']).toBe('evt-existing-999');
+      expect(mockDb.insertEvent).not.toHaveBeenCalled();
+      expect(mockDb.insertArtifact).not.toHaveBeenCalled();
+    });
+
+    it('does not consult the idempotency index when source_event_id is omitted', async () => {
+      const token = await mintToken();
+      const res = await app.fetch(artifactRequest(token, VALID_BODY), baseEnv(), makeCtx());
+      expect(res.status).toBe(201);
+      expect(mockDb.findEventBySourceId).not.toHaveBeenCalled();
+    });
+  });
 });
