@@ -17,8 +17,7 @@
 set -euo pipefail
 
 PROJECT="factory-495015"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ROOT="$HOME/.claude/scripts"
 
 # Fail-open guards
 if ! command -v node >/dev/null 2>&1; then
@@ -41,7 +40,7 @@ if [ -z "${GCP_SA_KEY:-}" ]; then
   exit 0
 fi
 
-TOKEN="$(node "$ROOT/scripts/gcp-token.mjs" 2>&1)" || {
+TOKEN="$(node "$ROOT/gcp-token.mjs" 2>&1)" || {
   echo ""
   echo "┌─────────────────────────────────────────────────────────────────────┐"
   echo "│ ❌ GCP token exchange failed.                                        │"
