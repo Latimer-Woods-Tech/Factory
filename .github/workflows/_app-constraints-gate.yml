@@ -1,0 +1,175 @@
+# =============================================================================
+# Reusable Constraints Gate — Better Gate Layer 1.
+#
+# WHAT IT DOES
+#   Runs constraints-check.mjs on the PR diff. Checks for CLAUDE.md hard
+#   constraint violations (process.env, Buffer, node: imports, require(),
+#   workers.dev in UI files, .cjs files in src/). Posts a review comment on
+#   the PR listing any violations. Exits 1 on errors.
+#
+#   On completion, posts a gate row to factory-core-api POST /v1/gates if
+#   FACTORY_CORE_API_URL is configured. The gate write is best-effort and
+#   does NOT affect CI status if it fails.
+#
+# HOW TO CALL (from another repo's workflow)
+#   jobs:
+#     constraints:
+#       uses: Latimer-Woods-Tech/factory/.github/workflows/_app-constraints-gate.yml@main
+#       secrets: inherit
+#
+# HOW TO CALL (with custom API URL)
+#   jobs:
+#     constraints:
+#       uses: Latimer-Woods-Tech/factory/.github/workflows/_app-constraints-gate.yml@main
+#       with:
+#         factory_core_api_url: https://factory-core-api.adrper79.workers.dev
+#       secrets: inherit
+#
+# REQUIRED SECRETS (via secrets: inherit)
+#   GITHUB_TOKEN   — to read PR diff and post review comment
+#
+# OPTIONAL SECRETS (gate-write path)
+#   FACTORY_CORE_API_URL — if set, exchanges OIDC for scoped JWT and posts
+#                          a gate row; silently skipped if absent.
+#
+# RELATED
+#   docs/architecture/ADMIN_TECHNICAL_GUIDE.md §2.1 (Better Gate Layer 1)
+#   docs/architecture/ADMIN_BUILD_PLAN.md P1.4
+# =============================================================================
+
+name: _app-constraints-gate
+
+on:
+  workflow_call:
+    inputs:
+      factory_core_api_url:
+        description: 'factory-core-api base URL for gate ingest. Omit to skip gate write.'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  constraints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Fetch constraint check script
+        run: |
+          # Use the local copy if running inside the Factory repo (e.g. on a
+          # PR that modifies this script itself). Download the canonical version
+          # from Factory main when called from external repos.
+          SCRIPT=".github/scripts/constraints-check.mjs"
+          if [ ! -f "$SCRIPT" ]; then
+            curl -sSfL \
+              "https://raw.githubusercontent.com/Latimer-Woods-Tech/factory/main/.github/scripts/constraints-check.mjs" \
+              -o /tmp/constraints-check.mjs
+            SCRIPT="/tmp/constraints-check.mjs"
+          fi
+          echo "CONSTRAINT_SCRIPT=$SCRIPT" >> "$GITHUB_ENV"
+
+      - name: Run constraint check
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set +e
+          node "$CONSTRAINT_SCRIPT" > /tmp/constraint-report.json 2>&1
+          EXIT_CODE=$?
+          set -e
+
+          cat /tmp/constraint-report.json
+
+          # Parse summary fields for the gate evidence
+          ERRORS=$(jq '.errors // 0' /tmp/constraint-report.json 2>/dev/null || echo 0)
+          WARNINGS=$(jq '.warnings // 0' /tmp/constraint-report.json 2>/dev/null || echo 0)
+          echo "errors=$ERRORS" >> "$GITHUB_OUTPUT"
+          echo "warnings=$WARNINGS" >> "$GITHUB_OUTPUT"
+          echo "state=$([ $EXIT_CODE -eq 0 ] && echo passed || echo failed)" >> "$GITHUB_OUTPUT"
+          echo "observed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+          exit $EXIT_CODE
+
+      - name: Post gate row to factory-core-api
+        if: always() && inputs.factory_core_api_url != ''
+        continue-on-error: true
+        env:
+          FACTORY_CORE_API_URL: ${{ inputs.factory_core_api_url }}
+          GATE_STATE: ${{ steps.check.outputs.state }}
+          GATE_ERRORS: ${{ steps.check.outputs.errors }}
+          GATE_WARNINGS: ${{ steps.check.outputs.warnings }}
+          GATE_OBSERVED_AT: ${{ steps.check.outputs.observed_at }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # Exchange GitHub OIDC token for a scoped factory JWT.
+          OIDC_TOKEN=$(curl -sSf \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=factory-core-api" \
+            | jq -r '.value')
+
+          SCOPED_RESPONSE=$(curl -sf -X POST "$FACTORY_CORE_API_URL/v1/auth/token" \
+            -H "Authorization: Bearer $OIDC_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"audience":"gates-constraints"}' || echo '{}')
+
+          SCOPED_JWT=$(echo "$SCOPED_RESPONSE" | jq -r '.token // empty')
+          if [ -z "$SCOPED_JWT" ]; then
+            echo "::warning::Could not obtain scoped JWT — gate row not written."
+            exit 0
+          fi
+
+          # POST the gate row.
+          PAYLOAD=$(jq -n \
+            --arg gt "constraints" \
+            --arg ss "github-actions" \
+            --arg sr "$RUN_URL" \
+            --arg st "pr" \
+            --arg sre "$REPO" \
+            --arg srf "$PR_NUMBER" \
+            --arg state "$GATE_STATE" \
+            --arg eu "$RUN_URL" \
+            --argjson errors "$GATE_ERRORS" \
+            --argjson warnings "$GATE_WARNINGS" \
+            --arg oa "$GATE_OBSERVED_AT" \
+            '{
+              gate_type: $gt,
+              source_system: $ss,
+              source_ref: $sr,
+              subject_type: $st,
+              subject_repo: $sre,
+              subject_ref: $srf,
+              state: $state,
+              evidence_url: $eu,
+              evidence_summary: { errors: $errors, warnings: $warnings },
+              observed_at: $oa
+            }')
+
+          HTTP_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+            -X POST "$FACTORY_CORE_API_URL/v1/gates" \
+            -H "Authorization: Bearer $SCOPED_JWT" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" || echo "000")
+
+          if [ "$HTTP_STATUS" = "201" ]; then
+            echo "✓ Gate row written (state: $GATE_STATE, errors: $GATE_ERRORS, warnings: $GATE_WARNINGS)"
+          else
+            echo "::warning::Gate write returned HTTP $HTTP_STATUS — row may not have been written."
+          fi
