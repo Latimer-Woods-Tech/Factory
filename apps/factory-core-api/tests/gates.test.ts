@@ -147,4 +147,46 @@ describe('POST /v1/gates', () => {
     expect(mockDb.markFailed).toHaveBeenCalledWith('evt-abc-123', 'DB constraint violation');
     expect(mockDb.markDerived).not.toHaveBeenCalled();
   });
+
+  describe('WEBHOOK_FANOUT_INGEST_KEY service-key auth', () => {
+    const SERVICE_KEY = 'svc-webhook-fanout-key-abcdef0123456789';
+
+    it('201 when authenticated with the service key (no JWT, no aud check)', async () => {
+      const res = await app.fetch(
+        gateRequest(SERVICE_KEY, VALID_BODY),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(201);
+      const body = await res.json() as Record<string, unknown>;
+      expect(body['event_id']).toBe('evt-abc-123');
+      expect(mockDb.insertEvent).toHaveBeenCalledOnce();
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        ingestActor: 'service:webhook-fanout',
+      });
+    });
+
+    it('201 with the service key for any gate_type (bypasses per-type aud)', async () => {
+      const res = await app.fetch(
+        gateRequest(SERVICE_KEY, { ...VALID_BODY, gate_type: 'codeowner-review' }),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(201);
+    });
+
+    it('401 when bearer is neither a valid JWT nor the service key', async () => {
+      const res = await app.fetch(
+        gateRequest('not-the-key-and-not-a-jwt', VALID_BODY),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it('does not honour the service key when WEBHOOK_FANOUT_INGEST_KEY is unset', async () => {
+      const res = await app.fetch(gateRequest(SERVICE_KEY, VALID_BODY), baseEnv(), makeCtx());
+      expect(res.status).toBe(401);
+    });
+  });
 });
