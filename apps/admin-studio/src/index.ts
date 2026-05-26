@@ -53,6 +53,7 @@ import dsr from './routes/dsr.js';
 import privacy from './routes/privacy.js';
 import { flagship } from './routes/flagship.js';
 import blocking from './routes/blocking.js';
+import commandCenter from './routes/command-center.js';
 
 const app = new Hono<AppEnv>();
 
@@ -171,6 +172,7 @@ app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
 app.use('/v1/blocking/*', envContextMiddleware());
+app.use('/v1/command-center/*', envContextMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -194,6 +196,7 @@ app.route('/dsr', dsr);
 app.route('/privacy', privacy);
 app.route('/api/flags', flagship);
 app.route('/v1/blocking', blocking);
+app.route('/v1/command-center', commandCenter);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {

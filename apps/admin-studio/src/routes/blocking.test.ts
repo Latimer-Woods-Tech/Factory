@@ -16,7 +16,7 @@ const mockExecute = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(createDb).mockReturnValue({ execute: mockExecute } as ReturnType<typeof createDb>);
+  vi.mocked(createDb).mockReturnValue({ execute: mockExecute } as unknown as ReturnType<typeof createDb>);
 });
 
 const FAKE_GATE = {

@@ -11,7 +11,7 @@ import { createDb, sql } from '@latimer-woods-tech/neon';
 import type { AppEnv } from '../types.js';
 
 /** Minimal shape of a blocking gate row returned by factory_gates_blocking. */
-export interface BlockingGate {
+export interface BlockingGate extends Record<string, unknown> {
   id: string;
   gate_type: string;
   source_system: string;
