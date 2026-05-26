@@ -65,7 +65,7 @@ let mockDb: IngestDb;
 beforeEach(() => {
   mockDb = {
     findEventBySourceId: vi.fn().mockResolvedValue(null),
-    insertEvent: vi.fn().mockResolvedValue({ id: 'evt-art-456' }),
+    insertEvent: vi.fn().mockResolvedValue({ id: 'evt-art-456', inserted: true }),
     insertGate: vi.fn().mockResolvedValue(undefined),
     insertArtifact: vi.fn().mockResolvedValue(undefined),
     markDerived: vi.fn().mockResolvedValue(undefined),
@@ -178,6 +178,21 @@ describe('POST /v1/artifacts', () => {
       const res = await app.fetch(artifactRequest(token, VALID_BODY), baseEnv(), makeCtx());
       expect(res.status).toBe(201);
       expect(mockDb.findEventBySourceId).not.toHaveBeenCalled();
+    });
+
+    it('200 + no duplicate artifact when a concurrent writer wins the insert race', async () => {
+      // Fast-path lookup misses (TOCTOU window), but the DB unique index fires:
+      // insertEvent reports inserted=false and derivation must be skipped.
+      vi.mocked(mockDb.findEventBySourceId).mockResolvedValue(null);
+      vi.mocked(mockDb.insertEvent).mockResolvedValue({ id: 'race-art-evt', inserted: false });
+      const token = await mintToken();
+      const bodyWithSourceId = { ...VALID_BODY, source_event_id: 'render-job-concurrent' };
+      const res = await app.fetch(artifactRequest(token, bodyWithSourceId), baseEnv(), makeCtx());
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body['event_id']).toBe('race-art-evt');
+      expect(mockDb.insertArtifact).not.toHaveBeenCalled();
+      expect(mockDb.markDerived).not.toHaveBeenCalled();
     });
   });
 });

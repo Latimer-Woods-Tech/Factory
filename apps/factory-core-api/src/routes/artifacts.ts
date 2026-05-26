@@ -4,9 +4,11 @@
  * Auth: Bearer scoped JWT where aud starts with 'artifacts-'. Workflow runs
  * (e.g. render-video.yml) obtain such a token by exchanging their GitHub OIDC
  * token at `/v1/auth/token` with `{ "audience": "artifacts-video" }`.
- * Idempotency: if `source_event_id` is provided and an event with that ID
- * already exists, returns the existing event_id without re-inserting — so a
- * retried workflow step (same run id / R2 key) dedupes server-side.
+ * Idempotency: if `source_event_id` is provided and an event with that
+ * (source_system, source_event_id) already exists, returns the existing
+ * event_id without re-inserting — so a retried workflow step (same run id /
+ * R2 key) dedupes server-side. The DB-level partial unique index makes this
+ * race-safe even under concurrent writers.
  */
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -65,14 +67,16 @@ export function createArtifactsRouter(): Hono<{ Bindings: Env }> {
 
     const db = createIngestDb(c.env.DB as { connectionString: string });
 
-    // Idempotency: if source_event_id already exists, return it. Lets a retried
-    // render workflow step POST the same artifact without creating duplicates.
+    // Idempotency fast path: if source_event_id already exists, return it. Lets
+    // a retried render workflow step POST the same artifact without creating
+    // duplicates. The DB unique index + ON CONFLICT in twoStepIngest is the
+    // real backstop under concurrency.
     if (body.source_event_id) {
       const existing = await db.findEventBySourceId('video-pipeline', body.source_event_id);
       if (existing) return c.json({ ok: true, event_id: existing.id });
     }
 
-    const eventId = await twoStepIngest(
+    const { eventId, created } = await twoStepIngest(
       db,
       {
         sourceSystem: 'video-pipeline',
@@ -103,7 +107,9 @@ export function createArtifactsRouter(): Hono<{ Bindings: Env }> {
       },
     );
 
-    return c.json({ ok: true, event_id: eventId }, 201);
+    // 201 for a freshly inserted event; 200 when the DB unique index detected a
+    // duplicate source_event_id under concurrency (derivation was skipped).
+    return c.json({ ok: true, event_id: eventId }, created ? 201 : 200);
   });
 
   return router;

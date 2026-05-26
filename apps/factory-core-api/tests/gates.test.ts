@@ -67,7 +67,7 @@ let mockDb: IngestDb;
 beforeEach(() => {
   mockDb = {
     findEventBySourceId: vi.fn().mockResolvedValue(null),
-    insertEvent: vi.fn().mockResolvedValue({ id: 'evt-abc-123' }),
+    insertEvent: vi.fn().mockResolvedValue({ id: 'evt-abc-123', inserted: true }),
     insertGate: vi.fn().mockResolvedValue(undefined),
     insertArtifact: vi.fn().mockResolvedValue(undefined),
     markDerived: vi.fn().mockResolvedValue(undefined),
@@ -188,5 +188,22 @@ describe('POST /v1/gates', () => {
       const res = await app.fetch(gateRequest(SERVICE_KEY, VALID_BODY), baseEnv(), makeCtx());
       expect(res.status).toBe(401);
     });
+  });
+
+  it('200 + existing event_id when a concurrent writer wins the insert race', async () => {
+    // Fast-path lookup misses (TOCTOU window), but the DB unique index fires:
+    // insertEvent reports inserted=false and resolves the existing row.
+    vi.mocked(mockDb.findEventBySourceId).mockResolvedValue(null);
+    vi.mocked(mockDb.insertEvent).mockResolvedValue({ id: 'race-winner-evt', inserted: false });
+    const token = await mintToken('ci');
+    const bodyWithSourceId = { ...VALID_BODY, source_event_id: 'gh-run-concurrent' };
+    const res = await app.fetch(gateRequest(token, bodyWithSourceId), baseEnv(), makeCtx());
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, unknown>;
+    expect(body['ok']).toBe(true);
+    expect(body['event_id']).toBe('race-winner-evt');
+    // Derivation must NOT run again — the derived gate row already exists.
+    expect(mockDb.insertGate).not.toHaveBeenCalled();
+    expect(mockDb.markDerived).not.toHaveBeenCalled();
   });
 });
