@@ -36,7 +36,7 @@ jobs:
       # separate long-lived PAT.
       - name: Mint Factory App token (5 repos)
         id: app
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
