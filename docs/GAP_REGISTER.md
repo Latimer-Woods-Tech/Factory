@@ -41,7 +41,7 @@ Source synthesis: `documents/factory/2026-05-11_HOLISTIC_GAP_REVIEW.md` (Sauna-s
 | ID | Gap | Status | Owner | Target | Fix mechanism |
 |---|---|---|---|---|---|
 | G14 | No retro mechanism for missed milestones | open | @adrper79-dot | continuous | Mandatory `documents/factory/retros/YYYY-MM-DD_milestone-NN_retro.md` after any milestone that misses exit criteria |
-| G15 | Monday review is a placeholder (no agenda template) | open | @adrper79-dot | stage-0 follow-up | `docs/MONDAY_REVIEW_TEMPLATE.md` — agenda: digest review (5m), milestone exit check (10m), drift triage (5m), customer signal review (5m), kickoff next milestone (5m) |
+| G15 | Monday review is a placeholder (no agenda template) | **closed** | @adrper79-dot | stage-0 follow-up | `docs/MONDAY_REVIEW_TEMPLATE.md` created: 5 sections (digest review, milestone exit check, drift triage, customer signal review, next-week kickoff), 30-min agenda. Branch `claude/dazzling-brahmagupta-RcOz7`. |
 | G16 | No customer feedback loop in the system | open | @sauna | stage-2 | Email forwarding into triage workflow; cancellation reasons from Stripe; NPS micro-survey; aggregated into daily digest |
 | G17 | No competitive intel watch | open | @sauna | continuous | Quarterly: sub-agent watches competitor changelogs / X feeds / G2 reviews |
 | G18 | No domain/IP/legal tracker | open | @adrper79-dot | stage-5 | `documents/factory/LEGAL_OPS.md` — domains + renewal dates, trademark status, ToS/PP version per product, tax registration per state |
