@@ -9,17 +9,18 @@ import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'reac
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { EnvironmentBanner } from '../components/EnvironmentBanner.js';
-import { 
-  LayoutDashboard, 
-  TestTube, 
-  Code2, 
-  Bot, 
-  Zap, 
-  Wrench, 
-  BookOpen, 
-  Clock, 
-  Flag, 
+import {
+  LayoutDashboard,
+  TestTube,
+  Code2,
+  Bot,
+  Zap,
+  Wrench,
+  BookOpen,
+  Clock,
+  Flag,
   ShieldCheck,
+  AlertTriangle,
   Menu,
   X
 } from 'lucide-react';
@@ -34,6 +35,7 @@ const TimelineTab = lazy(() => import('./tabs/TimelineTab.js').then(m => ({ defa
 const FlagsTab = lazy(() => import('./tabs/FlagsTab.js').then(m => ({ default: m.FlagsTab })));
 const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').then(m => ({ default: m.TrainingLibraryTab })));
 const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
+const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
 
 const TABS = [
   { to: '/overview',  label: 'Overview', icon: LayoutDashboard },
@@ -46,6 +48,7 @@ const TABS = [
   { to: '/timeline',  label: 'Timeline', icon: Clock },
   { to: '/flags',     label: 'Flags', icon: Flag },
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
+  { to: '/command-center', label: 'Command Center', icon: AlertTriangle },
 ];
 
 // Mobile bottom nav shows first 4 tabs, rest go in "More"
@@ -114,6 +117,7 @@ export function Dashboard() {
               <Route path="/timeline" element={<TimelineTab />} />
               <Route path="/flags" element={<FlagsTab />} />
               <Route path="/audit" element={<AuditTab />} />
+              <Route path="/command-center" element={<CommandCenterTab />} />
             </Routes>
           </Suspense>
         </main>

@@ -52,6 +52,7 @@ import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.j
 import dsr from './routes/dsr.js';
 import privacy from './routes/privacy.js';
 import { flagship } from './routes/flagship.js';
+import blocking from './routes/blocking.js';
 
 const app = new Hono<AppEnv>();
 
@@ -169,6 +170,7 @@ app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
 app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
+app.use('/v1/blocking/*', envContextMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -191,6 +193,7 @@ app.route('/api/admin/payouts', payouts);
 app.route('/dsr', dsr);
 app.route('/privacy', privacy);
 app.route('/api/flags', flagship);
+app.route('/v1/blocking', blocking);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
