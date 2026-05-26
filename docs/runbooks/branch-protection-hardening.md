@@ -8,13 +8,18 @@ self-healing layer for ops-critical GitHub state that has historically drifted
 
 | # | Dimension | API path | Canonical file | Behavior on drift |
 | - | --------- | -------- | -------------- | ----------------- |
-| 1 | `main` branch protection (legacy API) | `PUT /repos/{owner}/{repo}/branches/main/protection` | `.github/security/main-branch-protection.json` | Auto-repair (PUT canonical) + verify |
-| 2 | Classic Ruleset id `15843812` | `PUT /repos/{owner}/{repo}/rulesets/{id}` | `.github/security/main-ruleset.json` | Auto-repair (PUT canonical) + verify |
-| 3 | Org-level Copilot coding-agent enablement | `GET /orgs/{org}/copilot/coding-agent/permissions` | (no file — read-only verify) | Warn-only (no per-repo writer exists) |
+| 1 | Classic Ruleset id `15843812` | `PUT /repos/{owner}/{repo}/rulesets/{id}` | `.github/security/main-ruleset.json` | Auto-repair (PUT canonical) + verify |
+| 2 | Org-level Copilot coding-agent enablement | `GET /orgs/{org}/copilot/coding-agent/permissions` | (no file — read-only verify) | Warn-only (no per-repo writer exists) |
 
-> Dimensions 1 and 2 run in parallel because Factory currently has BOTH a
-> legacy branch-protection JSON AND a newer Ruleset targeting the same `main`
-> branch. Audit #602 §7 rec #4 is to consolidate; until then, both are locked.
+> **History (consolidation):** Factory previously ran a second dimension that
+> PUT `.github/security/main-branch-protection.json` against the legacy
+> `/branches/main/protection` API. PR #1000 brought the ruleset to parity-or-
+> better with that mechanism (added `dependency-review` + flipped
+> `required_review_thread_resolution` to `true`); the legacy half was retired
+> after an 8-hour parallel-enforcement soak with zero drift. The legacy
+> `/branches/main/protection` rules will sit unused on GitHub until an
+> operator runs `gh api repos/Latimer-Woods-Tech/Factory/branches/main/protection -X DELETE`
+> — not required for correctness; the ruleset enforces protection alone.
 
 ## What it does NOT cover
 
@@ -69,10 +74,9 @@ workflows' toggle is NOT API-controllable", verify the UI state at:
 
 ## How to update canonical config
 
-To change branch protection or the ruleset:
+To change the ruleset:
 
-1. Edit `.github/security/main-branch-protection.json` and/or
-   `.github/security/main-ruleset.json`.
+1. Edit `.github/security/main-ruleset.json`.
 2. Open a PR. CI does not test the PUT (we won't apply unmerged config).
 3. After merge, the next scheduled run (within 1h) will detect drift between
    the new canonical and live state, then PUT the canonical.
@@ -89,11 +93,6 @@ To change branch protection or the ruleset:
 If the workflow itself is broken or you need an immediate fix:
 
 ```bash
-# Branch protection
-gh api -X PUT repos/Latimer-Woods-Tech/Factory/branches/main/protection \
-  -H "Accept: application/vnd.github+json" \
-  --input <(jq 'del(._comment)' .github/security/main-branch-protection.json)
-
 # Ruleset
 gh api -X PUT repos/Latimer-Woods-Tech/Factory/rulesets/15843812 \
   -H "Accept: application/vnd.github+json" \

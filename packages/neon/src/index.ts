@@ -32,7 +32,7 @@ export type FactoryDb = Omit<HyperdriveDrizzleDb, 'execute'> & {
   ): Promise<FactoryQueryResult<TRow>>;
 };
 
-export { sql } from 'drizzle-orm';
+export { sql, eq, and } from 'drizzle-orm';
 
 /**
  * Minimal Cloudflare Hyperdrive-compatible binding shape.
@@ -142,3 +142,11 @@ export async function runMigrations(
  * Exports schema, service layer, and webhook handler.
  */
 export * from './entitlements/index.js';
+
+/**
+ * Factory read-layer schema — Admin Build Plan P1.2.
+ *
+ * Drizzle table definitions for `factory_events_ingest`, `factory_gates`,
+ * and `factory_artifacts`. SQL migration: migrations/0101_factory_read_layer.sql.
+ */
+export * from './factory/schema.js';
