@@ -32,12 +32,19 @@
     "production": {
       "name": "factory-events-replay",
       "workers_dev": false,
+      // Hyperdrive is a non-inheritable binding — must be repeated per environment.
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
       "vars": {
         "ENVIRONMENT": "production"
       }
     },
     "staging": {
       "name": "factory-events-replay-staging",
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
       "vars": {
         "ENVIRONMENT": "staging"
       }
