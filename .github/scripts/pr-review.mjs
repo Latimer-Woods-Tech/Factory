@@ -40,6 +40,10 @@ const {
   // Shape: Array<{ class: string; label: string; patterns: string[]; reviewers: string[] }>
   // When set, these entries are merged with (and override) the built-in defaults.
   REVIEWER_HINTS_MAP,
+  // Factory Core API — ingest gate rows for the Command Center (P2.3).
+  // Both vars are optional; gate writes are best-effort and never block reviews.
+  FACTORY_CORE_API_URL,
+  FACTORY_CORE_API_INGEST_KEY,
 } = process.env;
 
 const MAX_ATTEMPTS = parseInt(MAX_REVIEW_ATTEMPTS, 10);
@@ -1323,6 +1327,58 @@ async function main() {
   }
 
   console.log(`[DONE] ${repo}#${prNum} → ${decision}`);
+
+  // ─── Gate ingest (best-effort, non-blocking) ──────────────────────────────
+  // POST to factory-core-api so the Command Center reflects claude-review gate
+  // outcomes in near-real-time. Silently skipped when credentials are absent.
+  await postGateRow({
+    repo,
+    prNum,
+    prSha: PR_SHA ?? '',
+    tier,
+    decision,
+    violationCount: deterministicResult.violations.length +
+      (llmResult?.architectural_concerns?.length ?? 0),
+  }).catch(err => console.warn(`[WARN] Gate ingest skipped: ${err.message.slice(0, 120)}`));
+}
+
+/**
+ * Posts a claude-review gate row to factory-core-api (P2.3).
+ * Fire-and-forget: caller wraps in .catch() so failures never block the review.
+ */
+async function postGateRow({ repo, prNum, prSha, tier, decision, violationCount }) {
+  if (!FACTORY_CORE_API_URL || !FACTORY_CORE_API_INGEST_KEY) return;
+
+  const prUrl = `https://github.com/${ORG}/${repo}/pull/${prNum}`;
+  const state = decision === 'APPROVE' ? 'passed' : 'failed';
+
+  const body = {
+    gate_type: 'claude-review',
+    source_system: 'factory-cross-repo',
+    source_ref: prUrl,
+    source_event_id: `${repo}#PR-${prNum}@${prSha}`,
+    subject_type: 'pr',
+    subject_repo: `${ORG}/${repo}`,
+    subject_ref: String(prNum),
+    state,
+    evidence_url: prUrl,
+    evidence_summary: { tier, decision, violation_count: violationCount },
+    observed_at: new Date().toISOString(),
+  };
+
+  const res = await fetch(`${FACTORY_CORE_API_URL}/v1/gates`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${FACTORY_CORE_API_INGEST_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`factory-core-api ${res.status}: ${text.slice(0, 200)}`);
+  }
+  console.log(`[OK] Gate row posted: ${state} (violation_count=${violationCount})`);
 }
 
 main().catch(err => {
