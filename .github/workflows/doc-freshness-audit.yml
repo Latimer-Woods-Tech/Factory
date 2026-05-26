@@ -47,6 +47,36 @@ jobs:
           echo "## 📋 Documentation Freshness Audit" >> $GITHUB_STEP_SUMMARY
           cat audit-report.md >> $GITHUB_STEP_SUMMARY
 
+      - name: Ingest audit-report artifact
+        if: always()
+        env:
+          FACTORY_CORE_API_URL: ${{ vars.FACTORY_CORE_API_URL || '' }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY || '' }}
+        run: |
+          if [ -z "${FACTORY_CORE_API_URL:-}" ] || [ -z "${FACTORY_CORE_API_INGEST_KEY:-}" ]; then
+            echo "Skipping audit artifact ingest (FACTORY_CORE_API_URL or FACTORY_CORE_API_INGEST_KEY not set)"
+            exit 0
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(jq -n \
+            --arg at "audit-report" \
+            --arg pt "github-workflow" \
+            --arg pr "${{ github.run_id }}" \
+            --arg ss "github-actions" \
+            --arg sei "audit-doc-freshness-${{ github.repository }}-${{ github.run_id }}" \
+            --arg srepo "${{ github.repository }}" \
+            --arg uri "$RUN_URL" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg report_type "doc-freshness" \
+            '{artifact_type:$at,producer_type:$pt,producer_ref:$pr,source_system:$ss,
+              source_event_id:$sei,subject_repo:$srepo,uri:$uri,
+              metadata:{report_type:$report_type},observed_at:$ts}')
+          curl -s -o /dev/null -w "Audit-report artifact HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/artifacts" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$PAYLOAD" || echo "::warning::Audit-report artifact ingest failed (non-blocking)"
+
       - name: Open docs-debt issue if stale docs found
         # steps.audit.outcome is 'failure' when the script exits non-zero,
         # even though continue-on-error prevents the job from failing.
