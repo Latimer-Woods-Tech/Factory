@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type Stripe from 'stripe';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { createDb } from '@latimer-woods-tech/neon';
 
 import {
   createCheckoutSession,
@@ -9,10 +10,16 @@ import {
   getSubscription,
   priceToTier,
   stripeWebhookHandler,
+  transferOrIdempotent,
   validateWebhook,
   type StripeKVCache,
   type SubscriptionStatus,
 } from './index';
+
+vi.mock('@latimer-woods-tech/neon', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@latimer-woods-tech/neon')>();
+  return { ...real, createDb: vi.fn() };
+});
 
 interface FakeSubscription {
   status: Stripe.Subscription.Status;
@@ -790,5 +797,119 @@ describe('priceToTier', () => {
 
   it('returns "unknown" for an unmapped price ID', () => {
     expect(priceToTier('price_other', { price_pro: 'pro' })).toBe('unknown');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// transferOrIdempotent (P2.13h)
+// ---------------------------------------------------------------------------
+
+describe('transferOrIdempotent', () => {
+  const baseOpts = {
+    neonDb: { connectionString: 'postgres://test' },
+    idempotencyKey: 'idem-key-001',
+    destination: 'acct_1234',
+    amountCents: 5000,
+  };
+
+  function makeDb(overrides: {
+    insertRows?: Array<{ id: string }>;
+    selectRows?: Array<unknown>;
+  } = {}) {
+    const updateWhere = vi.fn().mockResolvedValue(undefined);
+    const updateSet = vi.fn().mockReturnValue({ where: updateWhere });
+    const update = vi.fn().mockReturnValue({ set: updateSet });
+    const selectLimit = vi.fn().mockResolvedValue(overrides.selectRows ?? []);
+    const selectWhere = vi.fn().mockReturnValue({ limit: selectLimit });
+    const selectFrom = vi.fn().mockReturnValue({ where: selectWhere });
+    const select = vi.fn().mockReturnValue({ from: selectFrom });
+    const insertReturning = vi.fn().mockResolvedValue(overrides.insertRows ?? [{ id: 'db-row-id' }]);
+    const insertOnConflict = vi.fn().mockReturnValue({ returning: insertReturning });
+    const insertValues = vi.fn().mockReturnValue({ onConflictDoNothing: insertOnConflict });
+    const insert = vi.fn().mockReturnValue({ values: insertValues });
+    return { insert, select, update };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls Stripe and returns transferId on fresh key', async () => {
+    const mockDb = makeDb({ insertRows: [{ id: 'db-row-id' }] });
+    vi.mocked(createDb).mockReturnValue(mockDb as unknown as ReturnType<typeof createDb>);
+
+    const fakeTransferCreate = vi.fn().mockResolvedValue({ id: 'tr_abc123' });
+    const fakeStripe = { transfers: { create: fakeTransferCreate } } as unknown as Stripe;
+
+    const result = await transferOrIdempotent({ ...baseOpts, stripeClient: fakeStripe });
+    expect(result).toEqual({ transferId: 'tr_abc123', isNew: true });
+    expect(fakeTransferCreate).toHaveBeenCalledWith(
+      { amount: 5000, currency: 'usd', destination: 'acct_1234', metadata: {} },
+      { idempotencyKey: 'idem-key-001' },
+    );
+  });
+
+  it('returns stored transferId on idempotent replay (status=success)', async () => {
+    const mockDb = makeDb({
+      insertRows: [],
+      selectRows: [{ status: 'success', stripeResponse: { id: 'tr_existing' }, stripeError: null }],
+    });
+    vi.mocked(createDb).mockReturnValue(mockDb as unknown as ReturnType<typeof createDb>);
+
+    const result = await transferOrIdempotent({ ...baseOpts, stripeClient: {} as unknown as Stripe });
+    expect(result).toEqual({ transferId: 'tr_existing', isNew: false });
+  });
+
+  it('throws stored error on idempotent replay (status=failed)', async () => {
+    const mockDb = makeDb({
+      insertRows: [],
+      selectRows: [{ status: 'failed', stripeResponse: null, stripeError: 'insufficient funds' }],
+    });
+    vi.mocked(createDb).mockReturnValue(mockDb as unknown as ReturnType<typeof createDb>);
+
+    await expect(
+      transferOrIdempotent({ ...baseOpts, stripeClient: {} as unknown as Stripe }),
+    ).rejects.toThrow('insufficient funds');
+  });
+
+  it('throws conflict error on idempotent replay (status=pending)', async () => {
+    const mockDb = makeDb({
+      insertRows: [],
+      selectRows: [{ status: 'pending', stripeResponse: null, stripeError: null }],
+    });
+    vi.mocked(createDb).mockReturnValue(mockDb as unknown as ReturnType<typeof createDb>);
+
+    await expect(
+      transferOrIdempotent({ ...baseOpts, stripeClient: {} as unknown as Stripe }),
+    ).rejects.toThrow('concurrent request');
+  });
+
+  it('marks status=failed and throws when Stripe errors', async () => {
+    const mockDb = makeDb({ insertRows: [{ id: 'db-row-id' }] });
+    vi.mocked(createDb).mockReturnValue(mockDb as unknown as ReturnType<typeof createDb>);
+
+    const fakeStripe = {
+      transfers: { create: vi.fn().mockRejectedValue(new Error('card declined')) },
+    } as unknown as Stripe;
+
+    await expect(
+      transferOrIdempotent({ ...baseOpts, stripeClient: fakeStripe }),
+    ).rejects.toThrow('card declined');
+    expect(mockDb.update).toHaveBeenCalled();
+  });
+
+  it('throws when conflict row not found', async () => {
+    const mockDb = makeDb({ insertRows: [], selectRows: [] });
+    vi.mocked(createDb).mockReturnValue(mockDb as unknown as ReturnType<typeof createDb>);
+
+    await expect(
+      transferOrIdempotent({ ...baseOpts, stripeClient: {} as unknown as Stripe }),
+    ).rejects.toThrow('row not found');
+  });
+
+  it('throws when neither stripeSecretKey nor stripeClient provided', async () => {
+    await expect(
+      transferOrIdempotent({ neonDb: { connectionString: 'x' }, idempotencyKey: 'k', destination: 'd', amountCents: 1 }),
+    ).rejects.toThrow('provide stripeSecretKey or stripeClient');
   });
 });
