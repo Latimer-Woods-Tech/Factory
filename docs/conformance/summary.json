@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-25T09:09:50.597446+00:00",
+  "generated": "2026-05-26T08:47:18.926804+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,7 +7,7 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-05-25T09:09:24.598951+00:00",
+      "timestamp": "2026-05-26T08:46:51.772245+00:00",
       "cohesion": 50,
       "dimensions": [
         {
@@ -297,7 +297,7 @@
       "repo_key": "CC",
       "repo_name": "capricast",
       "repo_path": "Latimer-Woods-Tech/capricast",
-      "timestamp": "2026-05-25T09:09:29.868994+00:00",
+      "timestamp": "2026-05-26T08:46:56.874594+00:00",
       "cohesion": 37,
       "dimensions": [
         {
@@ -587,8 +587,8 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-05-25T09:09:38.795898+00:00",
-      "cohesion": 57,
+      "timestamp": "2026-05-26T08:47:05.639427+00:00",
+      "cohesion": 60,
       "dimensions": [
         {
           "key": "stack",
@@ -851,16 +851,16 @@
           "key": "privacy",
           "title": "Privacy",
           "weight": 5,
-          "score": 0,
+          "score": 67,
           "checks": [
             {
               "name": "PII_INVENTORY.md present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
               "name": "Retention policy doc present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             },
             {
@@ -877,7 +877,7 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-05-25T09:09:44.757998+00:00",
+      "timestamp": "2026-05-26T08:47:12.176611+00:00",
       "cohesion": 37,
       "dimensions": [
         {
@@ -1167,7 +1167,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-05-25T09:09:50.596741+00:00",
+      "timestamp": "2026-05-26T08:47:18.926103+00:00",
       "cohesion": 49,
       "dimensions": [
         {

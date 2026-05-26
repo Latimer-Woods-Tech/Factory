@@ -2,8 +2,8 @@
   "repo_key": "FA",
   "repo_name": "factory-admin-studio",
   "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-05-25T09:09:38.795898+00:00",
-  "cohesion": 57,
+  "timestamp": "2026-05-26T08:47:05.639427+00:00",
+  "cohesion": 60,
   "dimensions": [
     {
       "key": "stack",
@@ -266,16 +266,16 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 0,
+      "score": 67,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Retention policy doc present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {

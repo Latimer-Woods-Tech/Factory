@@ -1,6 +1,6 @@
 # Platform Conformance — Shadow Mode
 
-*Generated: 2026-05-25 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
+*Generated: 2026-05-26 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
 
 ## Cohesion summary
 
@@ -8,7 +8,7 @@
 |------|---------:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
 | HumanDesign | **50** | 40 | 0 | 100 | 40 | 80 | 33 | 33 | 67 | 67 | 0 |
 | capricast | **37** | 20 | 20 | 40 | 40 | 60 | 0 | 33 | 33 | 67 | 33 |
-| factory-admin-studio | **57** | 60 | 80 | 20 | 40 | 80 | 67 | 33 | 67 | 100 | 0 |
+| factory-admin-studio | **60** | 60 | 80 | 20 | 40 | 80 | 67 | 33 | 67 | 100 | 67 |
 | cypher-healing | **37** | 60 | 80 | 60 | 0 | 20 | 33 | 33 | 33 | 0 | 0 |
 | xico-city | **49** | 80 | 80 | 60 | 0 | 20 | 67 | 33 | 33 | 67 | 33 |
 
@@ -138,7 +138,7 @@
 - ❌ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
 
-## factory-admin-studio — 57/100
+## factory-admin-studio — 60/100
 
 ### Stack — 60/100 (weight 10)
 - ❌ wrangler.jsonc present
@@ -195,9 +195,9 @@
 - ✅ Canary or post-deploy verify
 - ✅ Synthetic / smoke workflow
 
-### Privacy — 0/100 (weight 5)
-- ❌ PII_INVENTORY.md present
-- ❌ Retention policy doc present
+### Privacy — 67/100 (weight 5)
+- ✅ PII_INVENTORY.md present
+- ✅ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
 
 ## cypher-healing — 37/100
