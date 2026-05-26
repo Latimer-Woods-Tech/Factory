@@ -94,12 +94,29 @@ jobs:
           git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
 
           # Guard: if an open PR already exists for this branch, the workflow
-          # was re-triggered today (e.g. repository_dispatch or manual run
-          # after the scheduled run already succeeded). Skip to avoid a
-          # non-fast-forward push error on the already-existing branch.
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          # was re-triggered today. Check if it's stale (>2h open without
+          # auto-merging). If stale, re-arm auto-merge so it doesn't block the
+          # next scheduled run. Symptom that motivated this: PR #702 sat open
+          # 14h because GitHub's auto-merge silently disarmed after a rebase.
+          EXISTING_PR=$(gh pr list \
+            --head "$BRANCH" \
+            --state open \
+            --json number,createdAt \
+            --jq '.[0] | "\(.number)|\(.createdAt)"' 2>/dev/null || true)
           if [ -n "$EXISTING_PR" ]; then
-            echo "PR #$EXISTING_PR already open for $BRANCH — skipping duplicate push."
+            PR_NUM=$(echo "$EXISTING_PR" | cut -d'|' -f1)
+            PR_CREATED=$(echo "$EXISTING_PR" | cut -d'|' -f2)
+            PR_AGE_SEC=$(( $(date +%s) - $(date -d "$PR_CREATED" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$PR_CREATED" +%s 2>/dev/null || echo 0) ))
+            if [ "$PR_AGE_SEC" -gt 7200 ]; then
+              echo "PR #$PR_NUM open >2h ($PR_AGE_SEC s). Re-arming auto-merge."
+              gh pr merge --auto --squash "$PR_NUM" \
+                --repo Latimer-Woods-Tech/Factory 2>/dev/null \
+                || gh pr merge --admin --squash "$PR_NUM" \
+                     --repo Latimer-Woods-Tech/Factory 2>/dev/null \
+                || echo "::warning::Could not re-arm auto-merge for PR #$PR_NUM; may need manual merge."
+            else
+              echo "PR #$PR_NUM already open for $BRANCH (age ${PR_AGE_SEC}s < 2h) — skipping duplicate push."
+            fi
             exit 0
           fi
 
