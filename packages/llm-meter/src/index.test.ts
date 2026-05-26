@@ -25,12 +25,12 @@ function makeDb(): { db: D1Like; inserts: unknown[][]; queries: Array<{ sql: str
         bind(...binds: unknown[]) {
           queries.push({ sql, binds });
           return {
-            first: <_T>() => Promise.resolve(firstResult as T | null),
+            first: <_T>() => Promise.resolve(firstResult as _T | null),
             run: () => {
               inserts.push(binds);
               return Promise.resolve({ success: true });
             },
-            all: <_T>() => Promise.resolve({ results: [] as T[] }),
+            all: <_T>() => Promise.resolve({ results: [] as _T[] }),
           };
         },
       };
@@ -310,9 +310,9 @@ describe('assertTenantBudget', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <_T>() => Promise.resolve({ cost_cents: 240 } as T),
+          first: <_T>() => Promise.resolve({ cost_cents: 240 } as _T),
           run: () => Promise.reject(new Error('disk full')),
-          all: <_T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -338,9 +338,9 @@ describe('assertTenantBudget', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <_T>() => Promise.resolve({ cost_cents: 240 } as T),
+          first: <_T>() => Promise.resolve({ cost_cents: 240 } as _T),
           run: () => Promise.reject('write conflict'), // not an Error instance
-          all: <_T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -475,7 +475,7 @@ describe('meteredComplete', () => {
         bind: () => ({
           first: <_T>() => Promise.reject(new Error('db timeout')),
           run: () => Promise.resolve({ success: true }),
-          all: <_T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -496,7 +496,7 @@ describe('meteredComplete', () => {
         bind: () => ({
           first: <_T>() => Promise.reject('db timeout'), // not an Error instance
           run: () => Promise.resolve({ success: true }),
-          all: <_T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -517,7 +517,7 @@ describe('meteredComplete', () => {
         bind: () => ({
           first: <_T>() => Promise.reject(new Error('network error')),
           run: () => Promise.resolve({ success: true }),
-          all: <_T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -538,7 +538,7 @@ describe('meteredComplete', () => {
         bind: () => ({
           first: <_T>() => Promise.reject('network error'), // not an Error instance
           run: () => Promise.resolve({ success: true }),
-          all: <_T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
