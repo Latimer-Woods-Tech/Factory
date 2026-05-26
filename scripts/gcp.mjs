@@ -120,13 +120,9 @@ async function getSecret(token, name) {
 async function setSecret(token, name, value) {
   // Try to create the secret; ignore 409 (already exists).
   try {
-    await smFetch(token, '/secrets', {
+    await smFetch(token, `/secrets?secretId=${encodeURIComponent(name)}`, {
       method: 'POST',
-      body: JSON.stringify({
-        parent: `projects/${PROJECT}`,
-        secretId: name,
-        replication: { automatic: {} },
-      }),
+      body: JSON.stringify({ replication: { automatic: {} } }),
     });
   } catch (err) {
     if (!err.message.includes('409') && !err.message.includes('ALREADY_EXISTS')) throw err;
@@ -134,7 +130,7 @@ async function setSecret(token, name, value) {
 
   // Add a new version.
   const encoded = Buffer.from(value, 'utf8').toString('base64');
-  await smFetch(token, `/secrets/${name}/versions:add`, {
+  await smFetch(token, `/secrets/${name}:addVersion`, {
     method: 'POST',
     body: JSON.stringify({ payload: { data: encoded } }),
   });
