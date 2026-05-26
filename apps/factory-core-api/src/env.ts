@@ -15,6 +15,13 @@ export interface Env extends Record<string, unknown> {
   DB: { readonly connectionString: string };
   /** Root HS256 signing key used to mint scoped JWTs. wrangler secret JWT_SIGNING_KEY. */
   JWT_SIGNING_KEY: string;
+  /**
+   * Dedicated service credential for the webhook-fanout worker's gate ingestion.
+   * Honoured ONLY on `POST /v1/gates`, so it is implicitly scoped to gate
+   * ingestion and cannot mint or reach any other topic. wrangler secret
+   * WEBHOOK_FANOUT_INGEST_KEY. Unset disables the service-key path.
+   */
+  WEBHOOK_FANOUT_INGEST_KEY?: string;
   /** Expected OIDC issuer. Defaults to GitHub Actions' issuer when unset. */
   OIDC_ISSUER?: string;
   /** Expected `aud` claim on the inbound GitHub OIDC token. */

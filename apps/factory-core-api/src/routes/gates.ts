@@ -1,7 +1,11 @@
 /**
  * POST /v1/gates — two-step ingest for gate state transitions.
  *
- * Auth: Bearer scoped JWT where aud === 'gates-{gate_type}'.
+ * Auth (either):
+ *   - the dedicated WEBHOOK_FANOUT_INGEST_KEY service credential, which is
+ *     accepted only on this route and is therefore implicitly scoped to gate
+ *     ingestion; or
+ *   - a Bearer scoped JWT where aud === 'gates-{gate_type}'.
  * Idempotency: if source_event_id is provided and an event with that ID
  * already exists, returns the existing event_id without re-inserting.
  */
@@ -45,6 +49,20 @@ const GateBodySchema = z.object({
   observed_at: z.string().datetime(),
 });
 
+/**
+ * Constant-time string comparison for the service credential, guarding against
+ * timing side-channels. Length is allowed to leak (standard for HMAC/secret
+ * compare); content comparison is timing-independent.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export function createGatesRouter(): Hono<{ Bindings: Env }> {
   const router = new Hono<{ Bindings: Env }>();
 
@@ -63,10 +81,19 @@ export function createGatesRouter(): Hono<{ Bindings: Env }> {
     }
     const body = parsed.data;
 
-    const claims = await verifyScopedToken(token, signingKey);
-    const expectedAud = `gates-${body.gate_type}`;
-    if (claims.aud !== expectedAud) {
-      throw new AuthError(`Token audience must be '${expectedAud}'`);
+    // Auth: the dedicated service key (accepted only here, so implicitly scoped
+    // to gate ingestion) OR a scoped JWT whose aud matches the gate_type.
+    const serviceKey = c.env.WEBHOOK_FANOUT_INGEST_KEY;
+    let ingestActor: string;
+    if (serviceKey && timingSafeEqual(token, serviceKey)) {
+      ingestActor = 'service:webhook-fanout';
+    } else {
+      const claims = await verifyScopedToken(token, signingKey);
+      const expectedAud = `gates-${body.gate_type}`;
+      if (claims.aud !== expectedAud) {
+        throw new AuthError(`Token audience must be '${expectedAud}'`);
+      }
+      ingestActor = `jwt-aud:${claims.aud}`;
     }
 
     const db = createIngestDb(c.env.DB as { connectionString: string });
@@ -84,7 +111,7 @@ export function createGatesRouter(): Hono<{ Bindings: Env }> {
         sourceEventType: `gate.${body.gate_type}`,
         sourceEventId: body.source_event_id,
         payload: body as Record<string, unknown>,
-        ingestActor: `jwt-aud:${claims.aud}`,
+        ingestActor,
         derivationStatus: 'pending',
         derivationTargets: ['factory_gates'],
         observedAt: new Date(body.observed_at),
