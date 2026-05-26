@@ -566,7 +566,7 @@ describe('meteredComplete', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(res.error!.code).toBe('BUDGET_EXCEEDED');
     expect(onBudgetExceeded).toHaveBeenCalledOnce();
-    const ctx = onBudgetExceeded.mock.calls[0][0];
+    const ctx = onBudgetExceeded.mock.calls[0]![0];
     expect(ctx.kind).toBe('run');
     expect(ctx.runId).toBe('r-99');
     expect(typeof ctx.spentCents).toBe('number');
@@ -591,7 +591,7 @@ describe('meteredComplete', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(res.error!.code).toBe('BUDGET_EXCEEDED');
     expect(onBudgetExceeded).toHaveBeenCalledOnce();
-    const ctx = onBudgetExceeded.mock.calls[0][0];
+    const ctx = onBudgetExceeded.mock.calls[0]![0];
     expect(ctx.kind).toBe('tenant');
     expect(ctx.tenantId).toBe('tenant-cap');
     expect(ctx.tier).toBe('free');

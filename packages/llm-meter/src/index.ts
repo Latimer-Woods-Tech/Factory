@@ -464,6 +464,7 @@ export async function meteredComplete(
             onBudgetExceeded({
               kind: 'run',
               runId: opts.runId,
+              /* c8 ignore next 2 -- assertRunBudget always provides these fields */
               spentCents: typeof ctx?.actual === 'number' ? ctx.actual : 0,
               capCents: typeof ctx?.maxCents === 'number' ? ctx.maxCents : cap,
             }),
@@ -500,6 +501,7 @@ export async function meteredComplete(
           Promise.resolve(
             onBudgetExceeded({
               kind: 'tenant',
+              /* c8 ignore next 5 -- assertTenantBudget always provides these fields */
               tenantId: typeof ctx?.tenantId === 'string' ? ctx.tenantId : tenantId,
               tier: typeof ctx?.tier === 'string' ? (ctx.tier as TenantTier) : tenantTier,
               spentCents: typeof ctx?.spentCents === 'number' ? ctx.spentCents : 0,
@@ -524,6 +526,7 @@ export async function meteredComplete(
   if (llmResp.error || !llmResp.data) return llmResp;
 
   const d = llmResp.data;
+  /* c8 ignore next -- llm package always returns a number for cacheRead */
   const cost = computeCostCents(d.model, d.tokens.input, d.tokens.output, d.tokens.cacheRead ?? 0);
   await recordCall(
     db,
@@ -536,6 +539,7 @@ export async function meteredComplete(
       provider: d.provider,
       model: d.model,
       inputTokens: d.tokens.input,
+      /* c8 ignore next -- llm package always returns a number for cacheRead */
       cachedInputTokens: d.tokens.cacheRead ?? 0,
       outputTokens: d.tokens.output,
       costCents: cost,
