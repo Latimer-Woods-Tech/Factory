@@ -46,6 +46,11 @@ curl -sS -X POST https://<host>/v1/auth/token \
 
 - `JWT_SIGNING_KEY` — root HS256 signing key for minted scoped JWTs (rotated
   quarterly per tech guide §1.5.2).
+- `WEBHOOK_FANOUT_INGEST_KEY` *(optional)* — dedicated service credential for
+  the webhook-fanout worker. Accepted only on `POST /v1/gates` (so it is
+  implicitly scoped to gate ingestion and cannot reach any other topic). Sent
+  as `Authorization: Bearer <key>`; compared in constant time. Unset disables
+  the service-key path, leaving scoped-JWT auth as the only accepted method.
 - `SENTRY_DSN` *(optional)* — error reporting via `@latimer-woods-tech/monitoring`.
 
 ## Develop
