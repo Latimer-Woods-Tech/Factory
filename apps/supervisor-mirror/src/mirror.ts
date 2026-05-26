@@ -8,6 +8,7 @@
  */
 import { createDb, sql } from '@latimer-woods-tech/neon';
 import { factoryRunsMirror, factoryEventsIngest } from '@latimer-woods-tech/neon';
+import type { NewFactoryRunsMirror } from '@latimer-woods-tech/neon';
 import type { Env } from './env.js';
 
 /** Default look-back window: 10 minutes in milliseconds. */
@@ -25,6 +26,55 @@ export interface MirrorResult {
   /** Number of rows that failed to upsert. */
   errors: number;
 }
+
+/**
+ * Minimal DB interface for the mirror operations — injectable for testing.
+ * Production code uses the full Drizzle instance from `createDb`.
+ */
+export interface MirrorDbOps {
+  /** Upsert one run row into `factory_runs_mirror`. */
+  upsertRun(run: Omit<NewFactoryRunsMirror, 'mirroredAt'>): Promise<void>;
+  /** Insert one audit event into `factory_events_ingest`. */
+  insertAuditEvent(payload: Record<string, unknown>): Promise<void>;
+}
+
+/**
+ * Creates a production `MirrorDbOps` backed by a real Drizzle instance.
+ * Pass the result as the optional `ops` parameter to `mirrorSupervisorRuns`
+ * to override (e.g. in tests).
+ */
+/* c8 ignore start — Drizzle adapter; requires a live Neon connection (integration test) */
+export function createMirrorDbOps(binding: Env['DB']): MirrorDbOps {
+  const db = createDb(binding);
+  return {
+    async upsertRun(run) {
+      await db
+        .insert(factoryRunsMirror)
+        .values(run)
+        .onConflictDoUpdate({
+          target: factoryRunsMirror.id,
+          set: {
+            status: sql`excluded.status`,
+            prUrl: sql`excluded.pr_url`,
+            finishedAt: sql`excluded.finished_at`,
+            mirroredAt: sql`now()`,
+          },
+        });
+    },
+    async insertAuditEvent(payload) {
+      await db.insert(factoryEventsIngest).values({
+        sourceSystem: 'supervisor-d1',
+        sourceEventType: 'mirror.sync',
+        payload,
+        ingestActor: 'supervisor-mirror:cron',
+        derivationStatus: 'derived',
+        derivationTargets: ['factory_runs_mirror'],
+        observedAt: new Date(),
+      });
+    },
+  };
+}
+/* c8 ignore stop */
 
 /**
  * Raw row shape returned by the D1 `supervisor_runs` query.
@@ -57,13 +107,15 @@ interface D1Row {
  *
  * @param env       - Worker bindings (DB Hyperdrive + SUPERVISOR_D1).
  * @param windowMs  - Look-back window in ms; defaults to 10 minutes.
+ * @param ops       - DB operations; defaults to a real Drizzle instance. Pass a
+ *                    mock here in tests to avoid live DB connections.
  * @returns         Result summary with synced / skipped / errors counts.
  */
 export async function mirrorSupervisorRuns(
   env: Env,
   windowMs: number = DEFAULT_WINDOW_MS,
+  ops: MirrorDbOps = createMirrorDbOps(env.DB),
 ): Promise<MirrorResult> {
-  const db = createDb(env.DB);
 
   // Query D1: all runs started or finished in the last window, plus any
   // non-terminal runs regardless of age (they may have changed status).
@@ -87,29 +139,18 @@ export async function mirrorSupervisorRuns(
 
   for (const row of rows) {
     try {
-      await db
-        .insert(factoryRunsMirror)
-        .values({
-          id: row.id,
-          templateId: row.template_id,
-          templateVersion: row.template_version,
-          description: row.description,
-          source: row.source,
-          status: row.status,
-          dryRun: row.dry_run === 1,
-          prUrl: row.pr_url ?? undefined,
-          startedAt: new Date(row.started_at),
-          finishedAt: row.finished_at != null ? new Date(row.finished_at) : undefined,
-        })
-        .onConflictDoUpdate({
-          target: factoryRunsMirror.id,
-          set: {
-            status: sql`excluded.status`,
-            prUrl: sql`excluded.pr_url`,
-            finishedAt: sql`excluded.finished_at`,
-            mirroredAt: sql`now()`,
-          },
-        });
+      await ops.upsertRun({
+        id: row.id,
+        templateId: row.template_id,
+        templateVersion: row.template_version,
+        description: row.description,
+        source: row.source,
+        status: row.status,
+        dryRun: row.dry_run === 1,
+        prUrl: row.pr_url ?? undefined,
+        startedAt: new Date(row.started_at),
+        finishedAt: row.finished_at != null ? new Date(row.finished_at) : undefined,
+      });
       synced++;
     } catch (_err) {
       errors++;
@@ -118,15 +159,7 @@ export async function mirrorSupervisorRuns(
 
   // Audit trail: one ingest event per sync batch (only when D1 returned rows).
   if (rows.length > 0) {
-    await db.insert(factoryEventsIngest).values({
-      sourceSystem: 'supervisor-d1',
-      sourceEventType: 'mirror.sync',
-      payload: { synced, errors, window_ms: windowMs, row_count: rows.length },
-      ingestActor: 'supervisor-mirror:cron',
-      derivationStatus: 'derived',
-      derivationTargets: ['factory_runs_mirror'],
-      observedAt: new Date(),
-    });
+    await ops.insertAuditEvent({ synced, errors, window_ms: windowMs, row_count: rows.length });
   }
 
   return { synced, skipped: rows.length - synced - errors, errors };
