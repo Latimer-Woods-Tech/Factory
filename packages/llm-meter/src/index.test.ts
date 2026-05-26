@@ -10,6 +10,7 @@ import {
   recordCall,
   TIER_BUDGET_CENTS,
   type BudgetAlertContext,
+  type BudgetExceededContext,
   type D1Like,
   type LedgerRow,
 } from './index.js';
@@ -24,12 +25,12 @@ function makeDb(): { db: D1Like; inserts: unknown[][]; queries: Array<{ sql: str
         bind(...binds: unknown[]) {
           queries.push({ sql, binds });
           return {
-            first: <T>() => Promise.resolve(firstResult as T | null),
+            first: <_T>() => Promise.resolve(firstResult as _T | null),
             run: () => {
               inserts.push(binds);
               return Promise.resolve({ success: true });
             },
-            all: <T>() => Promise.resolve({ results: [] as T[] }),
+            all: <_T>() => Promise.resolve({ results: [] as _T[] }),
           };
         },
       };
@@ -309,9 +310,9 @@ describe('assertTenantBudget', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <T>() => Promise.resolve({ cost_cents: 240 } as T),
+          first: <_T>() => Promise.resolve({ cost_cents: 240 } as _T),
           run: () => Promise.reject(new Error('disk full')),
-          all: <T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -337,9 +338,9 @@ describe('assertTenantBudget', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <T>() => Promise.resolve({ cost_cents: 240 } as T),
+          first: <_T>() => Promise.resolve({ cost_cents: 240 } as _T),
           run: () => Promise.reject('write conflict'), // not an Error instance
-          all: <T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -472,9 +473,9 @@ describe('meteredComplete', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <T>() => Promise.reject(new Error('db timeout')),
+          first: <_T>() => Promise.reject(new Error('db timeout')),
           run: () => Promise.resolve({ success: true }),
-          all: <T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -493,9 +494,9 @@ describe('meteredComplete', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <T>() => Promise.reject('db timeout'), // not an Error instance
+          first: <_T>() => Promise.reject('db timeout'), // not an Error instance
           run: () => Promise.resolve({ success: true }),
-          all: <T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -514,9 +515,9 @@ describe('meteredComplete', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <T>() => Promise.reject(new Error('network error')),
+          first: <_T>() => Promise.reject(new Error('network error')),
           run: () => Promise.resolve({ success: true }),
-          all: <T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -535,9 +536,9 @@ describe('meteredComplete', () => {
     const db: D1Like = {
       prepare: () => ({
         bind: () => ({
-          first: <T>() => Promise.reject('network error'), // not an Error instance
+          first: <_T>() => Promise.reject('network error'), // not an Error instance
           run: () => Promise.resolve({ success: true }),
-          all: <T>() => Promise.resolve({ results: [] as T[] }),
+          all: <_T>() => Promise.resolve({ results: [] as _T[] }),
         }),
       }),
     };
@@ -566,7 +567,7 @@ describe('meteredComplete', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(res.error!.code).toBe('BUDGET_EXCEEDED');
     expect(onBudgetExceeded).toHaveBeenCalledOnce();
-    const ctx = onBudgetExceeded.mock.calls[0]![0];
+    const ctx = onBudgetExceeded.mock.calls[0]![0] as BudgetExceededContext;
     expect(ctx.kind).toBe('run');
     expect(ctx.runId).toBe('r-99');
     expect(typeof ctx.spentCents).toBe('number');
@@ -591,7 +592,7 @@ describe('meteredComplete', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(res.error!.code).toBe('BUDGET_EXCEEDED');
     expect(onBudgetExceeded).toHaveBeenCalledOnce();
-    const ctx = onBudgetExceeded.mock.calls[0]![0];
+    const ctx = onBudgetExceeded.mock.calls[0]![0] as BudgetExceededContext;
     expect(ctx.kind).toBe('tenant');
     expect(ctx.tenantId).toBe('tenant-cap');
     expect(ctx.tier).toBe('free');

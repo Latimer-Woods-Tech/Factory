@@ -33,6 +33,7 @@ export interface EmailTemplateResult {
   text: string;
 }
 
+/** Template variables for the subscription confirmation email. */
 export interface SubscriptionConfirmedVars {
   brand: BrandVars;
   userName: string;
@@ -45,6 +46,7 @@ export interface SubscriptionConfirmedVars {
   manageUrl: string;
 }
 
+/** Template variables for the renewal failure notification email. */
 export interface RenewalFailedVars {
   brand: BrandVars;
   userName: string;
@@ -57,6 +59,7 @@ export interface RenewalFailedVars {
   retryDate?: string;
 }
 
+/** Template variables for the payout completed notification email. */
 export interface PayoutCompletedVars {
   brand: BrandVars;
   userName: string;
@@ -70,6 +73,7 @@ export interface PayoutCompletedVars {
   estimatedArrivalDate?: string;
 }
 
+/** Template variables for the account-under-review notification email. */
 export interface AccountReviewRequiredVars {
   brand: BrandVars;
   userName: string;
@@ -79,6 +83,7 @@ export interface AccountReviewRequiredVars {
   supportUrl: string;
 }
 
+/** Template variables for the magic-link sign-in email. */
 export interface MagicLinkVars {
   brand: BrandVars;
   /** One-time sign-in URL. */
@@ -87,6 +92,7 @@ export interface MagicLinkVars {
   expiresInMinutes?: number;
 }
 
+/** Template variables for the password reset email. */
 export interface PasswordResetVars {
   brand: BrandVars;
   userName: string;
