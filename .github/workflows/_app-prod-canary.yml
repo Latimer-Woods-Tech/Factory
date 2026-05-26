@@ -63,6 +63,10 @@ on:
       alert_on_failure:
         type: boolean
         default: true
+      # Factory Core API URL for gate ingest (P2.4). Optional — skipped when empty.
+      factory_core_api_url:
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -141,3 +145,39 @@ jobs:
           fi
           npx -y wrangler@latest versions rollback --name "${{ inputs.worker_name }}" --version-id "$PREV" --yes
           echo "✓ Rolled back to $PREV"
+
+      - name: Ingest canary gate row
+        if: always()
+        env:
+          FACTORY_CORE_API_URL: ${{ inputs.factory_core_api_url }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ -z "${FACTORY_CORE_API_URL:-}" ] || [ -z "${FACTORY_CORE_API_INGEST_KEY:-}" ]; then
+            echo "Skipping canary gate ingest (FACTORY_CORE_API_URL or FACTORY_CORE_API_INGEST_KEY not set)"
+            exit 0
+          fi
+          STATE=$([ "$JOB_STATUS" = "success" ] && echo "passed" || echo "failed")
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          SUBJECT_REF="${{ inputs.worker_name }}"
+          if [ -z "$SUBJECT_REF" ]; then SUBJECT_REF="${{ inputs.base_url }}"; fi
+          PAYLOAD=$(jq -n \
+            --arg gt "canary" \
+            --arg ss "github-actions" \
+            --arg sr "$RUN_URL" \
+            --arg sei "canary-${{ github.repository }}-${{ github.run_id }}" \
+            --arg st "deploy" \
+            --arg srepo "${{ github.repository }}" \
+            --arg sref "$SUBJECT_REF" \
+            --arg state "$STATE" \
+            --arg eu "$RUN_URL" \
+            --arg base_url "${{ inputs.base_url }}" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{gate_type:$gt,source_system:$ss,source_ref:$sr,source_event_id:$sei,
+              subject_type:$st,subject_repo:$srepo,subject_ref:$sref,state:$state,
+              evidence_url:$eu,evidence_summary:{base_url:$base_url},observed_at:$ts}')
+          curl -s -o /dev/null -w "Gate ingest HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/gates" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$PAYLOAD" || echo "::warning::Canary gate ingest failed (non-blocking)"
