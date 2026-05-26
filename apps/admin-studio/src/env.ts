@@ -9,6 +9,8 @@ export interface Env {
 
   // ── Bindings ────────────────────────────────────────────────────────────────────────────────
   DB: Hyperdrive;
+  /** Hyperdrive binding to THE_FACTORY Neon project for Command Center reads (P1.11). */
+  FACTORY_DB?: { connectionString: string };
 
   // ── Secrets (wrangler secret put) ───────────────────────────────────────────────────────────────────────
   /** Signing key for Studio-issued JWTs */

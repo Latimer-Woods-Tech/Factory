@@ -72,6 +72,11 @@ export interface LLMOptions {
    * KV TTL: 40 days.
    */
   monthlyCapUsd?: number;
+  /**
+   * Metering context. When supplied and `deps.onRecord` is set, a {@link LLMRecordRow}
+   * is emitted after every successful completion. Errors are swallowed.
+   */
+  ledger?: LLMRecordContext;
 }
 
 /**
@@ -135,12 +140,48 @@ export interface CostKvStore {
 }
 
 /**
+ * Caller-supplied context stamped on every metering row.
+ * Mirrors the `LLMRecordContext` in `@latimer-woods-tech/llm-meter`; kept inline
+ * to avoid a circular dependency (llm-meter imports llm).
+ */
+export interface LLMRecordContext {
+  project: string;
+  actor: string;
+  runId?: string;
+  workload?: string;
+  tenantId?: string;
+}
+
+/**
+ * Row shape passed to the optional {@link LLMDeps.onRecord} callback.
+ * Callers can wire this directly to `recordCall` from `@latimer-woods-tech/llm-meter`.
+ */
+export interface LLMRecordRow extends LLMRecordContext {
+  model: string;
+  provider: LLMProvider;
+  tier: LLMTier;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  latencyMs: number;
+  costUsd: number;
+  yyyyMm: string;
+}
+
+/**
  * Optional dependencies for {@link complete}.
  */
 export interface LLMDeps {
   fetch?: typeof fetch;
   logger?: Logger;
   now?: () => number;
+  /**
+   * Optional metering callback. Called after every successful completion.
+   * Errors are swallowed so metering never blocks the caller.
+   * Wire to `recordCall` from `@latimer-woods-tech/llm-meter`.
+   */
+  onRecord?: (row: LLMRecordRow) => Promise<void>;
 }
 
 // Model catalogue — keep in sync with docs/architecture/FACTORY_V1.md § LLM substrate.
@@ -856,6 +897,25 @@ export async function complete(
       // compare-and-swap, so concurrent increments may undercount spend.
       if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
         await recordOrgCostUsage(kv, todayKey, monthKey, costUsd, opts);
+      }
+      // ── Metering callback ────────────────────────────────────────────────
+      if (deps.onRecord && opts.ledger) {
+        const row: LLMRecordRow = {
+          ...opts.ledger,
+          model: llmResult.model,
+          provider: llmResult.provider,
+          tier: llmResult.tier,
+          inputTokens: llmResult.tokens.input,
+          outputTokens: llmResult.tokens.output,
+          cacheReadTokens: llmResult.tokens.cacheRead ?? 0,
+          cacheWriteTokens: llmResult.tokens.cacheWrite ?? 0,
+          latencyMs: llmResult.latency,
+          costUsd,
+          yyyyMm: isoMonth(now()),
+        };
+        deps.onRecord(row).catch((e: unknown) => {
+          logger?.warn?.('llm.onRecord.error', { message: e instanceof Error ? e.message : String(e) });
+        });
       }
       return { data: llmResult, error: null };
     } catch (e) {

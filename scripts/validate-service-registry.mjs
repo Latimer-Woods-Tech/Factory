@@ -83,6 +83,12 @@ const WORKFLOW_RULES = [
     verifier: 'verify-http-endpoint.mjs',
     targets: [{ id: 'webhook-fanout', key: 'default' }],
   },
+  {
+    path: '.github/workflows/deploy-factory-core-api.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'factory-core-api', key: 'default' }],
+  },
 ];
 
 // Keep contract validation intentionally narrow. This only covers local workers
@@ -158,6 +164,10 @@ const EXPLICIT_EXEMPTIONS = new Map([
   // for both Workers in a dedicated PR.
   ['.github/workflows/deploy-inbound-oracle.yml', 'inbound-oracle Worker — pending service-registry registration'],
   ['.github/workflows/deploy-linkedin-publisher.yml', 'linkedin-publisher Worker — pending service-registry registration'],
+  // Cron-only Worker (workers_dev:false, no public route) — fires */15 to replay
+  // failed derivations. No HTTP verifier step by design, so it cannot use a
+  // URL-based WORKFLOW_RULES entry; the registry entry documents the cron contract.
+  ['.github/workflows/deploy-factory-events-replay.yml', 'factory-events-replay — cron-only Worker, no public route to verify'],
 ]);
 
 const registry = await loadRegistry(REGISTRY_PATH);

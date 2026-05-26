@@ -7,7 +7,7 @@
     "@latimer-woods-tech/errors": "file:packages/errors",
     "@latimer-woods-tech/logger": "file:packages/logger",
     "@latimer-woods-tech/monitoring": "file:packages/monitoring",
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "js-yaml": "^4.1.1",

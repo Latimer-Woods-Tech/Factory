@@ -32,6 +32,13 @@
         {
           "binding": "DB",
           "id": "efe957f404bb457593e6bd08b733b7c4"
+        },
+        {
+          // THE_FACTORY Neon read-layer (factory_gates_blocking view). Replace
+          // placeholder with real Hyperdrive UUID before deploying. See
+          // docs/runbooks/add-new-app.md §Hyperdrive.
+          "binding": "FACTORY_DB",
+          "id": "efe957f404bb457593e6bd08b733b7c4"
         }
       ],
       "kv_namespaces": [
@@ -79,6 +86,10 @@
       "hyperdrive": [
         {
           "binding": "DB",
+          "id": "efe957f404bb457593e6bd08b733b7c4"
+        },
+        {
+          "binding": "FACTORY_DB",
           "id": "efe957f404bb457593e6bd08b733b7c4"
         }
       ],

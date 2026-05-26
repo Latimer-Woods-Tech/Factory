@@ -23,9 +23,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
-      - uses: actions/create-github-app-token@v3
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -33,7 +33,7 @@ jobs:
           owner: Latimer-Woods-Tech
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: .nvmrc
       - name: Run documentation freshness audit
@@ -47,12 +47,42 @@ jobs:
           echo "## 📋 Documentation Freshness Audit" >> $GITHUB_STEP_SUMMARY
           cat audit-report.md >> $GITHUB_STEP_SUMMARY
 
+      - name: Ingest audit-report artifact
+        if: always()
+        env:
+          FACTORY_CORE_API_URL: ${{ vars.FACTORY_CORE_API_URL || '' }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY || '' }}
+        run: |
+          if [ -z "${FACTORY_CORE_API_URL:-}" ] || [ -z "${FACTORY_CORE_API_INGEST_KEY:-}" ]; then
+            echo "Skipping audit artifact ingest (FACTORY_CORE_API_URL or FACTORY_CORE_API_INGEST_KEY not set)"
+            exit 0
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(jq -n \
+            --arg at "audit-report" \
+            --arg pt "github-workflow" \
+            --arg pr "${{ github.run_id }}" \
+            --arg ss "github-actions" \
+            --arg sei "audit-doc-freshness-${{ github.repository }}-${{ github.run_id }}" \
+            --arg srepo "${{ github.repository }}" \
+            --arg uri "$RUN_URL" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg report_type "doc-freshness" \
+            '{artifact_type:$at,producer_type:$pt,producer_ref:$pr,source_system:$ss,
+              source_event_id:$sei,subject_repo:$srepo,uri:$uri,
+              metadata:{report_type:$report_type},observed_at:$ts}')
+          curl -s -o /dev/null -w "Audit-report artifact HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/artifacts" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$PAYLOAD" || echo "::warning::Audit-report artifact ingest failed (non-blocking)"
+
       - name: Open docs-debt issue if stale docs found
         # steps.audit.outcome is 'failure' when the script exits non-zero,
         # even though continue-on-error prevents the job from failing.
         # (The old `if: failure()` never triggered for the same reason.)
         if: steps.audit.outcome == 'failure'
-        uses: actions/github-script@v9
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
@@ -137,10 +167,10 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version-file: .nvmrc
       - name: Configure git
@@ -149,7 +179,7 @@ jobs:
           git config user.email "factory-docs-bot@users.noreply.github.com"
       - name: Create org-scoped GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
