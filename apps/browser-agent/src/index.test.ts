@@ -42,6 +42,7 @@ const visualReviewMock = vi.fn().mockResolvedValue({
     ],
     tokenUsage: { input: 1200, output: 250 },
   },
+  axeViolations: null,
 });
 
 const mockAutomation: BrowserAutomation = {
@@ -316,6 +317,22 @@ describe('browser-agent', () => {
         body: JSON.stringify({ url: 'https://example.com', rubric: ['', 'ok'] }),
       });
       expect(res.status).toBe(422);
+    });
+
+    it('passes runAxe and skipFinalNavigation through to the automation', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://example.com',
+          runAxe: true,
+          skipFinalNavigation: true,
+        }),
+      });
+      expect(res.status).toBe(200);
+      expect(visualReviewMock).toHaveBeenCalledWith(
+        expect.objectContaining({ runAxe: true, skipFinalNavigation: true }),
+      );
     });
   });
 });
