@@ -220,52 +220,52 @@ function applyHandoffToScaffold(handoff) {
   const varAdditions = (plan.env?.vars ?? []).filter((v) => !BASE_ENV_VARS.has(v));
 
   const envTsPath = join(TARGET, 'src/env.ts');
-  if ((secretAdditions.length > 0 || varAdditions.length > 0) && existsSync(envTsPath)) {
-    let envTs = readFileSync(envTsPath, 'utf8');
-
-    if (secretAdditions.length > 0) {
-      // Insert recipe secrets before the "Non-secret vars" comment so the
-      // logical grouping (secrets vs vars) in the generated file is preserved.
-      const secretLines = secretAdditions.map((s) => `  ${s}: string;`).join('\n');
-      const secretBlock = `\n  // ── Recipe secrets (${handoff.recipeId}) ─────────────────────────────────────\n${secretLines}\n`;
-      envTs = envTs.replace(
-        /(\n  \/\/ ── Non-secret vars)/,
-        `${secretBlock}$1`,
-      );
-      console.log(`  🔐 +${secretAdditions.length} secret type(s) → src/env.ts`);
+  if (secretAdditions.length > 0 || varAdditions.length > 0) {
+    // Use try/catch instead of existsSync+readFileSync to avoid TOCTOU (CWE-367).
+    let envTs;
+    try { envTs = readFileSync(envTsPath, 'utf8'); } catch { envTs = null; }
+    if (envTs !== null) {
+      if (secretAdditions.length > 0) {
+        // Insert recipe secrets before the "Non-secret vars" comment so the
+        // logical grouping (secrets vs vars) in the generated file is preserved.
+        const secretLines = secretAdditions.map((s) => `  ${s}: string;`).join('\n');
+        const secretBlock = `\n  // ── Recipe secrets (${handoff.recipeId}) ─────────────────────────────────────\n${secretLines}\n`;
+        envTs = envTs.replace(
+          /(\n  \/\/ ── Non-secret vars)/,
+          `${secretBlock}$1`,
+        );
+        console.log(`  🔐 +${secretAdditions.length} secret type(s) → src/env.ts`);
+      }
+      if (varAdditions.length > 0) {
+        // Append recipe vars at the end of the Env interface, before the closing `}`.
+        const varLines = varAdditions.map((v) => `  ${v}: string;`).join('\n');
+        const varBlock = `\n  // ── Recipe vars (${handoff.recipeId}) ───────────────────────────────────────\n${varLines}\n`;
+        envTs = envTs.replace(/(\n}\s*\n?)$/, `${varBlock}$1`);
+        console.log(`  ⚙️  +${varAdditions.length} var type(s) → src/env.ts`);
+      }
+      writeFileSync(envTsPath, envTs, 'utf8');
     }
-
-    if (varAdditions.length > 0) {
-      // Append recipe vars at the end of the Env interface, before the closing `}`.
-      const varLines = varAdditions.map((v) => `  ${v}: string;`).join('\n');
-      const varBlock = `\n  // ── Recipe vars (${handoff.recipeId}) ───────────────────────────────────────\n${varLines}\n`;
-      envTs = envTs.replace(/(\n}\s*\n?)$/, `${varBlock}$1`);
-      console.log(`  ⚙️  +${varAdditions.length} var type(s) → src/env.ts`);
-    }
-
-    writeFileSync(envTsPath, envTs, 'utf8');
   }
 
   // Thread recipe vars into wrangler.jsonc (both root and staging vars blocks).
   if (varAdditions.length > 0) {
     const wranglerPath = join(TARGET, 'wrangler.jsonc');
-    if (existsSync(wranglerPath)) {
-      let wrangler = readFileSync(wranglerPath, 'utf8');
-
+    // Use try/catch instead of existsSync+readFileSync to avoid TOCTOU (CWE-367).
+    let wrangler;
+    try { wrangler = readFileSync(wranglerPath, 'utf8'); } catch { wrangler = null; }
+    if (wrangler !== null) {
       // Root vars block: 4-space indent, WORKER_NAME is the last key.
       const rootVarLines = varAdditions.map((v) => `    "${v}": ""`).join(',\n');
       wrangler = wrangler.replace(
         `    "WORKER_NAME": "${APP_NAME}"\n  },`,
         `    "WORKER_NAME": "${APP_NAME}",\n${rootVarLines}\n  },`,
       );
-
       // Staging vars block: 8-space indent, WORKER_NAME is the last key.
       const stagingVarLines = varAdditions.map((v) => `        "${v}": ""`).join(',\n');
       wrangler = wrangler.replace(
         `        "WORKER_NAME": "${APP_NAME}-staging"\n      }`,
         `        "WORKER_NAME": "${APP_NAME}-staging",\n${stagingVarLines}\n      }`,
       );
-
       writeFileSync(wranglerPath, wrangler, 'utf8');
       console.log(`  ⚙️  +${varAdditions.length} var(s) → wrangler.jsonc (root + staging)`);
     }
