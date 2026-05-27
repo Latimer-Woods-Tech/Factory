@@ -689,7 +689,18 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
             await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
             await page.waitForTimeout(2_000);
           }
-          const image = await page.screenshot({ type: 'png', fullPage: true });
+          // Anthropic vision API rejects images with any dimension > 8000px.
+          // Long-form pages (terms, privacy, glossary) exceed this on
+          // fullPage screenshots. Cap height at 7500px (safety margin under
+          // the 8000 limit) by switching to a `clip` screenshot in that case.
+          const docHeight = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 0));
+          const MAX_IMAGE_HEIGHT = 7500;
+          const image = docHeight > MAX_IMAGE_HEIGHT
+            ? await page.screenshot({
+                type: 'png',
+                clip: { x: 0, y: 0, width: viewport.width, height: MAX_IMAGE_HEIGHT },
+              })
+            : await page.screenshot({ type: 'png', fullPage: true });
           shots.push({
             viewport: viewport.name,
             width: viewport.width,
