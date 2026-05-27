@@ -15,8 +15,14 @@
  *   GET  /capabilities/provision-requests/:id  — single provision request (evidence polling)
  *   POST /capabilities/provision-requests/:id/transition — lifecycle transition
  *
+ * Stage 3 — service lineage:
+ *   POST /capabilities/services                — register/update a deployed service
+ *   GET  /capabilities/services                — list all services (with optional handoffId filter)
+ *   GET  /capabilities/services/:serviceId     — single service lookup by serviceId
+ *   POST /capabilities/services/:serviceId/drift-check — record that a drift check ran
+ *
  * Every mutating route emits an audit entry via the audit middleware. The
- * handoff and provision-staging endpoints persist their artifacts in
+ * handoff, provision-staging, and service endpoints persist their artifacts in
  * Postgres via `handoff-store.ts`.
  */
 import { Hono } from 'hono';
@@ -34,15 +40,20 @@ import {
   findHandoffById,
   findHandoffByHash,
   findProvisionRequestById,
+  findServiceByServiceId,
   listHandoffs,
   listProvisionRequests,
+  listServices,
   persistHandoff,
   recordProvisionRequest,
+  touchServiceDriftCheck,
   transitionProvisionRequest,
+  upsertService,
   validateProofGates,
   type HandoffRecord,
   type ProofGateState,
   type ProvisionRequestRecord,
+  type ServiceRecord,
 } from '../lib/handoff-store.js';
 
 const capabilities = new Hono<AppEnv>();
@@ -389,6 +400,124 @@ capabilities.post('/provision-requests/:id/transition', async (c) => {
   });
 
   return c.json({ request: updated });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stage 3 — Service lineage routes
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Register or update a deployed service.
+ *
+ * Called by the dispatch-capability-provision.yml workflow after a successful
+ * scaffold + deploy cycle. Idempotent on service_id: re-provisioning updates
+ * the existing row rather than inserting a duplicate.
+ *
+ * POST /capabilities/services
+ *   body: { serviceId, handoffId, provisionRequestId?, deployedSha, manifestHash }
+ */
+capabilities.post('/services', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+
+  type ServiceBody = {
+    serviceId?: string;
+    handoffId?: string;
+    provisionRequestId?: string | null;
+    deployedSha?: string;
+    manifestHash?: string;
+  };
+  const body = await c.req.json<ServiceBody>().catch((): ServiceBody => ({}));
+
+  if (!body.serviceId) return c.json({ error: 'serviceId is required' }, 400);
+  if (!body.handoffId) return c.json({ error: 'handoffId is required' }, 400);
+  if (!body.deployedSha) return c.json({ error: 'deployedSha is required' }, 400);
+  if (!body.manifestHash) return c.json({ error: 'manifestHash is required' }, 400);
+
+  const service = await upsertService(c.env.DB, {
+    serviceId: body.serviceId,
+    handoffId: body.handoffId,
+    provisionRequestId: body.provisionRequestId ?? null,
+    deployedSha: body.deployedSha,
+    manifestHash: body.manifestHash,
+  });
+
+  c.set('auditAction', 'capabilities.service.upsert');
+  c.set('auditResource', 'capability_services');
+  c.set('auditResourceId', service.id);
+  c.set('auditReversibility', 'manual-rollback');
+  c.set('auditResultDetail', {
+    serviceId: service.serviceId,
+    handoffId: service.handoffId,
+    deployedSha: service.deployedSha,
+    manifestHash: service.manifestHash,
+  });
+
+  return c.json({ service }, 201);
+});
+
+/**
+ * List service lineage records.
+ * GET /capabilities/services?handoffId=…&limit=50
+ */
+capabilities.get('/services', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+  const handoffId = c.req.query('handoffId') ?? undefined;
+  const limitRaw = c.req.query('limit');
+  const limit = limitRaw ? Math.max(1, Math.min(200, Number.parseInt(limitRaw, 10) || 50)) : 50;
+  const services = await listServices(c.env.DB, { handoffId, limit });
+  return c.json({ generatedAt: new Date().toISOString(), services });
+});
+
+/**
+ * Single service lookup by stable service_id string.
+ * GET /capabilities/services/:serviceId
+ */
+capabilities.get('/services/:serviceId', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+  const serviceId = c.req.param('serviceId');
+  const service = await findServiceByServiceId(c.env.DB, serviceId);
+  if (!service) {
+    return c.json({ error: `Unknown service: ${serviceId}` }, 404);
+  }
+  return c.json({ service });
+});
+
+/**
+ * Record that an automated drift check ran for this service.
+ * Touches only last_drift_check_at; does not change deployment fields.
+ *
+ * POST /capabilities/services/:serviceId/drift-check
+ */
+capabilities.post('/services/:serviceId/drift-check', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+  const serviceId = c.req.param('serviceId');
+  const service = await touchServiceDriftCheck(c.env.DB, serviceId);
+  if (!service) {
+    return c.json({ error: `Unknown service: ${serviceId}` }, 404);
+  }
+
+  c.set('auditAction', 'capabilities.service.drift-check');
+  c.set('auditResource', 'capability_services');
+  c.set('auditResourceId', service.id);
+  c.set('auditReversibility', 'reversible');
+  c.set('auditResultDetail', {
+    serviceId: service.serviceId,
+    lastDriftCheckAt: service.lastDriftCheckAt,
+  });
+
+  return c.json({ service });
 });
 
 type ConceptBody = { conceptId?: string; params?: Record<string, unknown> };
