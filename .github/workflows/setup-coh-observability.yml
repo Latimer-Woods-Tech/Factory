@@ -136,7 +136,7 @@ jobs:
             'check_frequency': $frequency,
             'request_timeout': 15,
             'expected_status_codes': [$expected_status],
-            'request_method': '$method',
+            'http_method': '$method'.lower(),
             'regions': ['us', 'eu', 'as'],
             'paused': False,
           }
@@ -146,13 +146,18 @@ jobs:
           print(json.dumps(d))
           ")
 
-            RESP=$(api_post "monitors" "$payload")
+            # Non-fatal: quota / plan limits shouldn't abort the whole workflow.
+            # Capture both stdout and HTTP errors; log and continue on failure.
+            RESP=$(api_post "monitors" "$payload" 2>&1) || {
+              log "⚠️  Monitor quota or API error for '$name' — skipping (upgrade plan or free a slot)"
+              log "    Response: $(echo "$RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('errors','?'))" 2>/dev/null || echo "$RESP" | head -c 120)"
+              return
+            }
             MONITOR_ID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
             if [ -n "$MONITOR_ID" ]; then
               log "✅ Created monitor: $name (id=$MONITOR_ID)"
             else
-              log "⚠️  Unexpected response for $name:"
-              echo "$RESP" | head -5
+              log "⚠️  Unexpected response for $name: $(echo "$RESP" | head -c 120)"
             fi
           }
 
