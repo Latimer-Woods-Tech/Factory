@@ -148,6 +148,14 @@ export interface VisualReviewRequest {
   captureConsole?: boolean;
   /** Flag responses with status >= this value. Default: 400. */
   statusThreshold?: number;
+  /**
+   * When true, skip the final `goto(url)` and capture the page in whatever
+   * state `steps[]` left it. Use this when `steps[]` already drives the SPA
+   * into the state you want to grade (e.g. a generated chart) — the default
+   * navigation would otherwise reload the page and wipe that state.
+   * The `url` is still required (used in the response payload + grader context).
+   */
+  skipFinalNavigation?: boolean;
 }
 
 /** Token usage reported by the grading LLM. */
@@ -677,9 +685,22 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
           if (request.steps && request.steps.length > 0) {
             await runScenarioSteps(page, request.steps);
           }
-          await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
-          await page.waitForTimeout(2_000);
-          const image = await page.screenshot({ type: 'png', fullPage: true });
+          if (!request.skipFinalNavigation) {
+            await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
+            await page.waitForTimeout(2_000);
+          }
+          // Anthropic vision API rejects images with any dimension > 8000px.
+          // Long-form pages (terms, privacy, glossary) exceed this on
+          // fullPage screenshots. Cap height at 7500px (safety margin under
+          // the 8000 limit) by switching to a `clip` screenshot in that case.
+          const docHeight = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 0));
+          const MAX_IMAGE_HEIGHT = 7500;
+          const image = docHeight > MAX_IMAGE_HEIGHT
+            ? await page.screenshot({
+                type: 'png',
+                clip: { x: 0, y: 0, width: viewport.width, height: MAX_IMAGE_HEIGHT },
+              })
+            : await page.screenshot({ type: 'png', fullPage: true });
           shots.push({
             viewport: viewport.name,
             width: viewport.width,
@@ -822,6 +843,7 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
     const rubric = body['rubric'] !== undefined ? parseRubric(body['rubric']) : undefined;
     const model = typeof body['model'] === 'string' && body['model'].trim() ? body['model'].trim() : undefined;
     const captureConsole = body['captureConsole'] !== undefined ? Boolean(body['captureConsole']) : undefined;
+    const skipFinalNavigation = body['skipFinalNavigation'] !== undefined ? Boolean(body['skipFinalNavigation']) : undefined;
     const statusThreshold = body['statusThreshold'] !== undefined
       ? (() => {
           const v = Number(body['statusThreshold']);
@@ -829,7 +851,7 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
           return v;
         })()
       : undefined;
-    const result = await automation.visualReview({ url, steps, viewports, rubric, model, captureConsole, statusThreshold });
+    const result = await automation.visualReview({ url, steps, viewports, rubric, model, captureConsole, statusThreshold, skipFinalNavigation });
     return c.json(result);
   });
 
