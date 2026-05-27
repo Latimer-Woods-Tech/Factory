@@ -53,7 +53,6 @@ import {
   type HandoffRecord,
   type ProofGateState,
   type ProvisionRequestRecord,
-  type ServiceRecord,
 } from '../lib/handoff-store.js';
 
 const capabilities = new Hono<AppEnv>();

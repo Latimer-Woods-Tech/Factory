@@ -14,7 +14,9 @@ name: Dispatch capability provision
 #        d. transitions the request to 'dispatched'
 #        e. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
 #        f. uploads the scaffolded tree as a workflow artifact for review
-#        g. on success, transitions to 'succeeded'; on failure, 'failed' with notes.
+#        g. (best-effort) registers service in capability_services lineage table
+#           with sha256(wrangler.jsonc) as manifest_hash; failure is non-fatal
+#        h. on success, transitions to 'succeeded'; on failure, 'failed' with notes.
 
 on:
   workflow_dispatch:
