@@ -21,6 +21,7 @@ import {
   Flag,
   ShieldCheck,
   AlertTriangle,
+  GitBranch,
   Menu,
   X
 } from 'lucide-react';
@@ -36,6 +37,7 @@ const FlagsTab = lazy(() => import('./tabs/FlagsTab.js').then(m => ({ default: m
 const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').then(m => ({ default: m.TrainingLibraryTab })));
 const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
 const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
+const GraphComposerTab = lazy(() => import('./tabs/GraphComposerTab.js').then(m => ({ default: m.GraphComposerTab })));
 
 const TABS = [
   { to: '/overview',  label: 'Overview', icon: LayoutDashboard },
@@ -49,6 +51,7 @@ const TABS = [
   { to: '/flags',     label: 'Flags', icon: Flag },
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
   { to: '/command-center', label: 'Command Center', icon: AlertTriangle },
+  { to: '/graph-composer', label: 'Graph Composer', icon: GitBranch },
 ];
 
 // Mobile bottom nav shows first 4 tabs, rest go in "More"
@@ -118,6 +121,7 @@ export function Dashboard() {
               <Route path="/flags" element={<FlagsTab />} />
               <Route path="/audit" element={<AuditTab />} />
               <Route path="/command-center" element={<CommandCenterTab />} />
+              <Route path="/graph-composer" element={<GraphComposerTab />} />
             </Routes>
           </Suspense>
         </main>
