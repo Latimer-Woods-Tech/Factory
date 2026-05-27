@@ -68,17 +68,17 @@ export class SupervisorDO {
     try {
       switch (`${request.method} ${url.pathname}`) {
         case 'GET /health':
-          return this.handleHealth();
+          return await this.handleHealth();
         case 'GET /state':
-          return this.handleState();
+          return await this.handleState();
         case 'GET /capabilities':
-          return this.handleCapabilities();
+          return await this.handleCapabilities();
         case 'POST /scheduled':
-          return this.handleScheduled();
+          return await this.handleScheduled();
         case 'POST /plan':
-          return this.handlePlan(request);
+          return await this.handlePlan(request);
         case 'POST /run':
-          return this.handleRun(request);
+          return await this.handleRun(request);
         default:
           return new Response('not found', { status: 404 });
       }
@@ -399,7 +399,11 @@ export class SupervisorDO {
 
     // Load templates and find the matching one
     const templates = await loadTemplates();
-    const template = templates.find((t) => t.id === templateId && (t as unknown as { version?: number }).version === version);
+    // Templates carry no explicit `version` field today; a versionless template
+    // is treated as version 1 so the default `version ?? 1` request matches.
+    const template = templates.find(
+      (t) => t.id === templateId && ((t as unknown as { version?: number }).version ?? 1) === version,
+    );
     if (!template) {
       return Response.json(
         { error: `Template not found: ${templateId}@${version}` },
@@ -454,8 +458,7 @@ export class SupervisorDO {
       `INSERT INTO supervisor_runs
        (id, template_id, template_version, description, source, status, dry_run, started_at, finished_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    runStmt.bind(
+    ).bind(
       runId,
       templateId,
       version,
@@ -486,16 +489,14 @@ export class SupervisorDO {
         // Update supervisor_runs with PR URL
         const updateStmt = this.env.MEMORY.prepare(
           `UPDATE supervisor_runs SET pr_url = ?, pr_opened_at = ? WHERE id = ?`,
-        );
-        updateStmt.bind(prUrl, Date.now(), runId);
+        ).bind(prUrl, Date.now(), runId);
         await updateStmt.all();
       } else if (!prResult.ok && prResult.error) {
         prOpenError = prResult.error.slice(0, 500);
         // Log gracefully (don't fail the run)
         const updateStmt = this.env.MEMORY.prepare(
           `UPDATE supervisor_runs SET pr_open_error = ? WHERE id = ?`,
-        );
-        updateStmt.bind(prOpenError, runId);
+        ).bind(prOpenError, runId);
         await updateStmt.all();
       }
     }
@@ -521,8 +522,7 @@ export class SupervisorDO {
         `INSERT INTO supervisor_steps
          (run_id, template_id, template_version, step_index, tool_name, side_effects, slots_json, result_json, jwt_scope, execution_ms, executed_at, awaiting_approval)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      );
-      stmt.bind(
+      ).bind(
         runId,
         templateId,
         version,

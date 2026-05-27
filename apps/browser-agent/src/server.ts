@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server';
-import { createApp } from './index.js';
-import type { R2Config } from './index.js';
+import { createApp, createAnthropicVisionGrader, createPlaywrightAutomation } from './index.js';
+import type { R2Config, VisionGrader } from './index.js';
 
 const port = Number(process.env['PORT']) || 8080;
 const accountId = process.env['R2_ACCOUNT_ID'];
@@ -19,5 +19,10 @@ const r2: R2Config | undefined =
       }
     : undefined;
 
-const app = createApp(undefined, r2);
+// ANTHROPIC_API_KEY is the canonical name; LATIMER_ANTHROPIC_API is the
+// production alias documented in factory-495015 Secret Manager.
+const anthropicKey = process.env['ANTHROPIC_API_KEY'] ?? process.env['LATIMER_ANTHROPIC_API'];
+const visionGrader: VisionGrader | undefined = anthropicKey ? createAnthropicVisionGrader(anthropicKey) : undefined;
+
+const app = createApp(createPlaywrightAutomation(visionGrader), r2);
 serve({ fetch: app.fetch, port });
