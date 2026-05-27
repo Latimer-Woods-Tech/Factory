@@ -1,21 +1,29 @@
 {
   "date": "2026-05-14",
-  "generated": "2026-05-15T05:08:00.806488+00:00",
+  "generated": "2026-05-27T15:25:39.998020+00:00",
   "lines": [
     {
       "provider": "cloudflare",
-      "label": "Workers + R2 + KV + D1",
+      "label": "Workers + R2 + KV + D1 (MTD/day est.)",
       "amount_usd": 0.0,
-      "detail": {},
-      "skipped": true,
-      "skip_reason": "API status 403"
+      "detail": {
+        "month_to_date": 0.0,
+        "day_of_month": 14,
+        "window": [
+          "2026-05-14T00:00:00+00:00",
+          "2026-05-15T00:00:00+00:00"
+        ]
+      },
+      "skipped": false,
+      "skip_reason": ""
     },
     {
       "provider": "anthropic",
       "label": "LLM tokens",
-      "amount_usd": 25.46,
+      "amount_usd": 0.25,
       "detail": {
         "daily_cap_usd": 50,
+        "raw_minor_units": 25.4557,
         "window": [
           "2026-05-14T00:00:00+00:00",
           "2026-05-15T00:00:00+00:00"
@@ -29,9 +37,12 @@
       "provider": "sentry",
       "label": "Event ingestion",
       "amount_usd": 0.0,
-      "detail": {},
-      "skipped": true,
-      "skip_reason": "API status 403"
+      "detail": {
+        "events_24h": 0,
+        "rate_per_event_usd": 0.0003
+      },
+      "skipped": false,
+      "skip_reason": ""
     },
     {
       "provider": "stripe",

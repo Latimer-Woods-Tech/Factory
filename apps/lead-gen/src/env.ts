@@ -13,6 +13,7 @@ export interface Env {
   AI_GATEWAY_BASE_URL: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  GROK_API_KEY?: string;
   VERTEX_ACCESS_TOKEN: string;
   VERTEX_PROJECT: string;
   VERTEX_LOCATION: string;

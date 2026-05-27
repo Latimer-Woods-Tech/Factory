@@ -92,6 +92,9 @@ jobs:
             echo "=== ${package} ==="
             cd "packages/${package}"
             npm ci --ignore-scripts
+            # All @latimer-woods-tech/* dependencies use file:../X references in packages/
+            # so npm ci creates symlinks into the local tree.  Symlinks resolve to the
+            # already-built dist/ from the earlier iteration, so no overlay is needed here.
             npm run lint
             npm run typecheck
             npm run test

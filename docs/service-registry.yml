@@ -436,6 +436,29 @@ workers:
           *.workers.dev fallback URLs (HARD-CONSTRAINTS violation tracked as
           a MED gap and being fixed by sprint A).
 
+  - id: factory-cross-repo
+    name: factory-cross-repo
+    repo: Latimer-Woods-Tech/factory
+    url: https://factory-cross-repo.latwoodtech.work
+    workers_dev_url: https://factory-cross-repo.adrper79.workers.dev
+    custom_domain: factory-cross-repo.latwoodtech.work
+    custom_domain_status: pending
+    health_endpoint: /health
+    verification_targets:
+      staging: https://factory-cross-repo.adrper79.workers.dev/health
+      production: https://factory-cross-repo.latwoodtech.work/health
+    telemetry_required: false
+    notes: >
+      Cross-repo GitHub App operations worker. Accepts POST /api/supervisor/create-pr
+      from factory-supervisor to open audit PRs in affected repos.
+    required_secrets:
+      - FACTORY_CROSS_REPO_TOKEN
+      - FACTORY_APP_ID
+      - FACTORY_APP_PRIVATE_KEY
+      - FACTORY_APP_INSTALLATION_ID
+    consumers:
+      - apps/supervisor/src/pr-opening.ts
+
   - id: factory-supervisor
     name: factory-supervisor                                   # matches wrangler.jsonc name
     repo: Latimer-Woods-Tech/factory
@@ -735,6 +758,116 @@ workers:
       - GCP_REGION
     consumers: []
 
+  - id: qa-tools-worker
+    name: qa-tools-worker
+    repo: Latimer-Woods-Tech/factory
+    url: https://qa-tools.lwt.internal
+    workers_dev_url: https://qa-tools-worker.adrper79.workers.dev
+    custom_domain: qa-tools.lwt.internal
+    custom_domain_status: not-yet-attached
+    health_endpoint: /health
+    telemetry_required: false
+    deployment_status: phase-1-live            # Phase 1 live 2026-05-27; health verified at /health
+    required_secrets:
+      - QA_TOOLS_JWT_SECRET
+      - BROWSER_AGENT_SA_KEY
+      - BROWSER_AGENT_URL
+      - BROWSER_AGENT_AUDIENCE
+    required_vars:
+      - ENVIRONMENT
+    required_bindings:
+      - DB (Hyperdrive ed95104a65c541c8b98f842e01f5894a — qa-tools-hyperdrive -> THE_FACTORY Neon)
+      - QA_TOOLS_R2 (R2 bucket qa-tools)
+      - RATE_LIMIT_KV (KV cbec8a8aa8554005bb763267bd5498b1 — QA_RATE_LIMIT_KV)
+    notes: >
+      QA Tools Platform API — accessibility audits, screenshot capture, performance testing.
+      Wraps the browser-agent Cloud Run service (/visual-review with runAxe=true for Phase 1).
+      Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+      Neon migrations: apps/qa-tools-worker/migrations/001_phase1.sql
+      Phase 1 (MVP): POST /runs, GET /runs/:id/status, GET /runs/:id/results, GET /apps/:appId/health
+      Consumers: qa-tools-ui (Phase 1 frontend)
+      LIVE: Deployed 2026-05-27, health check passing at https://qa-tools-worker.adrper79.workers.dev/health
+    consumers: []
+
+  # ─── PLANNED (not yet built) ─────────────────────────────────────────────────
+  # These workers are referenced in docs/marketing/pr3-briefs/ planning documents.
+  # They will be built during Stage 3 (marketing automation).
+
+  - id: marketing-supervisor
+    name: marketing-supervisor
+    repo: Latimer-Woods-Tech/factory
+    url: https://marketing.latwoodtech.work
+    workers_dev_url: https://marketing-supervisor.adrper79.workers.dev
+    custom_domain: marketing.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://marketing-supervisor.adrper79.workers.dev/health
+      production: https://marketing.latwoodtech.work/health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      Marketing automation supervisor (Stage 3). Orchestrates email drip,
+      social adapters, topic queue, shareables, embeds, and brand safety.
+      Planned — not yet deployed.
+    consumers: []
+
+  - id: marketing-supervisor-staging
+    name: marketing-supervisor-staging
+    repo: Latimer-Woods-Tech/factory
+    url: https://marketing-supervisor-staging.adrper79.workers.dev
+    workers_dev_url: https://marketing-supervisor-staging.adrper79.workers.dev
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://marketing-supervisor-staging.adrper79.workers.dev/health
+    telemetry_required: false
+    notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
+    consumers: []
+
+  - id: referrals
+    name: referrals
+    repo: Latimer-Woods-Tech/factory
+    url: https://referrals.latwoodtech.work
+    workers_dev_url: https://referrals.adrper79.workers.dev
+    custom_domain: referrals.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://referrals.adrper79.workers.dev/health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      Referral tracking worker (Stage 3 — PR brief 3j).
+      Planned — not yet deployed.
+    consumers: []
+
+  - id: llm-rank-worker
+    name: llm-rank-worker
+    repo: Latimer-Woods-Tech/factory
+    url: https://llm-rank.latwoodtech.work
+    workers_dev_url: https://llm-rank-worker.adrper79.workers.dev
+    custom_domain: llm-rank.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://llm-rank-worker.adrper79.workers.dev/health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      LLM ranking worker for surfacing the most relevant content (Stage 3 — PR brief 3l).
+      Planned — not yet deployed.
+    consumers: []
+
 pages:
   - id: prime-self-ui
     repo: Latimer-Woods-Tech/HumanDesign
@@ -800,6 +933,26 @@ pages:
     required_secrets:
       - CLOUDFLARE_API_TOKEN
       - CLOUDFLARE_ACCOUNT_ID
+
+  - id: qa-tools-ui
+    repo: Latimer-Woods-Tech/factory
+    project_name: qa-tools-ui                            # CF Pages project (wrangler pages project create qa-tools-ui)
+    custom_domain: null                                  # internal tool — no public domain in Phase 1
+    custom_domain_status: not-yet-attached
+    deployment_status: phase-1-in-progress
+    root_file: apps/qa-tools-ui/src/app/page.tsx
+    deploy_dir: apps/qa-tools-ui/out
+    worker_dependencies:
+      - qa-tools-worker
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+    notes: >
+      QA Tools Platform dashboard (Next.js 15 static export).
+      Internal engineering tool — accessible to qa-runner/viewer/admin roles only.
+      No public custom domain in Phase 1; provisioned on default pages.dev URL.
+      Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+
 # ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────
 #
 # Shared npm packages published to @adrper79-dot scope.

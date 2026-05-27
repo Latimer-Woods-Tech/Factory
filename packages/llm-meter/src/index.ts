@@ -176,17 +176,24 @@ const DEFAULT_RUN_CAP_CENTS = 500;
 
 // Pricing in micro-dollars per 1M tokens (USD × 10_000 to keep ints).
 // Keep in sync with provider pricing pages; update on price changes.
-// Sources (2026-05): anthropic.com/pricing, cloud.google.com/vertex-ai/pricing, groq.com/pricing
+// Sources (2026-05): anthropic.com/pricing, cloud.google.com/vertex-ai/pricing, groq.com/pricing, docs.x.ai
 const PRICING_UCENTS_PER_MTOK: Record<string, { input: number; output: number; cachedInput?: number }> = {
   // Anthropic
   'claude-haiku-4-20250514':   { input: 80,    output: 400,   cachedInput: 8 },
+  'claude-haiku-4-5-20251001': { input: 80,    output: 400,   cachedInput: 8 },
   'claude-sonnet-4-20250514':  { input: 300,   output: 1500,  cachedInput: 30 },
+  'claude-sonnet-4-6':         { input: 300,   output: 1500,  cachedInput: 30 },
   'claude-opus-4-20250514':    { input: 1500,  output: 7500,  cachedInput: 150 },
+  'claude-opus-4-7':           { input: 1500,  output: 7500,  cachedInput: 150 },
   // Google
   'gemini-2.5-pro':            { input: 125,   output: 500 },
   'gemini-1.5-flash':          { input: 8,     output: 30 },
   // Groq
   'llama-3.3-70b-versatile':   { input: 59,    output: 79 },
+  // xAI
+  'grok-4.3':                  { input: 125,   output: 250 },
+  'grok-4-fast':               { input: 125,   output: 250 },
+  'grok-3-mini-latest':        { input: 125,   output: 250 },
 };
 
 /**

@@ -10,6 +10,7 @@ export const GENERATED_TARGETS = [
   { id: "capricast-api.health", url: "https://api.capricast.com/health", contains: "ok" },
   { id: "cypher-healing.health", url: "https://api.cipherofhealing.com/health", contains: "ok" },
   { id: "coh.health", url: "https://api.cypherofhealing.com/health", contains: "ok" },
+  { id: "factory-cross-repo.health", url: "https://factory-cross-repo.latwoodtech.work/health", contains: "ok" },
   { id: "factory-supervisor.health", url: "https://supervisor.latwoodtech.work/health", contains: "ok" },
   { id: "lead-gen.health", url: "https://lead-gen.adrper79.workers.dev/health", contains: "ok" },
   { id: "factory-core-api.health", url: "https://core.latwoodtech.work/health", contains: "ok" },
@@ -17,4 +18,9 @@ export const GENERATED_TARGETS = [
   { id: "daily-brief.health", url: "https://daily-brief.adrper79.workers.dev/health", contains: "ok" },
   { id: "xico-city.health", url: "https://xicocity.com/health", contains: "ok" },
   { id: "xico-city-staging.health", url: "https://staging.xicocity.com/health", contains: "ok" },
+  { id: "qa-tools-worker.health", url: "https://qa-tools.lwt.internal/health", contains: "ok" },
+  { id: "marketing-supervisor.health", url: "https://marketing.latwoodtech.work/health", contains: "ok" },
+  { id: "marketing-supervisor-staging.health", url: "https://marketing-supervisor-staging.adrper79.workers.dev/health", contains: "ok" },
+  { id: "referrals.health", url: "https://referrals.latwoodtech.work/health", contains: "ok" },
+  { id: "llm-rank-worker.health", url: "https://llm-rank.latwoodtech.work/health", contains: "ok" },
 ] as const;

@@ -1,0 +1,109 @@
+name: Deploy factory-cross-repo (Worker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/factory-cross-repo/**'
+      - '.github/workflows/deploy-factory-cross-repo.yml'
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+concurrency:
+  group: factory-cross-repo-${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  deploy:
+    name: Deploy to ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: apps/factory-cross-repo
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: apps/factory-cross-repo
+
+      - name: Confirm CF_API_TOKEN is set
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          test -n "${CF_API_TOKEN}" || \
+            (echo "::error::CF_API_TOKEN not set" && exit 1)
+
+      - name: Provision secrets
+        working-directory: apps/factory-cross-repo
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          SECRET_FACTORY_CROSS_REPO_TOKEN: ${{ secrets.FACTORY_CROSS_REPO_TOKEN }}
+          SECRET_FACTORY_APP_ID: ${{ secrets.FACTORY_APP_ID }}
+          SECRET_FACTORY_APP_PRIVATE_KEY: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          SECRET_FACTORY_APP_INSTALLATION_ID: ${{ secrets.FACTORY_APP_INSTALLATION_ID }}
+          TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+        run: |
+          put_secret() {
+            local name="$1" val="$2"
+            if [ -z "$val" ]; then
+              echo "::warning::Skipping $name — secret not set"
+              return 0
+            fi
+            ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+            echo "$val" | npx wrangler secret put "$name" ${ENV_FLAG} 2>&1 | grep -v "^$"
+          }
+          put_secret FACTORY_CROSS_REPO_TOKEN "${SECRET_FACTORY_CROSS_REPO_TOKEN}"
+          put_secret FACTORY_APP_ID           "${SECRET_FACTORY_APP_ID}"
+          put_secret FACTORY_APP_PRIVATE_KEY  "${SECRET_FACTORY_APP_PRIVATE_KEY}"
+          put_secret FACTORY_APP_INSTALLATION_ID "${SECRET_FACTORY_APP_INSTALLATION_ID}"
+
+      - name: Deploy
+        working-directory: apps/factory-cross-repo
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+        run: |
+          ENV_FLAG=$([ "${TARGET_ENV}" = "production" ] && echo "--env production" || echo "")
+          npx wrangler deploy ${ENV_FLAG}
+
+      - name: Post-deploy health check
+        run: |
+          if [ "${{ github.event.inputs.env }}" = "production" ] || \
+             ( [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ] ); then
+            URL="https://factory-cross-repo.latwoodtech.work"
+          else
+            URL="https://factory-cross-repo.adrper79.workers.dev"
+          fi
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${URL}/health")
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed on ${URL}"
+              exit 0
+            fi
+            echo "Attempt $i: status=${STATUS}, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Health check failed after 5 attempts"
+          exit 1
