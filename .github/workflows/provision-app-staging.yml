@@ -355,10 +355,20 @@ jobs:
           # Non-fatal: lineage update is best-effort; a failed update does not
           # roll back the deployment.
           SHA="${DEPLOYED_SHA:-${GITHUB_SHA}}"
-          WRANGLER_PATH="staging-workspace/${APP_NAME}/wrangler.jsonc"
-          MANIFEST_HASH=""
-          if [ -f "$WRANGLER_PATH" ]; then
-            MANIFEST_HASH=$(sha256sum "$WRANGLER_PATH" | awk '{print $1}')
+          MANIFEST_JSON=$(curl -sf --max-time 10 "${STAGING_WORKER_URL}/manifest" 2>/dev/null || echo "")
+          if [ -n "${MANIFEST_JSON}" ]; then
+            MANIFEST_HASH=$(echo "${MANIFEST_JSON}" | jq -c -S '.' | sha256sum | awk '{print $1}')
+            echo "✅ manifest_hash computed from /manifest endpoint"
+          else
+            # Fallback: hash the wrangler.jsonc if /manifest is not yet reachable
+            WRANGLER_PATH="staging-workspace/${APP_NAME}/wrangler.jsonc"
+            if [ -f "${WRANGLER_PATH}" ]; then
+              MANIFEST_HASH=$(sha256sum "${WRANGLER_PATH}" | awk '{print $1}')
+              echo "⚠️  /manifest not reachable — fell back to wrangler.jsonc hash"
+            else
+              MANIFEST_HASH="unknown"
+              echo "::warning::Could not compute manifest_hash — /manifest unreachable and wrangler.jsonc missing"
+            fi
           fi
           BODY=$(jq -n \
             --arg serviceId "${APP_NAME}-staging" \
@@ -368,12 +378,14 @@ jobs:
             --arg mhash "${MANIFEST_HASH}" \
             --arg hyperdriveId "${HYPERDRIVE_ID:-}" \
             --arg rateLimiterId "${{ inputs.rate_limiter_namespace_id }}" \
+            --arg wurl "${STAGING_WORKER_URL}" \
             '{
               serviceId: $serviceId,
               handoffId: $handoffId,
               provisionRequestId: $provReqId,
               deployedSha: $sha,
               manifestHash: $mhash,
+              workerUrl: $wurl,
               metadata: {
                 hyperdrive_id: $hyperdriveId,
                 rate_limiter_namespace_id: $rateLimiterId,
