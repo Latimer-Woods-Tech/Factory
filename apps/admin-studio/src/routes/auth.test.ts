@@ -104,6 +104,7 @@ function buildEnv(envOverride: EnvOverride = {}): Env {
     JWT_SECRET: 'test-jwt-secret-with-enough-entropy',
     STUDIO_ADMIN_EMAIL: 'operator@example.com',
     STUDIO_ADMIN_PASSWORD_SHA256: passwordHash,
+    STUDIO_GOOGLE_WORKSPACE_DOMAIN: 'latwoodtech.com',
     GITHUB_TOKEN: 'github-token',
     ANTHROPIC_API_KEY: 'anthropic-key',
 ...envOverride,

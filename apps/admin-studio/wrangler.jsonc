@@ -8,6 +8,7 @@
   ],
   "vars": {
     "STUDIO_ENV": "staging",
+    "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
     "ALLOWED_ORIGINS": "https://studio.thefactory.dev,https://apunlimited.com,https://staging.admin-studio-ui.pages.dev"
   },
   "env": {
@@ -18,6 +19,7 @@
       ],
       "vars": {
         "STUDIO_ENV": "staging",
+        "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
         "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,https://admin-staging.latwoodtech.work,http://localhost:5173",
         // Digest non-secret vars
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
@@ -72,6 +74,7 @@
       "name": "admin-studio-production",
       "vars": {
         "STUDIO_ENV": "production",
+        "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
         "ALLOWED_ORIGINS": "https://studio.thefactory.dev,https://apunlimited.com",
         // Digest non-secret vars
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
