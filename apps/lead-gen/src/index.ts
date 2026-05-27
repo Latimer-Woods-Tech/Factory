@@ -47,7 +47,7 @@ app.post('/run', async (c) => {
       VERTEX_PROJECT: c.env.VERTEX_PROJECT,
       VERTEX_LOCATION: c.env.VERTEX_LOCATION,
     },
-    { tier: 'balanced' }
+    { tier: 'fast', maxTokens: 350, maxCostUsd: 0.05, project: 'lead-gen', actor: 'worker', workload: 'lead-qualification' }
   );
 
   if (qualification.error) {
@@ -169,7 +169,7 @@ async function runRedditSniper(env: Env, logger: ReturnType<typeof createLogger>
           { role: 'user', content: userContent },
         ],
         llmEnv,
-        { tier: 'fast' }
+        { tier: 'fast', maxTokens: 220, maxCostUsd: 0.03, project: 'lead-gen', actor: 'worker', workload: 'reddit-reply' }
       );
 
       const reply = result.error

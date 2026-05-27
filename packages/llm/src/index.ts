@@ -45,6 +45,8 @@ export interface LLMOptions {
   project?: string;
   /** Optional actor identifier (supervisor / worker / human). */
   actor?: string;
+  /** Optional workload label used in logs and cost-policy call sites. */
+  workload?: string;
   /** Anthropic prompt-cache control. Defaults to `true` for `system` prompts ≥ 1024 tokens. */
   promptCache?: boolean;
   /**
@@ -277,9 +279,12 @@ async function recordOrgCostUsage(
 const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic Haiku 4
   'claude-haiku-4-20250514': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
+  'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
   // Anthropic Sonnet 4
+  'claude-sonnet-4-20250514': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
   'claude-sonnet-4-6': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
   // Anthropic Opus 4
+  'claude-opus-4-20250514': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
   'claude-opus-4-7': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
   // Gemini 2.5 Pro
   'gemini-2.5-pro': { input: 1.25, output: 10.00, cacheRead: 0.31, cacheWrite: 4.50 },
@@ -862,6 +867,7 @@ export async function complete(
         runId: opts.runId,
         project: opts.project,
         actor: opts.actor,
+        workload: opts.workload,
       });
       const llmResult: LLMResult = {
         content: result.parsed.content,

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.2 — 2026-05-27
+
+### Added (no breaking changes)
+
+- **`LLMOptions.workload`** — optional string label (`'insights'`, `'copy'`, `'lead-qualification'`, …)
+  forwarded to cost-recording calls for per-workload cost attribution in dashboards.
+- **Missing model pricing entries** in `MODEL_PRICE_PER_1M`:
+  `claude-haiku-4-5-20251001`, `claude-sonnet-4-20250514`, `claude-opus-4-20250514`
+  (aliases for variants that share pricing with their shorthand names; prevents
+  `estimateCostUsd` from silently returning `$0` for these model IDs).
+- **`workload` forwarded** to `recordOrgCostUsage` so per-workload breakdowns appear
+  in the cost-tracking KV store.
+
+### Consumers
+
+- Existing callers do not need to set `workload`; it is optional and defaults to `undefined`.
+- The `recordOrgCostUsage` signature is unchanged; `workload` is an additive internal field.
+
+---
+
 ## 0.3.1 — 2026-05-02 PM
 
 ### Added (no breaking changes)
