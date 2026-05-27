@@ -128,7 +128,10 @@ async function createJwt(
   const signatureBytes = await crypto.subtle.sign(
     'RSASSA-PKCS1-v1_5',
     cryptoKey,
-    stringToBytes(signatureInput),
+    // Uint8Array.buffer is ArrayBufferLike in strict TS but Web Crypto requires
+    // the narrower ArrayBuffer. The buffer is always a plain ArrayBuffer when
+    // created by stringToBytes (TextEncoder.encode path, not SharedArrayBuffer).
+    stringToBytes(signatureInput).buffer as ArrayBuffer,
   );
   const signatureB64 = base64UrlEncode(new Uint8Array(signatureBytes));
 

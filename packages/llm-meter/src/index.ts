@@ -180,8 +180,11 @@ const DEFAULT_RUN_CAP_CENTS = 500;
 const PRICING_UCENTS_PER_MTOK: Record<string, { input: number; output: number; cachedInput?: number }> = {
   // Anthropic
   'claude-haiku-4-20250514':   { input: 80,    output: 400,   cachedInput: 8 },
+  'claude-haiku-4-5-20251001': { input: 80,    output: 400,   cachedInput: 8 },
   'claude-sonnet-4-20250514':  { input: 300,   output: 1500,  cachedInput: 30 },
+  'claude-sonnet-4-6':         { input: 300,   output: 1500,  cachedInput: 30 },
   'claude-opus-4-20250514':    { input: 1500,  output: 7500,  cachedInput: 150 },
+  'claude-opus-4-7':           { input: 1500,  output: 7500,  cachedInput: 150 },
   // Google
   'gemini-2.5-pro':            { input: 125,   output: 500 },
   'gemini-1.5-flash':          { input: 8,     output: 30 },

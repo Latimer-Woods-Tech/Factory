@@ -77,7 +77,7 @@ async function draftLinkedInPost(env: Env): Promise<string> {
       VERTEX_PROJECT: env.VERTEX_PROJECT,
       VERTEX_LOCATION: env.VERTEX_LOCATION,
     },
-    { tier: 'balanced', temperature: 0.82, maxTokens: 450, project: 'linkedin-publisher' },
+    { tier: 'fast', temperature: 0.82, maxTokens: 450, maxCostUsd: 0.08, project: 'linkedin-publisher', actor: 'worker', workload: 'draft' },
   );
 
   if (result.error) {

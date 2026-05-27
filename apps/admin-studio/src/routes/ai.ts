@@ -102,6 +102,10 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
       model: 'gemini-2.5-pro',
       tier: 'smart',
       maxTokens: 2048,
+      maxCostUsd: 0.75,
+      project: 'admin-studio',
+      actor: 'human',
+      workload: 'planning',
       temperature: mode === 'refactor' ? 0.2 : 0.35,
     };
   }
@@ -111,6 +115,10 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
       model: 'grok-4-fast',
       tier: 'fast',
       maxTokens: 2048,
+      maxCostUsd: 0.50,
+      project: 'admin-studio',
+      actor: 'human',
+      workload: 'drafting',
       temperature: mode === 'refactor' ? 0.3 : 0.65,
     };
   }
@@ -118,6 +126,10 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
     system,
     tier: 'balanced',
     maxTokens: 2048,
+    maxCostUsd: 0.50,
+    project: 'admin-studio',
+    actor: 'human',
+    workload: 'execution',
     temperature: mode === 'refactor' ? 0.2 : 0.5,
   };
 }
@@ -369,10 +381,13 @@ ai.post('/chat', async (c) => {
     ? `${c.env.AI_GATEWAY_BASE_URL}/anthropic`
     : 'https://api.anthropic.com'; // Direct Anthropic API if gateway not configured
 
-  const agentMessages = [...messages];
+  // Typed to accept both plain-string content and structured content blocks
+  // (tool_result blocks pushed during the tool-use loop require the array form).
+  type AgentMessage = { role: string; content: string | Array<Record<string, unknown>> };
+  const agentMessages: AgentMessage[] = [...messages];
   let finalText = '';
   let loopCount = 0;
-  const maxLoops = 5; // Prevent infinite loops
+  const maxLoops = 3; // Prevent expensive runaway tool loops
 
   while (loopCount < maxLoops) {
     loopCount++;
@@ -380,7 +395,7 @@ ai.post('/chat', async (c) => {
     // Call Anthropic with tools (non-streaming for tool-use loop)
     const payload = {
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 1024,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096
         ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
@@ -647,7 +662,14 @@ Return ONLY valid JSON — no prose, no markdown fences:
     const result = await complete(
       [{ role: 'user', content: userContent }],
       llmEnv,
-      { system: systemContent, maxTokens: 512 },
+      {
+        system: systemContent,
+        maxTokens: 512,
+        maxCostUsd: 0.10,
+        project: 'admin-studio',
+        actor: 'worker',
+        workload: 'analysis-cycle',
+      },
     );
     const raw = result.data?.content ?? '';
     const parsed: unknown = JSON.parse(raw);
@@ -705,7 +727,14 @@ Return ONLY valid JSON — no prose, no markdown:
   const fixResult = await complete(
     [{ role: 'user', content: fixUserContent }],
     fixLlmEnv,
-    { system: fixSystemContent, maxTokens: 1024 },
+    {
+      system: fixSystemContent,
+      maxTokens: 1024,
+      maxCostUsd: 0.20,
+      project: 'admin-studio',
+      actor: 'worker',
+      workload: 'propose-fix',
+    },
   );
   const raw = fixResult.data?.content ?? '';
 
