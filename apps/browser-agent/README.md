@@ -9,7 +9,7 @@ Dockerized Playwright service for GCP Cloud Run. Cloud Run IAM protects the publ
 - `POST /screenshot` with `{ "url": "https://example.com" }`
 - `POST /audit` with `{ "url": "https://example.com", "steps"?: [...], "captureConsole"?: true, "statusThreshold"?: 400 }`
 - `POST /run-scenario` with `{ "steps": [...] }` (records video to R2 when configured)
-- `POST /visual-review` with `{ "url", "steps"?, "viewports"?, "rubric"?, "model"?, "captureConsole"?, "statusThreshold"? }`
+- `POST /visual-review` with `{ "url", "steps"?, "viewports"?, "rubric"?, "model"?, "captureConsole"?, "statusThreshold"?, "skipFinalNavigation"?, "runAxe"? }`
 
 ### `/visual-review`
 
@@ -44,6 +44,10 @@ Captures full-page screenshots across one or more viewports (default: desktop 12
 ```
 
 If neither `ANTHROPIC_API_KEY` nor `LATIMER_ANTHROPIC_API` is set, `review` is `null` and only the screenshots + diagnostics are returned.
+
+**Options:**
+- `skipFinalNavigation: true` — capture the page exactly where `steps[]` left it (don't re-`goto(url)`). Use for stateful SPA flows where the rendered state isn't preserved by URL alone (modal dismissal, post-submit renders).
+- `runAxe: true` — inject [axe-core](https://github.com/dequelabs/axe-core) into the page after `steps[]` complete, run a WCAG audit, and return objective violations in `axeViolations[]`. Each violation includes `id`, `impact`, `tags`, `nodeCount`, and `exampleSelectors`. Defaults to `false` to keep latency predictable for callers that only want vision grading.
 
 Local invocation via the helper: `scripts/test-site.sh https://selfprime.net/?start=1 visual-review`.
 
