@@ -1,61 +1,165 @@
-app: videoking
-repo: Latimer-Woods-Tech/capricast
-base_url: https://api.capricast.com
-auth: admin_jwt
-supervisor_access: approved
-tiers_allowed: [green, yellow]
+# capabilities.yml — capricast (P2.15)
+# Schema: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §3.1.1
+# Validated by: .github/workflows/_app-capability-lint.yml (P2.16)
+#
+# Note: The Worker is named `capricast-api`; legacy names include `videoking`,
+# `nichestream-api`. The capabilities file retains the `videoking.yml` filename
+# for backwards compatibility with the capabilities-loader.
+#
+# supervisor_access tiers:
+#   green   — supervisor may call without human review
+#   yellow  — supervisor may call; human confirms before execution
+#   red     — human must explicitly approve; supervisor may only plan, not execute
+#   denied  — never callable by supervisor
 
-capabilities:
-  - id: creator.lookup
-    desc: "Fetch a creator's profile, onboarding status, and Stripe connect state."
-    route: GET /api/admin/creators/:id
+version: 1
+app:
+  id: capricast
+  name: "capricast"
+  repo: Latimer-Woods-Tech/capricast
+  custom_domain: api.capricast.com
+  product_tier: revenue
+
+routes:
+  # ── Admin telemetry (mandatory per service-registry.yml) ────────────────────
+  - path: /api/admin/health
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
 
-  - id: creator.list
-    desc: "Paginated list of creators with optional status filter."
-    route: GET /api/admin/creators
+  - path: /api/admin/metrics
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
     params_schema:
-      page: { type: integer, min: 1 }
-      limit: { type: integer, min: 1, max: 100 }
+      window: { type: enum, values: [1h, 6h, 24h, 7d], optional: true }
+
+  - path: /api/admin/events
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      severity: { type: enum, values: [error, warn, info], optional: true }
+      limit:    { type: integer, min: 1, max: 100, optional: true }
+
+  # ── Creators ─────────────────────────────────────────────────────────────────
+  - path: /api/admin/creators
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      page:   { type: integer, min: 1, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
       status: { type: enum, values: [pending, active, suspended, onboarding], optional: true }
-    side_effects: none
-    required_scope: supervisor.readonly
 
-  - id: creator.verify_stripe
-    desc: "Trigger Stripe Connect verification for a creator. Idempotent — safe to re-run."
-    route: POST /api/admin/creators/:id/verify-stripe
-    idempotency_key: "creator_id + 'verify-stripe'"
+  - path: /api/admin/creators/:id
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  - path: /api/admin/creators/:id/verify-stripe
+    method: POST
+    handler_class: mutate-internal
     side_effects: write-external
+    supervisor_access: yellow
     reversibility: idempotent
-    required_scope: supervisor.mutator-stripe-verify
-    extra_guard: requires_codeowner_approval
+    requires_codeowner_oob: false
 
-  - id: creator.mark_ready_for_payout
-    desc: "Mark a creator as payout-eligible after manual KYC confirmation."
-    route: POST /api/admin/creators/:id/mark-ready-for-payout
-    idempotency_key: "creator_id + 'mark-ready'"
+  - path: /api/admin/creators/:id/mark-ready-for-payout
+    method: POST
+    handler_class: mutate-internal
     side_effects: write-app
+    supervisor_access: yellow
     reversibility: reversible-with-effort
-    required_scope: supervisor.mutator-creator-payout-ready
-    extra_guard: requires_codeowner_approval
+    requires_codeowner_oob: true
 
-  - id: payout.list_batches
-    desc: "List payout batches with status."
-    route: GET /api/admin/payouts/batches
+  # ── Payouts ──────────────────────────────────────────────────────────────────
+  - path: /api/admin/payouts/batches
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
     params_schema:
-      limit: { type: integer, min: 1, max: 50 }
-    side_effects: none
-    required_scope: supervisor.readonly
+      limit: { type: integer, min: 1, max: 50, optional: true }
 
-  - id: onboarding.status
-    desc: "Fetch a creator's onboarding funnel position."
-    route: GET /api/creator/onboarding
-    side_effects: none
-    required_scope: supervisor.readonly
+  - path: /api/admin/payouts
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-external
+    supervisor_access: red
+    reversibility: reversible-with-effort
+    requires_codeowner_oob: true
+    body_schema:
+      creator_id:   { type: string, validator: "^[a-zA-Z0-9\\-]{1,64}$" }
+      amount_cents: { type: integer, min: 100 }
+      currency:     { type: enum, values: [usd, eur, gbp], optional: true }
 
-  - id: health.check
-    desc: "Worker liveness check."
-    route: GET /health
+  # ── Videos ───────────────────────────────────────────────────────────────────
+  - path: /api/admin/videos
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
+    params_schema:
+      page:   { type: integer, min: 1, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+      status: { type: enum, values: [pending, processing, published, failed], optional: true }
+
+  - path: /api/admin/videos/import
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-app
+    supervisor_access: yellow
+    reversibility: idempotent
+    body_schema:
+      stream_video_id: { type: string, validator: "^[a-f0-9\\-]{32,64}$" }
+      title:           { type: string, validator: "^.{1,200}$" }
+      creator_id:      { type: string, validator: "^[a-zA-Z0-9\\-]{1,64}$" }
+
+  # ── Creator onboarding ────────────────────────────────────────────────────────
+  - path: /api/creator/onboarding
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  # ── Webhooks (never callable by supervisor) ──────────────────────────────────
+  - path: /api/stripe/webhook
+    method: POST
+    handler_class: webhook-external
+    side_effects: write-external
+    supervisor_access: denied
+
+  - path: /webhooks/stripe-connect
+    method: POST
+    handler_class: webhook-external
+    side_effects: write-external
+    supervisor_access: denied
+
+  # ── Health ───────────────────────────────────────────────────────────────────
+  - path: /health
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+capabilities_exposed:
+  - creator-management
+  - payout-processing
+  - video-import
+  - creator-onboarding
+
+capabilities_required:
+  - "@latimer-woods-tech/stripe@^0.2.0"
+  - "@latimer-woods-tech/auth@^0.2.0"
+  - "@latimer-woods-tech/neon@^0.2.0"
+
+side_effects_summary:
+  read_external: ["sentry-api", "posthog", "cloudflare-stream"]
+  write_external: ["stripe", "cloudflare-stream", "resend"]
+  write_app: ["neon:72697ebbf0d44419850743679390acf1"]

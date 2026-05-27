@@ -46,6 +46,10 @@ on:
       p0_gate_enabled:
         type: boolean
         default: true
+      # Factory Core API URL for gate ingest (P2.4). Optional — skipped when empty.
+      factory_core_api_url:
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -58,8 +62,8 @@ jobs:
       run:
         working-directory: ${{ inputs.working_directory }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ inputs.node_version }}
           registry-url: 'https://npm.pkg.github.com'
@@ -111,3 +115,36 @@ jobs:
             exit 1
           fi
           echo "✓ No open P0 issues; gate passes."
+
+      - name: Ingest reliability gate row
+        if: always()
+        env:
+          FACTORY_CORE_API_URL: ${{ inputs.factory_core_api_url }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ -z "${FACTORY_CORE_API_URL:-}" ] || [ -z "${FACTORY_CORE_API_INGEST_KEY:-}" ]; then
+            echo "Skipping reliability gate ingest (FACTORY_CORE_API_URL or FACTORY_CORE_API_INGEST_KEY not set)"
+            exit 0
+          fi
+          STATE=$([ "$JOB_STATUS" = "success" ] && echo "passed" || echo "failed")
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(jq -n \
+            --arg gt "reliability" \
+            --arg ss "github-actions" \
+            --arg sr "$RUN_URL" \
+            --arg sei "reliability-${{ github.repository }}-${{ github.run_id }}" \
+            --arg st "deploy" \
+            --arg srepo "${{ github.repository }}" \
+            --arg sref "${{ github.run_id }}" \
+            --arg state "$STATE" \
+            --arg eu "$RUN_URL" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{gate_type:$gt,source_system:$ss,source_ref:$sr,source_event_id:$sei,
+              subject_type:$st,subject_repo:$srepo,subject_ref:$sref,state:$state,
+              evidence_url:$eu,evidence_summary:{},observed_at:$ts}')
+          curl -s -o /dev/null -w "Gate ingest HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/gates" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$PAYLOAD" || echo "::warning::Reliability gate ingest failed (non-blocking)"

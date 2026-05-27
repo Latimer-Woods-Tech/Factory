@@ -17,8 +17,8 @@
  */
 import type { RepoBranch, RepoFileContent, RepoPullRequest, RepoTreeNode } from '@latimer-woods-tech/studio-core';
 
-const FACTORY_OWNER = 'adrper79-dot';
-const FACTORY_REPO = 'factory';
+const FACTORY_OWNER = 'Latimer-Woods-Tech';
+const FACTORY_REPO = 'Factory';
 const API_BASE = 'https://api.github.com';
 
 export class GitHubApiError extends Error {
@@ -343,6 +343,21 @@ export async function dispatchWorkflow(token: string, args: WorkflowDispatchArgs
   }
 }
 
+interface GhIssueResponse {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  labels: Array<{ name: string }>;
+  html_url: string;
+}
+
+interface GhPullListResponse {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  html_url: string;
+}
+
 interface GhRunsResponse {
   workflow_runs: Array<{
     id: number;
@@ -350,6 +365,43 @@ interface GhRunsResponse {
     created_at: string;
     status: string;
   }>;
+}
+
+/**
+ * List issues in the repo, optionally filtered by labels.
+ */
+export async function listIssues(
+  token: string,
+  state: 'open' | 'closed' = 'open',
+  labels: string = '',
+): Promise<Array<{ number: number; title: string; state: string; labels: string[]; url: string }>> {
+  const labelQuery = labels ? `&labels=${encodeURIComponent(labels)}` : '';
+  const res = await gh(token, `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/issues?state=${state}&per_page=30${labelQuery}`);
+  const data = await readJson<GhIssueResponse[]>(res);
+  return data.map((i) => ({
+    number: i.number,
+    title: i.title,
+    state: i.state,
+    labels: i.labels.map((l) => l.name),
+    url: i.html_url,
+  }));
+}
+
+/**
+ * List pull requests in the repo.
+ */
+export async function listPullRequests(
+  token: string,
+  state: 'open' | 'closed' | 'all' = 'open',
+): Promise<Array<{ number: number; title: string; state: string; url: string }>> {
+  const res = await gh(token, `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/pulls?state=${state}&per_page=30`);
+  const data = await readJson<GhPullListResponse[]>(res);
+  return data.map((p) => ({
+    number: p.number,
+    title: p.title,
+    state: p.state,
+    url: p.html_url,
+  }));
 }
 
 /**
