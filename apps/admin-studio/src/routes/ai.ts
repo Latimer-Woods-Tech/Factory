@@ -20,6 +20,8 @@ import type { AppEnv } from '../types.js';
 import type { Env } from '../env.js';
 import { fetchFile } from '../lib/github-api.js';
 import type { LLMEnv } from '@latimer-woods-tech/llm';
+import { AGENT_TOOLS, executeTool, extractToolUse } from '../lib/ai-tools.js';
+import type { ToolUseBlock } from '../lib/ai-tools.js';
 
 // ---------------------------------------------------------------------------
 // Module-level CONTEXT.md cache — fetched once per worker cold start
@@ -366,35 +368,111 @@ ai.post('/chat', async (c) => {
     });
   }
 
+  // Tool-use agentic loop (non-streaming for now)
   const apiKey = c.env.ANTHROPIC_API_KEY;
-  // AI Gateway is required — no fallback to direct Anthropic (STACK.md).
   const baseUrl = `${c.env.AI_GATEWAY_BASE_URL}/anthropic`;
-  const upstream = await fetch(`${baseUrl}/v1/messages`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31',
-    },
-    body: JSON.stringify({
+
+  const agentMessages = [...messages];
+  let finalText = '';
+  let loopCount = 0;
+  const maxLoops = 5; // Prevent infinite loops
+
+  while (loopCount < maxLoops) {
+    loopCount++;
+
+    // Call Anthropic with tools (non-streaming for tool-use loop)
+    const payload = {
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096
         ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
         : system,
-      messages,
-      stream: true,
-    }),
-  });
-  if (!upstream.ok || !upstream.body) {
-    return c.json({ error: 'upstream failed' }, 502);
+      messages: agentMessages,
+      tools: AGENT_TOOLS.length > 0 ? AGENT_TOOLS : undefined,
+      stream: false, // Collect full response for tool-use check
+    };
+
+    const upstream = await fetch(`${baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!upstream.ok) {
+      return c.json({ error: 'upstream failed', status: upstream.status }, 502);
+    }
+
+    const response = await upstream.json<any>();
+    if (response.error || !response.content) {
+      return c.json({ error: 'upstream error', detail: response.error }, 502);
+    }
+
+    // Check if model returned tool_use
+    const toolUse = extractToolUse(response.content);
+    if (toolUse) {
+      // Execute the tool
+      let toolResult: unknown = { error: 'tool execution failed' };
+      try {
+        if (!c.env.GITHUB_TOKEN) {
+          toolResult = { error: 'GITHUB_TOKEN not configured' };
+        } else {
+          toolResult = await executeTool(toolUse.name, toolUse.input as Record<string, unknown>, c.env.GITHUB_TOKEN);
+        }
+      } catch (err) {
+        toolResult = { error: (err as Error).message };
+      }
+
+      // Append assistant response and tool result to messages
+      agentMessages.push({
+        role: 'assistant',
+        content: response.content,
+      });
+      agentMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(toolResult),
+          },
+        ],
+      });
+
+      continue; // Loop back and get the next response
+    }
+
+    // No tool_use — extract final text and break
+    for (const block of response.content) {
+      if (block && typeof block === 'object' && (block as Record<string, unknown>).type === 'text') {
+        finalText = (block as Record<string, unknown>).text as string || '';
+      }
+    }
+    break;
   }
 
-  const out = transformAnthropicSse(upstream.body);
+  // Stream the final text response
+  const encoder = new TextEncoder();
+  const finalStream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const token: AIChatEvent = { type: 'token', delta: finalText };
+      const done: AIChatEvent = {
+        type: 'done',
+        provider: 'anthropic',
+        tokens: { input: 0, output: finalText.length },
+      };
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(done)}\n\n`));
+      controller.close();
+    },
+  });
 
-  return new Response(out, {
+  return new Response(finalStream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
