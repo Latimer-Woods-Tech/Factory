@@ -781,6 +781,10 @@ workers:
       staging: https://marketing-supervisor.adrper79.workers.dev/health
       production: https://marketing.latwoodtech.work/health
     telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     notes: >
       Marketing automation supervisor (Stage 3). Orchestrates email drip,
       social adapters, topic queue, shareables, embeds, and brand safety.
@@ -811,6 +815,10 @@ workers:
     verification_targets:
       staging: https://referrals.adrper79.workers.dev/health
     telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     notes: >
       Referral tracking worker (Stage 3 — PR brief 3j).
       Planned — not yet deployed.
@@ -827,6 +835,10 @@ workers:
     verification_targets:
       staging: https://llm-rank-worker.adrper79.workers.dev/health
     telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     notes: >
       LLM ranking worker for surfacing the most relevant content (Stage 3 — PR brief 3l).
       Planned — not yet deployed.
