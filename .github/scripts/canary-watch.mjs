@@ -59,8 +59,8 @@ const SIBLINGS              = env('SIBLING_SENTRY_PROJECTS', '')
 const SENTRY_TOKEN          = env('SENTRY_AUTH_TOKEN');
 const CF_TOKEN              = env('CLOUDFLARE_API_TOKEN');
 const CF_ACCOUNT            = env('CLOUDFLARE_ACCOUNT_ID');
-const PUSHOVER_USER         = env('PUSHOVER_USER_KEY');
-const PUSHOVER_APP          = env('PUSHOVER_APP_TOKEN');
+const PUSHOVER_USER         = env('PUSHOVER_USER_KEY', '');
+const PUSHOVER_APP          = env('PUSHOVER_APP_TOKEN', '');
 const GH_TOKEN              = env('GH_TOKEN');
 const REPO                  = env('GITHUB_REPOSITORY');
 const RUN_URL               = `${env('GITHUB_SERVER_URL')}/${REPO}/actions/runs/${env('GITHUB_RUN_ID')}`;
@@ -132,6 +132,11 @@ const smokeProbe = async () => {
 // ---- Pushover ---------------------------------------------------------------
 
 const pushover = async ({ title, message, priority = 1 }) => {
+  if (!PUSHOVER_USER || !PUSHOVER_APP) {
+    console.warn('Pushover not configured; skipping notification.');
+    return;
+  }
+
   const body = new URLSearchParams({
     token: PUSHOVER_APP,
     user: PUSHOVER_USER,
