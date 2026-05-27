@@ -84,6 +84,7 @@ def test_dim_privacy_accepts_new_stub_routes(monkeypatch):
 
     monkeypatch.setattr(conformance, "gh_get_file", fake_get_file)
     monkeypatch.setattr(conformance, "gh_search_code", fake_search_code)
+    monkeypatch.setattr(conformance, "gh_list_dir", lambda *_a, **_k: [])
 
     dim = conformance.dim_privacy("Latimer-Woods-Tech/example")
     assert dim.score == 100
@@ -105,6 +106,7 @@ def test_dim_privacy_accepts_quoted_stub_routes(monkeypatch):
 
     monkeypatch.setattr(conformance, "gh_get_file", fake_get_file)
     monkeypatch.setattr(conformance, "gh_search_code", fake_search_code)
+    monkeypatch.setattr(conformance, "gh_list_dir", lambda *_a, **_k: [])
 
     dim = conformance.dim_privacy("Latimer-Woods-Tech/example")
     assert dim.score == 100
@@ -126,10 +128,298 @@ def test_dim_privacy_requires_delete_endpoint_hint(monkeypatch):
 
     monkeypatch.setattr(conformance, "gh_get_file", fake_get_file)
     monkeypatch.setattr(conformance, "gh_search_code", fake_search_code)
+    monkeypatch.setattr(conformance, "gh_list_dir", lambda *_a, **_k: [])
 
+    # 3 of 4 checks pass (PII inventory + retention + PII-drift); DSR hint fails.
     dim = conformance.dim_privacy("Latimer-Woods-Tech/example")
-    assert dim.score == 67
+    assert dim.score == 75
     assert dim.checks[2].passed is False
+
+
+# ───────────── Schema / ROLLBACK block tests ─────────────
+
+
+def _make_migration_item(name: str) -> dict:
+    """Helper: build a minimal GitHub API directory-listing item for a migration file."""
+    return {"name": name, "path": f"migrations/{name}", "type": "file"}
+
+
+def test_rollback_block_present(platform_conformance, monkeypatch):
+    """A migration that contains '-- ROLLBACK:' passes with no errors or warnings."""
+    item = _make_migration_item("0001_create_users.sql")
+
+    monkeypatch.setattr(platform_conformance, "gh_list_dir", lambda *_: [item])
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "CREATE TABLE users (id INT);\n-- ROLLBACK: DROP TABLE users;",
+    )
+
+    errors, warnings = platform_conformance.check_rollback_blocks(
+        [item], set(), "Latimer-Woods-Tech/example"
+    )
+    assert errors == []
+    assert warnings == []
+
+
+def test_rollback_block_missing_existing_migration(platform_conformance, monkeypatch):
+    """An existing migration (not in changed_files) without -- ROLLBACK: → warning, not error."""
+    item = _make_migration_item("0001_create_users.sql")
+
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "CREATE TABLE users (id INT);",
+    )
+
+    errors, warnings = platform_conformance.check_rollback_blocks(
+        [item], set(), "Latimer-Woods-Tech/example"
+    )
+    assert errors == []
+    assert warnings == ["migrations/0001_create_users.sql"]
+
+
+def test_rollback_block_missing_new_migration(platform_conformance, monkeypatch):
+    """A new migration (in changed_files) without -- ROLLBACK: → error (blocks conformance)."""
+    item = _make_migration_item("0002_add_email.sql")
+
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "ALTER TABLE users ADD COLUMN email TEXT;",
+    )
+
+    errors, warnings = platform_conformance.check_rollback_blocks(
+        [item],
+        {"migrations/0002_add_email.sql"},
+        "Latimer-Woods-Tech/example",
+    )
+    assert errors == ["migrations/0002_add_email.sql"]
+    assert warnings == []
+
+
+def test_rollback_block_none_with_adr(platform_conformance, monkeypatch):
+    """-- ROLLBACK: NONE -- ADR-001 counts as a valid ROLLBACK block."""
+    item = _make_migration_item("0003_irreversible.sql")
+
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": (
+            "DROP TABLE legacy_data;\n-- ROLLBACK: NONE -- ADR-042"
+        ),
+    )
+
+    errors, warnings = platform_conformance.check_rollback_blocks(
+        [item], {"migrations/0003_irreversible.sql"}, "Latimer-Woods-Tech/example"
+    )
+    assert errors == []
+    assert warnings == []
+
+
+def test_rollback_block_case_insensitive(platform_conformance, monkeypatch):
+    """The -- ROLLBACK: marker is matched case-insensitively."""
+    item = _make_migration_item("0004_mixed_case.sql")
+
+    # Use lowercase variant
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "CREATE INDEX idx ON users(email);\n-- rollback: DROP INDEX idx;",
+    )
+
+    errors, warnings = platform_conformance.check_rollback_blocks(
+        [item], {"migrations/0004_mixed_case.sql"}, "Latimer-Woods-Tech/example"
+    )
+    assert errors == []
+    assert warnings == []
+
+
+def test_dim_schema_new_migration_missing_rollback_fails(platform_conformance, monkeypatch):
+    """dim_schema marks the ROLLBACK check as failed when a new migration lacks the block."""
+    item = _make_migration_item("0001_init.sql")
+
+    monkeypatch.setattr(platform_conformance, "gh_list_dir", lambda *_: [item])
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "CREATE TABLE foo (id INT);",
+    )
+
+    dim = platform_conformance.dim_schema(
+        "Latimer-Woods-Tech/example",
+        changed_files={"migrations/0001_init.sql"},
+    )
+    rollback_check = next(c for c in dim.checks if "ROLLBACK" in c.name)
+    assert rollback_check.passed is False
+    assert "migrations/0001_init.sql" in rollback_check.detail
+
+
+def test_dim_schema_existing_migration_missing_rollback_warns_not_fails(platform_conformance, monkeypatch):
+    """dim_schema passes the ROLLBACK check (with a warning detail) for pre-existing debt."""
+    item = _make_migration_item("0001_init.sql")
+
+    monkeypatch.setattr(platform_conformance, "gh_list_dir", lambda *_: [item])
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "CREATE TABLE foo (id INT);",
+    )
+
+    dim = platform_conformance.dim_schema(
+        "Latimer-Woods-Tech/example",
+        changed_files=set(),  # not a new migration
+    )
+    rollback_check = next(c for c in dim.checks if "ROLLBACK" in c.name)
+    assert rollback_check.passed is True
+    assert "WARN" in rollback_check.detail
+    assert "migrations/0001_init.sql" in rollback_check.detail
+
+
+def test_dim_schema_all_migrations_have_rollback_passes_clean(platform_conformance, monkeypatch):
+    """dim_schema ROLLBACK check passes cleanly when all migrations have the block."""
+    item = _make_migration_item("0001_init.sql")
+
+    monkeypatch.setattr(platform_conformance, "gh_list_dir", lambda *_: [item])
+    monkeypatch.setattr(
+        platform_conformance,
+        "gh_get_file",
+        lambda repo, path, ref="main": "CREATE TABLE foo (id INT);\n-- ROLLBACK: DROP TABLE foo;",
+    )
+
+    dim = platform_conformance.dim_schema(
+        "Latimer-Woods-Tech/example",
+        changed_files={"migrations/0001_init.sql"},
+    )
+    rollback_check = next(c for c in dim.checks if "ROLLBACK" in c.name)
+    assert rollback_check.passed is True
+    assert rollback_check.detail == ""
+
+
+# ───────────── Privacy / PII schema-drift tests (G12) ─────────────
+
+
+def test_extract_sql_columns_add_and_inline(platform_conformance):
+    """Column extraction picks up ADD COLUMN and inline defs, skips constraints."""
+    sql = (
+        "CREATE TABLE creators (\n"
+        "  id UUID PRIMARY KEY,\n"
+        "  email TEXT NOT NULL,\n"
+        '  "full_name" VARCHAR(255),\n'
+        "  created_at TIMESTAMPTZ DEFAULT now(),\n"
+        "  CONSTRAINT uq_email UNIQUE (email)\n"
+        ");\n"
+        "ALTER TABLE creators ADD COLUMN IF NOT EXISTS phone_number TEXT;"
+    )
+    cols = platform_conformance.extract_sql_columns(sql)
+    assert {"id", "email", "full_name", "created_at", "phone_number"} <= cols
+    # Constraint keywords must not be captured as columns.
+    assert "constraint" not in cols
+    assert "unique" not in cols
+
+
+def test_parse_documented_pii_fields(platform_conformance):
+    """Backtick-quoted identifiers in the inventory are collected (lowercased)."""
+    inventory = "| `email` | PII |\n| `stripe_customer_id` | financial |\n plain text `User_Agent`"
+    fields = platform_conformance.parse_documented_pii_fields(inventory)
+    assert fields == {"email", "stripe_customer_id", "user_agent"}
+    assert platform_conformance.parse_documented_pii_fields(None) == set()
+
+
+def test_is_pii_column_positive_and_negative(platform_conformance):
+    for name in ("email", "phone_number", "full_name", "ip", "ip_address",
+                 "user_agent", "avatar_url", "stripe_customer_id", "date_of_birth"):
+        assert platform_conformance.is_pii_column(name), name
+    for name in ("id", "template_id", "status", "created_at", "description",
+                 "recipient", "filename"):
+        assert not platform_conformance.is_pii_column(name), name
+
+
+def test_pii_drift_documented_column_passes(platform_conformance, monkeypatch):
+    """A PII column that is documented in the inventory yields no errors/warnings."""
+    item = _make_migration_item("0001_users.sql")
+    monkeypatch.setattr(
+        platform_conformance, "gh_get_file",
+        lambda repo, path, ref="main": "CREATE TABLE users (id UUID, email TEXT);",
+    )
+    errors, warnings = platform_conformance.check_pii_schema_drift(
+        [item], "documented: `email`", {"migrations/0001_users.sql"},
+        "Latimer-Woods-Tech/example",
+    )
+    assert errors == []
+    assert warnings == []
+
+
+def test_pii_drift_undocumented_new_migration_errors(platform_conformance, monkeypatch):
+    """An undocumented PII column in a NEW migration is an error."""
+    item = _make_migration_item("0002_add_phone.sql")
+    monkeypatch.setattr(
+        platform_conformance, "gh_get_file",
+        lambda repo, path, ref="main": "ALTER TABLE users ADD COLUMN phone_number TEXT;",
+    )
+    errors, warnings = platform_conformance.check_pii_schema_drift(
+        [item], "documented: `email`", {"migrations/0002_add_phone.sql"},
+        "Latimer-Woods-Tech/example",
+    )
+    assert errors == ["migrations/0002_add_phone.sql: phone_number"]
+    assert warnings == []
+
+
+def test_pii_drift_undocumented_existing_warns(platform_conformance, monkeypatch):
+    """An undocumented PII column in a PRE-EXISTING migration is a warning, not an error."""
+    item = _make_migration_item("0002_add_phone.sql")
+    monkeypatch.setattr(
+        platform_conformance, "gh_get_file",
+        lambda repo, path, ref="main": "ALTER TABLE users ADD COLUMN phone_number TEXT;",
+    )
+    errors, warnings = platform_conformance.check_pii_schema_drift(
+        [item], "documented: `email`", set(), "Latimer-Woods-Tech/example",
+    )
+    assert errors == []
+    assert warnings == ["migrations/0002_add_phone.sql: phone_number"]
+
+
+def test_pii_drift_non_pii_columns_ignored(platform_conformance, monkeypatch):
+    """Non-PII columns never trigger errors or warnings even when undocumented."""
+    item = _make_migration_item("0003_widgets.sql")
+    monkeypatch.setattr(
+        platform_conformance, "gh_get_file",
+        lambda repo, path, ref="main": (
+            "CREATE TABLE widgets (id UUID, template_id UUID, status TEXT, qty INTEGER);"
+        ),
+    )
+    errors, warnings = platform_conformance.check_pii_schema_drift(
+        [item], "", {"migrations/0003_widgets.sql"}, "Latimer-Woods-Tech/example",
+    )
+    assert errors == []
+    assert warnings == []
+
+
+def test_dim_privacy_new_migration_undocumented_pii_fails(platform_conformance, monkeypatch):
+    """dim_privacy marks the PII-drift check failed for an undocumented PII column in a new migration."""
+    item = _make_migration_item("0009_add_ssn.sql")
+
+    def fake_get_file(_repo: str, path: str, _ref: str = "main"):
+        if path in {"docs/PII_INVENTORY.md", "docs/RETENTION.md"}:
+            return "documented: `email`"
+        if path == "migrations/0009_add_ssn.sql":
+            return "ALTER TABLE users ADD COLUMN ssn TEXT;"
+        return None
+
+    monkeypatch.setattr(platform_conformance, "gh_get_file", fake_get_file)
+    monkeypatch.setattr(platform_conformance, "gh_search_code", lambda *_a, **_k: 1)
+    monkeypatch.setattr(platform_conformance, "gh_list_dir", lambda repo, path, ref="main": [item] if path == "migrations" else [])
+
+    dim = platform_conformance.dim_privacy(
+        "Latimer-Woods-Tech/example",
+        changed_files={"migrations/0009_add_ssn.sql"},
+    )
+    pii_check = next(c for c in dim.checks if c.name == "Migration PII columns documented")
+    assert pii_check.passed is False
+    assert "ssn" in pii_check.detail
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 def _fake_search_with_hits(*hits: str):

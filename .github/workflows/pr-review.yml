@@ -71,4 +71,8 @@ jobs:
           # Optional: JSON array to override/extend the built-in reviewer-class map.
           # Shape: [{"class":"platform","label":"...","patterns":["regex"],"reviewers":["handle"]}]
           REVIEWER_HINTS_MAP: ${{ vars.REVIEWER_HINTS_MAP || '' }}
+          # Factory Core API — gate ingest for the Command Center (P2.3).
+          # Best-effort: omitting these vars silently skips the gate write.
+          FACTORY_CORE_API_URL: ${{ vars.FACTORY_CORE_API_URL || '' }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY || '' }}
         run: node .github/scripts/pr-review.mjs

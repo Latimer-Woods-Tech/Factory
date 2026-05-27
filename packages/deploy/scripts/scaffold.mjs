@@ -270,6 +270,8 @@ coverage/
       deploy: 'wrangler deploy',
       'deploy:staging': 'wrangler deploy --env staging',
       typecheck: 'tsc --noEmit',
+      lint: 'biome check src',
+      format: 'biome format --write src',
       test: 'vitest run',
       'test:watch': 'vitest',
     },
@@ -286,7 +288,9 @@ coverage/
       hono: '^4.12.15',
     },
     devDependencies: {
+      '@latimer-woods-tech/biome-config': '^0.1.0',
       '@latimer-woods-tech/testing': '^0.2.0',
+      '@biomejs/biome': '^1.9.4',
       '@cloudflare/workers-types': '^4.20260426.1',
       '@cloudflare/vitest-pool-workers': '^0.8.0',
       'drizzle-kit': '^0.31.0',
@@ -295,6 +299,12 @@ coverage/
       vitest: '^1.6.0',
       '@vitest/coverage-v8': '^1.6.0',
     },
+  }, null, 2) + '\n');
+
+  // biome.json — extends shared config; existing apps are unaffected.
+  write('biome.json', JSON.stringify({
+    $schema: 'https://biomejs.dev/schemas/1.9.4/schema.json',
+    extends: ['@latimer-woods-tech/biome-config/biome.json'],
   }, null, 2) + '\n');
 
   // tsconfig.json

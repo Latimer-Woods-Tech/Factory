@@ -7,6 +7,7 @@ import {
   ValidationError,
   toErrorResponse,
 } from '@latimer-woods-tech/errors';
+import { createDb, stripeIdempotencyKeys, eq } from '@latimer-woods-tech/neon';
 
 /**
  * Normalized subscription state used across Factory apps.
@@ -549,6 +550,138 @@ export function stripeWebhookHandler(options: StripeWebhookHandlerOptions): Hand
  */
 export function priceToTier(priceId: string, tierMap: Record<string, string>): string {
   return tierMap[priceId] ?? 'unknown';
+}
+
+// ---------------------------------------------------------------------------
+// Idempotency-key helper (P2.13h)
+// ---------------------------------------------------------------------------
+
+/** Options for transferOrIdempotent. */
+export interface IdempotentTransferOptions {
+  /** Stripe secret key. Required when stripeClient is not provided. */
+  stripeSecretKey?: string;
+  /** Optional pre-built Stripe client (for testing). */
+  stripeClient?: Stripe;
+  /** Hyperdrive-compatible Neon DB binding for idempotency key persistence. */
+  neonDb: { connectionString: string };
+  /** Pre-generated idempotency key (UUID recommended). */
+  idempotencyKey: string;
+  /** Destination Stripe Connect account ID. */
+  destination: string;
+  /** Amount in cents. */
+  amountCents: number;
+  /** ISO 4217 currency code (lowercase). Default: 'usd'. */
+  currency?: string;
+  /** Optional attribution for cost accounting. */
+  tenantId?: string;
+  runId?: string;
+  actor?: string;
+  /** Optional transfer metadata passed through to Stripe. */
+  metadata?: Record<string, string>;
+}
+
+/** Result of a transferOrIdempotent call. */
+export interface IdempotentTransferResult {
+  /** Stripe transfer ID. */
+  transferId: string;
+  /** True when this call performed the transfer; false when a previous call did. */
+  isNew: boolean;
+}
+
+/**
+ * Persists an idempotency key to Neon BEFORE calling Stripe, so a Worker
+ * crash mid-call never results in a double-charge.
+ *
+ * Flow:
+ *   1. INSERT idempotency key with status='pending' (unique constraint)
+ *   2. If INSERT conflicts, look up the existing row:
+ *      - status='success' → return stored transfer ID (idempotent replay)
+ *      - status='failed'  → throw stored error
+ *      - status='pending' → another request is in flight; throw conflict error
+ *   3. Call Stripe stripe.transfers.create()
+ *   4. On success: UPDATE status='success', stripe_response=...
+ *   5. On failure: UPDATE status='failed', stripe_error=...
+ *
+ * @throws {InternalError} when Stripe rejects the transfer.
+ */
+export async function transferOrIdempotent(
+  opts: IdempotentTransferOptions,
+): Promise<IdempotentTransferResult> {
+  if (!opts.stripeSecretKey && !opts.stripeClient) {
+    throw new InternalError('transferOrIdempotent: provide stripeSecretKey or stripeClient');
+  }
+  const db = createDb(opts.neonDb);
+  const stripe = opts.stripeClient ?? new Stripe(opts.stripeSecretKey!);
+
+  // Step 1: try to claim the idempotency key
+  const inserted = await db
+    .insert(stripeIdempotencyKeys)
+    .values({
+      idempotencyKey: opts.idempotencyKey,
+      stripeOperation: 'transfer',
+      status: 'pending',
+      tenantId: opts.tenantId,
+      runId: opts.runId,
+      actor: opts.actor,
+    })
+    .onConflictDoNothing({ target: stripeIdempotencyKeys.idempotencyKey })
+    .returning({ id: stripeIdempotencyKeys.id });
+
+  // Step 2: conflict → look up existing row
+  if (inserted.length === 0) {
+    const existing = await db
+      .select({
+        status: stripeIdempotencyKeys.status,
+        stripeResponse: stripeIdempotencyKeys.stripeResponse,
+        stripeError: stripeIdempotencyKeys.stripeError,
+      })
+      .from(stripeIdempotencyKeys)
+      .where(eq(stripeIdempotencyKeys.idempotencyKey, opts.idempotencyKey))
+      .limit(1);
+
+    const row = existing[0];
+    if (!row) throw new InternalError('idempotency key conflict but row not found');
+
+    if (row.status === 'success') {
+      const transferId = (row.stripeResponse as { id?: string } | null)?.id;
+      if (!transferId) throw new InternalError('missing transfer ID in stored response');
+      return { transferId, isNew: false };
+    }
+    if (row.status === 'failed') {
+      throw new InternalError(`transfer failed (stored): ${row.stripeError ?? 'unknown'}`);
+    }
+    throw new InternalError('transfer in progress: concurrent request holds this idempotency key');
+  }
+
+  // Step 3 & 4: call Stripe, then update the key
+  const rowId = inserted[0]?.id;
+  if (!rowId) throw new InternalError('unexpected: insert returned no row id');
+
+  try {
+    const transfer = await stripe.transfers.create(
+      {
+        amount: opts.amountCents,
+        currency: opts.currency ?? 'usd',
+        destination: opts.destination,
+        metadata: opts.metadata ?? {},
+      },
+      { idempotencyKey: opts.idempotencyKey },
+    );
+
+    await db
+      .update(stripeIdempotencyKeys)
+      .set({ status: 'success', stripeResponse: transfer as unknown as Record<string, unknown>, resolvedAt: new Date() })
+      .where(eq(stripeIdempotencyKeys.id, rowId));
+
+    return { transferId: transfer.id, isNew: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await db
+      .update(stripeIdempotencyKeys)
+      .set({ status: 'failed', stripeError: msg, resolvedAt: new Date() })
+      .where(eq(stripeIdempotencyKeys.id, rowId));
+    throw new InternalError(`Stripe transfer failed: ${msg}`);
+  }
 }
 
 export type { Stripe };

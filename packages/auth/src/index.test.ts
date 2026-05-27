@@ -110,6 +110,76 @@ describe('issueToken / verifyToken', () => {
 });
 
 // ---------------------------------------------------------------------------
+// dual-key rotation (verifyToken + issueToken + jwtMiddleware with secretNext)
+// ---------------------------------------------------------------------------
+
+const SECRET_NEXT = 'next-secret-at-least-32-characters!!';
+
+describe('dual-key rotation', () => {
+  it('verifyToken accepts a token signed with the primary secret', async () => {
+    const token = await issueToken({ sub: 'u', tenantId: 't', role: 'member' }, SECRET);
+    const payload = await verifyToken(token, SECRET, SECRET_NEXT);
+    expect(payload.sub).toBe('u');
+  });
+
+  it('verifyToken accepts a token signed with secretNext', async () => {
+    const token = await issueToken({ sub: 'u', tenantId: 't', role: 'member' }, SECRET_NEXT);
+    const payload = await verifyToken(token, SECRET, SECRET_NEXT);
+    expect(payload.sub).toBe('u');
+  });
+
+  it('verifyToken rejects a token signed with an unknown third secret', async () => {
+    const token = await issueToken({ sub: 'u', tenantId: 't', role: 'member' }, 'unknown-secret-that-is-not-registered!');
+    await expect(verifyToken(token, SECRET, SECRET_NEXT)).rejects.toThrow();
+  });
+
+  it('verifyToken does not fall back to secretNext for expired tokens', async () => {
+    const expired = await makeExpiredToken();
+    await expect(verifyToken(expired, SECRET, SECRET_NEXT)).rejects.toThrow('Token expired');
+  });
+
+  it('issueToken signs with secretNext when provided', async () => {
+    const token = await issueToken({ sub: 'u', tenantId: 't', role: 'admin' }, SECRET, 3600, SECRET_NEXT);
+    // Verifiable with secretNext but not with primary
+    await expect(verifyToken(token, SECRET)).rejects.toThrow();
+    const payload = await verifyToken(token, SECRET_NEXT);
+    expect(payload.sub).toBe('u');
+  });
+
+  it('refreshToken re-signs with secretNext when provided', async () => {
+    const token = await issueToken({ sub: 'u', tenantId: 't', role: 'member' }, SECRET);
+    const refreshed = await refreshToken(token, SECRET, 3600, SECRET_NEXT);
+    // refreshed token must be verifiable with SECRET_NEXT
+    const payload = await verifyToken(refreshed, SECRET_NEXT);
+    expect(payload.sub).toBe('u');
+  });
+
+  it('jwtMiddleware accepts old-secret token during rotation', async () => {
+    const app = new Hono<{ Variables: { user: { sub: string } } }>();
+    app.use('*', jwtMiddleware(SECRET, { secretNext: SECRET_NEXT }));
+    app.get('/me', (c) => c.json(c.get('user')));
+
+    const oldToken = await issueToken({ sub: 'bob', tenantId: 't', role: 'viewer' }, SECRET);
+    const res = await app.request('/me', { headers: { authorization: `Bearer ${oldToken}` } });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { sub: string };
+    expect(body.sub).toBe('bob');
+  });
+
+  it('jwtMiddleware accepts new-secret token during rotation', async () => {
+    const app = new Hono<{ Variables: { user: { sub: string } } }>();
+    app.use('*', jwtMiddleware(SECRET, { secretNext: SECRET_NEXT }));
+    app.get('/me', (c) => c.json(c.get('user')));
+
+    const newToken = await issueToken({ sub: 'carol', tenantId: 't', role: 'owner' }, SECRET_NEXT);
+    const res = await app.request('/me', { headers: { authorization: `Bearer ${newToken}` } });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { sub: string };
+    expect(body.sub).toBe('carol');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // refreshToken
 // ---------------------------------------------------------------------------
 

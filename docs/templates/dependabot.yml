@@ -1,0 +1,49 @@
+# .github/dependabot.yml — canonical template for Latimer-Woods-Tech app repos
+# Copy this file to your app repo's .github/dependabot.yml to enable:
+#   1. GitHub Actions SHA-pinning updates (github-actions ecosystem)
+#   2. npm security patches (npm ecosystem, patch + minor only)
+#
+# Pin actions by SHA per docs/architecture/FACTORY_V1.md §Security.
+# Dependabot reads the trailing `# vX.Y.Z` comment to show a human-readable
+# version in PRs even though the `uses:` line references a SHA.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+      - supervisor:approved-source
+    commit-message:
+      prefix: chore(actions)
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    allow:
+      - dependency-type: direct
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+    open-pull-requests-limit: 5

@@ -421,17 +421,68 @@ def dim_security(repo: str) -> DimensionScore:
     return DimensionScore("security", "Security", 15, score_from_checks(checks), checks)
 
 
-def dim_schema(repo: str) -> DimensionScore:
+def check_rollback_blocks(
+    migration_files: list[dict[str, Any]],
+    changed_files: set[str],
+    repo: str,
+) -> tuple[list[str], list[str]]:
+    """
+    Check every SQL migration file for a ``-- ROLLBACK:`` comment block.
+
+    Rules
+    -----
+    * The marker is ``-- ROLLBACK:`` (case-insensitive), anywhere in the file.
+    * ``-- ROLLBACK: NONE -- ADR-XXX`` is valid (irreversible migration documented
+      via an ADR reference).
+    * A migration whose *path* appears in ``changed_files`` is considered **new**
+      (added in the current PR).  New migrations without the block are **errors**
+      (the dimension check fails).
+    * Pre-existing migrations without the block are **warnings** (debt; not
+      blocking the conformance score, but surfaced in the report).
+
+    Returns
+    -------
+    errors   : list of file paths for new migrations missing the block
+    warnings : list of file paths for existing migrations missing the block
+    """
+    ROLLBACK_RE = re.compile(r"--\s*ROLLBACK\s*:", re.IGNORECASE)
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    sql_files = [m for m in migration_files if m.get("name", "").endswith(".sql")]
+    for item in sql_files:
+        path = item.get("path", "")
+        content = gh_get_file(repo, path) or ""
+        if ROLLBACK_RE.search(content):
+            continue  # block found — passes
+        if path in changed_files:
+            errors.append(path)
+        else:
+            warnings.append(path)
+
+    return errors, warnings
+
+
+def dim_schema(repo: str, changed_files: set[str] | None = None) -> DimensionScore:
+    if changed_files is None:
+        changed_files = set()
     migrations = gh_list_dir(repo, "migrations") + gh_list_dir(repo, "src/db/migrations")
-    sample = ""
-    if migrations:
-        sample_path = next((m["path"] for m in migrations if m.get("name", "").endswith(".sql")), None)
-        if sample_path:
-            sample = gh_get_file(repo, sample_path) or ""
+
+    rollback_errors, rollback_warnings = check_rollback_blocks(migrations, changed_files, repo)
+
+    rollback_passed = len(rollback_errors) == 0
+    rollback_detail = ""
+    if rollback_errors:
+        rollback_detail = f"New migrations missing -- ROLLBACK: block: {', '.join(rollback_errors)}"
+    elif rollback_warnings:
+        rollback_detail = (
+            f"WARN: {len(rollback_warnings)} existing migration(s) missing -- ROLLBACK: block "
+            f"(debt — not blocking): {', '.join(rollback_warnings)}"
+        )
 
     checks = [
         check("Migrations directory present",  len(migrations) > 0),
-        check("ROLLBACK block in sample",      "-- ROLLBACK" in sample if sample else False),
+        check("ROLLBACK block enforced",       rollback_passed, rollback_detail),
         check("Numbered file naming",          any(re.match(r"^\d{4}_", m.get("name", "")) for m in migrations)),
     ]
     return DimensionScore("schema", "Schema", 5, score_from_checks(checks), checks)
@@ -485,7 +536,119 @@ def dim_performance(repo: str) -> DimensionScore:
     return DimensionScore("performance", "Performance", 10, score_from_checks(checks), checks)
 
 
-def dim_privacy(repo: str) -> DimensionScore:
+# PII column-name heuristics — curated to stay high-signal. Broad tokens like a
+# bare "name" or "id" are intentionally excluded; they produce noise without
+# adding coverage. Each pattern is matched (search) against the lowercased
+# column identifier.
+PII_COLUMN_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(p, re.IGNORECASE) for p in (
+        r"e?_?mail",
+        r"phone", r"telephone", r"^mobile(_number)?$", r"^msisdn$",
+        r"first_name", r"last_name", r"full_name", r"middle_name",
+        r"sur_?name", r"given_name", r"maiden_name",
+        r"date_of_birth", r"^dob$", r"birth_?date", r"^birthday$",
+        r"^ssn$", r"social_security", r"national_id", r"passport",
+        r"tax_id", r"drivers?_licen[sc]e",
+        r"street_address", r"^address(_line\d?)?$", r"postal_code", r"^zip_?code$",
+        r"^ip$", r"ip_address",
+        r"user_agent",
+        r"avatar",
+        r"^latitude$", r"^longitude$",
+        r"(google|oidc|apple|github)_sub",
+        r"stripe_customer_id",
+    )
+]
+
+# Column-type whitelist keeps the inline-column regex from matching constraint
+# keywords (PRIMARY KEY, FOREIGN KEY, CONSTRAINT ...).
+_SQL_COLUMN_TYPES = (
+    r"text|varchar|character|char|citext|uuid|smallint|integer|int|int4|int8|"
+    r"bigint|serial|bigserial|smallserial|boolean|bool|timestamptz|timestamp|"
+    r"date|time|jsonb|json|numeric|decimal|real|double|float|bytea|inet|cidr|"
+    r"macaddr|money|interval"
+)
+_ADD_COLUMN_RE = re.compile(
+    r'ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(?P<col>[a-zA-Z_][a-zA-Z0-9_]*)"?',
+    re.IGNORECASE,
+)
+_INLINE_COLUMN_RE = re.compile(
+    r'^\s*"?(?P<col>[a-zA-Z_][a-zA-Z0-9_]*)"?\s+(?:' + _SQL_COLUMN_TYPES + r')\b',
+    re.IGNORECASE | re.MULTILINE,
+)
+_SQL_RESERVED = frozenset({
+    "constraint", "primary", "foreign", "unique", "check", "key", "index",
+    "create", "table", "alter", "add", "column", "references", "if", "not", "exists",
+})
+_DOC_IDENT_RE = re.compile(r"`([a-zA-Z_][a-zA-Z0-9_]*)`")
+
+
+def extract_sql_columns(sql_text: str) -> set[str]:
+    """Best-effort extraction of column identifiers declared or added in a migration."""
+    cols: set[str] = set()
+    for m in _ADD_COLUMN_RE.finditer(sql_text):
+        cols.add(m.group("col").lower())
+    for m in _INLINE_COLUMN_RE.finditer(sql_text):
+        name = m.group("col").lower()
+        if name not in _SQL_RESERVED:
+            cols.add(name)
+    return cols
+
+
+def parse_documented_pii_fields(inventory_text: str | None) -> set[str]:
+    """Collect backtick-quoted field identifiers documented in PII_INVENTORY.md."""
+    if not inventory_text:
+        return set()
+    return {m.group(1).lower() for m in _DOC_IDENT_RE.finditer(inventory_text)}
+
+
+def is_pii_column(name: str) -> bool:
+    """True when a column identifier matches a known PII name pattern."""
+    return any(p.search(name) for p in PII_COLUMN_PATTERNS)
+
+
+def check_pii_schema_drift(
+    migration_files: list[dict[str, Any]],
+    inventory_text: str | None,
+    changed_files: set[str],
+    repo: str,
+) -> tuple[list[str], list[str]]:
+    """
+    Diff PII-looking columns in migration SQL against documented fields in
+    ``PII_INVENTORY.md`` (G12).
+
+    A column whose name matches :data:`PII_COLUMN_PATTERNS` but whose identifier
+    is absent from the inventory is *undocumented PII*. New migrations (path in
+    ``changed_files``) → **errors** (fail the check); pre-existing migrations →
+    **warnings** (debt, surfaced but non-blocking). Mirrors the G13 ROLLBACK
+    new/existing split.
+
+    Returns ``(errors, warnings)`` as lists of ``"path: column"`` strings.
+    """
+    documented = parse_documented_pii_fields(inventory_text)
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    sql_files = [m for m in migration_files if m.get("name", "").endswith(".sql")]
+    for item in sql_files:
+        path = item.get("path", "")
+        content = gh_get_file(repo, path) or ""
+        undocumented = sorted(
+            col for col in extract_sql_columns(content)
+            if is_pii_column(col) and col not in documented
+        )
+        for col in undocumented:
+            entry = f"{path}: {col}"
+            if path in changed_files:
+                errors.append(entry)
+            else:
+                warnings.append(entry)
+
+    return errors, warnings
+
+
+def dim_privacy(repo: str, changed_files: set[str] | None = None) -> DimensionScore:
+    if changed_files is None:
+        changed_files = set()
     pii = (
         gh_get_file(repo, "docs/PII_INVENTORY.md")
         or gh_get_file(repo, "docs/pii_inventory.md")
@@ -522,10 +685,26 @@ def dim_privacy(repo: str) -> DimensionScore:
         "/privacy/delete",
     )
 
+    migrations = gh_list_dir(repo, "migrations") + gh_list_dir(repo, "src/db/migrations")
+    pii_errors, pii_warnings = check_pii_schema_drift(migrations, pii, changed_files, repo)
+    pii_drift_passed = len(pii_errors) == 0
+    if pii_errors:
+        pii_drift_detail = (
+            f"New migration PII column(s) missing from PII_INVENTORY.md: {', '.join(pii_errors)}"
+        )
+    elif pii_warnings:
+        pii_drift_detail = (
+            f"WARN: {len(pii_warnings)} existing migration PII column(s) not documented in "
+            f"PII_INVENTORY.md (debt — not blocking): {', '.join(pii_warnings)}"
+        )
+    else:
+        pii_drift_detail = ""
+
     checks = [
         check("PII_INVENTORY.md present",      pii is not None),
         check("Retention policy doc present",  retention is not None),
         check("DSR endpoint hints (export + delete)", export_hint and delete_hint),
+        check("Migration PII columns documented", pii_drift_passed, pii_drift_detail),
     ]
     return DimensionScore("privacy", "Privacy", 5, score_from_checks(checks), checks)
 

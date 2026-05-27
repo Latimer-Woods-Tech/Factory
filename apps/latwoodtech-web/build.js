@@ -224,6 +224,7 @@ const { topology } = await generateTopology();
 
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
+await copyFile(join(srcDir, 'privacy.html'), join(distDir, 'privacy.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
