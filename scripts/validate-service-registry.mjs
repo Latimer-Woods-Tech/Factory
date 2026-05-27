@@ -50,6 +50,16 @@ const WORKFLOW_RULES = [
     targets: [{ id: 'schedule-worker', key: 'default' }],
   },
   {
+    path: '.github/workflows/deploy-factory-cross-repo.yml',
+    section: 'workers',
+    verifier: 'curl -s -o /dev/null',
+    matchMode: 'base-url',
+    targets: [
+      { id: 'factory-cross-repo', key: 'staging' },
+      { id: 'factory-cross-repo', key: 'production' },
+    ],
+  },
+  {
     path: '.github/workflows/deploy-supervisor.yml',
     section: 'workers',
     verifier: 'curl -s -o /dev/null',
