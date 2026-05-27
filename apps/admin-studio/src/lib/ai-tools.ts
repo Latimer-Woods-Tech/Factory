@@ -7,6 +7,7 @@
 
 import type { Env } from '../env.js';
 import { fetchTree, fetchFile, listIssues, listPullRequests } from './github-api.js';
+import { gcpGetSecret } from './gcp-secrets.js';
 
 export interface ToolDefinition {
   name: string;
@@ -78,6 +79,17 @@ export const AGENT_TOOLS: ToolDefinition[] = [
       required: [],
     },
   },
+  {
+    name: 'gcp_get_secret',
+    description: 'Fetch a secret from GCP Secret Manager by name (e.g. "NEON_FACTORY_DATABASE_URL")',
+    input_schema: {
+      type: 'object',
+      properties: {
+        secret_name: { type: 'string', description: 'Secret name in GCP Secret Manager' },
+      },
+      required: ['secret_name'],
+    },
+  },
 ];
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -88,6 +100,7 @@ export async function executeTool(
   toolName: string,
   toolInput: Record<string, unknown>,
   githubToken: string,
+  env?: { GCP_SA_KEY?: string },
 ): Promise<ToolResult> {
   switch (toolName) {
     case 'github_read_file': {
@@ -147,6 +160,21 @@ export async function executeTool(
           state,
           count: prs.length,
           prs: prs.slice(0, 20).map((p) => ({ number: p.number, title: p.title, state: p.state })),
+        };
+      } catch (err) {
+        return { error: (err as Error).message };
+      }
+    }
+
+    case 'gcp_get_secret': {
+      const secretName = String(toolInput.secret_name ?? '');
+      if (!secretName) return { error: 'secret_name is required' };
+      if (!env?.GCP_SA_KEY) return { error: 'GCP_SA_KEY environment variable not set' };
+      try {
+        const secret = await gcpGetSecret(secretName, env);
+        return {
+          secret_name: secretName,
+          value: secret.slice(0, 100) + (secret.length > 100 ? '...' : ''),
         };
       } catch (err) {
         return { error: (err as Error).message };

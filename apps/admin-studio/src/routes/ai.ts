@@ -422,7 +422,12 @@ ai.post('/chat', async (c) => {
         if (!c.env.GITHUB_TOKEN) {
           toolResult = { error: 'GITHUB_TOKEN not configured' };
         } else {
-          toolResult = await executeTool(toolUse.name, toolUse.input as Record<string, unknown>, c.env.GITHUB_TOKEN);
+          toolResult = await executeTool(
+            toolUse.name,
+            toolUse.input as Record<string, unknown>,
+            c.env.GITHUB_TOKEN,
+            { GCP_SA_KEY: c.env.GCP_SA_KEY },
+          );
         }
       } catch (err) {
         toolResult = { error: (err as Error).message };
