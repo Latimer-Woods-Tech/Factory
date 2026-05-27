@@ -52,7 +52,5 @@ jobs:
           git config user.name  "factory-supervisor[bot]"
           git config user.email "supervisor@latimer-woods-tech.com"
           git rm .github/workflows/cleanup-orphaned-sa-key.yml
-          git commit -m "chore(infra): remove one-shot SA key cleanup workflow after successful run
-
-https://claude.ai/code/session_01VqGZDt1QMs3NJiEGSXHacS"
+          git commit -m "chore(infra): remove one-shot SA key cleanup workflow after successful run"
           git push
