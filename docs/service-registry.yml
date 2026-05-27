@@ -205,13 +205,13 @@ workers:
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
     repo: Latimer-Woods-Tech/factory
-    url: https://admin-staging.latwoodtech.work            # canonical staging custom domain — declared in wrangler.jsonc env.staging.routes
-    custom_domain: admin-staging.latwoodtech.work
+    url: https://api.admin.latimerwoods.dev                # canonical staging domain — latimerwoods.dev is the dev surface
+    custom_domain: api.admin.latimerwoods.dev
     custom_domain_status: pending_attach                   # attaches on next admin-studio staging deploy
     workers_dev_url: https://admin-studio-staging.adrper79.workers.dev  # CF fallback; never hardcode in user-facing code
     health_endpoint: /health
     verification_targets:
-      default: https://admin-staging.latwoodtech.work/health
+      default: https://api.admin.latimerwoods.dev/health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
@@ -238,13 +238,13 @@ workers:
         note: deploy-time health verify hits the workers.dev URL directly
       - repo: Latimer-Woods-Tech/factory
         file: .github/workflows/deploy-admin-studio-ui.yml
-        line: ~60
-        pattern: "https://admin-staging.latwoodtech.work"
-        note: VITE_API_BASE_STAGING — bundled into the UI for end-user requests
+        line: ~67
+        pattern: "https://api.admin.latimerwoods.dev"
+        note: VITE_API_BASE_STAGING — bundled into the UI for end-user requests (updated 2026-05-27)
       - repo: Latimer-Woods-Tech/factory
         file: apps/admin-studio-ui/.env.example
         line: ~13
-        pattern: "https://admin-staging.latwoodtech.work"
+        pattern: "https://api.admin.latimerwoods.dev"
       - repo: Latimer-Woods-Tech/factory
         file: docs/admin-studio/02-OPERATOR-QUICK-REF.md
         line: ~16
@@ -253,9 +253,10 @@ workers:
   - id: admin-studio-production
     name: admin-studio-production                          # matches apps/admin-studio/wrangler.jsonc env.production.name
     repo: Latimer-Woods-Tech/factory
-    url: https://api.apunlimited.com                       # branded prod API domain — used by admin-studio-ui prod build
+    url: https://api.apunlimited.com                       # canonical branded prod API domain — used by admin-studio-ui prod build
     custom_domain: api.apunlimited.com
-    custom_domain_alternate: admin.latwoodtech.work        # second custom domain on the same worker (attached 2026-05-08)
+    # admin.latwoodtech.work RETIRED 2026-05-27: consolidated to api.apunlimited.com as sole canonical production URL.
+    # Manual step: detach admin.latwoodtech.work from the CF custom domains list via CF API or dashboard.
     health_endpoint: /health
     verification_targets:
       default: https://admin.latwoodtech.work/health
@@ -465,7 +466,7 @@ workers:
     url: https://supervisor.latwoodtech.work                   # internal infra domain
     workers_dev_url: https://factory-supervisor.adrper79.workers.dev
     custom_domain: supervisor.latwoodtech.work
-    custom_domain_alternate: supervisor.apunlimited.com        # legacy/secondary domain retained in production routes
+    # supervisor.apunlimited.com RETIRED 2026-05-27: never resolved in 2026-05-21 audit; removed from wrangler.jsonc routes.
     custom_domain_status: attached_live_verified_2026-05-21
     health_endpoint: /health
     verification_targets:
@@ -761,10 +762,10 @@ workers:
   - id: qa-tools-worker
     name: qa-tools-worker
     repo: Latimer-Woods-Tech/factory
-    url: https://qa-tools.lwt.internal
+    url: https://api.qa.latimerwoods.dev
     workers_dev_url: https://qa-tools-worker.adrper79.workers.dev
-    custom_domain: qa-tools.lwt.internal
-    custom_domain_status: not-yet-attached
+    custom_domain: api.qa.latimerwoods.dev
+    custom_domain_status: pending_attach                   # attaches on next qa-tools-worker deploy (2026-05-27)
     health_endpoint: /health
     telemetry_required: false
     deployment_status: phase-1-live            # Phase 1 live 2026-05-27; health verified at /health
@@ -786,7 +787,7 @@ workers:
       Neon migrations: apps/qa-tools-worker/migrations/001_phase1.sql
       Phase 1 (MVP): POST /runs, GET /runs/:id/status, GET /runs/:id/results, GET /apps/:appId/health
       Consumers: qa-tools-ui (Phase 1 frontend)
-      LIVE: Deployed 2026-05-27, health check passing at https://qa-tools-worker.adrper79.workers.dev/health
+      LIVE: Deployed 2026-05-27; custom domain api.qa.latimerwoods.dev wired 2026-05-27 (pending attach on next deploy)
     consumers: []
 
   # ─── PLANNED (not yet built) ─────────────────────────────────────────────────
@@ -885,7 +886,8 @@ pages:
     repo: Latimer-Woods-Tech/factory
     project_name: admin-studio-ui
     custom_domain: apunlimited.com
-    custom_domain_alternate: studio.thefactory.dev
+    # studio.thefactory.dev RETIRED 2026-05-27: apunlimited.com is the sole canonical operator URL.
+    # thefactory.dev domain retired; manual step: remove studio.thefactory.dev from CF Pages custom domains.
     staging_url: https://staging.admin-studio-ui.pages.dev
     root_file: apps/admin-studio-ui/index.html
     deploy_dir: apps/admin-studio-ui/dist

@@ -20,8 +20,8 @@ const DEFAULT_ENV = 'staging';
 // Custom domains — workers.dev URLs return 1042 "Route not active" once a
 // Custom Domain is attached, so prefer the branded host.
 const ENVS = {
-  staging: 'admin-staging.latwoodtech.work',
-  production: 'admin.latwoodtech.work',
+  staging: 'api.admin.latimerwoods.dev',
+  production: 'api.apunlimited.com',
 };
 
 async function curl(url, options = {}) {
