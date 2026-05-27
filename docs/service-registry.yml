@@ -247,8 +247,8 @@ workers:
         pattern: "https://api.admin.latimerwoods.dev"
       - repo: Latimer-Woods-Tech/factory
         file: docs/admin-studio/02-OPERATOR-QUICK-REF.md
-        line: ~16
-        pattern: "https://admin-staging.latwoodtech.work"
+        line: ~10
+        pattern: "https://api.admin.latimerwoods.dev"
 
   - id: admin-studio-production
     name: admin-studio-production                          # matches apps/admin-studio/wrangler.jsonc env.production.name
@@ -259,7 +259,7 @@ workers:
     # Manual step: detach admin.latwoodtech.work from the CF custom domains list via CF API or dashboard.
     health_endpoint: /health
     verification_targets:
-      default: https://admin.latwoodtech.work/health
+      default: https://api.apunlimited.com/health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-05-06
     notes: >
@@ -767,6 +767,8 @@ workers:
     custom_domain: api.qa.latimerwoods.dev
     custom_domain_status: pending_attach                   # attaches on next qa-tools-worker deploy (2026-05-27)
     health_endpoint: /health
+    verification_targets:
+      default: https://api.qa.latimerwoods.dev/health
     telemetry_required: false
     deployment_status: phase-1-live            # Phase 1 live 2026-05-27; health verified at /health
     required_secrets:
