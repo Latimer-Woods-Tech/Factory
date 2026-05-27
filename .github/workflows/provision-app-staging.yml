@@ -61,6 +61,9 @@ jobs:
       id-token: write  # required for GCP WIF
     env:
       STAGING_WORKER_URL: https://${{ inputs.app_name }}-staging.adrper79.workers.dev
+      # GitHub Actions repo secrets (NOT in GCP Secret Manager)
+      GH_PAT: ${{ secrets.GH_PAT }}
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -273,14 +276,9 @@ jobs:
           # Stage everything (node_modules excluded via .gitignore in scaffold template)
           git add -A
           git diff --cached --stat
-          git commit -m "feat: initial scaffold from capability handoff ${HANDOFF_ID}
-
-Provisioned by provision-app-staging workflow.
-Hyperdrive: ${HYPERDRIVE_ID}
-Rate limiter namespace_id: ${{ inputs.rate_limiter_namespace_id }}
-
-Co-Authored-By: Factory Capability Dispatcher <factory-dispatcher@latwoodtech.work>" \
-            --allow-empty
+          COMMIT_MSG=$(printf 'feat: initial scaffold from capability handoff %s\n\nProvisioned by provision-app-staging workflow.\nHyperdrive: %s\nRate limiter namespace_id: %s\n\nCo-Authored-By: Factory Capability Dispatcher <factory-dispatcher@latwoodtech.work>' \
+            "${HANDOFF_ID}" "${HYPERDRIVE_ID}" "${{ inputs.rate_limiter_namespace_id }}")
+          git commit --allow-empty -m "${COMMIT_MSG}"
           git remote add origin \
             "https://x-access-token:${GH_PAT}@github.com/Latimer-Woods-Tech/${APP_NAME}.git" \
             2>/dev/null || \
