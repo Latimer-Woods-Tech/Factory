@@ -464,6 +464,7 @@ capabilities.post('/services', async (c) => {
     provisionRequestId?: string | null;
     deployedSha?: string;
     manifestHash?: string;
+    workerUrl?: string;
   };
   const body = await c.req.json<ServiceBody>().catch((): ServiceBody => ({}));
 
@@ -478,6 +479,7 @@ capabilities.post('/services', async (c) => {
     provisionRequestId: body.provisionRequestId ?? null,
     deployedSha: body.deployedSha,
     manifestHash: body.manifestHash,
+    workerUrl: body.workerUrl ?? null,
   });
 
   c.set('auditAction', 'capabilities.service.upsert');
@@ -489,6 +491,7 @@ capabilities.post('/services', async (c) => {
     handoffId: service.handoffId,
     deployedSha: service.deployedSha,
     manifestHash: service.manifestHash,
+    workerUrl: service.workerUrl,
   });
 
   return c.json({ service }, 201);
@@ -496,7 +499,7 @@ capabilities.post('/services', async (c) => {
 
 /**
  * List service lineage records.
- * GET /capabilities/services?handoffId=…&limit=50
+ * GET /capabilities/services?handoffId=…&conceptId=…&limit=50
  */
 capabilities.get('/services', async (c) => {
   const ctx = c.var.envContext;
@@ -504,9 +507,10 @@ capabilities.get('/services', async (c) => {
     return c.json({ error: 'auth required' }, 401);
   }
   const handoffId = c.req.query('handoffId') ?? undefined;
+  const conceptId = c.req.query('conceptId') ?? undefined;
   const limitRaw = c.req.query('limit');
   const limit = limitRaw ? Math.max(1, Math.min(200, Number.parseInt(limitRaw, 10) || 50)) : 50;
-  const services = await listServices(c.env.DB, { handoffId, limit });
+  const services = await listServices(c.env.DB, { handoffId, conceptId, limit });
   return c.json({ generatedAt: new Date().toISOString(), services });
 });
 
@@ -528,10 +532,13 @@ capabilities.get('/services/:serviceId', async (c) => {
 });
 
 /**
- * Record that an automated drift check ran for this service.
- * Touches only last_drift_check_at; does not change deployment fields.
+ * Record the result of an automated drift check for this service.
+ * Updates last_drift_check_at, drift_detected, live_manifest_hash, and
+ * drift_first_seen_at (only on false→true transition). Does not alter
+ * deployment fields.
  *
  * POST /capabilities/services/:serviceId/drift-check
+ *   body: { driftDetected?: boolean; liveManifestHash?: string | null }
  */
 capabilities.post('/services/:serviceId/drift-check', async (c) => {
   const ctx = c.var.envContext;
@@ -539,7 +546,15 @@ capabilities.post('/services/:serviceId/drift-check', async (c) => {
     return c.json({ error: 'auth required' }, 401);
   }
   const serviceId = c.req.param('serviceId');
-  const service = await touchServiceDriftCheck(c.env.DB, serviceId);
+
+  type DriftCheckBody = { driftDetected?: boolean; liveManifestHash?: string | null };
+  const body = await c.req.json<DriftCheckBody>().catch((): DriftCheckBody => ({}));
+  const driftResult = {
+    driftDetected: Boolean(body.driftDetected),
+    liveManifestHash: body.liveManifestHash ?? null,
+  };
+
+  const service = await touchServiceDriftCheck(c.env.DB, serviceId, driftResult);
   if (!service) {
     return c.json({ error: `Unknown service: ${serviceId}` }, 404);
   }
@@ -551,6 +566,8 @@ capabilities.post('/services/:serviceId/drift-check', async (c) => {
   c.set('auditResultDetail', {
     serviceId: service.serviceId,
     lastDriftCheckAt: service.lastDriftCheckAt,
+    driftDetected: service.driftDetected,
+    liveManifestHash: service.liveManifestHash,
   });
 
   return c.json({ service });
