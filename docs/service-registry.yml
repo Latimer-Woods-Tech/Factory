@@ -436,6 +436,29 @@ workers:
           *.workers.dev fallback URLs (HARD-CONSTRAINTS violation tracked as
           a MED gap and being fixed by sprint A).
 
+  - id: factory-cross-repo
+    name: factory-cross-repo
+    repo: Latimer-Woods-Tech/factory
+    url: https://factory-cross-repo.latwoodtech.work
+    workers_dev_url: https://factory-cross-repo.adrper79.workers.dev
+    custom_domain: factory-cross-repo.latwoodtech.work
+    custom_domain_status: pending
+    health_endpoint: /health
+    verification_targets:
+      staging: https://factory-cross-repo.adrper79.workers.dev/health
+      production: https://factory-cross-repo.latwoodtech.work/health
+    telemetry_required: false
+    notes: >
+      Cross-repo GitHub App operations worker. Accepts POST /api/supervisor/create-pr
+      from factory-supervisor to open audit PRs in affected repos.
+    required_secrets:
+      - FACTORY_CROSS_REPO_TOKEN
+      - FACTORY_APP_ID
+      - FACTORY_APP_PRIVATE_KEY
+      - FACTORY_APP_INSTALLATION_ID
+    consumers:
+      - apps/supervisor/src/pr-opening.ts
+
   - id: factory-supervisor
     name: factory-supervisor                                   # matches wrangler.jsonc name
     repo: Latimer-Woods-Tech/factory
