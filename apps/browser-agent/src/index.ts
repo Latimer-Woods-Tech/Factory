@@ -425,15 +425,27 @@ export function createAnthropicVisionGrader(apiKey: string): VisionGrader {
 }
 
 /**
+ * Strips an outer ```json ... ``` fence if present. Uses indexOf/lastIndexOf
+ * rather than a regex to avoid polynomial-backtracking on pathological input
+ * (CodeQL: js/polynomial-redos).
+ */
+function stripCodeFence(s: string): string {
+  if (!s.startsWith('```')) return s;
+  const afterFence = s.indexOf('\n');
+  if (afterFence === -1) return s;
+  const closeIdx = s.lastIndexOf('```');
+  if (closeIdx <= afterFence) return s;
+  return s.slice(afterFence + 1, closeIdx).trim();
+}
+
+/**
  * Extracts the first top-level JSON object from a string and validates it
  * against the expected vision-grading schema. Returns null when no valid
  * object can be recovered.
  */
 export function parseVisionResponse(raw: string): { summary: string; findings: VisualReviewFinding[] } | null {
-  const trimmed = raw.trim();
   // Tolerate ```json fences even though the prompt forbids them.
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const candidate = fenced && fenced[1] ? fenced[1].trim() : trimmed;
+  const candidate = stripCodeFence(raw.trim());
   const firstBrace = candidate.indexOf('{');
   const lastBrace = candidate.lastIndexOf('}');
   if (firstBrace < 0 || lastBrace <= firstBrace) return null;
