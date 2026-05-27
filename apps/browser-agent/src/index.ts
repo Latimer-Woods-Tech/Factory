@@ -148,6 +148,44 @@ export interface VisualReviewRequest {
   captureConsole?: boolean;
   /** Flag responses with status >= this value. Default: 400. */
   statusThreshold?: number;
+  /**
+   * When true, skip the final `goto(url)` and capture the page in whatever
+   * state `steps[]` left it. Use this when `steps[]` already drives the SPA
+   * into the state you want to grade (e.g. a generated chart) — the default
+   * navigation would otherwise reload the page and wipe that state.
+   * The `url` is still required (used in the response payload + grader context).
+   */
+  skipFinalNavigation?: boolean;
+  /**
+   * When true, run an axe-core accessibility audit on the page after `steps[]`
+   * complete but before screenshotting. Surfaces objective WCAG violations
+   * (color contrast, ARIA, focus management, etc.) alongside the vision-based
+   * findings. Default: false — opt-in to keep latency predictable for callers
+   * that only want vision grading.
+   */
+  runAxe?: boolean;
+}
+
+/** A single axe-core accessibility violation flattened for the response. */
+export interface AxeViolation {
+  /** axe rule id, e.g. "color-contrast", "label", "image-alt". */
+  id: string;
+  /** axe impact level. */
+  impact: 'minor' | 'moderate' | 'serious' | 'critical' | null;
+  /** Human-readable description of what failed. */
+  description: string;
+  /** Suggested remediation summary. */
+  help: string;
+  /** Doc URL for the rule. */
+  helpUrl: string;
+  /** WCAG criteria tagged on this violation (e.g. ["wcag2aa", "wcag143"]). */
+  tags: string[];
+  /** Number of DOM nodes that triggered this rule. */
+  nodeCount: number;
+  /** Up to 3 example selectors that triggered the rule. */
+  exampleSelectors: string[];
+  /** Viewport label this violation was found on. */
+  viewport: string;
 }
 
 /** Token usage reported by the grading LLM. */
@@ -187,6 +225,8 @@ export interface VisualReviewResult {
   failedRequests: FailedRequest[];
   /** Null when no vision grader is configured (no ANTHROPIC_API_KEY in env). */
   review: VisionGradeResult | null;
+  /** axe-core violations, aggregated across viewports. Null when `runAxe` was not requested. */
+  axeViolations: AxeViolation[] | null;
 }
 
 /** Browser automation implementation, injectable for tests. */
@@ -492,6 +532,68 @@ async function uploadToR2(videoPath: string, key: string, config: R2Config): Pro
   return `${endpoint}/${config.bucket}/${key}`;
 }
 
+/**
+ * Injects axe-core into the page and runs an accessibility audit.
+ * Returns flattened violations tagged with the viewport label. Uses
+ * `require.resolve` so we ship the bundled axe.min.js from the
+ * axe-core npm package — no separate CDN dep at runtime.
+ */
+async function runAxeAudit(page: Page, viewportName: string): Promise<AxeViolation[]> {
+  // axe-core ships a self-contained UMD bundle at axe.min.js — inject it
+  // into the page, then call window.axe.run() in the page context.
+  // Using createRequire so this works under ESM (tsup output).
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  const axePath = require.resolve('axe-core/axe.min.js');
+  await page.addScriptTag({ path: axePath });
+
+  // Run with defaults — all WCAG 2.0/2.1 A/AA rules. Best-effort: on failure
+  // (e.g. CSP blocks the injected script) return an empty list rather than
+  // throwing so callers still get the rest of the visualReview payload.
+  let raw: { violations: unknown[] } | null = null;
+  try {
+    raw = await page.evaluate(async () => {
+      // window.axe is injected by addScriptTag above. Wrap in Record<string, unknown>
+      // to keep the page-context evaluator typesafe under our lint config.
+      const w = window as unknown as { axe: { run: () => Promise<{ violations: unknown[] }> } };
+      const r = await w.axe.run();
+      return { violations: r.violations };
+    });
+  } catch {
+    return [];
+  }
+  if (!raw) return [];
+
+  const violations: AxeViolation[] = [];
+  for (const v of raw.violations) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    const impact = typeof o['impact'] === 'string' && ['minor', 'moderate', 'serious', 'critical'].includes(o['impact'])
+      ? (o['impact'] as AxeViolation['impact'])
+      : null;
+    const nodesRaw = Array.isArray(o['nodes']) ? (o['nodes'] as unknown[]) : [];
+    const exampleSelectors: string[] = [];
+    for (const n of nodesRaw.slice(0, 3)) {
+      if (n && typeof n === 'object' && Array.isArray((n as Record<string, unknown>)['target'])) {
+        const target = ((n as Record<string, unknown>)['target']) as unknown[];
+        if (target.length > 0 && typeof target[0] === 'string') exampleSelectors.push(target[0]);
+      }
+    }
+    violations.push({
+      id: typeof o['id'] === 'string' ? o['id'] : 'unknown',
+      impact,
+      description: typeof o['description'] === 'string' ? o['description'] : '',
+      help: typeof o['help'] === 'string' ? o['help'] : '',
+      helpUrl: typeof o['helpUrl'] === 'string' ? o['helpUrl'] : '',
+      tags: Array.isArray(o['tags']) ? (o['tags'] as unknown[]).filter((t): t is string => typeof t === 'string') : [],
+      nodeCount: nodesRaw.length,
+      exampleSelectors,
+      viewport: viewportName,
+    });
+  }
+  return violations;
+}
+
 async function runScenarioSteps(page: Page, steps: ScenarioStep[]): Promise<void> {
   for (const step of steps) {
     switch (step.action) {
@@ -642,6 +744,7 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
       const consoleErrors: ConsoleMessage[] = [];
       const pageErrors: PageError[] = [];
       const failedRequests: FailedRequest[] = [];
+      const axeViolations: AxeViolation[] = [];
 
       // One fresh context per viewport so cookies, console buffers, and
       // viewport size are isolated. Login (via request.steps) runs again
@@ -677,9 +780,28 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
           if (request.steps && request.steps.length > 0) {
             await runScenarioSteps(page, request.steps);
           }
-          await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
-          await page.waitForTimeout(2_000);
-          const image = await page.screenshot({ type: 'png', fullPage: true });
+          if (!request.skipFinalNavigation) {
+            await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
+            await page.waitForTimeout(2_000);
+          }
+          // Run axe-core audit BEFORE screenshot so any UI mutation from the
+          // injected script doesn't leak into the captured image.
+          if (request.runAxe) {
+            const v = await runAxeAudit(page, viewport.name);
+            axeViolations.push(...v);
+          }
+          // Anthropic vision API rejects images with any dimension > 8000px.
+          // Long-form pages (terms, privacy, glossary) exceed this on
+          // fullPage screenshots. Cap height at 7500px (safety margin under
+          // the 8000 limit) by switching to a `clip` screenshot in that case.
+          const docHeight = await page.evaluate(() => Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 0));
+          const MAX_IMAGE_HEIGHT = 7500;
+          const image = docHeight > MAX_IMAGE_HEIGHT
+            ? await page.screenshot({
+                type: 'png',
+                clip: { x: 0, y: 0, width: viewport.width, height: MAX_IMAGE_HEIGHT },
+              })
+            : await page.screenshot({ type: 'png', fullPage: true });
           shots.push({
             viewport: viewport.name,
             width: viewport.width,
@@ -705,6 +827,7 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
         pageErrors,
         failedRequests,
         review,
+        axeViolations: request.runAxe ? axeViolations : null,
       };
     },
 
@@ -822,6 +945,8 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
     const rubric = body['rubric'] !== undefined ? parseRubric(body['rubric']) : undefined;
     const model = typeof body['model'] === 'string' && body['model'].trim() ? body['model'].trim() : undefined;
     const captureConsole = body['captureConsole'] !== undefined ? Boolean(body['captureConsole']) : undefined;
+    const skipFinalNavigation = body['skipFinalNavigation'] !== undefined ? Boolean(body['skipFinalNavigation']) : undefined;
+    const runAxe = body['runAxe'] !== undefined ? Boolean(body['runAxe']) : undefined;
     const statusThreshold = body['statusThreshold'] !== undefined
       ? (() => {
           const v = Number(body['statusThreshold']);
@@ -829,7 +954,7 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
           return v;
         })()
       : undefined;
-    const result = await automation.visualReview({ url, steps, viewports, rubric, model, captureConsole, statusThreshold });
+    const result = await automation.visualReview({ url, steps, viewports, rubric, model, captureConsole, statusThreshold, skipFinalNavigation, runAxe });
     return c.json(result);
   });
 
