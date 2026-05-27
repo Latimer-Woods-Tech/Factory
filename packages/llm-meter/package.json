@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@latimer-woods-tech/errors": "^0.2.0",
-    "@latimer-woods-tech/llm": "^0.3.3",
+    "@latimer-woods-tech/llm": "file:../llm",
     "@latimer-woods-tech/logger": "^0.2.0"
   },
   "devDependencies": {
