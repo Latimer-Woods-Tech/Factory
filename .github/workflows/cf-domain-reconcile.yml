@@ -1,0 +1,225 @@
+name: CF Domain Reconcile (latimerwoods.dev rollout)
+
+# One-shot, workflow_dispatch-only reconciler that completes the manual
+# Cloudflare dashboard steps from docs/runbooks/enable-pr-previews.md and
+# the latimerwoods.dev surface plan. Idempotent — safe to re-run.
+#
+# Operations (all default to true; flip to false to skip):
+#   1. Detach admin.latwoodtech.work from admin-studio-production
+#   2. Create latimerwoods-dev Pages project (if missing)
+#   3. Attach dev.latimerwoods.dev to latimerwoods-dev Pages project
+#   4. Detach studio.thefactory.dev from admin-studio-ui Pages project
+#   5. Attach assets.apunlimited.com to factory-digest-audio R2 bucket
+#
+# NOT covered (out of scope for CF API):
+#   - Resend sender domain verification for apunlimited.com (Resend dashboard)
+#   - Worker custom-domain attaches for api.admin.latimerwoods.dev and
+#     api.qa.latimerwoods.dev (handled by next deploy of those workers,
+#     since their wrangler.jsonc files now declare the custom_domain route)
+#
+# FRIDGE rule 8 (irreversible CF resource changes need explicit human
+# approval) is satisfied because workflow_dispatch IS a human trigger and
+# every destructive operation has an opt-out boolean.
+
+on:
+  workflow_dispatch:
+    inputs:
+      detach_admin_latwoodtech:
+        description: "Detach admin.latwoodtech.work from admin-studio-production"
+        required: true
+        default: true
+        type: boolean
+      create_pages_project:
+        description: "Create latimerwoods-dev Pages project if missing"
+        required: true
+        default: true
+        type: boolean
+      attach_dev_latimerwoods:
+        description: "Attach dev.latimerwoods.dev to latimerwoods-dev Pages"
+        required: true
+        default: true
+        type: boolean
+      detach_studio_thefactory:
+        description: "Detach studio.thefactory.dev from admin-studio-ui Pages"
+        required: true
+        default: true
+        type: boolean
+      attach_assets_apunlimited:
+        description: "Attach assets.apunlimited.com to factory-digest-audio R2 bucket"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: cf-domain-reconcile
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+    steps:
+      - name: Check CF API token + account
+        run: |
+          set -euo pipefail
+          # /accounts/{id} returns 200 if the token can read this account.
+          curl -fsS -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}" \
+            | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!r.success){console.error('Token auth failed:', JSON.stringify(r.errors)); process.exit(1)} console.log('Token OK, account:', r.result.name)"
+
+      # ─── 1. Detach admin.latwoodtech.work from admin-studio-production ────────
+      - name: Detach admin.latwoodtech.work
+        if: ${{ inputs.detach_admin_latwoodtech }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          HOST="admin.latwoodtech.work"
+          # Find the worker-domain mapping ID by hostname (account-scoped).
+          MAPPING=$(curl -fsS -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/domains?hostname=${HOST}" \
+            | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=r.result?.[0]; console.log(m?(m.id+' '+(m.service||'?')):'')")
+          if [ -z "$MAPPING" ]; then
+            echo "::notice::No worker-domain mapping for $HOST — already detached"
+            exit 0
+          fi
+          ID=$(echo "$MAPPING" | cut -d' ' -f1)
+          SVC=$(echo "$MAPPING" | cut -d' ' -f2)
+          echo "Found mapping $ID ($HOST → $SVC); detaching..."
+          curl -fsS -X DELETE -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/domains/${ID}" \
+            > /tmp/detach.json
+          cat /tmp/detach.json | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!r.success){console.error('Detach failed:', JSON.stringify(r.errors)); process.exit(1)}"
+          echo "Detached $HOST"
+
+      # ─── 2. Create latimerwoods-dev Pages project if missing ──────────────────
+      - name: Create latimerwoods-dev Pages project
+        if: ${{ inputs.create_pages_project }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          PROJECT="latimerwoods-dev"
+          # GET returns 200 if exists, 404 if missing.
+          STATUS=$(curl -s -o /tmp/proj.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}")
+          if [ "$STATUS" = "200" ]; then
+            echo "Pages project ${PROJECT} already exists — skipping create"
+            exit 0
+          fi
+          echo "Creating Pages project ${PROJECT}..."
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects" \
+            -d "{\"name\":\"${PROJECT}\",\"production_branch\":\"main\"}" \
+            > /tmp/create.json
+          cat /tmp/create.json | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!r.success){console.error('Create failed:', JSON.stringify(r.errors)); process.exit(1)} console.log('Created Pages project', r.result.name)"
+
+      # ─── 3. Attach dev.latimerwoods.dev to latimerwoods-dev Pages ─────────────
+      - name: Attach dev.latimerwoods.dev to Pages project
+        if: ${{ inputs.attach_dev_latimerwoods }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          PROJECT="latimerwoods-dev"
+          HOST="dev.latimerwoods.dev"
+          # Pages custom domain attach is POST /pages/projects/:name/domains.
+          # The API returns 409 if the domain is already attached — treat that
+          # as success.
+          RESPONSE=$(curl -s -o /tmp/attach.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/domains" \
+            -d "{\"name\":\"${HOST}\"}")
+          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "201" ]; then
+            echo "Attached ${HOST} to ${PROJECT}"
+          elif [ "$RESPONSE" = "409" ]; then
+            echo "${HOST} already attached to ${PROJECT}"
+          else
+            echo "::error::Unexpected response $RESPONSE attaching domain:"
+            cat /tmp/attach.json
+            exit 1
+          fi
+
+      # ─── 4. Detach studio.thefactory.dev from admin-studio-ui Pages ───────────
+      - name: Detach studio.thefactory.dev
+        if: ${{ inputs.detach_studio_thefactory }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          PROJECT="admin-studio-ui"
+          HOST="studio.thefactory.dev"
+          STATUS=$(curl -s -o /tmp/detach.json -w "%{http_code}" -X DELETE \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/domains/${HOST}")
+          if [ "$STATUS" = "200" ]; then
+            echo "Detached ${HOST} from ${PROJECT}"
+          elif [ "$STATUS" = "404" ]; then
+            echo "${HOST} not attached to ${PROJECT} (already detached)"
+          else
+            echo "::warning::Unexpected response $STATUS detaching domain:"
+            cat /tmp/detach.json
+          fi
+          echo "Note: Cloudflare also removes the DNS CNAME for ${HOST} as part of detach."
+
+      # ─── 5. Attach assets.apunlimited.com to factory-digest-audio R2 ──────────
+      - name: Attach assets.apunlimited.com R2 custom domain
+        if: ${{ inputs.attach_assets_apunlimited }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          BUCKET="factory-digest-audio"
+          HOST="assets.apunlimited.com"
+          ZONE="apunlimited.com"
+
+          # Resolve zone id (R2 custom-domain attach needs it explicitly).
+          ZONE_ID=$(curl -fsS -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/zones?name=${ZONE}" \
+            | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(r.result?.[0]?.id ?? '')")
+          if [ -z "$ZONE_ID" ]; then
+            echo "::error::Could not resolve zone id for ${ZONE} — token may lack zone:read for that zone."
+            exit 1
+          fi
+
+          # POST /r2/buckets/{bucket}/domains/custom (idempotent: 409 if exists)
+          STATUS=$(curl -s -o /tmp/r2.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/r2/buckets/${BUCKET}/domains/custom" \
+            -d "{\"domain\":\"${HOST}\",\"zoneId\":\"${ZONE_ID}\",\"enabled\":true,\"minTLS\":\"1.2\"}")
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "201" ]; then
+            echo "Attached ${HOST} to R2 bucket ${BUCKET}"
+          elif [ "$STATUS" = "409" ]; then
+            echo "${HOST} already attached to ${BUCKET}"
+          else
+            echo "::error::Unexpected response $STATUS attaching R2 domain:"
+            cat /tmp/r2.json
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## CF Domain Reconcile complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Operation | Requested | Notes |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Detach admin.latwoodtech.work | ${{ inputs.detach_admin_latwoodtech }} | Workers custom-domain DELETE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Create latimerwoods-dev Pages | ${{ inputs.create_pages_project }} | Pages projects POST |" >> $GITHUB_STEP_SUMMARY
+          echo "| Attach dev.latimerwoods.dev   | ${{ inputs.attach_dev_latimerwoods }} | Pages custom-domain POST |" >> $GITHUB_STEP_SUMMARY
+          echo "| Detach studio.thefactory.dev  | ${{ inputs.detach_studio_thefactory }} | Pages custom-domain DELETE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Attach assets.apunlimited.com | ${{ inputs.attach_assets_apunlimited }} | R2 custom-domain POST |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Remaining manual steps" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify \`apunlimited.com\` in Resend dashboard as a sender domain (for \`digest@apunlimited.com\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`api.admin.latimerwoods.dev\` and \`api.qa.latimerwoods.dev\` will auto-attach on the next deploy of admin-studio-staging and qa-tools-worker respectively (wrangler.jsonc already declares the custom_domain route)." >> $GITHUB_STEP_SUMMARY
