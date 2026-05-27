@@ -1,8 +1,30 @@
 # Capability Factory — Backcasting Plan
 
-**Status:** Draft for council review  
-**Date:** 2026-05-22  
+**Status:** Active — Stage 1E complete (2026-05-27)
+**Date:** 2026-05-22 (last updated 2026-05-27)
 **Decision context:** Option 3 selected — recipe-first provisioning engine, followed by a constrained visual composer.
+
+## Implementation Status
+
+The end-to-end thin slice (resolve → provision → deploy) is now fully operational.
+
+| Stage | Description | Status | PR |
+|-------|-------------|--------|----|
+| 1A | Dispatch chain end-to-end (resolve → preview → handoff → provision-staging → auto-dispatch → scaffold artifact) | ✅ Shipped | #910 + 7 follow-up PRs |
+| 1B | Hyperdrive race fix — hash-based fallback lookup in auto-dispatcher | ✅ Shipped | #1097 |
+| 1C | Parameter threading — recipe secrets/vars baked into scaffold `src/env.ts` + `wrangler.jsonc` | ✅ Shipped | #1099 |
+| 1D | `capability_services` lineage table — `POST /capabilities/services`, drift-check, dispatch wire-up | ✅ Shipped | #1100 |
+| 1E | Real deploy — `provision-app-staging.yml` provisions Hyperdrive + GitHub repo + JWT_SECRET, deploys Worker, verifies `/health`, updates lineage | ✅ Shipped | #1108 |
+
+**Full operator flow (all five stages live):**
+```
+Admin Studio → resolve recipe → preview plan → create handoff
+  → dispatch-capability-provision.yml (scaffold artifact + lineage)
+  → [operator reviews artifact]
+  → provision-app-staging.yml (Hyperdrive + repo + deploy + /health verify)
+```
+
+**Remaining work (Phases 2–5 per plan below):** Compiler/rules engine, Studio plan-preview UI, drift detection cron, constrained visual composer.
 
 ## Purpose
 
