@@ -20,7 +20,7 @@
 //   3. Rollback path:
 //        a. If HAS_MIGRATIONS=true → DO NOT roll back. Page human (P0),
 //           open incident issue tagged `needs-human-rollback`, exit 1.
-//        b. Else → `wrangler rollback --version-id $PREVIOUS_VERSION_ID`.
+//        b. Else → `wrangler versions deploy $PREVIOUS_VERSION_ID@100%`.
 //             - Success → open incident issue, page Pushover priority=1.
 //             - Failure → page Pushover priority=2 (emergency), open issue
 //               tagged `rollback-failed`, exit 1.
@@ -178,9 +178,10 @@ const ghCreateIssue = async ({ title, body, labels }) => {
 const rollback = () => {
   console.log(`Rolling back ${WORKER_NAME} to ${PREVIOUS_VERSION_ID}…`);
   const r = spawnSync('npx', [
-    '-y', 'wrangler@latest', 'versions', 'rollback',
+    '-y', 'wrangler@latest', 'versions', 'deploy',
+    `${PREVIOUS_VERSION_ID}@100%`,
     '--name', WORKER_NAME,
-    '--version-id', PREVIOUS_VERSION_ID,
+    '--message', `canary rollback to ${PREVIOUS_VERSION_ID}`,
     '--yes',
   ], {
     env: {
