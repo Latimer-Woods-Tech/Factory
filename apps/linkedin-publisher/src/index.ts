@@ -6,13 +6,13 @@ import { complete } from '@latimer-woods-tech/llm';
  * Cron: Tue/Thu at 14:00 UTC  (0 14 * * 2,4)
  *
  * On each trigger:
- *  1. Calls @latimer-woods-tech/llm (balanced tier) to draft a sharp,
+ *  1. Calls @latimer-woods-tech/llm (fast tier) to draft a sharp,
  *     zero-fluff LinkedIn post translating Human Design mechanics into
  *     operational leverage for founders.
  *  2. Pushes the draft to Pushover for 1-click review and posting.
  *
  * Secrets (wrangler secret put):
- *   ANTHROPIC_API_KEY, GROQ_API_KEY, VERTEX_ACCESS_TOKEN,
+ *   ANTHROPIC_API_KEY, GROQ_API_KEY, GROK_API_KEY, VERTEX_ACCESS_TOKEN,
  *   PUSHOVER_TOKEN, PUSHOVER_USER_KEY
  *
  * Vars (wrangler.jsonc):
@@ -23,6 +23,7 @@ export interface Env {
   AI_GATEWAY_BASE_URL: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  GROK_API_KEY?: string;
   VERTEX_ACCESS_TOKEN: string;
   VERTEX_PROJECT: string;
   VERTEX_LOCATION: string;
@@ -73,6 +74,7 @@ async function draftLinkedInPost(env: Env): Promise<string> {
       AI_GATEWAY_BASE_URL: env.AI_GATEWAY_BASE_URL,
       ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
       GROQ_API_KEY: env.GROQ_API_KEY,
+      GROK_API_KEY: env.GROK_API_KEY,
       VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN,
       VERTEX_PROJECT: env.VERTEX_PROJECT,
       VERTEX_LOCATION: env.VERTEX_LOCATION,
