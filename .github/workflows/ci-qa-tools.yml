@@ -1,0 +1,118 @@
+name: CI — QA Tools
+
+# Runs on every PR and push to main when qa-tools code changes.
+# Validates both the Hono worker backend and the Next.js frontend.
+#
+# See: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+
+on:
+  pull_request:
+    paths:
+      - 'apps/qa-tools-worker/**'
+      - 'apps/qa-tools-ui/**'
+      - 'packages/browser/**'
+      - 'packages/errors/**'
+      - 'packages/logger/**'
+      - 'packages/monitoring/**'
+      - '.github/workflows/ci-qa-tools.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/qa-tools-worker/**'
+      - 'apps/qa-tools-ui/**'
+      - 'packages/browser/**'
+      - 'packages/errors/**'
+      - 'packages/logger/**'
+      - 'packages/monitoring/**'
+      - '.github/workflows/ci-qa-tools.yml'
+
+concurrency:
+  group: ci-qa-tools-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # qa-tools-worker: typecheck, lint, test (Vitest + coverage), build
+  # ---------------------------------------------------------------------------
+  worker:
+    name: qa-tools-worker CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            apps/qa-tools-worker/package-lock.json
+            packages/errors/package-lock.json
+            packages/monitoring/package-lock.json
+            packages/logger/package-lock.json
+            packages/browser/package-lock.json
+
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for pkg in errors monitoring logger browser; do
+            echo "=== ${pkg} ==="
+            cd "packages/${pkg}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install worker dependencies
+        working-directory: apps/qa-tools-worker
+        run: npm install
+
+      - name: Typecheck
+        working-directory: apps/qa-tools-worker
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: apps/qa-tools-worker
+        run: npm run lint
+
+      - name: Test (with coverage)
+        working-directory: apps/qa-tools-worker
+        run: npm test
+
+  # ---------------------------------------------------------------------------
+  # qa-tools-ui: typecheck, lint, build (Next.js static export)
+  # ---------------------------------------------------------------------------
+  ui:
+    name: qa-tools-ui CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/qa-tools-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/qa-tools-ui
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: apps/qa-tools-ui
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: apps/qa-tools-ui
+        run: npm run lint
+
+      - name: Build (static export)
+        working-directory: apps/qa-tools-ui
+        run: npm run build
