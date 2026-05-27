@@ -767,7 +767,7 @@ workers:
     custom_domain_status: not-yet-attached
     health_endpoint: /health
     telemetry_required: false
-    deployment_status: phase-1-in-progress
+    deployment_status: deployed                # Phase 1 live 2026-05-27; health verified at /health
     required_secrets:
       - QA_TOOLS_JWT_SECRET
       - BROWSER_AGENT_SA_KEY
