@@ -162,5 +162,11 @@ export function createEmailClient(config: EmailConfig, deps: EmailDeps = {}): Em
   };
 }
 
+/**
+ * Typed transactional email templates (G35).
+ * Each template returns { subject, html, text } ready for sendTransactional().
+ */
+export * from './templates.js';
+
 /** Re-export path used in tsup entry. */
 export const RESEND_BASE_URL = RESEND_SEND_URL;

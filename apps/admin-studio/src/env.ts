@@ -9,6 +9,8 @@ export interface Env {
 
   // ── Bindings ────────────────────────────────────────────────────────────────────────────────
   DB: Hyperdrive;
+  /** Hyperdrive binding to THE_FACTORY Neon project for Command Center reads. */
+  FACTORY_DB?: Hyperdrive;
 
   // ── Secrets (wrangler secret put) ───────────────────────────────────────────────────────────────────────
   /** Signing key for Studio-issued JWTs */
@@ -21,6 +23,8 @@ export interface Env {
   GITHUB_TOKEN: string;
   /** Anthropic API key for AI chat */
   ANTHROPIC_API_KEY: string;
+  /** GCP service account key (base64-encoded JSON) for Secret Manager access */
+  GCP_SA_KEY?: string;
   /** Grok fallback */
   XAI_API_KEY?: string;
   /** Groq fallback */

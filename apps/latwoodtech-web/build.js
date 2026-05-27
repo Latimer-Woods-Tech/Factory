@@ -232,6 +232,7 @@ await rm(join(distDir, 'status'), { recursive: true, force: true, maxRetries: 3 
 await rm(join(distDir, '.well-known'), { recursive: true, force: true, maxRetries: 3 });
 await rm(join(distDir, 'data'), { recursive: true, force: true, maxRetries: 3 });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
+await copyFile(join(srcDir, 'privacy.html'), join(distDir, 'privacy.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await mkdir(join(distDir, 'stack'), { recursive: true });

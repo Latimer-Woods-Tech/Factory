@@ -516,6 +516,43 @@ workers:
       - VERTEX_LOCATION
     consumers: []
 
+  - id: factory-core-api
+    name: factory-core-api
+    repo: Latimer-Woods-Tech/factory
+    url: https://core.latwoodtech.work
+    workers_dev_url: https://factory-core-api.adrper79.workers.dev
+    custom_domain: core.latwoodtech.work
+    custom_domain_status: attached_2026-05-26
+    health_endpoint: /health
+    verification_targets:
+      default: https://core.latwoodtech.work/health
+    telemetry_required: false
+    deployment_status: deployed_verified_2026-05-26
+    notes: >
+      Read-layer ingestion + auth API (Admin Build Plan P1.1+). Hyperdrive `DB`
+      binds the THE_FACTORY Neon project (factory-core-db,
+      efe957f404bb457593e6bd08b733b7c4). Worker secrets JWT_SIGNING_KEY and
+      SUPERVISOR_PUSH_KEY are set on the worker (still need backfilling into GCP
+      Secret Manager for the CI deploy path). Read-layer migrations 0101-0105
+      were applied to THE_FACTORY on 2026-05-26. Verified: /health 200,
+      /v1/runs/mirror 200 with the push key (401 without).
+  - id: factory-events-replay
+    name: factory-events-replay
+    repo: Latimer-Woods-Tech/factory
+    url: null
+    workers_dev_url: null
+    custom_domain: null
+    health_endpoint: /health
+    verification_targets:
+      default: cron-only (no public route; workers_dev:false)
+    telemetry_required: false
+    deployment_status: deployed_2026-05-26
+    notes: >
+      Replay cron Worker (P1.10) — fires every 15 minutes (*/15 * * * *),
+      scans factory_events_ingest for derivation_status='failed' and re-derives
+      into factory_gates / factory_artifacts. Hyperdrive `DB` binds THE_FACTORY
+      (factory-core-db). No public surface by design; the /health fetch handler
+      exists for ad-hoc checks only.
   - id: webhook-fanout
     name: webhook-fanout
     repo: Latimer-Woods-Tech/factory

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "plan",
+  "recipe": {
+    "id": "outbound-dialer",
+    "version": "1.0.0",
+    "maturity": "beta",
+    "summary": "CRM-segment driven outbound dialer workflow.",
+    "goal": "Launch governed outbound calling for CRM-selected contacts."
+  },
+  "packages": [
+    {
+      "primitiveId": "analytics",
+      "package": "@latimer-woods-tech/analytics",
+      "versionRange": "^0.1.0"
+    },
+    {
+      "primitiveId": "compliance",
+      "package": "@latimer-woods-tech/compliance",
+      "versionRange": "^0.1.0"
+    },
+    {
+      "primitiveId": "crm",
+      "package": "@latimer-woods-tech/crm",
+      "versionRange": "^0.1.0"
+    },
+    {
+      "primitiveId": "telephony",
+      "package": "@latimer-woods-tech/telephony",
+      "versionRange": "^0.1.0"
+    }
+  ],
+  "env": {
+    "secrets": [
+      "ANTHROPIC_API_KEY",
+      "CRM_API_KEY",
+      "DEEPGRAM_API_KEY",
+      "ELEVENLABS_API_KEY",
+      "JWT_SECRET",
+      "TELNYX_API_KEY"
+    ],
+    "vars": [
+      "ENVIRONMENT",
+      "WORKER_DOMAIN",
+      "WORKER_NAME"
+    ],
+    "policyTags": [
+      "analytics",
+      "compliance",
+      "crm",
+      "telephony"
+    ]
+  },
+  "bindings": {
+    "required": [
+      "ANALYTICS",
+      "AUTH_RATE_LIMITER",
+      "CALL_QUEUE",
+      "CRM_SEGMENTS",
+      "DB",
+      "FLAG_TELEMETRY",
+      "FLAGS"
+    ],
+    "optional": [
+      "ANALYTICS"
+    ]
+  },
+  "expectedSurfaces": [
+    "/health",
+    "/manifest",
+    "/api/campaigns",
+    "/api/campaigns/:id/start",
+    "/api/dispositions"
+  ],
+  "smokeChecks": [
+    {
+      "path": "/health",
+      "expectedStatus": 200,
+      "expectContains": "ok"
+    },
+    {
+      "path": "/manifest",
+      "expectedStatus": 200,
+      "expectContains": "manifestVersion"
+    }
+  ],
+  "constraints": [
+    "Use a branded custom domain.",
+    "Verify staging smoke checks before production."
+  ],
+  "scaffold": {
+    "entryScript": "packages/deploy/scripts/scaffold.mjs",
+    "stagingFirst": true,
+    "requiredSecrets": [
+      "JWT_SECRET"
+    ],
+    "requiredBindings": [
+      "ANALYTICS",
+      "AUTH_RATE_LIMITER",
+      "CALL_QUEUE",
+      "CRM_SEGMENTS",
+      "DB",
+      "FLAG_TELEMETRY",
+      "FLAGS"
+    ],
+    "requiredVars": [
+      "ENVIRONMENT",
+      "WORKER_DOMAIN",
+      "WORKER_NAME"
+    ]
+  }
+}

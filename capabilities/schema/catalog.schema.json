@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factory.latimer-woods.tech/capabilities/schema/catalog.schema.json",
+  "title": "Capability Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "summary",
+    "primitives",
+    "recipes",
+    "concepts",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "catalog"
+    },
+    "generatedAt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primitiveCount",
+        "recipeCount",
+        "conceptCount",
+        "ruleFileCount"
+      ],
+      "properties": {
+        "primitiveCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recipeCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "conceptCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ruleFileCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "primitives": {
+      "type": "array"
+    },
+    "recipes": {
+      "type": "array"
+    },
+    "concepts": {
+      "type": "array"
+    },
+    "rules": {
+      "type": "array"
+    }
+  }
+}
