@@ -18,7 +18,7 @@ export const GENERATED_TARGETS = [
   { id: "daily-brief.health", url: "https://daily-brief.adrper79.workers.dev/health", contains: "ok" },
   { id: "xico-city.health", url: "https://xicocity.com/health", contains: "ok" },
   { id: "xico-city-staging.health", url: "https://staging.xicocity.com/health", contains: "ok" },
-  { id: "qa-tools-worker.health", url: "https://qa-tools.lwt.internal/health", contains: "ok" },
+  { id: "qa-tools-worker.health", url: "https://api.qa.latimerwoods.dev/health", contains: "ok" },
   { id: "marketing-supervisor.health", url: "https://marketing.latwoodtech.work/health", contains: "ok" },
   { id: "marketing-supervisor-staging.health", url: "https://marketing-supervisor-staging.adrper79.workers.dev/health", contains: "ok" },
   { id: "referrals.health", url: "https://referrals.latwoodtech.work/health", contains: "ok" },

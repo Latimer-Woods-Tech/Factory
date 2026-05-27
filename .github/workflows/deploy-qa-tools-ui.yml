@@ -8,7 +8,7 @@ name: Deploy QA Tools UI
 #
 # PRE-DEPLOY CHECKLIST (one-time provisioning):
 #   1. wrangler pages project create qa-tools-ui --production-branch main
-#   2. Set custom domain in CF Pages dashboard: qa-tools.lwt.internal
+#   2. Set custom domain in CF Pages dashboard: qa.latimerwoods.dev
 #
 # See: docs/architecture/QA_TOOLS_ARCHITECTURE.md §9.1
 
