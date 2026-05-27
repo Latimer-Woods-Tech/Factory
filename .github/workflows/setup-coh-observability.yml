@@ -189,6 +189,7 @@ jobs:
               print(p['id']); break
           " 2>/dev/null || echo "")
           else
+            # Try dedicated COH status page; fall back to existing if plan limit hit
             PAGE_RESP=$(api_post "status-pages" '{
               "name": "CypherOfHealing Platform Status",
               "subdomain": "cypherofhealing-status",
@@ -196,10 +197,20 @@ jobs:
               "notification_email": "adrper79@gmail.com",
               "allow_subscriptions": true,
               "hide_from_search_engines": false
-            }')
+            }' 2>&1) || true
             STATUS_PAGE_ID=$(echo "$PAGE_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
             if [ -n "$STATUS_PAGE_ID" ]; then
               log "✅ Created status page (id=$STATUS_PAGE_ID)"
+            elif echo "$PAGE_RESP" | grep -qi "quota"; then
+              STATUS_PAGE_ID=$(api_get "status-pages?per_page=1" | python3 -c "
+          import json, sys
+          pages = json.load(sys.stdin).get('data', [])
+          if pages: print(pages[0]['id'])
+          " 2>/dev/null || echo "")
+              if [ -n "$STATUS_PAGE_ID" ]; then
+                log "⚠️  Status page quota — attaching COH monitors to existing page (id=$STATUS_PAGE_ID)"
+                log "    Upgrade BetterStack plan for a dedicated status.cypherofhealing.com page"
+              fi
             else
               log "⚠️  Status page creation response:"
               echo "$PAGE_RESP" | head -5
