@@ -272,6 +272,31 @@ capabilities.post('/provision-staging', async (c) => {
 });
 
 /**
+ * Lineage: single handoff lookup by content-addressable hash.
+ *
+ * Used by the auto-dispatcher as a fallback when the id-based lookup
+ * (`GET /capabilities/handoffs/:id`) misses due to the Hyperdrive
+ * read-after-write race — a freshly-inserted handoff may not yet be
+ * visible on the pooled connection the id-lookup lands on. The hash is
+ * always available in the provision-request list (via JOIN) so the
+ * auto-dispatcher can switch to this path without any extra API calls.
+ *
+ * GET /capabilities/handoffs/by-hash/:hash
+ */
+capabilities.get('/handoffs/by-hash/:hash', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) {
+    return c.json({ error: 'auth required' }, 401);
+  }
+  const hash = c.req.param('hash');
+  const handoff = await findHandoffByHash(c.env.DB, hash);
+  if (!handoff) {
+    return c.json({ error: `Unknown handoff hash: ${hash}` }, 404);
+  }
+  return c.json({ handoff });
+});
+
+/**
  * Lineage: single handoff lookup by id.
  * GET /capabilities/handoffs/:id
  */

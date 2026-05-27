@@ -152,7 +152,7 @@ describe('complete', () => {
     expect(String(call[0])).toContain('anthropic/v1/messages');
   });
 
-  it('fast tier uses Haiku and no fallback leg', async () => {
+  it('fast tier falls back to Haiku when Grok key is unavailable', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(anthropicResponse('fast')));
     const res = await complete(
       [{ role: 'user', content: 'hi' }],
@@ -162,7 +162,36 @@ describe('complete', () => {
     );
     expect(res.error).toBeNull();
     expect(res.data!.tier).toBe('fast');
+    expect(res.data!.provider).toBe('anthropic');
     expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('fast tier uses Grok 4.3 with no reasoning when Grok key is available', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: 'grok-fast' }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 7, completion_tokens: 4 },
+            model: 'grok-4.3',
+          }),
+          { status: 200, headers: { 'cf-aig-request-id': 'grok-aig' } },
+        ),
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV, GROK_API_KEY: 'gk-test' },
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('grok');
+    expect(res.data!.model).toBe('grok-4.3');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { model: string; reasoning_effort: string };
+    expect(body.model).toBe('grok-4.3');
+    expect(body.reasoning_effort).toBe('none');
   });
 
   it('smart tier with long-context goes to Gemini primary', async () => {

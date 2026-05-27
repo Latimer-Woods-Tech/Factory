@@ -57,15 +57,23 @@ jobs:
           node-version-file: .nvmrc
 
       # Authenticate with GCP to fetch secrets from Secret Manager
-      - name: Authenticate to GCP (WIF)
-        id: gcp-auth
-        uses: google-github-actions/auth@v2
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
-          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Fetch secrets from GCP Secret Manager
-        run: bash scripts/fetch_gcp_secrets.sh
+        run: |
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env QA_TOOLS_JWT_SECRET   QA_TOOLS_JWT_SECRET
+          fetch_to_env BROWSER_AGENT_SA_KEY  BROWSER_AGENT_SA_KEY
+          fetch_to_env BROWSER_AGENT_URL     BROWSER_AGENT_URL
+          fetch_to_env BROWSER_AGENT_AUDIENCE BROWSER_AGENT_AUDIENCE
+          fetch_to_env GITHUB_QA_TOKEN       GITHUB_QA_TOKEN       FACTORY_GH_PAT
+          fetch_to_env SLACK_QA_WEBHOOK_URL  SLACK_WEBHOOK_OPS
         env:
           GCP_PROJECT_ID: factory-495015
 
