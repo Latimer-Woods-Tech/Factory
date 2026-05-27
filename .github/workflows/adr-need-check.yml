@@ -1,0 +1,57 @@
+name: ADR Need Check (Advisory)
+
+# Gap G11 — PR-time "does this PR need an ADR?" detector.
+#
+# ADVISORY / SHADOW MODE: never blocks a PR (the script always exits 0).
+# Path heuristic is the fast path; one claude-haiku-4-5 call is the fallback
+# when the heuristic is inconclusive (significant paths touched, no ADR added).
+# Fails open on any missing key / API error.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: adr-need-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  adr-need:
+    name: ADR-need check (shadow / advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    if: ${{ github.event.sender.type != 'Bot' && !github.event.pull_request.draft }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch Anthropic key from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env ANTHROPIC_API_KEY LATIMER_ANTHROPIC_API ANTHROPIC_API_KEY
+
+      - name: Run ADR-need check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/adr-need-check.mjs
