@@ -17,7 +17,11 @@
 set -euo pipefail
 
 PROJECT="factory-495015"
-ROOT="$HOME/.claude/scripts"
+# Resolve the gcp-token.mjs helper relative to this script's location
+# (scripts/claude-hooks/ → scripts/) so it works in fresh web containers
+# regardless of cwd, instead of assuming a populated ~/.claude/scripts.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Fail-open guards
 if ! command -v node >/dev/null 2>&1; then

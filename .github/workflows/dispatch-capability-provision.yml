@@ -44,9 +44,9 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           # Node 24 is the current Active LTS (since Oct 2025; Maintenance
           # through Oct 2026). Node 20 hit EOL 2026-04-30. Wrangler 4.x
@@ -55,12 +55,12 @@ jobs:
           node-version: '24'
 
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.VERTEX_SA_KEY }}
 
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v3
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
 
       - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
         run: |
@@ -167,7 +167,7 @@ jobs:
 
       - name: Upload scaffolded workspace as artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: staging-workspace-${{ inputs.app_name }}
           path: staging-workspace/${{ inputs.app_name }}

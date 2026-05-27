@@ -59,6 +59,21 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env SUPERVISOR_PUSH_KEY  SUPERVISOR_PUSH_KEY
+          fetch_to_env SUPERVISOR_API_KEY   SUPERVISOR_API_KEY
+
       - name: Build dependency packages
         run: |
           set -euo pipefail
@@ -110,6 +125,8 @@ jobs:
           SECRET_PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
           SECRET_SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
           SECRET_SLACK_OWNER_USER_ID: ${{ secrets.SLACK_OWNER_USER_ID }}
+          SECRET_SUPERVISOR_PUSH_KEY: ${{ env.SUPERVISOR_PUSH_KEY }}
+          SECRET_SUPERVISOR_API_KEY: ${{ env.SUPERVISOR_API_KEY }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
           # Only provision secrets that are actually set — skip empties with a warning.
@@ -137,6 +154,8 @@ jobs:
           put_secret PUSHOVER_USER_KEY          "${SECRET_PUSHOVER_USER_KEY}"
           put_secret SLACK_SIGNING_SECRET       "${SECRET_SLACK_SIGNING_SECRET}"
           put_secret SLACK_OWNER_USER_ID        "${SECRET_SLACK_OWNER_USER_ID}"
+          put_secret SUPERVISOR_PUSH_KEY        "${SECRET_SUPERVISOR_PUSH_KEY}"
+          put_secret SUPERVISOR_API_KEY         "${SECRET_SUPERVISOR_API_KEY}"
 
       - name: Install Sentry CLI
         run: npm install -g @sentry/cli
