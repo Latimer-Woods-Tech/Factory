@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.2 — 2026-05-27
+
+### Added (no breaking changes)
+
+- **xAI pricing entries** in `PRICING_UCENTS_PER_MTOK`:
+  - `grok-4.3` — $1.25/$2.50 per MTok (in/out)
+  - `grok-4-fast` — $1.25/$2.50 per MTok (deprecated alias, retained for ledger rows)
+  - `grok-3-mini-latest` — $1.25/$2.50 per MTok (deprecated alias)
+  
+  Prevents `estimateCost()` from returning `$0` when the `fast` tier routes to Grok 4.3.
+- Peer dependency updated: `@latimer-woods-tech/llm ^0.3.3` (was `^0.3.1`).
+- Source attribution comment updated to include `docs.x.ai`.
+
+---
+
 ## 0.2.1 — 2026-05-27
 
 ### Added (no breaking changes)
