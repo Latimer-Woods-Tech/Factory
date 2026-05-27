@@ -1,0 +1,247 @@
+name: COH Observability Setup
+
+# One-shot workflow: creates BetterStack monitors + status page for
+# cypherofhealing.com and syncs POSTHOG_PROJECT_TOKEN to the live Worker.
+#
+# Run manually: Actions → COH Observability Setup → Run workflow
+# Safe to re-run: BetterStack API returns existing resources if names match;
+# duplicate monitors/pages are caught and skipped via the dedup check below.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (print what would be created, no API calls)'
+        type: boolean
+        default: false
+
+jobs:
+  setup:
+    name: Create monitors + status page
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+
+          # BetterStack — try all plausible key names
+          fetch_to_env BETTERSTACK_API_TOKEN \
+            betterstack-api-key \
+            betterstack-uptime-api-key \
+            betterstack-uptime-token \
+            betterstack-token \
+            BETTERSTACK_API_KEY \
+            BETTERSTACK_TOKEN
+
+          # PostHog — project token (public-safe, already in frontend bundle)
+          fetch_to_env POSTHOG_PROJECT_TOKEN \
+            posthog-project-token \
+            POSTHOG_PROJECT_TOKEN \
+            posthog-api-key \
+            POSTHOG_API_KEY
+
+      - name: Create BetterStack monitors + status page
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${BETTERSTACK_API_TOKEN:-}" ]; then
+            echo "❌ BETTERSTACK_API_TOKEN not found in GCP Secret Manager"
+            echo "   Tried: betterstack-api-key, betterstack-uptime-api-key, betterstack-uptime-token"
+            echo "   Create the secret with: printf '%s' '<token>' | gcloud secrets create betterstack-api-key --data-file=- --project=factory-495015"
+            exit 1
+          fi
+
+          BS_BASE="https://uptime.betterstack.com/api/v2"
+          AUTH_HEADER="Authorization: Bearer $BETTERSTACK_API_TOKEN"
+
+          log() { echo "  $*"; }
+          api_get()  { curl -sf -H "$AUTH_HEADER" "$BS_BASE/$1"; }
+          api_post() {
+            local path="$1"; shift
+            curl -sf -X POST -H "$AUTH_HEADER" -H "Content-Type: application/json" \
+              "$BS_BASE/$path" -d "$*"
+          }
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🔍 DRY RUN — no API calls will be made"
+            log "Would create 6 monitors for cypherofhealing.com"
+            log "Would create status page: CypherOfHealing Platform Status"
+            exit 0
+          fi
+
+          echo "── Step 1: Fetch existing monitors to avoid duplicates ──"
+          EXISTING=$(api_get "monitors?per_page=100" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          names = [m['attributes']['pronounceable_name'] for m in data.get('data', [])]
+          print('\n'.join(names))
+          " 2>/dev/null || echo "")
+
+          create_monitor() {
+            local name="$1" url="$2" method="$3" expected_status="$4" frequency="$5"
+            local body="${6:-}"
+
+            if echo "$EXISTING" | grep -qF "$name"; then
+              log "⏭  Monitor already exists: $name"
+              return
+            fi
+
+            local payload
+            payload=$(python3 -c "
+          import json
+          d = {
+            'monitor_type': 'status',
+            'pronounceable_name': '$name',
+            'url': '$url',
+            'check_frequency': $frequency,
+            'request_timeout': 15,
+            'expected_status_codes': [$expected_status],
+            'request_method': '$method',
+            'regions': ['us', 'eu', 'as'],
+            'paused': False,
+          }
+          if '$body':
+            d['request_body'] = '$body'
+            d['request_headers'] = [{'name': 'Content-Type', 'value': 'application/json'}]
+          print(json.dumps(d))
+          ")
+
+            RESP=$(api_post "monitors" "$payload")
+            MONITOR_ID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+            if [ -n "$MONITOR_ID" ]; then
+              log "✅ Created monitor: $name (id=$MONITOR_ID)"
+            else
+              log "⚠️  Unexpected response for $name:"
+              echo "$RESP" | head -5
+            fi
+          }
+
+          echo "── Step 2: Create monitors ──"
+          create_monitor "API Health"        "https://api.cypherofhealing.com/health"              "GET"  200 60
+          create_monitor "API (alias)"       "https://api.cipherofhealing.com/health"              "GET"  200 60
+          create_monitor "Store Products"    "https://api.cypherofhealing.com/api/store/products"  "GET"  200 300
+          create_monitor "Booking Services"  "https://api.cypherofhealing.com/api/booking/services" "GET" 200 300
+          create_monitor "Auth Route (401)"  "https://api.cypherofhealing.com/api/auth/login"      "POST" 401 300 \
+            '{"email":"status-monitor@invalid.local","password":"probe"}'
+          create_monitor "Frontend"          "https://cypherofhealing.com"                         "GET"  200 300
+
+          echo "── Step 3: Create status page ──"
+          EXISTING_PAGES=$(api_get "status-pages?per_page=50" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          names = [p['attributes'].get('name','') for p in data.get('data', [])]
+          print('\n'.join(names))
+          " 2>/dev/null || echo "")
+
+          STATUS_PAGE_ID=""
+          if echo "$EXISTING_PAGES" | grep -qF "CypherOfHealing Platform Status"; then
+            log "⏭  Status page already exists"
+            STATUS_PAGE_ID=$(api_get "status-pages?per_page=50" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for p in data.get('data', []):
+            if p['attributes'].get('name') == 'CypherOfHealing Platform Status':
+              print(p['id']); break
+          " 2>/dev/null || echo "")
+          else
+            PAGE_RESP=$(api_post "status-pages" '{
+              "name": "CypherOfHealing Platform Status",
+              "subdomain": "cypherofhealing-status",
+              "custom_domain": "status.cypherofhealing.com",
+              "notification_email": "adrper79@gmail.com",
+              "allow_subscriptions": true,
+              "hide_from_search_engines": false
+            }')
+            STATUS_PAGE_ID=$(echo "$PAGE_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['id'])" 2>/dev/null || echo "")
+            if [ -n "$STATUS_PAGE_ID" ]; then
+              log "✅ Created status page (id=$STATUS_PAGE_ID)"
+            else
+              log "⚠️  Status page creation response:"
+              echo "$PAGE_RESP" | head -5
+            fi
+          fi
+
+          echo "── Step 4: Add monitors to status page ──"
+          if [ -z "$STATUS_PAGE_ID" ]; then
+            log "⚠️  No status page ID — skipping resource attachment"
+          else
+            ALL_MONITORS=$(api_get "monitors?per_page=100")
+            echo "$ALL_MONITORS" | python3 -c "
+          import json, sys, subprocess, os
+
+          data = json.load(sys.stdin)
+          target_names = {
+            'API Health', 'API (alias)', 'Store Products',
+            'Booking Services', 'Auth Route (401)', 'Frontend'
+          }
+          page_id = os.environ['STATUS_PAGE_ID']
+          base = os.environ['BS_BASE']
+          token = os.environ['BETTERSTACK_API_TOKEN']
+
+          for m in data.get('data', []):
+            name = m['attributes']['pronounceable_name']
+            if name not in target_names:
+              continue
+            payload = json.dumps({'monitor_id': m['id'], 'history': True})
+            r = subprocess.run(
+              ['curl', '-sf', '-X', 'POST',
+               '-H', f'Authorization: Bearer {token}',
+               '-H', 'Content-Type: application/json',
+               f'{base}/status-pages/{page_id}/status-page-resources',
+               '-d', payload],
+              capture_output=True, text=True
+            )
+            if r.returncode == 0:
+              print(f'  ✅ Added to status page: {name}')
+            else:
+              print(f'  ⚠️  Could not add {name}: {r.stderr[:80]}')
+          " STATUS_PAGE_ID="$STATUS_PAGE_ID" BS_BASE="$BS_BASE" \
+            BETTERSTACK_API_TOKEN="$BETTERSTACK_API_TOKEN" || true
+          fi
+
+          echo ""
+          echo "── Summary ──"
+          echo "Status page URL : https://status.cypherofhealing.com"
+          echo "BetterStack     : https://uptime.betterstack.com"
+          echo ""
+          echo "DNS step (Cloudflare → cypherofhealing.com DNS):"
+          echo "  CNAME  status  →  statuspage.betteruptime.com  (Proxy: DNS only)"
+
+      - name: Sync POSTHOG_PROJECT_TOKEN to COH Workers
+        if: ${{ inputs.dry_run != true }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "${POSTHOG_PROJECT_TOKEN:-}" ]; then
+            echo "⚠️  POSTHOG_PROJECT_TOKEN not found in GCP — skipping Worker secret sync"
+            exit 0
+          fi
+
+          npm ci --prefix . 2>/dev/null || true
+
+          for env_flag in "" "--env staging"; do
+            worker_label=$([ -z "$env_flag" ] && echo "production" || echo "staging")
+            printf '%s' "$POSTHOG_PROJECT_TOKEN" | \
+              npx wrangler secret put POSTHOG_PROJECT_TOKEN \
+                --name cypher-of-healing-api$( [ "$worker_label" = "staging" ] && echo "-staging" || echo "" ) \
+                2>&1 | tail -3
+            echo "✅ POSTHOG_PROJECT_TOKEN synced to $worker_label worker"
+          done
