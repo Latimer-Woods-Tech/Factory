@@ -1,13 +1,18 @@
 /**
- * Capability handoff + provision-request persistence.
+ * Capability handoff + provision-request + service lineage persistence.
  *
  * Stage B (Golden Design): durable, content-addressable handoff artifacts.
  * Stage C: audited staging-provision-request channel that references those
  * handoffs.
+ * Stage 3: capability_services lineage table — one row per provisioned service,
+ * recording the deployed_sha + manifest_hash for drift detection and the
+ * upgrade-candidate loop (Backcasting Phase 5+).
  *
- * Schema is mirrored in `apps/admin-studio/migrations/0006_capability_handoffs.sql`
- * and applied lazily here via `ensureCapabilityHandoffSchema()` so fresh
- * deploys don't 500 before the migration is run.
+ * Schema is mirrored in:
+ *   apps/admin-studio/migrations/0006_capability_handoffs.sql
+ *   apps/admin-studio/migrations/0007_capability_services.sql
+ * and applied lazily here via ensureSchema() so fresh deploys don't 500
+ * before the migrations are run.
  */
 
 import { createDb, sql, type FactoryDb, type HyperdriveBinding } from '@latimer-woods-tech/neon';
@@ -55,6 +60,32 @@ export interface ProvisionRequestRecord {
   requestedAt: string;
   env: 'local' | 'staging' | 'production';
   notes: string | null;
+}
+
+/**
+ * Stage 3 — lineage record for a provisioned service.
+ *
+ * One row per service_id. Re-provision UPSERTs the row so each service always
+ * reflects its most-recent deployment. The combination of `deployed_sha` +
+ * `manifest_hash` against the canonical compiled plan is the drift signal:
+ * if either diverges, the service is a re-provision candidate.
+ */
+export interface ServiceRecord {
+  id: string;
+  /** Stable human-readable worker identifier (e.g. "media-room"). */
+  serviceId: string;
+  /** FK: the handoff that defines what this service should look like. */
+  handoffId: string;
+  /** FK: the provision request that triggered the scaffold run (nullable). */
+  provisionRequestId: string | null;
+  /** Git SHA of the Factory Core repo at deploy time. */
+  deployedSha: string;
+  /** Content hash of wrangler.jsonc at deploy time. */
+  manifestHash: string;
+  /** Timestamp of the most recent automated drift check; null until first run. */
+  lastDriftCheckAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ProofGateState {
@@ -124,6 +155,24 @@ async function ensureSchema(hyperdrive: HyperdriveBinding): Promise<void> {
       `);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_provision_requests_handoff ON capability_provision_requests (handoff_id)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_provision_requests_status ON capability_provision_requests (status, requested_at DESC)`);
+
+      // Stage 3: service lineage table (mirrors 0007_capability_services.sql).
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS capability_services (
+          id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          service_id           TEXT NOT NULL,
+          handoff_id           UUID NOT NULL REFERENCES capability_handoffs(id) ON DELETE RESTRICT,
+          provision_request_id UUID REFERENCES capability_provision_requests(id) ON DELETE SET NULL,
+          deployed_sha         TEXT NOT NULL,
+          manifest_hash        TEXT NOT NULL,
+          last_drift_check_at  TIMESTAMPTZ,
+          created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+      await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_capability_services_service_id ON capability_services (service_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_services_handoff          ON capability_services (handoff_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_services_drift_check      ON capability_services (last_drift_check_at DESC NULLS FIRST)`);
     })();
     schemaInitCache.set(hyperdrive, init);
     init.catch(() => { schemaInitCache.delete(hyperdrive); });
@@ -487,4 +536,175 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
     createdBy: row.created_by,
     env: row.env,
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stage 3 — Service lineage CRUD
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ServiceRow {
+  id: string;
+  service_id: string;
+  handoff_id: string;
+  provision_request_id: string | null;
+  deployed_sha: string;
+  manifest_hash: string;
+  last_drift_check_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function serviceRowToRecord(row: ServiceRow): ServiceRecord {
+  return {
+    id: row.id,
+    serviceId: row.service_id,
+    handoffId: row.handoff_id,
+    provisionRequestId: row.provision_request_id,
+    deployedSha: row.deployed_sha,
+    manifestHash: row.manifest_hash,
+    lastDriftCheckAt: row.last_drift_check_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Upsert a service lineage record.
+ *
+ * Re-provisioning the same service updates the existing row (deployed_sha,
+ * manifest_hash, handoff_id, provision_request_id, updated_at) so the table
+ * always reflects the most-recent deployment. The original created_at is
+ * preserved.
+ */
+export async function upsertService(
+  hyperdrive: HyperdriveBinding,
+  input: Omit<ServiceRecord, 'id' | 'createdAt' | 'updatedAt' | 'lastDriftCheckAt'> & {
+    id?: string;
+  },
+): Promise<ServiceRecord> {
+  const id = input.id ?? crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  await ensureSchema(hyperdrive);
+  const db = getDb(hyperdrive);
+
+  const result = await db.execute(sql`
+    INSERT INTO capability_services (
+      id, service_id, handoff_id, provision_request_id,
+      deployed_sha, manifest_hash, created_at, updated_at
+    ) VALUES (
+      ${id}, ${input.serviceId}, ${input.handoffId},
+      ${input.provisionRequestId ?? null},
+      ${input.deployedSha}, ${input.manifestHash},
+      ${now}, ${now}
+    )
+    ON CONFLICT (service_id) DO UPDATE SET
+      handoff_id           = EXCLUDED.handoff_id,
+      provision_request_id = EXCLUDED.provision_request_id,
+      deployed_sha         = EXCLUDED.deployed_sha,
+      manifest_hash        = EXCLUDED.manifest_hash,
+      updated_at           = EXCLUDED.updated_at
+    RETURNING id, service_id, handoff_id, provision_request_id,
+              deployed_sha, manifest_hash, last_drift_check_at,
+              created_at, updated_at
+  `);
+
+  const row = (result.rows as unknown as ServiceRow[])[0];
+  if (!row) {
+    throw new Error(`[handoff-store] upsertService returned no row for service_id=${input.serviceId}`);
+  }
+  return serviceRowToRecord(row);
+}
+
+/**
+ * Look up a service by its stable service_id string.
+ */
+export async function findServiceByServiceId(
+  hyperdrive: HyperdriveBinding,
+  serviceId: string,
+): Promise<ServiceRecord | null> {
+  try {
+    await ensureSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const result = await db.execute(sql`
+      SELECT id, service_id, handoff_id, provision_request_id,
+             deployed_sha, manifest_hash, last_drift_check_at,
+             created_at, updated_at
+      FROM capability_services
+      WHERE service_id = ${serviceId}
+      LIMIT 1
+    `);
+    const row = (result.rows as unknown as ServiceRow[])[0];
+    return row ? serviceRowToRecord(row) : null;
+  } catch (err) {
+    console.error('[handoff-store] findServiceByServiceId failed:', (err as Error).message);
+    return null;
+  }
+}
+
+/**
+ * List service lineage records, optionally filtered by handoff.
+ * Ordered by updated_at DESC so re-provisioned services sort to the top.
+ */
+export async function listServices(
+  hyperdrive: HyperdriveBinding,
+  filter: { handoffId?: string; limit?: number } = {},
+): Promise<ServiceRecord[]> {
+  try {
+    await ensureSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const limit = clamp(filter.limit ?? 50, 1, 200);
+
+    const conditions: ReturnType<typeof sql>[] = [];
+    if (filter.handoffId) conditions.push(sql`handoff_id = ${filter.handoffId}`);
+    const whereChunks: ReturnType<typeof sql>[] = [];
+    for (let i = 0; i < conditions.length; i += 1) {
+      whereChunks.push(i === 0 ? sql`WHERE` : sql`AND`);
+      whereChunks.push(conditions[i]!);
+    }
+    const whereClause = sql.join(whereChunks, sql` `);
+
+    const result = await db.execute(sql`
+      SELECT id, service_id, handoff_id, provision_request_id,
+             deployed_sha, manifest_hash, last_drift_check_at,
+             created_at, updated_at
+      FROM capability_services
+      ${whereClause}
+      ORDER BY updated_at DESC
+      LIMIT ${limit}
+    `);
+    return (result.rows as unknown as ServiceRow[]).map(serviceRowToRecord);
+  } catch (err) {
+    console.error('[handoff-store] listServices failed:', (err as Error).message);
+    return [];
+  }
+}
+
+/**
+ * Record that a drift check ran for this service. Touches only
+ * last_drift_check_at + updated_at; does not change the deployment fields.
+ */
+export async function touchServiceDriftCheck(
+  hyperdrive: HyperdriveBinding,
+  serviceId: string,
+): Promise<ServiceRecord | null> {
+  try {
+    await ensureSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const now = new Date().toISOString();
+    const result = await db.execute(sql`
+      UPDATE capability_services
+      SET last_drift_check_at = ${now},
+          updated_at          = ${now}
+      WHERE service_id = ${serviceId}
+      RETURNING id, service_id, handoff_id, provision_request_id,
+                deployed_sha, manifest_hash, last_drift_check_at,
+                created_at, updated_at
+    `);
+    const row = (result.rows as unknown as ServiceRow[])[0];
+    return row ? serviceRowToRecord(row) : null;
+  } catch (err) {
+    console.error('[handoff-store] touchServiceDriftCheck failed:', (err as Error).message);
+    return null;
+  }
 }
