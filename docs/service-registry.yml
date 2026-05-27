@@ -735,6 +735,73 @@ workers:
       - GCP_REGION
     consumers: []
 
+  # ─── PLANNED (not yet built) ─────────────────────────────────────────────────
+  # These workers are referenced in docs/marketing/pr3-briefs/ planning documents.
+  # They will be built during Stage 3 (marketing automation).
+
+  - id: marketing-supervisor
+    name: marketing-supervisor
+    repo: Latimer-Woods-Tech/factory
+    url: https://marketing.latwoodtech.work
+    workers_dev_url: https://marketing-supervisor.adrper79.workers.dev
+    custom_domain: marketing.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://marketing-supervisor.adrper79.workers.dev/health
+      production: https://marketing.latwoodtech.work/health
+    telemetry_required: true
+    notes: >
+      Marketing automation supervisor (Stage 3). Orchestrates email drip,
+      social adapters, topic queue, shareables, embeds, and brand safety.
+      Planned — not yet deployed.
+    consumers: []
+
+  - id: marketing-supervisor-staging
+    name: marketing-supervisor-staging
+    repo: Latimer-Woods-Tech/factory
+    url: https://marketing-supervisor-staging.adrper79.workers.dev
+    workers_dev_url: https://marketing-supervisor-staging.adrper79.workers.dev
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://marketing-supervisor-staging.adrper79.workers.dev/health
+    telemetry_required: false
+    notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
+    consumers: []
+
+  - id: referrals
+    name: referrals
+    repo: Latimer-Woods-Tech/factory
+    url: https://referrals.latwoodtech.work
+    workers_dev_url: https://referrals.adrper79.workers.dev
+    custom_domain: referrals.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://referrals.adrper79.workers.dev/health
+    telemetry_required: true
+    notes: >
+      Referral tracking worker (Stage 3 — PR brief 3j).
+      Planned — not yet deployed.
+    consumers: []
+
+  - id: llm-rank-worker
+    name: llm-rank-worker
+    repo: Latimer-Woods-Tech/factory
+    url: https://llm-rank.latwoodtech.work
+    workers_dev_url: https://llm-rank-worker.adrper79.workers.dev
+    custom_domain: llm-rank.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://llm-rank-worker.adrper79.workers.dev/health
+    telemetry_required: true
+    notes: >
+      LLM ranking worker for surfacing the most relevant content (Stage 3 — PR brief 3l).
+      Planned — not yet deployed.
+    consumers: []
+
 pages:
   - id: prime-self-ui
     repo: Latimer-Woods-Tech/HumanDesign
