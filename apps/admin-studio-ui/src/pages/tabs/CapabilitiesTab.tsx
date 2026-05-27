@@ -213,6 +213,22 @@ interface ConceptTemplate {
   values: Record<string, string | number | boolean>;
 }
 
+interface DeployedServiceRecord {
+  id: string;
+  serviceId: string;
+  handoffId: string;
+  provisionRequestId: string | null;
+  deployedSha: string;
+  manifestHash: string;
+  liveManifestHash: string | null;
+  workerUrl: string | null;
+  driftDetected: boolean;
+  driftFirstSeenAt: string | null;
+  lastDriftCheckAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 const PROOF_GATE_LABELS: Array<{ key: keyof ProofGateState; label: string; hint: string }> = [
   {
@@ -842,6 +858,9 @@ export function CapabilitiesTab() {
 
               {/* Stage D: lineage history — past handoffs for this concept */}
               <ConceptHistoryPanel conceptId={selectedConcept.id} />
+
+              {/* Deployed services with live drift status */}
+              <DeployedServicesPanel conceptId={selectedConcept.id} />
             </>
           )}
         </section>
@@ -1547,6 +1566,128 @@ function ConceptHistoryPanel({ conceptId }: { conceptId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Shows provisioned services for the selected concept with drift status. */
+function DeployedServicesPanel({ conceptId }: { conceptId: string }) {
+  const [open, setOpen] = useState(false);
+  const [services, setServices] = useState<DeployedServiceRecord[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setServices(null);
+    setFetchError(null);
+  }, [conceptId]);
+
+  async function load() {
+    if (loading || services !== null) return;
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const data = await apiFetch<{ services: DeployedServiceRecord[] }>(
+        `/capabilities/services?conceptId=${encodeURIComponent(conceptId)}&limit=10`,
+      );
+      setServices(data.services ?? []);
+    } catch (err) {
+      setFetchError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next) void load();
+  }
+
+  return (
+    <div className="rounded border border-slate-800 bg-slate-950/60">
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-200"
+      >
+        <span>Deployed services</span>
+        <span>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="border-t border-slate-800 px-4 py-3">
+          {loading && <p className="text-xs text-slate-500">Loading services…</p>}
+          {fetchError && <p className="text-xs text-red-400">{fetchError}</p>}
+          {!loading && services !== null && services.length === 0 && (
+            <p className="text-xs text-slate-500">No services provisioned for this concept yet.</p>
+          )}
+          {!loading && services && services.length > 0 && (
+            <ul className="space-y-2">
+              {services.map((s) => (
+                <li
+                  key={s.id}
+                  className="rounded border border-slate-800 bg-slate-900 px-3 py-3 text-xs"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-medium text-slate-200">{s.serviceId}</span>
+                        <DriftStatusBadge service={s} />
+                      </div>
+                      {s.workerUrl && (
+                        <a
+                          href={`${s.workerUrl}/health`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-[10px] text-blue-400 hover:underline"
+                        >
+                          {s.workerUrl}
+                        </a>
+                      )}
+                      <div className="font-mono text-[10px] text-slate-500">
+                        sha: {s.deployedSha.slice(0, 12)}
+                      </div>
+                    </div>
+                    <div className="text-right text-slate-500 space-y-0.5">
+                      <div>Provisioned {new Date(s.createdAt).toLocaleString()}</div>
+                      {s.lastDriftCheckAt && (
+                        <div>Checked {new Date(s.lastDriftCheckAt).toLocaleString()}</div>
+                      )}
+                    </div>
+                  </div>
+                  {s.driftDetected && s.driftFirstSeenAt && (
+                    <div className="mt-2 rounded border border-amber-700/50 bg-amber-950/30 px-2 py-1 text-amber-200">
+                      Drift first seen {new Date(s.driftFirstSeenAt).toLocaleString()} — re-provision required
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DriftStatusBadge({ service }: { service: DeployedServiceRecord }) {
+  if (!service.lastDriftCheckAt) {
+    return (
+      <span className="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-500">
+        unchecked
+      </span>
+    );
+  }
+  if (service.driftDetected) {
+    return (
+      <span className="rounded border border-amber-700/60 bg-amber-950/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+        drift
+      </span>
+    );
+  }
+  return (
+    <span className="rounded border border-emerald-700/60 bg-emerald-950/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+      ok
+    </span>
   );
 }
 

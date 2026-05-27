@@ -54,9 +54,21 @@ import {
   type ProofGateState,
   type ProvisionRequestRecord,
 } from '../lib/handoff-store.js';
+import {
+  createGraph,
+  findGraphById,
+  listGraphs,
+  updateGraphLayout,
+  saveCompiledPlan,
+  deleteGraph,
+  type GraphNode,
+  type GraphEdge,
+} from '../lib/graph-store.js';
+import { compileGraph } from '../lib/graph-compiler.js';
 
 const capabilities = new Hono<AppEnv>();
 
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- literal const needs as const for the type narrowing used in handoff bodies
 const HANDOFF_SCHEMA_VERSION = '1.0.0' as const;
 
 capabilities.get('/', (c) => {
@@ -559,6 +571,213 @@ capabilities.post('/services/:serviceId/drift-check', async (c) => {
   });
 
   return c.json({ service });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 5 — Capability Graph routes (visual composer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * List graph documents.
+ * GET /capabilities/graphs?limit=50
+ */
+capabilities.get('/graphs', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const limitRaw = c.req.query('limit');
+  const limit = limitRaw ? Math.max(1, Math.min(200, Number.parseInt(limitRaw, 10) || 50)) : 50;
+  const graphs = await listGraphs(c.env.DB, { limit });
+  return c.json({ generatedAt: new Date().toISOString(), graphs });
+});
+
+/**
+ * Create a new graph document.
+ * POST /capabilities/graphs
+ *   body: { name, description? }
+ */
+capabilities.post('/graphs', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  type GraphCreateBody = { name?: string; description?: string };
+  const body = await c.req.json<GraphCreateBody>().catch((): GraphCreateBody => ({}));
+  if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
+  const graph = await createGraph(c.env.DB, {
+    name: body.name.trim(),
+    description: body.description,
+    createdBy: ctx.userId,
+  });
+  c.set('auditAction', 'capabilities.graph.create');
+  c.set('auditResource', 'capability_graphs');
+  c.set('auditResourceId', graph.id);
+  c.set('auditReversibility', 'reversible');
+  c.set('auditResultDetail', { graphId: graph.id, name: graph.name });
+  return c.json({ graph }, 201);
+});
+
+/**
+ * Get a graph by id.
+ * GET /capabilities/graphs/:id
+ */
+capabilities.get('/graphs/:id', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  return c.json({ graph });
+});
+
+/**
+ * Update graph nodes/edges/name/description.
+ * PUT /capabilities/graphs/:id
+ *   body: { name?, description?, nodes?, edges? }
+ * Clears compiledPlan on every update (recompile required).
+ */
+capabilities.put('/graphs/:id', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  type GraphPatchBody = {
+    name?: string;
+    description?: string;
+    nodes?: unknown[];
+    edges?: unknown[];
+  };
+  const body = await c.req.json<GraphPatchBody>().catch((): GraphPatchBody => ({}));
+  const graph = await updateGraphLayout(c.env.DB, id, {
+    name: body.name,
+    description: body.description,
+    nodes: body.nodes as GraphNode[] | undefined,
+    edges: body.edges as GraphEdge[] | undefined,
+  });
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  c.set('auditAction', 'capabilities.graph.update');
+  c.set('auditResource', 'capability_graphs');
+  c.set('auditResourceId', graph.id);
+  c.set('auditReversibility', 'reversible');
+  c.set('auditResultDetail', {
+    graphId: graph.id,
+    nodeCount: graph.nodes.length,
+    edgeCount: graph.edges.length,
+  });
+  return c.json({ graph });
+});
+
+/**
+ * Delete a graph.
+ * DELETE /capabilities/graphs/:id
+ */
+capabilities.delete('/graphs/:id', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const deleted = await deleteGraph(c.env.DB, id);
+  if (!deleted) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  c.set('auditAction', 'capabilities.graph.delete');
+  c.set('auditResource', 'capability_graphs');
+  c.set('auditResourceId', id);
+  c.set('auditReversibility', 'irreversible');
+  c.set('auditResultDetail', { graphId: id });
+  return c.json({ deleted: true });
+});
+
+/**
+ * Compile a graph to a CapabilityPlan.
+ * POST /capabilities/graphs/:id/compile
+ * Returns errors/warnings + plan on success.
+ * On success, persists the compiled plan to the graph record.
+ */
+capabilities.post('/graphs/:id/compile', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const result = compileGraph(graph);
+  if (result.success && result.plan) {
+    await saveCompiledPlan(c.env.DB, id, result.plan as unknown as Record<string, unknown>);
+  }
+  c.set('auditAction', 'capabilities.graph.compile');
+  c.set('auditResource', 'capability_graphs');
+  c.set('auditResourceId', id);
+  c.set('auditReversibility', 'reversible');
+  c.set('auditResultDetail', {
+    graphId: id,
+    success: result.success,
+    errorCount: result.errors.length,
+    recipeId: result.recipeId,
+  });
+  return c.json({
+    graphId: id,
+    success: result.success,
+    errors: result.errors,
+    warnings: result.warnings,
+    plan: result.plan,
+    recipeId: result.recipeId,
+    compiledAt: result.success ? new Date().toISOString() : null,
+  });
+});
+
+/**
+ * Compile a graph and generate a handoff for staging provision.
+ * POST /capabilities/graphs/:id/handoff
+ * Equivalent to the recipe-first handoff flow but driven from a graph.
+ */
+capabilities.post('/graphs/:id/handoff', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const compileResult = compileGraph(graph);
+  if (!compileResult.success || !compileResult.plan || !compileResult.resolution) {
+    return c.json(
+      {
+        error: 'Graph compilation failed — fix errors before generating a handoff',
+        errors: compileResult.errors,
+        warnings: compileResult.warnings,
+      },
+      422,
+    );
+  }
+  const handoffBody = {
+    schemaVersion: HANDOFF_SCHEMA_VERSION,
+    kind: 'scaffold-handoff' as const,
+    conceptId: compileResult.resolution.concept.id,
+    recipeId: compileResult.recipeId!,
+    parameters: compileResult.resolution.parameters,
+    plan: compileResult.plan,
+    preview: renderCapabilityPlanPreview(compileResult.plan),
+    nextAction: {
+      action: 'request-staging-provision' as const,
+      conceptId: compileResult.resolution.concept.id,
+      recipeId: compileResult.recipeId!,
+    },
+  };
+  const hash = await hashHandoffBody(handoffBody);
+  const persisted = await persistHandoff(c.env.DB, {
+    hash,
+    schemaVersion: HANDOFF_SCHEMA_VERSION,
+    conceptId: handoffBody.conceptId,
+    recipeId: handoffBody.recipeId,
+    parameters: handoffBody.parameters,
+    plan: handoffBody.plan,
+    preview: handoffBody.preview,
+    nextAction: handoffBody.nextAction,
+    createdBy: ctx.userId,
+    env: ctx.env,
+  });
+  const handoff = { ...handoffBody, id: persisted.id, hash, createdAt: persisted.createdAt };
+  c.set('auditAction', 'capabilities.graph.handoff');
+  c.set('auditResource', 'capability_graphs');
+  c.set('auditResourceId', id);
+  c.set('auditReversibility', 'reversible');
+  c.set('auditResultDetail', {
+    graphId: id,
+    handoffId: persisted.id,
+    recipeId: handoffBody.recipeId,
+  });
+  return c.json({ graph: { id, name: graph.name }, handoff });
 });
 
 type ConceptBody = { conceptId?: string; params?: Record<string, unknown> };
