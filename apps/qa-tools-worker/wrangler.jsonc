@@ -12,17 +12,17 @@
   "logpush": true,
   "observability": { "enabled": true },
 
-  // Hyperdrive binding — replace UUID after provisioning per docs/runbooks/add-new-app.md
-  // wrangler hyperdrive create qa-tools-hyperdrive --connection-string "$NEON_CONNECTION_STRING"
+  // Hyperdrive binding — qa-tools-hyperdrive → THE_FACTORY Neon DB (morning-dust-88304389)
+  // Provisioned: 2026-05-27  wrangler hyperdrive create qa-tools-hyperdrive
   "hyperdrive": [
     {
       "binding": "DB",
-      "id": "REPLACE_WITH_REAL_HYPERDRIVE_UUID"
+      "id": "ed95104a65c541c8b98f842e01f5894a"
     }
   ],
 
   // R2 bucket for screenshots, videos, JSON exports (90-day lifecycle policy)
-  // wrangler r2 bucket create qa-tools
+  // Provisioned: 2026-05-27  wrangler r2 bucket create qa-tools
   "r2_buckets": [
     {
       "binding": "QA_TOOLS_R2",
@@ -31,11 +31,11 @@
   ],
 
   // KV for rate-limit counters (concurrent run tracking per app)
-  // wrangler kv namespace create QA_RATE_LIMIT_KV
+  // Provisioned: 2026-05-27  wrangler kv namespace create QA_RATE_LIMIT_KV
   "kv_namespaces": [
     {
       "binding": "RATE_LIMIT_KV",
-      "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID"
+      "id": "cbec8a8aa8554005bb763267bd5498b1"
     }
   ],
 
@@ -43,11 +43,11 @@
     "ENVIRONMENT": "development"
   },
 
-  // Required secrets — set via `wrangler secret put <NAME>`:
-  //   QA_TOOLS_JWT_SECRET     HS256 key for QA Tools JWTs (rotate semi-annually)
-  //   BROWSER_AGENT_SA_KEY    GCP service-account JSON (minified) for browser-agent OIDC auth
-  //   BROWSER_AGENT_URL       Cloud Run service URL  (e.g. https://browser-agent-*.run.app)
-  //   BROWSER_AGENT_AUDIENCE  Same as BROWSER_AGENT_URL — used as OIDC audience claim
+  // Required secrets — provisioned via deploy-qa-tools-worker.yml from GCP Secret Manager:
+  //   QA_TOOLS_JWT_SECRET     HS256 key (created 2026-05-27 in factory-495015)
+  //   BROWSER_AGENT_SA_KEY    supervisor-sa JSON key (BROWSER_AGENT_SA_KEY in factory-495015)
+  //   BROWSER_AGENT_URL       https://browser-agent-891842778224.us-central1.run.app
+  //   BROWSER_AGENT_AUDIENCE  https://browser-agent-891842778224.us-central1.run.app
   //
   // Optional secrets:
   //   GITHUB_QA_TOKEN         GitHub PAT (repo:write) for issue creation + PR comments
@@ -61,26 +61,26 @@
         { "pattern": "qa-tools.lwt.internal", "custom_domain": true }
       ],
       "hyperdrive": [
-        { "binding": "DB", "id": "REPLACE_WITH_REAL_HYPERDRIVE_UUID" }
+        { "binding": "DB", "id": "ed95104a65c541c8b98f842e01f5894a" }
       ],
       "r2_buckets": [
         { "binding": "QA_TOOLS_R2", "bucket_name": "qa-tools" }
       ],
       "kv_namespaces": [
-        { "binding": "RATE_LIMIT_KV", "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID" }
+        { "binding": "RATE_LIMIT_KV", "id": "cbec8a8aa8554005bb763267bd5498b1" }
       ],
       "vars": { "ENVIRONMENT": "production" }
     },
     "staging": {
       "name": "qa-tools-worker-staging",
       "hyperdrive": [
-        { "binding": "DB", "id": "REPLACE_WITH_REAL_HYPERDRIVE_UUID" }
+        { "binding": "DB", "id": "ed95104a65c541c8b98f842e01f5894a" }
       ],
       "r2_buckets": [
         { "binding": "QA_TOOLS_R2", "bucket_name": "qa-tools-staging" }
       ],
       "kv_namespaces": [
-        { "binding": "RATE_LIMIT_KV", "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID" }
+        { "binding": "RATE_LIMIT_KV", "id": "cbec8a8aa8554005bb763267bd5498b1" }
       ],
       "vars": { "ENVIRONMENT": "staging" }
     }

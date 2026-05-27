@@ -65,7 +65,14 @@ jobs:
           service_account: ${{ secrets.GCP_SA_EMAIL }}
 
       - name: Fetch secrets from GCP Secret Manager
-        run: bash scripts/fetch_gcp_secrets.sh
+        run: |
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env QA_TOOLS_JWT_SECRET   QA_TOOLS_JWT_SECRET
+          fetch_to_env BROWSER_AGENT_SA_KEY  BROWSER_AGENT_SA_KEY
+          fetch_to_env BROWSER_AGENT_URL     BROWSER_AGENT_URL
+          fetch_to_env BROWSER_AGENT_AUDIENCE BROWSER_AGENT_AUDIENCE
+          fetch_to_env GITHUB_QA_TOKEN       GITHUB_QA_TOKEN       FACTORY_GH_PAT
+          fetch_to_env SLACK_QA_WEBHOOK_URL  SLACK_WEBHOOK_OPS
         env:
           GCP_PROJECT_ID: factory-495015
 
