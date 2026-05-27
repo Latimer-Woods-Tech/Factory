@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createApp } from './index.js';
+import { createApp, parseVisionResponse } from './index.js';
 import type { BrowserAutomation } from './index.js';
 
 const runScenarioMock = vi.fn().mockResolvedValue({
@@ -18,6 +18,32 @@ const auditMock = vi.fn().mockResolvedValue({
   screenshotBase64: 'abc123',
 });
 
+const visualReviewMock = vi.fn().mockResolvedValue({
+  url: 'https://example.com',
+  reviewedAt: '2026-05-15T00:00:00.000Z',
+  viewports: [
+    { viewport: 'desktop', width: 1280, height: 720, screenshotBase64: 'desktop-bytes' },
+    { viewport: 'mobile', width: 375, height: 667, screenshotBase64: 'mobile-bytes' },
+  ],
+  consoleErrors: [],
+  pageErrors: [],
+  failedRequests: [],
+  review: {
+    model: 'claude-haiku-4-5-20251001',
+    summary: 'Layout looks clean across both viewports.',
+    findings: [
+      {
+        severity: 'medium',
+        category: 'color',
+        viewport: 'mobile',
+        description: 'Primary CTA contrast is borderline against the hero background.',
+        recommendation: 'Increase CTA text weight or darken the background overlay.',
+      },
+    ],
+    tokenUsage: { input: 1200, output: 250 },
+  },
+});
+
 const mockAutomation: BrowserAutomation = {
   scrape: vi.fn().mockResolvedValue({
     url: 'https://example.com',
@@ -32,6 +58,7 @@ const mockAutomation: BrowserAutomation = {
   }),
   runScenario: runScenarioMock,
   audit: auditMock,
+  visualReview: visualReviewMock,
 };
 
 describe('browser-agent', () => {
@@ -214,5 +241,124 @@ describe('browser-agent', () => {
       });
       expect(res.status).toBe(422);
     });
+  });
+
+  describe('POST /visual-review', () => {
+    it('returns 200 with shots + review for a valid url', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com' }),
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body).toHaveProperty('url', 'https://example.com');
+      expect(body).toHaveProperty('viewports');
+      expect(body).toHaveProperty('review');
+      const review = body['review'] as Record<string, unknown>;
+      expect(review['findings']).toHaveLength(1);
+      expect(visualReviewMock).toHaveBeenCalledOnce();
+    });
+
+    it('accepts optional steps, viewports, rubric, model overrides', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://example.com',
+          steps: [{ action: 'goto', url: 'https://example.com/login' }],
+          viewports: [{ name: 'wide', width: 1920, height: 1080 }],
+          rubric: ['Find any broken images.'],
+          model: 'claude-sonnet-4-6',
+        }),
+      });
+      expect(res.status).toBe(200);
+      expect(visualReviewMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'claude-sonnet-4-6',
+          viewports: [{ name: 'wide', width: 1920, height: 1080 }],
+          rubric: ['Find any broken images.'],
+        }),
+      );
+    });
+
+    it('returns 422 when url is missing', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 when viewports has zero entries', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', viewports: [] }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 when a viewport is missing width', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', viewports: [{ name: 'm', height: 600 }] }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 when a rubric item is empty', async () => {
+      const res = await app.request('/visual-review', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://example.com', rubric: ['', 'ok'] }),
+      });
+      expect(res.status).toBe(422);
+    });
+  });
+});
+
+describe('parseVisionResponse', () => {
+  it('extracts a clean JSON object', () => {
+    const raw = '{"summary":"ok","findings":[{"severity":"high","category":"layout","viewport":"desktop","description":"x","recommendation":"y"}]}';
+    const parsed = parseVisionResponse(raw);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.summary).toBe('ok');
+    expect(parsed?.findings).toHaveLength(1);
+    expect(parsed?.findings[0]?.severity).toBe('high');
+  });
+
+  it('strips a leading ```json code fence', () => {
+    const raw = '```json\n{"summary":"f","findings":[]}\n```';
+    const parsed = parseVisionResponse(raw);
+    expect(parsed?.summary).toBe('f');
+  });
+
+  it('recovers when the model emits leading prose before the JSON', () => {
+    const raw = 'Sure — here is the review:\n{"summary":"after prose","findings":[]}';
+    expect(parseVisionResponse(raw)?.summary).toBe('after prose');
+  });
+
+  it('drops findings with no description', () => {
+    const raw = '{"summary":"","findings":[{"severity":"high","category":"c","viewport":"v"}]}';
+    expect(parseVisionResponse(raw)?.findings).toEqual([]);
+  });
+
+  it('coerces unknown severity to info and missing category to general', () => {
+    const raw = '{"summary":"s","findings":[{"description":"bad","severity":"catastrophic"}]}';
+    const parsed = parseVisionResponse(raw);
+    expect(parsed?.findings[0]?.severity).toBe('info');
+    expect(parsed?.findings[0]?.category).toBe('general');
+    expect(parsed?.findings[0]?.viewport).toBe('all');
+  });
+
+  it('returns null for non-JSON', () => {
+    expect(parseVisionResponse('definitely not json')).toBeNull();
+  });
+
+  it('returns null when JSON is malformed', () => {
+    expect(parseVisionResponse('{"summary":"x","findings":[}')).toBeNull();
   });
 });
