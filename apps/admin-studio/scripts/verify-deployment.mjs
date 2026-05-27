@@ -180,7 +180,7 @@ async function verify(env = DEFAULT_ENV, argv = process.argv.slice(2)) {
 
   results.push(
     await test('/me returns 401 without bearer token', async () => {
-      const res = await curl(`${base}/me/`, { timeout: 5 });
+      const res = await curl(`${base}/me`, { timeout: 5 });
       assertNotEdgeError(res, base);
       if (res.status !== 401) throw new Error(`Expected 401, got ${res.status}`);
       const parsed = parseJsonSafe(res.body);
@@ -192,7 +192,7 @@ async function verify(env = DEFAULT_ENV, argv = process.argv.slice(2)) {
 
   results.push(
     await test('/me returns 401 with invalid token + includes requestId', async () => {
-      const res = await curl(`${base}/me/`, {
+      const res = await curl(`${base}/me`, {
         headers: { Authorization: 'Bearer invalid' },
         timeout: 5,
       });
@@ -208,7 +208,7 @@ async function verify(env = DEFAULT_ENV, argv = process.argv.slice(2)) {
 
   results.push(
     await test('/tests returns 401 without token', async () => {
-      const res = await curl(`${base}/tests/`, { timeout: 5 });
+      const res = await curl(`${base}/tests`, { timeout: 5 });
       assertNotEdgeError(res, base);
       if (res.status !== 401) throw new Error(`Expected 401, got ${res.status}`);
     })
