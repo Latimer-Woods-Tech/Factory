@@ -735,6 +735,36 @@ workers:
       - GCP_REGION
     consumers: []
 
+  - id: qa-tools-worker
+    name: qa-tools-worker
+    repo: Latimer-Woods-Tech/factory
+    url: https://qa-tools.lwt.internal
+    workers_dev_url: https://qa-tools-worker.adrper79.workers.dev
+    custom_domain: qa-tools.lwt.internal
+    custom_domain_status: not-yet-attached
+    health_endpoint: /health
+    telemetry_required: false
+    deployment_status: phase-1-in-progress
+    required_secrets:
+      - QA_TOOLS_JWT_SECRET
+      - BROWSER_AGENT_SA_KEY
+      - BROWSER_AGENT_URL
+      - BROWSER_AGENT_AUDIENCE
+    required_vars:
+      - ENVIRONMENT
+    required_bindings:
+      - DB (Hyperdrive — provision with: wrangler hyperdrive create qa-tools-hyperdrive --connection-string "$NEON_CONNECTION_STRING")
+      - QA_TOOLS_R2 (R2 bucket — wrangler r2 bucket create qa-tools)
+      - RATE_LIMIT_KV (KV namespace — wrangler kv namespace create QA_RATE_LIMIT_KV)
+    notes: >
+      QA Tools Platform API — accessibility audits, screenshot capture, performance testing.
+      Wraps the browser-agent Cloud Run service (/visual-review with runAxe=true for Phase 1).
+      Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+      Neon migrations: apps/qa-tools-worker/migrations/001_phase1.sql
+      Phase 1 (MVP): POST /runs, GET /runs/:id/status, GET /runs/:id/results, GET /apps/:appId/health
+      Consumers: qa-tools-ui (Phase 1 frontend)
+    consumers: []
+
   # ─── PLANNED (not yet built) ─────────────────────────────────────────────────
   # These workers are referenced in docs/marketing/pr3-briefs/ planning documents.
   # They will be built during Stage 3 (marketing automation).
@@ -867,6 +897,26 @@ pages:
     required_secrets:
       - CLOUDFLARE_API_TOKEN
       - CLOUDFLARE_ACCOUNT_ID
+
+  - id: qa-tools-ui
+    repo: Latimer-Woods-Tech/factory
+    project_name: qa-tools-ui                            # CF Pages project (wrangler pages project create qa-tools-ui)
+    custom_domain: null                                  # internal tool — no public domain in Phase 1
+    custom_domain_status: not-yet-attached
+    deployment_status: phase-1-in-progress
+    root_file: apps/qa-tools-ui/src/app/page.tsx
+    deploy_dir: apps/qa-tools-ui/out
+    worker_dependencies:
+      - qa-tools-worker
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+    notes: >
+      QA Tools Platform dashboard (Next.js 15 static export).
+      Internal engineering tool — accessible to qa-runner/viewer/admin roles only.
+      No public custom domain in Phase 1; provisioned on default pages.dev URL.
+      Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+
 # ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────
 #
 # Shared npm packages published to @adrper79-dot scope.

@@ -174,7 +174,7 @@ export async function generateInsights(input: InsightsInput): Promise<BriefInsig
       VERTEX_PROJECT: input.env.VERTEX_PROJECT,
       VERTEX_LOCATION: input.env.VERTEX_LOCATION,
     },
-    { tier: 'balanced', temperature: 0.72, maxTokens: 1200 },
+    { tier: 'balanced', temperature: 0.72, maxTokens: 1200, maxCostUsd: 0.20, project: 'daily-brief', actor: 'worker', workload: 'insights' },
   );
 
   if (result.error) {
