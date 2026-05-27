@@ -80,10 +80,22 @@ export interface ServiceRecord {
   provisionRequestId: string | null;
   /** Git SHA of the Factory Core repo at deploy time. */
   deployedSha: string;
-  /** Content hash of wrangler.jsonc at deploy time. */
+  /**
+   * Content hash stored at deploy time (wrangler.jsonc hash for the scaffold
+   * workflow). The drift cron compares this against the SHA-256 of the live
+   * /manifest endpoint response to detect configuration divergence.
+   */
   manifestHash: string;
   /** Timestamp of the most recent automated drift check; null until first run. */
   lastDriftCheckAt: string | null;
+  /** Staging worker URL (e.g. https://foo-staging.adrper79.workers.dev). */
+  workerUrl: string | null;
+  /** True if the last drift check detected a hash mismatch. */
+  driftDetected: boolean;
+  /** Timestamp when drift was first detected; null until drift occurs. */
+  driftFirstSeenAt: string | null;
+  /** SHA-256 hex of the /manifest response observed during the last drift check. */
+  liveManifestHash: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -166,6 +178,10 @@ async function ensureSchema(hyperdrive: HyperdriveBinding): Promise<void> {
           deployed_sha         TEXT NOT NULL,
           manifest_hash        TEXT NOT NULL,
           last_drift_check_at  TIMESTAMPTZ,
+          worker_url           TEXT,
+          drift_detected       BOOLEAN NOT NULL DEFAULT false,
+          drift_first_seen_at  TIMESTAMPTZ,
+          live_manifest_hash   TEXT,
           created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
         )
@@ -173,6 +189,11 @@ async function ensureSchema(hyperdrive: HyperdriveBinding): Promise<void> {
       await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_capability_services_service_id ON capability_services (service_id)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_services_handoff          ON capability_services (handoff_id)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_services_drift_check      ON capability_services (last_drift_check_at DESC NULLS FIRST)`);
+      // Stage 4: drift detection columns — added via ALTER so existing deploys pick them up.
+      await db.execute(sql`ALTER TABLE capability_services ADD COLUMN IF NOT EXISTS worker_url TEXT`);
+      await db.execute(sql`ALTER TABLE capability_services ADD COLUMN IF NOT EXISTS drift_detected BOOLEAN NOT NULL DEFAULT false`);
+      await db.execute(sql`ALTER TABLE capability_services ADD COLUMN IF NOT EXISTS drift_first_seen_at TIMESTAMPTZ`);
+      await db.execute(sql`ALTER TABLE capability_services ADD COLUMN IF NOT EXISTS live_manifest_hash TEXT`);
     })();
     schemaInitCache.set(hyperdrive, init);
     init.catch(() => { schemaInitCache.delete(hyperdrive); });
@@ -550,6 +571,10 @@ interface ServiceRow {
   deployed_sha: string;
   manifest_hash: string;
   last_drift_check_at: string | null;
+  worker_url: string | null;
+  drift_detected: boolean;
+  drift_first_seen_at: string | null;
+  live_manifest_hash: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -563,6 +588,10 @@ function serviceRowToRecord(row: ServiceRow): ServiceRecord {
     deployedSha: row.deployed_sha,
     manifestHash: row.manifest_hash,
     lastDriftCheckAt: row.last_drift_check_at,
+    workerUrl: row.worker_url,
+    driftDetected: row.drift_detected,
+    driftFirstSeenAt: row.drift_first_seen_at,
+    liveManifestHash: row.live_manifest_hash,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -572,14 +601,15 @@ function serviceRowToRecord(row: ServiceRow): ServiceRecord {
  * Upsert a service lineage record.
  *
  * Re-provisioning the same service updates the existing row (deployed_sha,
- * manifest_hash, handoff_id, provision_request_id, updated_at) so the table
- * always reflects the most-recent deployment. The original created_at is
- * preserved.
+ * manifest_hash, handoff_id, provision_request_id, worker_url, updated_at)
+ * so the table always reflects the most-recent deployment. The original
+ * created_at is preserved.
  */
 export async function upsertService(
   hyperdrive: HyperdriveBinding,
-  input: Omit<ServiceRecord, 'id' | 'createdAt' | 'updatedAt' | 'lastDriftCheckAt'> & {
+  input: Omit<ServiceRecord, 'id' | 'createdAt' | 'updatedAt' | 'lastDriftCheckAt' | 'driftDetected' | 'driftFirstSeenAt' | 'liveManifestHash'> & {
     id?: string;
+    workerUrl?: string | null;
   },
 ): Promise<ServiceRecord> {
   const id = input.id ?? crypto.randomUUID();
@@ -591,11 +621,12 @@ export async function upsertService(
   const result = await db.execute(sql`
     INSERT INTO capability_services (
       id, service_id, handoff_id, provision_request_id,
-      deployed_sha, manifest_hash, created_at, updated_at
+      deployed_sha, manifest_hash, worker_url, created_at, updated_at
     ) VALUES (
       ${id}, ${input.serviceId}, ${input.handoffId},
       ${input.provisionRequestId ?? null},
       ${input.deployedSha}, ${input.manifestHash},
+      ${input.workerUrl ?? null},
       ${now}, ${now}
     )
     ON CONFLICT (service_id) DO UPDATE SET
@@ -603,9 +634,11 @@ export async function upsertService(
       provision_request_id = EXCLUDED.provision_request_id,
       deployed_sha         = EXCLUDED.deployed_sha,
       manifest_hash        = EXCLUDED.manifest_hash,
+      worker_url           = EXCLUDED.worker_url,
       updated_at           = EXCLUDED.updated_at
     RETURNING id, service_id, handoff_id, provision_request_id,
               deployed_sha, manifest_hash, last_drift_check_at,
+              worker_url, drift_detected, drift_first_seen_at, live_manifest_hash,
               created_at, updated_at
   `);
 
@@ -629,6 +662,7 @@ export async function findServiceByServiceId(
     const result = await db.execute(sql`
       SELECT id, service_id, handoff_id, provision_request_id,
              deployed_sha, manifest_hash, last_drift_check_at,
+             worker_url, drift_detected, drift_first_seen_at, live_manifest_hash,
              created_at, updated_at
       FROM capability_services
       WHERE service_id = ${serviceId}
@@ -643,18 +677,40 @@ export async function findServiceByServiceId(
 }
 
 /**
- * List service lineage records, optionally filtered by handoff.
+ * List service lineage records, optionally filtered by handoff or concept.
+ *
+ * When `conceptId` is provided the query JOINs `capability_handoffs` so the
+ * WHERE condition can reference the concept_id column without requiring the
+ * caller to resolve it first.
+ *
  * Ordered by updated_at DESC so re-provisioned services sort to the top.
  */
 export async function listServices(
   hyperdrive: HyperdriveBinding,
-  filter: { handoffId?: string; limit?: number } = {},
+  filter: { handoffId?: string; conceptId?: string; limit?: number } = {},
 ): Promise<ServiceRecord[]> {
   try {
     await ensureSchema(hyperdrive);
     const db = getDb(hyperdrive);
     const limit = clamp(filter.limit ?? 50, 1, 200);
 
+    if (filter.conceptId) {
+      // JOIN path: filter by concept_id via the handoffs table.
+      const result = await db.execute(sql`
+        SELECT cs.id, cs.service_id, cs.handoff_id, cs.provision_request_id,
+               cs.deployed_sha, cs.manifest_hash, cs.last_drift_check_at,
+               cs.worker_url, cs.drift_detected, cs.drift_first_seen_at, cs.live_manifest_hash,
+               cs.created_at, cs.updated_at
+        FROM capability_services cs
+        JOIN capability_handoffs ch ON ch.id = cs.handoff_id
+        WHERE ch.concept_id = ${filter.conceptId}
+        ORDER BY cs.updated_at DESC
+        LIMIT ${limit}
+      `);
+      return (result.rows as unknown as ServiceRow[]).map(serviceRowToRecord);
+    }
+
+    // Plain path: optional handoffId filter, no JOIN needed.
     const conditions: ReturnType<typeof sql>[] = [];
     if (filter.handoffId) conditions.push(sql`handoff_id = ${filter.handoffId}`);
     const whereChunks: ReturnType<typeof sql>[] = [];
@@ -667,6 +723,7 @@ export async function listServices(
     const result = await db.execute(sql`
       SELECT id, service_id, handoff_id, provision_request_id,
              deployed_sha, manifest_hash, last_drift_check_at,
+             worker_url, drift_detected, drift_first_seen_at, live_manifest_hash,
              created_at, updated_at
       FROM capability_services
       ${whereClause}
@@ -681,12 +738,22 @@ export async function listServices(
 }
 
 /**
- * Record that a drift check ran for this service. Touches only
- * last_drift_check_at + updated_at; does not change the deployment fields.
+ * Record the result of a drift check for this service.
+ *
+ * Updates:
+ *   - last_drift_check_at → now()
+ *   - drift_detected      → driftResult.driftDetected
+ *   - live_manifest_hash  → driftResult.liveManifestHash (null if fetch failed)
+ *   - drift_first_seen_at → set to now() ONLY on the false→true transition;
+ *                           preserved on repeated drift; cleared back to null
+ *                           when drift is resolved (driftDetected goes false).
+ *
+ * Does not touch the deployment fields (deployed_sha, manifest_hash).
  */
 export async function touchServiceDriftCheck(
   hyperdrive: HyperdriveBinding,
   serviceId: string,
+  driftResult: { driftDetected: boolean; liveManifestHash?: string | null },
 ): Promise<ServiceRecord | null> {
   try {
     await ensureSchema(hyperdrive);
@@ -695,10 +762,18 @@ export async function touchServiceDriftCheck(
     const result = await db.execute(sql`
       UPDATE capability_services
       SET last_drift_check_at = ${now},
-          updated_at          = ${now}
+          updated_at          = ${now},
+          drift_detected      = ${driftResult.driftDetected},
+          live_manifest_hash  = ${driftResult.liveManifestHash ?? null},
+          drift_first_seen_at = CASE
+            WHEN NOT drift_detected AND ${driftResult.driftDetected} THEN ${now}
+            WHEN ${driftResult.driftDetected} THEN drift_first_seen_at
+            ELSE NULL
+          END
       WHERE service_id = ${serviceId}
       RETURNING id, service_id, handoff_id, provision_request_id,
                 deployed_sha, manifest_hash, last_drift_check_at,
+                worker_url, drift_detected, drift_first_seen_at, live_manifest_hash,
                 created_at, updated_at
     `);
     const row = (result.rows as unknown as ServiceRow[])[0];
