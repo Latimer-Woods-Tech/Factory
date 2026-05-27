@@ -105,6 +105,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          # Phase 2: encryption key sourced from GitHub secret as primary fallback.
+          # Once GCP Secret Manager has QA_TOOLS_ENCRYPT_KEY, the GCP fetch step above
+          # will overwrite this value (GCP is authoritative long-term).
+          QA_TOOLS_ENCRYPT_KEY: ${{ secrets.QA_TOOLS_ENCRYPT_KEY }}
         run: |
           set -euo pipefail
 
