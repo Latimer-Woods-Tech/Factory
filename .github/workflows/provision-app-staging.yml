@@ -1,0 +1,417 @@
+name: Provision App to Staging
+
+# Operator-triggered workflow that takes a dispatched + reviewed capability handoff
+# all the way to a live staging Worker deployment.
+#
+# Prerequisites (run dispatch-capability-provision.yml first):
+#   - capability_provision_requests row is in 'succeeded' state
+#   - Operator has reviewed the scaffold artifact from dispatch-capability-provision.yml
+#   - Neon Postgres project created for this app; connection string in hand
+#   - Rate limiter namespace ID allocated from docs/runbooks/add-new-app.md registry
+#
+# Flow (Steps a → k):
+#   a. Authenticate to GCP (WIF) + pull all creds from Secret Manager
+#   b. Mint a fresh Studio JWT via /auth/login
+#   c. Fetch handoff package from admin-studio
+#   d. Create GitHub repo: Latimer-Woods-Tech/{app_name}
+#   e. Create Hyperdrive for this app → capture UUID
+#   f. Run scaffold.mjs with real Hyperdrive UUID + rate-limiter ID
+#   g. Install @latimer-woods-tech/* packages (NODE_AUTH_TOKEN via .npmrc)
+#   h. Push scaffold to GitHub repo
+#   i. Provision JWT_SECRET → wrangler secret put JWT_SECRET --name {app}-staging
+#   j. Deploy: wrangler deploy --env staging
+#   k. Verify health endpoint (200), then update capability_services lineage
+
+on:
+  workflow_dispatch:
+    inputs:
+      provision_request_id:
+        description: capability_provision_requests.id (UUID) — for lineage update
+        required: true
+      handoff_id:
+        description: capability_handoffs.id (UUID) — same as used in dispatch workflow
+        required: true
+      app_name:
+        description: kebab-case app name (e.g. "my-new-app")
+        required: true
+      neon_connection_string:
+        description: Neon Postgres connection string for this app (postgres://...)
+        required: true
+      rate_limiter_namespace_id:
+        description: |
+          Cloudflare rate limiter namespace ID (integer).
+          Allocate the next available ID from docs/runbooks/add-new-app.md and
+          update that table after this workflow succeeds.
+        required: false
+        default: '1013'
+      deploy_to_staging:
+        description: Run wrangler deploy --env staging (set false for dry-run)
+        required: false
+        default: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # required for GCP WIF
+    env:
+      STAGING_WORKER_URL: https://${{ inputs.app_name }}-staging.adrper79.workers.dev
+      # GitHub Actions repo secrets (NOT in GCP Secret Manager)
+      GH_PAT: ${{ secrets.GH_PAT }}
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '24'
+
+      # ── Step a: GCP auth + pull all creds ───────────────────────────────────
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Fetch all creds from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          # Studio bootstrap (shared with dispatch-capability-provision.yml)
+          fetch_to_env STUDIO_API_BASE     ADMIN_STUDIO_PROD_URL
+          fetch_to_env BOOTSTRAP_EMAIL     ADMIN_STUDIO_BOOTSTRAP_EMAIL
+          fetch_to_env BOOTSTRAP_PASSWORD  ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+          # Cloudflare — wrangler reads CF_API_TOKEN natively (not CLOUDFLARE_API_TOKEN)
+          fetch_to_env CF_API_TOKEN        CF_API_TOKEN
+          fetch_to_env CF_ACCOUNT_ID       CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          # GitHub — GH_PAT: classic PAT with repo + read:packages scopes
+          fetch_to_env GH_PAT              GH_PAT
+          # npm — for @latimer-woods-tech/* GitHub Packages
+          fetch_to_env NODE_AUTH_TOKEN     NODE_AUTH_TOKEN
+
+      - name: Validate required creds
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -z "${STUDIO_API_BASE:-}" ]   && missing="$missing STUDIO_API_BASE"
+          [ -z "${BOOTSTRAP_EMAIL:-}" ]   && missing="$missing BOOTSTRAP_EMAIL"
+          [ -z "${BOOTSTRAP_PASSWORD:-}" ] && missing="$missing BOOTSTRAP_PASSWORD"
+          [ -z "${CF_API_TOKEN:-}" ]       && missing="$missing CF_API_TOKEN"
+          [ -z "${CF_ACCOUNT_ID:-}" ]      && missing="$missing CF_ACCOUNT_ID"
+          [ -z "${GH_PAT:-}" ]             && missing="$missing GH_PAT"
+          [ -z "${NODE_AUTH_TOKEN:-}" ]    && missing="$missing NODE_AUTH_TOKEN"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing required creds from GCP Secret Manager:$missing"
+            echo "::error::Add them to factory-495015 with 'printf '%s' value | gcloud secrets create ...'"
+            exit 1
+          fi
+          echo "✅ All required creds present"
+
+      # ── Step b: Mint fresh Studio JWT ───────────────────────────────────────
+      - name: Mint dispatch JWT via /auth/login
+        run: |
+          set -euo pipefail
+          BODY=$(jq -n \
+            --arg e "$BOOTSTRAP_EMAIL" \
+            --arg p "$BOOTSTRAP_PASSWORD" \
+            '{email:$e,password:$p,env:"production"}')
+          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" | jq -r .token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Login returned no token — check BOOTSTRAP_EMAIL/PASSWORD in GCP"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "STUDIO_DISPATCH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      # ── Step c: Fetch handoff ────────────────────────────────────────────────
+      - name: Fetch handoff package from admin-studio
+        env:
+          HANDOFF_ID: ${{ inputs.handoff_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p .factory-handoff
+          curl -fsSL \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            "${STUDIO_API_BASE}/capabilities/handoffs/${HANDOFF_ID}" \
+            | node -e "
+              const fs = require('fs');
+              let body = '';
+              process.stdin.on('data', (c) => (body += c));
+              process.stdin.on('end', () => {
+                const payload = JSON.parse(body);
+                const found = payload.handoff;
+                if (!found) {
+                  console.error('Handoff not found in response');
+                  process.exit(1);
+                }
+                fs.writeFileSync('.factory-handoff/handoff.json', JSON.stringify(found, null, 2));
+                console.log('Handoff fetched:', found.recipeId, found.hash);
+              });
+            "
+
+      # ── Step d: Create GitHub repo ───────────────────────────────────────────
+      - name: Create GitHub repo for app
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          GH_TOKEN: ${{ env.GH_PAT }}
+        run: |
+          set -euo pipefail
+          # Check if repo already exists (idempotent — re-runs after failure are safe)
+          REPO_EXISTS=$(gh api repos/Latimer-Woods-Tech/${APP_NAME} --jq '.name' 2>/dev/null || echo "")
+          if [ -n "$REPO_EXISTS" ]; then
+            echo "ℹ️  Repo Latimer-Woods-Tech/${APP_NAME} already exists — skipping create"
+          else
+            gh repo create "Latimer-Woods-Tech/${APP_NAME}" \
+              --private \
+              --description "Factory app: ${APP_NAME} (provisioned via capability handoff ${{ inputs.handoff_id }})"
+            echo "✅ Created Latimer-Woods-Tech/${APP_NAME}"
+          fi
+
+      # ── Step e: Create Hyperdrive ────────────────────────────────────────────
+      - name: Install scaffold prerequisites (wrangler)
+        run: |
+          set -euo pipefail
+          npm install -g wrangler@latest
+          NPM_BIN="$(npm config get prefix)/bin"
+          echo "$NPM_BIN" >> "$GITHUB_PATH"
+          "$NPM_BIN/wrangler" --version
+          git config --global user.email "factory-dispatcher@latwoodtech.work"
+          git config --global user.name  "Factory Capability Dispatcher"
+
+      - name: Create Hyperdrive for app
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          NEON_CONN: ${{ inputs.neon_connection_string }}
+        run: |
+          set -euo pipefail
+          # Check if hyperdrive already exists for idempotency (name = {app}-db)
+          EXISTING=$(wrangler hyperdrive list --json 2>/dev/null \
+            | jq -r --arg n "${APP_NAME}-db" '.[] | select(.name==$n) | .id' || echo "")
+          if [ -n "$EXISTING" ]; then
+            echo "ℹ️  Hyperdrive '${APP_NAME}-db' already exists: $EXISTING"
+            echo "HYPERDRIVE_ID=$EXISTING" >> "$GITHUB_ENV"
+          else
+            # wrangler hyperdrive create outputs something like:
+            #   [created] {app}-db -> <uuid>
+            CREATE_OUTPUT=$(wrangler hyperdrive create "${APP_NAME}-db" \
+              --connection-string "${NEON_CONN}" 2>&1)
+            echo "$CREATE_OUTPUT"
+            HYPERDRIVE_ID=$(echo "$CREATE_OUTPUT" \
+              | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+              | head -1)
+            if [ -z "$HYPERDRIVE_ID" ]; then
+              echo "::error::Failed to parse Hyperdrive UUID from wrangler output"
+              echo "wrangler output was: $CREATE_OUTPUT"
+              exit 1
+            fi
+            echo "✅ Hyperdrive created: $HYPERDRIVE_ID"
+            echo "HYPERDRIVE_ID=$HYPERDRIVE_ID" >> "$GITHUB_ENV"
+          fi
+
+      # ── Step f: Scaffold with real IDs ──────────────────────────────────────
+      - name: Run scaffold with real Hyperdrive + rate-limiter IDs
+        id: scaffold
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          RATE_LIMITER_ID: ${{ inputs.rate_limiter_namespace_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p staging-workspace
+          cd staging-workspace
+          node ../packages/deploy/scripts/scaffold.mjs "${APP_NAME}" \
+            --handoff ../.factory-handoff/handoff.json \
+            --hyperdrive-id "${HYPERDRIVE_ID}" \
+            --rate-limiter-id "${RATE_LIMITER_ID}" \
+            --no-deploy --no-install
+          echo "✅ Scaffold complete at staging-workspace/${APP_NAME}"
+          echo "app_dir=staging-workspace/${APP_NAME}" >> "$GITHUB_OUTPUT"
+
+      # ── Step g: Install packages ─────────────────────────────────────────────
+      - name: Configure .npmrc for @latimer-woods-tech GitHub Packages
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          set -euo pipefail
+          NPMRC="staging-workspace/${APP_NAME}/.npmrc"
+          # Append (or create) .npmrc with GitHub Packages auth for @latimer-woods-tech scope
+          {
+            echo "@latimer-woods-tech:registry=https://npm.pkg.github.com"
+            echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}"
+          } >> "${NPMRC}"
+          echo "✅ .npmrc configured for GitHub Packages"
+
+      - name: Install app dependencies
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          NODE_AUTH_TOKEN: ${{ env.NODE_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd "staging-workspace/${APP_NAME}"
+          npm install --prefer-offline 2>&1
+          echo "✅ npm install complete"
+
+      # ── Step h: Push scaffold to GitHub ─────────────────────────────────────
+      - name: Push scaffold to GitHub repo
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          HANDOFF_ID: ${{ inputs.handoff_id }}
+        run: |
+          set -euo pipefail
+          cd "staging-workspace/${APP_NAME}"
+          # Initialise git repo (scaffold may already have done git init)
+          if [ ! -d .git ]; then
+            git init
+          fi
+          # Ensure we have at least main branch checked out
+          git checkout -b main 2>/dev/null || git checkout main
+          # Stage everything (node_modules excluded via .gitignore in scaffold template)
+          git add -A
+          git diff --cached --stat
+          COMMIT_MSG=$(printf 'feat: initial scaffold from capability handoff %s\n\nProvisioned by provision-app-staging workflow.\nHyperdrive: %s\nRate limiter namespace_id: %s\n\nCo-Authored-By: Factory Capability Dispatcher <factory-dispatcher@latwoodtech.work>' \
+            "${HANDOFF_ID}" "${HYPERDRIVE_ID}" "${{ inputs.rate_limiter_namespace_id }}")
+          git commit --allow-empty -m "${COMMIT_MSG}"
+          git remote add origin \
+            "https://x-access-token:${GH_PAT}@github.com/Latimer-Woods-Tech/${APP_NAME}.git" \
+            2>/dev/null || \
+          git remote set-url origin \
+            "https://x-access-token:${GH_PAT}@github.com/Latimer-Woods-Tech/${APP_NAME}.git"
+          git push -u origin main --force-with-lease || git push -u origin main --force
+          echo "✅ Scaffold pushed to Latimer-Woods-Tech/${APP_NAME}"
+
+      # ── Step i: Provision JWT_SECRET ─────────────────────────────────────────
+      - name: Generate and push JWT_SECRET for staging worker
+        if: ${{ inputs.deploy_to_staging == 'true' }}
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          set -euo pipefail
+          JWT_SECRET=$(openssl rand -base64 32)
+          echo "::add-mask::$JWT_SECRET"
+          # wrangler reads CF_API_TOKEN natively
+          printf '%s' "${JWT_SECRET}" \
+            | wrangler secret put JWT_SECRET \
+                --name "${APP_NAME}-staging" \
+                --env staging
+          echo "✅ JWT_SECRET provisioned for ${APP_NAME}-staging"
+
+      # ── Step j: Deploy ───────────────────────────────────────────────────────
+      - name: Deploy to Cloudflare Workers (staging)
+        id: deploy
+        if: ${{ inputs.deploy_to_staging == 'true' }}
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          set -euo pipefail
+          cd "staging-workspace/${APP_NAME}"
+          DEPLOY_OUTPUT=$(wrangler deploy --env staging 2>&1)
+          echo "$DEPLOY_OUTPUT"
+          echo "✅ wrangler deploy --env staging complete for ${APP_NAME}"
+          # Capture the deployed SHA for lineage recording
+          echo "DEPLOYED_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      # ── Step k: Verify + update lineage ─────────────────────────────────────
+      - name: Verify /health endpoint returns 200
+        if: ${{ inputs.deploy_to_staging == 'true' }}
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          set -euo pipefail
+          TARGET="${STAGING_WORKER_URL}/health"
+          echo "Checking $TARGET …"
+          # Give Workers cold-start a moment (up to 30s with 5s between attempts)
+          for attempt in 1 2 3 4 5 6; do
+            HTTP_STATUS=$(curl -s -o /tmp/health_body -w "%{http_code}" \
+              --max-time 15 "${TARGET}" || echo "000")
+            echo "  attempt $attempt → HTTP $HTTP_STATUS"
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ Health check passed"
+              break
+            fi
+            if [ "$attempt" = "6" ]; then
+              echo "::error::Health check failed after 6 attempts — last HTTP status: $HTTP_STATUS"
+              echo "::error::Response body: $(cat /tmp/health_body)"
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Update capability_services with live deploy info
+        if: always()
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          HANDOFF_ID: ${{ inputs.handoff_id }}
+          PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
+        run: |
+          set -euo pipefail
+          # Non-fatal: lineage update is best-effort; a failed update does not
+          # roll back the deployment.
+          SHA="${DEPLOYED_SHA:-${GITHUB_SHA}}"
+          WRANGLER_PATH="staging-workspace/${APP_NAME}/wrangler.jsonc"
+          MANIFEST_HASH=""
+          if [ -f "$WRANGLER_PATH" ]; then
+            MANIFEST_HASH=$(sha256sum "$WRANGLER_PATH" | awk '{print $1}')
+          fi
+          BODY=$(jq -n \
+            --arg serviceId "${APP_NAME}-staging" \
+            --arg handoffId "${HANDOFF_ID}" \
+            --arg provReqId "${PROVISION_REQUEST_ID}" \
+            --arg sha "${SHA}" \
+            --arg mhash "${MANIFEST_HASH}" \
+            --arg hyperdriveId "${HYPERDRIVE_ID:-}" \
+            --arg rateLimiterId "${{ inputs.rate_limiter_namespace_id }}" \
+            '{
+              serviceId: $serviceId,
+              handoffId: $handoffId,
+              provisionRequestId: $provReqId,
+              deployedSha: $sha,
+              manifestHash: $mhash,
+              metadata: {
+                hyperdrive_id: $hyperdriveId,
+                rate_limiter_namespace_id: $rateLimiterId,
+                staging_url: ("https://" + $serviceId + ".adrper79.workers.dev")
+              }
+            }')
+          HTTP_STATUS=$(curl -s -o /tmp/lineage_body -w "%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "${BODY}" \
+            "${STUDIO_API_BASE}/capabilities/services" || echo "000")
+          if [ "$HTTP_STATUS" = "201" ] || [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ capability_services lineage updated (HTTP $HTTP_STATUS)"
+          else
+            echo "::warning::Lineage update returned HTTP $HTTP_STATUS — non-fatal"
+            echo "::warning::Response: $(cat /tmp/lineage_body 2>/dev/null || echo '<empty>')"
+          fi
+
+      - name: Summary
+        if: always()
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+        run: |
+          echo "## Provision App to Staging — Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| App | \`${APP_NAME}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Handoff | \`${{ inputs.handoff_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Hyperdrive ID | \`${HYPERDRIVE_ID:-N/A}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Rate Limiter Namespace | \`${{ inputs.rate_limiter_namespace_id }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| GitHub Repo | [Latimer-Woods-Tech/${APP_NAME}](https://github.com/Latimer-Woods-Tech/${APP_NAME}) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Staging Worker | ${STAGING_WORKER_URL} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Deployed SHA | \`${DEPLOYED_SHA:-N/A}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> ⚠️  **Next steps for operator**:" >> "$GITHUB_STEP_SUMMARY"
+          echo "> 1. Update rate limiter registry in \`docs/runbooks/add-new-app.md\` with ID \`${{ inputs.rate_limiter_namespace_id }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "> 2. Run \`setup-app-secrets.yml\` on the new repo to wire Sentry DSN + PostHog key" >> "$GITHUB_STEP_SUMMARY"
+          echo "> 3. Add app to \`docs/service-registry.yml\` with \`${APP_NAME}-staging.adrper79.workers.dev\` as \`workers_dev_url\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "> 4. Register Sentry project for \`${APP_NAME}\` and store DSN as Wrangler secret" >> "$GITHUB_STEP_SUMMARY"
