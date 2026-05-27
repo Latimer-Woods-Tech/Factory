@@ -61,9 +61,6 @@ jobs:
       id-token: write  # required for GCP WIF
     env:
       STAGING_WORKER_URL: https://${{ inputs.app_name }}-staging.adrper79.workers.dev
-      # GitHub Actions repo secrets (NOT in GCP Secret Manager)
-      GH_PAT: ${{ secrets.GH_PAT }}
-      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -93,8 +90,9 @@ jobs:
           fetch_to_env CF_ACCOUNT_ID       CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
           # GitHub — GH_PAT: classic PAT with repo + read:packages scopes
           fetch_to_env GH_PAT              GH_PAT
-          # npm — for @latimer-woods-tech/* GitHub Packages
-          fetch_to_env NODE_AUTH_TOKEN     NODE_AUTH_TOKEN
+          # npm — NODE_AUTH_TOKEN = GH_PAT (same classic PAT has read:packages)
+          # secrets.NODE_AUTH_TOKEN does not exist in this repo; do NOT use it.
+          fetch_to_env NODE_AUTH_TOKEN     GH_PAT
 
       - name: Validate required creds
         run: |
