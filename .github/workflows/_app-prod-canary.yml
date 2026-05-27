@@ -1,6 +1,6 @@
 # =============================================================================
 # Reusable Prod Canary — runs a canary script against live production post-deploy
-# or on cron. Posts to Pushover on failure; optional wrangler rollback.
+# or on cron. Posts to Pushover on failure; optional Wrangler version rollback.
 #
 # HOW TO CALL
 #   post-deploy:
@@ -143,7 +143,7 @@ jobs:
             echo "::error::Could not determine previous version for rollback"
             exit 1
           fi
-          npx -y wrangler@latest versions rollback --name "${{ inputs.worker_name }}" --version-id "$PREV" --yes
+          npx -y wrangler@latest versions deploy "$PREV@100%" --name "${{ inputs.worker_name }}" --message "prod canary rollback to $PREV" --yes
           echo "✓ Rolled back to $PREV"
 
       - name: Ingest canary gate row

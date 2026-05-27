@@ -8,7 +8,7 @@
 #        - Skips rollback if the same Sentry error fingerprint is firing on
 #          >=2 other Latimer-Woods-Tech prod apps (likely upstream incident).
 #        - Skips rollback if the deploy included DB migrations (flags human).
-#        - Otherwise calls `wrangler rollback` to the previous version_id.
+#        - Otherwise deploys the previous version_id back to 100% traffic.
 #   4. Opens a P0 incident issue in Latimer-Woods-Tech/factory and pages
 #      Pushover. If rollback itself fails, pages Pushover at priority=2
 #      (emergency, bypasses quiet hours).
