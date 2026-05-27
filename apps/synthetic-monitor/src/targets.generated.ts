@@ -17,4 +17,5 @@ export const GENERATED_TARGETS = [
   { id: "daily-brief.health", url: "https://daily-brief.adrper79.workers.dev/health", contains: "ok" },
   { id: "xico-city.health", url: "https://xicocity.com/health", contains: "ok" },
   { id: "xico-city-staging.health", url: "https://staging.xicocity.com/health", contains: "ok" },
+  { id: "qa-tools-worker.health", url: "https://qa-tools.lwt.internal/health", contains: "ok" },
 ] as const;
