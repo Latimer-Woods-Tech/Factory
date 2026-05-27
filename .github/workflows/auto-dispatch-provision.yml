@@ -127,6 +127,33 @@ jobs:
             });
           }
 
+          async function resolveConceptId(handoffId, handoffHash) {
+            // Primary: id-based lookup (fast path, no hash needed).
+            try {
+              const payload = await apiFetch('/capabilities/handoffs/' + handoffId);
+              if (payload.handoff?.conceptId) return payload.handoff.conceptId;
+            } catch (err) {
+              console.warn('id-based handoff lookup failed (' + handoffId + '):', err.message);
+            }
+            // Fallback: hash-based lookup. Closes the Hyperdrive read-after-write
+            // race where a freshly-inserted handoff is not yet visible on the
+            // pooled connection the id-lookup lands on. The hash is supplied by
+            // GET /capabilities/provision-requests via a LEFT JOIN so no extra
+            // round-trip is needed here.
+            if (handoffHash) {
+              try {
+                const hashPayload = await apiFetch('/capabilities/handoffs/by-hash/' + handoffHash);
+                if (hashPayload.handoff?.conceptId) {
+                  console.log('Hash fallback resolved conceptId for handoff ' + handoffId);
+                  return hashPayload.handoff.conceptId;
+                }
+              } catch (hashErr) {
+                console.warn('Hash-based handoff lookup also failed (' + handoffHash + '):', hashErr.message);
+              }
+            }
+            return 'unknown-concept';
+          }
+
           async function main() {
             const rows = JSON.parse(fs.readFileSync('.auto-dispatch/pending.json', 'utf8'));
             if (rows.length === 0) {
@@ -135,18 +162,13 @@ jobs:
             }
             for (const row of rows) {
               const handoffId = row.handoffId;
+              const handoffHash = row.handoffHash; // from LEFT JOIN on provision-requests list
               const requestId = row.id;
               if (!handoffId || !requestId) {
                 console.warn('Skipping row missing handoffId or id:', JSON.stringify(row));
                 continue;
               }
-              let conceptId = 'unknown-concept';
-              try {
-                const payload = await apiFetch('/capabilities/handoffs/' + handoffId);
-                conceptId = payload.handoff?.conceptId ?? conceptId;
-              } catch (err) {
-                console.warn('Could not fetch handoff ' + handoffId + ':', err.message);
-              }
+              const conceptId = await resolveConceptId(handoffId, handoffHash);
               const appName = conceptId.replace(/-api$/, '');
               const cmd = [
                 'gh workflow run dispatch-capability-provision.yml',
@@ -155,7 +177,7 @@ jobs:
                 '--field app_name=' + appName,
                 '--field no_deploy=true',
               ].join(' ');
-              console.log('Dispatching:', appName, '(request=' + requestId + ')');
+              console.log('Dispatching:', appName, '(request=' + requestId + ', conceptId=' + conceptId + ')');
               execSync(cmd, { stdio: 'inherit' });
             }
           }

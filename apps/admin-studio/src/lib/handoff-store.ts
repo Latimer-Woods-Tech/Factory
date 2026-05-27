@@ -42,6 +42,13 @@ export interface HandoffRecord {
 export interface ProvisionRequestRecord {
   id: string;
   handoffId: string;
+  /**
+   * Content-addressable hash of the referenced handoff. Populated when the
+   * record is returned by `listProvisionRequests` (which JOINs
+   * `capability_handoffs`). Absent when fetched by id via
+   * `findProvisionRequestById` to avoid the extra JOIN on the hot polling path.
+   */
+  handoffHash?: string;
   status: 'requested' | 'acknowledged' | 'dispatched' | 'succeeded' | 'failed' | 'withdrawn';
   proofGates: ProofGateState;
   requestedBy: string;
@@ -306,9 +313,11 @@ export async function listProvisionRequests(
     const db = getDb(hyperdrive);
     const limit = clamp(filter.limit ?? 50, 1, 200);
 
+    // Column aliases use `pr.` prefix so the WHERE conditions can reference
+    // the provision-request columns without ambiguity after the JOIN.
     const conditions: ReturnType<typeof sql>[] = [];
-    if (filter.status) conditions.push(sql`status = ${filter.status}`);
-    if (filter.handoffId) conditions.push(sql`handoff_id = ${filter.handoffId}`);
+    if (filter.status) conditions.push(sql`pr.status = ${filter.status}`);
+    if (filter.handoffId) conditions.push(sql`pr.handoff_id = ${filter.handoffId}`);
     const whereChunks: ReturnType<typeof sql>[] = [];
     for (let i = 0; i < conditions.length; i += 1) {
       whereChunks.push(i === 0 ? sql`WHERE` : sql`AND`);
@@ -316,16 +325,23 @@ export async function listProvisionRequests(
     }
     const whereClause = sql.join(whereChunks, sql` `);
 
+    // LEFT JOIN capability_handoffs to include the handoff hash so the
+    // auto-dispatcher can resolve conceptId via hash when id-based lookup
+    // misses (Hyperdrive read-after-write race — see auto-dispatch-provision.yml).
     const result = await db.execute(sql`
-      SELECT id, handoff_id, status, proof_gates, requested_by, requested_at, env, notes
-      FROM capability_provision_requests
+      SELECT pr.id, pr.handoff_id, pr.status, pr.proof_gates, pr.requested_by,
+             pr.requested_at, pr.env, pr.notes,
+             ch.hash AS handoff_hash
+      FROM capability_provision_requests pr
+      LEFT JOIN capability_handoffs ch ON ch.id = pr.handoff_id
       ${whereClause}
-      ORDER BY requested_at DESC
+      ORDER BY pr.requested_at DESC
       LIMIT ${limit}
     `);
     return (result.rows as unknown as ProvisionRequestRow[]).map((row) => ({
       id: row.id,
       handoffId: row.handoff_id,
+      handoffHash: row.handoff_hash ?? undefined,
       status: row.status,
       proofGates: row.proof_gates,
       requestedBy: row.requested_by,
@@ -382,6 +398,8 @@ function clamp(n: number, min: number, max: number): number {
 interface ProvisionRequestRow {
   id: string;
   handoff_id: string;
+  /** Populated by LEFT JOIN in listProvisionRequests; absent in findProvisionRequestById. */
+  handoff_hash?: string | null;
   status: ProvisionRequestRecord['status'];
   proof_gates: ProofGateState;
   requested_by: string;
