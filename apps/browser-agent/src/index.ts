@@ -751,7 +751,13 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
       // for each viewport — necessary because session state lives in the
       // per-context cookie jar.
       for (const viewport of viewports) {
-        const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+        const context = await browser.newContext({
+          viewport: { width: viewport.width, height: viewport.height },
+          // bypassCSP is required when runAxe=true: page.addScriptTag is blocked
+          // by strict CSP headers (e.g. selfprime.net) unless Playwright
+          // intercepts and strips the header at the network layer.
+          ...(request.runAxe ? { bypassCSP: true } : {}),
+        });
         const page = await context.newPage();
         if (captureConsole) {
           page.on('console', (msg: PwConsoleMessage) => {
