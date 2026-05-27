@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
+  sendAuditEntry,
   checkTCPA,
   logConsent,
   checkFDCPA,
@@ -614,5 +615,68 @@ describe('canDispatchCall', () => {
     const result = await canDispatchCall(db, 'c', 't', 'America/Chicago', svc);
     expect(result.allowed).toBe(true);
     vi.restoreAllMocks();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sendAuditEntry (P2.13g)
+// ---------------------------------------------------------------------------
+
+describe('sendAuditEntry', () => {
+  const config = { apiUrl: 'https://api.factory.example.com', apiKey: 'test-key' };
+  const baseEntry = {
+    actor: 'operator@example.com',
+    action: 'deploy',
+    resource: 'worker.myapp',
+    acted_at: '2026-05-26T10:00:00Z',
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('POSTs to /v1/audit with correct headers and body', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 201 }),
+    );
+    await sendAuditEntry(config, baseEntry);
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://api.factory.example.com/v1/audit');
+    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer test-key');
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body['actor']).toBe('operator@example.com');
+    expect(body['action']).toBe('deploy');
+    expect(body['resource']).toBe('worker.myapp');
+  });
+
+  it('defaults actor_type to human', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 201 }),
+    );
+    await sendAuditEntry(config, baseEntry);
+    const body = JSON.parse((fetchSpy.mock.calls[0] as [string, RequestInit])[1]?.body as string) as Record<string, unknown>;
+    expect(body['actor_type']).toBe('human');
+  });
+
+  it('sends actor_type automation when specified', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 201 }),
+    );
+    await sendAuditEntry(config, { ...baseEntry, actorType: 'automation' });
+    const body = JSON.parse((fetchSpy.mock.calls[0] as [string, RequestInit])[1]?.body as string) as Record<string, unknown>;
+    expect(body['actor_type']).toBe('automation');
+  });
+
+  it('throws InternalError when API returns non-ok status', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Forbidden', { status: 403 }),
+    );
+    await expect(sendAuditEntry(config, baseEntry)).rejects.toThrow('audit ingest rejected');
+  });
+
+  it('propagates fetch network errors', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network error'));
+    await expect(sendAuditEntry(config, baseEntry)).rejects.toThrow('network error');
   });
 });

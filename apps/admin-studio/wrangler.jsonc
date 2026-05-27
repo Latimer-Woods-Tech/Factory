@@ -32,6 +32,12 @@
         {
           "binding": "DB",
           "id": "efe957f404bb457593e6bd08b733b7c4"
+        },
+        {
+          // THE_FACTORY core database (factory-core-db Hyperdrive)
+          // Points to Neon Factory database for admin queries
+          "binding": "FACTORY_DB",
+          "id": "efe957f404bb457593e6bd08b733b7c4"
         }
       ],
       "kv_namespaces": [
@@ -79,6 +85,10 @@
       "hyperdrive": [
         {
           "binding": "DB",
+          "id": "efe957f404bb457593e6bd08b733b7c4"
+        },
+        {
+          "binding": "FACTORY_DB",
           "id": "efe957f404bb457593e6bd08b733b7c4"
         }
       ],

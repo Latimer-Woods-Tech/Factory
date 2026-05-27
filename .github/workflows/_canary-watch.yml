@@ -24,8 +24,8 @@
 #       with:
 #         app_name: admin-studio
 #         worker_name: admin-studio-production
-#         sentry_project: admin-studio
-#         sentry_org: latimer-woods-tech
+#         sentry_project: factory-admin-worker
+#         sentry_org: latwood-tech
 #         base_url: https://admin.latwoodtech.work
 #         smoke_path: /healthz
 #         previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
@@ -65,7 +65,7 @@ on:
         required: true
       sentry_org:
         type: string
-        default: latimer-woods-tech
+        default: latwood-tech
       base_url:
         type: string
         required: true
@@ -112,18 +112,18 @@ jobs:
     # 5-min watch + ~3 min slack for setup, rollback, issue creation, paging.
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Generate factory[bot] token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
           repositories: factory
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
 

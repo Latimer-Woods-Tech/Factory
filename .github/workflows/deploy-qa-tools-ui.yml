@@ -1,0 +1,46 @@
+name: Deploy QA Tools UI
+
+# Deploys qa-tools-ui to Cloudflare Pages on every push to main
+# when UI source changes.
+#
+# The Next.js app uses output: 'export' so the build produces a static
+# `out/` directory that is deployed directly to CF Pages.
+#
+# PRE-DEPLOY CHECKLIST (one-time provisioning):
+#   1. wrangler pages project create qa-tools-ui --production-branch main
+#   2. Set custom domain in CF Pages dashboard: qa-tools.lwt.internal
+#
+# See: docs/architecture/QA_TOOLS_ARCHITECTURE.md §9.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/qa-tools-ui/**'
+      - '.github/workflows/deploy-qa-tools-ui.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-qa-tools-ui-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_app-deploy-pages.yml
+    with:
+      node_version: '22'
+      working_directory: apps/qa-tools-ui
+      environment: production
+      build_command: build
+      dist_dir: out
+      project_name: qa-tools-ui
+      branch: main
+      health_url: ''
+    secrets: inherit

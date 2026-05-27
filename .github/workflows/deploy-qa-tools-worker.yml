@@ -1,0 +1,133 @@
+name: Deploy QA Tools Worker
+
+# Deploys qa-tools-worker to Cloudflare Workers (production) on every push
+# to main when worker code or its local package deps change.
+#
+# Secrets sourced from GCP Secret Manager via WIF (same pattern as all
+# other Factory workers). See docs/runbooks/github-secrets-and-tokens.md.
+#
+# PRE-DEPLOY CHECKLIST (one-time provisioning, not automated here):
+#   1. wrangler hyperdrive create qa-tools-hyperdrive --connection-string "$NEON_CONNECTION_STRING"
+#      → replace REPLACE_WITH_REAL_HYPERDRIVE_UUID in wrangler.jsonc
+#   2. wrangler kv namespace create QA_RATE_LIMIT_KV
+#      → replace REPLACE_WITH_REAL_KV_NAMESPACE_ID in wrangler.jsonc
+#   3. wrangler r2 bucket create qa-tools
+#   4. Add secrets to GCP Secret Manager (factory-495015):
+#      QA_TOOLS_JWT_SECRET, BROWSER_AGENT_SA_KEY, BROWSER_AGENT_URL,
+#      BROWSER_AGENT_AUDIENCE, GITHUB_QA_TOKEN, SLACK_QA_WEBHOOK_URL
+#
+# See: docs/architecture/QA_TOOLS_ARCHITECTURE.md §9.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/qa-tools-worker/**'
+      - 'packages/browser/**'
+      - 'packages/errors/**'
+      - 'packages/logger/**'
+      - 'packages/monitoring/**'
+      - '.github/workflows/deploy-qa-tools-worker.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+  id-token: write   # Required for WIF → GCP Secret Manager
+
+concurrency:
+  group: deploy-qa-tools-worker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy qa-tools-worker to Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      # Authenticate with GCP to fetch secrets from Secret Manager
+      - name: Authenticate to GCP (WIF)
+        id: gcp-auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: bash scripts/fetch_gcp_secrets.sh
+        env:
+          GCP_PROJECT_ID: factory-495015
+
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for pkg in errors monitoring logger browser; do
+            echo "=== ${pkg} ==="
+            cd "packages/${pkg}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install worker dependencies
+        working-directory: apps/qa-tools-worker
+        run: npm install
+
+      - name: Substitute Hyperdrive and KV IDs
+        working-directory: apps/qa-tools-worker
+        run: |
+          set -euo pipefail
+          sed -i "s/REPLACE_WITH_REAL_HYPERDRIVE_UUID/${{ secrets.HYPERDRIVE_QA_TOOLS }}/g" wrangler.jsonc
+          sed -i "s/REPLACE_WITH_REAL_KV_NAMESPACE_ID/${{ secrets.KV_QA_RATE_LIMIT }}/g" wrangler.jsonc
+          echo "✅ Substituted Hyperdrive and KV IDs"
+
+      - name: Provision secrets and deploy
+        working-directory: apps/qa-tools-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+
+          # Required secrets (loaded from GCP Secret Manager via fetch_gcp_secrets.sh)
+          printf '%s' "${QA_TOOLS_JWT_SECRET}"    | npx wrangler secret put QA_TOOLS_JWT_SECRET    --env production
+          printf '%s' "${BROWSER_AGENT_SA_KEY}"   | npx wrangler secret put BROWSER_AGENT_SA_KEY   --env production
+          printf '%s' "${BROWSER_AGENT_URL}"      | npx wrangler secret put BROWSER_AGENT_URL      --env production
+          printf '%s' "${BROWSER_AGENT_AUDIENCE}" | npx wrangler secret put BROWSER_AGENT_AUDIENCE --env production
+
+          # Optional secrets (fail gracefully if not set)
+          if [ -n "${GITHUB_QA_TOKEN:-}" ]; then
+            printf '%s' "${GITHUB_QA_TOKEN}" | npx wrangler secret put GITHUB_QA_TOKEN --env production
+          fi
+          if [ -n "${SLACK_QA_WEBHOOK_URL:-}" ]; then
+            printf '%s' "${SLACK_QA_WEBHOOK_URL}" | npx wrangler secret put SLACK_QA_WEBHOOK_URL --env production
+          fi
+          if [ -n "${SENTRY_DSN:-}" ]; then
+            printf '%s' "${SENTRY_DSN}" | npx wrangler secret put SENTRY_DSN --env production
+          fi
+
+          # Deploy
+          npx wrangler deploy --env production
+
+      - name: Verify deployment
+        run: |
+          echo "🚀 Deployment complete"
+          echo "📍 Health check: https://qa-tools-worker.adrper79.workers.dev/health"
+          node scripts/verify-http-endpoint.mjs \
+            --url https://qa-tools-worker.adrper79.workers.dev/health \
+            --status 200 \
+            --json-field status \
+            --json-equals ok \
+            --retries 8 \
+            --delay-ms 5000

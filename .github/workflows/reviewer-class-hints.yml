@@ -23,7 +23,7 @@ jobs:
     if: ${{ github.event.sender.type != 'Bot' || github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
@@ -106,7 +106,7 @@ jobs:
           - ❌ Never auto-merge; human must confirm after bot approval
 
           **Red-tier checks (hardcoded):**
-          - Actions injection safety (no \`\${{ github.event.*.body }}\` in \`run:\` steps)
+          - Actions injection safety (don't reference issue/PR/comment body fields from \`github.event\` directly in \`run:\` steps — pass them through an env var first)
           - Migration reversibility
           - Billing idempotency
           - CODEOWNERS self-modification guard"

@@ -2,8 +2,8 @@
   "repo_key": "HD",
   "repo_name": "HumanDesign",
   "repo_path": "Latimer-Woods-Tech/HumanDesign",
-  "timestamp": "2026-05-18T08:55:38.188752+00:00",
-  "cohesion": 41,
+  "timestamp": "2026-05-27T08:51:16.273687+00:00",
+  "cohesion": 53,
   "dimensions": [
     {
       "key": "stack",
@@ -65,7 +65,7 @@
           "detail": ""
         },
         {
-          "name": "Typed Env interface",
+          "name": "Typed Env bindings",
           "passed": false,
           "detail": ""
         }
@@ -75,11 +75,11 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 60,
+      "score": 100,
       "checks": [
         {
           "name": "vitest.config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -99,7 +99,7 @@
         },
         {
           "name": "Coverage thresholds set",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -108,31 +108,31 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 60,
+      "score": 40,
       "checks": [
         {
           "name": "Sentry import",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Sourcemap upload step",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "SLO doc present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Structured log fields",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -141,7 +141,7 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 60,
+      "score": 80,
       "checks": [
         {
           "name": "CodeQL workflow present",
@@ -150,7 +150,7 @@
         },
         {
           "name": "npm audit step in CI",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -174,7 +174,7 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 33,
+      "score": 67,
       "checks": [
         {
           "name": "Migrations directory present",
@@ -182,9 +182,9 @@
           "detail": ""
         },
         {
-          "name": "ROLLBACK block in sample",
-          "passed": false,
-          "detail": ""
+          "name": "ROLLBACK block enforced",
+          "passed": true,
+          "detail": "WARN: 2 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql"
         },
         {
           "name": "Numbered file naming",
@@ -243,11 +243,11 @@
       "key": "performance",
       "title": "Performance",
       "weight": 10,
-      "score": 33,
+      "score": 67,
       "checks": [
         {
           "name": "p95 budgets declared",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -266,7 +266,7 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 33,
+      "score": 25,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
@@ -279,7 +279,12 @@
           "detail": ""
         },
         {
-          "name": "DSR export endpoint hint",
+          "name": "DSR endpoint hints (export + delete)",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Migration PII columns documented",
           "passed": true,
           "detail": ""
         }

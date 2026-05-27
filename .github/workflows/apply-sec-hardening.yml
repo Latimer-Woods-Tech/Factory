@@ -10,17 +10,25 @@
 #   referenced workflow-prefixed contexts like "CI / validate" instead of the
 #   bare check job names like "validate", silently breaking required-status
 #   enforcement). This workflow closes that systemic gap by reading from
-#   checked-in source-of-truth files and re-applying them deterministically.
+#   the checked-in source-of-truth file and re-applying it deterministically.
 #
-# DIMENSIONS COVERED (post-#602 audit)
-#   1. Branch protection (legacy /branches/main/protection API)
-#      — canonical: .github/security/main-branch-protection.json
-#   2. Classic Ruleset id 15843812 (newer /rulesets API, also targets `main`
-#      via ~DEFAULT_BRANCH; runs in PARALLEL with #1 until §7 rec #4 lands)
-#      — canonical: .github/security/main-ruleset.json
-#   3. Org-level Copilot coding-agent repo enablement
+# DIMENSIONS COVERED
+#   1. Classic Ruleset id 15843812 (Rulesets API, targets `main` via
+#      ~DEFAULT_BRANCH) — canonical: .github/security/main-ruleset.json
+#   2. Org-level Copilot coding-agent repo enablement
 #      (GET /orgs/{org}/copilot/coding-agent/permissions — read-only verify
 #      that Factory is enabled at the org policy level)
+#
+# HISTORY
+#   This workflow previously ran a parallel dimension that PUT
+#   .github/security/main-branch-protection.json against the legacy
+#   /branches/main/protection API. PR #1000 brought the ruleset to
+#   parity-or-better with the legacy mechanism (added dependency-review +
+#   required_review_thread_resolution); the legacy half was retired in this
+#   PR after an 8-hour parallel-enforcement soak with zero drift. The
+#   legacy rules on GitHub will sit unused until an operator runs:
+#     gh api repos/Latimer-Woods-Tech/Factory/branches/main/protection -X DELETE
+#   Not required for correctness — the ruleset enforces protection alone.
 #
 # NOT COVERED (no REST API exists as of 2026-05-09)
 #   - Per-repo Copilot coding-agent "skip approval for workflows" toggle
@@ -31,11 +39,10 @@
 #     a "::warning::" with manual-step instructions on every scheduled run
 #     until an API is available. Tracked in #602 §5 item #17.
 #
-# SOURCES OF TRUTH
-#   .github/security/main-branch-protection.json
+# SOURCE OF TRUTH
 #   .github/security/main-ruleset.json
-#   Edit either file (in a PR) to change the canonical config; the scheduled
-#   workflow self-applies on the next 1h tick after merge.
+#   Edit this file (in a PR); the scheduled workflow self-applies on the
+#   next 1h tick after merge.
 #
 # TRIGGERS
 #   - workflow_dispatch: deliberate manual repair
@@ -81,16 +88,15 @@ jobs:
       REPO: Factory
       ORG: Latimer-Woods-Tech
       RULESET_ID: "15843812"
-      CANONICAL_PATH: .github/security/main-branch-protection.json
       RULESET_CANONICAL_PATH: .github/security/main-ruleset.json
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           persist-credentials: false
 
       - name: Mint factory-cross-repo App token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -99,151 +105,8 @@ jobs:
           repositories: Factory
 
       # -----------------------------------------------------------------------
-      # DIMENSION 1: Branch protection (legacy /branches/main/protection API)
-      # -----------------------------------------------------------------------
-      - name: Validate canonical branch-protection config exists & parses
-        id: canonical
-        run: |
-          set -euo pipefail
-          if [ ! -f "$CANONICAL_PATH" ]; then
-            echo "::error::Canonical config not found at $CANONICAL_PATH"
-            exit 1
-          fi
-          # Strip the `_comment` field (humans only) and emit the PUT body.
-          jq 'del(._comment)' "$CANONICAL_PATH" > /tmp/canonical.json
-          echo "Canonical PUT body:"
-          jq . /tmp/canonical.json
-          # Sanity: contexts must be the bare names, not workflow-prefixed.
-          bad=$(jq -r '.required_status_checks.contexts[]? | select(test(" / "))' /tmp/canonical.json || true)
-          if [ -n "$bad" ]; then
-            echo "::error::Canonical config contains workflow-prefixed contexts (\"$bad\"). Use bare check job names — see issue #529."
-            exit 1
-          fi
-
-      - name: Fetch live branch protection
-        id: live
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          endpoint="https://api.github.com/repos/$OWNER/$REPO/branches/main/protection"
-          body=$(mktemp)
-          code=$(curl -sS -o "$body" -w "%{http_code}" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$endpoint")
-          echo "live_status=$code" >> "$GITHUB_OUTPUT"
-          if [ "$code" = "200" ]; then
-            cp "$body" /tmp/live-raw.json
-          elif [ "$code" = "404" ]; then
-            echo "::warning::No branch protection currently set; will apply canonical."
-            echo '{}' > /tmp/live-raw.json
-          else
-            echo "::error::Unexpected response from $endpoint (HTTP $code)."
-            cat "$body"
-            exit 1
-          fi
-
-      - name: Project live state to canonical shape & diff
-        id: diff
-        run: |
-          set -euo pipefail
-          # Project the GET response into the same shape as the canonical PUT body.
-          jq '{
-            required_status_checks: {
-              strict: (.required_status_checks.strict // false),
-              contexts: (.required_status_checks.contexts // [])
-            },
-            enforce_admins: (.enforce_admins.enabled // false),
-            required_pull_request_reviews: (
-              if .required_pull_request_reviews then
-                {
-                  dismiss_stale_reviews: (.required_pull_request_reviews.dismiss_stale_reviews // false),
-                  require_code_owner_reviews: (.required_pull_request_reviews.require_code_owner_reviews // false),
-                  required_approving_review_count: (.required_pull_request_reviews.required_approving_review_count // 0),
-                  require_last_push_approval: (.required_pull_request_reviews.require_last_push_approval // false)
-                }
-              else null end
-            ),
-            restrictions: null,
-            required_linear_history: (.required_linear_history.enabled // false),
-            allow_force_pushes: (.allow_force_pushes.enabled // false),
-            allow_deletions: (.allow_deletions.enabled // false),
-            block_creations: (.block_creations.enabled // false),
-            required_conversation_resolution: (.required_conversation_resolution.enabled // false),
-            lock_branch: (.lock_branch.enabled // false),
-            allow_fork_syncing: (.allow_fork_syncing.enabled // false)
-          }' /tmp/live-raw.json > /tmp/live-projected.json
-
-          # Sort canonical to the same shape for stable comparison.
-          jq -S . /tmp/canonical.json > /tmp/canonical-sorted.json
-          jq -S . /tmp/live-projected.json > /tmp/live-sorted.json
-
-          if diff -u /tmp/canonical-sorted.json /tmp/live-sorted.json > /tmp/diff.txt; then
-            echo "drift=false" >> "$GITHUB_OUTPUT"
-            echo "No drift detected; live config matches canonical."
-          else
-            echo "drift=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::Drift detected vs canonical:"
-            cat /tmp/diff.txt
-          fi
-
-      - name: Apply canonical via PUT
-        id: apply
-        if: steps.diff.outputs.drift == 'true' || github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          endpoint="https://api.github.com/repos/$OWNER/$REPO/branches/main/protection"
-          body=$(mktemp)
-          code=$(curl -sS -o "$body" -w "%{http_code}" -X PUT \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            -H "Content-Type: application/json" \
-            --data-binary @/tmp/canonical.json \
-            "$endpoint")
-          if [ "$code" != "200" ]; then
-            echo "::error::PUT failed (HTTP $code)."
-            cat "$body"
-            exit 1
-          fi
-          echo "Applied canonical branch protection."
-          echo "applied=true" >> "$GITHUB_OUTPUT"
-
-      - name: Verify post-apply
-        if: steps.apply.outputs.applied == 'true'
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          endpoint="https://api.github.com/repos/$OWNER/$REPO/branches/main/protection"
-          body=$(mktemp)
-          code=$(curl -sS -o "$body" -w "%{http_code}" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "$endpoint")
-          if [ "$code" != "200" ]; then
-            echo "::error::Verify GET failed (HTTP $code)."
-            cat "$body"
-            exit 1
-          fi
-
-          required_contexts=$(jq -c '.required_status_checks.contexts // []' /tmp/canonical.json)
-          actual_contexts=$(jq -c '.required_status_checks.contexts // []' "$body")
-          missing=$(jq -rn \
-            --argjson required "$required_contexts" \
-            --argjson actual "$actual_contexts" \
-            '[ $required[] | select(($actual | index(.)) == null) ]')
-          if [ "$missing" != "[]" ]; then
-            echo "::error::Post-apply verification failed; missing contexts: $missing"
-            exit 1
-          fi
-          echo "Post-apply verification OK. Active contexts: $actual_contexts"
-
-      # -----------------------------------------------------------------------
-      # DIMENSION 2: Classic Ruleset (id 15843812) via /rulesets API
-      # Mirrors the dimension-1 pattern: canonical -> diff -> PUT -> verify.
+      # DIMENSION 1: Classic Ruleset (id 15843812) via /rulesets API.
+      # Pattern: canonical -> diff -> PUT -> verify.
       # -----------------------------------------------------------------------
       - name: Validate canonical ruleset config exists & parses
         id: ruleset_canonical
@@ -385,7 +248,7 @@ jobs:
           echo "Ruleset post-apply verification OK. Active contexts: $actual_contexts"
 
       # -----------------------------------------------------------------------
-      # DIMENSION 3: Org-level Copilot coding-agent repo enablement
+      # DIMENSION 2: Org-level Copilot coding-agent repo enablement
       # Read-only verify (no per-repo skip-approval API exists; see header).
       # -----------------------------------------------------------------------
       - name: Verify org-level Copilot coding-agent enablement
@@ -436,11 +299,10 @@ jobs:
       # Notification & summary
       # -----------------------------------------------------------------------
       - name: Notify on drift repair (Pushover)
-        if: github.event_name == 'schedule' && (steps.diff.outputs.drift == 'true' || steps.ruleset_diff.outputs.drift == 'true' || steps.copilot_verify.outputs.status == 'drift')
+        if: github.event_name == 'schedule' && (steps.ruleset_diff.outputs.drift == 'true' || steps.copilot_verify.outputs.status == 'drift')
         env:
           PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
           PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
-          BP_DRIFT: ${{ steps.diff.outputs.drift }}
           RS_DRIFT: ${{ steps.ruleset_diff.outputs.drift }}
           CP_STATUS: ${{ steps.copilot_verify.outputs.status }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -451,7 +313,6 @@ jobs:
             exit 0
           fi
           dims=""
-          [ "$BP_DRIFT" = "true" ] && dims="$dims branch-protection"
           [ "$RS_DRIFT" = "true" ] && dims="$dims ruleset"
           [ "$CP_STATUS" = "drift" ] && dims="$dims copilot-org"
           MESSAGE="Factory security hardening drift detected on:$dims. Repaired (where API exists) and/or warned (Copilot UI-only). Run: $RUN_URL"
@@ -474,9 +335,8 @@ jobs:
             echo ""
             echo "| Dimension | Drift | Applied |"
             echo "| --- | --- | --- |"
-            echo "| 1. Branch protection | ${{ steps.diff.outputs.drift || 'n/a' }} | ${{ steps.apply.outputs.applied || 'false' }} |"
-            echo "| 2. Ruleset $RULESET_ID | ${{ steps.ruleset_diff.outputs.drift || 'n/a' }} | ${{ steps.ruleset_apply.outputs.applied || 'false' }} |"
-            echo "| 3. Copilot org enablement | ${{ steps.copilot_verify.outputs.status || 'n/a' }} | n/a (read-only) |"
+            echo "| 1. Ruleset $RULESET_ID | ${{ steps.ruleset_diff.outputs.drift || 'n/a' }} | ${{ steps.ruleset_apply.outputs.applied || 'false' }} |"
+            echo "| 2. Copilot org enablement | ${{ steps.copilot_verify.outputs.status || 'n/a' }} | n/a (read-only) |"
             echo ""
             echo "_Per-repo Copilot 'skip approval for workflows' toggle is UI-only as of 2026-05-09 — see workflow header._"
           } >> "$GITHUB_STEP_SUMMARY"

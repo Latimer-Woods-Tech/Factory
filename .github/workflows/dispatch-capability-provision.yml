@@ -1,28 +1,20 @@
 name: Dispatch capability provision
 
-# Operator-triggered dispatcher for staging provision requests recorded by
-# the Capability Design Studio (see docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md).
+# Operator-triggered (or auto-dispatch-provision.yml triggered) dispatcher for
+# staging provision requests recorded by the Capability Design Studio.
+# See docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md.
 #
 # Flow:
-#   1. Operator confirms the proof gates in admin-studio and a row is inserted
-#      into capability_provision_requests with status='requested'.
-#   2. Operator (or a scheduled poller) calls this workflow_dispatch with the
-#      provision_request_id and the persisted handoff_id.
-#   3. This workflow:
-#        a. fetches the handoff package from admin-studio
-#        b. transitions the request to 'dispatched'
-#        c. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
-#        d. uploads the scaffolded tree as a workflow artifact for review
-#        e. on success, transitions the request to 'succeeded'; on failure,
-#           transitions to 'failed' with the error captured in notes.
-#
-# Two secrets are required:
-#   - STUDIO_API_BASE       — e.g. https://admin-staging.latwoodtech.work
-#   - STUDIO_DISPATCH_TOKEN — admin-tier JWT (short-lived, rotated)
-#
-# The workflow stays manual on purpose. Stage D could replace workflow_dispatch
-# with a schedule that polls /capabilities/provision-requests?status=requested,
-# but that's a separate council inquiry.
+#   1. Operator (or auto-dispatcher) calls this workflow_dispatch with
+#      provision_request_id, handoff_id, app_name.
+#   2. This workflow:
+#        a. authenticates to GCP (WIF) and pulls bootstrap creds from Secret Manager
+#        b. mints a fresh studio JWT via /auth/login (4h TTL)
+#        c. fetches the handoff package from admin-studio
+#        d. transitions the request to 'dispatched'
+#        e. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
+#        f. uploads the scaffolded tree as a workflow artifact for review
+#        g. on success, transitions to 'succeeded'; on failure, 'failed' with notes.
 
 on:
   workflow_dispatch:
@@ -41,23 +33,66 @@ on:
         required: false
         default: 'true'
 
+permissions:
+  contents: read
+
 jobs:
   dispatch:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: '20'
+          # Node 24 is the current Active LTS (since Oct 2025; Maintenance
+          # through Oct 2026). Node 20 hit EOL 2026-04-30. Wrangler 4.x
+          # refuses to start below node 22, so anything < 22 breaks the
+          # scaffold prereq check.
+          node-version: '24'
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env STUDIO_API_BASE     ADMIN_STUDIO_PROD_URL
+          fetch_to_env BOOTSTRAP_EMAIL     ADMIN_STUDIO_BOOTSTRAP_EMAIL
+          fetch_to_env BOOTSTRAP_PASSWORD  ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+
+      - name: Mint fresh dispatch JWT via /auth/login
+        run: |
+          set -euo pipefail
+          if [ -z "${STUDIO_API_BASE:-}" ] || [ -z "${BOOTSTRAP_EMAIL:-}" ] || [ -z "${BOOTSTRAP_PASSWORD:-}" ]; then
+            echo "::error::GCP-sourced creds missing — cannot mint dispatch JWT"
+            exit 1
+          fi
+          BODY=$(jq -n \
+            --arg e "$BOOTSTRAP_EMAIL" \
+            --arg p "$BOOTSTRAP_PASSWORD" \
+            '{email:$e,password:$p,env:"production"}')
+          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" | jq -r .token)
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Login returned no token"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "STUDIO_DISPATCH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
       - name: Fetch handoff package
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           HANDOFF_ID: ${{ inputs.handoff_id }}
         run: |
           set -euo pipefail
@@ -83,8 +118,6 @@ jobs:
 
       - name: Transition provision request → dispatched
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
@@ -93,6 +126,21 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"status":"dispatched","notes":"dispatched via GH Actions"}' \
             "${STUDIO_API_BASE}/capabilities/provision-requests/${PROVISION_REQUEST_ID}/transition"
+
+      - name: Install scaffold prerequisites (wrangler)
+        # actions/setup-node sets a custom npm prefix so global installs don't
+        # need sudo; the resulting bin/ isn't on PATH by default in the next
+        # step. Add it to $GITHUB_PATH so the scaffold call can resolve
+        # `wrangler`. Verify accessible inline so we fail fast if install
+        # actually went wrong.
+        run: |
+          set -euo pipefail
+          npm install -g wrangler@latest
+          NPM_BIN="$(npm config get prefix)/bin"
+          echo "$NPM_BIN" >> "$GITHUB_PATH"
+          "$NPM_BIN/wrangler" --version
+          git config --global user.email "factory-dispatcher@latwoodtech.work"
+          git config --global user.name  "Factory Capability Dispatcher"
 
       - name: Run scaffold against handoff
         id: scaffold
@@ -107,12 +155,19 @@ jobs:
           if [ "${NO_DEPLOY_INPUT}" = "true" ]; then
             NO_DEPLOY_FLAG="--no-deploy --no-install"
           fi
+          # Pass placeholder IDs so scaffold skips its interactive prompts in CI;
+          # the generated wrangler.jsonc gets these as defaults — an operator
+          # replaces them with real CF resources during human-in-the-loop
+          # provisioning. The dispatcher only produces the artifact today.
           node ../packages/deploy/scripts/scaffold.mjs "${APP_NAME}" \
-            --handoff ../.factory-handoff/handoff.json $NO_DEPLOY_FLAG
+            --handoff ../.factory-handoff/handoff.json \
+            --hyperdrive-id REPLACE_WITH_HYPERDRIVE_ID \
+            --rate-limiter-id REPLACE_WITH_RATE_LIMITER_NAMESPACE_ID \
+            $NO_DEPLOY_FLAG
 
       - name: Upload scaffolded workspace as artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: staging-workspace-${{ inputs.app_name }}
           path: staging-workspace/${{ inputs.app_name }}
@@ -122,8 +177,6 @@ jobs:
       - name: Transition provision request → succeeded
         if: success()
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail
@@ -136,8 +189,6 @@ jobs:
       - name: Transition provision request → failed
         if: failure()
         env:
-          STUDIO_API_BASE: ${{ secrets.STUDIO_API_BASE }}
-          STUDIO_DISPATCH_TOKEN: ${{ secrets.STUDIO_DISPATCH_TOKEN }}
           PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
         run: |
           set -euo pipefail

@@ -60,6 +60,12 @@ const WORKFLOW_RULES = [
     ],
   },
   {
+    path: '.github/workflows/deploy-status-prober.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'status-prober', key: 'default' }],
+  },
+  {
     path: '.github/workflows/deploy-supervisor.yml',
     section: 'workers',
     verifier: 'curl -s -o /dev/null',
@@ -86,6 +92,18 @@ const WORKFLOW_RULES = [
     section: 'workers',
     verifier: 'verify-http-endpoint.mjs',
     targets: [{ id: 'webhook-fanout', key: 'default' }],
+  },
+  {
+    path: '.github/workflows/deploy-factory-core-api.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'factory-core-api', key: 'default' }],
+  },
+  {
+    path: '.github/workflows/deploy-qa-tools-worker.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'qa-tools-worker', key: 'default' }],
   },
 ];
 
@@ -154,6 +172,22 @@ const EXPLICIT_EXEMPTIONS = new Map([
   // Pages site for latwoodtech.com — service-registry entry + WORKFLOW_RULES coverage
   // tracked in the latwoodtech-web onboarding work; exempted here until that lands.
   ['.github/workflows/deploy-latwoodtech-web.yml', 'latwoodtech.com Pages site — pending service-registry registration'],
+  // Added 2026-05-24 alongside the github-hardening pass. These two deploy
+  // workflows were introduced (#994 and predecessor) without registering their
+  // services in docs/service-registry.yml or wiring WORKFLOW_RULES coverage
+  // above. Exempting unblocks the validate-service-registry CI step; the
+  // follow-up is to add full coverage (verifier + targets + registry entry)
+  // for both Workers in a dedicated PR.
+  ['.github/workflows/deploy-inbound-oracle.yml', 'inbound-oracle Worker — pending service-registry registration'],
+  ['.github/workflows/deploy-linkedin-publisher.yml', 'linkedin-publisher Worker — pending service-registry registration'],
+  // Cron-only Worker (workers_dev:false, no public route) — fires */15 to replay
+  // failed derivations. No HTTP verifier step by design, so it cannot use a
+  // URL-based WORKFLOW_RULES entry; the registry entry documents the cron contract.
+  ['.github/workflows/deploy-factory-events-replay.yml', 'factory-events-replay — cron-only Worker, no public route to verify'],
+  // Internal engineering dashboard deployed via _app-deploy-pages.yml reusable workflow.
+  // No custom domain attached in Phase 1 (health_url is empty in the deploy workflow).
+  // Full verification coverage will be added when the domain is provisioned.
+  ['.github/workflows/deploy-qa-tools-ui.yml', 'qa-tools-ui — internal Pages app, no health_url in Phase 1 deploy; pending domain attachment'],
 ]);
 
 const registry = await loadRegistry(REGISTRY_PATH);

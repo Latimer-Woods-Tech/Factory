@@ -1,0 +1,88 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // qa-tools-worker — QA testing platform API (accessibility, performance, visual regression)
+  // Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+  // Add-new-app runbook: docs/runbooks/add-new-app.md
+  "name": "qa-tools-worker",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": { "enabled": true },
+
+  // Hyperdrive binding — replace UUID after provisioning per docs/runbooks/add-new-app.md
+  // wrangler hyperdrive create qa-tools-hyperdrive --connection-string "$NEON_CONNECTION_STRING"
+  "hyperdrive": [
+    {
+      "binding": "DB",
+      "id": "REPLACE_WITH_REAL_HYPERDRIVE_UUID"
+    }
+  ],
+
+  // R2 bucket for screenshots, videos, JSON exports (90-day lifecycle policy)
+  // wrangler r2 bucket create qa-tools
+  "r2_buckets": [
+    {
+      "binding": "QA_TOOLS_R2",
+      "bucket_name": "qa-tools"
+    }
+  ],
+
+  // KV for rate-limit counters (concurrent run tracking per app)
+  // wrangler kv namespace create QA_RATE_LIMIT_KV
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+
+  // Required secrets — set via `wrangler secret put <NAME>`:
+  //   QA_TOOLS_JWT_SECRET     HS256 key for QA Tools JWTs (rotate semi-annually)
+  //   BROWSER_AGENT_SA_KEY    GCP service-account JSON (minified) for browser-agent OIDC auth
+  //   BROWSER_AGENT_URL       Cloud Run service URL  (e.g. https://browser-agent-*.run.app)
+  //   BROWSER_AGENT_AUDIENCE  Same as BROWSER_AGENT_URL — used as OIDC audience claim
+  //
+  // Optional secrets:
+  //   GITHUB_QA_TOKEN         GitHub PAT (repo:write) for issue creation + PR comments
+  //   SLACK_QA_WEBHOOK_URL    Slack incoming webhook for notifications + daily digest
+  //   SENTRY_DSN              Sentry DSN for error reporting
+
+  "env": {
+    "production": {
+      "name": "qa-tools-worker",
+      "routes": [
+        { "pattern": "qa-tools.lwt.internal", "custom_domain": true }
+      ],
+      "hyperdrive": [
+        { "binding": "DB", "id": "REPLACE_WITH_REAL_HYPERDRIVE_UUID" }
+      ],
+      "r2_buckets": [
+        { "binding": "QA_TOOLS_R2", "bucket_name": "qa-tools" }
+      ],
+      "kv_namespaces": [
+        { "binding": "RATE_LIMIT_KV", "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID" }
+      ],
+      "vars": { "ENVIRONMENT": "production" }
+    },
+    "staging": {
+      "name": "qa-tools-worker-staging",
+      "hyperdrive": [
+        { "binding": "DB", "id": "REPLACE_WITH_REAL_HYPERDRIVE_UUID" }
+      ],
+      "r2_buckets": [
+        { "binding": "QA_TOOLS_R2", "bucket_name": "qa-tools-staging" }
+      ],
+      "kv_namespaces": [
+        { "binding": "RATE_LIMIT_KV", "id": "REPLACE_WITH_REAL_KV_NAMESPACE_ID" }
+      ],
+      "vars": { "ENVIRONMENT": "staging" }
+    }
+  }
+}

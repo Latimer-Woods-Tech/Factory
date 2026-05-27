@@ -45,6 +45,8 @@ export interface LLMOptions {
   project?: string;
   /** Optional actor identifier (supervisor / worker / human). */
   actor?: string;
+  /** Optional workload label used in logs and cost-policy call sites. */
+  workload?: string;
   /** Anthropic prompt-cache control. Defaults to `true` for `system` prompts ≥ 1024 tokens. */
   promptCache?: boolean;
   /**
@@ -72,6 +74,11 @@ export interface LLMOptions {
    * KV TTL: 40 days.
    */
   monthlyCapUsd?: number;
+  /**
+   * Metering context. When supplied and `deps.onRecord` is set, a {@link LLMRecordRow}
+   * is emitted after every successful completion. Errors are swallowed.
+   */
+  ledger?: LLMRecordContext;
 }
 
 /**
@@ -135,12 +142,48 @@ export interface CostKvStore {
 }
 
 /**
+ * Caller-supplied context stamped on every metering row.
+ * Mirrors the `LLMRecordContext` in `@latimer-woods-tech/llm-meter`; kept inline
+ * to avoid a circular dependency (llm-meter imports llm).
+ */
+export interface LLMRecordContext {
+  project: string;
+  actor: string;
+  runId?: string;
+  workload?: string;
+  tenantId?: string;
+}
+
+/**
+ * Row shape passed to the optional {@link LLMDeps.onRecord} callback.
+ * Callers can wire this directly to `recordCall` from `@latimer-woods-tech/llm-meter`.
+ */
+export interface LLMRecordRow extends LLMRecordContext {
+  model: string;
+  provider: LLMProvider;
+  tier: LLMTier;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  latencyMs: number;
+  costUsd: number;
+  yyyyMm: string;
+}
+
+/**
  * Optional dependencies for {@link complete}.
  */
 export interface LLMDeps {
   fetch?: typeof fetch;
   logger?: Logger;
   now?: () => number;
+  /**
+   * Optional metering callback. Called after every successful completion.
+   * Errors are swallowed so metering never blocks the caller.
+   * Wire to `recordCall` from `@latimer-woods-tech/llm-meter`.
+   */
+  onRecord?: (row: LLMRecordRow) => Promise<void>;
 }
 
 // Model catalogue — keep in sync with docs/architecture/FACTORY_V1.md § LLM substrate.
@@ -236,9 +279,12 @@ async function recordOrgCostUsage(
 const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic Haiku 4
   'claude-haiku-4-20250514': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
+  'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
   // Anthropic Sonnet 4
+  'claude-sonnet-4-20250514': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
   'claude-sonnet-4-6': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
   // Anthropic Opus 4
+  'claude-opus-4-20250514': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
   'claude-opus-4-7': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
   // Gemini 2.5 Pro
   'gemini-2.5-pro': { input: 1.25, output: 10.00, cacheRead: 0.31, cacheWrite: 4.50 },
@@ -821,6 +867,7 @@ export async function complete(
         runId: opts.runId,
         project: opts.project,
         actor: opts.actor,
+        workload: opts.workload,
       });
       const llmResult: LLMResult = {
         content: result.parsed.content,
@@ -856,6 +903,25 @@ export async function complete(
       // compare-and-swap, so concurrent increments may undercount spend.
       if (kv && (opts.dailyCapUsd !== undefined || opts.monthlyCapUsd !== undefined)) {
         await recordOrgCostUsage(kv, todayKey, monthKey, costUsd, opts);
+      }
+      // ── Metering callback ────────────────────────────────────────────────
+      if (deps.onRecord && opts.ledger) {
+        const row: LLMRecordRow = {
+          ...opts.ledger,
+          model: llmResult.model,
+          provider: llmResult.provider,
+          tier: llmResult.tier,
+          inputTokens: llmResult.tokens.input,
+          outputTokens: llmResult.tokens.output,
+          cacheReadTokens: llmResult.tokens.cacheRead ?? 0,
+          cacheWriteTokens: llmResult.tokens.cacheWrite ?? 0,
+          latencyMs: llmResult.latency,
+          costUsd,
+          yyyyMm: isoMonth(now()),
+        };
+        deps.onRecord(row).catch((e: unknown) => {
+          logger?.warn?.('llm.onRecord.error', { message: e instanceof Error ? e.message : String(e) });
+        });
       }
       return { data: llmResult, error: null };
     } catch (e) {

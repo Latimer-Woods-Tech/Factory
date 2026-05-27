@@ -94,6 +94,39 @@ async function verifyStripeSignature(
 }
 
 // ---------------------------------------------------------------------------
+// GitHub webhook signature verification — X-Hub-Signature-256, constant-time
+// ---------------------------------------------------------------------------
+
+async function verifyGitHubSignature(
+  payload: string,
+  sigHeader: string | null,
+  secret: string,
+): Promise<boolean> {
+  if (!sigHeader?.startsWith('sha256=')) return false;
+  const provided = sigHeader.slice('sha256='.length);
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sigBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+  const expected = Array.from(new Uint8Array(sigBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  // Constant-time compare
+  if (provided.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < provided.length; i++) {
+    diff |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+// ---------------------------------------------------------------------------
 // Synthetic customer filter
 // ---------------------------------------------------------------------------
 
@@ -478,6 +511,138 @@ async function fanOut(env: Env, event: StripeEvent): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// GitHub event → factory gate translation (Admin Build Plan P1.6)
+// ---------------------------------------------------------------------------
+
+/** Gate-write contract for factory-core-api POST /v1/gates. */
+interface GateWrite {
+  gate_type: string;
+  source_system: string;
+  source_ref: string;
+  source_event_id?: string;
+  subject_type: string;
+  subject_repo?: string;
+  subject_ref: string;
+  state: string;
+  evidence_url?: string;
+  evidence_summary?: Record<string, unknown>;
+  observed_at: string;
+}
+
+// GitHub check_run.conclusion → gate state. Unmapped conclusions are skipped.
+const CHECK_CONCLUSION_TO_STATE: Record<string, string> = {
+  success: 'passed',
+  failure: 'failed',
+  timed_out: 'failed',
+  action_required: 'failed',
+  cancelled: 'skipped',
+  neutral: 'skipped',
+  skipped: 'skipped',
+  stale: 'expired',
+};
+
+// GitHub review.state → gate state. 'commented' is not a gate decision (skipped).
+const REVIEW_STATE_TO_STATE: Record<string, string> = {
+  approved: 'passed',
+  changes_requested: 'failed',
+  dismissed: 'skipped',
+};
+
+/**
+ * Derives a `ci` gate from a `check_run.completed` event. Returns null for
+ * non-completed runs, unmapped conclusions, or runs not associated with a PR
+ * (gates are PR-scoped).
+ */
+function deriveGateFromCheckRun(payload: Record<string, unknown>, deliveryId: string): GateWrite | null {
+  if (payload['action'] !== 'completed') return null;
+  const checkRun = payload['check_run'] as Record<string, unknown> | undefined;
+  if (!checkRun) return null;
+
+  const conclusion = checkRun['conclusion'] as string | null | undefined;
+  const state = conclusion ? CHECK_CONCLUSION_TO_STATE[conclusion] : undefined;
+  if (!state) return null;
+
+  const prs = checkRun['pull_requests'] as Array<{ number?: number }> | undefined;
+  const prNumber = prs?.[0]?.number;
+  if (prNumber == null) return null;
+
+  const repo = (payload['repository'] as Record<string, unknown> | undefined)?.['full_name'] as string | undefined;
+  return {
+    gate_type: 'ci',
+    source_system: 'github-actions',
+    source_ref: String(checkRun['id'] ?? prNumber),
+    source_event_id: deliveryId || undefined,
+    subject_type: 'pr',
+    subject_repo: repo,
+    subject_ref: String(prNumber),
+    state,
+    evidence_url: (checkRun['html_url'] as string | undefined),
+    evidence_summary: {
+      name: checkRun['name'],
+      conclusion,
+      head_sha: checkRun['head_sha'],
+    },
+    observed_at: (checkRun['completed_at'] as string | undefined) ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * Derives a `codeowner-review` gate from a `pull_request_review.submitted`
+ * event. Returns null for non-submit actions or non-decision review states
+ * (e.g. 'commented').
+ */
+function deriveGateFromReview(payload: Record<string, unknown>, deliveryId: string): GateWrite | null {
+  if (payload['action'] !== 'submitted') return null;
+  const review = payload['review'] as Record<string, unknown> | undefined;
+  const pr = payload['pull_request'] as Record<string, unknown> | undefined;
+  if (!review || !pr) return null;
+
+  const reviewState = String(review['state'] ?? '').toLowerCase();
+  const state = REVIEW_STATE_TO_STATE[reviewState];
+  if (!state) return null;
+
+  const repo = (payload['repository'] as Record<string, unknown> | undefined)?.['full_name'] as string | undefined;
+  return {
+    gate_type: 'codeowner-review',
+    source_system: 'github-review',
+    source_ref: String(review['id'] ?? pr['number']),
+    source_event_id: deliveryId || undefined,
+    subject_type: 'pr',
+    subject_repo: repo,
+    subject_ref: String(pr['number']),
+    state,
+    evidence_url: (review['html_url'] as string | undefined),
+    evidence_summary: {
+      reviewer: (review['user'] as Record<string, unknown> | undefined)?.['login'],
+      review_state: reviewState,
+    },
+    observed_at: (review['submitted_at'] as string | undefined) ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * Posts a derived gate to factory-core-api. Auth uses the dedicated service
+ * credential (accepted only on /v1/gates). factory-core-api dedupes on
+ * source_event_id, so redelivered webhooks are idempotent server-side.
+ */
+async function postGate(env: Env, gate: GateWrite): Promise<void> {
+  const base = env.FACTORY_CORE_API_URL.replace(/\/+$/, '');
+  const res = await fetchWithTimeout(`${base}/v1/gates`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.FACTORY_CORE_API_INGEST_KEY}`,
+    },
+    body: JSON.stringify(gate),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gate ingest failed (${String(res.status)}): ${text}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Hono app — single POST /stripe handler + health
 // ---------------------------------------------------------------------------
 
@@ -591,6 +756,56 @@ app.post('/stripe', async c => {
     ),
   );
 
+  return c.json({ ok: true });
+});
+
+app.post('/github', async c => {
+  const requestId = c.get('requestId') ?? generateRequestId();
+  const log = createLogger({
+    workerId: 'webhook-fanout',
+    requestId,
+    environment: (c.env.ENVIRONMENT ?? 'production') as 'development' | 'staging' | 'production',
+  });
+
+  // 1. Read raw body — must precede parsing to preserve the HMAC payload
+  const rawBody = await c.req.text();
+  const sigHeader = c.req.header('x-hub-signature-256') ?? null;
+
+  // 2. Verify GitHub HMAC-SHA256 signature (constant-time)
+  const valid = await verifyGitHubSignature(rawBody, sigHeader, c.env.GH_WEBHOOK_SECRET);
+  if (!valid) {
+    log.warn('GitHub signature verification failed', { hasHeader: sigHeader !== null });
+    return c.json({ error: 'Invalid signature' }, 401);
+  }
+
+  const eventType = c.req.header('x-github-event') ?? '';
+  const deliveryId = c.req.header('x-github-delivery') ?? '';
+  const payload = JSON.parse(rawBody) as Record<string, unknown>;
+
+  // 3. Translate supported events into a gate write
+  let gate: GateWrite | null = null;
+  if (eventType === 'check_run') gate = deriveGateFromCheckRun(payload, deliveryId);
+  else if (eventType === 'pull_request_review') gate = deriveGateFromReview(payload, deliveryId);
+
+  if (!gate) {
+    log.info('GitHub event ignored (no gate derived)', { eventType, action: payload['action'] });
+    return c.json({ ok: true, ignored: true });
+  }
+
+  // 4. Async ingest — respond to GitHub fast; factory-core-api is idempotent
+  c.executionCtx.waitUntil(
+    postGate(c.env, gate).catch(err =>
+      log.error('Gate ingest error', err, { eventType, deliveryId }),
+    ),
+  );
+
+  log.info('GitHub event translated to gate', {
+    eventType,
+    deliveryId,
+    gateType: gate.gate_type,
+    state: gate.state,
+    subjectRef: gate.subject_ref,
+  });
   return c.json({ ok: true });
 });
 

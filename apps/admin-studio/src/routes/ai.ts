@@ -20,6 +20,8 @@ import type { AppEnv } from '../types.js';
 import type { Env } from '../env.js';
 import { fetchFile } from '../lib/github-api.js';
 import type { LLMEnv } from '@latimer-woods-tech/llm';
+import { AGENT_TOOLS, executeTool, extractToolUse } from '../lib/ai-tools.js';
+import type { ToolUseBlock } from '../lib/ai-tools.js';
 
 // ---------------------------------------------------------------------------
 // Module-level CONTEXT.md cache — fetched once per worker cold start
@@ -70,7 +72,6 @@ function getMissingCompleteLlmConfig(
   >,
 ): string[] {
   const missing: string[] = [];
-  if (!env.AI_GATEWAY_BASE_URL) missing.push('AI_GATEWAY_BASE_URL');
   if (!env.ANTHROPIC_API_KEY) missing.push('ANTHROPIC_API_KEY');
   if (!env.VERTEX_ACCESS_TOKEN) missing.push('VERTEX_ACCESS_TOKEN');
   if (!env.VERTEX_PROJECT) missing.push('VERTEX_PROJECT');
@@ -101,6 +102,10 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
       model: 'gemini-2.5-pro',
       tier: 'smart',
       maxTokens: 2048,
+      maxCostUsd: 0.75,
+      project: 'admin-studio',
+      actor: 'human',
+      workload: 'planning',
       temperature: mode === 'refactor' ? 0.2 : 0.35,
     };
   }
@@ -110,6 +115,10 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
       model: 'grok-4-fast',
       tier: 'fast',
       maxTokens: 2048,
+      maxCostUsd: 0.50,
+      project: 'admin-studio',
+      actor: 'human',
+      workload: 'drafting',
       temperature: mode === 'refactor' ? 0.3 : 0.65,
     };
   }
@@ -117,6 +126,10 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
     system,
     tier: 'balanced',
     maxTokens: 2048,
+    maxCostUsd: 0.50,
+    project: 'admin-studio',
+    actor: 'human',
+    workload: 'execution',
     temperature: mode === 'refactor' ? 0.2 : 0.5,
   };
 }
@@ -314,10 +327,6 @@ ai.post('/chat', async (c) => {
   if (!c.env.ANTHROPIC_API_KEY) {
     return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
   }
-  // All provider calls must route through Cloudflare AI Gateway (STACK.md).
-  if (!c.env.AI_GATEWAY_BASE_URL) {
-    return c.json({ error: 'AI_GATEWAY_BASE_URL not configured' }, 503);
-  }
 
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
@@ -366,35 +375,121 @@ ai.post('/chat', async (c) => {
     });
   }
 
+  // Tool-use agentic loop (non-streaming for now)
   const apiKey = c.env.ANTHROPIC_API_KEY;
-  // AI Gateway is required — no fallback to direct Anthropic (STACK.md).
-  const baseUrl = `${c.env.AI_GATEWAY_BASE_URL}/anthropic`;
-  const upstream = await fetch(`${baseUrl}/v1/messages`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31',
-    },
-    body: JSON.stringify({
+  const baseUrl = c.env.AI_GATEWAY_BASE_URL
+    ? `${c.env.AI_GATEWAY_BASE_URL}/anthropic`
+    : 'https://api.anthropic.com'; // Direct Anthropic API if gateway not configured
+
+  // Typed to accept both plain-string content and structured content blocks
+  // (tool_result blocks pushed during the tool-use loop require the array form).
+  type AgentMessage = { role: string; content: string | Array<Record<string, unknown>> };
+  const agentMessages: AgentMessage[] = [...messages];
+  let finalText = '';
+  let loopCount = 0;
+  const maxLoops = 3; // Prevent expensive runaway tool loops
+
+  while (loopCount < maxLoops) {
+    loopCount++;
+
+    // Call Anthropic with tools (non-streaming for tool-use loop)
+    const payload = {
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 1024,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096
         ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
         : system,
-      messages,
-      stream: true,
-    }),
-  });
-  if (!upstream.ok || !upstream.body) {
-    return c.json({ error: 'upstream failed' }, 502);
+      messages: agentMessages,
+      tools: AGENT_TOOLS.length > 0 ? AGENT_TOOLS : undefined,
+      stream: false, // Collect full response for tool-use check
+    };
+
+    const upstream = await fetch(`${baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!upstream.ok) {
+      return c.json({ error: 'upstream failed', status: upstream.status }, 502);
+    }
+
+    const response = await upstream.json<any>();
+    if (response.error || !response.content) {
+      return c.json({ error: 'upstream error', detail: response.error }, 502);
+    }
+
+    // Check if model returned tool_use
+    const toolUse = extractToolUse(response.content);
+    if (toolUse) {
+      // Execute the tool
+      let toolResult: unknown = { error: 'tool execution failed' };
+      try {
+        if (!c.env.GITHUB_TOKEN) {
+          toolResult = { error: 'GITHUB_TOKEN not configured' };
+        } else {
+          toolResult = await executeTool(
+            toolUse.name,
+            toolUse.input as Record<string, unknown>,
+            c.env.GITHUB_TOKEN,
+            { GCP_SA_KEY: c.env.GCP_SA_KEY },
+          );
+        }
+      } catch (err) {
+        toolResult = { error: (err as Error).message };
+      }
+
+      // Append assistant response and tool result to messages
+      agentMessages.push({
+        role: 'assistant',
+        content: response.content,
+      });
+      agentMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: toolUse.id,
+            content: JSON.stringify(toolResult),
+          },
+        ],
+      });
+
+      continue; // Loop back and get the next response
+    }
+
+    // No tool_use — extract final text and break
+    for (const block of response.content) {
+      if (block && typeof block === 'object' && (block as Record<string, unknown>).type === 'text') {
+        finalText = (block as Record<string, unknown>).text as string || '';
+      }
+    }
+    break;
   }
 
-  const out = transformAnthropicSse(upstream.body);
+  // Stream the final text response
+  const encoder = new TextEncoder();
+  const finalStream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const token: AIChatEvent = { type: 'token', delta: finalText };
+      const done: AIChatEvent = {
+        type: 'done',
+        provider: 'anthropic',
+        tokens: { input: 0, output: finalText.length },
+      };
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify(done)}\n\n`));
+      controller.close();
+    },
+  });
 
-  return new Response(out, {
+  return new Response(finalStream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
@@ -567,7 +662,14 @@ Return ONLY valid JSON — no prose, no markdown fences:
     const result = await complete(
       [{ role: 'user', content: userContent }],
       llmEnv,
-      { system: systemContent, maxTokens: 512 },
+      {
+        system: systemContent,
+        maxTokens: 512,
+        maxCostUsd: 0.10,
+        project: 'admin-studio',
+        actor: 'worker',
+        workload: 'analysis-cycle',
+      },
     );
     const raw = result.data?.content ?? '';
     const parsed: unknown = JSON.parse(raw);
@@ -625,7 +727,14 @@ Return ONLY valid JSON — no prose, no markdown:
   const fixResult = await complete(
     [{ role: 'user', content: fixUserContent }],
     fixLlmEnv,
-    { system: fixSystemContent, maxTokens: 1024 },
+    {
+      system: fixSystemContent,
+      maxTokens: 1024,
+      maxCostUsd: 0.20,
+      project: 'admin-studio',
+      actor: 'worker',
+      workload: 'propose-fix',
+    },
   );
   const raw = fixResult.data?.content ?? '';
 

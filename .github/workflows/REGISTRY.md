@@ -22,7 +22,7 @@
 
 CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
-### T1 — Load-bearing (25)
+### T1 — Load-bearing (27)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -53,12 +53,15 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `deploy-synthetic-monitor.yml` | push, dispatch | Production deploy — synthetic-monitor Worker |
 | `deploy-video-cron.yml` | push, dispatch | Production deploy — video-cron Worker |
 | `deploy-webhook-fanout.yml` | push, dispatch | Production deploy — webhook-fanout Worker |
+| `deploy-factory-core-api.yml` | push, dispatch | Production deploy — factory-core-api Worker (read-layer + auth) |
+| `deploy-factory-events-replay.yml` | push, dispatch | Production deploy — factory-events-replay cron Worker (P1.10) |
 | `browser-agent-deploy.yml` | push, dispatch | Production deploy — Cloud Run browser-agent |
 
-### T2 — Operational (28)
+### T2 — Operational (30)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
+| `adr-need-check.yml` | PR | ADR-need advisory (shadow mode) — path heuristic + Claude fallback (G11) |
 | `auto-merge-approved-prs.yml` | PR, pull_request_review | Event-driven auto-merge enable |
 | `auto-merge-spotter.yml` | schedule (10min), dispatch | Polling fallback — GH auto-merge does not auto-rebase BEHIND PRs |
 | `automation-reliability-loop.yml` | schedule, dispatch | Self-test of automation surface |
@@ -67,6 +70,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `copilot-auto-approve.yml` | PR, workflow_run | Auto-approve Copilot agent PRs |
 | `copilot-pr-poller.yml` | schedule (10min), dispatch | Polling for Copilot agent PR state |
 | `dead-mans-switch.yml` | schedule, dispatch | Liveness signal |
+| `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
 | `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |

@@ -2,39 +2,44 @@
 // DO NOT EDIT DIRECTLY — edit docs/capabilities/*.yml instead,
 // then run: node scripts/generate-supervisor-capabilities.mjs
 //
-// Generated: 2026-05-25T00:20:12.802Z
-// Source files: factory-admin.yml, humandesign.yml, videoking.yml, webhook-fanout.yml, xico-city.yml
+// Generated: 2026-05-27T03:32:02.105Z
+// Source files: coh.yml, factory-admin.yml, humandesign.yml, videoking.yml, webhook-fanout.yml, xico-city.yml
 
-export interface Capability {
-  id: string;
-  desc?: string;
-  route: string;
-  side_effects: 'none' | 'read-external' | 'write-app' | 'write-external';
-  required_scope: string;
-  idempotency_key?: string;
+export type SideEffect = 'none' | 'read-external' | 'write-app' | 'write-external';
+export type SupervisorAccess = 'green' | 'yellow' | 'red' | 'denied';
+
+export interface RouteCapability {
+  path: string;
+  method: string;
+  handler_class: string;
+  side_effects: SideEffect;
+  supervisor_access: SupervisorAccess;
   reversibility?: string;
-  extra_guard?: string;
+  requires_codeowner_oob?: boolean;
   params_schema?: Record<string, unknown>;
   body_schema?: Record<string, unknown>;
 }
 
 export interface AppCapabilities {
   app: string;
+  name: string;
   repo: string;
   base_url: string;
-  auth: string;
-  supervisor_access: string;
-  tiers_allowed: string[];
-  capabilities: Capability[];
+  product_tier: string;
+  tiers_allowed: SupervisorAccess[];
+  capabilities: RouteCapability[];
+  capabilities_exposed: string[];
+  capabilities_required: string[];
+  side_effects_summary: Record<string, string[]>;
 }
 
 export const GENERATED_CAPABILITIES: AppCapabilities[] = [
   {
-    "app": "factory-admin",
-    "repo": "Latimer-Woods-Tech/factory",
-    "base_url": "https://admin-studio.adrper79.workers.dev",
-    "auth": "admin_jwt",
-    "supervisor_access": "approved",
+    "app": "coh",
+    "name": "cypher-of-healing",
+    "repo": "Latimer-Woods-Tech/coh",
+    "base_url": "https://api.cypherofhealing.com",
+    "product_tier": "revenue",
     "tiers_allowed": [
       "green",
       "yellow",
@@ -42,143 +47,568 @@ export const GENERATED_CAPABILITIES: AppCapabilities[] = [
     ],
     "capabilities": [
       {
-        "id": "health.check",
-        "desc": "Admin-studio liveness check.",
-        "route": "GET /health",
+        "path": "/health",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green"
       },
       {
-        "id": "deploys.list",
-        "desc": "List recent Cloudflare Worker deployments across all apps.",
-        "route": "GET /deploys",
+        "path": "/api/admin/health",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/metrics",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
         "params_schema": {
+          "window": {
+            "type": "enum",
+            "values": [
+              "1h",
+              "6h",
+              "24h",
+              "7d"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/events",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "severity": {
+            "type": "enum",
+            "values": [
+              "error",
+              "warn",
+              "info"
+            ],
+            "optional": true
+          },
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 50
+            "max": 100,
+            "optional": true
           }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        }
       },
       {
-        "id": "deploys.trigger",
-        "desc": "Dispatch a workflow_dispatch to re-deploy an app. Only for Green-tier deploys (docs-only). Red-tier deploys require human.",
-        "route": "POST /deploys",
-        "body_schema": {
-          "app": {
+        "path": "/auth/login",
+        "method": "POST",
+        "handler_class": "auth-internal",
+        "side_effects": "none",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/auth/refresh",
+        "method": "POST",
+        "handler_class": "auth-internal",
+        "side_effects": "none",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/api/admin/bookings",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "status": {
             "type": "enum",
             "values": [
-              "humandesign",
-              "videoking",
-              "xico-city",
-              "factory-admin"
-            ]
-          },
-          "ref": {
-            "type": "string",
-            "validator": "^[a-zA-Z0-9/_\\-\\.]{1,100}$"
-          },
-          "env": {
-            "type": "enum",
-            "values": [
-              "staging"
-            ]
+              "pending",
+              "confirmed",
+              "completed",
+              "cancelled"
+            ],
+            "optional": true
           }
-        },
-        "idempotency_key": "app + ref + env",
-        "side_effects": "write-external",
+        }
+      },
+      {
+        "path": "/api/admin/bookings/:id",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/bookings/:id/cancel",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "yellow",
         "reversibility": "reversible-with-effort",
-        "required_scope": "supervisor.mutator-deploy",
-        "extra_guard": "requires_codeowner_approval"
+        "requires_codeowner_oob": true,
+        "body_schema": {
+          "reason": {
+            "type": "string",
+            "validator": "^[\\w\\s,\\.\\-]{10,200}$"
+          }
+        }
       },
       {
-        "id": "observability.summary",
-        "desc": "Fetch cross-app Sentry error rates and synthetic monitor status.",
-        "route": "GET /observability",
+        "path": "/api/admin/practitioners",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      },
-      {
-        "id": "audit.list",
-        "desc": "Fetch recent studio audit log entries.",
-        "route": "GET /audit",
+        "supervisor_access": "green",
         "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 100
+            "max": 100,
+            "optional": true
           },
+          "status": {
+            "type": "enum",
+            "values": [
+              "active",
+              "pending",
+              "suspended"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/practitioners/:id",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/practitioners/:id/suspend",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "yellow",
+        "reversibility": "reversible-with-effort",
+        "requires_codeowner_oob": true,
+        "body_schema": {
+          "reason": {
+            "type": "string",
+            "validator": "^[\\w\\s,\\.\\-]{10,200}$"
+          }
+        }
+      },
+      {
+        "path": "/api/admin/subscriptions",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "status": {
+            "type": "enum",
+            "values": [
+              "active",
+              "cancelled",
+              "past_due",
+              "trialing"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/subscriptions/:id/cancel",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-external",
+        "supervisor_access": "red",
+        "reversibility": "reversible-with-effort",
+        "requires_codeowner_oob": true,
+        "body_schema": {
+          "reason": {
+            "type": "string",
+            "validator": "^[\\w\\s,\\.\\-]{10,200}$"
+          },
+          "at_period_end": {
+            "type": "boolean",
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/stripe/webhook",
+        "method": "POST",
+        "handler_class": "webhook-external",
+        "side_effects": "write-external",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/webhooks/stripe",
+        "method": "POST",
+        "handler_class": "webhook-external",
+        "side_effects": "write-external",
+        "supervisor_access": "denied"
+      }
+    ],
+    "capabilities_exposed": [
+      "booking-management",
+      "practitioner-management",
+      "subscription-management"
+    ],
+    "capabilities_required": [
+      "@latimer-woods-tech/auth@^0.2.0",
+      "@latimer-woods-tech/neon@^0.2.0",
+      "@latimer-woods-tech/stripe@^0.2.0",
+      "@latimer-woods-tech/llm@^0.3.0"
+    ],
+    "side_effects_summary": {
+      "read_external": [
+        "sentry-api",
+        "posthog"
+      ],
+      "write_external": [
+        "stripe",
+        "resend",
+        "anthropic"
+      ],
+      "write_app": [
+        "neon:coh"
+      ]
+    }
+  },
+  {
+    "app": "admin-studio-production",
+    "name": "factory-admin-studio",
+    "repo": "Latimer-Woods-Tech/factory",
+    "base_url": "https://api.apunlimited.com",
+    "product_tier": "internal",
+    "tiers_allowed": [
+      "green"
+    ],
+    "capabilities": [
+      {
+        "path": "/health",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/v1/health",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/v1/blocking",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
           "app": {
             "type": "string",
             "validator": "^[a-z\\-]{3,40}$",
             "optional": true
-          }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      },
-      {
-        "id": "catalog.list",
-        "desc": "List function_catalog entries for an app.",
-        "route": "GET /catalog",
-        "params_schema": {
-          "app": {
-            "type": "string",
-            "validator": "^[a-z\\-]{3,40}$"
-          }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      },
-      {
-        "id": "timeline.list",
-        "desc": "Fetch incident/audit timeline for correlation.",
-        "route": "GET /timeline",
-        "params_schema": {
-          "limit": {
-            "type": "integer",
-            "min": 1,
-            "max": 100
-          }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      }
-    ]
-  },
-  {
-    "app": "humandesign",
-    "repo": "Latimer-Woods-Tech/HumanDesign",
-    "base_url": "https://api.selfprime.net",
-    "auth": "admin_jwt",
-    "supervisor_access": "approved",
-    "tiers_allowed": [
-      "green",
-      "yellow"
-    ],
-    "capabilities": [
-      {
-        "id": "user.lookup",
-        "desc": "Fetch a user's profile, tier, and account status by ID or email.",
-        "route": "GET /admin/users/:id",
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      },
-      {
-        "id": "user.list",
-        "desc": "Paginated list of users, optionally filtered by tier or status.",
-        "route": "GET /admin/users",
-        "params_schema": {
-          "page": {
-            "type": "integer",
-            "min": 1
           },
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 100
+            "max": 100,
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/v1/command-center/runs",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "status": {
+            "type": "enum",
+            "values": [
+              "running",
+              "done",
+              "failed",
+              "cancelled"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/v1/command-center/gates",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "run_id": {
+            "type": "string",
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/v1/command-center/artifacts",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "run_id": {
+            "type": "string",
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/v1/audit",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "actor": {
+            "type": "string",
+            "optional": true
+          },
+          "action": {
+            "type": "string",
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/v1/audit",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/v1/events",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "denied"
+      }
+    ],
+    "capabilities_exposed": [
+      "command-center-visibility",
+      "audit-log-read",
+      "gate-status"
+    ],
+    "capabilities_required": [
+      "@latimer-woods-tech/auth@^0.2.0",
+      "@latimer-woods-tech/neon@^0.2.0",
+      "@latimer-woods-tech/monitoring@^0.2.0"
+    ],
+    "side_effects_summary": {
+      "read_external": [
+        "sentry-api"
+      ],
+      "write_external": [],
+      "write_app": [
+        "neon:factory-main"
+      ]
+    }
+  },
+  {
+    "app": "humandesign",
+    "name": "HumanDesign / selfprime",
+    "repo": "Latimer-Woods-Tech/HumanDesign",
+    "base_url": "https://api.selfprime.net",
+    "product_tier": "revenue",
+    "tiers_allowed": [
+      "green",
+      "yellow",
+      "red"
+    ],
+    "capabilities": [
+      {
+        "path": "/auth/login",
+        "method": "POST",
+        "handler_class": "auth-internal",
+        "side_effects": "none",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/auth/refresh",
+        "method": "POST",
+        "handler_class": "auth-internal",
+        "side_effects": "none",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/api/practitioners",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "status": {
+            "type": "enum",
+            "values": [
+              "active",
+              "pending",
+              "suspended"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/practitioners/:id",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/health",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/metrics",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "window": {
+            "type": "enum",
+            "values": [
+              "1h",
+              "6h",
+              "24h",
+              "7d"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/events",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "severity": {
+            "type": "enum",
+            "values": [
+              "error",
+              "warn",
+              "info"
+            ],
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "user_id": {
+            "type": "string",
+            "validator": "^[a-zA-Z0-9\\-]{1,64}$",
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/users",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
           },
           "tier": {
             "type": "enum",
@@ -198,46 +628,53 @@ export const GENERATED_CAPABILITIES: AppCapabilities[] = [
             ],
             "optional": true
           }
-        },
+        }
+      },
+      {
+        "path": "/api/admin/users/:id",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green"
       },
       {
-        "id": "user.suspend",
-        "desc": "Suspend a user account. Reversible via user.reinstate.",
-        "route": "POST /admin/users/:id/suspend",
-        "body_schema": {
-          "reason": {
-            "type": "string",
-            "validator": "^[\\w\\s,\\.\\-]{10,200}$"
-          }
-        },
-        "idempotency_key": "user_id + 'suspend'",
+        "path": "/api/admin/users/:id/suspend",
+        "method": "POST",
+        "handler_class": "mutate-internal",
         "side_effects": "write-app",
+        "supervisor_access": "yellow",
         "reversibility": "reversible-with-effort",
-        "required_scope": "supervisor.mutator-user-suspend",
-        "extra_guard": "requires_codeowner_approval"
-      },
-      {
-        "id": "user.reinstate",
-        "desc": "Reinstate a suspended user account.",
-        "route": "POST /admin/users/:id/reinstate",
+        "requires_codeowner_oob": true,
         "body_schema": {
           "reason": {
             "type": "string",
             "validator": "^[\\w\\s,\\.\\-]{10,200}$"
           }
-        },
-        "idempotency_key": "user_id + 'reinstate'",
-        "side_effects": "write-app",
-        "reversibility": "idempotent",
-        "required_scope": "supervisor.mutator-user-reinstate",
-        "extra_guard": "requires_codeowner_approval"
+        }
       },
       {
-        "id": "subscription.tier_change",
-        "desc": "Change a user's subscription tier. Writes to Stripe.",
-        "route": "POST /admin/users/:id/tier",
+        "path": "/api/admin/users/:id/reinstate",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "yellow",
+        "reversibility": "idempotent",
+        "requires_codeowner_oob": true,
+        "body_schema": {
+          "reason": {
+            "type": "string",
+            "validator": "^[\\w\\s,\\.\\-]{10,200}$"
+          }
+        }
+      },
+      {
+        "path": "/api/admin/users/:id/tier",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-external",
+        "supervisor_access": "red",
+        "reversibility": "reversible-with-effort",
+        "requires_codeowner_oob": true,
         "body_schema": {
           "new_tier": {
             "type": "enum",
@@ -247,72 +684,147 @@ export const GENERATED_CAPABILITIES: AppCapabilities[] = [
               "agency"
             ]
           }
-        },
-        "idempotency_key": "user_id + new_tier",
-        "side_effects": "write-external",
-        "reversibility": "reversible-with-effort",
-        "required_scope": "supervisor.mutator-subscription-tier-change",
-        "extra_guard": "requires_codeowner_approval"
+        }
       },
       {
-        "id": "events.recent",
-        "desc": "Fetch recent factory_events for a user.",
-        "route": "GET /admin/events",
-        "params_schema": {
+        "path": "/api/admin/synthesis",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "yellow",
+        "reversibility": "idempotent",
+        "body_schema": {
           "user_id": {
             "type": "string",
-            "validator": "^[a-zA-Z0-9\\-]{1,64}$",
+            "validator": "^[a-zA-Z0-9\\-]{1,64}$"
+          },
+          "chart_type": {
+            "type": "enum",
+            "values": [
+              "natal",
+              "transit",
+              "synastry"
+            ]
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/stripe/webhook",
+        "method": "POST",
+        "handler_class": "webhook-external",
+        "side_effects": "write-external",
+        "supervisor_access": "denied"
+      }
+    ],
+    "capabilities_exposed": [
+      "synthesize-energy-blueprint",
+      "generate-practitioner-pdf",
+      "user-management",
+      "practitioner-directory"
+    ],
+    "capabilities_required": [
+      "@latimer-woods-tech/llm@^0.3.0",
+      "@latimer-woods-tech/stripe@^0.2.0",
+      "@latimer-woods-tech/auth@^0.2.0"
+    ],
+    "side_effects_summary": {
+      "read_external": [
+        "sentry-api",
+        "posthog"
+      ],
+      "write_external": [
+        "stripe",
+        "anthropic",
+        "resend"
+      ],
+      "write_app": [
+        "neon:divine-grass-42421088"
+      ]
+    }
+  },
+  {
+    "app": "capricast",
+    "name": "capricast",
+    "repo": "Latimer-Woods-Tech/capricast",
+    "base_url": "https://api.capricast.com",
+    "product_tier": "revenue",
+    "tiers_allowed": [
+      "green",
+      "yellow",
+      "red"
+    ],
+    "capabilities": [
+      {
+        "path": "/api/admin/health",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/metrics",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "window": {
+            "type": "enum",
+            "values": [
+              "1h",
+              "6h",
+              "24h",
+              "7d"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/events",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "severity": {
+            "type": "enum",
+            "values": [
+              "error",
+              "warn",
+              "info"
+            ],
             "optional": true
           },
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 100
+            "max": 100,
+            "optional": true
           }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        }
       },
       {
-        "id": "health.check",
-        "desc": "Worker liveness check.",
-        "route": "GET /health",
+        "path": "/api/admin/creators",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      }
-    ]
-  },
-  {
-    "app": "videoking",
-    "repo": "Latimer-Woods-Tech/capricast",
-    "base_url": "https://api.capricast.com",
-    "auth": "admin_jwt",
-    "supervisor_access": "approved",
-    "tiers_allowed": [
-      "green",
-      "yellow"
-    ],
-    "capabilities": [
-      {
-        "id": "creator.lookup",
-        "desc": "Fetch a creator's profile, onboarding status, and Stripe connect state.",
-        "route": "GET /api/admin/creators/:id",
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      },
-      {
-        "id": "creator.list",
-        "desc": "Paginated list of creators with optional status filter.",
-        "route": "GET /api/admin/creators",
+        "supervisor_access": "green",
         "params_schema": {
           "page": {
             "type": "integer",
-            "min": 1
+            "min": 1,
+            "optional": true
           },
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 100
+            "max": 100,
+            "optional": true
           },
           "status": {
             "type": "enum",
@@ -324,202 +836,434 @@ export const GENERATED_CAPABILITIES: AppCapabilities[] = [
             ],
             "optional": true
           }
-        },
+        }
+      },
+      {
+        "path": "/api/admin/creators/:id",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green"
       },
       {
-        "id": "creator.verify_stripe",
-        "desc": "Trigger Stripe Connect verification for a creator. Idempotent — safe to re-run.",
-        "route": "POST /api/admin/creators/:id/verify-stripe",
-        "idempotency_key": "creator_id + 'verify-stripe'",
+        "path": "/api/admin/creators/:id/verify-stripe",
+        "method": "POST",
+        "handler_class": "mutate-internal",
         "side_effects": "write-external",
+        "supervisor_access": "yellow",
         "reversibility": "idempotent",
-        "required_scope": "supervisor.mutator-stripe-verify",
-        "extra_guard": "requires_codeowner_approval"
+        "requires_codeowner_oob": false
       },
       {
-        "id": "creator.mark_ready_for_payout",
-        "desc": "Mark a creator as payout-eligible after manual KYC confirmation.",
-        "route": "POST /api/admin/creators/:id/mark-ready-for-payout",
-        "idempotency_key": "creator_id + 'mark-ready'",
+        "path": "/api/admin/creators/:id/mark-ready-for-payout",
+        "method": "POST",
+        "handler_class": "mutate-internal",
         "side_effects": "write-app",
+        "supervisor_access": "yellow",
         "reversibility": "reversible-with-effort",
-        "required_scope": "supervisor.mutator-creator-payout-ready",
-        "extra_guard": "requires_codeowner_approval"
+        "requires_codeowner_oob": true
       },
       {
-        "id": "payout.list_batches",
-        "desc": "List payout batches with status.",
-        "route": "GET /api/admin/payouts/batches",
+        "path": "/api/admin/payouts/batches",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
         "params_schema": {
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 50
+            "max": 50,
+            "optional": true
           }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        }
       },
       {
-        "id": "onboarding.status",
-        "desc": "Fetch a creator's onboarding funnel position.",
-        "route": "GET /api/creator/onboarding",
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "path": "/api/admin/payouts",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-external",
+        "supervisor_access": "red",
+        "reversibility": "reversible-with-effort",
+        "requires_codeowner_oob": true,
+        "body_schema": {
+          "creator_id": {
+            "type": "string",
+            "validator": "^[a-zA-Z0-9\\-]{1,64}$"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "min": 100
+          },
+          "currency": {
+            "type": "enum",
+            "values": [
+              "usd",
+              "eur",
+              "gbp"
+            ],
+            "optional": true
+          }
+        }
       },
       {
-        "id": "health.check",
-        "desc": "Worker liveness check.",
-        "route": "GET /health",
+        "path": "/api/admin/videos",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "status": {
+            "type": "enum",
+            "values": [
+              "pending",
+              "processing",
+              "published",
+              "failed"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/videos/import",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "yellow",
+        "reversibility": "idempotent",
+        "body_schema": {
+          "stream_video_id": {
+            "type": "string",
+            "validator": "^[a-f0-9\\-]{32,64}$"
+          },
+          "title": {
+            "type": "string",
+            "validator": "^.{1,200}$"
+          },
+          "creator_id": {
+            "type": "string",
+            "validator": "^[a-zA-Z0-9\\-]{1,64}$"
+          }
+        }
+      },
+      {
+        "path": "/api/creator/onboarding",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/stripe/webhook",
+        "method": "POST",
+        "handler_class": "webhook-external",
+        "side_effects": "write-external",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/webhooks/stripe-connect",
+        "method": "POST",
+        "handler_class": "webhook-external",
+        "side_effects": "write-external",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/health",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
       }
-    ]
+    ],
+    "capabilities_exposed": [
+      "creator-management",
+      "payout-processing",
+      "video-import",
+      "creator-onboarding"
+    ],
+    "capabilities_required": [
+      "@latimer-woods-tech/stripe@^0.2.0",
+      "@latimer-woods-tech/auth@^0.2.0",
+      "@latimer-woods-tech/neon@^0.2.0"
+    ],
+    "side_effects_summary": {
+      "read_external": [
+        "sentry-api",
+        "posthog",
+        "cloudflare-stream"
+      ],
+      "write_external": [
+        "stripe",
+        "cloudflare-stream",
+        "resend"
+      ],
+      "write_app": [
+        "neon:72697ebbf0d44419850743679390acf1"
+      ]
+    }
   },
   {
     "app": "webhook-fanout",
-    "base_url": "https://webhooks.latwoodtech.com",
-    "auth": "none",
-    "supervisor_access": "read-only",
+    "name": "webhook-fanout",
+    "repo": "Latimer-Woods-Tech/factory",
+    "base_url": "https://webhooks.latwoodtech.work",
+    "product_tier": "internal",
     "tiers_allowed": [
       "green"
     ],
-    "description": "Cloudflare Worker that ingests Stripe webhook events, verifies HMAC-SHA256 signatures, deduplicates via KV (7-day TTL), filters synthetic customers, and fans out to PostHog + factory_events (analytics) and Resend (lifecycle emails).\n",
-    "routed_events": [
-      {
-        "stripe": "customer.created",
-        "analytics_event": "stripe.customer.created",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "customer.updated",
-        "analytics_event": "stripe.customer.updated",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "customer.subscription.created",
-        "analytics_event": "stripe.customer.subscription.created",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "customer.subscription.updated",
-        "analytics_event": "stripe.customer.subscription.updated",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "customer.subscription.deleted",
-        "analytics_event": "stripe.customer.subscription.deleted",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "customer.subscription.trial_will_end",
-        "analytics_event": "stripe.customer.subscription.trial_will_end",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "invoice.paid",
-        "analytics_event": "stripe.invoice.paid",
-        "lifecycle_email": "resend"
-      },
-      {
-        "stripe": "invoice.payment_failed",
-        "analytics_event": "stripe.invoice.payment_failed",
-        "lifecycle_email": "resend"
-      }
-    ],
     "capabilities": [
       {
-        "id": "health.check",
-        "desc": "Worker liveness check.",
-        "route": "GET /health",
+        "path": "/health",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green"
       },
       {
-        "id": "stripe.webhook.receive",
-        "desc": "Receive and process a Stripe webhook event. Verifies HMAC signature, deduplicates, filters synthetic customers, and fans out to PostHog, factory_events, and Resend.\n",
-        "route": "POST /stripe",
+        "path": "/stripe",
+        "method": "POST",
+        "handler_class": "webhook-external",
         "side_effects": "write-external",
-        "reversibility": "idempotent",
-        "required_scope": "none",
-        "notes": "Called exclusively by Stripe. Not for direct invocation by the Supervisor. Returns 200 immediately; fan-out continues in waitUntil().\n"
+        "supervisor_access": "denied"
       }
-    ]
+    ],
+    "capabilities_exposed": [
+      "stripe-webhook-fanout"
+    ],
+    "capabilities_required": [
+      "@latimer-woods-tech/analytics@^0.2.0",
+      "@latimer-woods-tech/email@^0.2.0"
+    ],
+    "side_effects_summary": {
+      "read_external": [
+        "stripe-hmac-verify"
+      ],
+      "write_external": [
+        "posthog",
+        "resend"
+      ],
+      "write_app": [
+        "neon:factory-main",
+        "kv:webhook-dedup"
+      ]
+    }
   },
   {
     "app": "xico-city",
+    "name": "xico-city",
     "repo": "Latimer-Woods-Tech/xico-city",
-    "base_url": "https://xico-city.adrper79.workers.dev",
-    "auth": "admin_jwt",
-    "supervisor_access": "approved",
+    "base_url": "https://xicocity.com",
+    "product_tier": "revenue",
     "tiers_allowed": [
       "green",
       "yellow"
     ],
     "capabilities": [
       {
-        "id": "health.check",
-        "desc": "Worker liveness check — /health and /ready.",
-        "route": "GET /health",
+        "path": "/health",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green"
       },
       {
-        "id": "compat.check",
-        "desc": "Verify factory-core package compatibility contract.",
-        "route": "GET /factory/compat",
+        "path": "/api/admin/health",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        "supervisor_access": "green"
       },
       {
-        "id": "user.me",
-        "desc": "Fetch the authenticated user's profile.",
-        "route": "GET /api/me",
+        "path": "/api/admin/metrics",
+        "method": "GET",
+        "handler_class": "read-internal",
         "side_effects": "none",
-        "required_scope": "supervisor.readonly"
-      },
-      {
-        "id": "admin.users.list",
-        "desc": "List users (artist roles).",
-        "route": "GET /admin/users",
+        "supervisor_access": "green",
         "params_schema": {
-          "page": {
-            "type": "integer",
-            "min": 1
+          "window": {
+            "type": "enum",
+            "values": [
+              "1h",
+              "6h",
+              "24h",
+              "7d"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/events",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "severity": {
+            "type": "enum",
+            "values": [
+              "error",
+              "warn",
+              "info"
+            ],
+            "optional": true
           },
           "limit": {
             "type": "integer",
             "min": 1,
-            "max": 100
+            "max": 100,
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/api/admin/users",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
           },
           "role": {
             "type": "string",
             "validator": "^[a-z_]{3,40}$",
             "optional": true
           }
-        },
-        "side_effects": "none",
-        "required_scope": "supervisor.readonly"
+        }
       },
       {
-        "id": "admin.users.suspend",
-        "desc": "Suspend an artist account.",
-        "route": "POST /admin/users/:id/suspend",
+        "path": "/api/admin/users/:id",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green"
+      },
+      {
+        "path": "/api/admin/users/:id/suspend",
+        "method": "POST",
+        "handler_class": "mutate-internal",
+        "side_effects": "write-app",
+        "supervisor_access": "yellow",
+        "reversibility": "reversible-with-effort",
+        "requires_codeowner_oob": true,
         "body_schema": {
           "reason": {
             "type": "string",
             "validator": "^[\\w\\s,\\.\\-]{10,200}$"
           }
-        },
-        "idempotency_key": "user_id + 'suspend'",
+        }
+      },
+      {
+        "path": "/api/admin/users/:id/reinstate",
+        "method": "POST",
+        "handler_class": "mutate-internal",
         "side_effects": "write-app",
-        "reversibility": "reversible-with-effort",
-        "required_scope": "supervisor.mutator-user-suspend",
-        "extra_guard": "requires_codeowner_approval"
+        "supervisor_access": "yellow",
+        "reversibility": "idempotent",
+        "requires_codeowner_oob": true,
+        "body_schema": {
+          "reason": {
+            "type": "string",
+            "validator": "^[\\w\\s,\\.\\-]{10,200}$"
+          }
+        }
+      },
+      {
+        "path": "/api/admin/content",
+        "method": "GET",
+        "handler_class": "read-internal",
+        "side_effects": "none",
+        "supervisor_access": "green",
+        "params_schema": {
+          "page": {
+            "type": "integer",
+            "min": 1,
+            "optional": true
+          },
+          "limit": {
+            "type": "integer",
+            "min": 1,
+            "max": 100,
+            "optional": true
+          },
+          "status": {
+            "type": "enum",
+            "values": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "optional": true
+          }
+        }
+      },
+      {
+        "path": "/auth/login",
+        "method": "POST",
+        "handler_class": "auth-internal",
+        "side_effects": "none",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/auth/refresh",
+        "method": "POST",
+        "handler_class": "auth-internal",
+        "side_effects": "none",
+        "supervisor_access": "denied"
+      },
+      {
+        "path": "/api/stripe/webhook",
+        "method": "POST",
+        "handler_class": "webhook-external",
+        "side_effects": "write-external",
+        "supervisor_access": "denied"
       }
-    ]
+    ],
+    "capabilities_exposed": [
+      "user-management",
+      "artist-directory",
+      "content-moderation"
+    ],
+    "capabilities_required": [
+      "@latimer-woods-tech/auth@^0.2.0",
+      "@latimer-woods-tech/neon@^0.2.0",
+      "@latimer-woods-tech/stripe@^0.2.0"
+    ],
+    "side_effects_summary": {
+      "read_external": [
+        "sentry-api",
+        "posthog"
+      ],
+      "write_external": [
+        "stripe",
+        "resend"
+      ],
+      "write_app": [
+        "neon:xico-city"
+      ]
+    }
   }
 ];
 
@@ -527,6 +1271,12 @@ export function getAppCapabilities(appId: string): AppCapabilities | undefined {
   return GENERATED_CAPABILITIES.find((a) => a.app === appId);
 }
 
-export function getCapability(appId: string, capId: string): Capability | undefined {
-  return getAppCapabilities(appId)?.capabilities.find((c) => c.id === capId);
+export function getCapability(
+  appId: string,
+  path: string,
+  method?: string,
+): RouteCapability | undefined {
+  return getAppCapabilities(appId)?.capabilities.find(
+    (c) => c.path === path && (method === undefined || c.method === method),
+  );
 }

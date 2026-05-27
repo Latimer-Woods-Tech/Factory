@@ -197,7 +197,8 @@ def collect_anthropic(target_day: str) -> list[CostLine]:
         "next_page": null
       }
 
-    `amount` is a STRING; sum across all results in the target day's bucket.
+    `amount` is a STRING in minor currency units (cents for USD); sum across
+    all results in the target day's bucket, then convert to dollars.
     Requires an admin/service API key (sk-ant-admin01-* or svac_*) — regular
     sk-ant-api* keys are rejected with 401 "invalid x-api-key".
     """
@@ -245,8 +246,10 @@ def collect_anthropic(target_day: str) -> list[CostLine]:
             break
         url = next_url  # Anthropic returns absolute URL for next page
 
-    return [CostLine("anthropic", "LLM tokens", round(total, 2),
+    total_usd = total / 100.0
+    return [CostLine("anthropic", "LLM tokens", round(total_usd, 2),
                      detail={"daily_cap_usd": ANTHROPIC_DAILY_CAP_USD,
+                             "raw_minor_units": round(total, 4),
                              "window": [start, end], "pages_fetched": pages})]
 
 

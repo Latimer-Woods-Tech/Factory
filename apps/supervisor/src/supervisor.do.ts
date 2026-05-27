@@ -399,10 +399,11 @@ export class SupervisorDO {
 
     // Load templates and find the matching one
     const templates = await loadTemplates();
-    const template = templates.find((t) => {
-      const tVersion = (t as unknown as { version?: number }).version ?? 1;
-      return t.id === templateId && tVersion === version;
-    });
+    // Templates carry no explicit `version` field today; a versionless template
+    // is treated as version 1 so the default `version ?? 1` request matches.
+    const template = templates.find(
+      (t) => t.id === templateId && ((t as unknown as { version?: number }).version ?? 1) === version,
+    );
     if (!template) {
       return Response.json(
         { error: `Template not found: ${templateId}@${version}` },
@@ -419,7 +420,8 @@ export class SupervisorDO {
     // Check if all steps succeeded
     const allSucceeded = receipts.every((r) => r.result.ok);
     const now = Date.now();
-    const runId = `${templateId}-${version}-${now}`;
+    // UUID run IDs so factory_runs_mirror (UUID PK) can store them verbatim.
+    const runId = crypto.randomUUID();
 
     // If execution succeeded and acceptance_gate is set, run verifier
     if (allSucceeded && template.acceptance_gate) {
@@ -451,23 +453,23 @@ export class SupervisorDO {
 
     // Insert run record into supervisor_runs
     const runStatus = allSucceeded ? 'passed' : 'failed_execution';
-    await this.env.MEMORY.prepare(
+    const finishedAt = Date.now();
+    const runStmt = this.env.MEMORY.prepare(
       `INSERT INTO supervisor_runs
        (id, template_id, template_version, description, source, status, dry_run, started_at, finished_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-      .bind(
-        runId,
-        templateId,
-        version,
-        description.slice(0, 500),
-        source,
-        runStatus,
-        0,
-        now,
-        Date.now(),
-      )
-      .all();
+    ).bind(
+      runId,
+      templateId,
+      version,
+      description.slice(0, 500),
+      source,
+      runStatus,
+      0, // not a dry run (checked earlier)
+      now,
+      finishedAt,
+    );
+    await runStmt.all();
 
     // Attempt to open a PR post-verification (if there are mutating steps)
     let prUrl: string | null = null;
@@ -485,44 +487,56 @@ export class SupervisorDO {
       if (prResult.ok && prResult.pr_url) {
         prUrl = prResult.pr_url;
         // Update supervisor_runs with PR URL
-        await this.env.MEMORY.prepare(
+        const updateStmt = this.env.MEMORY.prepare(
           `UPDATE supervisor_runs SET pr_url = ?, pr_opened_at = ? WHERE id = ?`,
-        )
-          .bind(prUrl, Date.now(), runId)
-          .all();
+        ).bind(prUrl, Date.now(), runId);
+        await updateStmt.all();
       } else if (!prResult.ok && prResult.error) {
         prOpenError = prResult.error.slice(0, 500);
         // Log gracefully (don't fail the run)
-        await this.env.MEMORY.prepare(
+        const updateStmt = this.env.MEMORY.prepare(
           `UPDATE supervisor_runs SET pr_open_error = ? WHERE id = ?`,
-        )
-          .bind(prOpenError, runId)
-          .all();
+        ).bind(prOpenError, runId);
+        await updateStmt.all();
       }
     }
 
+    // Push-on-write: best-effort notify factory-core-api of the terminal state.
+    // Never throws — a push failure does not mask the run result.
+    await pushRunToFactoryCoreApi(this.env, {
+      id: runId,
+      templateId,
+      templateVersion: version,
+      description,
+      source,
+      status: runStatus,
+      dryRun: false,
+      prUrl,
+      startedAt: now,
+      finishedAt,
+    });
+
     // Log all receipts to D1 (only if execution succeeded and verification passed if applicable)
     for (const receipt of receipts) {
-      await this.env.MEMORY.prepare(
+      const stmt = this.env.MEMORY.prepare(
         `INSERT INTO supervisor_steps
          (run_id, template_id, template_version, step_index, tool_name, side_effects, slots_json, result_json, jwt_scope, execution_ms, executed_at, awaiting_approval)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-        .bind(
-          runId,
-          templateId,
-          version,
-          receipt.step_index,
-          receipt.tool_name,
-          receipt.side_effects,
-          JSON.stringify(receipt.slots_provided),
-          JSON.stringify(receipt.result),
-          receipt.jwt_scope,
-          receipt.execution_ms,
-          receipt.executed_at,
-          receipt.awaiting_approval ?? null,
-        )
-        .all();
+      ).bind(
+        runId,
+        templateId,
+        version,
+        receipt.step_index,
+        receipt.tool_name,
+        receipt.side_effects,
+        JSON.stringify(receipt.slots_provided),
+        JSON.stringify(receipt.result),
+        receipt.jwt_scope,
+        receipt.execution_ms,
+        receipt.executed_at,
+        receipt.awaiting_approval ?? null,
+      );
+      await stmt.all();
     }
 
     return Response.json({
@@ -572,5 +586,73 @@ export class SupervisorDO {
     } catch (err) {
       console.error('[supervisor] releaseLock error:', err);
     }
+  }
+}
+
+/**
+ * Best-effort push of a terminal run record to factory-core-api /v1/runs/mirror.
+ * Never throws — a push failure must never mask the run result.
+ */
+async function pushRunToFactoryCoreApi(
+  env: Env,
+  run: {
+    id: string;
+    templateId: string;
+    templateVersion: number;
+    description: string;
+    source: string;
+    status: string;
+    dryRun: boolean;
+    prUrl: string | null;
+    startedAt: number;
+    finishedAt: number;
+  },
+): Promise<void> {
+  const baseUrl = env.FACTORY_CORE_API_URL;
+  const pushKey = env.SUPERVISOR_PUSH_KEY;
+  if (!baseUrl || !pushKey) return;
+
+  try {
+    const resp = await fetch(`${baseUrl}/v1/runs/mirror`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${pushKey}`,
+      },
+      body: JSON.stringify({
+        id: run.id,
+        template_id: run.templateId,
+        template_version: run.templateVersion,
+        description: run.description,
+        source: run.source,
+        status: run.status,
+        dry_run: run.dryRun,
+        pr_url: run.prUrl,
+        started_at: new Date(run.startedAt).toISOString(),
+        finished_at: new Date(run.finishedAt).toISOString(),
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.warn(
+        JSON.stringify({
+          level: 'warn',
+          msg: 'push-on-write failed',
+          run_id: run.id,
+          http_status: resp.status,
+          body: text.slice(0, 200),
+        }),
+      );
+    }
+  } catch (err) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        msg: 'push-on-write error',
+        run_id: run.id,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
   }
 }
