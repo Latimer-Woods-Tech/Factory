@@ -39,7 +39,7 @@
 **Responsibility:** Team C lead
 
 **Required from Team C:**
-1. **FACTORY_CROSS_REPO_URL** — Worker base URL (e.g., `https://factory-cross-repo-worker.adrper79.workers.dev`)
+1. **FACTORY_CROSS_REPO_URL** — Worker base URL (e.g., `https://factory-cross-repo.adrper79.workers.dev`)
 2. **FACTORY_CROSS_REPO_TOKEN** — Bearer token for authentication
 
 **Where to provide:** Reply to Factory #974 (GitHub Issue) with both values
