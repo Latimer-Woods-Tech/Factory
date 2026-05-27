@@ -12,7 +12,6 @@
 //   /admin mutations (any tier) → REQUEST_CHANGES (FRIDGE rule 4)
 
 import { readFileSync } from 'node:fs';
-import { buildConstraintSystemBlock } from './constraints-loader.mjs';
 
 const ORG = 'Latimer-Woods-Tech';
 const REVIEW_BOT_LOGIN = 'factory-cross-repo[bot]';
@@ -437,6 +436,18 @@ function loadDoc(filePath, maxChars = 8000) {
 // Tracks which docs were missing at load time so the review body can surface the gap.
 const MISSING_DOCS = [];
 
+function extractHardConstraints(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    // Extract "## Hard Constraints" section and everything until the next ## header
+    const match = content.match(/## Hard Constraints\n([\s\S]*?)(?:\n## |\Z)/);
+    if (!match) return null;
+    return `## Hard Constraints\n${match[1].trim()}`;
+  } catch {
+    return null;
+  }
+}
+
 function buildConstraintBlock(repoName) {
   const sections = [];
 
@@ -445,8 +456,8 @@ function buildConstraintBlock(repoName) {
   // risk from the 8 000-char loading limit on the full CLAUDE.md below.
   // For cross-repo reviews we still load from factory CLAUDE.md because that
   // is the authoritative source; per-repo extensions are handled further down.
-  const hardConstraintsBlock = buildConstraintSystemBlock('CLAUDE.md');
-  sections.push(hardConstraintsBlock);
+  const hardConstraintsBlock = extractHardConstraints('CLAUDE.md');
+  if (hardConstraintsBlock) sections.push(hardConstraintsBlock);
 
   const claudeMd = loadDoc('CLAUDE.md');
   if (claudeMd) {

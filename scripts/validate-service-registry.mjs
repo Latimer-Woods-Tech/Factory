@@ -89,6 +89,12 @@ const WORKFLOW_RULES = [
     verifier: 'verify-http-endpoint.mjs',
     targets: [{ id: 'factory-core-api', key: 'default' }],
   },
+  {
+    path: '.github/workflows/deploy-qa-tools-worker.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'qa-tools-worker', key: 'default' }],
+  },
 ];
 
 // Keep contract validation intentionally narrow. This only covers local workers
@@ -168,6 +174,10 @@ const EXPLICIT_EXEMPTIONS = new Map([
   // failed derivations. No HTTP verifier step by design, so it cannot use a
   // URL-based WORKFLOW_RULES entry; the registry entry documents the cron contract.
   ['.github/workflows/deploy-factory-events-replay.yml', 'factory-events-replay — cron-only Worker, no public route to verify'],
+  // Internal engineering dashboard deployed via _app-deploy-pages.yml reusable workflow.
+  // No custom domain attached in Phase 1 (health_url is empty in the deploy workflow).
+  // Full verification coverage will be added when the domain is provisioned.
+  ['.github/workflows/deploy-qa-tools-ui.yml', 'qa-tools-ui — internal Pages app, no health_url in Phase 1 deploy; pending domain attachment'],
 ]);
 
 const registry = await loadRegistry(REGISTRY_PATH);
