@@ -72,7 +72,6 @@ function getMissingCompleteLlmConfig(
   >,
 ): string[] {
   const missing: string[] = [];
-  if (!env.AI_GATEWAY_BASE_URL) missing.push('AI_GATEWAY_BASE_URL');
   if (!env.ANTHROPIC_API_KEY) missing.push('ANTHROPIC_API_KEY');
   if (!env.VERTEX_ACCESS_TOKEN) missing.push('VERTEX_ACCESS_TOKEN');
   if (!env.VERTEX_PROJECT) missing.push('VERTEX_PROJECT');
@@ -316,10 +315,6 @@ ai.post('/chat', async (c) => {
   if (!c.env.ANTHROPIC_API_KEY) {
     return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
   }
-  // All provider calls must route through Cloudflare AI Gateway (STACK.md).
-  if (!c.env.AI_GATEWAY_BASE_URL) {
-    return c.json({ error: 'AI_GATEWAY_BASE_URL not configured' }, 503);
-  }
 
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
@@ -370,7 +365,9 @@ ai.post('/chat', async (c) => {
 
   // Tool-use agentic loop (non-streaming for now)
   const apiKey = c.env.ANTHROPIC_API_KEY;
-  const baseUrl = `${c.env.AI_GATEWAY_BASE_URL}/anthropic`;
+  const baseUrl = c.env.AI_GATEWAY_BASE_URL
+    ? `${c.env.AI_GATEWAY_BASE_URL}/anthropic`
+    : 'https://api.anthropic.com'; // Direct Anthropic API if gateway not configured
 
   const agentMessages = [...messages];
   let finalText = '';
