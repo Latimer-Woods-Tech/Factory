@@ -8,7 +8,7 @@
 #   Authenticates to GitHub Packages so private @latimer-woods-tech/* deps resolve.
 #
 # WHO CALLS IT
-#   App repos that use pnpm. Currently: videoking.
+#   App repos that use pnpm. Currently: capricast (formerly videoking).
 #   Use _app-ci.yml for npm-based apps.
 #
 # HOW TO CALL
