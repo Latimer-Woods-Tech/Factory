@@ -61,10 +61,40 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Dry-run: skip token requirement and show token resolution status
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            echo "🔍 DRY RUN — no API calls will be made"
+            echo "  Would create 6 monitors for cypherofhealing.com"
+            echo "  Would create status page: CypherOfHealing Platform Status"
+            echo ""
+            if [ -n "${BETTERSTACK_API_TOKEN:-}" ]; then
+              echo "  ✅ BetterStack token: found in GCP (${#BETTERSTACK_API_TOKEN} chars)"
+            else
+              echo "  ❌ BetterStack token: NOT FOUND in GCP Secret Manager"
+              echo "     To add it, run:"
+              echo "       printf '%s' '<token>' | gcloud secrets create betterstack-api-key --data-file=- --project=factory-495015"
+              echo "       gcloud secrets add-iam-policy-binding betterstack-api-key \\"
+              echo "         --member=serviceAccount:supervisor-sa@factory-495015.iam.gserviceaccount.com \\"
+              echo "         --role=roles/secretmanager.secretAccessor --project=factory-495015"
+            fi
+            if [ -n "${POSTHOG_PROJECT_TOKEN:-}" ]; then
+              echo "  ✅ PostHog token: found in GCP (${#POSTHOG_PROJECT_TOKEN} chars)"
+            else
+              echo "  ❌ PostHog token: NOT FOUND in GCP Secret Manager"
+            fi
+            exit 0
+          fi
+
           if [ -z "${BETTERSTACK_API_TOKEN:-}" ]; then
             echo "❌ BETTERSTACK_API_TOKEN not found in GCP Secret Manager"
             echo "   Tried: betterstack-api-key, betterstack-uptime-api-key, betterstack-uptime-token"
-            echo "   Create the secret with: printf '%s' '<token>' | gcloud secrets create betterstack-api-key --data-file=- --project=factory-495015"
+            echo "   Create the secret with:"
+            echo "     printf '%s' '<your-token>' | gcloud secrets create betterstack-api-key \\"
+            echo "       --data-file=- --project=factory-495015"
+            echo "   Then grant access:"
+            echo "     gcloud secrets add-iam-policy-binding betterstack-api-key \\"
+            echo "       --member=serviceAccount:supervisor-sa@factory-495015.iam.gserviceaccount.com \\"
+            echo "       --role=roles/secretmanager.secretAccessor --project=factory-495015"
             exit 1
           fi
 
@@ -78,13 +108,6 @@ jobs:
             curl -sf -X POST -H "$AUTH_HEADER" -H "Content-Type: application/json" \
               "$BS_BASE/$path" -d "$*"
           }
-
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "🔍 DRY RUN — no API calls will be made"
-            log "Would create 6 monitors for cypherofhealing.com"
-            log "Would create status page: CypherOfHealing Platform Status"
-            exit 0
-          fi
 
           echo "── Step 1: Fetch existing monitors to avoid duplicates ──"
           EXISTING=$(api_get "monitors?per_page=100" | python3 -c "
