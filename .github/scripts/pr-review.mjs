@@ -12,6 +12,7 @@
 //   /admin mutations (any tier) → REQUEST_CHANGES (FRIDGE rule 4)
 
 import { readFileSync } from 'node:fs';
+import { buildConstraintSystemBlock } from './constraints-loader.mjs';
 
 const ORG = 'Latimer-Woods-Tech';
 const REVIEW_BOT_LOGIN = 'factory-cross-repo[bot]';
@@ -39,6 +40,10 @@ const {
   // Shape: Array<{ class: string; label: string; patterns: string[]; reviewers: string[] }>
   // When set, these entries are merged with (and override) the built-in defaults.
   REVIEWER_HINTS_MAP,
+  // Factory Core API — ingest gate rows for the Command Center (P2.3).
+  // Both vars are optional; gate writes are best-effort and never block reviews.
+  FACTORY_CORE_API_URL,
+  FACTORY_CORE_API_INGEST_KEY,
 } = process.env;
 
 const MAX_ATTEMPTS = parseInt(MAX_REVIEW_ATTEMPTS, 10);
@@ -434,6 +439,14 @@ const MISSING_DOCS = [];
 
 function buildConstraintBlock(repoName) {
   const sections = [];
+
+  // Prepend the focused Hard Constraints block (parsed live from CLAUDE.md) so
+  // the LLM always sees it at the top of the context, before any truncation
+  // risk from the 8 000-char loading limit on the full CLAUDE.md below.
+  // For cross-repo reviews we still load from factory CLAUDE.md because that
+  // is the authoritative source; per-repo extensions are handled further down.
+  const hardConstraintsBlock = buildConstraintSystemBlock('CLAUDE.md');
+  sections.push(hardConstraintsBlock);
 
   const claudeMd = loadDoc('CLAUDE.md');
   if (claudeMd) {
@@ -1314,6 +1327,58 @@ async function main() {
   }
 
   console.log(`[DONE] ${repo}#${prNum} → ${decision}`);
+
+  // ─── Gate ingest (best-effort, non-blocking) ──────────────────────────────
+  // POST to factory-core-api so the Command Center reflects claude-review gate
+  // outcomes in near-real-time. Silently skipped when credentials are absent.
+  await postGateRow({
+    repo,
+    prNum,
+    prSha: PR_SHA ?? '',
+    tier,
+    decision,
+    violationCount: deterministicResult.violations.length +
+      (llmResult?.architectural_concerns?.length ?? 0),
+  }).catch(err => console.warn(`[WARN] Gate ingest skipped: ${err.message.slice(0, 120)}`));
+}
+
+/**
+ * Posts a claude-review gate row to factory-core-api (P2.3).
+ * Fire-and-forget: caller wraps in .catch() so failures never block the review.
+ */
+async function postGateRow({ repo, prNum, prSha, tier, decision, violationCount }) {
+  if (!FACTORY_CORE_API_URL || !FACTORY_CORE_API_INGEST_KEY) return;
+
+  const prUrl = `https://github.com/${ORG}/${repo}/pull/${prNum}`;
+  const state = decision === 'APPROVE' ? 'passed' : 'failed';
+
+  const body = {
+    gate_type: 'claude-review',
+    source_system: 'factory-cross-repo',
+    source_ref: prUrl,
+    source_event_id: `${repo}#PR-${prNum}@${prSha}`,
+    subject_type: 'pr',
+    subject_repo: `${ORG}/${repo}`,
+    subject_ref: String(prNum),
+    state,
+    evidence_url: prUrl,
+    evidence_summary: { tier, decision, violation_count: violationCount },
+    observed_at: new Date().toISOString(),
+  };
+
+  const res = await fetch(`${FACTORY_CORE_API_URL}/v1/gates`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${FACTORY_CORE_API_INGEST_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`factory-core-api ${res.status}: ${text.slice(0, 200)}`);
+  }
+  console.log(`[OK] Gate row posted: ${state} (violation_count=${violationCount})`);
 }
 
 main().catch(err => {

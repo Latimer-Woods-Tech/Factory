@@ -1,20 +1,20 @@
 # Platform Conformance — Shadow Mode
 
-*Generated: 2026-05-25 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
+*Generated: 2026-05-27 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
 
 ## Cohesion summary
 
 | Repo | Cohesion | Stack (10) | Code patterns (15) | Tests (15) | Observability (10) | Security (15) | Schema (5) | Workflows (10) | Release (5) | Performance (10) | Privacy (5) |
 |------|---------:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
-| HumanDesign | **50** | 40 | 0 | 100 | 40 | 80 | 33 | 33 | 67 | 67 | 0 |
-| capricast | **37** | 20 | 20 | 40 | 40 | 60 | 0 | 33 | 33 | 67 | 33 |
-| factory-admin-studio | **57** | 60 | 80 | 20 | 40 | 80 | 67 | 33 | 67 | 100 | 0 |
-| cypher-healing | **37** | 60 | 80 | 60 | 0 | 20 | 33 | 33 | 33 | 0 | 0 |
-| xico-city | **49** | 80 | 80 | 60 | 0 | 20 | 67 | 33 | 33 | 67 | 33 |
+| HumanDesign | **53** | 40 | 0 | 100 | 40 | 80 | 67 | 33 | 67 | 67 | 25 |
+| capricast | **42** | 40 | 20 | 40 | 40 | 60 | 33 | 33 | 33 | 67 | 50 |
+| factory-admin-studio | **62** | 60 | 80 | 20 | 40 | 80 | 100 | 33 | 67 | 100 | 75 |
+| cypher-healing | **40** | 60 | 80 | 60 | 0 | 20 | 67 | 33 | 33 | 0 | 25 |
+| xico-city | **51** | 80 | 80 | 60 | 0 | 20 | 100 | 33 | 33 | 67 | 50 |
 
 **Shadow threshold:** 70. Below this would block deploys once Stage 4 ships.
 
-## HumanDesign — 50/100
+## HumanDesign — 53/100
 
 ### Stack — 40/100 (weight 10)
 - ❌ wrangler.jsonc present
@@ -51,9 +51,9 @@
 - ❌ Trusted Publishers (OIDC)
 - ✅ Renovate config present
 
-### Schema — 33/100 (weight 5)
+### Schema — 67/100 (weight 5)
 - ✅ Migrations directory present
-- ❌ ROLLBACK block in sample
+- ✅ ROLLBACK block enforced — WARN: 2 existing migration(s) missing -- ROLLBACK: block (debt — not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql
 - ❌ Numbered file naming
 
 ### Workflows — 33/100 (weight 10)
@@ -71,16 +71,17 @@
 - ❌ Canary or post-deploy verify
 - ✅ Synthetic / smoke workflow
 
-### Privacy — 0/100 (weight 5)
+### Privacy — 25/100 (weight 5)
 - ❌ PII_INVENTORY.md present
 - ❌ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
+- ✅ Migration PII columns documented
 
-## capricast — 37/100
+## capricast — 42/100
 
-### Stack — 20/100 (weight 10)
+### Stack — 40/100 (weight 10)
 - ❌ wrangler.jsonc present
-- ❌ ESM ('type': 'module')
+- ✅ ESM ('type': 'module')
 - ❌ Hono in deps
 - ❌ No node:crypto imports
 - ✅ No Express
@@ -113,9 +114,9 @@
 - ❌ Trusted Publishers (OIDC)
 - ✅ Renovate config present
 
-### Schema — 0/100 (weight 5)
+### Schema — 33/100 (weight 5)
 - ❌ Migrations directory present
-- ❌ ROLLBACK block in sample
+- ✅ ROLLBACK block enforced
 - ❌ Numbered file naming
 
 ### Workflows — 33/100 (weight 10)
@@ -133,12 +134,13 @@
 - ✅ Canary or post-deploy verify
 - ❌ Synthetic / smoke workflow
 
-### Privacy — 33/100 (weight 5)
+### Privacy — 50/100 (weight 5)
 - ✅ PII_INVENTORY.md present
 - ❌ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
+- ✅ Migration PII columns documented
 
-## factory-admin-studio — 57/100
+## factory-admin-studio — 62/100
 
 ### Stack — 60/100 (weight 10)
 - ❌ wrangler.jsonc present
@@ -175,9 +177,9 @@
 - ✅ Trusted Publishers (OIDC)
 - ✅ Renovate config present
 
-### Schema — 67/100 (weight 5)
+### Schema — 100/100 (weight 5)
 - ✅ Migrations directory present
-- ❌ ROLLBACK block in sample
+- ✅ ROLLBACK block enforced — WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt — not blocking): migrations/0100_studio_entitlements.sql
 - ✅ Numbered file naming
 
 ### Workflows — 33/100 (weight 10)
@@ -195,12 +197,13 @@
 - ✅ Canary or post-deploy verify
 - ✅ Synthetic / smoke workflow
 
-### Privacy — 0/100 (weight 5)
-- ❌ PII_INVENTORY.md present
-- ❌ Retention policy doc present
+### Privacy — 75/100 (weight 5)
+- ✅ PII_INVENTORY.md present
+- ✅ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
+- ✅ Migration PII columns documented
 
-## cypher-healing — 37/100
+## cypher-healing — 40/100
 
 ### Stack — 60/100 (weight 10)
 - ✅ wrangler.jsonc present
@@ -237,9 +240,9 @@
 - ❌ Trusted Publishers (OIDC)
 - ❌ Renovate config present
 
-### Schema — 33/100 (weight 5)
+### Schema — 67/100 (weight 5)
 - ✅ Migrations directory present
-- ❌ ROLLBACK block in sample
+- ✅ ROLLBACK block enforced — WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt — not blocking): src/db/migrations/add-product-images.sql
 - ❌ Numbered file naming
 
 ### Workflows — 33/100 (weight 10)
@@ -257,12 +260,13 @@
 - ❌ Canary or post-deploy verify
 - ❌ Synthetic / smoke workflow
 
-### Privacy — 0/100 (weight 5)
+### Privacy — 25/100 (weight 5)
 - ❌ PII_INVENTORY.md present
 - ❌ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
+- ✅ Migration PII columns documented
 
-## xico-city — 49/100
+## xico-city — 51/100
 
 ### Stack — 80/100 (weight 10)
 - ✅ wrangler.jsonc present
@@ -299,9 +303,9 @@
 - ❌ Trusted Publishers (OIDC)
 - ❌ Renovate config present
 
-### Schema — 67/100 (weight 5)
+### Schema — 100/100 (weight 5)
 - ✅ Migrations directory present
-- ❌ ROLLBACK block in sample
+- ✅ ROLLBACK block enforced — WARN: 16 existing migration(s) missing -- ROLLBACK: block (debt — not blocking): src/db/migrations/0000_smart_titania.down.sql, src/db/migrations/0000_smart_titania.sql, src/db/migrations/0001_rls_policies.down.sql, src/db/migrations/0001_rls_policies.sql, src/db/migrations/0002_burly_luke_cage.down.sql, src/db/migrations/0002_burly_luke_cage.sql, src/db/migrations/0003_betterauth_rls.down.sql, src/db/migrations/0003_betterauth_rls.sql, src/db/migrations/0004_worried_jetstream.down.sql, src/db/migrations/0004_worried_jetstream.sql, src/db/migrations/0005_notifications_rls.down.sql, src/db/migrations/0005_notifications_rls.sql, src/db/migrations/0006_previous_tyger_tiger.down.sql, src/db/migrations/0006_previous_tyger_tiger.sql, src/db/migrations/0007_search_indexes.down.sql, src/db/migrations/0007_search_indexes.sql
 - ✅ Numbered file naming
 
 ### Workflows — 33/100 (weight 10)
@@ -319,7 +323,8 @@
 - ✅ Canary or post-deploy verify
 - ✅ Synthetic / smoke workflow
 
-### Privacy — 33/100 (weight 5)
+### Privacy — 50/100 (weight 5)
 - ❌ PII_INVENTORY.md present
 - ✅ Retention policy doc present
 - ❌ DSR endpoint hints (export + delete)
+- ✅ Migration PII columns documented — WARN: 7 existing migration PII column(s) not documented in PII_INVENTORY.md (debt — not blocking): src/db/migrations/0000_smart_titania.sql: avatar_r2_key, src/db/migrations/0000_smart_titania.sql: email, src/db/migrations/0000_smart_titania.sql: email_verified, src/db/migrations/0000_smart_titania.sql: ip_address, src/db/migrations/0000_smart_titania.sql: stripe_customer_id, src/db/migrations/0000_smart_titania.sql: user_agent, src/db/migrations/0004_worried_jetstream.sql: emailed_at

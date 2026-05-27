@@ -171,6 +171,7 @@ async function buildPulseSnapshot() {
 
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
+await copyFile(join(srcDir, 'privacy.html'), join(distDir, 'privacy.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });

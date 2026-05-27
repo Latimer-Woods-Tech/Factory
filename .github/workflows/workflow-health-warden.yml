@@ -59,17 +59,17 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
 
       - name: Set up Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
 
       - name: Mint factory-cross-repo App token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -82,14 +82,10 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
           PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
-          # DRY-RUN DEFAULT for the shakeout period after first merge to main.
-          # Scheduled runs produce WARDEN_AUDIT log lines but make no state
-          # changes (no issues opened, no Pushover paging, no workflow disables).
-          # The operator can review actual evaluations before letting the Warden
-          # act. To go live: change 'true' to 'false' in a follow-up PR after
-          # observing 7+ days of clean dry-run output. Manual workflow_dispatch
-          # can override per-run via the dry_run input.
-          WARDEN_DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          # DRY-RUN now defaults to false — warden is live as of 2026-05-26.
+          # Override per-run with the dry_run workflow_dispatch input.
+          # To pause: gh workflow disable workflow-health-warden.yml
+          WARDEN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: node .github/scripts/workflow-health-warden.mjs
 
       - name: Summary

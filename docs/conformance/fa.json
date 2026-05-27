@@ -2,8 +2,8 @@
   "repo_key": "FA",
   "repo_name": "factory-admin-studio",
   "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-05-25T09:09:38.795898+00:00",
-  "cohesion": 57,
+  "timestamp": "2026-05-27T08:51:45.779703+00:00",
+  "cohesion": 62,
   "dimensions": [
     {
       "key": "stack",
@@ -174,7 +174,7 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 67,
+      "score": 100,
       "checks": [
         {
           "name": "Migrations directory present",
@@ -182,9 +182,9 @@
           "detail": ""
         },
         {
-          "name": "ROLLBACK block in sample",
-          "passed": false,
-          "detail": ""
+          "name": "ROLLBACK block enforced",
+          "passed": true,
+          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/0100_studio_entitlements.sql"
         },
         {
           "name": "Numbered file naming",
@@ -266,21 +266,26 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 0,
+      "score": 75,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Retention policy doc present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "DSR endpoint hints (export + delete)",
           "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Migration PII columns documented",
+          "passed": true,
           "detail": ""
         }
       ]
