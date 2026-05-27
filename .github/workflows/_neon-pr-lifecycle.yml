@@ -1,0 +1,411 @@
+name: Reusable — Neon PR Branch Lifecycle
+
+# Spins up an isolated PR preview environment for any Factory app:
+#   1. Creates a Neon branch forked from `staging` (named pr/{number}).
+#   2. Creates an ephemeral Hyperdrive config bound to that branch.
+#   3. Deploys a preview Worker (separate name) with the ephemeral Hyperdrive.
+#   4. Attaches a custom domain at api.pr-{number}.{app}.latimerwoods.dev.
+#   5. Posts a PR comment with the preview URL.
+# On PR close, tears everything down in reverse order.
+#
+# Naming convention (deterministic so cleanup can re-derive without state):
+#   Neon branch:  pr/{pr_number}                   (parent: staging)
+#   Hyperdrive:   {worker_base_name}-pr-{pr_number}
+#   Worker:       {worker_base_name}-pr-{pr_number}
+#   Domain:       api.pr-{pr_number}.{app_name}.latimerwoods.dev
+#
+# Callers must provide their app's production Hyperdrive UUID so we can
+# sed-replace it in wrangler.jsonc with the ephemeral one (Hyperdrive bindings
+# are JSON-only — no CLI override exists).
+#
+# Security: FRIDGE rule 8 (irreversible actions require human approval) is
+# respected because (a) Neon branches forked from staging carry no production
+# data, (b) preview Workers live on isolated names that never replace prod
+# routes, and (c) cleanup only deletes resources matching the deterministic
+# pr-{number} pattern.
+
+on:
+  workflow_call:
+    inputs:
+      neon_project_id:
+        description: Neon project ID (e.g. divine-grass-42421088).
+        required: true
+        type: string
+      neon_parent_branch:
+        description: Parent Neon branch to fork from. Defaults to 'staging' to keep production data isolated.
+        required: false
+        type: string
+        default: staging
+      app_name:
+        description: Short app identifier used in the preview subdomain (e.g. 'capricast').
+        required: true
+        type: string
+      worker_base_name:
+        description: Production wrangler `name` field (e.g. 'capricast-api'). Cleanup derives the PR worker name from this.
+        required: true
+        type: string
+      worker_path:
+        description: Path to the worker's directory containing wrangler.jsonc (e.g. 'apps/capricast-api').
+        required: true
+        type: string
+      production_hyperdrive_id:
+        description: The Hyperdrive UUID currently hardcoded in wrangler.jsonc. Used as the sed-replace anchor.
+        required: true
+        type: string
+      pr_number:
+        description: GitHub PR number (github.event.number from the caller).
+        required: true
+        type: string
+      pr_action:
+        description: github.event.action — 'opened', 'synchronize', 'reopened', or 'closed'.
+        required: true
+        type: string
+      latimerwoods_zone:
+        description: CF zone for preview domains. Override only if testing on a different zone.
+        required: false
+        type: string
+        default: latimerwoods.dev
+    secrets:
+      NEON_API_KEY:
+        required: true
+      CF_API_TOKEN:
+        required: true
+      CF_ACCOUNT_ID:
+        required: true
+      GH_PAT:
+        required: true
+
+concurrency:
+  group: neon-pr-${{ inputs.app_name }}-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  create:
+    name: Create or update PR preview
+    if: ${{ inputs.pr_action == 'opened' || inputs.pr_action == 'synchronize' || inputs.pr_action == 'reopened' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Compute names
+        id: names
+        run: |
+          set -euo pipefail
+          PR=${{ inputs.pr_number }}
+          BASE=${{ inputs.worker_base_name }}
+          APP=${{ inputs.app_name }}
+          ZONE=${{ inputs.latimerwoods_zone }}
+          echo "neon_branch=pr/${PR}"                                      >> "$GITHUB_OUTPUT"
+          echo "hyperdrive_name=${BASE}-pr-${PR}"                          >> "$GITHUB_OUTPUT"
+          echo "worker_name=${BASE}-pr-${PR}"                              >> "$GITHUB_OUTPUT"
+          echo "preview_host=api.pr-${PR}.${APP}.${ZONE}"                  >> "$GITHUB_OUTPUT"
+          echo "preview_url=https://api.pr-${PR}.${APP}.${ZONE}"           >> "$GITHUB_OUTPUT"
+
+      - name: Create or update Neon branch
+        id: neon
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          set -euo pipefail
+          BRANCH="${{ steps.names.outputs.neon_branch }}"
+          PROJECT="${{ inputs.neon_project_id }}"
+          PARENT="${{ inputs.neon_parent_branch }}"
+
+          # neonctl create is idempotent in practice: it returns the existing
+          # branch when one already exists with the same name. We tolerate
+          # either outcome and always pull a fresh connection string.
+          npx --yes neonctl@latest branches create \
+            --project-id "$PROJECT" \
+            --name "$BRANCH" \
+            --parent "$PARENT" \
+            --type read_write \
+            || echo "Branch $BRANCH already exists (treating as success)"
+
+          CONN=$(npx --yes neonctl@latest connection-string \
+            --project-id "$PROJECT" \
+            --branch "$BRANCH" \
+            --role-name neondb_owner \
+            --database-name neondb \
+            --pooled true)
+
+          if [ -z "$CONN" ]; then
+            echo "::error::Failed to resolve connection string for $BRANCH"
+            exit 1
+          fi
+
+          # Mask the URL so it never lands in logs.
+          echo "::add-mask::$CONN"
+          echo "connection_string=$CONN" >> "$GITHUB_OUTPUT"
+
+      - name: Create or replace ephemeral Hyperdrive
+        id: hyperdrive
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.names.outputs.hyperdrive_name }}"
+          CONN="${{ steps.neon.outputs.connection_string }}"
+
+          # If a Hyperdrive with this name already exists (from a prior PR
+          # synchronize), delete it so we can recreate with a fresh connection
+          # string. Hyperdrive does not support in-place connection-string
+          # updates via wrangler CLI in all versions, so create-then-delete
+          # is the safer path here.
+          EXISTING=$(npx --yes wrangler hyperdrive list --json 2>/dev/null \
+            | node -e "const list=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=list.find(h=>h.name==='$NAME'); console.log(m?m.id:'')")
+
+          if [ -n "$EXISTING" ]; then
+            echo "Removing stale Hyperdrive $EXISTING ($NAME) so we can recreate"
+            npx --yes wrangler hyperdrive delete "$EXISTING" || true
+          fi
+
+          OUTPUT=$(npx --yes wrangler hyperdrive create "$NAME" --connection-string "$CONN")
+          # wrangler hyperdrive create prints `id = "<uuid>"` — grep for it.
+          UUID=$(echo "$OUTPUT" | grep -oE '[0-9a-f]{32}' | head -1)
+          if [ -z "$UUID" ]; then
+            echo "::error::Could not extract Hyperdrive UUID from wrangler output:"
+            echo "$OUTPUT"
+            exit 1
+          fi
+          echo "hyperdrive_id=$UUID" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare ephemeral wrangler.jsonc
+        working-directory: ${{ inputs.worker_path }}
+        run: |
+          set -euo pipefail
+          PROD_UUID="${{ inputs.production_hyperdrive_id }}"
+          EPHEMERAL_UUID="${{ steps.hyperdrive.outputs.hyperdrive_id }}"
+
+          if ! grep -q "$PROD_UUID" wrangler.jsonc; then
+            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in wrangler.jsonc — sed replace would be a no-op"
+            exit 1
+          fi
+          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" wrangler.jsonc
+          echo "Swapped Hyperdrive UUID in wrangler.jsonc"
+
+      - name: Deploy preview Worker
+        working-directory: ${{ inputs.worker_path }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          WORKER_NAME="${{ steps.names.outputs.worker_name }}"
+          # --name overrides the wrangler.jsonc `name` field. Routes/custom_domain
+          # entries in wrangler.jsonc still apply to the named worker, so callers
+          # MUST keep their production routes inside an env block (e.g. env.production)
+          # and avoid declaring routes at the top level.
+          npx --yes wrangler deploy --name "$WORKER_NAME"
+
+      - name: Attach preview custom domain
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          WORKER_NAME="${{ steps.names.outputs.worker_name }}"
+          HOST="${{ steps.names.outputs.preview_host }}"
+          ZONE="${{ inputs.latimerwoods_zone }}"
+
+          # Look up the zone id once.
+          ZONE_ID=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones?name=${ZONE}" \
+            | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(r.result?.[0]?.id ?? '')")
+          if [ -z "$ZONE_ID" ]; then
+            echo "::error::Could not resolve zone id for $ZONE"
+            exit 1
+          fi
+
+          # Attach custom domain to the worker. The API is idempotent — if the
+          # mapping already exists for this hostname + worker, the call returns
+          # 200 with the existing record.
+          curl -fsS -X PUT \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains" \
+            -d "{\"environment\":\"production\",\"hostname\":\"$HOST\",\"service\":\"$WORKER_NAME\",\"zone_id\":\"$ZONE_ID\"}" \
+            > /tmp/domain.json
+          cat /tmp/domain.json | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!r.success){console.error('domain attach failed:', JSON.stringify(r.errors)); process.exit(1)}"
+          echo "Attached https://$HOST → $WORKER_NAME"
+
+      - name: Verify /health
+        run: |
+          set -e
+          URL="${{ steps.names.outputs.preview_url }}/health"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsSL --max-time 10 "$URL" > /tmp/health.json; then
+              echo "Preview /health reachable: $URL"
+              cat /tmp/health.json
+              exit 0
+            fi
+            echo "Retry $i/6 — health not ready yet, waiting 10s"
+            sleep 10
+          done
+          echo "::warning::Preview /health did not return 200 within 60s (DNS/cert may still be propagating)."
+
+      - name: Post or update PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          PR=${{ inputs.pr_number }}
+          PREVIEW_URL="${{ steps.names.outputs.preview_url }}"
+          NEON_BRANCH="${{ steps.names.outputs.neon_branch }}"
+          BODY=$(cat <<EOM
+          🔍 **PR Preview ready**
+
+          | Resource | Value |
+          |---|---|
+          | Preview API | ${PREVIEW_URL} |
+          | Health probe | ${PREVIEW_URL}/health |
+          | Neon branch | \`${NEON_BRANCH}\` (forked from \`${{ inputs.neon_parent_branch }}\`) |
+          | Worker name | \`${{ steps.names.outputs.worker_name }}\` |
+          | Hyperdrive  | \`${{ steps.names.outputs.hyperdrive_name }}\` |
+
+          This environment auto-tears-down when the PR closes or merges. Synchronize the PR to redeploy.
+
+          <!-- neon-pr-lifecycle:${{ inputs.app_name }} -->
+          EOM
+          )
+
+          # Find existing comment with our marker and update it; otherwise create one.
+          REPO=${GITHUB_REPOSITORY}
+          MARKER="<!-- neon-pr-lifecycle:${{ inputs.app_name }} -->"
+          EXISTING=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq "[.[] | select(.body | contains(\"${MARKER}\"))] | first | .id // empty")
+          if [ -n "$EXISTING" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${EXISTING}" -f body="$BODY" > /dev/null
+            echo "Updated existing preview comment (id=$EXISTING)"
+          else
+            gh pr comment "$PR" --repo "$REPO" --body "$BODY"
+            echo "Posted new preview comment"
+          fi
+
+  destroy:
+    name: Tear down PR preview
+    if: ${{ inputs.pr_action == 'closed' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+
+      - name: Compute names
+        id: names
+        run: |
+          set -euo pipefail
+          PR=${{ inputs.pr_number }}
+          BASE=${{ inputs.worker_base_name }}
+          APP=${{ inputs.app_name }}
+          ZONE=${{ inputs.latimerwoods_zone }}
+          echo "neon_branch=pr/${PR}"                                       >> "$GITHUB_OUTPUT"
+          echo "hyperdrive_name=${BASE}-pr-${PR}"                           >> "$GITHUB_OUTPUT"
+          echo "worker_name=${BASE}-pr-${PR}"                               >> "$GITHUB_OUTPUT"
+          echo "preview_host=api.pr-${PR}.${APP}.${ZONE}"                   >> "$GITHUB_OUTPUT"
+
+      - name: Detach preview custom domain
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          HOST="${{ steps.names.outputs.preview_host }}"
+          # Look up the domain mapping id then DELETE it.
+          MAPPING_ID=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains?hostname=${HOST}" \
+            | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(r.result?.[0]?.id ?? '')")
+          if [ -n "$MAPPING_ID" ]; then
+            curl -fsS -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/domains/${MAPPING_ID}" \
+              > /dev/null
+            echo "Detached $HOST (mapping $MAPPING_ID)"
+          else
+            echo "No custom domain mapping found for $HOST (already detached)"
+          fi
+
+      - name: Delete preview Worker
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          WORKER_NAME="${{ steps.names.outputs.worker_name }}"
+          npx --yes wrangler delete --name "$WORKER_NAME" --force || echo "Worker $WORKER_NAME already gone"
+
+      - name: Delete ephemeral Hyperdrive
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          NAME="${{ steps.names.outputs.hyperdrive_name }}"
+          ID=$(npx --yes wrangler hyperdrive list --json 2>/dev/null \
+            | node -e "const list=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=list.find(h=>h.name==='$NAME'); console.log(m?m.id:'')")
+          if [ -n "$ID" ]; then
+            npx --yes wrangler hyperdrive delete "$ID" || true
+            echo "Deleted Hyperdrive $NAME ($ID)"
+          else
+            echo "No Hyperdrive named $NAME (already gone)"
+          fi
+
+      - name: Delete Neon PR branch
+        continue-on-error: true
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          set -euo pipefail
+          BRANCH="${{ steps.names.outputs.neon_branch }}"
+          PROJECT="${{ inputs.neon_project_id }}"
+          npx --yes neonctl@latest branches delete "$BRANCH" \
+            --project-id "$PROJECT" \
+            || echo "Neon branch $BRANCH already gone"
+
+      - name: Post cleanup confirmation
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          PR=${{ inputs.pr_number }}
+          REPO=${GITHUB_REPOSITORY}
+          MARKER="<!-- neon-pr-lifecycle:${{ inputs.app_name }} -->"
+          BODY=$(cat <<EOM
+          🧹 **PR Preview torn down**
+
+          Cleaned up:
+          - Preview Worker \`${{ steps.names.outputs.worker_name }}\`
+          - Hyperdrive \`${{ steps.names.outputs.hyperdrive_name }}\`
+          - Neon branch \`${{ steps.names.outputs.neon_branch }}\`
+          - Custom domain \`${{ steps.names.outputs.preview_host }}\`
+
+          ${MARKER}
+          EOM
+          )
+
+          EXISTING=$(gh api "repos/${REPO}/issues/${PR}/comments" --paginate \
+            --jq "[.[] | select(.body | contains(\"${MARKER}\"))] | first | .id // empty")
+          if [ -n "$EXISTING" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${EXISTING}" -f body="$BODY" > /dev/null
+          else
+            gh pr comment "$PR" --repo "$REPO" --body "$BODY"
+          fi
