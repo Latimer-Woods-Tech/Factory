@@ -1,0 +1,56 @@
+name: Cleanup orphaned SA key (one-shot)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # needed to delete this file after running
+  id-token: write   # WIF
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: projects/891842778224/locations/global/workloadIdentityPools/github-factory/providers/github
+          service_account: factory-sa@factory-495015.iam.gserviceaccount.com
+
+      - name: Delete orphaned SA key
+        run: |
+          set -euo pipefail
+          SA="factory-sa@factory-495015.iam.gserviceaccount.com"
+          ORPHAN_KEY="a5ebbec14fb0ab1ece868b43388b37dac5134449"
+          ACTIVE_KEY="0efb02519fb763b40334cd6c02cb1d9384af235e"
+          PROJECT="factory-495015"
+
+          echo "=== Keys before ==="
+          gcloud iam service-accounts keys list \
+            --iam-account="$SA" --project="$PROJECT"
+
+          echo ""
+          echo "Deleting orphaned key: $ORPHAN_KEY"
+          gcloud iam service-accounts keys delete "$ORPHAN_KEY" \
+            --iam-account="$SA" --project="$PROJECT" --quiet
+
+          echo ""
+          echo "=== Keys after ==="
+          gcloud iam service-accounts keys list \
+            --iam-account="$SA" --project="$PROJECT"
+
+          # Verify the active key (stored in SM) is still present
+          gcloud iam service-accounts keys describe "$ACTIVE_KEY" \
+            --iam-account="$SA" --project="$PROJECT" \
+            && echo "✓ Active key $ACTIVE_KEY confirmed present"
+
+      - name: Self-destruct this workflow file
+        run: |
+          git config user.name  "factory-supervisor[bot]"
+          git config user.email "supervisor@latimer-woods-tech.com"
+          git rm .github/workflows/cleanup-orphaned-sa-key.yml
+          git commit -m "chore(infra): remove one-shot SA key cleanup workflow after successful run"
+          git push
