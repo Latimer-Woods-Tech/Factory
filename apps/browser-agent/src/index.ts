@@ -3,8 +3,9 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import Anthropic from '@anthropic-ai/sdk';
 import { Hono } from 'hono';
-import { chromium, type Browser } from 'playwright';
+import { chromium, type Browser, type ConsoleMessage as PwConsoleMessage, type Response as PwResponse, type Page } from 'playwright';
 
 /** Selector map keyed by caller-defined field names. */
 export type BrowserSelectors = Record<string, string>;
@@ -99,13 +100,121 @@ export interface AuditResult {
   screenshotBase64: string;
 }
 
+/** A device viewport for multi-resolution capture. */
+export interface Viewport {
+  /** Caller-facing label (e.g. "desktop", "tablet", "mobile"). */
+  name: string;
+  width: number;
+  height: number;
+}
+
+/** Severity tier for a visual-review finding. */
+export type VisualReviewSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+
+/** A single observation produced by the vision grader. */
+export interface VisualReviewFinding {
+  severity: VisualReviewSeverity;
+  /** Free-form category — e.g. "color", "layout", "rendering", "content". */
+  category: string;
+  /** Viewport label this applies to, or "all" when cross-cutting. */
+  viewport: string;
+  description: string;
+  recommendation: string;
+}
+
+/** A captured screenshot for one viewport. */
+export interface VisualReviewShot {
+  viewport: string;
+  width: number;
+  height: number;
+  screenshotBase64: string;
+}
+
+/** Visual-review request body. */
+export interface VisualReviewRequest {
+  url: string;
+  /** Optional pre-capture scenario steps (e.g. login, navigation). */
+  steps?: ScenarioStep[];
+  /** Viewports to capture; defaults to desktop (1280x720) + mobile (375x667). */
+  viewports?: Viewport[];
+  /**
+   * Plain-English questions / criteria to ask the vision model about each shot.
+   * Defaults to a general rubric covering layout, color, content, and SVG rendering.
+   */
+  rubric?: string[];
+  /** Anthropic model id to use for grading. Defaults to claude-haiku-4-5-20251001. */
+  model?: string;
+  /** Capture console.warn/error/log messages. Default: true. */
+  captureConsole?: boolean;
+  /** Flag responses with status >= this value. Default: 400. */
+  statusThreshold?: number;
+}
+
+/** Token usage reported by the grading LLM. */
+export interface VisionTokenUsage {
+  input: number;
+  output: number;
+}
+
+/** Grading payload (separated for testability and reuse). */
+export interface VisionGradeRequest {
+  url: string;
+  shots: VisualReviewShot[];
+  rubric: string[];
+  model: string;
+}
+
+/** Grading result. */
+export interface VisionGradeResult {
+  model: string;
+  summary: string;
+  findings: VisualReviewFinding[];
+  tokenUsage: VisionTokenUsage;
+}
+
+/** Vision grader interface; injectable so tests can mock without hitting Anthropic. */
+export interface VisionGrader {
+  grade(request: VisionGradeRequest): Promise<VisionGradeResult>;
+}
+
+/** Visual-review result. */
+export interface VisualReviewResult {
+  url: string;
+  reviewedAt: string;
+  viewports: VisualReviewShot[];
+  consoleErrors: ConsoleMessage[];
+  pageErrors: PageError[];
+  failedRequests: FailedRequest[];
+  /** Null when no vision grader is configured (no ANTHROPIC_API_KEY in env). */
+  review: VisionGradeResult | null;
+}
+
 /** Browser automation implementation, injectable for tests. */
 export interface BrowserAutomation {
   scrape(request: ScrapeRequest): Promise<{ url: string; scrapedAt: string; results: Record<string, ScrapeFieldResult> }>;
   screenshot(request: ScreenshotRequest): Promise<{ url: string; capturedAt: string; mimeType: 'image/png'; dataBase64: string }>;
   runScenario(request: ScenarioRequest, r2?: R2Config): Promise<ScenarioResult>;
   audit(request: AuditRequest): Promise<AuditResult>;
+  visualReview(request: VisualReviewRequest): Promise<VisualReviewResult>;
 }
+
+/** Default viewports captured when the request omits `viewports`. */
+export const DEFAULT_VIEWPORTS: Viewport[] = [
+  { name: 'desktop', width: 1280, height: 720 },
+  { name: 'mobile', width: 375, height: 667 },
+];
+
+/** Default vision-grading rubric used when the request omits `rubric`. */
+export const DEFAULT_RUBRIC: string[] = [
+  'Identify visual rendering issues: clipping, overlap, broken layout, missing assets, or unstyled flashes.',
+  'Identify color and contrast issues that hurt readability or brand consistency.',
+  'Identify responsive design issues across the captured viewports (only when more than one viewport is provided).',
+  'Identify content quality issues: typos, broken text, placeholder copy, lorem ipsum, lorem-style filler.',
+  'Identify SVG, canvas, or chart rendering anomalies (e.g. bodygraphs, diagrams, gauges) — note any obviously misaligned, distorted, or partially drawn elements.',
+];
+
+/** Default Anthropic model used for grading. Vision-capable Claude Haiku. */
+export const DEFAULT_VISION_MODEL = 'claude-haiku-4-5-20251001';
 
 class HttpError extends Error {
   public constructor(public readonly status: number, message: string) {
@@ -192,12 +301,170 @@ function parseSteps(value: unknown): ScenarioStep[] {
   });
 }
 
+function parseViewports(value: unknown): Viewport[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new HttpError(422, 'viewports must be a non-empty array');
+  }
+  return (value as unknown[]).map((v, i) => {
+    if (!v || typeof v !== 'object' || Array.isArray(v)) {
+      throw new HttpError(422, `viewports[${i}] must be an object`);
+    }
+    const vp = v as Record<string, unknown>;
+    const name = typeof vp['name'] === 'string' ? vp['name'].trim() : '';
+    const width = Number(vp['width']);
+    const height = Number(vp['height']);
+    if (!name) throw new HttpError(422, `viewports[${i}].name is required`);
+    if (!Number.isInteger(width) || width < 200 || width > 4096) {
+      throw new HttpError(422, `viewports[${i}].width must be an integer 200-4096`);
+    }
+    if (!Number.isInteger(height) || height < 200 || height > 4096) {
+      throw new HttpError(422, `viewports[${i}].height must be an integer 200-4096`);
+    }
+    return { name, width, height };
+  });
+}
+
+function parseRubric(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new HttpError(422, 'rubric must be a non-empty array of strings');
+  }
+  return (value as unknown[]).map((item, i) => {
+    if (typeof item !== 'string' || !item.trim()) {
+      throw new HttpError(422, `rubric[${i}] must be a non-empty string`);
+    }
+    return item.trim();
+  });
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
   const chunks: string[] = [];
   for (let offset = 0; offset < bytes.length; offset += BASE64_CHUNK_SIZE) {
     chunks.push(String.fromCharCode(...bytes.slice(offset, offset + BASE64_CHUNK_SIZE)));
   }
   return btoa(chunks.join(''));
+}
+
+/**
+ * Constructs an Anthropic-backed vision grader. Sends screenshots + rubric to
+ * Claude and parses the JSON findings array out of the response.
+ *
+ * The model is instructed to respond with JSON only; if it returns extra prose
+ * we extract the first top-level `{...}` block. Malformed responses surface a
+ * single `info`-severity finding describing the parse failure rather than
+ * throwing, so callers always get a structured payload back.
+ */
+export function createAnthropicVisionGrader(apiKey: string): VisionGrader {
+  const client = new Anthropic({ apiKey });
+  return {
+    async grade(request: VisionGradeRequest): Promise<VisionGradeResult> {
+      const rubricText = request.rubric.map((q, i) => `${i + 1}. ${q}`).join('\n');
+      const viewportLabels = request.shots.map((s) => `${s.viewport} (${s.width}x${s.height})`).join(', ');
+
+      const systemPrompt =
+        'You are a senior UI/UX reviewer evaluating screenshots of a production web page. ' +
+        'Respond with ONLY a single JSON object — no prose, no markdown, no code fences. ' +
+        'Schema: { "summary": string, "findings": [ { "severity": "critical" | "high" | "medium" | "low" | "info", "category": string, "viewport": string, "description": string, "recommendation": string } ] }. ' +
+        'Use the viewport label from the input (or "all" if cross-cutting). ' +
+        'If a rubric question reveals no issue, do not invent one — omit it from findings. ' +
+        'Limit findings to at most 25.';
+
+      const userText =
+        `URL: ${request.url}\n` +
+        `Viewports captured: ${viewportLabels}\n\n` +
+        `Rubric:\n${rubricText}\n\n` +
+        'Review the attached screenshot(s) against each rubric item. Return only the JSON object described in the system prompt.';
+
+      const contentBlocks: Anthropic.MessageParam['content'] = [
+        { type: 'text', text: userText },
+      ];
+      for (const shot of request.shots) {
+        contentBlocks.push({
+          type: 'text',
+          text: `--- viewport: ${shot.viewport} (${shot.width}x${shot.height}) ---`,
+        });
+        contentBlocks.push({
+          type: 'image',
+          source: { type: 'base64', media_type: 'image/png', data: shot.screenshotBase64 },
+        });
+      }
+
+      const response = await client.messages.create({
+        model: request.model,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: contentBlocks }],
+      });
+
+      const textBlock = response.content.find((b) => b.type === 'text');
+      const raw = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+      const usage: VisionTokenUsage = {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+      };
+
+      const parsed = parseVisionResponse(raw);
+      if (!parsed) {
+        return {
+          model: request.model,
+          summary: 'Vision grader returned a response that could not be parsed as JSON; raw output preserved in the single finding below.',
+          findings: [
+            {
+              severity: 'info',
+              category: 'grader',
+              viewport: 'all',
+              description: `Unparseable grader output (first 500 chars): ${raw.slice(0, 500)}`,
+              recommendation: 'Inspect the raw response and refine the system prompt or model.',
+            },
+          ],
+          tokenUsage: usage,
+        };
+      }
+      return { model: request.model, summary: parsed.summary, findings: parsed.findings, tokenUsage: usage };
+    },
+  };
+}
+
+/**
+ * Extracts the first top-level JSON object from a string and validates it
+ * against the expected vision-grading schema. Returns null when no valid
+ * object can be recovered.
+ */
+export function parseVisionResponse(raw: string): { summary: string; findings: VisualReviewFinding[] } | null {
+  const trimmed = raw.trim();
+  // Tolerate ```json fences even though the prompt forbids them.
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = fenced && fenced[1] ? fenced[1].trim() : trimmed;
+  const firstBrace = candidate.indexOf('{');
+  const lastBrace = candidate.lastIndexOf('}');
+  if (firstBrace < 0 || lastBrace <= firstBrace) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(candidate.slice(firstBrace, lastBrace + 1));
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const obj = parsed as Record<string, unknown>;
+  const summary = typeof obj['summary'] === 'string' ? obj['summary'] : '';
+  const rawFindings = Array.isArray(obj['findings']) ? (obj['findings'] as unknown[]) : [];
+
+  const allowedSeverity = new Set<VisualReviewSeverity>(['critical', 'high', 'medium', 'low', 'info']);
+  const findings: VisualReviewFinding[] = [];
+  for (const f of rawFindings) {
+    if (!f || typeof f !== 'object' || Array.isArray(f)) continue;
+    const o = f as Record<string, unknown>;
+    const severity = typeof o['severity'] === 'string' && allowedSeverity.has(o['severity'] as VisualReviewSeverity)
+      ? (o['severity'] as VisualReviewSeverity)
+      : 'info';
+    const category = typeof o['category'] === 'string' && o['category'].trim() ? o['category'].trim() : 'general';
+    const viewport = typeof o['viewport'] === 'string' && o['viewport'].trim() ? o['viewport'].trim() : 'all';
+    const description = typeof o['description'] === 'string' ? o['description'].trim() : '';
+    const recommendation = typeof o['recommendation'] === 'string' ? o['recommendation'].trim() : '';
+    if (!description) continue;
+    findings.push({ severity, category, viewport, description, recommendation });
+  }
+  return { summary, findings };
 }
 
 async function uploadToR2(videoPath: string, key: string, config: R2Config): Promise<string> {
@@ -213,7 +480,34 @@ async function uploadToR2(videoPath: string, key: string, config: R2Config): Pro
   return `${endpoint}/${config.bucket}/${key}`;
 }
 
-function createPlaywrightAutomation(): BrowserAutomation {
+async function runScenarioSteps(page: Page, steps: ScenarioStep[]): Promise<void> {
+  for (const step of steps) {
+    switch (step.action) {
+      case 'goto':
+        await page.goto(step.url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        break;
+      case 'fill':
+        await page.fill(step.selector, step.value);
+        break;
+      case 'click':
+        await page.click(step.selector);
+        break;
+      case 'wait':
+        await page.waitForTimeout(step.ms);
+        break;
+      case 'waitForSelector':
+        await page.waitForSelector(step.selector, step.timeout !== undefined ? { timeout: step.timeout } : undefined);
+        break;
+    }
+  }
+}
+
+/**
+ * Factory for the production browser automation. The optional `grader`
+ * argument enables vision-LLM grading on /visual-review; when absent, the
+ * endpoint still returns screenshots + console diagnostics but `review` is null.
+ */
+export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutomation {
   let browserPromise: Promise<Browser> | undefined;
   const getBrowser = (): Promise<Browser> => {
     // --no-sandbox + --disable-dev-shm-usage: required on Cloud Run (gVisor)
@@ -274,27 +568,24 @@ function createPlaywrightAutomation(): BrowserAutomation {
       const failedRequests: FailedRequest[] = [];
 
       if (captureConsole) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        page.on('console', (msg: any) => {
-          const type: string = msg.type();
-          if (type === 'error' || type === 'warning' || type === 'warn') {
-            const loc: { url?: string; lineNumber?: number } = msg.location();
+        page.on('console', (msg: PwConsoleMessage) => {
+          const type = msg.type();
+          if (type === 'error' || type === 'warning') {
+            const loc = msg.location();
             consoleErrors.push({
               type,
               text: msg.text(),
-              location: loc.url ? `${loc.url}:${loc.lineNumber ?? 0}` : '',
+              location: loc.url ? `${loc.url}:${loc.lineNumber}` : '',
             });
           }
         });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      page.on('pageerror', (err: any) => {
+      page.on('pageerror', (err: Error) => {
         pageErrors.push({ message: err.message, stack: err.stack ?? '' });
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      page.on('response', (res: any) => {
+      page.on('response', (res: PwResponse) => {
         if (res.status() >= threshold) {
           const req = res.request();
           failedRequests.push({ url: res.url(), method: req.method(), status: res.status() });
@@ -304,25 +595,7 @@ function createPlaywrightAutomation(): BrowserAutomation {
       try {
         // Run optional login/setup steps before auditing
         if (request.steps && request.steps.length > 0) {
-          for (const step of request.steps) {
-            switch (step.action) {
-              case 'goto':
-                await page.goto(step.url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-                break;
-              case 'fill':
-                await page.fill(step.selector, step.value);
-                break;
-              case 'click':
-                await page.click(step.selector);
-                break;
-              case 'wait':
-                await page.waitForTimeout(step.ms);
-                break;
-              case 'waitForSelector':
-                await page.waitForSelector(step.selector, step.timeout !== undefined ? { timeout: step.timeout } : undefined);
-                break;
-            }
-          }
+          await runScenarioSteps(page, request.steps);
         }
 
         // Navigate to the target URL and wait for network to settle
@@ -343,6 +616,84 @@ function createPlaywrightAutomation(): BrowserAutomation {
         await page.close();
         await context.close();
       }
+    },
+
+    async visualReview(request) {
+      const viewports = request.viewports && request.viewports.length > 0 ? request.viewports : DEFAULT_VIEWPORTS;
+      const rubric = request.rubric && request.rubric.length > 0 ? request.rubric : DEFAULT_RUBRIC;
+      const model = request.model && request.model.trim() ? request.model.trim() : DEFAULT_VISION_MODEL;
+      const threshold = request.statusThreshold ?? 400;
+      const captureConsole = request.captureConsole !== false;
+
+      const browser = await getBrowser();
+      const shots: VisualReviewShot[] = [];
+      const consoleErrors: ConsoleMessage[] = [];
+      const pageErrors: PageError[] = [];
+      const failedRequests: FailedRequest[] = [];
+
+      // One fresh context per viewport so cookies, console buffers, and
+      // viewport size are isolated. Login (via request.steps) runs again
+      // for each viewport — necessary because session state lives in the
+      // per-context cookie jar.
+      for (const viewport of viewports) {
+        const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+        const page = await context.newPage();
+        if (captureConsole) {
+          page.on('console', (msg: PwConsoleMessage) => {
+            const type = msg.type();
+            if (type === 'error' || type === 'warning') {
+              const loc = msg.location();
+              consoleErrors.push({
+                type,
+                text: `[${viewport.name}] ${msg.text()}`,
+                location: loc.url ? `${loc.url}:${loc.lineNumber}` : '',
+              });
+            }
+          });
+        }
+        page.on('pageerror', (err: Error) => {
+          pageErrors.push({ message: `[${viewport.name}] ${err.message}`, stack: err.stack ?? '' });
+        });
+        page.on('response', (res: PwResponse) => {
+          if (res.status() >= threshold) {
+            const req = res.request();
+            failedRequests.push({ url: res.url(), method: req.method(), status: res.status() });
+          }
+        });
+
+        try {
+          if (request.steps && request.steps.length > 0) {
+            await runScenarioSteps(page, request.steps);
+          }
+          await page.goto(request.url, { waitUntil: 'networkidle', timeout: 45_000 });
+          await page.waitForTimeout(2_000);
+          const image = await page.screenshot({ type: 'png', fullPage: true });
+          shots.push({
+            viewport: viewport.name,
+            width: viewport.width,
+            height: viewport.height,
+            screenshotBase64: bytesToBase64(image),
+          });
+        } finally {
+          await page.close();
+          await context.close();
+        }
+      }
+
+      let review: VisionGradeResult | null = null;
+      if (grader) {
+        review = await grader.grade({ url: request.url, shots, rubric, model });
+      }
+
+      return {
+        url: request.url,
+        reviewedAt: new Date().toISOString(),
+        viewports: shots,
+        consoleErrors,
+        pageErrors,
+        failedRequests,
+        review,
+      };
     },
 
     async runScenario(request, r2) {
@@ -448,6 +799,25 @@ export function createApp(automation: BrowserAutomation = createPlaywrightAutoma
     const body = await readJson(c);
     const steps = parseSteps(body['steps']);
     const result = await automation.runScenario({ steps }, r2);
+    return c.json(result);
+  });
+
+  app.post('/visual-review', async (c) => {
+    const body = await readJson(c);
+    const url = normalizeUrl(body['url']);
+    const steps = body['steps'] !== undefined ? parseSteps(body['steps']) : undefined;
+    const viewports = body['viewports'] !== undefined ? parseViewports(body['viewports']) : undefined;
+    const rubric = body['rubric'] !== undefined ? parseRubric(body['rubric']) : undefined;
+    const model = typeof body['model'] === 'string' && body['model'].trim() ? body['model'].trim() : undefined;
+    const captureConsole = body['captureConsole'] !== undefined ? Boolean(body['captureConsole']) : undefined;
+    const statusThreshold = body['statusThreshold'] !== undefined
+      ? (() => {
+          const v = Number(body['statusThreshold']);
+          if (!Number.isInteger(v) || v < 100 || v > 599) throw new HttpError(422, 'statusThreshold must be an integer between 100 and 599');
+          return v;
+        })()
+      : undefined;
+    const result = await automation.visualReview({ url, steps, viewports, rubric, model, captureConsole, statusThreshold });
     return c.json(result);
   });
 
