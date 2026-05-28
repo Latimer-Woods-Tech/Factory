@@ -58,16 +58,22 @@ jobs:
 
       - name: Verify Pages preview deployment
         run: |
+          # Pages production deploys (--branch=main) serve at {project}.pages.dev,
+          # NOT {branch}.{project}.pages.dev (that pattern is for non-main branches).
+          OK=0
           for i in {1..5}; do
-            if curl -fsSL https://main.latimerwoods-dev.pages.dev > /dev/null; then
-              echo "Pages preview reachable"
-              exit 0
+            if curl -fsSL https://latimerwoods-dev.pages.dev > /dev/null; then
+              echo "Pages production deploy reachable"
+              OK=1
+              break
             fi
             echo "Retrying preview verification ($i/5)..."
             sleep 5
           done
-          echo "Pages preview verification failed"
-          exit 1
+          if [ "$OK" -ne 1 ]; then
+            echo "Pages production deploy verification failed"
+            exit 1
+          fi
 
       # Custom-domain verification is best-effort during the first rollout — it
       # only fails CI if the page is reachable but missing the expected marker
