@@ -1,6 +1,3 @@
-import { readdirSync, readFileSync } from 'fs';
-import { basename, join } from 'path';
-
 export const COMPOSITIONS = new Set([
   'MarketingVideo',
   'TrainingVideo',
@@ -207,7 +204,7 @@ export function validateBrief(brief, options = {}) {
   const warnings = issues.filter(issue => issue.severity === 'warning');
   return {
     file,
-    briefKey: brief.briefKey || basename(file, '.json'),
+    briefKey: brief.briefKey || briefKeyFromFile(file),
     composition: brief.composition || null,
     status: blockers.length ? 'blocked' : 'ready',
     sourceStatus: brief.status || 'draft',
@@ -220,28 +217,6 @@ export function validateBrief(brief, options = {}) {
     warnings,
     issues,
   };
-}
-
-export function loadBriefs(briefDir) {
-  return readdirSync(briefDir)
-    .filter(name => name.endsWith('.json') && name !== 'training-library.json')
-    .map(name => {
-      const file = join(briefDir, name);
-      const raw = readFileSync(file, 'utf8');
-      return {
-        file,
-        brief: JSON.parse(raw),
-      };
-    })
-    .filter(({ brief }) => Boolean(brief.composition));
-}
-
-export function validateBriefDirectory(briefDir, options = {}) {
-  const briefKeys = Array.isArray(options.briefKeys) ? new Set(options.briefKeys) : null;
-  const results = loadBriefs(briefDir)
-    .filter(({ brief }) => !briefKeys || briefKeys.has(brief.briefKey))
-    .map(({ file, brief }) => validateBrief(brief, { ...options, file }));
-  return summarizeResults(results);
 }
 
 export function summarizeResults(results) {
@@ -298,4 +273,12 @@ function isMissingField(record, field) {
 
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function briefKeyFromFile(file) {
+  return String(file || 'unknown')
+    .replace(/\\/g, '/')
+    .split('/')
+    .pop()
+    .replace(/\.json$/i, '');
 }

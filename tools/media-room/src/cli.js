@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-import { relative, resolve } from 'path';
-import { validateBriefDirectory } from './brief-contract.js';
+import { summarizeResults, validateBrief } from './brief-contract.js';
 
 function parseArgs(argv) {
   const args = { command: argv[2], briefDir: '', strict: false, json: false, briefKeys: [] };
@@ -39,7 +38,7 @@ function printTextReport(summary, root) {
   console.log(`Media Room brief readiness: ${summary.ready}/${summary.checked} ready, ${summary.blocked} blocked`);
   for (const result of summary.results) {
     const status = result.status === 'ready' ? 'READY' : 'BLOCKED';
-    const file = relative(root, result.file);
+    const file = relativePath(root, result.file);
     console.log(`\n[${status}] ${result.briefKey} (${result.composition})`);
     console.log(`  file: ${file}`);
     console.log(`  words: ${result.scriptWords || 'generated'} | duration: ${result.durationSeconds}s | min: ${result.minimumDurationSeconds || 'n/a'}s`);
@@ -58,8 +57,8 @@ if (args.command !== 'validate-briefs' || !args.briefDir) {
 }
 
 const root = process.cwd();
-const briefDir = resolve(root, args.briefDir);
-const summary = validateBriefDirectory(briefDir, {
+const briefDir = resolvePath(root, args.briefDir);
+const summary = await validateBriefDirectory(briefDir, {
   strict: args.strict,
   briefKeys: args.briefKeys.filter(Boolean),
 });
@@ -72,4 +71,67 @@ if (args.json) {
 
 if (args.strict && summary.blockers.length > 0) {
   process.exit(1);
+}
+
+async function validateBriefDirectory(briefDir, options = {}) {
+  const briefKeys = options.briefKeys.length
+    ? options.briefKeys
+    : await loadBriefKeysFromLibrary(briefDir);
+  const briefEntries = await Promise.all(briefKeys.map(async (briefKey) => {
+    const file = joinPath(briefDir, `${briefKey}.json`);
+    return { file, brief: await importJson(file) };
+  }));
+  return summarizeResults(briefEntries
+    .filter(({ brief }) => Boolean(brief.composition))
+    .map(({ file, brief }) => validateBrief(brief, { ...options, file })));
+}
+
+async function loadBriefKeysFromLibrary(briefDir) {
+  const library = await importJson(joinPath(briefDir, 'training-library.json'));
+  if (!Array.isArray(library.modules)) {
+    throw new Error(`training-library.json in ${briefDir} must contain a modules array`);
+  }
+  return library.modules
+    .map(module => module?.briefKey)
+    .filter(briefKey => typeof briefKey === 'string' && briefKey.trim());
+}
+
+async function importJson(file) {
+  try {
+    const module = await import(toFileUrl(file), { with: { type: 'json' } });
+    return module.default;
+  } catch (error) {
+    throw new Error(`Unable to load JSON brief ${file}: ${error.message}`);
+  }
+}
+
+function resolvePath(root, input) {
+  if (isAbsolutePath(input)) return normalizePath(input);
+  return joinPath(root, input);
+}
+
+function relativePath(root, file) {
+  const normalizedRoot = normalizePath(root);
+  const normalizedFile = normalizePath(file);
+  const prefix = normalizedRoot.endsWith('/') ? normalizedRoot : `${normalizedRoot}/`;
+  return normalizedFile.startsWith(prefix) ? normalizedFile.slice(prefix.length) : normalizedFile;
+}
+
+function joinPath(base, child) {
+  return `${normalizePath(base).replace(/\/+$/u, '')}/${normalizePath(child).replace(/^\/+/u, '')}`;
+}
+
+function normalizePath(value) {
+  return String(value || '').replace(/\\/g, '/');
+}
+
+function isAbsolutePath(value) {
+  return /^([A-Za-z]:\/|\/)/u.test(normalizePath(value));
+}
+
+function toFileUrl(file) {
+  const normalized = normalizePath(file);
+  if (/^[A-Za-z]:\//u.test(normalized)) return `file:///${normalized}`;
+  if (normalized.startsWith('/')) return `file://${normalized}`;
+  return new URL(normalized, `file://${normalizePath(process.cwd()).replace(/\/?$/u, '/')}`).href;
 }

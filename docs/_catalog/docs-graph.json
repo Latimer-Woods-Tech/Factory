@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 413,
+    "total_docs": 415,
     "canonical": 17,
-    "active": 348,
+    "active": 350,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -353,7 +353,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:e7a5990cdd0321865e446607d2d02b1ccb66f9fd5b596bf27f3b6696bb4ff159",
+      "content_hash": "sha256:9c04b0e79e40033578bfa57c61a242bce7de97cc28adc75e1e4b8b380da10bb3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2849,6 +2849,27 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-05-28-media-room-control-plane.md",
+      "title": "Media Room Control Plane",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:33657a601a5d733c953bb4988012853b555a7171d63fb416e22215da6c151402",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/README.md",
       "title": "Decisions",
       "status": "active",
@@ -2861,7 +2882,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d0ae1a8dbc536e25a139f10251af6f2e9101ff5f1f3b20cc6a6a1b4b99b3d43d",
+      "content_hash": "sha256:2155d6a7292a0174f7eaec3f837a34ae5c62cbf3c2c53ad3250f4ad8d06ba66e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -4169,6 +4190,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:607216cd593c9e2e0ea87edcd5524b818353143463f16968e677d51ebf182ad6",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md",
+      "title": "Media Room Production Control Plane",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:50498f0e0332547120e4cfd57e029347b116454116f79f76b4f2ba6b86c0a8bd",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7182,7 +7224,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:514fa7ea1615a2bb11292ef68efc59302a3b41865e5bfa5df5965920bdbc51d5",
+      "content_hash": "sha256:2ff22b7f8c3a38200800f79104c3bff377f0a9d878f8c3827ddd707e1d19ca5f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
