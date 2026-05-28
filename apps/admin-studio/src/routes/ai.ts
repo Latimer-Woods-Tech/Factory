@@ -81,23 +81,49 @@ function getMissingCompleteLlmConfig(
   return missing;
 }
 
-function getMissingStrategyConfig(
+export function getMissingStrategyConfig(
   strategy: AIModelStrategy,
   env: Pick<
     Env,
-    'AI_GATEWAY_BASE_URL' | 'ANTHROPIC_API_KEY' | 'VERTEX_ACCESS_TOKEN' | 'VERTEX_PROJECT' | 'VERTEX_LOCATION' | 'XAI_API_KEY'
+    | 'AI_GATEWAY_BASE_URL'
+    | 'ANTHROPIC_API_KEY'
+    | 'VERTEX_ACCESS_TOKEN'
+    | 'VERTEX_PROJECT'
+    | 'VERTEX_LOCATION'
+    | 'XAI_API_KEY'
+    | 'DEEPSEEK_API_KEY'
+    | 'GROQ_API_KEY'
   >,
 ): string[] {
-  const missing = getMissingCompleteLlmConfig(env);
-  if (strategy === 'drafting' && !env.XAI_API_KEY) missing.push('XAI_API_KEY');
+  const missing: string[] = [];
+  if (!env.AI_GATEWAY_BASE_URL) missing.push('AI_GATEWAY_BASE_URL');
+
+  if (strategy === 'workbench') {
+    if (!env.DEEPSEEK_API_KEY) missing.push('DEEPSEEK_API_KEY');
+    return missing;
+  }
+
+  if (strategy === 'drafting') {
+    if (!env.XAI_API_KEY) missing.push('XAI_API_KEY');
+    return missing;
+  }
+
+  if (strategy === 'planning') {
+    if (!env.VERTEX_ACCESS_TOKEN) missing.push('VERTEX_ACCESS_TOKEN');
+    if (!env.VERTEX_PROJECT) missing.push('VERTEX_PROJECT');
+    if (!env.VERTEX_LOCATION) missing.push('VERTEX_LOCATION');
+    return missing;
+  }
+
+  if (!env.ANTHROPIC_API_KEY) missing.push('ANTHROPIC_API_KEY');
   return missing;
 }
 
-function isModelStrategy(value: unknown): value is AIModelStrategy {
-  return value === 'execution' || value === 'planning' || value === 'drafting';
+export function isModelStrategy(value: unknown): value is AIModelStrategy {
+  return value === 'execution' || value === 'planning' || value === 'drafting' || value === 'workbench';
 }
 
-function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'], system: string): LLMOptions {
+export function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'], system: string): LLMOptions {
   if (strategy === 'planning') {
     return {
       system,
@@ -122,6 +148,18 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
       actor: 'human',
       workload: 'drafting',
       temperature: mode === 'refactor' ? 0.3 : 0.65,
+    };
+  }
+  if (strategy === 'workbench') {
+    return {
+      system,
+      tier: 'workbench',
+      maxTokens: 2048,
+      maxCostUsd: 0.10,
+      project: 'admin-studio',
+      actor: 'human',
+      workload: 'ticket-drafting',
+      temperature: mode === 'refactor' ? 0.2 : 0.45,
     };
   }
   return {
@@ -326,10 +364,6 @@ ai.post('/chat', async (c) => {
   if (!body.mode || !Object.prototype.hasOwnProperty.call(SYSTEM_PROMPTS, body.mode)) {
     return c.json({ error: 'invalid mode', allowed: Object.keys(SYSTEM_PROMPTS) }, 400);
   }
-  if (!c.env.ANTHROPIC_API_KEY) {
-    return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
-  }
-
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
     : 'execution';
@@ -340,7 +374,7 @@ ai.post('/chat', async (c) => {
   const system = ctxPrefix + buildSystem(body);
   const messages = body.history.map((t) => ({ role: t.role, content: t.content }));
 
-  if (strategy !== 'execution') {
+  if (strategy === 'planning' || strategy === 'drafting' || strategy === 'workbench') {
     const missingStrategyConfig = getMissingStrategyConfig(strategy, c.env);
     if (missingStrategyConfig.length > 0) {
       return c.json({ error: 'LLM configuration incomplete', missing: missingStrategyConfig }, 503);
@@ -377,8 +411,13 @@ ai.post('/chat', async (c) => {
     });
   }
 
-  // Tool-use agentic loop (non-streaming for now)
+  // Execution is the only strategy that reaches this Anthropic tool-use loop.
   const apiKey = c.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
+  }
+
+  // Tool-use agentic loop (non-streaming for now)
   const baseUrl = c.env.AI_GATEWAY_BASE_URL
     ? `${c.env.AI_GATEWAY_BASE_URL}/anthropic`
     : 'https://api.anthropic.com'; // Direct Anthropic API if gateway not configured
@@ -518,9 +557,6 @@ ai.post('/proposals', async (c) => {
   if (body.before.length > 256_000) {
     return c.json({ error: 'file too large for proposal', maxBytes: 256_000 }, 413);
   }
-  if (!c.env.ANTHROPIC_API_KEY) {
-    return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
-  }
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
     : 'execution';
@@ -529,6 +565,9 @@ ai.post('/proposals', async (c) => {
     return c.json({ error: 'LLM configuration incomplete', missing: missingLlmConfig }, 503);
   }
 
+  // Proposal generation uses the provider selected by resolveLlmOptions() via
+  // @latimer-woods-tech/llm; Workbench proposals do not enter the Anthropic
+  // tool-use loop used by execution chat.
   const language = body.language ?? guessLanguage(body.path);
   const system = [
     'You are an automated code-edit assistant for the Factory monorepo.',
