@@ -36,7 +36,8 @@ function toRepoPath(filePath) {
 }
 
 function sha256(text) {
-  return `sha256:${createHash('sha256').update(text).digest('hex')}`;
+  const normalized = String(text).replace(/\r\n/g, '\n');
+  return `sha256:${createHash('sha256').update(normalized).digest('hex')}`;
 }
 
 function globToRegExp(pattern) {

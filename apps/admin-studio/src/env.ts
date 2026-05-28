@@ -29,6 +29,8 @@ export interface Env {
   XAI_API_KEY?: string;
   /** Groq fallback */
   GROQ_API_KEY?: string;
+  /** DeepSeek bargain workbench for low-risk internal batch work */
+  DEEPSEEK_API_KEY?: string;
   /** AI Gateway base URL (optional) */
   AI_GATEWAY_BASE_URL?: string;
   /** Vertex AI access token */
