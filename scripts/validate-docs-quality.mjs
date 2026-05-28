@@ -22,12 +22,15 @@ import { resolve, dirname, join, extname, relative, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, '..');
+const REPO_ROOT = process.env.DOCS_TARGET_ROOT ? resolve(process.env.DOCS_TARGET_ROOT) : resolve(__dirname, '..');
 
 // ─── CLI args ─────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
-const MAX_ERRORS = parseInt(args[args.indexOf('--max-errors') + 1] ?? '50', 10) || 50;
+const maxErrorsArg = args.includes('--max-errors')
+  ? Number.parseInt(args[args.indexOf('--max-errors') + 1] ?? '50', 10)
+  : 50;
+const MAX_ERRORS = Number.isFinite(maxErrorsArg) && maxErrorsArg >= 0 ? maxErrorsArg : 50;
 const JSON_MODE  = args.includes('--json');
 
 // ─── Collect Markdown files (bounded, no symlinks) ───────────────────────────
@@ -87,10 +90,13 @@ const allFiles = new Set();
 collectFiles(join(REPO_ROOT, 'docs')).forEach(f => allFiles.add(f));
 
 // apps/*/README.md — one level only (avoid scanning compiled output)
-for (const entry of readdirSync(join(REPO_ROOT, 'apps'), { withFileTypes: true })) {
-  if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
-  const readme = join(REPO_ROOT, 'apps', entry.name, 'README.md');
-  if (existsSync(readme)) allFiles.add(readme);
+const appsRoot = join(REPO_ROOT, 'apps');
+if (existsSync(appsRoot)) {
+  for (const entry of readdirSync(appsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
+    const readme = join(appsRoot, entry.name, 'README.md');
+    if (existsSync(readme)) allFiles.add(readme);
+  }
 }
 
 // Root *.md (non-recursive)
@@ -159,7 +165,7 @@ for (const filePath of fileArray) {
       // Check file existence
       if (!existsSync(target)) {
         broken.push({ file: relative(REPO_ROOT, filePath), line: i + 1, target: raw, reason: 'file not found' });
-        if (broken.length >= MAX_ERRORS) break outer;
+        if (MAX_ERRORS > 0 && broken.length >= MAX_ERRORS) break outer;
         continue;
       }
 
@@ -168,7 +174,7 @@ for (const filePath of fileArray) {
         const targetAnchors = anchorIndex.get(target);
         if (!targetAnchors?.has(anchor)) {
           broken.push({ file: relative(REPO_ROOT, filePath), line: i + 1, target: raw, reason: `anchor #${anchor} not found` });
-          if (broken.length >= MAX_ERRORS) break outer;
+          if (MAX_ERRORS > 0 && broken.length >= MAX_ERRORS) break outer;
         }
       }
     }
@@ -177,7 +183,7 @@ for (const filePath of fileArray) {
 
 // ─── Report ───────────────────────────────────────────────────────────────────
 
-const capped = broken.length >= MAX_ERRORS;
+const capped = MAX_ERRORS > 0 && broken.length >= MAX_ERRORS;
 
 if (broken.length === 0) {
   console.log(`\n✅ Docs quality: PASS — ${scanned} files, 0 broken links.`);

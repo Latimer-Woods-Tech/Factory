@@ -20,8 +20,13 @@
  *   - Auto-assign stale docs to owners
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const WORKSPACE_ROOT = process.env.DOCS_TARGET_ROOT ? path.resolve(process.env.DOCS_TARGET_ROOT) : path.resolve(__dirname, '..');
+const CATALOG_DIR = path.join(WORKSPACE_ROOT, 'docs', '_catalog');
 
 /**
  * Cadence definitions (in days since last update)
@@ -109,10 +114,19 @@ function extractLastUpdatedDate(filePath) {
     const lines = content.split('\n').slice(0, 20); // Check first 20 lines
     
     for (const line of lines) {
-      const match = line.match(/\*?\*?Last Updated:\*?\*?\s+(\d{4})-(\d{2})-(\d{2})/);
-      if (match) {
-        const [, year, month, day] = match;
+      const isoMatch = line.match(/\*?\*?Last Updated:\*?\*?\s+(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        const [, year, month, day] = isoMatch;
         return new Date(`${year}-${month}-${day}`);
+      }
+
+      const longMatch = line.match(/\*?\*?Last Updated:\*?\*?\s+([A-Z][a-z]+)\s+(\d{1,2}),\s+(\d{4})/);
+      if (longMatch) {
+        const [, monthName, day, year] = longMatch;
+        const parsed = new Date(`${monthName} ${day}, ${year}`);
+        if (!Number.isNaN(parsed.getTime())) {
+          return parsed;
+        }
       }
     }
   } catch (err) {
@@ -156,7 +170,7 @@ function runAudit() {
     missing: [],
   };
 
-  const workspaceRoot = path.resolve(__dirname, '..');
+  const workspaceRoot = WORKSPACE_ROOT;
 
   for (const doc of DOC_REGISTRY) {
     const fullPath = path.join(workspaceRoot, doc.path);
@@ -271,6 +285,24 @@ function formatMarkdown(results) {
  */
 const results = runAudit();
 const markdown = formatMarkdown(results);
+const report = {
+  version: 1,
+  generated_by: 'scripts/doc-freshness-audit.js',
+  generated_at: new Date().toISOString(),
+  ok: results.yellow.length === 0 && results.red.length === 0 && results.critical.length === 0 && results.missing.length === 0,
+  counts: {
+    fresh: results.fresh.length,
+    yellow: results.yellow.length,
+    red: results.red.length,
+    critical: results.critical.length,
+    missing: results.missing.length,
+  },
+  results,
+};
+
+fs.mkdirSync(CATALOG_DIR, { recursive: true });
+fs.writeFileSync(path.join(CATALOG_DIR, 'freshness.json'), `${JSON.stringify(report, null, 2)}\n`);
+fs.writeFileSync(path.join(CATALOG_DIR, 'freshness.md'), markdown);
 
 console.log(markdown);
 
