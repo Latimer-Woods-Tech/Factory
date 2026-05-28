@@ -7,6 +7,7 @@ export const GENERATED_TARGETS = [
   { id: "video-cron.health", url: "https://video-cron.adrper79.workers.dev/health", contains: "ok" },
   { id: "status-prober.health", url: "https://status.latwoodtech.work/health", contains: "ok" },
   { id: "admin-studio-staging.health", url: "https://admin-studio-staging.adrper79.workers.dev/health", contains: "ok" },
+  { id: "capricast-api-staging.health", url: "https://api.capricast.latimerwoods.dev/health", contains: "ok" },
   { id: "capricast-api.health", url: "https://api.capricast.com/health", contains: "ok" },
   { id: "cypher-healing.health", url: "https://api.cipherofhealing.com/health", contains: "ok" },
   { id: "coh.health", url: "https://api.cypherofhealing.com/health", contains: "ok" },
