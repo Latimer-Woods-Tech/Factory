@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Factory Documentation Frontmatter",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["canonical", "active", "stale", "archive", "generated", "scratch"]
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": ["runbook", "architecture", "reference", "decision", "audit", "guide", "diagram", "policy", "prompt", "index", "plan", "unknown"]
+    },
+    "fidelity": {
+      "type": "string",
+      "enum": ["verified", "generated", "owner-reviewed", "unverified", "historical"]
+    },
+    "quality": {
+      "type": "string",
+      "enum": ["polished", "usable", "rough", "draft"]
+    },
+    "last_updated": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "last_verified": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "truth_source": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verified_by": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "scope": {
+      "type": "string"
+    }
+  },
+  "required": ["status", "owner", "fidelity"]
+}
