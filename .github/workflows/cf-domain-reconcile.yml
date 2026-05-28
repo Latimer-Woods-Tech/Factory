@@ -54,6 +54,11 @@ on:
         required: true
         default: true
         type: boolean
+      ensure_pages_cnames:
+        description: "Ensure CNAME records exist for Pages custom domains (dev + qa)"
+        required: true
+        default: true
+        type: boolean
 
 concurrency:
   group: cf-domain-reconcile
@@ -158,7 +163,16 @@ jobs:
           if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "201" ]; then
             echo "Attached ${HOST} to ${PROJECT}"
           elif [ "$RESPONSE" = "409" ]; then
-            echo "${HOST} already attached to ${PROJECT}"
+            echo "${HOST} already attached to ${PROJECT} (409)"
+          elif [ "$RESPONSE" = "400" ]; then
+            CODE=$(node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/attach.json','utf8')); console.log(r.errors?.[0]?.code ?? '')")
+            if [ "$CODE" = "8000018" ]; then
+              echo "${HOST} already attached to ${PROJECT} (400/8000018)"
+            else
+              echo "::error::Unexpected 400 attaching domain (code $CODE):"
+              cat /tmp/attach.json
+              exit 1
+            fi
           else
             echo "::error::Unexpected response $RESPONSE attaching domain:"
             cat /tmp/attach.json
@@ -237,12 +251,86 @@ jobs:
           if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "201" ]; then
             echo "Attached ${HOST} to ${PROJECT}"
           elif [ "$RESPONSE" = "409" ]; then
-            echo "${HOST} already attached to ${PROJECT}"
+            echo "${HOST} already attached to ${PROJECT} (409)"
+          elif [ "$RESPONSE" = "400" ]; then
+            CODE=$(node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/qa.json','utf8')); console.log(r.errors?.[0]?.code ?? '')")
+            if [ "$CODE" = "8000018" ]; then
+              echo "${HOST} already attached to ${PROJECT} (400/8000018)"
+            else
+              echo "::error::Unexpected 400 attaching domain (code $CODE):"
+              cat /tmp/qa.json
+              exit 1
+            fi
           else
             echo "::error::Unexpected response $RESPONSE attaching domain:"
             cat /tmp/qa.json
             exit 1
           fi
+
+      # ─── 7. Ensure CNAME records exist for Pages custom domains ───────────────
+      # The Pages /projects/.../domains POST endpoint is supposed to auto-create
+      # the CNAME record, but in practice it sometimes leaves the domain in a
+      # "pending verification" state without writing DNS. This step explicitly
+      # writes the CNAME records that point at the corresponding pages.dev
+      # hostname, idempotently — it skips if a CNAME with the same name already
+      # exists in the zone.
+      - name: Ensure Pages CNAME records (dev + qa)
+        if: ${{ inputs.ensure_pages_cnames }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          ZONE="latimerwoods.dev"
+
+          # Resolve zone id (also a token sanity check — requires zone:read).
+          ZONE_ID=$(curl -fsS -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/zones?name=${ZONE}" \
+            | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); console.log(r.result?.[0]?.id ?? '')")
+          if [ -z "$ZONE_ID" ]; then
+            echo "::error::Could not resolve zone id for ${ZONE} — token may lack zone:read."
+            exit 1
+          fi
+          echo "Zone ${ZONE} = ${ZONE_ID}"
+
+          # Each row: subdomain  ->  pages.dev target
+          ROWS=(
+            "dev:latimerwoods-dev.pages.dev"
+            "qa:qa-tools-ui.pages.dev"
+          )
+
+          for row in "${ROWS[@]}"; do
+            SUB="${row%%:*}"
+            TARGET="${row##*:}"
+            FQDN="${SUB}.${ZONE}"
+
+            EXISTING=$(curl -fsS -H "Authorization: Bearer ${CF_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=${FQDN}" \
+              | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=r.result?.[0]; console.log(m?(m.id+' '+m.content):'')")
+
+            if [ -n "$EXISTING" ]; then
+              EXISTING_TARGET=$(echo "$EXISTING" | cut -d' ' -f2)
+              echo "CNAME ${FQDN} already exists -> ${EXISTING_TARGET} (skipping)"
+              continue
+            fi
+
+            echo "Creating CNAME ${FQDN} -> ${TARGET}"
+            STATUS=$(curl -s -o /tmp/dns.json -w "%{http_code}" -X POST \
+              -H "Authorization: Bearer ${CF_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records" \
+              -d "{\"type\":\"CNAME\",\"name\":\"${SUB}\",\"content\":\"${TARGET}\",\"proxied\":true,\"ttl\":1,\"comment\":\"Auto-created by cf-domain-reconcile for Pages custom domain ${FQDN}\"}")
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "201" ]; then
+              echo "Created CNAME ${FQDN} -> ${TARGET}"
+            elif [ "$STATUS" = "400" ] || [ "$STATUS" = "409" ]; then
+              # 400 with "An A, AAAA, or CNAME record with that host already exists" — race; treat as success
+              # 409 — same logical condition
+              echo "CNAME ${FQDN} could not be created (HTTP $STATUS) — likely already exists:"
+              cat /tmp/dns.json
+            else
+              echo "::error::Unexpected response $STATUS creating CNAME ${FQDN}:"
+              cat /tmp/dns.json
+              exit 1
+            fi
+          done
 
       - name: Summary
         if: always()
@@ -257,6 +345,7 @@ jobs:
           echo "| Detach studio.thefactory.dev  | ${{ inputs.detach_studio_thefactory }} | Pages custom-domain DELETE |" >> $GITHUB_STEP_SUMMARY
           echo "| Attach assets.apunlimited.com | ${{ inputs.attach_assets_apunlimited }} | R2 custom-domain POST |" >> $GITHUB_STEP_SUMMARY
           echo "| Attach qa.latimerwoods.dev    | ${{ inputs.attach_qa_latimerwoods }} | Pages custom-domain POST |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ensure Pages CNAME records   | ${{ inputs.ensure_pages_cnames }} | Zone DNS records POST (dev + qa) |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Remaining manual steps" >> $GITHUB_STEP_SUMMARY
           echo "- Verify \`apunlimited.com\` in Resend dashboard as a sender domain (for \`digest@apunlimited.com\`)" >> $GITHUB_STEP_SUMMARY
