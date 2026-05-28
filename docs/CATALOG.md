@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 413 |
+| total_docs | 415 |
 | canonical | 17 |
-| active | 348 |
+| active | 350 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (348)
+## Active Docs (350)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -140,6 +140,7 @@
 | [docs/decisions/2026-05-23-governance-of-governance.md](decisions/2026-05-23-governance-of-governance.md) | active | unverified | platform | unknown | 2026-05-23 — Governance of Governance |
 | [docs/decisions/2026-05-23-workflow-lifecycle.md](decisions/2026-05-23-workflow-lifecycle.md) | active | unverified | platform | unknown | 2026-05-23 — Workflow Lifecycle & Automation Hygiene |
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
+| [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | platform | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -202,6 +203,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | marketing | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | marketing | unknown | Voices |
 | [docs/MASTER_SUCCESS_METRICS_BASELINE.md](MASTER_SUCCESS_METRICS_BASELINE.md) | active | unverified | platform | unknown | Master Success Metrics Baseline Table |
+| [docs/MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md](MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md) | active | unverified | platform | unknown | Media Room Production Control Plane |
 | [docs/MONDAY_REVIEW_TEMPLATE.md](MONDAY_REVIEW_TEMPLATE.md) | active | unverified | platform | unknown | Monday Review — Agenda Template (G15) |
 | [docs/MONETIZATION_FUNNEL_INSTRUMENTATION.md](MONETIZATION_FUNNEL_INSTRUMENTATION.md) | active | unverified | platform | unknown | Monetization Funnel: End-to-End Measurement |
 | [docs/MONEY_MOVING_REGRESSION_TESTS.md](MONEY_MOVING_REGRESSION_TESTS.md) | active | unverified | platform | unknown | Money-Moving Regression Tests: Subscriptions, Unlocks, Payouts |

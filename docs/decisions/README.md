@@ -37,3 +37,4 @@ Lightweight log of operational, vendor, and product decisions — things that do
 ## Index
 
 - [2026-05-15-operations-checkpoint](2026-05-15-operations-checkpoint.md) — 9 calls: testing-first week, hybrid llm-meter, Stripe Tax, Dreaming pilot, Copilot review, HubSpot, Cursor app, Salesforce drop
+- [2026-05-28-media-room-control-plane](2026-05-28-media-room-control-plane.md) — keep Media Room as a Node-only production control plane for generated-media readiness.
