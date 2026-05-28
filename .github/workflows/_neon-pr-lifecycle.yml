@@ -216,6 +216,20 @@ jobs:
           fi
           echo "hyperdrive_id=$UUID" >> "$GITHUB_OUTPUT"
 
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          # Install from repo root so workspace packages (e.g. @capricast/types,
+          # @capricast/db) are resolvable when wrangler builds the worker bundle.
+          if [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm@latest --silent
+            pnpm install --frozen-lockfile
+          elif [ -f "yarn.lock" ]; then
+            yarn install --frozen-lockfile
+          else
+            npm ci
+          fi
+
       - name: Prepare ephemeral wrangler config
         working-directory: ${{ inputs.worker_path }}
         env:
