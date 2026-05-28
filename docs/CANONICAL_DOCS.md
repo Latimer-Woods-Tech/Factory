@@ -2,7 +2,7 @@
 
 # Canonical Documents
 
-**Generated:** 2026-05-28T11:08:14Z
+**Generated:** source-derived
 
 These docs are allowlisted in `docs/_governance/canonical-docs.yml`. They are trusted only when their fidelity and health checks remain valid.
 

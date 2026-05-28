@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,12 +14,7 @@ const NPM_SCRIPT_RE = /\bnpm\s+run\s+([A-Za-z0-9:_-]+)/g;
 const MARKDOWN_LINK_RE = /\[([^\]]*)\]\(([^)]+)\)/g;
 
 function generatedAt() {
-  if (process.env.DOCS_GENERATED_AT) return process.env.DOCS_GENERATED_AT;
-  try {
-    return execFileSync('git', ['show', '-s', '--format=%cI', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
-  } catch {
-    return new Date().toISOString();
-  }
+  return process.env.DOCS_GENERATED_AT ?? 'source-derived';
 }
 
 function toRepoPath(filePath) {

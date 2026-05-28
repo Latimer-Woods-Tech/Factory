@@ -1,6 +1,6 @@
 # Documentation Broken Link Report
 
-**Generated:** 2026-05-28T11:08:14Z
+**Generated:** source-derived
 **Broken links:** 389
 **Canonical:** 0
 **Active:** 273
