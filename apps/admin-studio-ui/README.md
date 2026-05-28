@@ -59,7 +59,7 @@ include an `/api` prefix.
 | Var | Purpose | Value (hardcoded in `deploy-admin-studio-ui.yml`) |
 |-----|---------|---------------------------------------------------|
 | `VITE_API_BASE_LOCAL` | Local dev backend | `http://localhost:8787` |
-| `VITE_API_BASE_STAGING` | Staging backend (custom domain) | `https://admin-staging.latwoodtech.work` |
+| `VITE_API_BASE_STAGING` | Staging backend (custom domain) | `https://api.admin.latimerwoods.dev` |
 | `VITE_API_BASE_PROD` | Production backend | `https://api.apunlimited.com` |
 
 At runtime, `lib/api.ts::getApiBase()` selects the correct base from the active session

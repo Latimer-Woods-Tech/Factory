@@ -7,8 +7,9 @@ name: Deploy QA Tools UI
 # `out/` directory that is deployed directly to CF Pages.
 #
 # PRE-DEPLOY CHECKLIST (one-time provisioning):
-#   1. wrangler pages project create qa-tools-ui --production-branch main
-#   2. Set custom domain in CF Pages dashboard: qa-tools.lwt.internal
+#   1. wrangler pages project create qa-tools-ui --production-branch main  (done 2026-05-27)
+#   2. qa.latimerwoods.dev attached via cf-domain-reconcile workflow_dispatch
+#      (op flag: attach_qa_latimerwoods, added to cf-domain-reconcile 2026-05-27)
 #
 # See: docs/architecture/QA_TOOLS_ARCHITECTURE.md §9.1
 
@@ -42,5 +43,5 @@ jobs:
       dist_dir: out
       project_name: qa-tools-ui
       branch: main
-      health_url: ''
+      health_url: 'https://qa.latimerwoods.dev'
     secrets: inherit
