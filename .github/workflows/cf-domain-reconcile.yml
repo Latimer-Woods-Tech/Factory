@@ -49,6 +49,11 @@ on:
         required: true
         default: true
         type: boolean
+      attach_qa_latimerwoods:
+        description: "Attach qa.latimerwoods.dev to qa-tools-ui Pages project"
+        required: true
+        default: true
+        type: boolean
 
 concurrency:
   group: cf-domain-reconcile
@@ -95,11 +100,20 @@ jobs:
           ID=$(echo "$MAPPING" | cut -d' ' -f1)
           SVC=$(echo "$MAPPING" | cut -d' ' -f2)
           echo "Found mapping $ID ($HOST → $SVC); detaching..."
-          curl -fsS -X DELETE -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/domains/${ID}" \
-            > /tmp/detach.json
-          cat /tmp/detach.json | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!r.success){console.error('Detach failed:', JSON.stringify(r.errors)); process.exit(1)}"
-          echo "Detached $HOST"
+          # Workers /domains DELETE returns 204 No Content with empty body, so we
+          # check the HTTP status code instead of parsing the response as JSON.
+          STATUS=$(curl -s -o /tmp/detach.json -w "%{http_code}" -X DELETE \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/domains/${ID}")
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ]; then
+            echo "Detached $HOST (HTTP $STATUS)"
+          elif [ "$STATUS" = "404" ]; then
+            echo "Mapping $ID was already gone (HTTP 404) — treating as success"
+          else
+            echo "::error::Detach failed with HTTP $STATUS"
+            cat /tmp/detach.json
+            exit 1
+          fi
 
       # ─── 2. Create latimerwoods-dev Pages project if missing ──────────────────
       - name: Create latimerwoods-dev Pages project
@@ -207,6 +221,29 @@ jobs:
             exit 1
           fi
 
+      # ─── 6. Attach qa.latimerwoods.dev to qa-tools-ui Pages ───────────────────
+      - name: Attach qa.latimerwoods.dev to qa-tools-ui Pages
+        if: ${{ inputs.attach_qa_latimerwoods }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          PROJECT="qa-tools-ui"
+          HOST="qa.latimerwoods.dev"
+          RESPONSE=$(curl -s -o /tmp/qa.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/${PROJECT}/domains" \
+            -d "{\"name\":\"${HOST}\"}")
+          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "201" ]; then
+            echo "Attached ${HOST} to ${PROJECT}"
+          elif [ "$RESPONSE" = "409" ]; then
+            echo "${HOST} already attached to ${PROJECT}"
+          else
+            echo "::error::Unexpected response $RESPONSE attaching domain:"
+            cat /tmp/qa.json
+            exit 1
+          fi
+
       - name: Summary
         if: always()
         run: |
@@ -219,6 +256,7 @@ jobs:
           echo "| Attach dev.latimerwoods.dev   | ${{ inputs.attach_dev_latimerwoods }} | Pages custom-domain POST |" >> $GITHUB_STEP_SUMMARY
           echo "| Detach studio.thefactory.dev  | ${{ inputs.detach_studio_thefactory }} | Pages custom-domain DELETE |" >> $GITHUB_STEP_SUMMARY
           echo "| Attach assets.apunlimited.com | ${{ inputs.attach_assets_apunlimited }} | R2 custom-domain POST |" >> $GITHUB_STEP_SUMMARY
+          echo "| Attach qa.latimerwoods.dev    | ${{ inputs.attach_qa_latimerwoods }} | Pages custom-domain POST |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Remaining manual steps" >> $GITHUB_STEP_SUMMARY
           echo "- Verify \`apunlimited.com\` in Resend dashboard as a sender domain (for \`digest@apunlimited.com\`)" >> $GITHUB_STEP_SUMMARY

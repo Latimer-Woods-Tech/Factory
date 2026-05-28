@@ -26,7 +26,7 @@
 #         worker_name: admin-studio-production
 #         sentry_project: factory-admin-worker
 #         sentry_org: latwood-tech
-#         base_url: https://admin.latwoodtech.work
+#         base_url: https://api.apunlimited.com
 #         smoke_path: /healthz
 #         previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
 #         new_version_id:      ${{ needs.deploy.outputs.new_version_id }}
