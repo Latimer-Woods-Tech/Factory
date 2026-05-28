@@ -258,9 +258,9 @@ jobs:
           # for any worker with a Custom Domain attached (HTTP 1042 "Route not active"),
           # so workers.dev probing here would always fail post-#610.
           if [ "${{ steps.target.outputs.env }}" = "production" ]; then
-            base_url="https://admin.latwoodtech.work"
+            base_url="https://api.apunlimited.com"
           else
-            base_url="https://admin-staging.latwoodtech.work"
+            base_url="https://api.admin.latimerwoods.dev"
           fi
           node apps/admin-studio/scripts/verify-deployment.mjs "${{ steps.target.outputs.env }}" --base-url "$base_url"
 
@@ -274,7 +274,7 @@ jobs:
       worker_name:         admin-studio-production
       sentry_project:      factory-admin-worker
       sentry_org:          latwood-tech
-      base_url:            https://admin.latwoodtech.work
+      base_url:            https://api.apunlimited.com
       smoke_path:          /health
       previous_version_id: ${{ needs.deploy.outputs.previous_version_id }}
       new_version_id:      ${{ needs.deploy.outputs.new_version_id }}

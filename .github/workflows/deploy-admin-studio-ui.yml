@@ -64,7 +64,7 @@ jobs:
           # Worker mounts routes at /auth, /synthetic, /ai, etc. — no /api prefix, so do NOT append one here.
           # Staging custom domain attached via apps/admin-studio/wrangler.jsonc env.staging.routes.
           VITE_API_BASE_LOCAL: "http://localhost:8787"
-          VITE_API_BASE_STAGING: "https://admin-staging.latwoodtech.work"
+          VITE_API_BASE_STAGING: "https://api.admin.latimerwoods.dev"
           VITE_API_BASE_PROD: "https://api.apunlimited.com"
 
       - name: Deploy to Cloudflare Pages

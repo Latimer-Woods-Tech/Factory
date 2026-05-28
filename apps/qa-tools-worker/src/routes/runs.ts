@@ -116,8 +116,8 @@ runsRouter.post('/', async (c) => {
 
   const estimatedDurationMs = profileDefaults.estimatedMs;
   const dashboardBase = c.env.ENVIRONMENT === 'production'
-    ? 'https://qa-tools.lwt.internal'
-    : 'https://qa-tools-staging.lwt.internal';
+    ? 'https://qa.latimerwoods.dev'
+    : 'https://staging.qa-tools-ui.pages.dev';
 
   // Dispatch audit asynchronously — returns immediately with 202
   c.executionCtx.waitUntil(
@@ -290,8 +290,8 @@ runsRouter.post('/:id/create-issue', async (c) => {
   });
 
   const dashboardBase = c.env.ENVIRONMENT === 'production'
-    ? 'https://qa-tools.lwt.internal'
-    : 'https://qa-tools-staging.lwt.internal';
+    ? 'https://qa.latimerwoods.dev'
+    : 'https://staging.qa-tools-ui.pages.dev';
 
   const issueTitle = body.title ??
     `QA Finding: [${run.app_id}] ${String(run.violations_count)} violation(s) on ${run.environment}`;
