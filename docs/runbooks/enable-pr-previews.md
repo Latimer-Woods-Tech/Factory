@@ -52,6 +52,8 @@ jobs:
       app_name:                 capricast       # short name used in subdomain (api.pr-{n}.capricast.latimerwoods.dev)
       worker_base_name:         capricast-api   # production wrangler `name` field
       worker_path:              .               # directory containing wrangler.jsonc (use 'apps/foo' if nested)
+      worker_env:               staging         # named env whose bindings the preview inherits (CRITICAL)
+      wrangler_config:          ''              # e.g. 'wrangler.staging.toml' if you use per-env files
       production_hyperdrive_id: ${{ vars.PRODUCTION_HYPERDRIVE_ID }}
       pr_number:                ${{ github.event.number }}
       pr_action:                ${{ github.event.action }}

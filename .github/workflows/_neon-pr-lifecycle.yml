@@ -48,10 +48,26 @@ on:
         description: Path to the worker's directory containing wrangler.jsonc (e.g. 'apps/capricast-api').
         required: true
         type: string
+      worker_env:
+        description: |
+          wrangler env to deploy. Pass 'staging' (or whichever named env mirrors staging's
+          bindings) so the preview Worker inherits staging routes/secrets, NOT production's.
+          Leave empty only if your wrangler.jsonc has no named envs (top-level config only).
+        required: false
+        type: string
+        default: staging
       production_hyperdrive_id:
         description: The Hyperdrive UUID currently hardcoded in wrangler.jsonc. Used as the sed-replace anchor.
         required: true
         type: string
+      wrangler_config:
+        description: |
+          Optional path to a non-default wrangler config file (e.g. 'wrangler.staging.toml'
+          for repos that use per-env files instead of env blocks in a single wrangler.jsonc).
+          Empty means use the default wrangler.jsonc / wrangler.toml discovery.
+        required: false
+        type: string
+        default: ''
       pr_number:
         description: GitHub PR number (github.event.number from the caller).
         required: true
@@ -209,13 +225,26 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           WORKER_NAME: ${{ steps.names.outputs.worker_name }}
+          WORKER_ENV: ${{ inputs.worker_env }}
+          WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
         run: |
           set -euo pipefail
-          # --name overrides the wrangler.jsonc `name` field. Routes/custom_domain
-          # entries in wrangler.jsonc still apply to the named worker, so callers
-          # MUST keep their production routes inside an env block (e.g. env.production)
-          # and avoid declaring routes at the top level.
-          npx --yes wrangler deploy --name "$WORKER_NAME"
+          # Deploy the preview Worker:
+          # - --name overrides the wrangler.jsonc `name` field.
+          # - --env inherits the named env's bindings (DB, KV, routes outside top
+          #   level, etc.). Critical for Capricast-style configs where production
+          #   bindings live at the top level: without --env the preview Worker
+          #   would inherit production bindings.
+          # - --config picks up per-env wrangler files (e.g. wrangler.staging.toml).
+          ARGS=( deploy --name "$WORKER_NAME" )
+          if [ -n "$WORKER_ENV" ]; then
+            ARGS+=( --env "$WORKER_ENV" )
+          fi
+          if [ -n "$WRANGLER_CONFIG" ]; then
+            ARGS+=( --config "$WRANGLER_CONFIG" )
+          fi
+          echo "Running: npx wrangler ${ARGS[*]}"
+          npx --yes wrangler "${ARGS[@]}"
 
       - name: Attach preview custom domain
         env:
@@ -359,9 +388,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           WORKER_NAME: ${{ steps.names.outputs.worker_name }}
+          WORKER_ENV: ${{ inputs.worker_env }}
+          WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
         run: |
           set -euo pipefail
-          npx --yes wrangler delete --name "$WORKER_NAME" --force || echo "Worker $WORKER_NAME already gone"
+          ARGS=( delete --name "$WORKER_NAME" --force )
+          if [ -n "$WORKER_ENV" ]; then
+            ARGS+=( --env "$WORKER_ENV" )
+          fi
+          if [ -n "$WRANGLER_CONFIG" ]; then
+            ARGS+=( --config "$WRANGLER_CONFIG" )
+          fi
+          npx --yes wrangler "${ARGS[@]}" || echo "Worker $WORKER_NAME already gone"
 
       - name: Delete ephemeral Hyperdrive
         continue-on-error: true
