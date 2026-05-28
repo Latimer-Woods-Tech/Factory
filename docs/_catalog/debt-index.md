@@ -1,6 +1,6 @@
 # Documentation Debt Index
 
-**Generated:** 2026-05-28T11:08:14Z
+**Generated:** source-derived
 
 This generated index combines drift and broken-link debt into an owner-routed cleanup queue. Freshness debt is emitted separately as `docs/_catalog/freshness.md` during `npm run audit:docs-freshness`.
 

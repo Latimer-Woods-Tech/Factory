@@ -2,9 +2,9 @@
 
 # Documentation Catalog
 
-**Generated:** 2026-05-28T11:08:14Z
-**Commit:** 20cd2a0abe6cc68a0e5d37111b93cd7edf169c8c
-**Git status:** dirty
+**Generated:** source-derived
+**Commit:** unknown
+**Git status:** not-recorded
 
 | Status | Count |
 |---|---:|

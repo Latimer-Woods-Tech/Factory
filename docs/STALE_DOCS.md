@@ -2,7 +2,7 @@
 
 # Stale And Low-Trust Docs
 
-**Generated:** 2026-05-28T11:08:14Z
+**Generated:** source-derived
 
 This view lists docs that are stale/archive or missing a `Last Updated`/`last_updated` signal. Archive docs are historical evidence unless re-verified.
 
