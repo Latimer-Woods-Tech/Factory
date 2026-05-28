@@ -1,0 +1,104 @@
+version: 1
+last_updated: 2026-05-28
+policy: docs/runbooks/docs-control-plane-deployment.md
+truth_policy: docs/DOCS_TRUTH_AND_GUARDRAILS.md
+defaults:
+  owner: platform
+  status: canonical
+  fidelity: owner-reviewed
+  quality: usable
+canonical_docs:
+  - path: CLAUDE.md
+    owner: platform
+    scope: Standing orders, stack constraints, verification requirements, and package dependency order.
+    truth_sources:
+      - manual-review
+  - path: docs/DOCS_TRUTH_AND_GUARDRAILS.md
+    owner: platform
+    scope: Source-of-truth order, evidence rules, diagram policy, and anti-hallucination rules.
+    truth_sources:
+      - validation-output
+      - service-registry
+      - github-workflows
+      - source-code
+  - path: docs/architecture/FACTORY_V1.md
+    owner: architecture
+    scope: Whole-system architecture baseline. Mutable counts must be verified against executable sources.
+    truth_sources:
+      - source-code
+      - service-registry
+      - manual-review
+  - path: docs/decisions/2026-05-25-factory-alignment.md
+    owner: platform
+    scope: Current strategic alignment, non-goals, cost posture, and Factory/app boundary.
+    truth_sources:
+      - manual-review
+  - path: WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md
+    owner: platform
+    scope: Parent open work register and coordination process.
+    truth_sources:
+      - manual-review
+  - path: docs/operations/WORLD_CLASS_360_TASK_DASHBOARD.md
+    owner: platform
+    scope: Current iteration task board for World Class 360 execution.
+    truth_sources:
+      - manual-review
+  - path: docs/service-registry.yml
+    owner: platform
+    scope: Worker, Pages, package, URL, secret, var, binding, and rename-safety registry.
+    truth_sources:
+      - service-registry
+      - validation-output
+  - path: .github/workflows/REGISTRY.md
+    owner: platform
+    scope: Workflow tiering and lifecycle registry.
+    truth_sources:
+      - github-workflows
+      - manual-review
+  - path: prompts/README.md
+    owner: platform
+    scope: Active prompt index for agents.
+    truth_sources:
+      - manual-review
+  - path: prompts/AGENT_SUCCESS_CONTRACT.md
+    owner: platform
+    scope: Agent execution contract.
+    truth_sources:
+      - manual-review
+  - path: prompts/PHASE_E_VIDEO_REVENUE_PROMPT.md
+    owner: revenue
+    scope: Video revenue execution prompt.
+    truth_sources:
+      - manual-review
+  - path: prompts/ADMIN_STUDIO_COMMAND_PLANE_PROMPT.md
+    owner: admin-studio
+    scope: Admin Studio safe command-plane prompt.
+    truth_sources:
+      - manual-review
+  - path: docs/revenue/PRACTITIONER_VIDEO_STUDIO_READY_STATE_PLAN.md
+    owner: revenue
+    scope: Practitioner Video Studio paid self-serve build plan.
+    truth_sources:
+      - manual-review
+  - path: docs/revenue/XICO_CITY_TRANCHE_REVIEW.md
+    owner: revenue
+    scope: Xico City fit, risk, and World Class 360 completion framing.
+    truth_sources:
+      - manual-review
+  - path: docs/architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md
+    owner: architecture
+    scope: Xico City low-level requirements, architecture, and ecosystem integration map.
+    truth_sources:
+      - manual-review
+      - source-code
+  - path: docs/operations/WORLD_CLASS_360_SCOPE_GAP_REVIEW.md
+    owner: platform
+    scope: Full-scope gap review covering apps, templates, standards, configs, and process maturity.
+    truth_sources:
+      - manual-review
+      - source-code
+  - path: docs/operations/WORLD_CLASS_360_DISCIPLINE_BREAKDOWN.md
+    owner: platform
+    scope: Discipline taxonomy and routing layer for W360 ownership/review gates.
+    truth_sources:
+      - manual-review

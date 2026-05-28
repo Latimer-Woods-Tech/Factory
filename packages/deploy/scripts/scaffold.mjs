@@ -211,7 +211,7 @@ function applyHandoffToScaffold(handoff) {
   //    Worker's TypeScript types stay in sync with what the recipe requires.
   const BASE_ENV_SECRETS = new Set([
     'JWT_SECRET', 'SENTRY_DSN', 'POSTHOG_KEY',
-    'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'RESEND_API_KEY',
+    'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'DEEPSEEK_API_KEY', 'RESEND_API_KEY',
   ]);
   const secretAdditions = (plan.env?.secrets ?? []).filter((s) => !BASE_ENV_SECRETS.has(s));
 
@@ -461,6 +461,7 @@ export interface Env {
   POSTHOG_KEY: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  DEEPSEEK_API_KEY?: string;
   RESEND_API_KEY: string;
 
   // ── Non-secret vars (wrangler.jsonc [vars]) ──────────────────────────────
@@ -648,6 +649,7 @@ JWT_SECRET=dev-secret-at-least-32-characters-long
 SENTRY_DSN=
 POSTHOG_KEY=
 ANTHROPIC_API_KEY=
+DEEPSEEK_API_KEY=
 GROK_API_KEY=
 GROQ_API_KEY=
 RESEND_API_KEY=
@@ -769,6 +771,7 @@ async function configureSecrets() {
     'SENTRY_DSN',
     'POSTHOG_KEY',
     'ANTHROPIC_API_KEY',
+    'DEEPSEEK_API_KEY',
     'GROK_API_KEY',
     'GROQ_API_KEY',
     'RESEND_API_KEY',
