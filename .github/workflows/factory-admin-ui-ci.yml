@@ -24,8 +24,38 @@ permissions:
   deployments: write
 
 jobs:
+  detect-changes:
+    name: Detect Admin UI changes
+    runs-on: ubuntu-latest
+    outputs:
+      app_changed: ${{ steps.diff.outputs.app_changed }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect app/package changes
+        id: diff
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          changed=$(git diff --name-only "$BASE" HEAD 2>/dev/null \
+            | grep -E '^(apps/admin-studio-ui|packages/ui|packages/design-tokens)/' \
+            | head -1 || true)
+          if [ -n "$changed" ]; then
+            echo "app_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   mobile-e2e:
     name: Playwright mobile (${{ matrix.project }})
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -82,6 +112,8 @@ jobs:
 
   capabilities-e2e:
     name: Playwright capabilities flow (desktop)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -127,7 +159,8 @@ jobs:
     name: Chromatic visual regression
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/main' }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app_changed == 'true' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
     env:
       CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
     steps:
@@ -163,7 +196,8 @@ jobs:
           exit 1
 
   deploy-storybook:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app_changed == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/_app-deploy-pages.yml
     with:
       node_version: '24'
