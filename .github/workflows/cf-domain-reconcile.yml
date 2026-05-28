@@ -163,7 +163,16 @@ jobs:
           if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "201" ]; then
             echo "Attached ${HOST} to ${PROJECT}"
           elif [ "$RESPONSE" = "409" ]; then
-            echo "${HOST} already attached to ${PROJECT}"
+            echo "${HOST} already attached to ${PROJECT} (409)"
+          elif [ "$RESPONSE" = "400" ]; then
+            CODE=$(node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/attach.json','utf8')); console.log(r.errors?.[0]?.code ?? '')")
+            if [ "$CODE" = "8000018" ]; then
+              echo "${HOST} already attached to ${PROJECT} (400/8000018)"
+            else
+              echo "::error::Unexpected 400 attaching domain (code $CODE):"
+              cat /tmp/attach.json
+              exit 1
+            fi
           else
             echo "::error::Unexpected response $RESPONSE attaching domain:"
             cat /tmp/attach.json
@@ -242,7 +251,16 @@ jobs:
           if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "201" ]; then
             echo "Attached ${HOST} to ${PROJECT}"
           elif [ "$RESPONSE" = "409" ]; then
-            echo "${HOST} already attached to ${PROJECT}"
+            echo "${HOST} already attached to ${PROJECT} (409)"
+          elif [ "$RESPONSE" = "400" ]; then
+            CODE=$(node -e "const r=JSON.parse(require('fs').readFileSync('/tmp/qa.json','utf8')); console.log(r.errors?.[0]?.code ?? '')")
+            if [ "$CODE" = "8000018" ]; then
+              echo "${HOST} already attached to ${PROJECT} (400/8000018)"
+            else
+              echo "::error::Unexpected 400 attaching domain (code $CODE):"
+              cat /tmp/qa.json
+              exit 1
+            fi
           else
             echo "::error::Unexpected response $RESPONSE attaching domain:"
             cat /tmp/qa.json
