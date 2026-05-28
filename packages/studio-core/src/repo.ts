@@ -130,7 +130,7 @@ export type AIChatEvent =
   | { type: 'error'; message: string }
   | {
       type: 'done';
-      provider: 'anthropic' | 'gemini' | 'grok' | 'groq';
+      provider: 'anthropic' | 'gemini' | 'grok' | 'groq' | 'deepseek';
       tokens?: { input: number; output: number };
     };
 

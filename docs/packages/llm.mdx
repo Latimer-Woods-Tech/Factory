@@ -1,11 +1,11 @@
 ---
 title: "@latimer-woods-tech/llm"
-description: Anthropic → Grok → Groq automatic failover chain with streaming.
+description: Tier-routed LLM orchestration with Anthropic, Gemini, Grok, Groq, and DeepSeek.
 ---
 
 # @latimer-woods-tech/llm
 
-LLM completions with a three-provider failover chain (Anthropic → Grok → Groq). Includes streaming and system-prompt binding. Depends on `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`.
+LLM completions with tier-based routing, Cloudflare AI Gateway telemetry, streaming, budget controls, and system-prompt binding. Depends on `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`.
 
 ## Installation
 
@@ -19,16 +19,20 @@ npm install @latimer-woods-tech/llm
 wrangler secret put ANTHROPIC_API_KEY
 wrangler secret put GROK_API_KEY
 wrangler secret put GROQ_API_KEY
+wrangler secret put DEEPSEEK_API_KEY
 ```
 
-## Failover chain
+## Routing
 
-1. Try **Anthropic** (`claude-sonnet-4-20250514`)
-2. On `429` or `5xx` → try **Grok** (`grok-3-fast`)
-3. On Grok failure → try **Groq** (`llama-3.3-70b-versatile`)
-4. All fail → return `FactoryError` with code `LLM_ALL_PROVIDERS_FAILED`
+| Tier | Primary | Fallback | Notes |
+|---|---|---|---|
+| `fast` | Grok 4.3 | Claude Haiku 4 | routine drafts and small jobs |
+| `balanced` | Claude Sonnet 4 | Gemini 2.5 Pro | default; swaps to Gemini for long context |
+| `smart` | Claude Opus 4 | Gemini 2.5 Pro | high-reasoning work |
+| `verifier` | Groq Llama | — | cheap second opinion |
+| `workbench` | DeepSeek Chat | Groq Llama | boring, reviewable, non-sensitive batch work |
 
-Each failover is logged via `@latimer-woods-tech/logger`.
+Use `workbench` for docs summaries, changelog drafts, issue triage, classification, and other low-risk outputs that are reviewed before use. Do not send secrets, customer PII, billing data, production ops requests, or final customer-facing answers through this tier.
 
 ## API
 
@@ -39,15 +43,17 @@ function complete(
   messages: LLMMessage[],
   env: {
     ANTHROPIC_API_KEY: string;
-    GROK_API_KEY: string;
     GROQ_API_KEY: string;
+    GROK_API_KEY?: string;
+    DEEPSEEK_API_KEY?: string;
   },
   opts?: LLMOptions,
 ): Promise<FactoryResponse<LLMResult>>;
 
 interface LLMResult {
   content: string;
-  provider: 'anthropic' | 'grok' | 'groq';
+  provider: 'anthropic' | 'gemini' | 'grok' | 'groq' | 'deepseek';
+  tier: 'fast' | 'balanced' | 'smart' | 'verifier' | 'workbench';
   tokens: { input: number; output: number };
   latency: number; // ms
 }
@@ -99,7 +105,17 @@ import { complete, withSystem } from '@latimer-woods-tech/llm';
 // Direct completion
 const result = await complete(
   [{ role: 'user', content: 'What is the capital of France?' }],
-  { ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY, GROK_API_KEY: env.GROK_API_KEY, GROQ_API_KEY: env.GROQ_API_KEY },
+  {
+    AI_GATEWAY_BASE_URL: env.AI_GATEWAY_BASE_URL,
+    ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
+    GROQ_API_KEY: env.GROQ_API_KEY,
+    GROK_API_KEY: env.GROK_API_KEY,
+    DEEPSEEK_API_KEY: env.DEEPSEEK_API_KEY,
+    VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN,
+    VERTEX_PROJECT: env.VERTEX_PROJECT,
+    VERTEX_LOCATION: env.VERTEX_LOCATION,
+  },
+  { tier: 'workbench', workload: 'docs-summary' },
 );
 
 // With system prompt pre-bound

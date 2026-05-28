@@ -47,6 +47,7 @@ function toLlmEnv(
     | 'ANTHROPIC_API_KEY'
     | 'XAI_API_KEY'
     | 'GROQ_API_KEY'
+    | 'DEEPSEEK_API_KEY'
     | 'VERTEX_ACCESS_TOKEN'
     | 'VERTEX_PROJECT'
     | 'VERTEX_LOCATION'
@@ -59,6 +60,7 @@ function toLlmEnv(
     // Pass undefined (not '') so the library treats it as absent, not empty.
     GROK_API_KEY: env.XAI_API_KEY,
     GROQ_API_KEY: env.GROQ_API_KEY ?? '',
+    DEEPSEEK_API_KEY: env.DEEPSEEK_API_KEY,
     VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN ?? '',
     VERTEX_PROJECT: env.VERTEX_PROJECT ?? '',
     VERTEX_LOCATION: env.VERTEX_LOCATION ?? '',
