@@ -72,7 +72,7 @@ cat sa-key.b64  # Copy this value for GCP_SA_KEY
   "type": "service_account",
   "project_id": "factory-495015",
   "private_key_id": "...",
-  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+  "private_key": "<service-account-private-key-redacted>",
   "client_email": "factory-sa@factory-495015.iam.gserviceaccount.com",
   "client_id": "...",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
