@@ -76,7 +76,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/render-video.yml'
-      - 'apps/media-room/**'
+      - 'tools/media-room/**'
       - 'apps/video-studio/**'
       - 'apps/video-cron/**'
   # Also run on push to non-main branches so dry-run executes from the PR
@@ -88,7 +88,7 @@ on:
       - main
     paths:
       - '.github/workflows/render-video.yml'
-      - 'apps/media-room/**'
+      - 'tools/media-room/**'
       - 'apps/video-studio/**'
       - 'apps/video-cron/**'
 
@@ -169,7 +169,7 @@ jobs:
       - name: Validate Media Room Prime Self tutorial readiness
         run: |
           set -euo pipefail
-          node apps/media-room/src/cli.js validate-briefs \
+          node tools/media-room/src/cli.js validate-briefs \
             --brief-dir apps/video-studio/content-briefs/prime-self \
             --brief-key homepage-welcome \
             --brief-key daily-transits-guide \
@@ -624,7 +624,26 @@ jobs:
           DURATION_SECONDS: ${{ steps.brief.outputs.duration_seconds }}
         run: |
           set -euo pipefail
-          # Build props JSON with jq so multi-line scripts survive cleanly.
+          write_json_array() {
+            local value="$1"
+            local file="$2"
+            if [ -z "$value" ]; then
+              printf '[]' > "$file"
+            else
+              printf '%s' "$value" > "$file"
+            fi
+            jq -e 'type == "array"' "$file" >/dev/null
+          }
+
+          write_json_array "$SCREENSHOT_URLS_JSON" /tmp/screenshot-urls.json
+          write_json_array "$STEPS_JSON" /tmp/render-steps.json
+          write_json_array "$VISUAL_BEATS_JSON" /tmp/visual-beats.json
+
+          if [ -n "$DURATION_SECONDS" ]; then
+            jq -e -n --arg value "$DURATION_SECONDS" '$value | tonumber | . > 0' >/dev/null
+          fi
+
+          # Build props JSON with jq so multi-line scripts and brief JSON survive cleanly.
           PROPS=$(jq -n \
             --arg composition  "$COMPOSITION_ID" \
             --arg appId        "$APP_ID" \
@@ -634,16 +653,16 @@ jobs:
             --arg brandColor   "$BRAND_COLOR" \
             --arg brandAccent  "$BRAND_ACCENT" \
             --arg logoUrl      "$LOGO_URL" \
-            --argjson screenshotUrls "$SCREENSHOT_URLS_JSON" \
-            --argjson steps "$STEPS_JSON" \
-            --argjson visualBeats "$VISUAL_BEATS_JSON" \
+            --slurpfile screenshotUrls /tmp/screenshot-urls.json \
+            --slurpfile steps /tmp/render-steps.json \
+            --slurpfile visualBeats /tmp/visual-beats.json \
             --arg durationSeconds "$DURATION_SECONDS" \
             'if $composition == "WalkthroughVideo"
-             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls}
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls[0]}
              elif $composition == "TrainingVideo"
-             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps,durationSeconds:($durationSeconds | if . == "" then 30 else tonumber end)}
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps[0],durationSeconds:($durationSeconds | if . == "" then 30 else tonumber end)}
              elif $composition == "MarketingVideo"
-             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats,durationSeconds:($durationSeconds | if . == "" then 15 else tonumber end)}
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats[0],durationSeconds:($durationSeconds | if . == "" then 15 else tonumber end)}
              else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl}
              end')
           cd apps/video-studio

@@ -185,7 +185,7 @@ The tutorial and landing-page video item is not closed until:
 
 | Layer | Owns | Must not own |
 |---|---|---|
-| `apps/media-room` | readiness, validation, dispatch commands, QA metadata | Remotion rendering, ffmpeg, Stream secrets |
+| `tools/media-room` | readiness, validation, dispatch commands, QA metadata | Remotion rendering, ffmpeg, Stream secrets |
 | `apps/video-studio` | Remotion templates and render entrypoint | approval policy, product-specific QA |
 | `render-video.yml` | pipeline execution | deciding whether a brief is good enough |
 | `apps/schedule-worker` | shared queue and app-scoped job status | creative validation |
