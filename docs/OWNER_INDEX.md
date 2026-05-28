@@ -2,7 +2,7 @@
 
 # Documentation Owner Index
 
-**Generated:** 2026-05-28T11:08:14Z
+**Generated:** source-derived
 
 ## admin-studio (6)
 

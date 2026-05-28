@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -55,31 +54,6 @@ function globToRegExp(pattern) {
     }
   }
   return new RegExp(`${source}$`);
-}
-
-function getGitCommit() {
-  try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
-  } catch {
-    return null;
-  }
-}
-
-function getGitCommitDate() {
-  try {
-    return execFileSync('git', ['show', '-s', '--format=%cI', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
-  } catch {
-    return new Date().toISOString();
-  }
-}
-
-function getGitStatus() {
-  try {
-    const status = execFileSync('git', ['status', '--short'], { cwd: ROOT, encoding: 'utf8' }).trim();
-    return status ? 'dirty' : 'clean';
-  } catch {
-    return 'unknown';
-  }
 }
 
 function walk(dir, results = []) {
@@ -258,9 +232,9 @@ function findOverride(repoPath, overrides) {
 }
 
 function buildGraph() {
-  const generatedAt = process.env.DOCS_GENERATED_AT ?? getGitCommitDate();
-  const generatedAtCommit = getGitCommit();
-  const gitStatus = getGitStatus();
+  const generatedAt = process.env.DOCS_GENERATED_AT ?? 'source-derived';
+  const generatedAtCommit = process.env.DOCS_GENERATED_AT_COMMIT ?? null;
+  const gitStatus = process.env.DOCS_GIT_STATUS ?? 'not-recorded';
   const canonical = loadCanonicalConfig();
   const overrides = loadOverridesConfig();
   const files = collectMarkdownFiles(canonical.entries.map((entry) => entry.path));

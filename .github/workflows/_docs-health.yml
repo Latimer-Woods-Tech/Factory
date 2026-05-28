@@ -68,6 +68,11 @@ jobs:
         working-directory: _factory-tools
         run: npm install --no-audit --no-fund --ignore-scripts
 
+      - name: Install target dependencies for Factory checks
+        if: ${{ inputs.repo_profile == 'factory' }}
+        working-directory: target
+        run: npm install --no-audit --no-fund --ignore-scripts
+
       - name: Run docs health
         env:
           DOCS_TARGET_ROOT: ${{ github.workspace }}/target

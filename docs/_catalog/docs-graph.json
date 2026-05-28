@@ -1,9 +1,9 @@
 {
   "version": 1,
   "generated_by": "scripts/docs/catalog.mjs",
-  "generated_at": "2026-05-28T11:08:14Z",
-  "generated_at_commit": "20cd2a0abe6cc68a0e5d37111b93cd7edf169c8c",
-  "git_status": "dirty",
+  "generated_at": "source-derived",
+  "generated_at_commit": null,
+  "git_status": "not-recorded",
   "source_hashes": {
     "docs/_governance/canonical-docs.yml": "sha256:3aee7e69a9d9070ddd0879ee83d270e4b88eb200c4ee03ca8589ab9619f00cfc",
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"

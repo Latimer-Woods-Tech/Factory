@@ -1,6 +1,6 @@
 # Documentation Drift Report
 
-**Generated:** 2026-05-28T11:08:14Z
+**Generated:** source-derived
 **Result:** PASS
 **Errors:** 0
 **Warnings:** 264
