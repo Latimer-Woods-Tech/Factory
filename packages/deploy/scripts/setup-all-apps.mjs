@@ -40,7 +40,7 @@ const APPS = [
     workerName: 'daily-brief',
     envKey: 'DAILY_BRIEF',
     extraSecrets: [
-      'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'GROK_API_KEY', 'VERTEX_ACCESS_TOKEN',
+      'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'GROK_API_KEY', 'DEEPSEEK_API_KEY', 'VERTEX_ACCESS_TOKEN',
       'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID', 'RESEND_API_KEY',
       'GITHUB_TOKEN', 'NEWS_API_KEY', 'STRIPE_SECRET_KEY',
       'POSTHOG_API_KEY', 'POSTHOG_PROJECT_ID', 'SENTRY_AUTH_TOKEN', 'SENTRY_ORG'
@@ -56,19 +56,19 @@ const APPS = [
     name: 'cypher-healing',
     workerName: 'cypher-healing',
     envKey: 'CYPHER_HEALING',
-    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
+    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
   },
   {
     name: 'prime-self',
     workerName: 'prime-self-api',
     envKey: 'PRIME_SELF',
-    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
+    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
   },
   {
     name: 'ijustus',
     workerName: 'ijustus',
     envKey: 'IJUSTUS',
-    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'TELNYX_API_KEY'],
+    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'TELNYX_API_KEY'],
   },
   {
     name: 'the-calling',

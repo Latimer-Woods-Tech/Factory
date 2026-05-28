@@ -1,7 +1,7 @@
 # Document Status Index
 
-**Last updated:** April 29, 2026  
-**Purpose:** prevent stale planning artifacts from misleading future agents during the World Class 360 iteration.
+**Last updated:** 2026-05-27
+**Purpose:** prevent stale planning artifacts from misleading future agents and operators.
 
 ---
 
@@ -21,10 +21,13 @@
 | Document | Status | Why it is canonical |
 |---|---|---|
 | `CLAUDE.md` | Canonical | Standing orders, stack constraints, verification requirements, package dependency order |
-| `MASTER_INDEX.md` | Canonical | Entry point and source-of-truth routing |
+| `docs/DOCS_TRUTH_AND_GUARDRAILS.md` | Canonical | Source-of-truth order, evidence rules, and anti-hallucination policy |
+| `docs/architecture/FACTORY_V1.md` | Canonical architecture baseline | Whole-system architecture and playbooks; verify mutable counts/status against executable sources |
+| `docs/decisions/2026-05-25-factory-alignment.md` | Canonical alignment decision | Current strategic alignment, current non-goals, cost posture, and Factory/app boundary |
 | `WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md` | Canonical | Parent open work register and coordination process |
 | `docs/operations/WORLD_CLASS_360_TASK_DASHBOARD.md` | Canonical | Current iteration task board for World Class 360 execution |
 | `docs/service-registry.yml` | Canonical | Worker/Page/package registry and rename safety source |
+| `.github/workflows/REGISTRY.md` | Canonical | Workflow tiering and lifecycle registry |
 | `prompts/README.md` | Canonical | Active prompt index for agents |
 | `prompts/AGENT_SUCCESS_CONTRACT.md` | Canonical | Agent execution contract |
 | `prompts/PHASE_E_VIDEO_REVENUE_PROMPT.md` | Canonical | Video revenue execution prompt |
@@ -41,12 +44,14 @@
 
 | Document | Status | Use |
 |---|---|---|
+| `MASTER_INDEX.md` | Active reference with known link drift | Historical/root navigation; run docs-quality before relying on its links |
 | `PROJECT_STATUS.md` | Active reference | High-level repo/package/app status; defer open work status to the dashboard |
-| `docs/FACTORY_PACKAGE_MATRIX.md` | Active reference | Package capability mapping |
+| `docs/packages/factory-capabilities-matrix.mdx` | Active reference | Package capability mapping |
 | `docs/APP_PLANNING_PATTERN.md` | Active reference | Planning template for app repos |
 | `docs/admin-studio/00-MASTER-PLAN.md` | Active reference | Admin Studio product and safety model |
 | `docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md` | Active reference | Video/SelfPrime synergy detail; verify dates against dashboard |
 | `docs/runbooks/deployment.md` | Active reference | Deploy and smoke verification process |
+| `docs/runbooks/docs-control-plane-deployment.md` | Active reference | Deployment plan for generated catalog, docs graph, drift detection, diagram contracts, and docs health CI |
 | `docs/runbooks/database.md` | Active reference | Neon and migration guidance |
 | `docs/runbooks/github-secrets-and-tokens.md` | Active reference | Secret inventory and token conventions |
 | `docs/runbooks/environment-isolation-and-verification.md` | Active reference | Environment safety and verification workflow |
@@ -100,9 +105,13 @@ Do not delete automatically. Coordinator should review and either move to an arc
 When a document conflicts with the World Class 360 dashboard, follow this order:
 
 1. `CLAUDE.md`
-2. `WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md`
-3. `docs/operations/WORLD_CLASS_360_TASK_DASHBOARD.md`
+2. `docs/DOCS_TRUTH_AND_GUARDRAILS.md`
+3. Executed validation output and current file inventory
 4. `docs/service-registry.yml`
-5. Active prompt files under `prompts/`
-6. Active reference docs
-7. Historical docs only as evidence
+5. `docs/decisions/2026-05-25-factory-alignment.md`
+6. `docs/architecture/FACTORY_V1.md`
+7. `WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md`
+8. `docs/operations/WORLD_CLASS_360_TASK_DASHBOARD.md`
+9. Active prompt files under `prompts/`
+10. Active reference docs
+11. Historical docs only as evidence
