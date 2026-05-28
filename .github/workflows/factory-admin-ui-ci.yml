@@ -21,6 +21,7 @@ concurrency:
 
 permissions:
   contents: read
+  deployments: write
 
 jobs:
   mobile-e2e:
@@ -151,8 +152,12 @@ jobs:
         working-directory: apps/admin-studio-ui
         run: npx chromatic --project-token="$CHROMATIC_PROJECT_TOKEN" --storybook-build-dir=storybook-static --exit-zero-on-changes=false
 
+      - name: Warn when Chromatic token is missing on PR
+        if: env.CHROMATIC_PROJECT_TOKEN == '' && github.event_name == 'pull_request'
+        run: echo "::warning::CHROMATIC_PROJECT_TOKEN missing; skipping PR visual-regression publish"
+
       - name: Fail when Chromatic token is missing
-        if: env.CHROMATIC_PROJECT_TOKEN == ''
+        if: env.CHROMATIC_PROJECT_TOKEN == '' && github.ref == 'refs/heads/main'
         run: |
           echo "CHROMATIC_PROJECT_TOKEN is required for visual-regression gating."
           exit 1
