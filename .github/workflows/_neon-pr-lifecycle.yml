@@ -216,19 +216,29 @@ jobs:
           fi
           echo "hyperdrive_id=$UUID" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare ephemeral wrangler.jsonc
+      - name: Prepare ephemeral wrangler config
         working-directory: ${{ inputs.worker_path }}
         env:
           PROD_UUID: ${{ inputs.production_hyperdrive_id }}
           EPHEMERAL_UUID: ${{ steps.hyperdrive.outputs.hyperdrive_id }}
+          WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
         run: |
           set -euo pipefail
-          if ! grep -q "$PROD_UUID" wrangler.jsonc; then
-            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in wrangler.jsonc — sed replace would be a no-op"
+          # Determine which wrangler config file to patch.
+          # Callers that use per-env files (e.g. wrangler.staging.toml) pass
+          # wrangler_config; callers using a single wrangler.jsonc leave it empty.
+          CONFIG_FILE="${WRANGLER_CONFIG:-wrangler.jsonc}"
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "::error::Wrangler config '$CONFIG_FILE' not found in $(pwd)"
+            ls -la
             exit 1
           fi
-          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" wrangler.jsonc
-          echo "Swapped Hyperdrive UUID in wrangler.jsonc"
+          if ! grep -q "$PROD_UUID" "$CONFIG_FILE"; then
+            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in $CONFIG_FILE — sed replace would be a no-op"
+            exit 1
+          fi
+          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" "$CONFIG_FILE"
+          echo "Swapped Hyperdrive UUID in $CONFIG_FILE"
 
       - name: Deploy preview Worker
         working-directory: ${{ inputs.worker_path }}
