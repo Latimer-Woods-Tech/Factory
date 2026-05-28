@@ -304,6 +304,7 @@ workers:
     custom_domain: api.capricast.latimerwoods.dev
     custom_domain_status: attached                             # attached via wrangler.staging.toml custom_domain = true
     health_endpoint: /health
+    telemetry_required: false                                  # staging environment — not monitored for SLO
     deployment_status: live
     neon_project_id: dry-poetry-91897020
     neon_staging_branch: staging                               # br-curly-rice-amw5jk6i — Neon PR preview branches fork from here
