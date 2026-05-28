@@ -188,6 +188,11 @@ const EXPLICIT_EXEMPTIONS = new Map([
   // No custom domain attached in Phase 1 (health_url is empty in the deploy workflow).
   // Full verification coverage will be added when the domain is provisioned.
   ['.github/workflows/deploy-qa-tools-ui.yml', 'qa-tools-ui — internal Pages app, no health_url in Phase 1 deploy; pending domain attachment'],
+  // Developer Index Pages site at dev.latimerwoods.dev. Self-verifies via curl
+  // marker check in the deploy workflow itself rather than the standard
+  // verify-http-endpoint.mjs path, so WORKFLOW_RULES coverage would be
+  // redundant. Registry entry: latimerwoods-dev (pages section).
+  ['.github/workflows/deploy-latimerwoods-dev.yml', 'latimerwoods-dev — Pages site self-verifies inline; no per-target verifier needed'],
 ]);
 
 const registry = await loadRegistry(REGISTRY_PATH);

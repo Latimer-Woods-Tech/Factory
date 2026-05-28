@@ -1,0 +1,13 @@
+{
+  "name": "@latimer-woods-tech/latimerwoods-dev",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Developer dashboard for the Factory ecosystem — static site generated from docs/service-registry.yml, deployed to dev.latimerwoods.dev.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://factory.latwoodtech.com/schemas/graph.json",
+  "title": "CapabilityGraph",
+  "description": "A visual composition of primitives and concepts that compiles to a CapabilityPlan. For v1, only graphs with exactly one concept node are supported.",
+  "type": "object",
+  "required": ["id", "name", "nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "description": { "type": "string", "maxLength": 1000 },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "nodeType", "ref", "position"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "nodeType": { "type": "string", "enum": ["primitive", "concept"] },
+          "ref": { "type": "string", "minLength": 1, "description": "Primitive id or concept id from the registry." },
+          "position": {
+            "type": "object",
+            "required": ["x", "y"],
+            "additionalProperties": false,
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          },
+          "params": {
+            "type": "object",
+            "description": "Concept parameters when nodeType=concept.",
+            "additionalProperties": true
+          },
+          "label": { "type": "string", "maxLength": 80 }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sourceNodeId", "targetNodeId"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "sourceNodeId": { "type": "string", "minLength": 1 },
+          "targetNodeId": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "maxLength": 80 }
+        }
+      }
+    }
+  }
+}
