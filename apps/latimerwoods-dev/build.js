@@ -14,55 +14,70 @@ const ROOT_DIR = join(__dirname, '..', '..');
 const REGISTRY_PATH = join(ROOT_DIR, 'docs', 'service-registry.yml');
 const DIST_DIR = join(__dirname, 'dist');
 
+// Zone classification by exact-hostname-suffix match. We parse the URL with
+// the WHATWG URL parser and compare against the apex domain of each zone, so
+// `evil-selfprime.net.attacker.com` cannot masquerade as a customer-product
+// host (CodeQL js/regex/missing-regexp-anchor — earlier regex matchers were
+// unanchored).
 const ZONES = [
   {
     id: 'products',
     name: 'Customer Products',
     accent: '#10b981',
     description: 'Branded customer-facing products. Live revenue surfaces.',
-    matchers: [/selfprime\.net/, /capricast\.com/, /cypherofhealing\.com/, /cipherofhealing\.com/, /xicocity\.com/],
+    apexes: ['selfprime.net', 'capricast.com', 'cypherofhealing.com', 'cipherofhealing.com', 'xicocity.com'],
   },
   {
     id: 'operator',
     name: 'Operator Surface',
     accent: '#a855f7',
     description: 'apunlimited.com — the Factory as a product. Admin Studio UI + API.',
-    matchers: [/apunlimited\.com/],
+    apexes: ['apunlimited.com'],
   },
   {
     id: 'infra',
     name: 'Production Infrastructure',
     accent: '#3b82f6',
     description: 'latwoodtech.work — machine-to-machine APIs. Always-on internal Workers.',
-    matchers: [/latwoodtech\.work/],
+    apexes: ['latwoodtech.work'],
   },
   {
     id: 'dev',
     name: 'Developer Surface',
     accent: '#f59e0b',
     description: 'latimerwoods.dev — staging environments, dev tools, PR previews.',
-    matchers: [/latimerwoods\.dev/],
+    apexes: ['latimerwoods.dev'],
   },
   {
     id: 'marketing',
     name: 'Marketing',
     accent: '#ec4899',
     description: 'latwoodtech.com — company homepage.',
-    matchers: [/latwoodtech\.com(?!\b\/work)/],
+    apexes: ['latwoodtech.com'],
   },
   {
     id: 'workers-dev',
     name: 'Unhomed (workers.dev)',
     accent: '#64748b',
     description: 'Services still on the workers.dev fallback. Should be assigned a custom domain.',
-    matchers: [/workers\.dev/],
+    apexes: ['workers.dev'],
   },
 ];
 
+function hostMatchesApex(host, apex) {
+  return host === apex || host.endsWith('.' + apex);
+}
+
 function classifyEntry(entry) {
   const url = entry.url || entry.workers_dev_url || '';
+  let host;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return 'workers-dev';
+  }
   for (const zone of ZONES) {
-    if (zone.matchers.some((re) => re.test(url))) return zone.id;
+    if (zone.apexes.some((apex) => hostMatchesApex(host, apex))) return zone.id;
   }
   return 'workers-dev';
 }
