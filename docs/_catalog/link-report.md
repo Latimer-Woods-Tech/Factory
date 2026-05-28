@@ -148,8 +148,8 @@
 | active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 778 | ./04-DEPLOYMENT.md | file not found |
 | active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 779 | ./05-OPERATIONS.md | file not found |
 | active | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 288 | ../PRODUCT_PRINCIPLES.md | file not found |
-| active | architecture | docs/architecture/SURFACES.md | 78 | ../PRODUCT_PRINCIPLES.md | file not found |
-| active | architecture | docs/architecture/SURFACES.md | 127 | ../PORTFOLIO_FOCUS.md | file not found |
+| active | architecture | docs/architecture/SURFACES.md | 79 | ../PRODUCT_PRINCIPLES.md | file not found |
+| active | architecture | docs/architecture/SURFACES.md | 129 | ../PORTFOLIO_FOCUS.md | file not found |
 | archive | platform | docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md | 236 | ./docs/BIRTHTIME_FORMATTING_TODO.md | file not found |
 | archive | platform | docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md | 237 | ./CLAUDE.md | file not found |
 | archive | platform | docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md | 238 | ./docs/design-system-component-guide.md | file not found |

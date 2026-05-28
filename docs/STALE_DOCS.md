@@ -21,6 +21,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [apps/supervisor/README.md](../apps/supervisor/README.md) | active | unverified | supervisor | unknown | factory-supervisor |
 | [apps/video-studio/README.md](../apps/video-studio/README.md) | active | unverified | video-studio | unknown | Video Studio |
 | [apps/webhook-fanout/README.md](../apps/webhook-fanout/README.md) | active | unverified | webhook-fanout | unknown | webhook-fanout |
+| [docs/ACCESS.md](ACCESS.md) | active | unverified | platform | unknown | Factory Access Map |
 | [docs/ACCESSIBILITY_AUDIT_BASELINE.md](ACCESSIBILITY_AUDIT_BASELINE.md) | active | unverified | platform | unknown | Accessibility Audit & Remediation Plan |
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | platform | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | platform | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
