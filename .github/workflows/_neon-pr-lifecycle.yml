@@ -182,25 +182,36 @@ jobs:
           set -euo pipefail
           NAME="$HD_NAME"
 
-          # If a Hyperdrive with this name already exists (from a prior PR
-          # synchronize), delete it so we can recreate with a fresh connection
-          # string. Hyperdrive does not support in-place connection-string
-          # updates via wrangler CLI in all versions, so create-then-delete
-          # is the safer path here.
-          EXISTING=$(npx --yes wrangler hyperdrive list --json 2>/dev/null \
-            | HD_NAME="$NAME" node -e "const list=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=list.find(h=>h.name===process.env.HD_NAME); console.log(m?m.id:'')")
+          # wrangler hyperdrive list --json is unsupported (outputs non-JSON).
+          # Use CF API for all list/delete operations; wrangler only for create.
+          hd_list() {
+            curl -fsS \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs"
+          }
+          hd_find_id() {
+            HD_NAME="$1" node -e "
+              const r=JSON.parse(require('fs').readFileSync(0,'utf8'));
+              const m=(r.result??[]).find(h=>h.name===process.env.HD_NAME);
+              console.log(m?m.id:'');
+            "
+          }
 
+          EXISTING=$(hd_list | hd_find_id "$NAME")
           if [ -n "$EXISTING" ]; then
-            echo "Removing stale Hyperdrive $EXISTING ($NAME) so we can recreate"
-            npx --yes wrangler hyperdrive delete "$EXISTING" || true
+            echo "Removing stale Hyperdrive $EXISTING ($NAME) before recreating"
+            curl -fsS -X DELETE \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs/${EXISTING}" \
+              > /dev/null
           fi
 
-          OUTPUT=$(npx --yes wrangler hyperdrive create "$NAME" --connection-string "$CONN")
-          # wrangler hyperdrive create prints `id = "<uuid>"` — grep for it.
-          UUID=$(echo "$OUTPUT" | grep -oE '[0-9a-f]{32}' | head -1)
+          npx --yes wrangler hyperdrive create "$NAME" --connection-string "$CONN"
+
+          # Read back UUID via CF API — wrangler output format varies across versions.
+          UUID=$(hd_list | hd_find_id "$NAME")
           if [ -z "$UUID" ]; then
-            echo "::error::Could not extract Hyperdrive UUID from wrangler output:"
-            echo "$OUTPUT"
+            echo "::error::Hyperdrive '$NAME' not found after create"
             exit 1
           fi
           echo "hyperdrive_id=$UUID" >> "$GITHUB_OUTPUT"
@@ -409,10 +420,19 @@ jobs:
           HD_NAME: ${{ steps.names.outputs.hyperdrive_name }}
         run: |
           set -euo pipefail
-          ID=$(npx --yes wrangler hyperdrive list --json 2>/dev/null \
-            | HD_NAME="$HD_NAME" node -e "const list=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=list.find(h=>h.name===process.env.HD_NAME); console.log(m?m.id:'')")
+          ID=$(curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs" \
+            | HD_NAME="$HD_NAME" node -e "
+              const r=JSON.parse(require('fs').readFileSync(0,'utf8'));
+              const m=(r.result??[]).find(h=>h.name===process.env.HD_NAME);
+              console.log(m?m.id:'');
+            ")
           if [ -n "$ID" ]; then
-            npx --yes wrangler hyperdrive delete "$ID" || true
+            curl -fsS -X DELETE \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs/${ID}" \
+              > /dev/null
             echo "Deleted Hyperdrive $HD_NAME ($ID)"
           else
             echo "No Hyperdrive named $HD_NAME (already gone)"
