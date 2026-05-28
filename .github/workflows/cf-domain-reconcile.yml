@@ -95,11 +95,20 @@ jobs:
           ID=$(echo "$MAPPING" | cut -d' ' -f1)
           SVC=$(echo "$MAPPING" | cut -d' ' -f2)
           echo "Found mapping $ID ($HOST → $SVC); detaching..."
-          curl -fsS -X DELETE -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/domains/${ID}" \
-            > /tmp/detach.json
-          cat /tmp/detach.json | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8')); if(!r.success){console.error('Detach failed:', JSON.stringify(r.errors)); process.exit(1)}"
-          echo "Detached $HOST"
+          # Workers /domains DELETE returns 204 No Content with empty body, so we
+          # check the HTTP status code instead of parsing the response as JSON.
+          STATUS=$(curl -s -o /tmp/detach.json -w "%{http_code}" -X DELETE \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/domains/${ID}")
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ]; then
+            echo "Detached $HOST (HTTP $STATUS)"
+          elif [ "$STATUS" = "404" ]; then
+            echo "Mapping $ID was already gone (HTTP 404) — treating as success"
+          else
+            echo "::error::Detach failed with HTTP $STATUS"
+            cat /tmp/detach.json
+            exit 1
+          fi
 
       # ─── 2. Create latimerwoods-dev Pages project if missing ──────────────────
       - name: Create latimerwoods-dev Pages project
