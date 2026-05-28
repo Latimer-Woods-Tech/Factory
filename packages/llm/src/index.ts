@@ -21,8 +21,9 @@ export interface LLMMessage {
  *  - `balanced`  → Anthropic Sonnet (default)
  *  - `smart`     → Anthropic Opus OR Gemini 2.5 Pro if input is long-context (>150k tokens estimated)
  *  - `verifier`  → Groq Llama (cheap second opinion; only used from verifier code path)
+ *  - `workbench` → DeepSeek Chat with Groq fallback (boring, reviewable, non-sensitive batch work)
  */
-export type LLMTier = 'fast' | 'balanced' | 'smart' | 'verifier';
+export type LLMTier = 'fast' | 'balanced' | 'smart' | 'verifier' | 'workbench';
 
 /**
  * Options that influence LLM completion behaviour.
@@ -84,9 +85,9 @@ export interface LLMOptions {
 }
 
 /**
- * Provider that produced an LLM response. `grok` removed in 0.3.0.
+ * Provider that produced an LLM response.
  */
-export type LLMProvider = 'anthropic' | 'gemini' | 'groq' | 'grok';
+export type LLMProvider = 'anthropic' | 'gemini' | 'groq' | 'grok' | 'deepseek';
 
 /**
  * Result returned by a successful completion.
@@ -115,6 +116,8 @@ export interface LLMEnv {
   AI_GATEWAY_BASE_URL: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  /** Optional — only required for `{ tier: 'workbench' }` or `deepseek-*` model overrides. */
+  DEEPSEEK_API_KEY?: string;
   /** Optional — only required when caller passes `{ model: 'grok-*' }` override. */
   GROK_API_KEY?: string;
   /**
@@ -204,6 +207,9 @@ const MODELS = {
   grok: {
     fast: 'grok-4.3',
   },
+  deepseek: {
+    workbench: 'deepseek-chat',
+  },
 } as const;
 
 const DEFAULT_MAX_TOKENS = 1024;
@@ -292,6 +298,9 @@ const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheR
   'llama-4-maverick': { input: 0.50, output: 0.77, cacheRead: 0.05, cacheWrite: 0.50 },
   // Grok 4.3
   'grok-4.3': { input: 1.25, output: 2.50, cacheRead: 0.00, cacheWrite: 0.00 },
+  // DeepSeek API pricing as of 2026-05: cache-write conservatively uses cache-miss input pricing.
+  'deepseek-chat': { input: 0.27, output: 1.10, cacheRead: 0.07, cacheWrite: 0.27 },
+  'deepseek-reasoner': { input: 0.55, output: 2.19, cacheRead: 0.14, cacheWrite: 0.55 },
   // Deprecated aliases retained for historical ledger rows.
   'grok-4-fast': { input: 1.25, output: 2.50, cacheRead: 0.00, cacheWrite: 0.00 },
   'grok-3-mini-latest': { input: 1.25, output: 2.50, cacheRead: 0.00, cacheWrite: 0.00 },
@@ -519,6 +528,34 @@ function buildGrokRequest(
   };
 }
 
+function buildDeepSeekRequest(
+  model: string,
+  messages: LLMMessage[],
+  opts: LLMOptions,
+  env: LLMEnv,
+): { url: string; headers: Record<string, string>; body: string } {
+  if (!env.DEEPSEEK_API_KEY) {
+    throw new ValidationError('DEEPSEEK_API_KEY required for workbench tier or deepseek-* model override');
+  }
+  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const merged: LLMMessage[] = [];
+  if (sys) merged.push({ role: 'system', content: sys });
+  for (const m of messages) if (m.role !== 'system') merged.push(m);
+  return {
+    url: `${env.AI_GATEWAY_BASE_URL}/deepseek/chat/completions`,
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+      temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
+      messages: merged,
+    }),
+  };
+}
+
 // ─── Response parsers ──────────────────────────────────────────────────────
 
 interface AnthropicResponse {
@@ -698,10 +735,16 @@ function plan(tier: LLMTier, opts: LLMOptions, tokenEstimate: number): RoutePlan
     if (m.startsWith('claude')) return { primary: { provider: 'anthropic', model: m } };
     if (m.startsWith('gemini')) return { primary: { provider: 'gemini', model: m } };
     if (m.startsWith('grok')) return { primary: { provider: 'grok', model: m } };
+    if (m.startsWith('deepseek')) return { primary: { provider: 'deepseek', model: m } };
     return { primary: { provider: 'groq', model: m } };
   }
   const longContext = tokenEstimate >= (opts.longContextThreshold ?? DEFAULT_LONG_CONTEXT_THRESHOLD);
   switch (tier) {
+    case 'workbench':
+      return {
+        primary: { provider: 'deepseek', model: MODELS.deepseek.workbench },
+        fallback: { provider: 'groq', model: MODELS.groq.verifier },
+      };
     case 'verifier':
       return { primary: { provider: 'groq', model: MODELS.groq.verifier } };
     case 'smart':
@@ -756,6 +799,9 @@ async function callOne(
     case 'grok':
       req = buildGrokRequest(leg.model, messages, opts, env);
       break;
+    case 'deepseek':
+      req = buildDeepSeekRequest(leg.model, messages, opts, env);
+      break;
   }
   const { json, gatewayRequestId, attempts } = await callWithBackoff(
     leg.provider,
@@ -774,6 +820,8 @@ async function callOne(
       return { parsed: parseGroq(json), gatewayRequestId, attempts };
     case 'grok':
       return { parsed: parseGroq(json), gatewayRequestId, attempts };
+    case 'deepseek':
+      return { parsed: parseGroq(json), gatewayRequestId, attempts };
   }
 }
 
@@ -785,6 +833,7 @@ async function callOne(
  *   - `balanced` → Anthropic Sonnet; Gemini 2.5 Pro if `longContextThreshold` exceeded
  *   - `smart`    → Anthropic Opus; Gemini 2.5 Pro if long-context
  *   - `verifier` → Groq Llama 3.3 70B (no fallback — verifier is inherently cheap/best-effort)
+ *   - `workbench` → DeepSeek Chat; Groq fallback for boring/reviewable internal batch jobs
  *
  * All provider traffic flows through Cloudflare AI Gateway at `AI_GATEWAY_BASE_URL`.
  *
