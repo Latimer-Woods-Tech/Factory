@@ -1,5 +1,5 @@
 {
-  "generated": "2026-05-27T08:52:14.106847+00:00",
+  "generated": "2026-05-28T08:57:06.952497+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,7 +7,7 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-05-27T08:51:16.273687+00:00",
+      "timestamp": "2026-05-28T08:56:28.431296+00:00",
       "cohesion": 53,
       "dimensions": [
         {
@@ -302,7 +302,7 @@
       "repo_key": "CC",
       "repo_name": "capricast",
       "repo_path": "Latimer-Woods-Tech/capricast",
-      "timestamp": "2026-05-27T08:51:26.630434+00:00",
+      "timestamp": "2026-05-28T08:56:35.110348+00:00",
       "cohesion": 42,
       "dimensions": [
         {
@@ -597,7 +597,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-05-27T08:51:45.779703+00:00",
+      "timestamp": "2026-05-28T08:56:49.249744+00:00",
       "cohesion": 62,
       "dimensions": [
         {
@@ -892,8 +892,8 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-05-27T08:51:56.701250+00:00",
-      "cohesion": 40,
+      "timestamp": "2026-05-28T08:56:55.766682+00:00",
+      "cohesion": 43,
       "dimensions": [
         {
           "key": "stack",
@@ -1031,7 +1031,7 @@
           "key": "security",
           "title": "Security",
           "weight": 15,
-          "score": 20,
+          "score": 40,
           "checks": [
             {
               "name": "CodeQL workflow present",
@@ -1055,7 +1055,7 @@
             },
             {
               "name": "Renovate config present",
-              "passed": false,
+              "passed": true,
               "detail": ""
             }
           ]
@@ -1187,7 +1187,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-05-27T08:52:14.106260+00:00",
+      "timestamp": "2026-05-28T08:57:06.951767+00:00",
       "cohesion": 51,
       "dimensions": [
         {

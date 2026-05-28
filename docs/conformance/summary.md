@@ -1,6 +1,6 @@
 # Platform Conformance — Shadow Mode
 
-*Generated: 2026-05-27 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
+*Generated: 2026-05-28 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
 
 ## Cohesion summary
 
@@ -9,7 +9,7 @@
 | HumanDesign | **53** | 40 | 0 | 100 | 40 | 80 | 67 | 33 | 67 | 67 | 25 |
 | capricast | **42** | 40 | 20 | 40 | 40 | 60 | 33 | 33 | 33 | 67 | 50 |
 | factory-admin-studio | **62** | 60 | 80 | 20 | 40 | 80 | 100 | 33 | 67 | 100 | 75 |
-| cypher-healing | **40** | 60 | 80 | 60 | 0 | 20 | 67 | 33 | 33 | 0 | 25 |
+| cypher-healing | **43** | 60 | 80 | 60 | 0 | 40 | 67 | 33 | 33 | 0 | 25 |
 | xico-city | **51** | 80 | 80 | 60 | 0 | 20 | 100 | 33 | 33 | 67 | 50 |
 
 **Shadow threshold:** 70. Below this would block deploys once Stage 4 ships.
@@ -203,7 +203,7 @@
 - ❌ DSR endpoint hints (export + delete)
 - ✅ Migration PII columns documented
 
-## cypher-healing — 40/100
+## cypher-healing — 43/100
 
 ### Stack — 60/100 (weight 10)
 - ✅ wrangler.jsonc present
@@ -233,12 +233,12 @@
 - ❌ SLO doc present
 - ❌ Structured log fields
 
-### Security — 20/100 (weight 15)
+### Security — 40/100 (weight 15)
 - ❌ CodeQL workflow present
 - ❌ npm audit step in CI
 - ✅ No NPM_TOKEN in workflows
 - ❌ Trusted Publishers (OIDC)
-- ❌ Renovate config present
+- ✅ Renovate config present
 
 ### Schema — 67/100 (weight 5)
 - ✅ Migrations directory present
