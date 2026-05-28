@@ -139,7 +139,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (317)
+## platform (318)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -152,6 +152,7 @@
 | [docs/_generated/workflow-map.md](_generated/workflow-map.md) | generated | generated | unknown | Factory Workflow Map |
 | [docs/_governance/doc-policy.md](_governance/doc-policy.md) | active | unverified | 2026-05-28 | Documentation Governance Policy |
 | [docs/_governance/evidence-policy.md](_governance/evidence-policy.md) | active | unverified | 2026-05-28 | Documentation Evidence Policy |
+| [docs/ACCESS.md](ACCESS.md) | active | unverified | unknown | Factory Access Map |
 | [docs/ACCESSIBILITY_AUDIT_BASELINE.md](ACCESSIBILITY_AUDIT_BASELINE.md) | active | unverified | unknown | Accessibility Audit & Remediation Plan |
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
