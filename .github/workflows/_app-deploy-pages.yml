@@ -20,8 +20,8 @@
 #       secrets: inherit
 #
 # REQUIRED SECRETS (passed via `secrets: inherit` from org-level vault)
-#   CLOUDFLARE_API_TOKEN      - Token with Cloudflare Pages:Edit permission
-#   CLOUDFLARE_ACCOUNT_ID     - Cloudflare account ID
+#   CF_API_TOKEN              - Token with Cloudflare Pages:Edit permission (same secret used by Workers deploys)
+#   CF_ACCOUNT_ID             - Cloudflare account ID
 #
 # OPTIONAL INPUTS
 #   node_version       - Node.js major version (default '22')
@@ -127,8 +127,8 @@ jobs:
             sleep "$delay"
           done
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
       - name: Post-deploy health check
         if: ${{ inputs.health_url != '' }}
         run: |
