@@ -58,8 +58,7 @@
     "production": {
       "workers_dev": false,
       "routes": [
-        { "pattern": "supervisor.latwoodtech.work/*", "zone_name": "latwoodtech.work" },
-        { "pattern": "supervisor.apunlimited.com/*", "zone_name": "apunlimited.com" }
+        { "pattern": "supervisor.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
       ],
       // vars, durable_objects, d1_databases, and migrations are NOT inherited by
       // named environments — they must be repeated here or the production worker

@@ -247,8 +247,8 @@ async function notifySlack(
   workerEnv: string,
 ): Promise<void> {
   const dashboardBase = workerEnv === 'production'
-    ? 'https://qa-tools.lwt.internal'
-    : 'https://qa-tools-staging.lwt.internal';
+    ? 'https://qa.latimerwoods.dev'
+    : 'https://staging.qa-tools-ui.pages.dev';
 
   const body = {
     text: `🔴 QA Audit Failed — ${appId}/${environment}`,

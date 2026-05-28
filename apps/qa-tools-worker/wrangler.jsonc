@@ -57,9 +57,9 @@
   "env": {
     "production": {
       "name": "qa-tools-worker",
-      // NOTE: qa-tools.lwt.internal is a reserved future domain (not a real CF zone yet).
-      // Worker is accessible at https://qa-tools-worker.adrper79.workers.dev until
-      // lwt.internal is registered. Add the custom_domain route back once the zone exists.
+      "routes": [
+        { "pattern": "api.qa.latimerwoods.dev", "custom_domain": true }
+      ],
       "hyperdrive": [
         { "binding": "DB", "id": "ed95104a65c541c8b98f842e01f5894a" }
       ],

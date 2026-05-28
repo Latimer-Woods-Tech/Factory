@@ -39,6 +39,8 @@ export interface Env {
   VERTEX_LOCATION?: string;
   /** Google OAuth 2.0 client ID for /auth/google endpoint */
   GOOGLE_CLIENT_ID?: string;
+  /** Required Google Workspace hosted domain for /auth/google, e.g. "latwoodtech.com". */
+  STUDIO_GOOGLE_WORKSPACE_DOMAIN?: string;
   /** JSON map of allowlisted users for Google OAuth: {"email@example.com": {"role": "owner"}} */
   STUDIO_ALLOWED_USERS_JSON?: string;
   /** Sentry DSN for error reporting */
