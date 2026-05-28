@@ -132,14 +132,30 @@ jobs:
           # Deploy
           npx wrangler deploy --env production
 
-      - name: Verify deployment
+      - name: Verify deployment (workers.dev — always reachable post-deploy)
         run: |
           echo "🚀 Deployment complete"
-          echo "📍 Health check: https://api.qa.latimerwoods.dev/health"
+          echo "📍 Primary health check (workers.dev fallback)"
           node scripts/verify-http-endpoint.mjs \
-            --url https://api.qa.latimerwoods.dev/health \
+            --url https://qa-tools-worker.adrper79.workers.dev/health \
             --status 200 \
             --json-field status \
             --json-equals ok \
             --retries 8 \
             --delay-ms 5000
+
+      - name: Verify api.qa.latimerwoods.dev (best-effort)
+        continue-on-error: true
+        run: |
+          # Custom domain DNS + edge cert provisioning can take 1-3 minutes (or
+          # longer for first attach). Best-effort during the cert window;
+          # promote to primary once we observe sustained 200s.
+          echo "📍 Best-effort health check (custom domain)"
+          node scripts/verify-http-endpoint.mjs \
+            --url https://api.qa.latimerwoods.dev/health \
+            --status 200 \
+            --json-field status \
+            --json-equals ok \
+            --retries 6 \
+            --delay-ms 10000 \
+            || echo "::warning::api.qa.latimerwoods.dev not 200 — likely cert/DNS still propagating on first attach."
