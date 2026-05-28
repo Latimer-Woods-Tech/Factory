@@ -18,7 +18,7 @@
 //   node scripts/validate-docs-quality.mjs --max-errors 20 --json
 
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, dirname, join, extname, relative, basename } from 'node:path';
+import { resolve, dirname, join, extname, relative, basename, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +105,11 @@ collectFiles(REPO_ROOT, false).forEach(f => allFiles.add(f));
 const fileArray = [...allFiles].sort();
 console.log(`[INFO] Scanning ${fileArray.length} Markdown files…`);
 
+function isInsideRepo(filePath) {
+  const rel = relative(REPO_ROOT, filePath);
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+}
+
 // ─── Build anchor index (id= and ## headings per file) ───────────────────────
 
 /** @type {Map<string, Set<string>>} filepath → set of anchor slugs */
@@ -163,7 +168,7 @@ for (const filePath of fileArray) {
       const target = resolve(dirname(filePath), pathPart);
 
       // Check file existence
-      if (!existsSync(target)) {
+      if (!isInsideRepo(target) || !existsSync(target)) {
         broken.push({ file: relative(REPO_ROOT, filePath), line: i + 1, target: raw, reason: 'file not found' });
         if (MAX_ERRORS > 0 && broken.length >= MAX_ERRORS) break outer;
         continue;
