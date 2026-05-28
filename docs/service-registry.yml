@@ -296,6 +296,28 @@ workers:
         line: ~10
         pattern: "https://admin-studio-production.adrper79.workers.dev"
 
+  - id: capricast-api-staging
+    name: capricast-api-staging                                # matches wrangler.staging.toml name in capricast repo
+    repo: Latimer-Woods-Tech/capricast
+    url: https://api.capricast.latimerwoods.dev                # canonical staging domain — latimerwoods.dev dev surface
+    workers_dev_url: https://capricast-api-staging.adrper79.workers.dev
+    custom_domain: api.capricast.latimerwoods.dev
+    custom_domain_status: pending_attach                       # attaches on next capricast-api-staging deploy (Phase 3)
+    health_endpoint: /health
+    neon_project_id: dry-poetry-91897020                       # capricast.com Neon project
+    neon_staging_branch: staging                               # br-curly-rice-amw5jk6i — created 2026-05-28
+    neon_hyperdrive_id: "43f49bb7de7a49edb290c66a7b9cab9e"    # staging Hyperdrive binding (used by _neon-pr-lifecycle.yml as production_hyperdrive_id)
+    deployment_status: live
+    notes: >
+      Staging environment for capricast-api. Uses wrangler.staging.toml (flat, no env blocks).
+      PR previews fork from the `staging` Neon branch via _neon-pr-lifecycle.yml.
+      Preview domains: api.pr-{n}.capricast.latimerwoods.dev
+    consumers:
+      - repo: Latimer-Woods-Tech/capricast
+        file: apps/worker/wrangler.staging.toml
+        pattern: "https://api.capricast.latimerwoods.dev"
+        note: APP_BASE_URL — used by CORS allowlist in the staging Worker
+
   - id: capricast-api
     name: capricast-api                                        # matches wrangler.jsonc name in capricast repo
     legacy_names: [videoking, nichestream-api]                 # historical names before 2026-05-15 rename

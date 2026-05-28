@@ -205,19 +205,23 @@ jobs:
           fi
           echo "hyperdrive_id=$UUID" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare ephemeral wrangler.jsonc
+      - name: Prepare ephemeral wrangler config
         working-directory: ${{ inputs.worker_path }}
         env:
           PROD_UUID: ${{ inputs.production_hyperdrive_id }}
           EPHEMERAL_UUID: ${{ steps.hyperdrive.outputs.hyperdrive_id }}
+          WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
         run: |
           set -euo pipefail
-          if ! grep -q "$PROD_UUID" wrangler.jsonc; then
-            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in wrangler.jsonc — sed replace would be a no-op"
+          # Default to wrangler.jsonc; honour caller-supplied per-env config files
+          # (e.g. wrangler.staging.toml for repos that use separate files per env).
+          CONFIG_FILE="${WRANGLER_CONFIG:-wrangler.jsonc}"
+          if ! grep -q "$PROD_UUID" "$CONFIG_FILE"; then
+            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in $CONFIG_FILE — sed replace would be a no-op"
             exit 1
           fi
-          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" wrangler.jsonc
-          echo "Swapped Hyperdrive UUID in wrangler.jsonc"
+          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" "$CONFIG_FILE"
+          echo "Swapped Hyperdrive UUID in $CONFIG_FILE"
 
       - name: Deploy preview Worker
         working-directory: ${{ inputs.worker_path }}
@@ -345,7 +349,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
+          node-version: '22'
 
       - name: Compute names
         id: names
