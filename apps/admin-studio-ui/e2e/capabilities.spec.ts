@@ -288,7 +288,8 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   // ── Preview ────────────────────────────────────────────────────────────
   await page.getByRole('button', { name: /^Preview Plan$/ }).click();
   await expect(page.getByRole('heading', { name: 'Plan Preview' })).toBeVisible();
-  await expect(page.getByText('/api/imports')).toBeVisible();
+  const expectedSurfacesCard = page.locator('h3', { name: 'Expected Surfaces' }).locator('..');
+  await expect(expectedSurfacesCard.getByText('/api/imports')).toBeVisible();
 
   // ── Confirm handoff → Generate ─────────────────────────────────────────
   const handoffConfirm = page.getByLabel(/I reviewed the preview/);

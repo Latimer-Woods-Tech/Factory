@@ -144,6 +144,7 @@ test('mobile smoke flow: login → overview → ai → code → audit', async ({
   await expect(composer).toBeVisible();
 
   await page.getByRole('link', { name: 'Code' }).click();
+  await page.getByRole('button', { name: 'Browse files' }).click();
   await page.getByRole('button', { name: 'src' }).click();
   await page.getByRole('button', { name: 'index.ts' }).click();
   await expect(page.getByPlaceholder('Commit message')).toBeVisible();
