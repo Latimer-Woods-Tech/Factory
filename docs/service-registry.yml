@@ -205,13 +205,13 @@ workers:
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
     repo: Latimer-Woods-Tech/factory
-    url: https://admin-staging.latwoodtech.work            # canonical staging custom domain — declared in wrangler.jsonc env.staging.routes
-    custom_domain: admin-staging.latwoodtech.work
-    custom_domain_status: pending_attach                   # attaches on next admin-studio staging deploy
+    url: https://api.admin.latimerwoods.dev                # canonical staging domain — latimerwoods.dev is the dev surface
+    custom_domain: api.admin.latimerwoods.dev
+    custom_domain_status: attached                         # verified 2026-05-28 via /health
     workers_dev_url: https://admin-studio-staging.adrper79.workers.dev  # CF fallback; never hardcode in user-facing code
     health_endpoint: /health
     verification_targets:
-      default: https://admin-staging.latwoodtech.work/health
+      default: https://api.admin.latimerwoods.dev/health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-04-29
     critical_endpoints:
@@ -227,9 +227,17 @@ workers:
       - STUDIO_ADMIN_PASSWORD_SHA256
       - GITHUB_TOKEN
       - ANTHROPIC_API_KEY
+    optional_secrets:
+      - DEEPSEEK_API_KEY
+      - XAI_API_KEY
+      - GROQ_API_KEY
+      - VERTEX_ACCESS_TOKEN
+      - GOOGLE_CLIENT_ID
+      - STUDIO_ALLOWED_USERS_JSON
     required_vars:
       - STUDIO_ENV
       - ALLOWED_ORIGINS
+      - AI_GATEWAY_BASE_URL
     consumers:
       - repo: Latimer-Woods-Tech/factory
         file: .github/workflows/deploy-admin-studio.yml
@@ -238,27 +246,28 @@ workers:
         note: deploy-time health verify hits the workers.dev URL directly
       - repo: Latimer-Woods-Tech/factory
         file: .github/workflows/deploy-admin-studio-ui.yml
-        line: ~60
-        pattern: "https://admin-staging.latwoodtech.work"
-        note: VITE_API_BASE_STAGING — bundled into the UI for end-user requests
+        line: ~67
+        pattern: "https://api.admin.latimerwoods.dev"
+        note: VITE_API_BASE_STAGING — bundled into the UI for end-user requests (updated 2026-05-27)
       - repo: Latimer-Woods-Tech/factory
         file: apps/admin-studio-ui/.env.example
         line: ~13
-        pattern: "https://admin-staging.latwoodtech.work"
+        pattern: "https://api.admin.latimerwoods.dev"
       - repo: Latimer-Woods-Tech/factory
         file: docs/admin-studio/02-OPERATOR-QUICK-REF.md
-        line: ~16
-        pattern: "https://admin-staging.latwoodtech.work"
+        line: ~10
+        pattern: "https://api.admin.latimerwoods.dev"
 
   - id: admin-studio-production
     name: admin-studio-production                          # matches apps/admin-studio/wrangler.jsonc env.production.name
     repo: Latimer-Woods-Tech/factory
-    url: https://api.apunlimited.com                       # branded prod API domain — used by admin-studio-ui prod build
+    url: https://api.apunlimited.com                       # canonical branded prod API domain — used by admin-studio-ui prod build
     custom_domain: api.apunlimited.com
-    custom_domain_alternate: admin.latwoodtech.work        # second custom domain on the same worker (attached 2026-05-08)
+    # admin.latwoodtech.work RETIRED + DETACHED 2026-05-27 via cf-domain-reconcile run #26545752158.
+    # curl admin.latwoodtech.work now returns NXDOMAIN. api.apunlimited.com is the sole canonical prod URL.
     health_endpoint: /health
     verification_targets:
-      default: https://admin.latwoodtech.work/health
+      default: https://api.apunlimited.com/health
     telemetry_required: false                              # Studio itself; telemetry not required
     deployment_status: live_health_verified_2026-05-06
     notes: >
@@ -278,9 +287,17 @@ workers:
       - STUDIO_ADMIN_PASSWORD_SHA256
       - GITHUB_TOKEN
       - ANTHROPIC_API_KEY
+    optional_secrets:
+      - DEEPSEEK_API_KEY
+      - XAI_API_KEY
+      - GROQ_API_KEY
+      - VERTEX_ACCESS_TOKEN
+      - GOOGLE_CLIENT_ID
+      - STUDIO_ALLOWED_USERS_JSON
     required_vars:
       - STUDIO_ENV
       - ALLOWED_ORIGINS
+      - AI_GATEWAY_BASE_URL
     consumers:
       - repo: Latimer-Woods-Tech/factory
         file: .github/workflows/deploy-admin-studio.yml
@@ -294,6 +311,21 @@ workers:
         file: docs/admin-studio/02-OPERATOR-QUICK-REF.md
         line: ~10
         pattern: "https://admin-studio-production.adrper79.workers.dev"
+
+  - id: capricast-api-staging
+    name: capricast-api-staging                                # wrangler.staging.toml name — ephemeral Neon branches fork from staging
+    repo: Latimer-Woods-Tech/capricast
+    url: https://api.capricast.latimerwoods.dev                # staging domain on Factory's developer surface
+    workers_dev_url: https://capricast-api-staging.adrper79.workers.dev
+    custom_domain: api.capricast.latimerwoods.dev
+    custom_domain_status: attached                             # attached via wrangler.staging.toml custom_domain = true
+    health_endpoint: /health
+    telemetry_required: false                                  # staging environment — not monitored for SLO
+    deployment_status: live
+    neon_project_id: dry-poetry-91897020
+    neon_staging_branch: staging                               # br-curly-rice-amw5jk6i — Neon PR preview branches fork from here
+    neon_hyperdrive_id: "43f49bb7de7a49edb290c66a7b9cab9e"    # staging Hyperdrive; sed-replaced per-PR by _neon-pr-lifecycle.yml
+    consumers: []
 
   - id: capricast-api
     name: capricast-api                                        # matches wrangler.jsonc name in capricast repo
@@ -436,13 +468,36 @@ workers:
           *.workers.dev fallback URLs (HARD-CONSTRAINTS violation tracked as
           a MED gap and being fixed by sprint A).
 
+  - id: factory-cross-repo
+    name: factory-cross-repo
+    repo: Latimer-Woods-Tech/factory
+    url: https://factory-cross-repo.latwoodtech.work
+    workers_dev_url: https://factory-cross-repo.adrper79.workers.dev
+    custom_domain: factory-cross-repo.latwoodtech.work
+    custom_domain_status: pending
+    health_endpoint: /health
+    verification_targets:
+      staging: https://factory-cross-repo.adrper79.workers.dev/health
+      production: https://factory-cross-repo.latwoodtech.work/health
+    telemetry_required: false
+    notes: >
+      Cross-repo GitHub App operations worker. Accepts POST /api/supervisor/create-pr
+      from factory-supervisor to open audit PRs in affected repos.
+    required_secrets:
+      - FACTORY_CROSS_REPO_TOKEN
+      - FACTORY_APP_ID
+      - FACTORY_APP_PRIVATE_KEY
+      - FACTORY_APP_INSTALLATION_ID
+    consumers:
+      - apps/supervisor/src/pr-opening.ts
+
   - id: factory-supervisor
     name: factory-supervisor                                   # matches wrangler.jsonc name
     repo: Latimer-Woods-Tech/factory
     url: https://supervisor.latwoodtech.work                   # internal infra domain
     workers_dev_url: https://factory-supervisor.adrper79.workers.dev
     custom_domain: supervisor.latwoodtech.work
-    custom_domain_alternate: supervisor.apunlimited.com        # legacy/secondary domain retained in production routes
+    # supervisor.apunlimited.com RETIRED 2026-05-27: never resolved in 2026-05-21 audit; removed from wrangler.jsonc routes.
     custom_domain_status: attached_live_verified_2026-05-21
     health_endpoint: /health
     verification_targets:
@@ -450,11 +505,11 @@ workers:
       production: https://supervisor.latwoodtech.work/health
     telemetry_required: false
     notes: >
-      Canonical production health verification moved back to
-      `supervisor.latwoodtech.work` on 2026-05-21 after direct curl validation
-      returned `200` there while `supervisor.apunlimited.com` did not resolve.
-      Production routes now declare both hostnames in wrangler so the canonical
-      infra domain and the alternate branded hostname are managed declaratively.
+      Canonical production URL is `supervisor.latwoodtech.work` (verified 2026-05-21).
+      The `supervisor.apunlimited.com` route was retired 2026-05-27: never resolved
+      in the 2026-05-21 audit and was removed from `apps/supervisor/wrangler.jsonc`
+      env.production.routes. Production routes now declare only the canonical infra
+      domain in wrangler.
     required_bindings:
       - SUPERVISOR
       - LOCK
@@ -735,6 +790,127 @@ workers:
       - GCP_REGION
     consumers: []
 
+  - id: qa-tools-worker
+    name: qa-tools-worker
+    repo: Latimer-Woods-Tech/factory
+    url: https://api.qa.latimerwoods.dev
+    workers_dev_url: https://qa-tools-worker.adrper79.workers.dev
+    custom_domain: api.qa.latimerwoods.dev
+    custom_domain_status: attached                         # verified 2026-05-28 via /health
+    health_endpoint: /health
+    verification_targets:
+      default: https://api.qa.latimerwoods.dev/health
+    telemetry_required: false
+    deployment_status: phase-1-live            # Phase 1 live 2026-05-27; health verified at /health
+    required_secrets:
+      - QA_TOOLS_JWT_SECRET
+      - GOOGLE_CLIENT_ID
+      - QA_TOOLS_ALLOWED_USERS_JSON
+      - QA_TOOLS_ADMIN_EMAIL
+      - QA_TOOLS_ADMIN_PASSWORD_SHA256
+      - BROWSER_AGENT_SA_KEY
+      - BROWSER_AGENT_URL
+      - BROWSER_AGENT_AUDIENCE
+    required_vars:
+      - ENVIRONMENT
+      - QA_TOOLS_GOOGLE_WORKSPACE_DOMAIN
+      - ALLOWED_ORIGINS
+    required_bindings:
+      - DB (Hyperdrive ed95104a65c541c8b98f842e01f5894a — qa-tools-hyperdrive -> THE_FACTORY Neon)
+      - QA_TOOLS_R2 (R2 bucket qa-tools)
+      - RATE_LIMIT_KV (KV cbec8a8aa8554005bb763267bd5498b1 — QA_RATE_LIMIT_KV)
+    notes: >
+      QA Tools Platform API — accessibility audits, screenshot capture, performance testing.
+      Wraps the browser-agent Cloud Run service (/visual-review with runAxe=true for Phase 1).
+      Operator auth follows the same policy as AP Unlimited/Admin Studio:
+      allowlisted latwoodtech.com Google sign-in plus FACTORY_USER/FACTORY_PW
+      break-glass fallback.
+      Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+      Neon migrations: apps/qa-tools-worker/migrations/001_phase1.sql
+      Phase 1 (MVP): POST /runs, GET /runs/:id/status, GET /runs/:id/results, GET /apps/:appId/health
+      Consumers: qa-tools-ui (Phase 1 frontend)
+      LIVE: Deployed 2026-05-27; custom domain api.qa.latimerwoods.dev health verified 2026-05-28.
+    consumers: []
+
+  # ─── PLANNED (not yet built) ─────────────────────────────────────────────────
+  # These workers are referenced in docs/marketing/pr3-briefs/ planning documents.
+  # They will be built during Stage 3 (marketing automation).
+
+  - id: marketing-supervisor
+    name: marketing-supervisor
+    repo: Latimer-Woods-Tech/factory
+    url: https://marketing.latwoodtech.work
+    workers_dev_url: https://marketing-supervisor.adrper79.workers.dev
+    custom_domain: marketing.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://marketing-supervisor.adrper79.workers.dev/health
+      production: https://marketing.latwoodtech.work/health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      Marketing automation supervisor (Stage 3). Orchestrates email drip,
+      social adapters, topic queue, shareables, embeds, and brand safety.
+      Planned — not yet deployed.
+    consumers: []
+
+  - id: marketing-supervisor-staging
+    name: marketing-supervisor-staging
+    repo: Latimer-Woods-Tech/factory
+    url: https://marketing-supervisor-staging.adrper79.workers.dev
+    workers_dev_url: https://marketing-supervisor-staging.adrper79.workers.dev
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://marketing-supervisor-staging.adrper79.workers.dev/health
+    telemetry_required: false
+    notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
+    consumers: []
+
+  - id: referrals
+    name: referrals
+    repo: Latimer-Woods-Tech/factory
+    url: https://referrals.latwoodtech.work
+    workers_dev_url: https://referrals.adrper79.workers.dev
+    custom_domain: referrals.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://referrals.adrper79.workers.dev/health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      Referral tracking worker (Stage 3 — PR brief 3j).
+      Planned — not yet deployed.
+    consumers: []
+
+  - id: llm-rank-worker
+    name: llm-rank-worker
+    repo: Latimer-Woods-Tech/factory
+    url: https://llm-rank.latwoodtech.work
+    workers_dev_url: https://llm-rank-worker.adrper79.workers.dev
+    custom_domain: llm-rank.latwoodtech.work
+    custom_domain_status: planned
+    health_endpoint: /health
+    verification_targets:
+      staging: https://llm-rank-worker.adrper79.workers.dev/health
+    telemetry_required: true
+    critical_endpoints:
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      LLM ranking worker for surfacing the most relevant content (Stage 3 — PR brief 3l).
+      Planned — not yet deployed.
+    consumers: []
+
 pages:
   - id: prime-self-ui
     repo: Latimer-Woods-Tech/HumanDesign
@@ -752,8 +928,10 @@ pages:
     repo: Latimer-Woods-Tech/factory
     project_name: admin-studio-ui
     custom_domain: apunlimited.com
-    custom_domain_alternate: studio.thefactory.dev
-    staging_url: https://staging.admin-studio-ui.pages.dev
+    # studio.thefactory.dev RETIRED + DETACHED 2026-05-27 via cf-domain-reconcile run #26545752158.
+    # curl studio.thefactory.dev now returns NXDOMAIN. apunlimited.com is the sole canonical operator URL.
+    staging_url: https://staging.admin.latimerwoods.dev
+    staging_custom_domain_status: attached_2026-05-28
     root_file: apps/admin-studio-ui/index.html
     deploy_dir: apps/admin-studio-ui/dist
     worker_dependencies:
@@ -800,6 +978,47 @@ pages:
     required_secrets:
       - CLOUDFLARE_API_TOKEN
       - CLOUDFLARE_ACCOUNT_ID
+
+  - id: qa-tools-ui
+    repo: Latimer-Woods-Tech/factory
+    project_name: qa-tools-ui                            # CF Pages project (wrangler pages project create qa-tools-ui)
+    custom_domain: qa.latimerwoods.dev
+    custom_domain_status: attached_2026-05-28
+    staging_url: https://staging.qa.latimerwoods.dev
+    staging_custom_domain_status: attached_2026-05-28
+    deployment_status: phase-1-live
+    root_file: apps/qa-tools-ui/src/app/page.tsx
+    deploy_dir: apps/qa-tools-ui/out
+    worker_dependencies:
+      - qa-tools-worker
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+    notes: >
+      QA Tools Platform dashboard (Next.js 15 static export).
+      Internal engineering tool — accessible to qa-runner/viewer/admin roles only.
+      Uses branded latimerwoods.dev domains only; default pages.dev URLs are
+      deployment implementation details, not user-facing entry points.
+      Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+
+  - id: latimerwoods-dev
+    repo: Latimer-Woods-Tech/factory
+    project_name: latimerwoods-dev                       # CF Pages project (wrangler pages project create latimerwoods-dev)
+    custom_domain: dev.latimerwoods.dev
+    custom_domain_status: attached_2026-05-27            # attached via cf-domain-reconcile run #26545752158
+    deployment_status: phase-2-provisioned               # Pages project + domain live; first deploy pending merge of this PR
+    root_file: apps/latimerwoods-dev/build.js
+    deploy_dir: apps/latimerwoods-dev/dist
+    worker_dependencies: []
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+    notes: >
+      Developer Index — static site that renders this registry as a grouped
+      map of every Factory service. No customer data, no auth. Generated by
+      apps/latimerwoods-dev/build.js on every push to main that touches
+      docs/service-registry.yml or the app itself.
+
 # ─── FACTORY PACKAGES ───────────────────────────────────────────────────────────
 #
 # Shared npm packages published to @adrper79-dot scope.

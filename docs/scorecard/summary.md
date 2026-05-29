@@ -1,15 +1,15 @@
 # Launch Readiness Scorecard
 
-*Generated: 2026-05-27T11:23:22.947749+00:00 · Reporting day: 2026-05-27*
+*Generated: 2026-05-29T10:57:11.023789+00:00 · Reporting day: 2026-05-29*
 
 ## Org composite
 
-**30.7 / 100** — Latimer-Woods-Tech (portfolio)
+**65.8 / 100** — Latimer-Woods-Tech (portfolio)
 
 | Dimension | Weight | Score | Detail |
 |---|--:|--:|---|
-| conformance | 40% | 46 | avg cohesion across 5 apps |
-| cost | 20% | 0 | worst-cap utilisation 223% |
+| conformance | 40% | 50 | avg cohesion across 5 apps |
+| cost | 20% | 98 | worst-cap utilisation 4% |
 | mrr | 20% | — | MRR is 0 — Stage 2 not yet generating recurring |
 | reliability | 20% | — | awaiting Sentry user-facing error rate (#723) |
 
@@ -17,11 +17,11 @@
 
 | Repo | Composite | Conformance | Completion | Reliability |
 |---|--:|--:|--:|--:|
-| **factory-admin-studio** (FA) | **38.0** | 57 | 0 | — |
-| **HumanDesign** (HD) | **33.3** | 50 | 0 | — |
-| **xico-city** (XC) | **32.7** | 49 | 0 | — |
-| **capricast** (CC) | **24.7** | 37 | 0 | — |
-| **cypher-healing** (CH) | **24.7** | 37 | 0 | — |
+| **factory-admin-studio** (FA) | **41.3** | 62 | 0 | — |
+| **HumanDesign** (HD) | **35.3** | 53 | 0 | — |
+| **xico-city** (XC) | **34.0** | 51 | 0 | — |
+| **capricast** (CC) | **28.0** | 42 | 0 | — |
+| **cypher-healing** (CH) | **26.7** | 40 | 0 | — |
 
 ## Notes on dimensions reporting `—`
 

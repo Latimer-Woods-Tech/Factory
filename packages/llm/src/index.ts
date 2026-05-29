@@ -17,12 +17,13 @@ export interface LLMMessage {
 
 /**
  * Quality tier selected by the caller. Routing is workload-split:
- *  - `fast`      → Anthropic Haiku (short, latency-sensitive)
+ *  - `fast`      → Grok 4.3 with Anthropic Haiku fallback (routine drafts/small jobs)
  *  - `balanced`  → Anthropic Sonnet (default)
  *  - `smart`     → Anthropic Opus OR Gemini 2.5 Pro if input is long-context (>150k tokens estimated)
  *  - `verifier`  → Groq Llama (cheap second opinion; only used from verifier code path)
+ *  - `workbench` → DeepSeek Chat with Groq fallback (boring, reviewable, non-sensitive batch work)
  */
-export type LLMTier = 'fast' | 'balanced' | 'smart' | 'verifier';
+export type LLMTier = 'fast' | 'balanced' | 'smart' | 'verifier' | 'workbench';
 
 /**
  * Options that influence LLM completion behaviour.
@@ -45,6 +46,10 @@ export interface LLMOptions {
   project?: string;
   /** Optional actor identifier (supervisor / worker / human). */
   actor?: string;
+  /** Optional workload label used in logs and cost-policy call sites. */
+  workload?: string;
+  /** Grok reasoning effort. Defaults to `none` for cost-controlled fast/draft calls. */
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high';
   /** Anthropic prompt-cache control. Defaults to `true` for `system` prompts ≥ 1024 tokens. */
   promptCache?: boolean;
   /**
@@ -80,9 +85,9 @@ export interface LLMOptions {
 }
 
 /**
- * Provider that produced an LLM response. `grok` removed in 0.3.0.
+ * Provider that produced an LLM response.
  */
-export type LLMProvider = 'anthropic' | 'gemini' | 'groq' | 'grok';
+export type LLMProvider = 'anthropic' | 'gemini' | 'groq' | 'grok' | 'deepseek';
 
 /**
  * Result returned by a successful completion.
@@ -111,6 +116,8 @@ export interface LLMEnv {
   AI_GATEWAY_BASE_URL: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  /** Optional — only required for `{ tier: 'workbench' }` or `deepseek-*` model overrides. */
+  DEEPSEEK_API_KEY?: string;
   /** Optional — only required when caller passes `{ model: 'grok-*' }` override. */
   GROK_API_KEY?: string;
   /**
@@ -198,9 +205,10 @@ const MODELS = {
     verifier: 'llama-4-maverick',
   },
   grok: {
-    /** Opt-in only via `{ model: 'grok-*' }`. Not in default tier routing. */
-    fast: 'grok-4-fast',
-    mini: 'grok-3-mini-latest',
+    fast: 'grok-4.3',
+  },
+  deepseek: {
+    workbench: 'deepseek-chat',
   },
 } as const;
 
@@ -270,24 +278,32 @@ async function recordOrgCostUsage(
 
 /**
  * USD cost per 1 million tokens for each model.
- * Source: Anthropic / Google pricing pages as of 2025-05.
+ * Source: Anthropic / Google / xAI pricing pages as of 2026-05.
  * Keep these model names in sync with the default routing constants in
  * {@link MODELS}; unknown models fall back to Opus rates (conservative upper bound).
  */
 const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic Haiku 4
   'claude-haiku-4-20250514': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
+  'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
   // Anthropic Sonnet 4
+  'claude-sonnet-4-20250514': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
   'claude-sonnet-4-6': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
   // Anthropic Opus 4
+  'claude-opus-4-20250514': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
   'claude-opus-4-7': { input: 15.00, output: 75.00, cacheRead: 1.50, cacheWrite: 18.75 },
   // Gemini 2.5 Pro
   'gemini-2.5-pro': { input: 1.25, output: 10.00, cacheRead: 0.31, cacheWrite: 4.50 },
   // Groq Llama 4 Maverick
   'llama-4-maverick': { input: 0.50, output: 0.77, cacheRead: 0.05, cacheWrite: 0.50 },
-  // Grok models — opt-in only
-  'grok-4-fast': { input: 3.00, output: 15.00, cacheRead: 0.30, cacheWrite: 3.75 },
-  'grok-3-mini-latest': { input: 0.30, output: 0.50, cacheRead: 0.03, cacheWrite: 0.30 },
+  // Grok 4.3
+  'grok-4.3': { input: 1.25, output: 2.50, cacheRead: 0.00, cacheWrite: 0.00 },
+  // DeepSeek API pricing as of 2026-05: cache-write conservatively uses cache-miss input pricing.
+  'deepseek-chat': { input: 0.27, output: 1.10, cacheRead: 0.07, cacheWrite: 0.27 },
+  'deepseek-reasoner': { input: 0.55, output: 2.19, cacheRead: 0.14, cacheWrite: 0.55 },
+  // Deprecated aliases retained for historical ledger rows.
+  'grok-4-fast': { input: 1.25, output: 2.50, cacheRead: 0.00, cacheWrite: 0.00 },
+  'grok-3-mini-latest': { input: 1.25, output: 2.50, cacheRead: 0.00, cacheWrite: 0.00 },
 };
 
 /** Fallback pricing used for unrecognised models (Opus rates — conservative upper bound). */
@@ -493,11 +509,43 @@ function buildGrokRequest(
   const merged: LLMMessage[] = [];
   if (sys) merged.push({ role: 'system', content: sys });
   for (const m of messages) if (m.role !== 'system') merged.push(m);
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+    temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
+    messages: merged,
+  };
+  if (model === MODELS.grok.fast) {
+    body.reasoning_effort = opts.reasoningEffort ?? 'none';
+  }
   return {
     url: `${env.AI_GATEWAY_BASE_URL}/grok/v1/chat/completions`,
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${env.GROK_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+  };
+}
+
+function buildDeepSeekRequest(
+  model: string,
+  messages: LLMMessage[],
+  opts: LLMOptions,
+  env: LLMEnv,
+): { url: string; headers: Record<string, string>; body: string } {
+  if (!env.DEEPSEEK_API_KEY) {
+    throw new ValidationError('DEEPSEEK_API_KEY required for workbench tier or deepseek-* model override');
+  }
+  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const merged: LLMMessage[] = [];
+  if (sys) merged.push({ role: 'system', content: sys });
+  for (const m of messages) if (m.role !== 'system') merged.push(m);
+  return {
+    url: `${env.AI_GATEWAY_BASE_URL}/deepseek/chat/completions`,
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
     },
     body: JSON.stringify({
       model,
@@ -687,10 +735,16 @@ function plan(tier: LLMTier, opts: LLMOptions, tokenEstimate: number): RoutePlan
     if (m.startsWith('claude')) return { primary: { provider: 'anthropic', model: m } };
     if (m.startsWith('gemini')) return { primary: { provider: 'gemini', model: m } };
     if (m.startsWith('grok')) return { primary: { provider: 'grok', model: m } };
+    if (m.startsWith('deepseek')) return { primary: { provider: 'deepseek', model: m } };
     return { primary: { provider: 'groq', model: m } };
   }
   const longContext = tokenEstimate >= (opts.longContextThreshold ?? DEFAULT_LONG_CONTEXT_THRESHOLD);
   switch (tier) {
+    case 'workbench':
+      return {
+        primary: { provider: 'deepseek', model: MODELS.deepseek.workbench },
+        fallback: { provider: 'groq', model: MODELS.groq.verifier },
+      };
     case 'verifier':
       return { primary: { provider: 'groq', model: MODELS.groq.verifier } };
     case 'smart':
@@ -704,7 +758,10 @@ function plan(tier: LLMTier, opts: LLMOptions, tokenEstimate: number): RoutePlan
             fallback: { provider: 'gemini', model: MODELS.gemini.smart },
           };
     case 'fast':
-      return { primary: { provider: 'anthropic', model: MODELS.anthropic.fast } };
+      return {
+        primary: { provider: 'grok', model: MODELS.grok.fast },
+        fallback: { provider: 'anthropic', model: MODELS.anthropic.fast },
+      };
     case 'balanced':
     default:
       return longContext
@@ -742,6 +799,9 @@ async function callOne(
     case 'grok':
       req = buildGrokRequest(leg.model, messages, opts, env);
       break;
+    case 'deepseek':
+      req = buildDeepSeekRequest(leg.model, messages, opts, env);
+      break;
   }
   const { json, gatewayRequestId, attempts } = await callWithBackoff(
     leg.provider,
@@ -760,6 +820,8 @@ async function callOne(
       return { parsed: parseGroq(json), gatewayRequestId, attempts };
     case 'grok':
       return { parsed: parseGroq(json), gatewayRequestId, attempts };
+    case 'deepseek':
+      return { parsed: parseGroq(json), gatewayRequestId, attempts };
   }
 }
 
@@ -767,10 +829,11 @@ async function callOne(
  * Run a completion through the routing plan for the requested tier.
  *
  * Routing summary (0.3.0):
- *   - `fast`     → Anthropic Haiku
+ *   - `fast`     → Grok 4.3; Anthropic Haiku fallback when Grok is unavailable
  *   - `balanced` → Anthropic Sonnet; Gemini 2.5 Pro if `longContextThreshold` exceeded
  *   - `smart`    → Anthropic Opus; Gemini 2.5 Pro if long-context
  *   - `verifier` → Groq Llama 3.3 70B (no fallback — verifier is inherently cheap/best-effort)
+ *   - `workbench` → DeepSeek Chat; Groq fallback for boring/reviewable internal batch jobs
  *
  * All provider traffic flows through Cloudflare AI Gateway at `AI_GATEWAY_BASE_URL`.
  *
@@ -841,12 +904,18 @@ export async function complete(
 
   const attemptLog: Array<{ provider: LLMProvider; status?: number; message: string }> = [];
 
-  for (const leg of [route.primary, route.fallback].filter(Boolean) as Array<{ provider: LLMProvider; model: string }>) {
+  const routeLegs = [route.primary, route.fallback].filter(Boolean) as Array<{ provider: LLMProvider; model: string }>;
+  for (const [legIndex, leg] of routeLegs.entries()) {
     // Skip providers that are currently in their cooldown window.
     if (isProviderCoolingDown(leg.provider, now)) {
       logger?.warn?.('llm.provider.coolingDown', { provider: leg.provider });
       attemptLog.push({ provider: leg.provider, message: 'skipped: cooling down' });
       continue;
+    }
+    if (opts.signal?.aborted) {
+      return toErrorResponse(
+        new InternalError('llm call aborted', { provider: leg.provider, model: leg.model }),
+      );
     }
     try {
       const result = await callOne(leg, messages, opts, env, fetchImpl, logger, now);
@@ -862,6 +931,7 @@ export async function complete(
         runId: opts.runId,
         project: opts.project,
         actor: opts.actor,
+        workload: opts.workload,
       });
       const llmResult: LLMResult = {
         content: result.parsed.content,
@@ -926,7 +996,7 @@ export async function complete(
       }
       if (isProviderError(e)) {
         attemptLog.push({ provider: e.provider, status: e.status, message: e.message });
-        if (e.status === 429 && !route.fallback) {
+        if (e.status === 429 && legIndex === routeLegs.length - 1) {
           return toErrorResponse(
             new RateLimitError(`llm rate limited on ${e.provider}`, { attempts: attemptLog }),
           );
@@ -1012,10 +1082,14 @@ export async function* completionStream(
   const system = opts.system ?? messages.find((m) => m.role === 'system')?.content;
   const tokenEstimate = estimateTokens(messages, system);
   const route = plan(tier, opts, tokenEstimate);
+  const streamLeg =
+    route.primary.provider === 'grok' && !env.GROK_API_KEY && route.fallback?.provider === 'anthropic'
+      ? route.fallback
+      : route.primary;
 
   // Only Anthropic supports streaming in the current implementation.
   // For all other primaries, fall back to non-streaming complete().
-  if (route.primary.provider !== 'anthropic') {
+  if (streamLeg.provider !== 'anthropic') {
     const result = await complete(messages, env, opts, deps);
     if (result.error !== null || result.data === null) {
       throw new InternalError('LLM_ALL_PROVIDERS_FAILED', { error: result.error });
@@ -1025,8 +1099,8 @@ export async function* completionStream(
   }
 
   // Check cooldown before attempting the streaming call.
-  if (isProviderCoolingDown(route.primary.provider, now)) {
-    logger?.warn?.('llm.provider.coolingDown', { provider: route.primary.provider });
+  if (isProviderCoolingDown(streamLeg.provider, now)) {
+    logger?.warn?.('llm.provider.coolingDown', { provider: streamLeg.provider });
     // Fall back to non-streaming complete() which will handle the fallback leg.
     const result = await complete(messages, env, opts, deps);
     if (result.error !== null || result.data === null) {
@@ -1036,7 +1110,7 @@ export async function* completionStream(
     return result.data;
   }
 
-  const req = buildAnthropicRequest(route.primary.model, messages, opts, env, true);
+  const req = buildAnthropicRequest(streamLeg.model, messages, opts, env, true);
 
   let response: Response;
   try {
@@ -1051,8 +1125,8 @@ export async function* completionStream(
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
       throw new InternalError('llm call aborted', {
-        provider: route.primary.provider,
-        model: route.primary.model,
+        provider: streamLeg.provider,
+        model: streamLeg.model,
       });
     }
     throw new InternalError('llm stream fetch failed', {
@@ -1064,13 +1138,13 @@ export async function* completionStream(
     const text = await response.text().catch(() => '');
     const retryable = isRetryableForBackoff(response.status);
     if (retryable && response.status === 429) {
-      markProviderCoolingDown(route.primary.provider, now);
+      markProviderCoolingDown(streamLeg.provider, now);
     }
     // Fall back to non-streaming complete() which will try the fallback leg.
     const result = await complete(messages, env, opts, deps);
     if (result.error !== null || result.data === null) {
       throw new InternalError('LLM_ALL_PROVIDERS_FAILED', {
-        streamError: `${route.primary.provider} ${String(response.status)}: ${text.slice(0, 300)}`,
+        streamError: `${streamLeg.provider} ${String(response.status)}: ${text.slice(0, 300)}`,
         error: result.error,
       });
     }
@@ -1080,7 +1154,7 @@ export async function* completionStream(
 
   if (!response.body) {
     throw new InternalError('llm stream response body is null', {
-      provider: route.primary.provider,
+      provider: streamLeg.provider,
     });
   }
 
@@ -1144,21 +1218,22 @@ export async function* completionStream(
     reader.releaseLock();
   }
 
-  clearProviderCooldown(route.primary.provider);
+  clearProviderCooldown(streamLeg.provider);
   logger?.info?.('llm.completionStream', {
-    provider: route.primary.provider,
-    model: route.primary.model,
+    provider: streamLeg.provider,
+    model: streamLeg.model,
     tier,
     tokenEstimate,
     runId: opts.runId,
     project: opts.project,
     actor: opts.actor,
+    workload: opts.workload,
   });
 
   return {
     content: accumulatedText,
-    provider: route.primary.provider,
-    model: modelName ?? route.primary.model,
+    provider: streamLeg.provider,
+    model: modelName ?? streamLeg.model,
     tier,
     tokens: { input: inputTokens, output: outputTokens, cacheRead, cacheWrite },
     latency: now() - startedAt,

@@ -14,7 +14,9 @@ name: Dispatch capability provision
 #        d. transitions the request to 'dispatched'
 #        e. runs scaffold.mjs --handoff <persisted> (--no-deploy by default)
 #        f. uploads the scaffolded tree as a workflow artifact for review
-#        g. on success, transitions to 'succeeded'; on failure, 'failed' with notes.
+#        g. (best-effort) registers service in capability_services lineage table
+#           with sha256(wrangler.jsonc) as manifest_hash; failure is non-fatal
+#        h. on success, transitions to 'succeeded'; on failure, 'failed' with notes.
 
 on:
   workflow_dispatch:
@@ -173,6 +175,47 @@ jobs:
           path: staging-workspace/${{ inputs.app_name }}
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Register service lineage (Stage 3)
+        # Best-effort: failure here must NOT block the provision-request
+        # transition to 'succeeded'. The scaffold artifact is the primary
+        # deliverable; lineage registration is supplementary.
+        #
+        # Computes manifest_hash from the generated wrangler.jsonc so the
+        # capability_services row can be used for drift detection later:
+        # any service whose manifest_hash diverges from the current compiled
+        # plan is an upgrade candidate.
+        if: success()
+        env:
+          APP_NAME: ${{ inputs.app_name }}
+          HANDOFF_ID: ${{ inputs.handoff_id }}
+          PROVISION_REQUEST_ID: ${{ inputs.provision_request_id }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          WRANGLER_PATH="staging-workspace/${APP_NAME}/wrangler.jsonc"
+          if [ ! -f "$WRANGLER_PATH" ]; then
+            echo "::warning::wrangler.jsonc not found at ${WRANGLER_PATH} — skipping service lineage registration"
+            exit 0
+          fi
+          MANIFEST_HASH=$(sha256sum "$WRANGLER_PATH" | awk '{print $1}')
+          BODY=$(jq -n \
+            --arg serviceId  "$APP_NAME" \
+            --arg handoffId  "$HANDOFF_ID" \
+            --arg provReqId  "$PROVISION_REQUEST_ID" \
+            --arg sha        "$GITHUB_SHA" \
+            --arg mhash      "$MANIFEST_HASH" \
+            '{serviceId:$serviceId, handoffId:$handoffId, provisionRequestId:$provReqId, deployedSha:$sha, manifestHash:$mhash}')
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${STUDIO_DISPATCH_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "$BODY" \
+            "${STUDIO_API_BASE}/capabilities/services")
+          if [ "$HTTP_STATUS" = "201" ]; then
+            echo "Service lineage registered (serviceId=${APP_NAME}, sha=${GITHUB_SHA:0:7}, manifestHash=${MANIFEST_HASH:0:12}…)"
+          else
+            echo "::warning::Service lineage registration returned HTTP ${HTTP_STATUS} — non-fatal, continuing"
+          fi
 
       - name: Transition provision request → succeeded
         if: success()

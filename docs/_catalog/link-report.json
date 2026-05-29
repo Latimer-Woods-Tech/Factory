@@ -1,0 +1,3527 @@
+{
+  "version": 1,
+  "generated_by": "scripts/docs/health.mjs#writeLinkReport",
+  "generated_at": "source-derived",
+  "ok": false,
+  "counts": {
+    "broken": 389,
+    "canonical": 0,
+    "active": 273,
+    "archive": 116,
+    "generated": 0
+  },
+  "by_owner": {
+    "platform": 272,
+    "admin-studio": 4,
+    "architecture": 3,
+    "capricast": 31,
+    "marketing": 79
+  },
+  "by_status": {
+    "active": 273,
+    "archive": 116
+  },
+  "broken": [
+    {
+      "file": "MASTER_INDEX.md",
+      "line": 37,
+      "target": "./DELIVERY_SUMMARY.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "MASTER_INDEX.md",
+      "line": 52,
+      "target": "./PROJECT_STATUS.md#what's-next",
+      "reason": "anchor #what's-next not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "MASTER_INDEX.md",
+      "line": 84,
+      "target": "./DELIVERY_SUMMARY.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "MASTER_INDEX.md",
+      "line": 113,
+      "target": "./STAGE_5_COMPLETE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "MASTER_INDEX.md",
+      "line": 114,
+      "target": "./STAGE_0_COMPLETE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "PHASE_6_7_READY_STATE.md",
+      "line": 125,
+      "target": "./PHASE_6_QUICK_START.md#1-gather-credentials-15-minutes",
+      "reason": "anchor #1-gather-credentials-15-minutes not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/ADMIN_STUDIO_SETUP.md",
+      "line": 328,
+      "target": "./docs/STACK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ADMIN_STUDIO_SETUP.md",
+      "line": 329,
+      "target": "./docs/runbooks/github-secrets-and-tokens.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 129,
+      "target": "../../docs/runbooks/environment-isolation-and-verification.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 181,
+      "target": "../../docs/runbooks/lessons-learned.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 186,
+      "target": "../../docs/runbooks/github-secrets-and-tokens.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 191,
+      "target": "../../docs/runbooks/lessons-learned.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 210,
+      "target": "../../docs/runbooks/deployment.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 312,
+      "target": "../../docs/runbooks/lessons-learned.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 327,
+      "target": "../../docs/runbooks/github-secrets-and-tokens.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 338,
+      "target": "../../docs/runbooks/environment-isolation-and-verification.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 342,
+      "target": "../../CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 343,
+      "target": "../../docs/runbooks/environment-isolation-and-verification.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 344,
+      "target": "../../docs/runbooks/github-secrets-and-tokens.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 345,
+      "target": "../../docs/runbooks/deployment.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 346,
+      "target": "../../docs/runbooks/lessons-learned.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/APP_README_TEMPLATE.md",
+      "line": 357,
+      "target": "../../docs/runbooks/lessons-learned.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ARCHITECTURAL_DECISION_RECORDS.md",
+      "line": 525,
+      "target": "./1001-weekly-batch-payouts.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ARCHITECTURAL_DECISION_RECORDS.md",
+      "line": 525,
+      "target": "./1002-realtime-subscription-webhooks.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ARCHITECTURAL_DECISION_RECORDS.md",
+      "line": 525,
+      "target": "./1003-stripe-connect-monetization.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/CLEAN_PASS_3_QUALITY_REPORT.md",
+      "line": 432,
+      "target": "./design-standards.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/CLEAN_PASS_3_QUALITY_REPORT.md",
+      "line": 452,
+      "target": "../docs/videoking/accessibility-audit-report.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DEFINITION_OF_READY_DONE.md",
+      "line": 237,
+      "target": "docs/videoking/TROUBLESHOOTING.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 38,
+      "target": "./docs/runbooks/getting-started.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 39,
+      "target": "./docs/PHASE_A_TEAM_ONBOARDING_PACK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 42,
+      "target": "./docs/FACTORY_FRONTEND_STANDARDS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 43,
+      "target": "./apps/admin-studio-ui/docs/COMPONENT_LIBRARY.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 46,
+      "target": "./docs/FACTORY_PACKAGE_MATRIX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 47,
+      "target": "./docs/runbooks/database.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 50,
+      "target": "./docs/runbooks/deployment.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 51,
+      "target": "./docs/videoking/SLO_FRAMEWORK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 54,
+      "target": "./docs/JOURNEY_MAPS_8_FLOWS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 55,
+      "target": "./docs/DESIGN_QUALITY_RUBRIC.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 58,
+      "target": "./docs/DEFINITION_OF_READY_DONE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 59,
+      "target": "./docs/RFC_DESIGN_REVIEW_PROCESS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 61,
+      "target": "./docs/DOCUMENTATION_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 92,
+      "target": "./videoking/videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 93,
+      "target": "./FACTORY_PACKAGE_MATRIX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 116,
+      "target": "./videoking/SLO_FRAMEWORK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 117,
+      "target": "./videoking/ON_CALL_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 254,
+      "target": "../../docs/FACTORY_FRONTEND_STANDARDS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 255,
+      "target": "./docs/COMPONENT_LIBRARY.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 433,
+      "target": "./videoking/videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 436,
+      "target": "./FACTORY_PACKAGE_MATRIX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 455,
+      "target": "./FACTORY_PACKAGE_MATRIX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 461,
+      "target": "./videoking/videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 468,
+      "target": "./videoking/SLO_FRAMEWORK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 469,
+      "target": "./videoking/ON_CALL_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/DOCUMENTATION_HIERARCHY.md",
+      "line": 485,
+      "target": "./FACTORY_PACKAGE_MATRIX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ENVIRONMENT_VERIFICATION_SETUP.md",
+      "line": 249,
+      "target": "../runbooks/environment-isolation-and-verification.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ENVIRONMENT_VERIFICATION_SETUP.md",
+      "line": 250,
+      "target": "../.dev.vars.example",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/ENVIRONMENT_VERIFICATION_SETUP.md",
+      "line": 251,
+      "target": "../runbooks/github-secrets-and-tokens.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 71,
+      "target": "videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 110,
+      "target": "dashboards/incident-metrics-template.yaml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 115,
+      "target": "videoking/security-audit-report.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 116,
+      "target": "videoking/privacy-audit-report.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 117,
+      "target": "videoking/security-fixes-roadmap.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 124,
+      "target": "templates/PRE_RELEASE_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 125,
+      "target": "templates/smoke-test-template.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 126,
+      "target": "runbooks/rollback-plan.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 127,
+      "target": "calendars/release-schedule.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 132,
+      "target": "scripts/track-delivery-metrics.mjs",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 133,
+      "target": "runbooks/delivery-kpi-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 140,
+      "target": "../apps/videoking/README.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 141,
+      "target": "../apps/videoking/ENGINEERING.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 142,
+      "target": "../docs/videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 143,
+      "target": "videoking/VIDEO_TRANSCODING_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 144,
+      "target": "videoking/DURABLE_OBJECTS_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 145,
+      "target": "videoking/DATABASE_OPERATIONS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 146,
+      "target": "videoking/API.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 147,
+      "target": "videoking/adr/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 148,
+      "target": "videoking/adr/ADR-001-durable-objects.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 149,
+      "target": "videoking/adr/ADR-002-stripe-connect.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 150,
+      "target": "videoking/adr/ADR-003-payout-batching.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 155,
+      "target": "scripts/generate-scorecard.mjs",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 156,
+      "target": "dashboards/implementation-scorecard-template.yaml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 157,
+      "target": "STAKEHOLDER_REPORT_TEMPLATE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 170,
+      "target": "videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 170,
+      "target": "videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 170,
+      "target": "videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 174,
+      "target": "../apps/videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 196,
+      "target": "templates/PRE_RELEASE_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 196,
+      "target": "templates/smoke-test-template.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 206,
+      "target": "packages/errors/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 207,
+      "target": "packages/monitoring/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 208,
+      "target": "packages/logger/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 214,
+      "target": "packages/auth/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 215,
+      "target": "packages/neon/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 216,
+      "target": "packages/deploy/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 217,
+      "target": "packages/testing/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 223,
+      "target": "packages/stripe/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 224,
+      "target": "packages/llm/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 225,
+      "target": "packages/telephony/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 226,
+      "target": "packages/analytics/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 227,
+      "target": "packages/email/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 228,
+      "target": "packages/video/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 229,
+      "target": "packages/schedule/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 235,
+      "target": "packages/compliance/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 236,
+      "target": "packages/crm/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 237,
+      "target": "packages/admin/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 238,
+      "target": "packages/content/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 239,
+      "target": "packages/copy/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 240,
+      "target": "packages/social/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 241,
+      "target": "packages/seo/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/PHASE_A_TEAM_ONBOARDING_PACK.md",
+      "line": 182,
+      "target": "videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md",
+      "line": 233,
+      "target": "./videoking/SELFPRIME_MONETIZATION_CONTRACT.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md",
+      "line": 387,
+      "target": "./videoking/SELFPRIME_MONETIZATION_CONTRACT.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md",
+      "line": 388,
+      "target": "./videoking/monetization-funnel-spec.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/RELEASE_TRAIN_VERIFICATION.md",
+      "line": 525,
+      "target": "../releases/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 13,
+      "target": "./docs/packages/design-standards.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 40,
+      "target": "./docs/packages/journeys.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 77,
+      "target": "./docs/packages/videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 217,
+      "target": "./docs/packages/design-standards.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 218,
+      "target": "./docs/packages/journeys.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 219,
+      "target": "./docs/packages/videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 222,
+      "target": "./docs/runbooks/product-quality-review.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 223,
+      "target": "./CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/T1_T2_DELIVERY_SUMMARY.md",
+      "line": 224,
+      "target": "./docs/runbooks/getting-started.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/admin-studio/00-MASTER-PLAN.md",
+      "line": 776,
+      "target": "./02-API-SPEC.md",
+      "reason": "file not found",
+      "owner": "admin-studio",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/admin-studio/00-MASTER-PLAN.md",
+      "line": 777,
+      "target": "./03-UI-COMPONENTS.md",
+      "reason": "file not found",
+      "owner": "admin-studio",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/admin-studio/00-MASTER-PLAN.md",
+      "line": 778,
+      "target": "./04-DEPLOYMENT.md",
+      "reason": "file not found",
+      "owner": "admin-studio",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/admin-studio/00-MASTER-PLAN.md",
+      "line": 779,
+      "target": "./05-OPERATIONS.md",
+      "reason": "file not found",
+      "owner": "admin-studio",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/architecture/ADMIN_TECHNICAL_GUIDE.md",
+      "line": 288,
+      "target": "../PRODUCT_PRINCIPLES.md",
+      "reason": "file not found",
+      "owner": "architecture",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/architecture/SURFACES.md",
+      "line": 79,
+      "target": "../PRODUCT_PRINCIPLES.md",
+      "reason": "file not found",
+      "owner": "architecture",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/architecture/SURFACES.md",
+      "line": 129,
+      "target": "../PORTFOLIO_FOCUS.md",
+      "reason": "file not found",
+      "owner": "architecture",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md",
+      "line": 236,
+      "target": "./docs/BIRTHTIME_FORMATTING_TODO.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md",
+      "line": 237,
+      "target": "./CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md",
+      "line": 238,
+      "target": "./docs/design-system-component-guide.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md",
+      "line": 239,
+      "target": "./docs/ACCESSIBILITY_AUDIT_BASELINE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 128,
+      "target": "./PHASE_6_EXECUTION_PLAYBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 129,
+      "target": "./docs/runbooks/CREDENTIALS_SETUP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 132,
+      "target": "./PHASE_6_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 137,
+      "target": "./START_HERE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 138,
+      "target": "./PROJECT_STATUS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 139,
+      "target": "./PHASE_6_7_TIMELINE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 281,
+      "target": "./PHASE_6_EXECUTION_PLAYBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 282,
+      "target": "./docs/runbooks/CREDENTIALS_SETUP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 295,
+      "target": "./docs/runbooks/CREDENTIALS_SETUP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 327,
+      "target": "./docs/runbooks/lessons-learned.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 335,
+      "target": "./PHASE_6_EXECUTION_PLAYBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/DELIVERY_SUMMARY.md",
+      "line": 336,
+      "target": "./docs/runbooks/CREDENTIALS_SETUP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 25,
+      "target": "./docs/runbooks/definition-of-ready-done.md#definition-of-ready",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 26,
+      "target": "./docs/runbooks/definition-of-ready-done.md#definition-of-done",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 27,
+      "target": "./.github/PULL_REQUEST_TEMPLATE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 37,
+      "target": "./docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 38,
+      "target": "./docs/README.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 39,
+      "target": "./docs/DOCS_OWNERSHIP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 40,
+      "target": "./docs/service-registry.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 42,
+      "target": "./scripts/doc-freshness-audit.js",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 43,
+      "target": "./.github/workflows/doc-freshness-audit.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 306,
+      "target": "./WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 307,
+      "target": "./CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 308,
+      "target": "./docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 309,
+      "target": "./docs/runbooks/definition-of-ready-done.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 310,
+      "target": "./docs/DOCS_OWNERSHIP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
+      "line": 311,
+      "target": "./docs/service-registry.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/FACTORY_STRATEGIC_REVIEW.md",
+      "line": 1,
+      "target": "./docs/architecture/FACTORY_V1.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/FACTORY_STRATEGIC_REVIEW.md",
+      "line": 82,
+      "target": "./STAGE_6_ONWARDS_PLAN.md#phase-8-factory-admin-dashboard",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 49,
+      "target": "SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 82,
+      "target": "SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 156,
+      "target": "SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 157,
+      "target": "WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 158,
+      "target": "CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 159,
+      "target": "apps/schedule-worker/wrangler.jsonc",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
+      "line": 160,
+      "target": "apps/video-cron/wrangler.jsonc",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_KICKOFF_PACKAGE.md",
+      "line": 300,
+      "target": "CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_KICKOFF_PACKAGE.md",
+      "line": 301,
+      "target": "WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_C_KICKOFF_PACKAGE.md",
+      "line": 302,
+      "target": "SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_D_COMPLETION_SUMMARY.md",
+      "line": 188,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_D_COMPLETION_SUMMARY.md",
+      "line": 189,
+      "target": "docs/IMPLEMENTATION_SCORECARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/PHASE_D_COMPLETION_SUMMARY.md",
+      "line": 190,
+      "target": "PHASE_6_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/R2_PROVISIONING_COMPLETE.md",
+      "line": 160,
+      "target": "./.github/workflows/provision-r2.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/R2_PROVISIONING_COMPLETE.md",
+      "line": 161,
+      "target": "./.github/workflows/render-video.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T4_3_OPERATOR_PATTERNS_SPEC.md",
+      "line": 432,
+      "target": "docs/packages/operator-ui-patterns.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T4_3_OPERATOR_PATTERNS_SPEC.md",
+      "line": 433,
+      "target": "docs/videoking/payout-operations-dashboard.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T4_4_TELEMETRY_CONTRACT_SPEC.md",
+      "line": 488,
+      "target": "docs/packages/factory-admin-telemetry-contract.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T4_4_TELEMETRY_CONTRACT_SPEC.md",
+      "line": 489,
+      "target": "docs/videoking/API.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 33,
+      "target": "docs/runbooks/slo-framework.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 48,
+      "target": "docs/videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 69,
+      "target": "docs/runbooks/error-budget-policy.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 92,
+      "target": "docs/dashboards/slo-dashboard-template.yaml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 109,
+      "target": "docs/templates/RFC_TEMPLATE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 125,
+      "target": "docs/runbooks/rfc-process.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 149,
+      "target": "docs/runbooks/design-review-checklist.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 204,
+      "target": "docs/rfc/RFC-001-payout-batching-fix.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 224,
+      "target": "docs/rfc/RFC-002-creator-onboarding-redesign.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 251,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 254,
+      "target": "docs/runbooks/slo-framework.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 255,
+      "target": "docs/videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 256,
+      "target": "docs/runbooks/error-budget-policy.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 257,
+      "target": "docs/dashboards/slo-dashboard-template.yaml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 260,
+      "target": "docs/runbooks/rfc-process.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 261,
+      "target": "docs/templates/RFC_TEMPLATE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 262,
+      "target": "docs/runbooks/design-review-checklist.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5-1_T6-2_COMPLETION_SUMMARY.md",
+      "line": 263,
+      "target": "docs/rfc/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5_3_INCIDENT_DRILL_CHECKLIST.md",
+      "line": 453,
+      "target": "docs/runbooks/incident-response-playbook.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5_3_INCIDENT_DRILL_CHECKLIST.md",
+      "line": 454,
+      "target": "docs/runbooks/rollback-runbook.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5_4_SECURITY_AUDIT_ROADMAP.md",
+      "line": 409,
+      "target": "docs/runbooks/security-review-checklist.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T5_4_SECURITY_AUDIT_ROADMAP.md",
+      "line": 410,
+      "target": "docs/videoking/privacy-audit-report.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 15,
+      "target": "docs/runbooks/definition-of-ready-done.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 21,
+      "target": ".github/PULL_REQUEST_TEMPLATE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 62,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 69,
+      "target": "docs/README.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 75,
+      "target": "docs/DOCS_OWNERSHIP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 81,
+      "target": "docs/service-registry.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 87,
+      "target": "WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 88,
+      "target": "PHASE_6_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 89,
+      "target": "START_HERE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 90,
+      "target": "PROJECT_STATUS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 92,
+      "target": "scripts/doc-freshness-audit.js",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 135,
+      "target": "docs/README.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 135,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 164,
+      "target": "docs/README.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 165,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 173,
+      "target": "docs/DOCS_OWNERSHIP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 186,
+      "target": "scripts/doc-freshness-audit.js",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 278,
+      "target": "docs/runbooks/definition-of-ready-done.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 279,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 280,
+      "target": "docs/DOCS_OWNERSHIP.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 281,
+      "target": "WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_1_AND_T7_1_COMPLETION_SUMMARY.md",
+      "line": 282,
+      "target": "CLAUDE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_3_RELEASE_TRAIN_SPEC.md",
+      "line": 442,
+      "target": "docs/runbooks/release-procedure.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_3_RELEASE_TRAIN_SPEC.md",
+      "line": 443,
+      "target": "docs/runbooks/rollback-runbook.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_3_RELEASE_TRAIN_SPEC.md",
+      "line": 444,
+      "target": "docs/runbooks/incident-response-playbook.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md",
+      "line": 619,
+      "target": "docs/dashboards/delivery-kpis-template.yaml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md",
+      "line": 620,
+      "target": "docs/IMPLEMENTATION_SCORECARD.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md",
+      "line": 621,
+      "target": "docs/IMPLEMENTATION_SCORECARD_AUTO.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md",
+      "line": 622,
+      "target": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
+      "line": 152,
+      "target": "docs/videoking/SLO_FRAMEWORK.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
+      "line": 153,
+      "target": "docs/videoking/ON_CALL_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
+      "line": 154,
+      "target": "docs/videoking/PHASE_B_T5_1_COMPLETE.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
+      "line": 155,
+      "target": "docs/videoking/PHASE_B_INDEX.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
+      "line": 156,
+      "target": "scripts/videoking-slo-collect.js",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
+      "line": 158,
+      "target": "docs/packages/videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/MONEY_FLOW_TEST_STRATEGY.md",
+      "line": 430,
+      "target": "../packages/testing/",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/ON_CALL_RUNBOOK.md",
+      "line": 449,
+      "target": "./videoking-engineering-baseline.mdx",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/PHASE_B_T5_1_COMPLETE.md",
+      "line": 12,
+      "target": "./docs/videoking/SLO_FRAMEWORK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/capricast/PHASE_B_T5_1_COMPLETE.md",
+      "line": 29,
+      "target": "./scripts/videoking-slo-collect.js",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/capricast/PHASE_B_T5_1_COMPLETE.md",
+      "line": 67,
+      "target": "./docs/videoking/ON_CALL_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "archive",
+      "fidelity": "historical"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 28,
+      "target": "../videoking/monetization-funnel-spec.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 59,
+      "target": "../videoking/monetization-analytics.sql",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 131,
+      "target": "../videoking/interpreting-monetization-funnel.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 159,
+      "target": "../videoking/revenue-integrity-audit.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 187,
+      "target": "../videoking/revenue-integrity-workflow.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 206,
+      "target": "../videoking/revenue-sync-agenda.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 233,
+      "target": "../videoking/monthly-revenue-close.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 377,
+      "target": "../videoking/monetization-funnel-spec.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 378,
+      "target": "../videoking/monetization-analytics.sql",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 380,
+      "target": "../videoking/interpreting-monetization-funnel.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 381,
+      "target": "../videoking/revenue-integrity-audit.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 382,
+      "target": "../videoking/revenue-integrity-workflow.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 383,
+      "target": "../videoking/revenue-sync-agenda.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
+      "line": 384,
+      "target": "../videoking/monthly-revenue-close.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 5,
+      "target": "../apps/videoking/ENGINEERING.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 5,
+      "target": "incident-response-playbook.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 507,
+      "target": "./github-actions-troubleshooting.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 508,
+      "target": "./deepgram-integration.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 509,
+      "target": "./cloudflare-stream-troubleshooting.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 510,
+      "target": "./r2-storage-troubleshooting.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/VIDEO_TRANSCODING_RUNBOOK.md",
+      "line": 511,
+      "target": "./incident-response-playbook.md",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/monetization-funnel-spec.md",
+      "line": 371,
+      "target": "../../apps/video-studio/src/routes/webhooks.ts",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/capricast/monetization-funnel-spec.md",
+      "line": 374,
+      "target": "../../apps/web/src/instrumentation/monetization-events.ts",
+      "reason": "file not found",
+      "owner": "capricast",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/council/DECISIONS.md",
+      "line": 11,
+      "target": "./inquiries/001-capability-factory-backcasting.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/council/DECISIONS.md",
+      "line": 31,
+      "target": "./inquiries/...",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/council/INDEX.md",
+      "line": 26,
+      "target": "./inquiries/001-capability-factory-backcasting.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/council/inquiries/002-capability-design-studio-golden-design.md",
+      "line": 12,
+      "target": "./001-capability-factory-backcasting.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-05-18-attribution-model.md",
+      "line": 15,
+      "target": "../marketing/CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-05-18-attribution-model.md",
+      "line": 51,
+      "target": "../../packages/attribution/src/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-05-18-attribution-model.md",
+      "line": 95,
+      "target": "../../packages/attribution/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-05-18-attribution-model.md",
+      "line": 129,
+      "target": "../../packages/attribution/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-05-25-marketing-external-api.md",
+      "line": 39,
+      "target": "../../apps/marketing-supervisor/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-05-25-marketing-external-api.md",
+      "line": 85,
+      "target": "file:///C:/Users/Ultimate%20Warrior/.claude/plans/eager-seeking-valley.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/design-system-component-guide.md",
+      "line": 461,
+      "target": "../videoking/component-inventory.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/design-system-component-guide.md",
+      "line": 462,
+      "target": "./design-system-scope.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/design-system-component-guide.md",
+      "line": 463,
+      "target": "../accessibility-testing-guide.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/integration/factory-admin-app-integration.md",
+      "line": 156,
+      "target": "../packages/auth/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/integration/factory-admin-app-integration.md",
+      "line": 216,
+      "target": "../packages/auth/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ATTRIBUTION.md",
+      "line": 5,
+      "target": "../../packages/attribution/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ATTRIBUTION.md",
+      "line": 44,
+      "target": "../../packages/attribution/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ATTRIBUTION.md",
+      "line": 68,
+      "target": "../../packages/attribution/src/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/BUDGET_CAPS.md",
+      "line": 46,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/BUDGET_CAPS.md",
+      "line": 219,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/CAMPAIGN_TAGGING.md",
+      "line": 133,
+      "target": "../../KPI_DECOMPOSITION.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/CHANNEL_DOCTRINE.md",
+      "line": 5,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/CHANNEL_DOCTRINE.md",
+      "line": 180,
+      "target": "./channel-state.yaml",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/CHANNEL_DOCTRINE.md",
+      "line": 198,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ESCALATION_TIERS.md",
+      "line": 44,
+      "target": "./playbooks/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ESCALATION_TIERS.md",
+      "line": 91,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ESCALATION_TIERS.md",
+      "line": 111,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/feedback_kanban_canonical.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ESCALATION_TIERS.md",
+      "line": 177,
+      "target": "./playbooks/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ESCALATION_TIERS.md",
+      "line": 265,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/feedback_kanban_canonical.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 26,
+      "target": "./icp/selfprime-power.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 26,
+      "target": "./icp/selfprime-studio.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 26,
+      "target": "./icp/selfprime-partner.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 28,
+      "target": "./icp/cypher-seeker.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 28,
+      "target": "./icp/cypher-clinic.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 29,
+      "target": "./icp/xicocity-creator.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 29,
+      "target": "./icp/xicocity-collective.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 78,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_priority_order.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ICP_MATRIX.md",
+      "line": 86,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_xicocity_canonical.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/KPI_DECOMPOSITION.md",
+      "line": 183,
+      "target": "./queries/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/LIFECYCLE.md",
+      "line": 59,
+      "target": "./funnels/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/LIFECYCLE.md",
+      "line": 162,
+      "target": "./dashboards/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/LIFECYCLE.md",
+      "line": 177,
+      "target": "./alerts/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_PLAN.md",
+      "line": 151,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_priority_order.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_PLAN.md",
+      "line": 152,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/feedback_engineering_style.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 51,
+      "target": "../../apps/marketing-supervisor/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 78,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 97,
+      "target": "./plans/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 235,
+      "target": "../../apps/marketing-supervisor/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 264,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 285,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/feedback_kanban_canonical.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/MARKETING_SUPERVISOR.md",
+      "line": 286,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_supervisor_architecture.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/OPS_CHECKLIST.md",
+      "line": 30,
+      "target": "../../CLAUDE.md#worker-rename-protocol",
+      "reason": "anchor #worker-rename-protocol not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/OPS_CHECKLIST.md",
+      "line": 34,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/reference_gcp_secret_manager_wiring.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/OPS_CHECKLIST.md",
+      "line": 38,
+      "target": "../../CLAUDE.md#verification-requirement-stop--read-this-before-declaring-anything-working",
+      "reason": "anchor #verification-requirement-stop--read-this-before-declaring-anything-working not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ROADMAP.md",
+      "line": 133,
+      "target": "../../CLAUDE.md#verification-requirement-stop--read-this-before-declaring-anything-working",
+      "reason": "anchor #verification-requirement-stop--read-this-before-declaring-anything-working not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ROADMAP.md",
+      "line": 163,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_capricast_rename.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/ROADMAP.md",
+      "line": 164,
+      "target": "./CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/VOICES.md",
+      "line": 65,
+      "target": "../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_capricast_rename.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/VOICES.md",
+      "line": 84,
+      "target": "./CONSTITUTION.md#9-honesty--truth",
+      "reason": "anchor #9-honesty--truth not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 5,
+      "target": "./cypher-seeker.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 74,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 90,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 101,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 121,
+      "target": "../CONSTITUTION.md#9-honesty--truth",
+      "reason": "anchor #9-honesty--truth not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 181,
+      "target": "../../customer-gate/M1_M2_CATALOG_2026-05-17.md#product-4--cipherofhealing-cypher-healing-repo",
+      "reason": "anchor #product-4--cipherofhealing-cypher-healing-repo not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 218,
+      "target": "./cypher-seeker.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/cypher-practitioner.md",
+      "line": 224,
+      "target": "../../customer-gate/M1_M2_CATALOG_2026-05-17.md#product-4--cipherofhealing-cypher-healing-repo",
+      "reason": "anchor #product-4--cipherofhealing-cypher-healing-repo not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 5,
+      "target": "./cypher-seeker.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 5,
+      "target": "./xicocity-creator.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 55,
+      "target": "../../GAP_REGISTER.md#p1--stage-1-2-must-fix",
+      "reason": "anchor #p1--stage-1-2-must-fix not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 58,
+      "target": "../../ROADMAP.md#stage-4",
+      "reason": "anchor #stage-4 not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 72,
+      "target": "../../GAP_REGISTER.md#p2--stage-2-5-fix",
+      "reason": "anchor #p2--stage-2-5-fix not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 153,
+      "target": "../../GAP_REGISTER.md#p1--stage-1-2-must-fix",
+      "reason": "anchor #p1--stage-1-2-must-fix not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 154,
+      "target": "../../ROADMAP.md#stage-4",
+      "reason": "anchor #stage-4 not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/factory-internal.md",
+      "line": 208,
+      "target": "../../customer-gate/M1_M2_CATALOG_2026-05-17.md#product-2--factory-the-platform",
+      "reason": "anchor #product-2--factory-the-platform not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/selfprime-practitioner.md",
+      "line": 72,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/selfprime-practitioner.md",
+      "line": 193,
+      "target": "../../customer-gate/M1_M2_CATALOG_2026-05-17.md#product-1--selfprime-humandesign-repo-selfprimenet",
+      "reason": "anchor #product-1--selfprime-humandesign-repo-selfprimenet not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/selfprime.md",
+      "line": 101,
+      "target": "../../customer-gate/M1_M2_CATALOG_2026-05-17.md#product-1--selfprime-humandesign-repo-selfprimenet",
+      "reason": "anchor #product-1--selfprime-humandesign-repo-selfprimenet not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/icp/selfprime.md",
+      "line": 105,
+      "target": "../../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_humandesign_repo.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3d-surface-registry.md",
+      "line": 13,
+      "target": "../surfaces/",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3d-surface-registry.md",
+      "line": 39,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3d-surface-registry.md",
+      "line": 267,
+      "target": "../MARKETING_SUPERVISOR.md#8-failure-modes--recovery",
+      "reason": "anchor #8-failure-modes--recovery not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3d-surface-registry.md",
+      "line": 280,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3e-supervisor-worker.md",
+      "line": 40,
+      "target": "../../../packages/content/src/surfaces.ts",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3e-supervisor-worker.md",
+      "line": 48,
+      "target": "../../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_supervisor_architecture.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3e-supervisor-worker.md",
+      "line": 245,
+      "target": "../../../CLAUDE.md#verification-requirement-stop--read-this-before-declaring-anything-working",
+      "reason": "anchor #verification-requirement-stop--read-this-before-declaring-anything-working not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3e-supervisor-worker.md",
+      "line": 366,
+      "target": "../MARKETING_SUPERVISOR.md#8-failure-modes--recovery",
+      "reason": "anchor #8-failure-modes--recovery not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3f-social-adapters.md",
+      "line": 35,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3f-social-adapters.md",
+      "line": 274,
+      "target": "../CONSTITUTION.md#5-channel-allowlist--readiness-gates",
+      "reason": "anchor #5-channel-allowlist--readiness-gates not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3h-shareables.md",
+      "line": 176,
+      "target": "../../../.claude/projects/c--Users-Ultimate-Warrior-Documents-GitHub-Factory/memory/project_selfprime_worker_routes.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3j-referrals.md",
+      "line": 32,
+      "target": "../CONSTITUTION.md#9-honesty--truth",
+      "reason": "anchor #9-honesty--truth not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3j-referrals.md",
+      "line": 345,
+      "target": "../CONSTITUTION.md#9-honesty--truth",
+      "reason": "anchor #9-honesty--truth not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3k-attribution.md",
+      "line": 11,
+      "target": "../../../packages/attribution/src/source-map.ts",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/marketing/pr3-briefs/3k-attribution.md",
+      "line": 161,
+      "target": "../../../.github/PULL_REQUEST_TEMPLATE/attribution-source-map.md",
+      "reason": "file not found",
+      "owner": "marketing",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/observability/debugging-with-correlation-ids.md",
+      "line": 443,
+      "target": "../runbooks/incident-response.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/observability/durable-objects-tracing.md",
+      "line": 544,
+      "target": "../videoking/durable-objects.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/observability/full-stack-tracing.md",
+      "line": 696,
+      "target": "../runbooks/slo.md#observability",
+      "reason": "anchor #observability not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/packages/factory-admin-telemetry-contract.mdx",
+      "line": 478,
+      "target": "../videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/packages/frontend-standards.mdx",
+      "line": 816,
+      "target": "frontend-contribution-guide.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/quickstart.mdx",
+      "line": 86,
+      "target": "/packages/auth",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/quickstart.mdx",
+      "line": 87,
+      "target": "/packages/neon",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/quickstart.mdx",
+      "line": 88,
+      "target": "/packages/analytics",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/quickstart.mdx",
+      "line": 89,
+      "target": "/packages/llm",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/CREDENTIALS_SETUP.md",
+      "line": 263,
+      "target": "../PHASE_6_QUICK_START.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/definition-of-ready-done.md",
+      "line": 115,
+      "target": "../../service-registry.yml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/error-budget-policy.md",
+      "line": 348,
+      "target": "../videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/frontend-contribution-guide.md",
+      "line": 527,
+      "target": "frontend-standards.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/frontend-contribution-guide.md",
+      "line": 528,
+      "target": "design-standards.mdx",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/release-procedure.md",
+      "line": 316,
+      "target": "../templates/PRE_RELEASE_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/release-procedure.md",
+      "line": 317,
+      "target": "../templates/smoke-test-template.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/rfc-process.md",
+      "line": 348,
+      "target": "RFC-001-payout-batching-fix.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/rfc-process.md",
+      "line": 349,
+      "target": "RFC-002-creator-onboarding-redesign.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/security-review-checklist.md",
+      "line": 420,
+      "target": "../videoking/privacy-audit-report.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/runbooks/slo-framework.md",
+      "line": 302,
+      "target": "../videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/supervisor/APP_INTEGRATION.md",
+      "line": 21,
+      "target": "../apps/supervisor/src/tools/registry.ts",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/POSTMORTEM_TEMPLATE.md",
+      "line": 171,
+      "target": "../../runbooks/definition-of-ready-done.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/POSTMORTEM_TEMPLATE.md",
+      "line": 226,
+      "target": "incident-response-playbook.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/POSTMORTEM_TEMPLATE.md",
+      "line": 227,
+      "target": "postmortem-sync-agenda.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/POSTMORTEM_TEMPLATE.md",
+      "line": 228,
+      "target": "rollback-runbook.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/POSTMORTEM_TEMPLATE.md",
+      "line": 229,
+      "target": "../../runbooks/definition-of-ready-done.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/RFC_TEMPLATE.md",
+      "line": 240,
+      "target": "design-review-checklist.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/templates/RFC_TEMPLATE.md",
+      "line": 295,
+      "target": "rfc-process.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    }
+  ]
+}

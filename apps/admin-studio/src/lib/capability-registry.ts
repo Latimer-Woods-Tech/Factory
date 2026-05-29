@@ -1,7 +1,9 @@
 import {
   capabilityCatalog,
+  capabilityPrimitives,
   type CapabilityConcept,
   type CapabilityParameterDefinition,
+  type PrimitiveDefinition,
   type CapabilityRecipeDetail,
   type CapabilityRecipeSummary,
 } from './capability-data.js';
@@ -15,6 +17,8 @@ type CapabilityCatalogResponse = {
     ruleFileCount: number;
   };
   concepts: CapabilityConcept[];
+  /** All registered primitives — used by the Phase 5 visual composer palette. */
+  primitives: PrimitiveDefinition[];
 };
 
 export interface CapabilityResolution {
@@ -91,6 +95,7 @@ export function listCapabilityCatalog(): CapabilityCatalogResponse {
       .filter((concept) => concept.menuVisible)
       .slice()
       .sort(compareConceptsByOperatorRelevance),
+    primitives: [...capabilityPrimitives.values()],
   };
 }
 

@@ -15,6 +15,7 @@ const ENV: LLMEnv = {
   AI_GATEWAY_BASE_URL: 'https://gateway.test/v1',
   ANTHROPIC_API_KEY: 'ak-test',
   GROQ_API_KEY: 'grq-test',
+  DEEPSEEK_API_KEY: 'dsk-test',
   VERTEX_ACCESS_TOKEN: 'vertex-test',
   VERTEX_PROJECT: 'factory-495015',
   VERTEX_LOCATION: 'us-central1',
@@ -54,6 +55,17 @@ function groqResponse(text = 'verdict') {
       model: 'llama-3.3-70b-versatile',
     }),
     { status: 200 },
+  );
+}
+
+function deepSeekResponse(text = 'workbench') {
+  return new Response(
+    JSON.stringify({
+      choices: [{ message: { content: text } }],
+      usage: { prompt_tokens: 11, completion_tokens: 6 },
+      model: 'deepseek-chat',
+    }),
+    { status: 200, headers: { 'cf-aig-request-id': 'deepseek-aig' } },
   );
 }
 
@@ -128,6 +140,7 @@ beforeEach(() => {
   clearProviderCooldown('gemini');
   clearProviderCooldown('groq');
   clearProviderCooldown('grok');
+  clearProviderCooldown('deepseek');
 });
 
 // â”€â”€â”€ Existing complete() tests (unchanged) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -152,7 +165,7 @@ describe('complete', () => {
     expect(String(call[0])).toContain('anthropic/v1/messages');
   });
 
-  it('fast tier uses Haiku and no fallback leg', async () => {
+  it('fast tier falls back to Haiku when Grok key is unavailable', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(anthropicResponse('fast')));
     const res = await complete(
       [{ role: 'user', content: 'hi' }],
@@ -162,7 +175,36 @@ describe('complete', () => {
     );
     expect(res.error).toBeNull();
     expect(res.data!.tier).toBe('fast');
+    expect(res.data!.provider).toBe('anthropic');
     expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('fast tier uses Grok 4.3 with no reasoning when Grok key is available', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: 'grok-fast' }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 7, completion_tokens: 4 },
+            model: 'grok-4.3',
+          }),
+          { status: 200, headers: { 'cf-aig-request-id': 'grok-aig' } },
+        ),
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV, GROK_API_KEY: 'gk-test' },
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('grok');
+    expect(res.data!.model).toBe('grok-4.3');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { model: string; reasoning_effort: string };
+    expect(body.model).toBe('grok-4.3');
+    expect(body.reasoning_effort).toBe('none');
   });
 
   it('smart tier with long-context goes to Gemini primary', async () => {
@@ -280,6 +322,57 @@ describe('complete', () => {
     expect(res.data!.provider).toBe('groq');
     const call = fetchImpl.mock.calls[0] as unknown as [string | URL | Request, RequestInit?];
     expect(String(call[0])).toContain('groq/openai/v1/chat/completions');
+  });
+
+  it('workbench tier routes to DeepSeek for cheap internal batch work', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(deepSeekResponse('cheap-draft')));
+    const res = await complete(
+      [{ role: 'user', content: 'summarize this non-sensitive changelog' }],
+      ENV,
+      { tier: 'workbench', workload: 'docs-summary' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('deepseek');
+    expect(res.data!.model).toBe('deepseek-chat');
+    expect(res.data!.tier).toBe('workbench');
+    expect(res.data!.gatewayRequestId).toBe('deepseek-aig');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string; headers: Record<string, string> }];
+    expect(String(call[0])).toContain('/deepseek/chat/completions');
+    expect(call[1].headers.authorization).toBe('Bearer dsk-test');
+    const body = JSON.parse(call[1].body) as { model: string };
+    expect(body.model).toBe('deepseek-chat');
+  });
+
+  it('workbench tier falls back to Groq when DeepSeek key is unavailable', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(groqResponse('fallback-verdict')));
+    const envWithoutDeepSeek = { ...ENV, DEEPSEEK_API_KEY: undefined };
+    const res = await complete(
+      [{ role: 'user', content: 'classify these public docs' }],
+      envWithoutDeepSeek,
+      { tier: 'workbench' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('groq');
+    expect(res.data!.tier).toBe('workbench');
+    const call = fetchImpl.mock.calls[0] as unknown as [string | URL | Request, RequestInit?];
+    expect(String(call[0])).toContain('groq/openai/v1/chat/completions');
+  });
+
+  it('routes deepseek-* model override through DeepSeek', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(deepSeekResponse('reasoned')));
+    const res = await complete(
+      [{ role: 'user', content: 'outline a doc cleanup plan' }],
+      ENV,
+      { model: 'deepseek-reasoner' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('deepseek');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { model: string };
+    expect(body.model).toBe('deepseek-reasoner');
   });
 
   it('enables prompt caching for long system prompt', async () => {

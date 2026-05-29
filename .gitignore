@@ -27,7 +27,18 @@ _external_reviews/
 package-lock.json
 !apps/supervisor/package-lock.json
 !apps/browser-agent/package-lock.json
+!apps/qa-tools-worker/package-lock.json
+!apps/qa-tools-ui/package-lock.json
 !packages/browser/package-lock.json
+
+# Documentation control-plane run artifacts. Durable generated views under
+# docs/_catalog and docs/_generated are tracked separately.
+docs-quality-report.json
+docs/_catalog/docs-health.json
+docs/_catalog/docs-health-summary.md
+docs/_catalog/freshness.json
+docs/_catalog/freshness.md
+docs/_catalog/metadata.json
 
 # Storybook
 storybook-static
@@ -45,3 +56,5 @@ __pycache__/
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 
+# MCP server configs (often contain plaintext API keys from local setup)
+.mcp.json

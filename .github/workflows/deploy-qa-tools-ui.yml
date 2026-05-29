@@ -1,0 +1,54 @@
+name: Deploy QA Tools UI
+
+# Deploys qa-tools-ui to Cloudflare Pages on every push to main
+# when UI source changes.
+#
+# The Next.js app uses output: 'export' so the build produces a static
+# `out/` directory that is deployed directly to CF Pages.
+#
+# PRE-DEPLOY CHECKLIST (one-time provisioning):
+#   1. wrangler pages project create qa-tools-ui --production-branch main  (done 2026-05-27)
+#   2. qa.latimerwoods.dev attached via cf-domain-reconcile workflow_dispatch
+#      (op flag: attach_qa_latimerwoods, added to cf-domain-reconcile 2026-05-27)
+#
+# See: docs/architecture/QA_TOOLS_ARCHITECTURE.md §9.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/qa-tools-ui/**'
+      - '.github/workflows/deploy-qa-tools-ui.yml'
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: deploy-qa-tools-ui-${{ github.event.inputs.env || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_app-deploy-pages.yml
+    with:
+      node_version: '22'
+      working_directory: apps/qa-tools-ui
+      environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
+      build_command: build
+      dist_dir: out
+      project_name: qa-tools-ui
+      branch: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'main' || 'staging' }}
+      health_url: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'https://qa.latimerwoods.dev' || 'https://staging.qa.latimerwoods.dev/login/' }}
+    secrets: inherit

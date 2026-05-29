@@ -153,7 +153,8 @@ export async function executeTool(
     }
 
     case 'github_list_prs': {
-      const state = String(toolInput.state ?? 'open');
+      const rawState = String(toolInput.state ?? 'open');
+      const state = (rawState === 'closed' || rawState === 'all') ? rawState : 'open' as const;
       try {
         const prs = await listPullRequests(githubToken, state);
         return {
@@ -171,7 +172,8 @@ export async function executeTool(
       if (!secretName) return { error: 'secret_name is required' };
       if (!env?.GCP_SA_KEY) return { error: 'GCP_SA_KEY environment variable not set' };
       try {
-        const secret = await gcpGetSecret(secretName, env);
+        // env.GCP_SA_KEY is truthy here (checked above); assert non-optional for type narrowing.
+        const secret = await gcpGetSecret(secretName, { GCP_SA_KEY: env.GCP_SA_KEY });
         return {
           secret_name: secretName,
           value: secret.slice(0, 100) + (secret.length > 100 ? '...' : ''),
