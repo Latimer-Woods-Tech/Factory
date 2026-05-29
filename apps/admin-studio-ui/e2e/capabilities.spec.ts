@@ -296,7 +296,9 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   await handoffConfirm.check();
   await page.getByRole('button', { name: /Generate Scaffold Handoff/ }).click();
   await expect(page.getByRole('heading', { name: 'Scaffold Handoff Package' })).toBeVisible();
-  await expect(page.getByText(handoffHash)).toBeVisible();
+  await expect(
+    page.locator('dt', { hasText: 'Content hash' }).locator('..').getByText(handoffHash),
+  ).toBeVisible();
 
   // Copy + download buttons should be present.
   await expect(page.getByRole('button', { name: /Copy JSON/ })).toBeVisible();
