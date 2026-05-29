@@ -54,6 +54,30 @@ async function probeSurfaces() {
 	return Promise.all(BRAND_SURFACES.map(probeSurface));
 }
 
+function buildFallbackSurfaceHealth() {
+	return BRAND_SURFACES.map((surface) => ({
+		name: surface.name,
+		url: surface.url,
+		category: surface.category,
+		alive: false,
+		status: 0,
+		durationMs: 7000,
+		error: 'probe timeout',
+	}));
+}
+
+async function withTimeout(promise, ms, fallback) {
+	let timeoutId;
+	const result = await Promise.race([
+		promise,
+		new Promise((resolve) => {
+			timeoutId = setTimeout(() => resolve(fallback), ms);
+		}),
+	]);
+	clearTimeout(timeoutId);
+	return result;
+}
+
 const PUBLIC_SURFACES = [
 	{
 		name: 'Prime Self',
@@ -239,8 +263,9 @@ await copyFile(
 );
 
 // Liveness probes run in parallel; on CI without outbound network they all
-// degrade and the runtime still renders a static topology.
-const surfaceHealth = await probeSurfaces();
+// degrade and the runtime still renders a static topology. Bound the overall
+// probe batch so the build does not stall longer than 7 seconds.
+const surfaceHealth = await withTimeout(probeSurfaces(), 7000, buildFallbackSurfaceHealth());
 await writeFile(
 	join(distDir, 'data', 'pulse.json'),
 	`${JSON.stringify(await buildPulseSnapshot(surfaceHealth), null, 2)}\n`,
