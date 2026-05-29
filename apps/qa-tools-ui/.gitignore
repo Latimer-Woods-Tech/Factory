@@ -1,0 +1,11 @@
+# Next.js build artifacts
+.next/
+out/
+node_modules/
+
+# Local env
+.env.local
+.env*.local
+
+# CF Pages
+.vercel/

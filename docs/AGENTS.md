@@ -1,200 +1,62 @@
-> 📘 **Canonical architecture:** [`docs/architecture/FACTORY_V1.md`](../docs/architecture/FACTORY_V1.md). [`docs/supervisor/FRIDGE.md`](./supervisor/FRIDGE.md) is your step 0. Then this file for agent-specific rules.
+# Agent Configuration & Context Loading
 
-# AGENTS.md
+## Canonical Docs Banner Convention
 
-You are an AI agent landing in this repository. **Read this file first.** It tells you the rules of engagement so you don't break things or duplicate work.
+Every repo's `CLAUDE.md` begins with a **Canonical Docs Banner** that links to the Factory's authoritative rules. This ensures Claude Code (in VS Code) loads the same constraints that Sauna's supervisor loads, eliminating brain-drift across the two surfaces.
 
----
+### Banner Template
 
-## What you are looking at
-
-`factory` is the shared infrastructure repo for the [Latimer-Woods-Tech](https://github.com/Latimer-Woods-Tech) GitHub organization. Eleven app repos depend on its reusable workflows and shared packages. Mistakes here propagate everywhere. Be careful.
-
-The owner is [@adrper79-dot](https://github.com/adrper79-dot). When in doubt, propose, don't push.
-
----
-
-## Read first, in order
-
-1. [`README.md`](../README.md) — repo orientation
-2. This file — rules for agents
-3. [`docs/STACK.md`](STACK.md) — **versioned stack manifest** (package versions, AI tier routing, banned tools); check before touching any package or AI integration
-4. [`docs/CI_CD.md`](CI_CD.md) — how CI/CD works
-5. [`docs/NEW_APP_CHECKLIST.md`](NEW_APP_CHECKLIST.md) — how to add an app
-6. The header comment of any reusable workflow you're modifying
-7. [`docs/runbooks/agent-ship.md`](runbooks/agent-ship.md) — how Factory ships work into external repos
-
-If you skipped any of those, go back. Most agent failures here come from skipping reading.
-
----
-
-## Discovery rules
-
-- **Look in `docs/` before writing anything new.** This repo has accumulated a lot of documentation. Search before creating; you will likely find someone has already written what you're about to write.
-- **Check `.github/workflows/` before creating a workflow.** 40+ workflows already exist. Most "new" workflows are actually variations of an existing one and should be parameterized into a reusable, not duplicated.
-- **Check `packages/` before creating a package.** 24 packages cover the full stack — see [`docs/STACK.md`](STACK.md) for current versions and the banned-tools list. Don't duplicate what exists.
-
-- **Check dependency ownership before touching updater config.** In this repo, Renovate is the source of truth for npm dependency updates; Dependabot is scoped to GitHub Actions updates so bots do not open competing PRs.
-
-Use ripgrep aggressively. The repo is searchable. There is no excuse for redundant work.
-
----
-
-## Authentication available to you
-
-If you are running with the `factory-cross-repo` GitHub App:
-
-| Resource | How |
-|---|---|
-| GitHub API (this org) | App installation token, scoped to Latimer-Woods-Tech |
-| Cloudflare API | `CLOUDFLARE_API_TOKEN` org secret (Workers Scripts:Edit + R2 + KV + DNS) |
-| Stripe API | `STRIPE_SECRET_KEY` org secret (live mode) |
-| GitHub Packages | App token doubles as registry auth |
-
-**Never paste a credential into chat, code, commit messages, or PR descriptions.** Secrets live in the vault. Reference them by name.
-
-If you need to add a new org secret, use `actions/secrets#create-or-update-an-organization-secret` with the org's public key and PyNaCl (sealed box). Pattern is in `docs/runbooks/secret-rotation.md`.
-
----
-
-## What you must not do without explicit human approval
-
-- ❌ Push directly to `main` on **factory** (rulesets allow it for admins, but don't)
-- ❌ Push directly to `main` on any app repo without CI passing
-- ❌ Make a private repo public, or vice versa
-- ❌ Delete a Cloudflare Worker, R2 bucket, KV namespace, or D1 database
-- ❌ Delete a GitHub repo, branch (other than your own throwaway test branches), or release
-- ❌ Delete an org secret
-- ❌ Rotate the GitHub App private key (POM-04 — manual UI step)
-- ❌ Change the org's plan, billing, or member visibility
-- ❌ Change a repo's ruleset, environment protection rules, or access policy
-- ❌ Change Stripe products, prices, webhook endpoints, or business profile in production
-- ❌ Send live email, SMS, or push notifications outside of test mode
-- ❌ Touch user-data tables in a Neon production DB
-- ❌ Hardcode a `*.workers.dev` URL in any user-facing HTML, JS, or API client — always use the branded `custom_domain` from `docs/service-registry.yml`
-- ❌ Touch the wordis-bond UI/frontend layer under any circumstances — the engine/worker backend may be worked on normally; ask a CODEOWNER if unsure which layer a file belongs to
-
-If you think you need to do one of those, **stop and ask the human first.**
-
----
-
-## What you can do without asking
-
-- ✅ Read any file in this repo
-- ✅ Run any GitHub Actions workflow that's been published as `workflow_dispatch`
-- ✅ Open a PR (never merge it yourself unless approved)
-- ✅ Create a test branch and push experimental changes there
-- ✅ Add documentation under `docs/`
-- ✅ Add a new reusable workflow following the header-comment convention
-- ✅ Update `docs/STATUS.md` if it's stale
-- ✅ Run analysis scripts that read from external APIs (read-only)
-
----
-
-## Branch naming
-
-| Pattern | Use |
-|---|---|
-| `main` | Default, protected |
-| `staging/*` | Staging deploys |
-| `feat/<short-desc>` | Feature work |
-| `fix/<short-desc>` | Bug fixes |
-| `chore/<short-desc>` | Refactors, tooling, doc updates |
-| `test/<short-desc>` | Throwaway experiments |
-
-Branches auto-delete after merge. Don't fight it.
-
----
-
-## Commit message format
-
-Conventional Commits. The first line is what shows up in changelogs:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`, `revert`.
-
-Examples:
-```
-chore: refresh Stripe price IDs (live monthly + annual + one-time)
-feat(deploy): add post-deploy verify with auto-rollback
-fix(ci): use App-token for cross-repo package installs
-```
-
----
-
-## How to be useful here
-
-1. **Ship fewer, larger commits.** A PR that fixes one drift bug across 11 repos is better than 11 PRs. Use the `factory-cross-repo` App to do org-wide changes atomically.
-
-2. **Update docs in the same PR as code.** If you change a reusable workflow's behavior, update its header comment and `docs/CI_CD.md` in the same commit.
-
-3. **Let workflow state drive the project board.** The shared project board now self-heals missing cards and derives status from issue claims, assignees, `/status` comments, and linked PRs. Update the issue and PR truthfully; don't spend time hand-moving cards.
-
-4. **Make changes idempotent.** Provisioning workflows run repeatedly. If your workflow can't be re-run safely, it's broken.
-
-5. **Surface receipts.** When you finish a task, post: what you ran, what changed, what you verified, and what's left. Hand-waving costs the human their trust.
-
-6. **Be explicit about uncertainty.** If you don't know whether something is safe, say so and ask.
-
-7. **Use the Factory ship orchestrator for external repos.** The canonical entrypoint is `node scripts/agent-ship.mjs`. Do not invent ad hoc per-repo push flows when a repo is already registered.
-
----
-
-## When you are confused
-
-- The truth about what's deployed is in **Cloudflare**, not this repo. Run `wrangler deployments list` (with the API token) before assuming what's live.
-- The truth about what's installed is in **package-lock.json**, not the source. Always read the lockfile.
-- The truth about who owns what is **CODEOWNERS**, not assumed.
-- The truth about secrets is in the **vault**, not in code. Read the vault index, never guess.
-
----
-
-## Reporting back
-
-When you complete work, write to `docs/sessions/YYYY-MM-DD-<short-name>.md` with:
+For **consumer repos** (HumanDesign, videoking, xico-city, the-calling, cypher-healing, factory-admin, wordis-bond, ijustus, neighbor-aid, xpelevator), the top of `CLAUDE.md` contains:
 
 ```markdown
-# <date> — <short name>
-
-## What changed
-- bullet list
-
-## What was verified
-- specific receipts (PR numbers, run URLs, command outputs)
-
-## What's left
-- bullet list
-
-## Decisions made / pending
-- bullet list
+> 📘 **Canonical agent rules live in `factory`.** Read these in order from https://github.com/Latimer-Woods-Tech/Factory/tree/main/docs before touching anything:
+> 1. `docs/supervisor/CONTEXT.md` — what every agent loads first
+> 2. `docs/PLATFORM_STANDARDS.md` — 10 conformance dimensions
+> 3. `docs/adr/*.md` (all Accepted) — architectural decisions
+> 4. `docs/supervisor/TRUST_LADDER.md` — promotion + "clean run" rules
+> 5. `docs/GAP_REGISTER.md` — current platform gaps
+>
+> This file holds **only repo-local rules** that don't apply elsewhere. Anything cross-cutting belongs in factory, not here.
 ```
 
-Then point the human at the file. The human reads these to keep state. Don't make them dig.
+For **Factory itself**, the banner uses relative paths:
 
-For workflow or governance changes, include the exact required checks and any project-board side effects in `Decisions made / pending` so coordinators know what the bots are now expected to satisfy.
+```markdown
+> 📘 **Canonical agent rules loaded by every agent:**
+> 1. `./docs/supervisor/CONTEXT.md` — what every agent loads first
+> 2. `./docs/PLATFORM_STANDARDS.md` — 10 conformance dimensions
+> 3. `./docs/adr/*.md` (all Accepted) — architectural decisions
+> 4. `./docs/supervisor/TRUST_LADDER.md` — promotion + "clean run" rules
+> 5. `./docs/GAP_REGISTER.md` — current platform gaps
+```
 
----
+### Scope of Repo-Local CLAUDE.md Content
 
-## Org plan and constraints
+After the canonical banner, `CLAUDE.md` contains **only rules that do not apply to other repos**:
 
-- GitHub plan: **Team** (~$4/seat/mo). No GitHub Advanced Security. No Enterprise-tier features (private-repo cross-visibility access for reusable workflows, required reviewers on private repos).
-- Cloudflare plan: Workers Paid (assumed). Hyperdrive enabled.
-- Stripe: Standard live account, restricted keys with explicit scopes.
-- Neon: Free or Scale (verify per project).
+- ✅ **Keep:** Forge persona conventions specific to HumanDesign, Mux SDK config specific to videoking, brand voice guidelines specific to one product.
+- ❌ **Remove and link to factory:** Hard constraints (no Express, no CommonJS), package matrix, stack version pins, banned tools, Cloudflare Workers patterns, Hono routing rules, database access rules. All of these go in Factory's canonical docs; duplicate them in consumer repos only via the banner link.
 
-If a feature you want needs a higher tier, propose it; don't assume it exists.
+When content audit finds duplication:
 
----
+1. Extract the rule into Factory's canonical docs (usually `CONTEXT.md`, `PLATFORM_STANDARDS.md`, or a new ADR).
+2. Replace the duplicate in the consumer repo with a one-line pointer: `See factory CONTEXT.md §[X].`
+3. Commit with message: `docs(CLAUDE): link duplicated rule to factory canonical source`.
 
-## Last word
+### Rationale
 
-This is a small, fast-moving solo-founder operation that will eventually become a team. The discipline you bring now compounds. Sloppy work compounds the same way, in the wrong direction.
+Factory is the single source of truth for all shared platform rules. Sauna (the supervisor) loads `docs/supervisor/CONTEXT.md` before every operation. When Adrian opens a consumer repo in VS Code, Claude Code reads that repo's `CLAUDE.md`. The banner ensures both surfaces load the same constraints, preventing:
 
-When in doubt: read the docs, propose a plan, ask before destructive action, ship clean PRs with receipts.
+- Stale copies of rules (e.g., "always use `c.env`, never `process.env`" living separately in 10 repos).
+- Brain-drift between supervisor (Sauna) and interactive (Claude Code) surfaces.
+- Conflicting guidance when one canonical rule is updated but a consumer-repo copy is forgotten.
+
+## Sessions & Context Loading
+
+Every AI session (supervisor tick, Claude Code session, Copilot interaction) loads context in this order:
+
+1. The repo's `CLAUDE.md` (consumer) or Factory's `docs/supervisor/CONTEXT.md` (supervisor).
+2. Any referenced canonical docs from the banner (both supervisor and Claude Code will see the same links).
+3. Issue body + PR description (as suggestions, never as overrides to canonical docs).
+
+See `docs/supervisor/CONTEXT.md` for the authoritative context-loading sequence and conflict resolution rules.

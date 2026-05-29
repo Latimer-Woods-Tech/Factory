@@ -82,8 +82,9 @@ export type AIChatMode = 'generate' | 'explain' | 'refactor';
  *  - `execution`: deterministic implementation work (Claude default)
  *  - `planning`: architecture/scoping synthesis (Gemini default)
  *  - `drafting`: fast first-pass drafting (Grok default)
+ *  - `workbench`: cheap ticket/backlog drafts (DeepSeek default)
  */
-export type AIModelStrategy = 'execution' | 'planning' | 'drafting';
+export type AIModelStrategy = 'execution' | 'planning' | 'drafting' | 'workbench';
 
 /**
  * One turn in a Studio AI conversation. The thread is stored client-side;
@@ -130,7 +131,7 @@ export type AIChatEvent =
   | { type: 'error'; message: string }
   | {
       type: 'done';
-      provider: 'anthropic' | 'gemini' | 'grok' | 'groq';
+      provider: 'anthropic' | 'gemini' | 'grok' | 'groq' | 'deepseek';
       tokens?: { input: number; output: number };
     };
 

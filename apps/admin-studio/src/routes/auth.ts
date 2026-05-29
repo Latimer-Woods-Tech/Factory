@@ -33,6 +33,7 @@ interface GoogleIdTokenPayload {
   sub?: unknown;
   email?: unknown;
   email_verified?: unknown;
+  hd?: unknown;
 }
 
 interface GoogleJwk extends JsonWebKey {
@@ -44,6 +45,11 @@ interface GoogleJwk extends JsonWebKey {
 
 interface GoogleJwksResponse {
   keys?: GoogleJwk[];
+}
+
+interface VerifiedGoogleIdentity {
+  email: string;
+  hostedDomain: string | null;
 }
 
 /**
@@ -148,12 +154,28 @@ auth.post('/google', async (c) => {
     return c.json({ error: 'Google sign-in is not configured' }, 503);
   }
 
-  let verifiedEmail: string;
+  let verifiedIdentity: VerifiedGoogleIdentity;
   try {
-    verifiedEmail = await verifyGoogleIdToken(body.credential, googleClientId, fetch);
+    verifiedIdentity = await verifyGoogleIdToken(body.credential, googleClientId, fetch);
   } catch (error) {
     return c.json({ error: 'Invalid Google credential', detail: (error as Error).message }, 401);
   }
+
+  const workspaceDomainError = getGoogleWorkspaceDomainError(
+    verifiedIdentity,
+    c.env.STUDIO_GOOGLE_WORKSPACE_DOMAIN,
+  );
+  if (workspaceDomainError) {
+    return c.json(
+      {
+        error: 'Access denied',
+        detail: workspaceDomainError,
+      },
+      403,
+    );
+  }
+
+  const verifiedEmail = verifiedIdentity.email;
 
   // Extract allowed users from env, fall back to empty list if not configured
   const allowedUsersJson = c.env.STUDIO_ALLOWED_USERS_JSON || '{}';
@@ -211,7 +233,7 @@ auth.post('/google', async (c) => {
 auth.get('/config', (c) => {
   return c.json({
     googleClientId: c.env.GOOGLE_CLIENT_ID || null,
-    hostedDomain: 'apunlimited.com',
+    hostedDomain: c.env.STUDIO_GOOGLE_WORKSPACE_DOMAIN || null,
   });
 });
 
@@ -232,7 +254,7 @@ async function verifyGoogleIdToken(
   token: string,
   expectedAudience: string,
   fetchFn: typeof fetch,
-): Promise<string> {
+): Promise<VerifiedGoogleIdentity> {
   const parts = token.split('.');
   if (parts.length !== 3) {
     throw new Error('Malformed Google ID token');
@@ -252,7 +274,8 @@ async function verifyGoogleIdToken(
   }
 
   if (header.alg !== 'RS256') {
-    throw new Error(`Unsupported algorithm: ${header.alg}`);
+    const alg = typeof header.alg === 'string' ? header.alg : String(header.alg);
+    throw new Error(`Unsupported algorithm: ${alg}`);
   }
   if (typeof header.kid !== 'string') {
     throw new Error('Missing kid in Google ID token header');
@@ -272,7 +295,7 @@ async function verifyGoogleIdToken(
   if (!jwksRes.ok) {
     throw new Error(`Failed to fetch Google JWKS: ${jwksRes.status}`);
   }
-  const jwksData = (await jwksRes.json()) as GoogleJwksResponse;
+  const jwksData: GoogleJwksResponse = await jwksRes.json();
   const keys = jwksData.keys || [];
 
   // Find the key matching the kid
@@ -315,10 +338,12 @@ async function verifyGoogleIdToken(
 
   // Validate required claims
   if (payload.iss !== 'https://accounts.google.com') {
-    throw new Error(`Invalid issuer: ${payload.iss}`);
+    const issuer = typeof payload.iss === 'string' ? payload.iss : String(payload.iss);
+    throw new Error(`Invalid issuer: ${issuer}`);
   }
   if (payload.aud !== expectedAudience) {
-    throw new Error(`Audience mismatch: expected ${expectedAudience}, got ${payload.aud}`);
+    const audience = typeof payload.aud === 'string' ? payload.aud : String(payload.aud);
+    throw new Error(`Audience mismatch: expected ${expectedAudience}, got ${audience}`);
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -335,7 +360,27 @@ async function verifyGoogleIdToken(
     throw new Error('No email claim in Google ID token');
   }
 
-  return payload.email;
+  return {
+    email: payload.email,
+    hostedDomain: typeof payload.hd === 'string' ? payload.hd : null,
+  };
+}
+
+export function getGoogleWorkspaceDomainError(
+  identity: VerifiedGoogleIdentity,
+  requiredDomain?: string,
+): string | null {
+  const normalizedRequiredDomain = requiredDomain?.trim().toLowerCase();
+  if (!normalizedRequiredDomain) {
+    return null;
+  }
+
+  const normalizedHostedDomain = identity.hostedDomain?.trim().toLowerCase() ?? '';
+  if (normalizedHostedDomain !== normalizedRequiredDomain) {
+    return `Google account '${identity.email}' is not a member of the required Workspace domain '${normalizedRequiredDomain}'`;
+  }
+
+  return null;
 }
 
 // ─── HS256 signer (Web Crypto only) ─────────────────────────────────────────

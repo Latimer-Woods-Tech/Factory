@@ -136,6 +136,12 @@ export async function runMigrations(
 }
 
 /**
+ * PostgreSQL Row-Level Security template helpers.
+ * Generates ALTER TABLE + CREATE POLICY SQL for migration files.
+ */
+export * from './rls.js';
+
+/**
  * W360-005: Practitioner Studio Entitlements Module
  *
  * Revenue model for self-serve video generation product.

@@ -22,6 +22,12 @@ export interface Env extends Record<string, unknown> {
    * WEBHOOK_FANOUT_INGEST_KEY. Unset disables the service-key path.
    */
   WEBHOOK_FANOUT_INGEST_KEY?: string;
+  /**
+   * Dedicated service credential for the supervisor Worker's push-on-write run
+   * mirroring. Honoured ONLY on `POST /v1/runs/mirror`. wrangler secret
+   * SUPERVISOR_PUSH_KEY. Unset disables the push path (cron mirror still works).
+   */
+  SUPERVISOR_PUSH_KEY?: string;
   /** Expected OIDC issuer. Defaults to GitHub Actions' issuer when unset. */
   OIDC_ISSUER?: string;
   /** Expected `aud` claim on the inbound GitHub OIDC token. */
@@ -34,4 +40,10 @@ export interface Env extends Record<string, unknown> {
   ENVIRONMENT?: string;
   /** Sentry DSN for error reporting. wrangler secret SENTRY_DSN. */
   SENTRY_DSN?: string;
+  /**
+   * Dedicated service credential for compliance auditLog() middleware.
+   * Honoured ONLY on `POST /v1/audit`. wrangler secret AUDIT_INGEST_KEY.
+   * Unset causes the route to return 401.
+   */
+  AUDIT_INGEST_KEY?: string;
 }

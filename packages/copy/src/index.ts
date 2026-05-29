@@ -128,7 +128,7 @@ export async function generateCopy(opts: GenerateCopyOpts): Promise<string> {
   const result = await complete(
     [{ role: 'user', content: userPrompt }],
     opts.env,
-    { system: systemPrompt },
+    { system: systemPrompt, tier: 'fast', maxTokens: 300, maxCostUsd: 0.05, project: opts.appId, actor: 'worker', workload: 'copy' },
   );
 
   if (!result.data) {

@@ -1,56 +1,46 @@
-app: webhook-fanout
-base_url: https://webhooks.latwoodtech.com
-auth: none
-supervisor_access: read-only
-tiers_allowed: [green]
+# capabilities.yml — webhook-fanout (P2.17)
+# Schema: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §3.1.1
+# Validated by: .github/workflows/_app-capability-lint.yml (P2.16)
+#
+# Cloudflare Worker that ingests Stripe webhook events, verifies HMAC-SHA256
+# signatures, deduplicates via KV (7-day TTL), filters synthetic customers,
+# and fans out to PostHog + factory_events + Resend.
+#
+# supervisor_access tiers:
+#   green   — supervisor may call without human review
+#   denied  — never callable by supervisor
 
-description: >
-  Cloudflare Worker that ingests Stripe webhook events, verifies HMAC-SHA256
-  signatures, deduplicates via KV (7-day TTL), filters synthetic customers,
-  and fans out to PostHog + factory_events (analytics) and Resend (lifecycle emails).
+version: 1
+app:
+  id: webhook-fanout
+  name: "webhook-fanout"
+  repo: Latimer-Woods-Tech/factory
+  custom_domain: webhooks.latwoodtech.work
+  product_tier: internal
 
-routed_events:
-  - stripe: customer.created
-    analytics_event: stripe.customer.created
-    lifecycle_email: resend
-  - stripe: customer.updated
-    analytics_event: stripe.customer.updated
-    lifecycle_email: resend
-  - stripe: customer.subscription.created
-    analytics_event: stripe.customer.subscription.created
-    lifecycle_email: resend
-  - stripe: customer.subscription.updated
-    analytics_event: stripe.customer.subscription.updated
-    lifecycle_email: resend
-  - stripe: customer.subscription.deleted
-    analytics_event: stripe.customer.subscription.deleted
-    lifecycle_email: resend
-  - stripe: customer.subscription.trial_will_end
-    analytics_event: stripe.customer.subscription.trial_will_end
-    lifecycle_email: resend
-  - stripe: invoice.paid
-    analytics_event: stripe.invoice.paid
-    lifecycle_email: resend
-  - stripe: invoice.payment_failed
-    analytics_event: stripe.invoice.payment_failed
-    lifecycle_email: resend
-
-capabilities:
-  - id: health.check
-    desc: "Worker liveness check."
-    route: GET /health
+routes:
+  # ── Health ────────────────────────────────────────────────────────────────────
+  - path: /health
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
 
-  - id: stripe.webhook.receive
-    desc: >
-      Receive and process a Stripe webhook event. Verifies HMAC signature,
-      deduplicates, filters synthetic customers, and fans out to PostHog,
-      factory_events, and Resend.
-    route: POST /stripe
+  # ── Stripe webhooks (exclusively called by Stripe) ────────────────────────────
+  - path: /stripe
+    method: POST
+    handler_class: webhook-external
     side_effects: write-external
-    reversibility: idempotent
-    required_scope: none
-    notes: >
-      Called exclusively by Stripe. Not for direct invocation by the Supervisor.
-      Returns 200 immediately; fan-out continues in waitUntil().
+    supervisor_access: denied
+
+capabilities_exposed:
+  - stripe-webhook-fanout
+
+capabilities_required:
+  - "@latimer-woods-tech/analytics@^0.2.0"
+  - "@latimer-woods-tech/email@^0.2.0"
+
+side_effects_summary:
+  read_external: ["stripe-hmac-verify"]
+  write_external: ["posthog", "resend"]
+  write_app: ["neon:factory-main", "kv:webhook-dedup"]

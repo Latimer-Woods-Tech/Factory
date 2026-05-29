@@ -1,0 +1,96 @@
+name: _docs-health
+
+on:
+  workflow_call:
+    inputs:
+      repo_profile:
+        description: "Docs health profile: factory, app, package, or docs-lite"
+        required: false
+        type: string
+        default: app
+      tools_ref:
+        description: "Factory ref to use for docs control-plane tools"
+        required: false
+        type: string
+        default: main
+      enforce_generated:
+        description: "Fail if generated catalog/diagram/debt outputs are stale"
+        required: false
+        type: boolean
+        default: true
+      node_version:
+        description: "Node version used when the target repo has no .nvmrc"
+        required: false
+        type: string
+        default: "24"
+
+concurrency:
+  group: docs-health-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  docs-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          path: target
+
+      - name: Checkout Factory docs tools
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: Latimer-Woods-Tech/Factory
+          ref: ${{ inputs.tools_ref }}
+          path: _factory-tools
+
+      - name: Setup Node.js from target .nvmrc
+        if: ${{ hashFiles('target/.nvmrc') != '' }}
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: target/.nvmrc
+
+      - name: Setup Node.js fallback
+        if: ${{ hashFiles('target/.nvmrc') == '' }}
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: ${{ inputs.node_version }}
+
+      - name: Install Factory docs tool dependencies
+        working-directory: _factory-tools
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Install target dependencies for Factory checks
+        if: ${{ inputs.repo_profile == 'factory' }}
+        working-directory: target
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Run docs health
+        env:
+          DOCS_TARGET_ROOT: ${{ github.workspace }}/target
+          DOCS_REPO_PROFILE: ${{ inputs.repo_profile }}
+        run: node _factory-tools/scripts/docs/health.mjs
+
+      - name: Check generated docs are current
+        if: ${{ inputs.enforce_generated }}
+        env:
+          DOCS_TARGET_ROOT: ${{ github.workspace }}/target
+          DOCS_REPO_PROFILE: ${{ inputs.repo_profile }}
+        run: node _factory-tools/scripts/docs/check-generated-current.mjs
+
+      - name: Write docs health summary
+        if: always()
+        run: |
+          if [ -f target/docs/_catalog/docs-health-summary.md ]; then
+            cat target/docs/_catalog/docs-health-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "target/docs/_catalog/docs-health-summary.md was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -28,10 +28,11 @@ const MODES: ReadonlyArray<{ id: AIChatMode; label: string; hint: string }> = [
   { id: 'refactor', label: 'Refactor', hint: 'Improve existing code' },
 ];
 
-const STRATEGIES: ReadonlyArray<{ id: AIModelStrategy; label: string; hint: string }> = [
+export const STRATEGIES: ReadonlyArray<{ id: AIModelStrategy; label: string; hint: string }> = [
   { id: 'execution', label: 'Execution', hint: 'Claude-oriented deterministic implementation' },
   { id: 'planning', label: 'Planning', hint: 'Gemini-oriented planning/scoping synthesis' },
   { id: 'drafting', label: 'Drafting', hint: 'Grok-oriented fast first-pass drafting' },
+  { id: 'workbench', label: 'Workbench', hint: 'DeepSeek-oriented ticket and backlog drafting' },
 ];
 
 function turn(role: 'user' | 'assistant', content: string): AIChatTurn {
@@ -291,8 +292,8 @@ export function AiTab() {
   return (
     <div className="flex flex-col md:flex-row h-auto md:h-[calc(100dvh-92px)] gap-3">
       <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
-        <header className="border-b border-slate-800 px-3 py-2 flex items-center gap-2">
-          <div className="flex gap-1">
+        <header className="border-b border-slate-800 px-3 py-2 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-1">
             {MODES.map((m) => (
               <button
                 key={m.id}
@@ -308,7 +309,7 @@ export function AiTab() {
               </button>
             ))}
           </div>
-          <div className="ml-3 flex gap-1">
+          <div className="flex flex-wrap gap-1 md:ml-3">
             {STRATEGIES.map((s) => (
               <button
                 key={s.id}

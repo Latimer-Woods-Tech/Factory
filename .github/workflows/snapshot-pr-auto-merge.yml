@@ -68,7 +68,7 @@ jobs:
       # always sourced from main, never from PR-author-controlled content.
       # This is the same pattern that makes pull_request_target safe.
       - name: Checkout main (for allowlist + helper)
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: main
           persist-credentials: false
@@ -80,7 +80,7 @@ jobs:
       #      enable survives `dismiss_stale_reviews_on_push: true` on
       #      subsequent synchronize events.
       - name: Mint factory-cross-repo App token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // qa-tools-worker — QA testing platform API (accessibility, performance, visual regression)
+  // Architecture: docs/architecture/QA_TOOLS_ARCHITECTURE.md
+  // Add-new-app runbook: docs/runbooks/add-new-app.md
+  "name": "qa-tools-worker",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": { "enabled": true },
+
+  // Hyperdrive binding — qa-tools-hyperdrive → THE_FACTORY Neon DB (morning-dust-88304389)
+  // Provisioned: 2026-05-27  wrangler hyperdrive create qa-tools-hyperdrive
+  "hyperdrive": [
+    {
+      "binding": "DB",
+      "id": "ed95104a65c541c8b98f842e01f5894a"
+    }
+  ],
+
+  // R2 bucket for screenshots, videos, JSON exports (90-day lifecycle policy)
+  // Provisioned: 2026-05-27  wrangler r2 bucket create qa-tools
+  "r2_buckets": [
+    {
+      "binding": "QA_TOOLS_R2",
+      "bucket_name": "qa-tools"
+    }
+  ],
+
+  // KV for rate-limit counters (concurrent run tracking per app)
+  // Provisioned: 2026-05-27  wrangler kv namespace create QA_RATE_LIMIT_KV
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "cbec8a8aa8554005bb763267bd5498b1"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development",
+    "QA_TOOLS_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
+    "ALLOWED_ORIGINS": "http://localhost:3000,https://qa.latimerwoods.dev,https://staging.qa.latimerwoods.dev"
+  },
+
+  // Required secrets — provisioned via deploy-qa-tools-worker.yml from GCP Secret Manager:
+  //   QA_TOOLS_JWT_SECRET     HS256 key (created 2026-05-27 in factory-495015)
+  //   GOOGLE_CLIENT_ID        shared operator Google OAuth client
+  //   QA_TOOLS_ALLOWED_USERS_JSON shared operator allowlist
+  //   QA_TOOLS_ADMIN_EMAIL    break-glass operator email (FACTORY_USER)
+  //   QA_TOOLS_ADMIN_PASSWORD_SHA256 break-glass password hash (FACTORY_PW)
+  //   BROWSER_AGENT_SA_KEY    supervisor-sa JSON key (BROWSER_AGENT_SA_KEY in factory-495015)
+  //   BROWSER_AGENT_URL       https://browser-agent-891842778224.us-central1.run.app
+  //   BROWSER_AGENT_AUDIENCE  https://browser-agent-891842778224.us-central1.run.app
+  //
+  // Optional secrets:
+  //   GITHUB_QA_TOKEN         GitHub PAT (repo:write) for issue creation + PR comments
+  //   SLACK_QA_WEBHOOK_URL    Slack incoming webhook for notifications + daily digest
+  //   SENTRY_DSN              Sentry DSN for error reporting
+
+  "env": {
+    "production": {
+      "name": "qa-tools-worker",
+      "routes": [
+        { "pattern": "api.qa.latimerwoods.dev", "custom_domain": true }
+      ],
+      "hyperdrive": [
+        { "binding": "DB", "id": "ed95104a65c541c8b98f842e01f5894a" }
+      ],
+      "r2_buckets": [
+        { "binding": "QA_TOOLS_R2", "bucket_name": "qa-tools" }
+      ],
+      "kv_namespaces": [
+        { "binding": "RATE_LIMIT_KV", "id": "cbec8a8aa8554005bb763267bd5498b1" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "QA_TOOLS_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
+        "ALLOWED_ORIGINS": "https://qa.latimerwoods.dev"
+      }
+    },
+    "staging": {
+      "name": "qa-tools-worker-staging",
+      "hyperdrive": [
+        { "binding": "DB", "id": "ed95104a65c541c8b98f842e01f5894a" }
+      ],
+      "r2_buckets": [
+        { "binding": "QA_TOOLS_R2", "bucket_name": "qa-tools-staging" }
+      ],
+      "kv_namespaces": [
+        { "binding": "RATE_LIMIT_KV", "id": "cbec8a8aa8554005bb763267bd5498b1" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "QA_TOOLS_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
+        "ALLOWED_ORIGINS": "https://staging.qa.latimerwoods.dev,http://localhost:3000"
+      }
+    }
+  }
+}

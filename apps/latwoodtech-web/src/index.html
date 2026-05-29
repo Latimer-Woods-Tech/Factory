@@ -39,22 +39,7 @@
         </div>
         <div class="hero-visual">
           <div class="visual-card">
-            <div class="reactor-core" aria-hidden="true">
-              <div class="reactor-ring reactor-ring-outer"></div>
-              <div class="reactor-ring reactor-ring-mid"></div>
-              <div class="reactor-ring reactor-ring-inner"></div>
-              <div class="reactor-center"></div>
-            </div>
-            <div class="visual-sigil" aria-hidden="true"></div>
-            <div class="visual-hud" aria-hidden="true">
-              <span class="hud-node hud-node-gold"></span>
-              <span class="hud-node hud-node-red"></span>
-              <span class="hud-node hud-node-green"></span>
-            </div>
-            <video autoplay muted loop playsinline preload="metadata" poster="assets/latimerWoodslogovideo.png" class="logo-video" aria-label="Latimer Woods motion logo animation">
-              <source src="assets/latimerWoodslogovideo.mp4" type="video/mp4" />
-              Your browser does not support video playback.
-            </video>
+            <canvas data-circuitry aria-label="Live signal map of Latimer Woods branded surfaces" role="img"></canvas>
             <strong>latwoodtech.com</strong>
           </div>
           <div class="hero-readout" aria-label="System readout">
@@ -369,6 +354,7 @@
                   <textarea name="message" rows="5" required maxlength="2000"></textarea>
                 </label>
                 <input type="text" name="website" class="contact-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" />
+                <p class="contact-consent">By providing your phone number and submitting this form, you consent to receive SMS messages from Latimer Woods Technology regarding your enquiry. Message and data rates may apply. Reply STOP to unsubscribe. <a href="/privacy.html">Privacy Policy</a>.</p>
                 <div class="contact-form-footer">
                   <button type="submit" class="button button-primary">Send message</button>
                   <p class="contact-status" data-contact-status>Messages route through the Factory contact worker.</p>
@@ -385,5 +371,6 @@
         </section>
       </main>
     </div>
+    <script type="module" src="hero-circuitry.js"></script>
   </body>
 </html>

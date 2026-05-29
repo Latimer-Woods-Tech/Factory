@@ -22,7 +22,7 @@
 
 CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
-### T1 — Load-bearing (25)
+### T1 — Load-bearing (27)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -53,12 +53,15 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `deploy-synthetic-monitor.yml` | push, dispatch | Production deploy — synthetic-monitor Worker |
 | `deploy-video-cron.yml` | push, dispatch | Production deploy — video-cron Worker |
 | `deploy-webhook-fanout.yml` | push, dispatch | Production deploy — webhook-fanout Worker |
+| `deploy-factory-core-api.yml` | push, dispatch | Production deploy — factory-core-api Worker (read-layer + auth) |
+| `deploy-factory-events-replay.yml` | push, dispatch | Production deploy — factory-events-replay cron Worker (P1.10) |
 | `browser-agent-deploy.yml` | push, dispatch | Production deploy — Cloud Run browser-agent |
 
-### T2 — Operational (29)
+### T2 — Operational (30)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
+| `adr-need-check.yml` | PR | ADR-need advisory (shadow mode) — path heuristic + Claude fallback (G11) |
 | `auto-merge-approved-prs.yml` | PR, pull_request_review | Event-driven auto-merge enable |
 | `auto-merge-spotter.yml` | schedule (10min), dispatch | Polling fallback — GH auto-merge does not auto-rebase BEHIND PRs |
 | `automation-reliability-loop.yml` | schedule, dispatch | Self-test of automation surface |
@@ -89,13 +92,14 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `_migration-drift-guard.yml` | workflow_call | Migration drift detection — see TR |
 | `_post-deploy-verify.yml` | workflow_call | Post-deploy verification — see TR |
 
-### T3 — Informational (24)
+### T3 — Informational (25)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
 | `bootstrap-completion-tracker-private.yml` | dispatch | Bootstrap helper — should likely be retired post-Phase 4 |
 | `cost-observability.yml` | schedule (daily), dispatch | Cost digest → snapshot PR |
 | `doc-freshness-audit.yml` | schedule (weekly), dispatch | Doc staleness check |
+| `docs-health.yml` | PR, push, schedule, dispatch | Documentation control-plane catalog, self-check, registry, link, and freshness health |
 | `flaky-check-report.yml` | schedule (weekly), dispatch | Flaky-test summary |
 | `generate-scorecard.yml` | schedule (weekly), dispatch | Scorecard summary |
 | `generate-state.yml` | push, schedule (daily), dispatch | STATE.md snapshot generator |
@@ -108,7 +112,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker |
 | `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
 
-### TR — Reusable (11)
+### TR — Reusable (12)
 
 | Workflow | Notes |
 |---|---|
@@ -120,6 +124,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `_app-prod-canary.yml` | (also T2 — caller-context defines tier) |
 | `_app-reliability-gate.yml` | (caller-context) |
 | `_canary-watch.yml` | (caller-context) |
+| `_docs-health.yml` | Reusable documentation control-plane health workflow |
 | `_hello-reusable.yml` | Reusable example/template |
 | `_migration-drift-guard.yml` | (caller-context) |
 | `_post-deploy-verify.yml` | (caller-context) |

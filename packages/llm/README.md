@@ -1,7 +1,7 @@
 # @latimer-woods-tech/llm
 
 Tier-routed LLM orchestration for the Factory platform, with Cloudflare AI Gateway, Anthropic
-primary, Gemini 2.5 Pro long-context fallback, and Groq verifier.
+primary, Gemini 2.5 Pro long-context fallback, Groq verifier, and DeepSeek workbench routing.
 
 ## Routing (0.3.0)
 
@@ -11,6 +11,7 @@ primary, Gemini 2.5 Pro long-context fallback, and Groq verifier.
 | `balanced` *(default)* | Claude Sonnet 4 | Gemini 2.5 Pro | swaps to Gemini when est. tokens ≥ 150k |
 | `smart` | Claude Opus 4 | Gemini 2.5 Pro | ditto; tools, long reasoning |
 | `verifier` | Groq Llama 3.3 70B | — | cheap second opinion; no fallback |
+| `workbench` | DeepSeek Chat | Groq Llama | boring, reviewable, non-sensitive batch work |
 
 All traffic flows through `AI_GATEWAY_BASE_URL`. The gateway handles caching, rate-limit shedding,
 and per-project cost telemetry.
@@ -29,6 +30,7 @@ const res = await complete(
     AI_GATEWAY_BASE_URL: env.AI_GATEWAY_BASE_URL,
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
     GROQ_API_KEY: env.GROQ_API_KEY,
+    DEEPSEEK_API_KEY: env.DEEPSEEK_API_KEY,
     VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN,
     VERTEX_PROJECT: env.VERTEX_PROJECT,
     VERTEX_LOCATION: env.VERTEX_LOCATION,
@@ -46,6 +48,11 @@ if (res.ok) {
   console.log(res.data.content, res.data.provider, res.data.tokens);
 }
 ```
+
+Use `tier: 'workbench'` only for low-risk internal jobs: docs summaries, changelog drafts,
+classification, issue triage, and other outputs a human or higher-trust model can review. Do not
+send secrets, customer PII, production ops requests, billing data, or final customer-facing answers
+through this lane.
 
 ## Vertex access token
 

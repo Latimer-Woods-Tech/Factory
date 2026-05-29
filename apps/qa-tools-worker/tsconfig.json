@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.internal-packages.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "ESNext", "WebWorker"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "types": ["@cloudflare/workers-types"],
+    // The base config maps @latimer-woods-tech/* packages to their src/ files,
+    // so TypeScript includes them in our compilation. rootDir must cover the
+    // entire monorepo to avoid "common source directory" errors.
+    "rootDir": "../..",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

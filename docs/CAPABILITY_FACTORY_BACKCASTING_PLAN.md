@@ -1,8 +1,51 @@
 # Capability Factory — Backcasting Plan
 
-**Status:** Draft for council review  
-**Date:** 2026-05-22  
+**Status:** Active — Phase 5 (Constrained Visual Composer) in auto-merge queue (2026-05-27)
+**Date:** 2026-05-22 (last updated 2026-05-27)
 **Decision context:** Option 3 selected — recipe-first provisioning engine, followed by a constrained visual composer.
+
+## Implementation Status
+
+The end-to-end thin slice (resolve → provision → deploy) is fully operational. Drift detection and the constrained visual composer are complete and pending final merge.
+
+### Assembly Line (Stages 1A–1E)
+
+| Stage | Description | Status | PR |
+|-------|-------------|--------|----|
+| 1A | Dispatch chain end-to-end (resolve → preview → handoff → provision-staging → auto-dispatch → scaffold artifact) | ✅ Shipped | #910 + 7 follow-up PRs |
+| 1B | Hyperdrive race fix — hash-based fallback lookup in auto-dispatcher | ✅ Shipped | #1097 |
+| 1C | Parameter threading — recipe secrets/vars baked into scaffold `src/env.ts` + `wrangler.jsonc` | ✅ Shipped | #1099 |
+| 1D | `capability_services` lineage table — `POST /capabilities/services`, drift-check, dispatch wire-up | ✅ Shipped | #1100 |
+| 1E | Real deploy — `provision-app-staging.yml` provisions Hyperdrive + GitHub repo + JWT_SECRET, deploys Worker, verifies `/health`, updates lineage | ✅ Shipped | #1108 |
+
+### Post-Assembly Line (Phase 5 + Observability)
+
+| Item | Description | Status | PR |
+|------|-------------|--------|----|
+| Credential fix | `NODE_AUTH_TOKEN` wired to non-existent repo secret → always failed at creds gate; fixed to derive from GCP `GH_PAT` | ✅ Shipped | #1123 |
+| Drift cron | `runDriftCheck()` on `0 */6 * * *`; SHA-256 of live `/manifest` response vs stored hash; `capability_services` extended with `worker_url`, `drift_detected`, `drift_first_seen_at`, `live_manifest_hash`; migration `0008_capability_services_drift.sql` | ✅ Shipped | #1116 |
+| Manifest hash semantics | `provision-app-staging.yml` hash changed from `sha256(wrangler.jsonc)` → `sha256(jq -c -S '.' /manifest)`; `workerUrl` added to lineage POST body | 🔄 Auto-merge queue | #1118 |
+| Drift UI badges | `DeployedServicesPanel` + `DriftStatusBadge` in `CapabilitiesTab.tsx`; polls `GET /capabilities/services?conceptId=...`; 3-state badge (unchecked / ok / drift) | 🔄 Auto-merge queue | #1119 |
+| Graph compiler backend | `capability_graphs` table, `graph-store.ts`, `graph-compiler.ts` (v1 constraint: exactly one concept node), graph routes (`GET/POST /capabilities/graphs`, `/:id/compile`, `/:id/handoff`), migration `0009_capability_graphs.sql` | 🔄 Auto-merge queue | #1120 |
+| Phase 5 — Visual Composer | `GraphComposerTab.tsx` (1178 lines): 3-panel layout (palette / canvas / properties), drag-drop nodes, SVG edge overlay, concept param editor, compile→handoff flow | 🔄 Auto-merge queue | #1121 |
+
+**Full operator flow (assembly line + composer):**
+```
+Admin Studio → resolve recipe → preview plan → create handoff          [Phases 1–4]
+  → dispatch-capability-provision.yml (scaffold artifact + lineage)
+  → [operator reviews artifact]
+  → provision-app-staging.yml (Hyperdrive + repo + deploy + /health verify + lineage)
+                                                                        [Phase 5]
+Admin Studio → GraphComposerTab → drag concept node → set params
+  → compile graph → POST /capabilities/graphs/:id/handoff
+  → same provision pipeline above
+
+Drift cron: 0 */6 * * * → runDriftCheck() → GET /manifest on each live service
+  → SHA-256 compare → flag drift in capability_services
+  → DriftStatusBadge in CapabilitiesTab shows amber when drift detected
+```
+
+**Remaining work:** First real end-to-end provision run with a live handoff; drift cron validation in production; multi-concept graph support (v1 supports one concept node only).
 
 ## Purpose
 
