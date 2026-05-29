@@ -1,6 +1,6 @@
-import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { copyFile, cp, mkdir, readFile, writeFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { generateTopology } from './scripts/generate-topology.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

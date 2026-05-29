@@ -13,9 +13,9 @@
  *   by ensuring each trace exits its origin on a unique band.
  */
 
-import { mkdir, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { mkdir, writeFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
