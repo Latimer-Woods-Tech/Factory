@@ -20,6 +20,13 @@ on:
       - 'apps/qa-tools-ui/**'
       - '.github/workflows/deploy-qa-tools-ui.yml'
   workflow_dispatch:
+    inputs:
+      env:
+        description: Target environment
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -29,7 +36,7 @@ permissions:
   deployments: write
 
 concurrency:
-  group: deploy-qa-tools-ui-${{ github.ref }}
+  group: deploy-qa-tools-ui-${{ github.event.inputs.env || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -38,10 +45,10 @@ jobs:
     with:
       node_version: '22'
       working_directory: apps/qa-tools-ui
-      environment: production
+      environment: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
       build_command: build
       dist_dir: out
       project_name: qa-tools-ui
-      branch: main
-      health_url: 'https://qa.latimerwoods.dev'
+      branch: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'main' || 'staging' }}
+      health_url: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'https://qa.latimerwoods.dev' || 'https://staging.qa.latimerwoods.dev/login/' }}
     secrets: inherit
