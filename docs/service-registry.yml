@@ -931,7 +931,7 @@ pages:
     # studio.thefactory.dev RETIRED + DETACHED 2026-05-27 via cf-domain-reconcile run #26545752158.
     # curl studio.thefactory.dev now returns NXDOMAIN. apunlimited.com is the sole canonical operator URL.
     staging_url: https://staging.admin.latimerwoods.dev
-    staging_custom_domain_status: pending_attach
+    staging_custom_domain_status: attached_2026-05-28
     root_file: apps/admin-studio-ui/index.html
     deploy_dir: apps/admin-studio-ui/dist
     worker_dependencies:
@@ -983,9 +983,9 @@ pages:
     repo: Latimer-Woods-Tech/factory
     project_name: qa-tools-ui                            # CF Pages project (wrangler pages project create qa-tools-ui)
     custom_domain: qa.latimerwoods.dev
-    custom_domain_status: pending_attach                 # attaches via cf-domain-reconcile op attach_qa_latimerwoods
+    custom_domain_status: attached_2026-05-28
     staging_url: https://staging.qa.latimerwoods.dev
-    staging_custom_domain_status: pending_attach
+    staging_custom_domain_status: attached_2026-05-28
     deployment_status: phase-1-live
     root_file: apps/qa-tools-ui/src/app/page.tsx
     deploy_dir: apps/qa-tools-ui/out
