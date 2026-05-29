@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 413,
+    "total_docs": 416,
     "canonical": 17,
-    "active": 348,
+    "active": 351,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -99,7 +99,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:164e78d1dbe8e5c229295b8f2796fb901a15eb2b63b3a10d836b29974fe6a9a8",
+      "content_hash": "sha256:982c8d50698391b4274616cbf836b06bfa564680614ffe0367657e3257e679a6",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -120,7 +120,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:acc4afaa20396c4b7253ec920e071f469259f0ec0ff33677e450f45311d93029",
+      "content_hash": "sha256:8198f76eb123c423d83a162b50b9b277c3149250b88a9fe3e95d98827671ce73",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -353,7 +353,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:e7a5990cdd0321865e446607d2d02b1ccb66f9fd5b596bf27f3b6696bb4ff159",
+      "content_hash": "sha256:616ba07c327146b28b9219af66c2545b321446746b0d97743677d30e2dbb03f5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -374,7 +374,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0f9efb118612c57c3469c78e0296ce5daa36149e85c62aafdc236a6bc80a156d",
+      "content_hash": "sha256:ca8133481429af3fe5e364f8cc4f7a49687645a1465842731cf5833545ff23e3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -446,6 +446,27 @@
       "errors": []
     },
     {
+      "path": "docs/ACCESS.md",
+      "title": "Factory Access Map",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:3534d45b3bf26ed82520dedf8a6028db7270b7137cbba858419ea9842eb31498",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/ACCESSIBILITY_AUDIT_BASELINE.md",
       "title": "Accessibility Audit & Remediation Plan",
       "status": "active",
@@ -500,7 +521,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:61297b9d851551df61473daf324bfda814a38c4ade0386f5508c65f4ed7f9d71",
+      "content_hash": "sha256:4bb8e55c1055a3131a308b3dff03d4f60e0794d965fe88fc2def010de25214d6",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -584,7 +605,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d04f76b68cae3c79ee395877419690598b512829a62e94e3c94131f2b6d048d0",
+      "content_hash": "sha256:da7f38919ea0254c89bdfc9f370894e85309ddeb2c3d1a4e86ece826c6028b75",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1134,7 +1155,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ac7b850b6f653a2ce3a7151ecb4253dacf0090a2c6b8ee2bd03fbea6c9ab2b6c",
+      "content_hash": "sha256:cc7c6cde174289883c424663e072501d634ef29a8bc07d99faec5d0fa54282a6",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -1155,7 +1176,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6fe4e7003406f61a623a9a8be81f8b06c91f5c0b1dd8b45afba033f76278d6f5",
+      "content_hash": "sha256:0b08af4127804f008aa7ecc0218dc5d6fdd17bce9a3c8d7351905b513122ccc4",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -2849,6 +2870,27 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-05-28-media-room-control-plane.md",
+      "title": "Media Room Control Plane",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:33657a601a5d733c953bb4988012853b555a7171d63fb416e22215da6c151402",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/README.md",
       "title": "Decisions",
       "status": "active",
@@ -2861,7 +2903,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d0ae1a8dbc536e25a139f10251af6f2e9101ff5f1f3b20cc6a6a1b4b99b3d43d",
+      "content_hash": "sha256:2155d6a7292a0174f7eaec3f837a34ae5c62cbf3c2c53ad3250f4ad8d06ba66e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3160,7 +3202,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2ec8d3b45040cab458ce5047a534f9d7cf4e905e521550b3b9cb83caed5367ec",
+      "content_hash": "sha256:925dcb137b40ba63c5219c477fe05229f4abb70156d9fbea6a4c1a551e38c8a9",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -4177,6 +4219,27 @@
       "errors": []
     },
     {
+      "path": "docs/MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md",
+      "title": "Media Room Production Control Plane",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:50498f0e0332547120e4cfd57e029347b116454116f79f76b4f2ba6b86c0a8bd",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/migrations/sup-1.4-migration-drift-guard/README.md",
       "title": "SUP-1.4 Migration Guide — Migration Drift Guard",
       "status": "archive",
@@ -4525,7 +4588,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:7d142ac966236662be40763a2648d55f03afd372462e9debdc66669922ef93c3",
+      "content_hash": "sha256:b519b3f768ea5ccd04a8e77a447259ff648986c8f18e93b413ae4226d57332fa",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7182,7 +7245,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:514fa7ea1615a2bb11292ef68efc59302a3b41865e5bfa5df5965920bdbc51d5",
+      "content_hash": "sha256:2ff22b7f8c3a38200800f79104c3bff377f0a9d878f8c3827ddd707e1d19ca5f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7206,7 +7269,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:4fab72af77caec014a4d4e1c7635cba89b71d696285ebf084317c0b806b7dbbc",
+      "content_hash": "sha256:25e410f451aa1d9fe48dcf5197433d7959dc7ab25509443a3ec51a208943d215",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,

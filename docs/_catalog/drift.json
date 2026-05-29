@@ -4,9 +4,9 @@
   "generated_at": "source-derived",
   "ok": true,
   "counts": {
-    "issues": 264,
+    "issues": 267,
     "errors": 0,
-    "warnings": 264
+    "warnings": 267
   },
   "issues": [
     {
@@ -79,6 +79,42 @@
       "truth_source": "package.json",
       "message": "References missing npm script \"phase-7:scaffold\".",
       "fix": "Update the command, add the root script to package.json, or mark it as a package-local command.",
+      "blocks": []
+    },
+    {
+      "id": "docs.workflow-ref.missing",
+      "severity": "warning",
+      "doc": "docs/ACCESS.md",
+      "line": 37,
+      "owner": "platform",
+      "status": "active",
+      "truth_source": ".github/workflows",
+      "message": "References missing workflow .github/workflows/deploy-admin-studio-worker.yml.",
+      "fix": "Update the workflow reference, restore the workflow, or move the claim to historical context.",
+      "blocks": []
+    },
+    {
+      "id": "docs.workflow-ref.missing",
+      "severity": "warning",
+      "doc": "docs/ACCESS.md",
+      "line": 41,
+      "owner": "platform",
+      "status": "active",
+      "truth_source": ".github/workflows",
+      "message": "References missing workflow .github/workflows/deploy-developer-index.yml.",
+      "fix": "Update the workflow reference, restore the workflow, or move the claim to historical context.",
+      "blocks": []
+    },
+    {
+      "id": "docs.workflow-ref.missing",
+      "severity": "warning",
+      "doc": "docs/ACCESS.md",
+      "line": 42,
+      "owner": "platform",
+      "status": "active",
+      "truth_source": ".github/workflows",
+      "message": "References missing workflow .github/workflows/deploy-status-page.yml.",
+      "fix": "Update the workflow reference, restore the workflow, or move the claim to historical context.",
       "blocks": []
     },
     {
@@ -553,7 +589,7 @@
       "id": "docs.workflow-ref.missing",
       "severity": "warning",
       "doc": "docs/architecture/QA_TOOLS_ARCHITECTURE.md",
-      "line": 1503,
+      "line": 1507,
       "owner": "architecture",
       "status": "active",
       "truth_source": ".github/workflows",
@@ -565,7 +601,7 @@
       "id": "docs.workflow-ref.missing",
       "severity": "warning",
       "doc": "docs/architecture/QA_TOOLS_ARCHITECTURE.md",
-      "line": 1591,
+      "line": 1595,
       "owner": "architecture",
       "status": "active",
       "truth_source": ".github/workflows",
