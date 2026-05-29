@@ -39,22 +39,7 @@
         </div>
         <div class="hero-visual">
           <div class="visual-card">
-            <div class="reactor-core" aria-hidden="true">
-              <div class="reactor-ring reactor-ring-outer"></div>
-              <div class="reactor-ring reactor-ring-mid"></div>
-              <div class="reactor-ring reactor-ring-inner"></div>
-              <div class="reactor-center"></div>
-            </div>
-            <div class="visual-sigil" aria-hidden="true"></div>
-            <div class="visual-hud" aria-hidden="true">
-              <span class="hud-node hud-node-gold"></span>
-              <span class="hud-node hud-node-red"></span>
-              <span class="hud-node hud-node-green"></span>
-            </div>
-            <video autoplay muted loop playsinline preload="metadata" poster="assets/latimerWoodslogovideo.png" class="logo-video" aria-label="Latimer Woods motion logo animation">
-              <source src="assets/latimerWoodslogovideo.mp4" type="video/mp4" />
-              Your browser does not support video playback.
-            </video>
+            <canvas data-circuitry aria-label="Live signal map of Latimer Woods branded surfaces" role="img"></canvas>
             <strong>latwoodtech.com</strong>
           </div>
           <div class="hero-readout" aria-label="System readout">
@@ -386,5 +371,6 @@
         </section>
       </main>
     </div>
+    <script type="module" src="hero-circuitry.js"></script>
   </body>
 </html>

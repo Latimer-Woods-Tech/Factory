@@ -47,6 +47,9 @@ storybook-static
 apps/video-studio/*.mp4
 apps/video-studio/*.webm
 
+# Generated topology artifact
+apps/latwoodtech-web/src/data/circuit-topology.json
+
 # Python bytecode
 __pycache__/
 *.pyc
