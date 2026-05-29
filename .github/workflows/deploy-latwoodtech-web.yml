@@ -45,7 +45,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=latwoodtech-com --branch=main
+          command: pages deploy apps/latwoodtech-web/dist --project-name=latwoodtech-com --branch=main
 
       - name: Verify Pages preview deployment
         run: |

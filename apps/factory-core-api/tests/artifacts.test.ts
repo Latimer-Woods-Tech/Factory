@@ -195,4 +195,66 @@ describe('POST /v1/artifacts', () => {
       expect(mockDb.markDerived).not.toHaveBeenCalled();
     });
   });
+
+  describe('service key auth (GitHub Actions deploy workflows)', () => {
+    const SERVICE_KEY = 'test-ingest-service-key-abc';
+    const DEPLOY_BODY = {
+      artifact_type: 'deploy-url',
+      producer_type: 'cloudflare-deploy',
+      producer_ref: 'run-12345',
+      source_system: 'github-actions',
+      source_event_id: 'deploy-myapp-production-12345',
+      subject_repo: 'Latimer-Woods-Tech/myapp',
+      subject_ref: 'production',
+      uri: 'https://myapp.adrper79.workers.dev',
+      observed_at: new Date().toISOString(),
+    };
+
+    it('201 when authenticated with the service key', async () => {
+      const res = await app.fetch(
+        artifactRequest(SERVICE_KEY, DEPLOY_BODY),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(201);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body['ok']).toBe(true);
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceSystem: 'github-actions',
+        ingestActor: 'service:github-actions',
+      });
+    });
+
+    it('401 when service key does not match', async () => {
+      const res = await app.fetch(
+        artifactRequest('wrong-key', DEPLOY_BODY),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it('defaults source_system to github-actions when omitted with service key', async () => {
+      const { source_system: _, ...bodyNoSS } = DEPLOY_BODY;
+      const res = await app.fetch(
+        artifactRequest(SERVICE_KEY, bodyNoSS),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(201);
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceSystem: 'github-actions',
+      });
+    });
+
+    it('defaults source_system to video-pipeline when JWT auth omits source_system', async () => {
+      const { source_system: _, ...bodyNoSS } = DEPLOY_BODY;
+      const token = await mintToken('artifacts-video');
+      const res = await app.fetch(artifactRequest(token, bodyNoSS), baseEnv(), makeCtx());
+      expect(res.status).toBe(201);
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceSystem: 'video-pipeline',
+      });
+    });
+  });
 });

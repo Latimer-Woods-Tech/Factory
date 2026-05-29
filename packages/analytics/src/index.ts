@@ -167,4 +167,161 @@ export function initAnalytics(config: AnalyticsConfig, deps: AnalyticsDeps = {})
     },
   };
 }
-export {};
+
+// ── Monetization funnel (G34) ─────────────────────────────────────────────────
+
+/**
+ * Identifiers for the five standard monetization funnel steps.
+ */
+export type FunnelStepId =
+  | 'signup'
+  | 'first-action'
+  | 'paid'
+  | 'renewal'
+  | 'day-30-retention';
+
+/**
+ * A single step in the monetization funnel.
+ */
+export interface FunnelStep {
+  /** Canonical step identifier. */
+  id: FunnelStepId;
+  /** PostHog event name tracked when this step is reached. */
+  event: string;
+  /** Human-readable description for dashboards. */
+  description: string;
+}
+
+/**
+ * The standard five-step monetization funnel.
+ *
+ * PostHog funnel definition:
+ *   signup → first-action → paid → renewal → day-30-retention
+ *
+ * Steps use `funnel.*` event prefix so PostHog dashboards can filter them
+ * as a group and they're visually distinct from product events.
+ */
+export const MONETIZATION_FUNNEL: readonly FunnelStep[] = [
+  {
+    id: 'signup',
+    event: 'funnel.signup',
+    description: 'User created an account',
+  },
+  {
+    id: 'first-action',
+    event: 'funnel.first_action',
+    description: 'First meaningful in-app action completed',
+  },
+  {
+    id: 'paid',
+    event: 'funnel.paid',
+    description: 'Became a paying customer (first successful charge)',
+  },
+  {
+    id: 'renewal',
+    event: 'funnel.renewal',
+    description: 'Renewed subscription (second+ successful charge)',
+  },
+  {
+    id: 'day-30-retention',
+    event: 'funnel.day30_retained',
+    description: 'Still active 30 days after first paid event',
+  },
+] as const;
+
+/**
+ * Per-product funnel configuration.
+ */
+export interface FunnelConfig {
+  /** App/product identifier (e.g. "humandesign", "capricast"). */
+  product: string;
+  /**
+   * Override which canonical event name to emit for each funnel step.
+   * Defaults to the step's own `event` when omitted.
+   */
+  eventOverrides?: Partial<Record<FunnelStepId, string>>;
+}
+
+/**
+ * Track a monetization funnel step event via the given Analytics instance.
+ *
+ * Enriches the event with `funnel_step`, `funnel_product`, and `funnel_order`
+ * so PostHog funnels can group by step. The event is sent to PostHog only
+ * (not factory_events) to avoid double-counting.
+ *
+ * @example
+ * ```ts
+ * await trackFunnelStep(analytics, 'paid', userId, { product: 'humandesign' });
+ * ```
+ */
+export async function trackFunnelStep(
+  analytics: Analytics,
+  stepId: FunnelStepId,
+  userId: string,
+  config: FunnelConfig,
+  properties: Record<string, unknown> = {},
+): Promise<void> {
+  const step = MONETIZATION_FUNNEL.find((s) => s.id === stepId);
+  if (!step) return;
+  const event = config.eventOverrides?.[stepId] ?? step.event;
+  await analytics.track(
+    event,
+    {
+      ...properties,
+      funnel_step: stepId,
+      funnel_product: config.product,
+      funnel_order: MONETIZATION_FUNNEL.indexOf(step),
+      funnel_description: step.description,
+    },
+    userId,
+  );
+}
+
+/**
+ * Result of {@link getFunnelPosition}.
+ */
+export interface FunnelPosition {
+  /** The most advanced funnel step the user has reached, or `null` if none. */
+  currentStep: FunnelStepId | null;
+  /** All steps completed by this user (may span multiple sessions). */
+  completedSteps: FunnelStepId[];
+}
+
+/**
+ * Query `factory_events` to determine where a user stands in the monetization
+ * funnel. Returns completed steps in funnel order.
+ *
+ * Note: only works for funnel steps that were tracked via {@link trackFunnelStep}
+ * (i.e. the event name matches `funnel.*`). Relies on `factory_events` — not
+ * PostHog — so it works in backend contexts without a PostHog read API key.
+ */
+export async function getFunnelPosition(
+  db: FactoryDb,
+  userId: string,
+  appId: string,
+  config: FunnelConfig = { product: appId },
+): Promise<FunnelPosition> {
+  const eventNames = MONETIZATION_FUNNEL.map(
+    (s) => config.eventOverrides?.[s.id] ?? s.event,
+  );
+
+  const result = await db.execute<{ event: string }>(
+    sql`SELECT DISTINCT event
+        FROM factory_events
+        WHERE app_id = ${appId}
+          AND user_id = ${userId}
+          AND event = ANY(${eventNames}::text[])`,
+  );
+
+  const seenEvents = new Set(result.rows.map((r) => r.event));
+
+  const completedSteps = MONETIZATION_FUNNEL
+    .filter((s) => seenEvents.has(config.eventOverrides?.[s.id] ?? s.event))
+    .map((s) => s.id);
+
+  const currentStep = completedSteps.length > 0
+    ? completedSteps[completedSteps.length - 1] ?? null
+    : null;
+
+  return { currentStep, completedSteps };
+}

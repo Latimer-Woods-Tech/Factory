@@ -41,9 +41,9 @@ describe('repo types', () => {
 });
 
 describe('AI chat types', () => {
-  it('AIModelStrategy supports execution/planning/drafting', () => {
-    const strategy: AIModelStrategy = 'planning';
-    expect(strategy).toBe('planning');
+  it('AIModelStrategy supports execution/planning/drafting/workbench', () => {
+    const strategies: AIModelStrategy[] = ['execution', 'planning', 'drafting', 'workbench'];
+    expect(strategies).toContain('workbench');
   });
 
   it('AIChatRequest carries history + optional context', () => {
@@ -102,7 +102,7 @@ describe('Phase D.2 commit + PR + proposal types', () => {
   it('AIProposalRequest + AIProposal pair carries before/after', () => {
     const req: AIProposalRequest = {
       path: 'a.ts',
-      modelStrategy: 'drafting',
+      modelStrategy: 'workbench',
       before: 'export const a = 1;\n',
       instruction: 'rename a to b',
     };

@@ -37,10 +37,10 @@ Expected success output looks like this:
 ```json
 {
   "ok": true,
-  "checkedWorkflows": 9,
+  "checkedWorkflows": 13,
   "checkedContracts": 9,
-  "exemptedWorkflows": 0,
-  "checkedAt": "2026-05-21T19:08:36.866Z"
+  "exemptedWorkflows": 5,
+  "checkedAt": "2026-05-27T20:45:31.396Z"
 }
 ```
 
@@ -108,11 +108,17 @@ The following 9 local Worker contracts are enforced today:
 - `daily-brief`
 - `factory-supervisor`
 
-### Exemption policy
+### Current explicit exemptions
 
-The current goal is zero exemptions. If a local deploy workflow is real, it should either be covered or the validator should fail until coverage is added.
+As of 2026-05-27, five deploy workflows are explicitly exempted in `scripts/validate-service-registry.mjs`:
 
-Exemptions should only be introduced when a workflow is temporarily impossible to validate cleanly and there is a written follow-up to remove the exemption.
+- `deploy-latwoodtech-web.yml`
+- `deploy-inbound-oracle.yml`
+- `deploy-linkedin-publisher.yml`
+- `deploy-factory-events-replay.yml`
+- `deploy-qa-tools-ui.yml`
+
+The goal is still to keep exemptions rare and named. If a local deploy workflow is real, it should either be covered or carry an explicit exemption with a written reason and removal path.
 
 ## What The Validator Does Not Do
 
@@ -258,8 +264,8 @@ When you change a covered service:
 
 As of the current hardening pass, Factory has:
 
-- 9 checked local deploy workflows
+- 13 checked local deploy workflows
 - 9 checked local Worker contracts
-- 0 exemptions
+- 5 explicit exemptions
 
 That is enough to materially reduce workflow/registry/Wrangler drift without turning the validator into a fake infrastructure simulator.

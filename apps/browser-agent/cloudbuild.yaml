@@ -62,7 +62,10 @@ steps:
       - --port=8080
       - --no-allow-unauthenticated
       - --set-env-vars=R2_ACCOUNT_ID=${_R2_ACCOUNT_ID},R2_BUCKET_NAME=${_R2_BUCKET_NAME}
-      - --set-secrets=R2_ACCESS_KEY_ID=browser-agent-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=browser-agent-r2-secret-access-key:latest
+      # LATIMER_ANTHROPIC_API powers /visual-review's vision grading; if the
+      # secret is missing the endpoint still returns screenshots + diagnostics
+      # but `review` will be null.
+      - --set-secrets=R2_ACCESS_KEY_ID=browser-agent-r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=browser-agent-r2-secret-access-key:latest,LATIMER_ANTHROPIC_API=LATIMER_ANTHROPIC_API:latest
 
 images:
   - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}

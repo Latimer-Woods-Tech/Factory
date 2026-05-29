@@ -10,7 +10,7 @@
  * /migrations/0102_ingest_source_event_unique.sql (partial unique index for
  * race-safe ingest dedup).
  */
-import { pgTable, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, pgView, text, uuid, integer, bigint, jsonb, timestamp, uniqueIndex, boolean, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ── factory_events_ingest ────────────────────────────────────────────────────
@@ -276,3 +276,121 @@ export const factoryRunsMirror = pgTable('factory_runs_mirror', {
 export type FactoryRunsMirror = typeof factoryRunsMirror.$inferSelect;
 /** Drizzle inferred insert type for `factory_runs_mirror`. */
 export type NewFactoryRunsMirror = typeof factoryRunsMirror.$inferInsert;
+
+// ── factory_runs_v (read-only join view) ─────────────────────────────────────
+
+/**
+ * `factory_runs_v` — supervisor runs enriched with gate counts and latest
+ * deploy-url artifact. Created by migration 0104_factory_runs_v.sql.
+ *
+ * Joins `factory_runs_mirror` with `factory_gates_latest` (gate aggregate
+ * counts per run) and `factory_artifacts` (most recent deploy-url).
+ * Use this view for the Command Center "Runs" list screen.
+ */
+export const factoryRunsV = pgView('factory_runs_v').as((qb) =>
+  qb
+    .select({
+      id: factoryRunsMirror.id,
+      templateId: factoryRunsMirror.templateId,
+      templateVersion: factoryRunsMirror.templateVersion,
+      description: factoryRunsMirror.description,
+      source: factoryRunsMirror.source,
+      status: factoryRunsMirror.status,
+      dryRun: factoryRunsMirror.dryRun,
+      prUrl: factoryRunsMirror.prUrl,
+      startedAt: factoryRunsMirror.startedAt,
+      finishedAt: factoryRunsMirror.finishedAt,
+      mirroredAt: factoryRunsMirror.mirroredAt,
+    })
+    .from(factoryRunsMirror),
+);
+
+/** TypeScript row shape for `factory_runs_v`. */
+export type FactoryRunsV = typeof factoryRunsV.$inferSelect & {
+  gatesPassed: number;
+  gatesFailed: number;
+  gatesPending: number;
+  lastGateObservedAt: Date | null;
+  deployUrl: string | null;
+};
+
+// ── factory_audit_log ────────────────────────────────────────────────────────
+
+/** Valid actor types for audit log entries. */
+export const AUDIT_ACTOR_TYPES = ['human', 'automation'] as const;
+/** Union of valid actor type strings. */
+export type AuditActorType = (typeof AUDIT_ACTOR_TYPES)[number];
+
+/** Valid result values for audit log entries. */
+export const AUDIT_RESULTS = ['success', 'failure', 'denied', 'dry-run'] as const;
+/** Union of valid audit result strings. */
+export type AuditResult = (typeof AUDIT_RESULTS)[number];
+
+/**
+ * `factory_audit_log` — append-only operator/automation action log (P2.13f).
+ *
+ * Written by the `@latimer-woods-tech/compliance` auditLog() middleware via
+ * factory-core-api POST /v1/audit.
+ */
+export const factoryAuditLog = pgTable('factory_audit_log', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+
+  actor: text('actor').notNull(),
+  actorType: text('actor_type').notNull().default('human'),
+
+  action: text('action').notNull(),
+  resource: text('resource').notNull(),
+  resourceId: text('resource_id'),
+
+  requestId: text('request_id'),
+  environment: text('environment').notNull().default('production'),
+  result: text('result').notNull().default('success'),
+  detail: jsonb('detail').notNull().default(sql`'{}'`),
+  evidenceUrl: text('evidence_url'),
+
+  actedAt: timestamp('acted_at', { withTimezone: true }).notNull().default(sql`now()`),
+}, (t) => [
+  index('ix_audit_log_actor').on(t.actor, t.actedAt),
+  index('ix_audit_log_resource').on(t.resource, t.actedAt),
+]);
+
+/** Drizzle inferred select type for `factory_audit_log`. */
+export type FactoryAuditLog = typeof factoryAuditLog.$inferSelect;
+/** Drizzle inferred insert type for `factory_audit_log`. */
+export type NewFactoryAuditLog = typeof factoryAuditLog.$inferInsert;
+
+// ── stripe_idempotency_keys ──────────────────────────────────────────────────
+
+/** Valid status values for Stripe idempotency key entries. */
+export const STRIPE_IDEM_STATUSES = ['pending', 'success', 'failed'] as const;
+/** Union of valid Stripe idempotency status strings. */
+export type StripeIdemStatus = (typeof STRIPE_IDEM_STATUSES)[number];
+
+/**
+ * `stripe_idempotency_keys` — Stripe call dedup table (P2.13f).
+ *
+ * Written by `@latimer-woods-tech/stripe` transferOrIdempotent() helper
+ * before each Stripe API call to prevent double-charges under Worker crash.
+ */
+export const stripeIdempotencyKeys = pgTable('stripe_idempotency_keys', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+
+  idempotencyKey: text('idempotency_key').notNull().unique(),
+  stripeOperation: text('stripe_operation').notNull(),
+  status: text('status').notNull().default('pending'),
+
+  tenantId: text('tenant_id'),
+  runId: text('run_id'),
+  actor: text('actor'),
+
+  stripeResponse: jsonb('stripe_response'),
+  stripeError: text('stripe_error'),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().default(sql`now()`),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+});
+
+/** Drizzle inferred select type for `stripe_idempotency_keys`. */
+export type StripeIdempotencyKey = typeof stripeIdempotencyKeys.$inferSelect;
+/** Drizzle inferred insert type for `stripe_idempotency_keys`. */
+export type NewStripeIdempotencyKey = typeof stripeIdempotencyKeys.$inferInsert;

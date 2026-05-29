@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "last_updated": "2026-05-28",
+  "policy": "docs/DOCS_TRUTH_AND_GUARDRAILS.md",
+  "catalog_policy": "docs/runbooks/docs-control-plane-deployment.md",
+  "truth_order": [
+    "executed-validation-output",
+    "service-registry",
+    "github-workflows",
+    "source-code",
+    "canonical-docs",
+    "active-docs",
+    "archive-docs"
+  ],
+  "default_trust": {
+    "canonical": "trusted-if-verified",
+    "active": "use-with-checks",
+    "stale": "context-only",
+    "archive": "historical-only",
+    "generated": "trusted-if-reproducible",
+    "scratch": "draft-only"
+  },
+  "agent_rules": [
+    "Read this file before treating repository docs as evidence.",
+    "Prefer executable evidence, registry data, workflow files, and source code over prose.",
+    "Do not treat archive or stale docs as current behavior.",
+    "Do not mark docs verified unless the relevant validators pass.",
+    "Use unknown, unverified, or planned when evidence is not available."
+  ]
+}

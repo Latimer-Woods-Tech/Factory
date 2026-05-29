@@ -46,13 +46,23 @@ function parseWorkers(yaml) {
 
     // Only parse workers (not pages or packages)
     const urlMatch = block.match(/^\s+url:\s*(https?:\/\/[^\s#]+)/m);
+    const workersDevMatch = block.match(/^\s+workers_dev_url:\s*(https?:\/\/[^\s#]+)/m);
     const healthMatch = block.match(/^\s+health_endpoint:\s*(\S+)/m);
+    const statusMatch = block.match(/^\s+custom_domain_status:\s*(\S+)/m);
 
     if (!urlMatch || !healthMatch) continue;
 
+    // If the canonical custom domain hasn't been attached yet, prefer the
+    // workers.dev fallback so the synthetic monitor doesn't alert on hosts
+    // that won't resolve until the next deploy. Once status flips to
+    // `attached*`, the generated file regenerates with the canonical URL.
+    const status = statusMatch ? statusMatch[1].trim() : null;
+    const pending = status === 'pending_attach' || status === 'not-yet-attached' || status === 'planned';
+    const url = pending && workersDevMatch ? workersDevMatch[1].trim() : urlMatch[1].trim();
+
     workers.push({
       id,
-      url: urlMatch[1].trim(),
+      url,
       healthEndpoint: healthMatch[1].trim(),
     });
   }

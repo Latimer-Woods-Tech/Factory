@@ -15,7 +15,7 @@
     "@latimer-woods-tech/schedule": "file:../../packages/schedule",
     "@neondatabase/serverless": "^0.10.4",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.14",
+    "hono": "^4.12.18",
     "postgres": "^3.4.9"
   },
   "devDependencies": {

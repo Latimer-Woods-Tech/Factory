@@ -8,22 +8,24 @@
   ],
   "vars": {
     "STUDIO_ENV": "staging",
-    "ALLOWED_ORIGINS": "https://studio.thefactory.dev,https://apunlimited.com,https://staging.admin-studio-ui.pages.dev"
+    "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
+    "ALLOWED_ORIGINS": "https://apunlimited.com,https://staging.admin.latimerwoods.dev"
   },
   "env": {
     "staging": {
       "name": "admin-studio-staging",
       "routes": [
-        { "pattern": "admin-staging.latwoodtech.work", "custom_domain": true }
+        { "pattern": "api.admin.latimerwoods.dev", "custom_domain": true }
       ],
       "vars": {
         "STUDIO_ENV": "staging",
-        "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,https://admin-staging.latwoodtech.work,http://localhost:5173",
+        "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
+        "ALLOWED_ORIGINS": "https://staging.admin.latimerwoods.dev,https://api.admin.latimerwoods.dev,http://localhost:5173",
         // Digest non-secret vars
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
         "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
         "SENTRY_ORG": "latwood-tech",
-        "R2_PUBLIC_DOMAIN": "https://digest-assets.thefactory.dev"
+        "R2_PUBLIC_DOMAIN": "https://assets.apunlimited.com"
         // Secrets (wrangler secret put --env staging):
         //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
         //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
@@ -31,6 +33,12 @@
       "hyperdrive": [
         {
           "binding": "DB",
+          "id": "efe957f404bb457593e6bd08b733b7c4"
+        },
+        {
+          // THE_FACTORY core database (factory-core-db Hyperdrive)
+          // Points to Neon Factory database for admin queries
+          "binding": "FACTORY_DB",
           "id": "efe957f404bb457593e6bd08b733b7c4"
         }
       ],
@@ -66,12 +74,13 @@
       "name": "admin-studio-production",
       "vars": {
         "STUDIO_ENV": "production",
-        "ALLOWED_ORIGINS": "https://studio.thefactory.dev,https://apunlimited.com",
+        "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
+        "ALLOWED_ORIGINS": "https://apunlimited.com",
         // Digest non-secret vars
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
         "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
         "SENTRY_ORG": "latwood-tech",
-        "R2_PUBLIC_DOMAIN": "https://digest-assets.thefactory.dev"
+        "R2_PUBLIC_DOMAIN": "https://assets.apunlimited.com"
         // Secrets (wrangler secret put --env production):
         //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
         //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
@@ -79,6 +88,10 @@
       "hyperdrive": [
         {
           "binding": "DB",
+          "id": "efe957f404bb457593e6bd08b733b7c4"
+        },
+        {
+          "binding": "FACTORY_DB",
           "id": "efe957f404bb457593e6bd08b733b7c4"
         }
       ],

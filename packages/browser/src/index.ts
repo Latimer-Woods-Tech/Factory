@@ -121,7 +121,10 @@ async function importPrivateKey(pem: string): Promise<CryptoKey> {
 
   return crypto.subtle.importKey(
     'pkcs8',
-    base64ToBytes(body),
+    // Uint8Array.buffer has type ArrayBufferLike in strict TS but Web Crypto
+    // requires the narrower ArrayBuffer. The underlying buffer is always a
+    // plain ArrayBuffer when created from atob → charCodeAt (not SharedArrayBuffer).
+    base64ToBytes(body).buffer as ArrayBuffer,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
     false,
     ['sign'],

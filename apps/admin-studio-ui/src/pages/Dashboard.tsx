@@ -4,34 +4,40 @@
  * - Desktop: Left sidebar with icons.
  * - Mobile: Bottom navigation bar + "More" drawer.
  */
+import { lazy, Suspense } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { OverviewTab } from './tabs/OverviewTab.js';
-import { TestsTab } from './tabs/TestsTab.js';
-import { CodeTab } from './tabs/CodeTab.js';
-import { AiTab } from './tabs/AiTab.js';
-import { AuditTab } from './tabs/AuditTab.js';
-import { CouncilTab } from './tabs/CouncilTab.js';
-import { FunctionsTab } from './tabs/FunctionsTab.js';
-import { TimelineTab } from './tabs/TimelineTab.js';
-import { FlagsTab } from './tabs/FlagsTab.js';
-import { TrainingLibraryTab } from './tabs/TrainingLibraryTab.js';
-import { CapabilitiesTab } from './tabs/CapabilitiesTab.js';
-import { QualityTab } from './tabs/QualityTab.js';
+const OverviewTab = lazy(() => import('./tabs/OverviewTab.js').then((m) => ({ default: m.OverviewTab })));
+const TestsTab = lazy(() => import('./tabs/TestsTab.js').then((m) => ({ default: m.TestsTab })));
+const CodeTab = lazy(() => import('./tabs/CodeTab.js').then((m) => ({ default: m.CodeTab })));
+const AiTab = lazy(() => import('./tabs/AiTab.js').then((m) => ({ default: m.AiTab })));
+const AuditTab = lazy(() => import('./tabs/AuditTab.js').then((m) => ({ default: m.AuditTab })));
+const CouncilTab = lazy(() => import('./tabs/CouncilTab.js').then((m) => ({ default: m.CouncilTab })));
+const FunctionsTab = lazy(() => import('./tabs/FunctionsTab.js').then((m) => ({ default: m.FunctionsTab })));
+const TimelineTab = lazy(() => import('./tabs/TimelineTab.js').then((m) => ({ default: m.TimelineTab })));
+const FlagsTab = lazy(() => import('./tabs/FlagsTab.js').then((m) => ({ default: m.FlagsTab })));
+const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').then((m) => ({ default: m.TrainingLibraryTab })));
+const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then((m) => ({ default: m.CapabilitiesTab })));
+const QualityTab = lazy(() => import('./tabs/QualityTab.js').then((m) => ({ default: m.QualityTab })));
+const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then((m) => ({ default: m.CommandCenterTab })));
+const GraphComposerTab = lazy(() => import('./tabs/GraphComposerTab.js').then((m) => ({ default: m.GraphComposerTab })));
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { EnvironmentBanner } from '../components/EnvironmentBanner.js';
-import { 
-  LayoutDashboard, 
-  TestTube, 
-  Code2, 
-  Bot, 
-  Zap, 
-  Wrench, 
-  BookOpen, 
-  Clock, 
-  Flag, 
+import {
+  LayoutDashboard,
+  TestTube,
+  Code2,
+  Bot,
+  Zap,
+  Wrench,
+  BookOpen,
+  Clock,
+  Flag,
   ShieldCheck,
+  Users,
   BarChart2,
+  AlertTriangle,
+  GitBranch,
   Menu,
   X
 } from 'lucide-react';
@@ -50,6 +56,8 @@ const TABS = [
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
   { to: '/council',   label: 'Council',   icon: Users,       maturity: 'partial' as Maturity },
   { to: '/quality',   label: 'Quality', icon: BarChart2 },
+  { to: '/command-center', label: 'Command Center', icon: AlertTriangle },
+  { to: '/graph-composer', label: 'Graph Composer', icon: GitBranch },
 ];
 
 // Mobile bottom nav shows first 4 tabs, rest go in "More"
@@ -105,21 +113,25 @@ export function Dashboard() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 md:pb-6 relative">
-          <Routes>
-            <Route path="/" element={<Navigate to="/overview" replace />} />
-            <Route path="/overview" element={<OverviewTab />} />
-            <Route path="/tests" element={<TestsTab />} />
-            <Route path="/code" element={<CodeTab />} />
-            <Route path="/ai" element={<AiTab />} />
-            <Route path="/capabilities" element={<CapabilitiesTab />} />
-            <Route path="/functions" element={<FunctionsTab />} />
-            <Route path="/training-library" element={<TrainingLibraryTab />} />
-            <Route path="/timeline" element={<TimelineTab />} />
-            <Route path="/flags" element={<FlagsTab />} />
-            <Route path="/audit" element={<AuditTab />} />
-            <Route path="/council" element={<CouncilTab />} />
-            <Route path="/quality" element={<QualityTab />} />
-          </Routes>
+          <Suspense fallback={<div className="flex items-center justify-center h-32 text-slate-500 text-sm">Loading…</div>}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/overview" element={<OverviewTab />} />
+              <Route path="/tests" element={<TestsTab />} />
+              <Route path="/code" element={<CodeTab />} />
+              <Route path="/ai" element={<AiTab />} />
+              <Route path="/capabilities" element={<CapabilitiesTab />} />
+              <Route path="/functions" element={<FunctionsTab />} />
+              <Route path="/training-library" element={<TrainingLibraryTab />} />
+              <Route path="/timeline" element={<TimelineTab />} />
+              <Route path="/flags" element={<FlagsTab />} />
+              <Route path="/audit" element={<AuditTab />} />
+              <Route path="/council" element={<CouncilTab />} />
+              <Route path="/quality" element={<QualityTab />} />
+              <Route path="/command-center" element={<CommandCenterTab />} />
+              <Route path="/graph-composer" element={<GraphComposerTab />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
 
