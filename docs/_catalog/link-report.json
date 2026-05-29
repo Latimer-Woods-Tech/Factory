@@ -1176,7 +1176,7 @@
     },
     {
       "file": "docs/architecture/SURFACES.md",
-      "line": 78,
+      "line": 79,
       "target": "../PRODUCT_PRINCIPLES.md",
       "reason": "file not found",
       "owner": "architecture",
@@ -1185,7 +1185,7 @@
     },
     {
       "file": "docs/architecture/SURFACES.md",
-      "line": 127,
+      "line": 129,
       "target": "../PORTFOLIO_FOCUS.md",
       "reason": "file not found",
       "owner": "architecture",

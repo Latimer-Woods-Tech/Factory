@@ -3,20 +3,20 @@
 **Generated:** source-derived
 **Result:** PASS
 **Errors:** 0
-**Warnings:** 264
+**Warnings:** 267
 
 ## By Issue Type
 
 | Issue | Count |
 |---|---:|
 | docs.npm-script.missing | 210 |
-| docs.workflow-ref.missing | 54 |
+| docs.workflow-ref.missing | 57 |
 
 ## By Owner
 
 | Owner | Count |
 |---|---:|
-| platform | 225 |
+| platform | 228 |
 | capricast | 24 |
 | architecture | 10 |
 | marketing | 2 |
@@ -33,6 +33,9 @@
 | warning | platform | CLAUDE.md | 155 | References missing npm script "typecheck". |
 | warning | platform | CLAUDE.md | 225 | References missing npm script "dev". |
 | warning | platform | CLAUDE.md | 258 | References missing npm script "phase-7:scaffold". |
+| warning | platform | docs/ACCESS.md | 37 | References missing workflow .github/workflows/deploy-admin-studio-worker.yml. |
+| warning | platform | docs/ACCESS.md | 41 | References missing workflow .github/workflows/deploy-developer-index.yml. |
+| warning | platform | docs/ACCESS.md | 42 | References missing workflow .github/workflows/deploy-status-page.yml. |
 | warning | platform | docs/ACCESSIBILITY_AUDIT_BASELINE.md | 254 | References missing workflow .github/workflows/accessibility-audit.yml. |
 | warning | platform | docs/ACCESSIBILITY_AUDIT_BASELINE.md | 273 | References missing npm script "test:a11y". |
 | warning | platform | docs/accessibility-testing-guide.md | 29 | References missing workflow .github/workflows/accessibility.yml. |
@@ -72,8 +75,8 @@
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 1397 | References missing npm script "migrate". |
 | warning | architecture | docs/architecture/FACTORY_V1.md | 647 | References missing npm script "migrate". |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1183 | References missing workflow .github/workflows/qa-audit.yml. |
-| warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1503 | References missing workflow .github/workflows/qa-audit.yml. |
-| warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1591 | References missing workflow .github/workflows/qa-audit.yml. |
+| warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1507 | References missing workflow .github/workflows/qa-audit.yml. |
+| warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1595 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | platform | docs/CAPABILITY_STUDIO_HANDOFF.md | 149 | References missing npm script "typecheck". |
 | warning | capricast | docs/capricast/API-ROUTES-IMPORT-CHECKLIST.md | 328 | References missing npm script "typecheck". |
 | warning | capricast | docs/capricast/API-ROUTES-IMPORT-CHECKLIST.md | 331 | References missing npm script "lint". |
@@ -124,6 +127,3 @@
 | warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 398 | References missing npm script "publish:kpi-dashboard". |
 | warning | platform | docs/DOCUMENTATION_HIERARCHY.md | 86 | References missing npm script "dev". |
 | warning | platform | docs/DOCUMENTATION_HIERARCHY.md | 216 | References missing npm script "dev". |
-| warning | platform | docs/DOCUMENTATION_HIERARCHY.md | 219 | References missing npm script "build". |
-| warning | platform | docs/DOCUMENTATION_HIERARCHY.md | 394 | References missing npm script "phase-6:provision". |
-| warning | platform | docs/ENVIRONMENT_VERIFICATION_SETUP.md | 23 | References missing npm script "verify:env". |

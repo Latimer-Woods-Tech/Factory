@@ -139,7 +139,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (315)
+## platform (318)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -152,6 +152,7 @@
 | [docs/_generated/workflow-map.md](_generated/workflow-map.md) | generated | generated | unknown | Factory Workflow Map |
 | [docs/_governance/doc-policy.md](_governance/doc-policy.md) | active | unverified | 2026-05-28 | Documentation Governance Policy |
 | [docs/_governance/evidence-policy.md](_governance/evidence-policy.md) | active | unverified | 2026-05-28 | Documentation Evidence Policy |
+| [docs/ACCESS.md](ACCESS.md) | active | unverified | unknown | Factory Access Map |
 | [docs/ACCESSIBILITY_AUDIT_BASELINE.md](ACCESSIBILITY_AUDIT_BASELINE.md) | active | unverified | unknown | Accessibility Audit & Remediation Plan |
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
@@ -216,6 +217,7 @@
 | [docs/decisions/2026-05-23-workflow-lifecycle.md](decisions/2026-05-23-workflow-lifecycle.md) | active | unverified | unknown | 2026-05-23 — Workflow Lifecycle & Automation Hygiene |
 | [docs/decisions/2026-05-25-factory-alignment.md](decisions/2026-05-25-factory-alignment.md) | canonical | owner-reviewed | unknown | 2026-05-25 — Factory alignment: what it IS, what it is NOT, what to build next |
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
+| [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | unknown | Media Room Control Plane |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -246,6 +248,7 @@
 | [docs/JOURNEY_MAPS_8_FLOWS.md](JOURNEY_MAPS_8_FLOWS.md) | active | unverified | unknown | Journey Maps: 8 Critical Flows for VideoKing |
 | [docs/KPI_TRACKING_BASELINE_SNAPSHOT.md](KPI_TRACKING_BASELINE_SNAPSHOT.md) | active | unverified | unknown | KPI Tracking: Baseline Snapshot |
 | [docs/MASTER_SUCCESS_METRICS_BASELINE.md](MASTER_SUCCESS_METRICS_BASELINE.md) | active | unverified | unknown | Master Success Metrics Baseline Table |
+| [docs/MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md](MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md) | active | unverified | unknown | Media Room Production Control Plane |
 | [docs/migrations/sup-1.4-migration-drift-guard/README.md](migrations/sup-1.4-migration-drift-guard/README.md) | archive | historical | unknown | SUP-1.4 Migration Guide — Migration Drift Guard |
 | [docs/migrations/syn-6-humandesign-workflow-rollout/README.md](migrations/syn-6-humandesign-workflow-rollout/README.md) | archive | historical | unknown | SYN-6 Migration Guide — HumanDesign Workflow Rollout (18 → 3) |
 | [docs/MONDAY_REVIEW_TEMPLATE.md](MONDAY_REVIEW_TEMPLATE.md) | active | unverified | unknown | Monday Review — Agenda Template (G15) |

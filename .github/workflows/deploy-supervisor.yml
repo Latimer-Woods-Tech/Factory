@@ -179,11 +179,17 @@ jobs:
         working-directory: apps/supervisor
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.FACTORY_SENTRY_API }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'latwood-tech' }}
         run: |
-          sentry-cli sourcemaps upload \
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "::warning::FACTORY_SENTRY_API missing; sourcemap upload skipped"
+            exit 0
+          fi
+          if ! sentry-cli sourcemaps upload \
             --project factory-supervisor \
-            .sentry-dist/
+            .sentry-dist/; then
+            echo "::warning::Sentry sourcemap upload failed; continuing deployment"
+          fi
 
       - name: Deploy
         working-directory: apps/supervisor

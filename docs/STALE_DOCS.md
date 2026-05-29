@@ -21,6 +21,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [apps/supervisor/README.md](../apps/supervisor/README.md) | active | unverified | supervisor | unknown | factory-supervisor |
 | [apps/video-studio/README.md](../apps/video-studio/README.md) | active | unverified | video-studio | unknown | Video Studio |
 | [apps/webhook-fanout/README.md](../apps/webhook-fanout/README.md) | active | unverified | webhook-fanout | unknown | webhook-fanout |
+| [docs/ACCESS.md](ACCESS.md) | active | unverified | platform | unknown | Factory Access Map |
 | [docs/ACCESSIBILITY_AUDIT_BASELINE.md](ACCESSIBILITY_AUDIT_BASELINE.md) | active | unverified | platform | unknown | Accessibility Audit & Remediation Plan |
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | platform | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | platform | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
@@ -99,6 +100,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/decisions/2026-05-23-governance-of-governance.md](decisions/2026-05-23-governance-of-governance.md) | active | unverified | platform | unknown | 2026-05-23 — Governance of Governance |
 | [docs/decisions/2026-05-23-workflow-lifecycle.md](decisions/2026-05-23-workflow-lifecycle.md) | active | unverified | platform | unknown | 2026-05-23 — Workflow Lifecycle & Automation Hygiene |
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
+| [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | platform | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -160,6 +162,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | marketing | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | marketing | unknown | Voices |
 | [docs/MASTER_SUCCESS_METRICS_BASELINE.md](MASTER_SUCCESS_METRICS_BASELINE.md) | active | unverified | platform | unknown | Master Success Metrics Baseline Table |
+| [docs/MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md](MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md) | active | unverified | platform | unknown | Media Room Production Control Plane |
 | [docs/MONDAY_REVIEW_TEMPLATE.md](MONDAY_REVIEW_TEMPLATE.md) | active | unverified | platform | unknown | Monday Review — Agenda Template (G15) |
 | [docs/MONETIZATION_FUNNEL_INSTRUMENTATION.md](MONETIZATION_FUNNEL_INSTRUMENTATION.md) | active | unverified | platform | unknown | Monetization Funnel: End-to-End Measurement |
 | [docs/MONEY_MOVING_REGRESSION_TESTS.md](MONEY_MOVING_REGRESSION_TESTS.md) | active | unverified | platform | unknown | Money-Moving Regression Tests: Subscriptions, Unlocks, Payouts |
