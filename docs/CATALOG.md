@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 415 |
+| total_docs | 416 |
 | canonical | 17 |
-| active | 350 |
+| active | 351 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (350)
+## Active Docs (351)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -58,6 +58,7 @@
 | [apps/webhook-fanout/README.md](../apps/webhook-fanout/README.md) | active | unverified | webhook-fanout | unknown | webhook-fanout |
 | [docs/_governance/doc-policy.md](_governance/doc-policy.md) | active | unverified | platform | 2026-05-28 | Documentation Governance Policy |
 | [docs/_governance/evidence-policy.md](_governance/evidence-policy.md) | active | unverified | platform | 2026-05-28 | Documentation Evidence Policy |
+| [docs/ACCESS.md](ACCESS.md) | active | unverified | platform | unknown | Factory Access Map |
 | [docs/ACCESSIBILITY_AUDIT_BASELINE.md](ACCESSIBILITY_AUDIT_BASELINE.md) | active | unverified | platform | unknown | Accessibility Audit & Remediation Plan |
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | platform | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | platform | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
