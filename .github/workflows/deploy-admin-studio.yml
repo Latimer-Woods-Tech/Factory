@@ -48,8 +48,10 @@ jobs:
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        env:
+          GCP_AUTH_CREDENTIALS_JSON: ${{ secrets.VERTEX_SA_KEY }}
         with:
-          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+          credentials_json: ${{ env.GCP_AUTH_CREDENTIALS_JSON }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
@@ -112,9 +114,11 @@ jobs:
         working-directory: packages/studio-core
 
       - name: Verify health pre-deploy (sanity)
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           echo "Deploying admin-studio to ${{ steps.target.outputs.env }}"
-          cf_api_token="${CF_API_TOKEN:-${{ secrets.CF_API_TOKEN }}}"
+          cf_api_token="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
           test -n "$cf_api_token" || (echo "::error::CF_API_TOKEN missing" && exit 1)
 
       # ---- NEW: capture previous live version BEFORE deploy ----
@@ -122,10 +126,13 @@ jobs:
         id: capture
         if: steps.target.outputs.env == 'production'
         working-directory: apps/admin-studio
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-${{ secrets.CF_API_TOKEN }}}"
-          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-${{ secrets.CF_ACCOUNT_ID }}}"
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
           # The currently-deployed prod version IS the rollback target.
           PREV=$(npx -y wrangler@latest deployments list --env production --json 2>/dev/null \
             | jq -r '.[0].versions[0].version_id // .[0].version_id // empty')
@@ -152,10 +159,14 @@ jobs:
           fi
 
       - name: Provision webhook secret
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          FALLBACK_STRIPE_SUBSCRIPTION_WEBHOOK_SECRET: ${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}
         run: |
-          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-${{ secrets.CF_API_TOKEN }}}"
-          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-${{ secrets.CF_ACCOUNT_ID }}}"
-          webhook_secret="${STRIPE_SUBSCRIPTION_WEBHOOK_SECRET:-${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}}"
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
+          webhook_secret="${STRIPE_SUBSCRIPTION_WEBHOOK_SECRET:-$FALLBACK_STRIPE_SUBSCRIPTION_WEBHOOK_SECRET}"
           if [ -z "$webhook_secret" ]; then
             echo "::warning::STRIPE_SUBSCRIPTION_WEBHOOK_SECRET missing; webhook endpoint will return 503 until configured"
             exit 0
@@ -227,26 +238,29 @@ jobs:
           FALLBACK_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
 
       - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+          if [ -z "${DATABASE_URL:-}" ]; then
             echo "::warning::DATABASE_URL not set; skipping migrations — ensure tables exist in the target database"
             exit 0
           fi
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
           for f in $(ls apps/admin-studio/migrations/*.sql | sort); do
             echo "Applying migration: $f"
-            psql "${{ secrets.DATABASE_URL }}" -v ON_ERROR_STOP=1 -f "$f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
           echo "✓ Database migrations applied successfully"
         shell: bash
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Deploy
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-${{ secrets.CF_API_TOKEN }}}"
-          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-${{ secrets.CF_ACCOUNT_ID }}}"
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
 
           ai_gateway_base_url="${AI_GATEWAY_BASE_URL:-}"
           if [ -z "$ai_gateway_base_url" ]; then
@@ -305,10 +319,13 @@ jobs:
         id: capture-new
         if: steps.target.outputs.env == 'production'
         working-directory: apps/admin-studio
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-${{ secrets.CF_API_TOKEN }}}"
-          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-${{ secrets.CF_ACCOUNT_ID }}}"
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
           NEW=$(npx -y wrangler@latest versions list --name admin-studio-production --json 2>/dev/null \
             | jq -r '.[0].id // empty')
           test -n "$NEW" || (echo "::error::Could not capture new version id" && exit 1)
