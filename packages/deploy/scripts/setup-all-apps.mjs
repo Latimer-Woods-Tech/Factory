@@ -37,6 +37,7 @@ import { createInterface } from 'readline';
 const APPS = [
   {
     name: 'daily-brief',
+    isMonorepo: true,
     workerName: 'daily-brief',
     envKey: 'DAILY_BRIEF',
     extraSecrets: [
@@ -229,7 +230,15 @@ async function setupApp(app) {
   // ── GitHub Secrets ──────────────────────────────────────────────
   console.log('\n  [GitHub Secrets]');
 
-  setGitHubSecret(name, 'PACKAGES_READ_TOKEN', requireEnv('PACKAGES_READ_TOKEN'));
+  if (app.isMonorepo) {
+    console.log(`  [skipped] ${name} is a monorepo app, skipping GitHub repo secrets`);
+  } else {
+    setGitHubSecret(name, 'PACKAGES_READ_TOKEN', requireEnv('PACKAGES_READ_TOKEN'));
+  }
+
+  // Cloudflare deploy credentials and environment setup are required for every
+  // app, including monorepo-hosted apps, because they are consumed by the
+  // app's CI workflow or inherited from the parent repo deployment pipeline.
   setGitHubSecret(name, 'CF_API_TOKEN', requireEnv('CF_API_TOKEN'));
   setGitHubSecret(name, 'CF_ACCOUNT_ID', requireEnv('CF_ACCOUNT_ID'));
   ensureGitHubEnvironment(name, 'staging');
