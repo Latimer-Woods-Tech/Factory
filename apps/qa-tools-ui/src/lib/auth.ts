@@ -1,30 +1,28 @@
 /**
  * Client-side JWT management for QA Tools UI.
  *
- * The JWT is issued by POST /auth/token on the qa-tools-worker and stored
- * in sessionStorage so it persists across page navigations within a tab
- * but is cleared when the tab is closed.
+ * The JWT is issued by the qa-tools-worker auth routes and kept in memory.
+ * Operators sign in again after a full page reload or tab close.
  *
  * Usage:
  *   import { getToken, setToken, clearToken, isAuthenticated } from '@/lib/auth';
  */
 
-const TOKEN_KEY = 'qa_tools_jwt';
+let tokenCache: string | null = null;
 
-/** Retrieve the stored JWT, or null if not authenticated. */
+/** Retrieve the current JWT, or null if not authenticated. */
 export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem(TOKEN_KEY);
+  return tokenCache;
 }
 
-/** Store the JWT (called after successful login). */
+/** Store the JWT for the current page lifecycle (called after successful login). */
 export function setToken(token: string): void {
-  sessionStorage.setItem(TOKEN_KEY, token);
+  tokenCache = token;
 }
 
 /** Remove the JWT (logout). */
 export function clearToken(): void {
-  sessionStorage.removeItem(TOKEN_KEY);
+  tokenCache = null;
 }
 
 /** Returns true if a JWT is stored (does not validate the signature). */
@@ -38,7 +36,7 @@ export function isAuthenticated(): boolean {
  */
 export function getAuthHeader(): string {
   const token = getToken();
-  if (!token) throw new Error('Not authenticated — no JWT in sessionStorage');
+  if (!token) throw new Error('Not authenticated');
   return `Bearer ${token}`;
 }
 

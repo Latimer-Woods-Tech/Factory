@@ -46,6 +46,41 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        env:
+          GCP_AUTH_CREDENTIALS_JSON: ${{ secrets.VERTEX_SA_KEY }}
+        with:
+          credentials_json: ${{ env.GCP_AUTH_CREDENTIALS_JSON }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch deploy secrets and vars from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env CF_API_TOKEN                         CF_API_TOKEN CLOUDFLARE_API_TOKEN cloudflare-api-token
+          fetch_to_env CF_ACCOUNT_ID                        CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID cloudflare-account-id
+          fetch_to_env JWT_SECRET                           JWT_SECRET jwt-secret
+          fetch_to_env STUDIO_ADMIN_EMAIL                   ADMIN_STUDIO_BOOTSTRAP_EMAIL FACTORY_USER
+          fetch_to_env STUDIO_ADMIN_PASSWORD                ADMIN_STUDIO_BOOTSTRAP_PASSWORD FACTORY_PW
+          fetch_to_env ANTHROPIC_API_KEY                    LATIMER_ANTHROPIC_API ANTHROPIC_API_KEY anthropic-api-key
+          fetch_to_env STUDIO_GITHUB_TOKEN                  GH_PAT FACTORY_GITHUB_TOKEN GITHUB_TOKEN
+          fetch_to_env AI_GATEWAY_BASE_URL                  AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
+          fetch_to_env DEEPSEEK_API_KEY                     DEEPSEEK_API_KEY deepseek-api-key
+          fetch_to_env XAI_API_KEY                          XAI_API_KEY GROK_API_KEY grok-api-key xai-api-key
+          fetch_to_env GROQ_API_KEY                         GROQ_API_KEY groq-api-key
+          fetch_to_env VERTEX_ACCESS_TOKEN                  VERTEX_ACCESS_TOKEN vertex-access-token
+          fetch_to_env VERTEX_PROJECT                       VERTEX_PROJECT vertex-project-id gcp-project-id
+          fetch_to_env VERTEX_LOCATION                      VERTEX_LOCATION vertex-location gcp-location
+          fetch_to_env STRIPE_SUBSCRIPTION_WEBHOOK_SECRET   STRIPE_SUBSCRIPTION_WEBHOOK_SECRET
+          fetch_to_env STUDIO_WEBHOOK_SECRET                STUDIO_WEBHOOK_SECRET
+          fetch_to_env WORKER_API_TOKEN                     WORKER_API_TOKEN worker-api-token
+          fetch_to_env GOOGLE_CLIENT_ID                     ADMIN_STUDIO_GOOGLE_CLIENT_ID GOOGLE_CLIENT_ID google-client-id
+          fetch_to_env STUDIO_ALLOWED_USERS_JSON            ADMIN_STUDIO_ALLOWED_USERS_JSON STUDIO_ALLOWED_USERS_JSON
+          fetch_to_env STUDIO_GOOGLE_WORKSPACE_DOMAIN       STUDIO_GOOGLE_WORKSPACE_DOMAIN ADMIN_STUDIO_GOOGLE_WORKSPACE_DOMAIN
+
       - name: Resolve target environment
         id: target
         run: |
@@ -79,9 +114,12 @@ jobs:
         working-directory: packages/studio-core
 
       - name: Verify health pre-deploy (sanity)
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           echo "Deploying admin-studio to ${{ steps.target.outputs.env }}"
-          test -n "${{ secrets.CF_API_TOKEN }}" || (echo "::error::CF_API_TOKEN missing" && exit 1)
+          cf_api_token="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          test -n "$cf_api_token" || (echo "::error::CF_API_TOKEN missing" && exit 1)
 
       # ---- NEW: capture previous live version BEFORE deploy ----
       - name: Capture previous worker version (pre-deploy)
@@ -89,10 +127,12 @@ jobs:
         if: steps.target.outputs.env == 'production'
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
           # The currently-deployed prod version IS the rollback target.
           PREV=$(npx -y wrangler@latest deployments list --env production --json 2>/dev/null \
             | jq -r '.[0].versions[0].version_id // .[0].version_id // empty')
@@ -119,16 +159,20 @@ jobs:
           fi
 
       - name: Provision webhook secret
+        env:
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          FALLBACK_STRIPE_SUBSCRIPTION_WEBHOOK_SECRET: ${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}
         run: |
-          if [ -z "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" ]; then
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
+          webhook_secret="${STRIPE_SUBSCRIPTION_WEBHOOK_SECRET:-$FALLBACK_STRIPE_SUBSCRIPTION_WEBHOOK_SECRET}"
+          if [ -z "$webhook_secret" ]; then
             echo "::warning::STRIPE_SUBSCRIPTION_WEBHOOK_SECRET missing; webhook endpoint will return 503 until configured"
             exit 0
           fi
-          echo "${{ secrets.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET }}" | npx wrangler secret put STRIPE_SUBSCRIPTION_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
+          printf '%s' "$webhook_secret" | npx wrangler secret put STRIPE_SUBSCRIPTION_WEBHOOK_SECRET --env "${{ steps.target.outputs.env }}"
         working-directory: apps/admin-studio
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
 
       - name: Provision required runtime secrets
         run: |
@@ -154,54 +198,88 @@ jobs:
             printf '%s' "$value" | npx wrangler secret put "$name" --env "${{ steps.target.outputs.env }}"
           }
 
-          password_hash=$(printf '%s' "$SECRET_FACTORY_PW" | sha256sum | cut -d' ' -f1)
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-${FALLBACK_CF_API_TOKEN}}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-${FALLBACK_CF_ACCOUNT_ID}}"
 
-          put_required_secret JWT_SECRET "$SECRET_JWT_SECRET"
-          put_required_secret STUDIO_ADMIN_EMAIL "$SECRET_FACTORY_USER"
+          jwt_secret="${JWT_SECRET:-${FALLBACK_JWT_SECRET}}"
+          studio_admin_email="${STUDIO_ADMIN_EMAIL:-${FALLBACK_STUDIO_ADMIN_EMAIL}}"
+          studio_admin_password="${STUDIO_ADMIN_PASSWORD:-${FALLBACK_STUDIO_ADMIN_PASSWORD}}"
+          anthropic_api_key="${ANTHROPIC_API_KEY:-${FALLBACK_ANTHROPIC_API_KEY}}"
+          github_token="${STUDIO_GITHUB_TOKEN:-${FALLBACK_GITHUB_TOKEN}}"
+
+          password_hash=$(printf '%s' "$studio_admin_password" | sha256sum | cut -d' ' -f1)
+
+          put_required_secret JWT_SECRET "$jwt_secret"
+          put_required_secret STUDIO_ADMIN_EMAIL "$studio_admin_email"
           put_required_secret STUDIO_ADMIN_PASSWORD_SHA256 "$password_hash"
-          put_required_secret ANTHROPIC_API_KEY "$SECRET_ANTHROPIC_API_KEY"
-          put_required_secret GITHUB_TOKEN "$SECRET_GH_PAT"
+          put_required_secret ANTHROPIC_API_KEY "$anthropic_api_key"
+          put_required_secret GITHUB_TOKEN "$github_token"
 
-          put_optional_secret STUDIO_WEBHOOK_SECRET "$SECRET_STUDIO_WEBHOOK_SECRET"
-          put_optional_secret WORKER_API_TOKEN "$SECRET_WORKER_API_TOKEN"
-          put_optional_secret GOOGLE_CLIENT_ID "$SECRET_GOOGLE_CLIENT_ID"
-          put_optional_secret STUDIO_ALLOWED_USERS_JSON "$SECRET_STUDIO_ALLOWED_USERS_JSON"
+          put_optional_secret DEEPSEEK_API_KEY "${DEEPSEEK_API_KEY:-}"
+          put_optional_secret XAI_API_KEY "${XAI_API_KEY:-}"
+          put_optional_secret GROQ_API_KEY "${GROQ_API_KEY:-}"
+          put_optional_secret VERTEX_ACCESS_TOKEN "${VERTEX_ACCESS_TOKEN:-}"
+          put_optional_secret STUDIO_WEBHOOK_SECRET "${STUDIO_WEBHOOK_SECRET:-${FALLBACK_STUDIO_WEBHOOK_SECRET}}"
+          put_optional_secret WORKER_API_TOKEN "${WORKER_API_TOKEN:-${FALLBACK_WORKER_API_TOKEN}}"
+          put_optional_secret GOOGLE_CLIENT_ID "${GOOGLE_CLIENT_ID:-${FALLBACK_GOOGLE_CLIENT_ID}}"
+          put_optional_secret STUDIO_ALLOWED_USERS_JSON "${STUDIO_ALLOWED_USERS_JSON:-${FALLBACK_STUDIO_ALLOWED_USERS_JSON}}"
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          SECRET_JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          SECRET_FACTORY_USER: ${{ secrets.FACTORY_USER }}
-          SECRET_FACTORY_PW: ${{ secrets.FACTORY_PW }}
-          SECRET_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SECRET_GH_PAT: ${{ secrets.GH_PAT }}
-          SECRET_STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
-          SECRET_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
-          SECRET_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
-          SECRET_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          FALLBACK_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          FALLBACK_STUDIO_ADMIN_EMAIL: ${{ secrets.FACTORY_USER }}
+          FALLBACK_STUDIO_ADMIN_PASSWORD: ${{ secrets.FACTORY_PW }}
+          FALLBACK_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FALLBACK_GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          FALLBACK_STUDIO_WEBHOOK_SECRET: ${{ secrets.STUDIO_WEBHOOK_SECRET }}
+          FALLBACK_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+          FALLBACK_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
+          FALLBACK_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
 
       - name: Apply database migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+          if [ -z "${DATABASE_URL:-}" ]; then
             echo "::warning::DATABASE_URL not set; skipping migrations — ensure tables exist in the target database"
             exit 0
           fi
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
           for f in $(ls apps/admin-studio/migrations/*.sql | sort); do
             echo "Applying migration: $f"
-            psql "${{ secrets.DATABASE_URL }}" -v ON_ERROR_STOP=1 -f "$f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
           done
           echo "✓ Database migrations applied successfully"
         shell: bash
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Deploy
-        run: npx wrangler deploy --env ${{ steps.target.outputs.env }} --outdir dist
-        working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
+
+          ai_gateway_base_url="${AI_GATEWAY_BASE_URL:-}"
+          if [ -z "$ai_gateway_base_url" ]; then
+            echo "::error::AI_GATEWAY_BASE_URL missing; Admin Studio AI strategies cannot function without it"
+            exit 1
+          fi
+
+          vertex_project="${VERTEX_PROJECT:-factory-495015}"
+          vertex_location="${VERTEX_LOCATION:-us-central1}"
+          workspace_domain="${STUDIO_GOOGLE_WORKSPACE_DOMAIN:-latwoodtech.com}"
+
+          npx wrangler deploy \
+            --env "${{ steps.target.outputs.env }}" \
+            --outdir dist \
+            --var AI_GATEWAY_BASE_URL:"$ai_gateway_base_url" \
+            --var VERTEX_PROJECT:"$vertex_project" \
+            --var VERTEX_LOCATION:"$vertex_location" \
+            --var STUDIO_GOOGLE_WORKSPACE_DOMAIN:"$workspace_domain"
+        working-directory: apps/admin-studio
 
       # Upload sourcemaps to Sentry so stack traces resolve to TypeScript
       # source lines. The release tag must match the BUILD_SHA exposed to the
@@ -242,10 +320,12 @@ jobs:
         if: steps.target.outputs.env == 'production'
         working-directory: apps/admin-studio
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          FALLBACK_CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
         run: |
           set -euo pipefail
+          export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-$FALLBACK_CF_API_TOKEN}"
+          export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-$FALLBACK_CF_ACCOUNT_ID}"
           NEW=$(npx -y wrangler@latest versions list --name admin-studio-production --json 2>/dev/null \
             | jq -r '.[0].id // empty')
           test -n "$NEW" || (echo "::error::Could not capture new version id" && exit 1)

@@ -10,7 +10,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | architecture | 10 | 3 |
 | capricast | 24 | 31 |
 | marketing | 2 | 79 |
-| platform | 225 | 272 |
+| platform | 228 | 272 |
 | revenue | 2 | 0 |
 
 ## Highest Link Debt Docs
@@ -70,5 +70,5 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 4 | PROJECT_STATUS.md |
 | 3 | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md |
 | 3 | CLAUDE.md |
+| 3 | docs/ACCESS.md |
 | 3 | docs/architecture/QA_TOOLS_ARCHITECTURE.md |
-| 3 | docs/DELIVERY_KPI_DASHBOARD.md |
