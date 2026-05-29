@@ -242,9 +242,10 @@ async function buildPulseSnapshot(surfaceHealth) {
 	};
 }
 
-// Regenerate the deterministic topology before we copy src/ -> dist/ so the
-// fresh JSON is included in the dist payload.
-const { topology } = await generateTopology();
+// Regenerate the deterministic topology and emit it into dist/data so the
+// fresh JSON is included in the dist payload without tracking the generated
+// source artifact in git.
+const { topology } = await generateTopology({ outDir: join(distDir, 'data') });
 
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
@@ -257,10 +258,6 @@ await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 // status-prober Worker with graceful fall-back to data/pulse.json.
 await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
 await mkdir(join(distDir, 'data'), { recursive: true });
-await copyFile(
-	join(srcDir, 'data', 'circuit-topology.json'),
-	join(distDir, 'data', 'circuit-topology.json'),
-);
 
 // Liveness probes run in parallel; on CI without outbound network they all
 // degrade and the runtime still renders a static topology. Bound the overall

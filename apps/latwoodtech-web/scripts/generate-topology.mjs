@@ -250,11 +250,11 @@ function build() {
   };
 }
 
-export async function generateTopology() {
+export async function generateTopology({ outDir } = {}) {
   const topology = build();
-  const outDir = join(__dirname, '..', 'src', 'data');
-  await mkdir(outDir, { recursive: true });
-  const outPath = join(outDir, 'circuit-topology.json');
+  const outputDir = outDir ? join(__dirname, outDir) : join(__dirname, '..', 'src', 'data');
+  await mkdir(outputDir, { recursive: true });
+  const outPath = join(outputDir, 'circuit-topology.json');
   await writeFile(outPath, `${JSON.stringify(topology, null, 2)}\n`, 'utf8');
   return { outPath, topology };
 }
