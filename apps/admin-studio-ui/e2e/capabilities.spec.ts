@@ -273,7 +273,7 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   await page.getByRole('button', { name: /Sign in to staging/i }).click();
   await expect(page).toHaveURL(/\/overview$/);
 
-  await page.getByRole('link', { name: 'Capabilities' }).click();
+  await page.locator('main').getByRole('link', { name: 'Capabilities' }).click();
   await expect(page.getByRole('heading', { name: 'Capability Design Studio' })).toBeVisible();
   await expect(page.getByText('Staging-first only')).toBeVisible();
 
@@ -318,6 +318,6 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   await page.getByRole('button', { name: /Confirm — submit request/ }).click();
 
   // Success surface.
-  await expect(page.getByText('Staging provision request recorded.')).toBeVisible();
+  await expect(page.locator('main').getByText('Staging provision request recorded.')).toBeVisible();
   await expect(page.getByText(provisionRequestId)).toBeVisible();
 });

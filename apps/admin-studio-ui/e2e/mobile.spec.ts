@@ -151,5 +151,5 @@ test('mobile smoke flow: login → overview → ai → code → audit', async ({
 
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('link', { name: 'Audit Log' }).click();
-  await expect(page.getByRole('heading', { name: 'Audit Log' })).toBeVisible();
+  await expect(page.locator('main').getByRole('heading', { name: 'Audit Log' })).toBeVisible();
 });
