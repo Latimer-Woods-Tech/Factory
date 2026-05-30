@@ -357,9 +357,9 @@
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | platform | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
-| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-05-30 | Stack Manifest |
+| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-05-25 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-27 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | 2026-05-02 | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
