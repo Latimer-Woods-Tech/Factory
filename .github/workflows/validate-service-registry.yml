@@ -1,5 +1,11 @@
 name: Validate Service Registry
 
+# Config-validation workflow. Hosts the service-registry coverage check and the
+# wrangler compatibility_date normalization check (FRH-CFG-001 / #585) so the
+# fleet stays on a single canonical compatibility_date. Folded in here rather
+# than as a separate workflow to respect the workflow budget gate
+# (docs/decisions/2026-05-23-workflow-lifecycle.md, Pillar 4).
+
 on:
   pull_request:
     paths:
@@ -7,6 +13,11 @@ on:
       - '.github/workflows/deploy-*.yml'
       - '.github/workflows/validate-service-registry.yml'
       - 'scripts/validate-service-registry.mjs'
+      - 'scripts/check-compatibility-date.mjs'
+      - 'apps/*/wrangler.jsonc'
+      - 'packages/deploy/templates/wrangler.jsonc'
+      - 'packages/deploy/scripts/scaffold.mjs'
+      - 'packages/deploy/scripts/scaffold-factory-admin.mjs'
       - 'package.json'
       - 'package-lock.json'
   push:
@@ -16,6 +27,11 @@ on:
       - '.github/workflows/deploy-*.yml'
       - '.github/workflows/validate-service-registry.yml'
       - 'scripts/validate-service-registry.mjs'
+      - 'scripts/check-compatibility-date.mjs'
+      - 'apps/*/wrangler.jsonc'
+      - 'packages/deploy/templates/wrangler.jsonc'
+      - 'packages/deploy/scripts/scaffold.mjs'
+      - 'packages/deploy/scripts/scaffold-factory-admin.mjs'
       - 'package.json'
       - 'package-lock.json'
 
@@ -50,3 +66,6 @@ jobs:
 
       - name: Validate service registry coverage
         run: npm run validate:service-registry
+
+      - name: Validate wrangler compatibility_date is normalized
+        run: npm run validate:compatibility-date
