@@ -315,6 +315,6 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   await page.getByRole('button', { name: /Confirm — submit request/ }).click();
 
   // Success surface.
-  await expect(page.getByText('Staging provision request recorded.')).toBeVisible();
-  await expect(page.getByText(provisionRequestId)).toBeVisible();
+  await expect(page.getByText('Staging provision request recorded.').first()).toBeVisible();
+  await expect(page.getByText(provisionRequestId).first()).toBeVisible();
 });
