@@ -24,8 +24,7 @@
  */
 
 import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { join, dirname, basename, resolve } from 'node:path';
+import { join, dirname, basename, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -134,14 +133,33 @@ async function cmdDeliberate(filePath, flags) {
   // --no-write: run LLM calls and print the deliberation block to stdout, but do
   // not modify the inquiry file. Used by GitHub Actions to post results as a PR comment.
   const noWrite = '--no-write' in flags;
-  const absPath = resolve(ROOT, filePath);
 
-  if (!existsSync(absPath)) {
-    console.error(`Error: file not found: ${filePath}`);
+  // Resolve and validate the path up front, constraining it to the council
+  // inquiries directory. Doing this once (rather than checking existence and
+  // later re-validating before the write) removes the time-of-check /
+  // time-of-use race between the existence probe and writeFile.
+  const inquiriesRoot = resolve(INQUIRIES_DIR);
+  const absPath = resolve(ROOT, filePath);
+  if (absPath !== inquiriesRoot && !absPath.startsWith(inquiriesRoot + sep)) {
+    console.error(`Error: inquiry path must be inside docs/council/inquiries/: ${filePath}`);
+    process.exit(1);
+  }
+  // Only operate on Markdown inquiry files.
+  if (!absPath.endsWith('.md')) {
+    console.error(`Error: inquiry path must be a Markdown (.md) file: ${filePath}`);
     process.exit(1);
   }
 
-  const inquiry = await readFile(absPath, 'utf8');
+  let inquiry;
+  try {
+    inquiry = await readFile(absPath, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      console.error(`Error: file not found: ${filePath}`);
+      process.exit(1);
+    }
+    throw err;
+  }
   const inquiryId = extractMetaField(inquiry, 'Inquiry ID') ?? basename(filePath, '.md');
 
   console.log(`\nDeliberating: ${inquiryId} — ${basename(absPath)}`);
@@ -217,12 +235,8 @@ async function cmdDeliberate(filePath, flags) {
     updated = fillRisksStub(updated, synthesis);
     updated = fillOpenQuestionsStub(updated, synthesis);
 
-    // Validate path stays within repo root to prevent path traversal
-    const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-    const resolvedPath = resolve(absPath);
-    if (!resolvedPath.startsWith(REPO_ROOT + '/')) {
-      throw new Error(`Path traversal attempt blocked: ${absPath}`);
-    }
+    // absPath was already canonicalized and constrained to the inquiries
+    // directory at the top of this function, so it is safe to write here.
     await writeFile(absPath, updated, 'utf8');
     await touchIndexEntry(extractMetaField(inquiry, 'Inquiry ID'));
 

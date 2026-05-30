@@ -93,10 +93,10 @@ jobs:
 
           # Truncate to 65000 chars to stay within GitHub comment limits
           truncated=$(head -c 65000 "$output_file")
-          if [ ${#truncated} -ge 65000 ]; then
-            truncated="$truncated
-            
-            echo "> [Deliberation output truncated — see workflow logs for the full output]"
+          if [ "${#truncated}" -ge 65000 ]; then
+            truncated="${truncated}
+
+          > [Deliberation output truncated — see workflow logs for the full output]"
           fi
 
           # Write to GitHub step summary for persistent visibility
