@@ -24,8 +24,7 @@
  */
 
 import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { join, dirname, basename, resolve } from 'node:path';
+import { join, dirname, basename, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -129,12 +128,29 @@ async function cmdDeliberate(filePath, flags) {
   const noWrite = '--no-write' in flags;
   const absPath = resolve(ROOT, filePath);
 
-  if (!existsSync(absPath)) {
-    console.error(`Error: file not found: ${filePath}`);
+  // Contain the target to the council inquiries directory. The path comes from a
+  // CLI argument, so without this guard a caller could read/overwrite arbitrary
+  // files via path traversal. Keeping the sink inside a fixed directory also
+  // neutralises the untrusted-path data flow CodeQL tracks here.
+  const inquiriesRoot = INQUIRIES_DIR.endsWith(sep) ? INQUIRIES_DIR : INQUIRIES_DIR + sep;
+  if (absPath !== INQUIRIES_DIR && !absPath.startsWith(inquiriesRoot)) {
+    console.error(`Error: inquiry file must live under docs/council/inquiries/ (got ${filePath})`);
     process.exit(1);
   }
 
-  const inquiry = await readFile(absPath, 'utf8');
+  // Read directly and handle the missing-file case via the thrown error rather
+  // than a separate existsSync() pre-check — the latter opens a TOCTOU window
+  // (file-system race) between the check and the subsequent read/write.
+  let inquiry;
+  try {
+    inquiry = await readFile(absPath, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') {
+      console.error(`Error: file not found: ${filePath}`);
+      process.exit(1);
+    }
+    throw err;
+  }
   const inquiryId = extractMetaField(inquiry, 'Inquiry ID') ?? basename(filePath, '.md');
 
   console.log(`\nDeliberating: ${inquiryId} — ${basename(absPath)}`);
@@ -736,14 +752,15 @@ async function updateIndexEntry(inquiryId, { status, lastUpdated, moveToHistoric
   const content = await readFile(INDEX_PATH, 'utf8').catch(() => '');
 
   // Update the status and last-updated columns in whatever table the ID appears in
-  const idPattern = new RegExp(`(\\| ${inquiryId} \\|[^|]+\\|\\s*)\\w+(\\s*\\|[^|]+\\|[^|]+\\|[^|]+\\|)([^|]+)(\\|)`);
+  const safeId = escapeRegExp(inquiryId);
+  const idPattern = new RegExp(`(\\| ${safeId} \\|[^|]+\\|\\s*)\\w+(\\s*\\|[^|]+\\|[^|]+\\|[^|]+\\|)([^|]+)(\\|)`);
   let updated = content.replace(idPattern, (match, pre, mid, _lastUpdated, pipe) => {
     return `${pre}${status}${mid}${lastUpdated}${pipe}`;
   });
 
   if (moveToHistorical && status !== 'draft' && status !== 'review') {
     // Move from active to historical by rebuilding the row in the historical table
-    const rowPattern = new RegExp(`\\| ${inquiryId} \\|[^\n]+\n`);
+    const rowPattern = new RegExp(`\\| ${safeId} \\|[^\n]+\n`);
     const rowMatch = updated.match(rowPattern);
     if (rowMatch) {
       const cols = rowMatch[0].split('|').map(c => c.trim()).filter(Boolean);
@@ -948,6 +965,18 @@ function safeParseJSON(raw, fallback) {
   } catch {
     return fallback;
   }
+}
+
+/**
+ * Escape a string for safe interpolation into a `RegExp`. Inquiry IDs originate
+ * from CLI arguments and file metadata, so they must be neutralised before being
+ * embedded in a dynamic pattern (prevents regex-injection / ReDoS).
+ *
+ * @param {string} value Raw string to escape.
+ * @returns {string} Regex-safe string.
+ */
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
 }
 
 async function nextInquiryId() {

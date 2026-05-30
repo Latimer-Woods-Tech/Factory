@@ -49,7 +49,7 @@
  *   - Printed:   Wrangler.jsonc snippet, repo-context CLAUDE.md, CF custom-domain curl command
  */
 
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -85,7 +85,33 @@ function parseArgs() {
     process.exit(1);
   }
 
+  // Validate every free-form identifier that later flows into shell commands so
+  // it cannot carry metacharacters (prevents command injection from arguments).
+  assertSafeArg('--app', app, /^[a-z][a-z0-9-]*$/u);
+  assertSafeArg('--worker-name', workerName, /^[a-z][a-z0-9-]*$/u);
+  if (db !== 'new') assertSafeArg('--db', db, /^[a-zA-Z0-9._:-]+$/u);
+  if (domain !== 'none') assertSafeArg('--domain', domain, /^[a-z0-9.-]+$/u);
+  if (recipe) assertSafeArg('--recipe', recipe, /^[a-z][a-z0-9-]*$/u);
+  for (const secret of extraSecrets) assertSafeArg('--extra-secrets', secret, /^[A-Za-z0-9_]+$/u);
+
   return { app, workerName, db, domain, rateLimiterId, extraSecrets, createRepo, scaffold, recipe, dryRun };
+}
+
+/**
+ * Reject CLI argument values that contain characters outside the allowed
+ * pattern. These values are interpolated into shell commands downstream, so
+ * constraining them at the entry point is the root-cause fix for command
+ * injection (CodeQL js/indirect-command-line-injection).
+ *
+ * @param {string} flag Flag name (for the error message).
+ * @param {string} value Provided value.
+ * @param {RegExp} pattern Allow-list pattern the value must match in full.
+ */
+function assertSafeArg(flag, value, pattern) {
+  if (typeof value !== 'string' || !pattern.test(value)) {
+    console.error(`ERROR: ${flag} value "${value}" is invalid — must match ${pattern}`);
+    process.exit(1);
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -549,26 +575,29 @@ function scaffoldAndPush({ app, hyperdriveUuid, rateLimiterId, recipe, createRep
   section('L. Scaffold App Code');
 
   const scaffoldScript = resolve(ROOT, 'packages/deploy/scripts/scaffold.mjs');
-  const parts = [
-    `node "${scaffoldScript}" ${app}`,
-    hyperdriveUuid ? `--hyperdrive-id ${hyperdriveUuid}` : '',
-    `--rate-limiter-id ${rateLimiterId}`,
+  // Build an explicit argv array and invoke via execFileSync (no shell). This
+  // avoids shell interpolation of caller-supplied values entirely, which is the
+  // root-cause fix for the command-injection sink CodeQL flags here.
+  const scaffoldArgs = [
+    scaffoldScript,
+    app,
+    ...(hyperdriveUuid ? ['--hyperdrive-id', String(hyperdriveUuid)] : []),
+    '--rate-limiter-id', String(rateLimiterId),
     '--no-prereq',
     '--no-secrets',
     '--no-deploy',
     '--no-install',
-    recipe ? `--recipe ${recipe}` : '',
-  ].filter(Boolean);
-  const cmd = parts.join(' ');
+    ...(recipe ? ['--recipe', recipe] : []),
+  ];
 
   console.log(`  Scaffolding: ${app}`);
   if (recipe) console.log(`  Recipe:      ${recipe}`);
 
   if (dryRun) {
-    console.log(`  [DRY-RUN] ${cmd}`);
+    console.log(`  [DRY-RUN] node ${scaffoldArgs.join(' ')}`);
   } else {
     try {
-      execSync(cmd, { stdio: 'inherit', cwd: ROOT });
+      execFileSync('node', scaffoldArgs, { stdio: 'inherit', cwd: ROOT });
     } catch (err) {
       throw new Error(`Scaffold failed: ${err.message}`);
     }
@@ -578,17 +607,18 @@ function scaffoldAndPush({ app, hyperdriveUuid, rateLimiterId, recipe, createRep
   if (createRepo) {
     const appDir = resolve(ROOT, app);
     const remoteUrl = `https://github.com/Latimer-Woods-Tech/${app}.git`;
-    const pushCmd = `git remote add origin ${remoteUrl} && git push -u origin main`;
     console.log(`  Pushing to:  ${remoteUrl}`);
     if (dryRun) {
-      console.log(`  [DRY-RUN] cd ${appDir} && ${pushCmd}`);
+      console.log(`  [DRY-RUN] cd ${appDir} && git remote add origin ${remoteUrl} && git push -u origin main`);
     } else {
       try {
-        execSync(pushCmd, { stdio: 'inherit', cwd: appDir });
+        // Each git step runs shell-free with the remote URL passed as a literal arg.
+        execFileSync('git', ['remote', 'add', 'origin', remoteUrl], { stdio: 'inherit', cwd: appDir });
+        execFileSync('git', ['push', '-u', 'origin', 'main'], { stdio: 'inherit', cwd: appDir });
         console.log(`  ✅ Pushed to ${remoteUrl}`);
       } catch {
         console.log(`  ⚠️  Auto-push failed — run manually:`);
-        console.log(`     cd "${appDir}" && ${pushCmd}`);
+        console.log(`     cd "${appDir}" && git remote add origin ${remoteUrl} && git push -u origin main`);
       }
     }
   }

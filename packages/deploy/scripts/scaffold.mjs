@@ -24,7 +24,7 @@
  * Cloudflare Worker that consumes @latimer-woods-tech/* packages.
  */
 
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -43,7 +43,12 @@ const NO_SECRETS = process.argv.includes('--no-secrets');
 const SKIP_PREREQ = process.argv.includes('--no-prereq');
 const CAPABILITY_RECIPE = (() => {
   const idx = process.argv.indexOf('--recipe');
-  return idx !== -1 ? process.argv[idx + 1] ?? null : null;
+  const value = idx !== -1 ? process.argv[idx + 1] ?? null : null;
+  if (value !== null && !/^[a-z][a-z0-9-]*$/u.test(value)) {
+    console.error(`Error: --recipe value "${value}" is invalid — must be a kebab-case identifier`);
+    process.exit(1);
+  }
+  return value;
 })();
 const CAPABILITY_PLAN = (() => {
   const idx = process.argv.indexOf('--plan');
@@ -283,7 +288,18 @@ function loadCapabilityPlan() {
       console.log(`
 🔧 Compiled plan for recipe ${CAPABILITY_RECIPE} not found — compiling now...`);
       try {
-        execSync(`node ${join(REPO_ROOT, 'scripts', 'compile-capability-recipe.mjs')} --recipe ${CAPABILITY_RECIPE} --output ${compiledPlanPath}`, { stdio: 'inherit', cwd: REPO_ROOT });
+        // Invoke shell-free via execFileSync with an explicit argv array so the
+        // repo path and recipe id are passed as literal arguments rather than
+        // interpolated into a shell string (fixes CodeQL command-injection).
+        execFileSync(
+          'node',
+          [
+            join(REPO_ROOT, 'scripts', 'compile-capability-recipe.mjs'),
+            '--recipe', CAPABILITY_RECIPE,
+            '--output', compiledPlanPath,
+          ],
+          { stdio: 'inherit', cwd: REPO_ROOT },
+        );
       } catch (err) {
         console.error('Failed to compile capability recipe:', err.message);
         process.exit(1);
