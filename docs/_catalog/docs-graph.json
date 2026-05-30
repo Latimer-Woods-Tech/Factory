@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 416,
+    "total_docs": 419,
     "canonical": 17,
-    "active": 351,
+    "active": 354,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -57,7 +57,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343",
+      "content_hash": "sha256:b7e54bfc4ac5a439ce0bd4b8ccb08d53fb92f6c62f5d795faeae7dbadbbace63",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -353,7 +353,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1988626b10a0f43a850e4720017c54e20b2ecd44ce30fe0afccb86f622c028ec",
+      "content_hash": "sha256:f52d7868576fb6cb27343f86761e4c74fcec2a28ec4465ccc5924c69de74328d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -374,7 +374,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2d8f71b74d3bdfd137485750d4e11c273435b04318e199381b814bb9d866aff0",
+      "content_hash": "sha256:d343ec88d2781e6c6d709b129d6378ac1e59e2adfc19bb8f3e54806264d27778",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:553ebe582da68cc422343af56646a133cc1abf9b244c56f933c126e733ecf9b5",
+      "content_hash": "sha256:1a90ac8f1701ac7883d4f3872f9d82f2da843d6bacf3ef31342569a4b015e290",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2679,6 +2679,27 @@
       "errors": []
     },
     {
+      "path": "docs/council/inquiries/001-capability-factory-backcasting.md",
+      "title": "C-001 — Capability Factory Backcasting and Thin-Slice Plan",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f36810b9fa1df2c1a4ad8c90149cd6dc243cb3180aadbc37cb59248e10f6bca4",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/council/inquiries/002-capability-design-studio-golden-design.md",
       "title": "C-002 — Capability Design Studio Golden Design",
       "status": "active",
@@ -2692,6 +2713,48 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:11ce34d622c7be5d5f96b180c9fd5b8f1040ec74ecf88581fe0569d7a9cd625f",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/council/README.md",
+      "title": "Council Space",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "index",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:bc435c735fed1c9641d56d10a67585cd73bb3effd85ea8ca2c91166a5c046cbb",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/council/TEMPLATE.md",
+      "title": "Council Inquiry Template",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:68e3275875042e803ed0e56c16476b72f6317e5ffa4c5aed9e9681f58ef6f5f9",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7203,7 +7266,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:40068fbc52ed350840a16b071279bf814ddbb98d9a32b207c7d5a23e2b59fa4d",
+      "content_hash": "sha256:45a2d0f8c383520bfe8c2862e4bef01da1e0b5b7e4fd276ccbb677ceb2708e98",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7224,7 +7287,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f3b2da7e26f6d6b4153c5d60c803153b109862e5a83303a7913980c6d905a3e9",
+      "content_hash": "sha256:bcbba96b6e5092ee4eb039c36e26c060ba4c7ec1b4f2bfd08c3fe39a99a33c56",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7269,7 +7332,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:15fd36d05231da9b5462fb7895e6dcd1b7e18d028715b865e498b0edb1ad48c6",
+      "content_hash": "sha256:5eb93ef8a0f805506403061e76526b92596288cca070bb82e63e34e815ba5a00",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,

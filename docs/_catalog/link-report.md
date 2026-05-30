@@ -1,16 +1,16 @@
 # Documentation Broken Link Report
 
 **Generated:** source-derived
-**Broken links:** 389
+**Broken links:** 386
 **Canonical:** 0
-**Active:** 273
+**Active:** 270
 **Archive:** 116
 
 ## By Owner
 
 | Owner | Broken Links |
 |---|---:|
-| platform | 272 |
+| platform | 269 |
 | marketing | 79 |
 | capricast | 31 |
 | admin-studio | 4 |

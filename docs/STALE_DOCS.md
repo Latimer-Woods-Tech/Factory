@@ -92,7 +92,10 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/cost/summary.md](cost/summary.md) | active | unverified | platform | unknown | Cost Digest — Rolling 30 days |
 | [docs/council/DECISIONS.md](council/DECISIONS.md) | active | unverified | platform | unknown | Council Decisions |
 | [docs/council/INDEX.md](council/INDEX.md) | active | unverified | platform | unknown | Council Inquiry Index |
+| [docs/council/inquiries/001-capability-factory-backcasting.md](council/inquiries/001-capability-factory-backcasting.md) | active | unverified | platform | unknown | C-001 — Capability Factory Backcasting and Thin-Slice Plan |
 | [docs/council/inquiries/002-capability-design-studio-golden-design.md](council/inquiries/002-capability-design-studio-golden-design.md) | active | unverified | platform | unknown | C-002 — Capability Design Studio Golden Design |
+| [docs/council/README.md](council/README.md) | active | unverified | platform | unknown | Council Space |
+| [docs/council/TEMPLATE.md](council/TEMPLATE.md) | active | unverified | platform | unknown | Council Inquiry Template |
 | [docs/CREATOR_ONBOARDING_UX_JOURNEY.md](CREATOR_ONBOARDING_UX_JOURNEY.md) | active | unverified | platform | unknown | Creator Onboarding UX: Complete Journey |
 | [docs/customer-gate/M1_M2_CATALOG_2026-05-17.md](customer-gate/M1_M2_CATALOG_2026-05-17.md) | active | unverified | platform | unknown | Customer Gate Catalog — 2026-05-17 |
 | [docs/decisions/2026-05-15-operations-checkpoint.md](decisions/2026-05-15-operations-checkpoint.md) | active | unverified | platform | unknown | 2026-05-15 — Operations checkpoint |

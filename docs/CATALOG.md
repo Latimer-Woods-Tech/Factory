@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 416 |
+| total_docs | 419 |
 | canonical | 17 |
-| active | 351 |
+| active | 354 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (351)
+## Active Docs (354)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -133,7 +133,10 @@
 | [docs/cost/summary.md](cost/summary.md) | active | unverified | platform | unknown | Cost Digest — Rolling 30 days |
 | [docs/council/DECISIONS.md](council/DECISIONS.md) | active | unverified | platform | unknown | Council Decisions |
 | [docs/council/INDEX.md](council/INDEX.md) | active | unverified | platform | unknown | Council Inquiry Index |
+| [docs/council/inquiries/001-capability-factory-backcasting.md](council/inquiries/001-capability-factory-backcasting.md) | active | unverified | platform | unknown | C-001 — Capability Factory Backcasting and Thin-Slice Plan |
 | [docs/council/inquiries/002-capability-design-studio-golden-design.md](council/inquiries/002-capability-design-studio-golden-design.md) | active | unverified | platform | unknown | C-002 — Capability Design Studio Golden Design |
+| [docs/council/README.md](council/README.md) | active | unverified | platform | unknown | Council Space |
+| [docs/council/TEMPLATE.md](council/TEMPLATE.md) | active | unverified | platform | unknown | Council Inquiry Template |
 | [docs/CREATOR_ONBOARDING_UX_JOURNEY.md](CREATOR_ONBOARDING_UX_JOURNEY.md) | active | unverified | platform | unknown | Creator Onboarding UX: Complete Journey |
 | [docs/customer-gate/M1_M2_CATALOG_2026-05-17.md](customer-gate/M1_M2_CATALOG_2026-05-17.md) | active | unverified | platform | unknown | Customer Gate Catalog — 2026-05-17 |
 | [docs/decisions/2026-05-15-operations-checkpoint.md](decisions/2026-05-15-operations-checkpoint.md) | active | unverified | platform | unknown | 2026-05-15 — Operations checkpoint |

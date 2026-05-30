@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-05-29
+last_generated: 2026-05-30
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -15,7 +15,7 @@ source:
 
 # Factory Workflow Map
 
-**Registry hash:** `sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343`
+**Registry hash:** `sha256:b7e54bfc4ac5a439ce0bd4b8ccb08d53fb92f6c62f5d795faeae7dbadbbace63`
 
 ```mermaid
 flowchart TB
@@ -61,6 +61,7 @@ flowchart TB
   Other --> copilot_auto_approve_yml["copilot-auto-approve.yml"]
   Other --> copilot_pr_poller_yml["copilot-pr-poller.yml"]
   Other --> cost_observability_yml["cost-observability.yml"]
+  Other --> council_deliberate_yml["council-deliberate.yml"]
   Other --> credential_scrub_yml["credential-scrub.yml"]
   Other --> dead_mans_switch_yml["dead-mans-switch.yml"]
   Other --> dependabot_security_auto_merge_yml["dependabot-security-auto-merge.yml"]
@@ -90,6 +91,7 @@ flowchart TB
   Quality --> docs_health_yml["docs-health.yml"]
   Other --> factory_admin_ui_ci_yml["factory-admin-ui-ci.yml"]
   Other --> factory_status_dashboard_yml["factory-status-dashboard.yml"]
+  Quality --> fix_docs_health_yml["fix-docs-health.yml"]
   Reporting --> flaky_check_report_yml["flaky-check-report.yml"]
   Other --> fridge_semantic_check_yml["fridge-semantic-check.yml"]
   Other --> generate_app_lockfiles_yml["generate-app-lockfiles.yml"]
