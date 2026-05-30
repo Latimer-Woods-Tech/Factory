@@ -17,7 +17,7 @@ name: Auto-dispatch capability provision
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '45 * * * *'   # hourly (was */15) — cost trim
   workflow_dispatch: {}
 
 permissions:
