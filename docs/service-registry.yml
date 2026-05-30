@@ -6,6 +6,10 @@
 #   - What its public URL is (used in logs, docs, and consumer configs)
 #   - Which repos or files hardcode that URL
 #
+#   This is the primary source of truth for service registration, health
+#   probe generation, and alert-routing configuration in this repo. Do not
+#   treat `docs/sauna-brain.md` as an authoritative service or alert config.
+#
 # RULE:
 #   Before changing the `name` field in ANY wrangler.jsonc, you MUST:
 #   1. Find this worker in the registry below
