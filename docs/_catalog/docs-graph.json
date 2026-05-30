@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 419,
+    "total_docs": 429,
     "canonical": 17,
-    "active": 354,
+    "active": 364,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -353,7 +353,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f52d7868576fb6cb27343f86761e4c74fcec2a28ec4465ccc5924c69de74328d",
+      "content_hash": "sha256:485e63e6aac86fba97614101084bbc93d9ac19247ecb6315f71408ba5c3cce00",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2607,7 +2607,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b2bdd24307919b78035dd5ef83db6398bcff5f2de9f42b952f3a06954f848dec",
+      "content_hash": "sha256:0d5216a34490c249db85b1ddeb000492920a6a7fb7c618f8ddec0919f082866a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3143,6 +3143,27 @@
       "errors": []
     },
     {
+      "path": "docs/digest/2026-05-30.md",
+      "title": "Morning digest — 2026-05-30",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:98d6b591eeee0ec83ee5fd43ce137aa1f775ea92f2ca21ed62a485043220d84d",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/DOCS_OWNERSHIP.md",
       "title": "Documentation Ownership & Update Cadence",
       "status": "active",
@@ -3560,6 +3581,195 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:188f78eb39c48cf13c943b23edb77c64d6b8e2dfb30e7ddcddae954f4fce19ae",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/capricast.md",
+      "title": "capricast KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:dd3c0a5cd06830f2f05be2f48dbb5fe6c28cb49b49ec4e4b5a9ecd0f9a3438e6",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/coh.md",
+      "title": "coh (CypherOfHealing) KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:b680eba3f48f82aee16c73506a4d548e21f046a044e7e0527a3a3670798f090b",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/factory-apps.md",
+      "title": "Factory apps + packages KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:736b079d36ad08d1e930e55ef773985dfc3f69a66d59a7fb248483a89234ad58",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/factory-governance.md",
+      "title": "Factory governance KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:dfe6f8522d53a9c162bb323b42029f2ec7523e5ce49d8d40ad94efa323ea2a63",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/humandesign.md",
+      "title": "HumanDesign / selfprime KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:010a2c3e4c7a7037df1f2efbc20f5a1a59c77808c24407d1ea74d742aa4cbc07",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/kpis/tier1_red_time.md",
+      "title": "KPI: Tier-1 Red Time",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:38b54d5b0add2b44acde8fe0b01bcb75bf7684534662edd3227ad8e92fe15cc0",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/metrics/warden_audit.md",
+      "title": "Metric: WARDEN_AUDIT",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "audit",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4e2a00d81b1ace725894378ffcc0feb4ac5fe1fd34f58ffbd493502b31fc931c",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/README.md",
+      "title": "Governance KPIs — Ground Truth Reference",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "index",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:b99dc936ec816dd362d2892bd6b64f2ed9f9012528d10dc484acde91f9612ca3",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/xico-city.md",
+      "title": "xico-city (DJMEXXICO) KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:119f5bb9eb216ed58e17a5071c40037e142198c81462cce30b8e2e5e2f9bf157",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7411,12 +7621,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-05-25",
+      "last_updated": "2026-05-30",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b269056fd985c5990b03e8004001a6a567daae1ebfda6d2eefd94e82f04385b7",
+      "content_hash": "sha256:8a12ca69aaf68f04719c76ec84558455ae1e21770cc7ccf7ed32945d021ee7b3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7447,7 +7657,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-05-27",
+      "title": "Factory State — 2026-05-30",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7458,7 +7668,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:eee7ceccaae50932699288f6c4a4cc8b0c00b7164880ae105f5cff6dd0d2f24a",
+      "content_hash": "sha256:7cf1a4cbf9d97eeae70d5df40571e35adbaa53cffe3f0ee029b2909ced503657",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,

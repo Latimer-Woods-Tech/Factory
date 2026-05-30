@@ -6,6 +6,7 @@
   "version": "1.0.0",
   "scripts": {
     "test": "echo 'No root-level tests — run tests in individual packages.' && exit 0",
+    "validate:compatibility-date": "node scripts/check-compatibility-date.mjs",
     "validate:service-registry": "node scripts/validate-service-registry.mjs",
     "validate:docs": "node scripts/validate-docs-quality.mjs",
     "audit:docs-freshness": "node scripts/doc-freshness-audit.js",
