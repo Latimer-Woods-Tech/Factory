@@ -6,7 +6,7 @@
   "name": "webhook-fanout",
   "main": "src/index.ts",
   "workers_dev": true,
-  "compatibility_date": "2026-04-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
 
   "logpush": true,
@@ -85,3 +85,4 @@
     }
   }
 }
+
