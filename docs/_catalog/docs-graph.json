@@ -374,7 +374,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:4538391207fea304cb04ca7a58613eaa7f1a679138983cd96a45f476fa6fa6b6",
+      "content_hash": "sha256:2d8f71b74d3bdfd137485750d4e11c273435b04318e199381b814bb9d866aff0",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -605,7 +605,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:da7f38919ea0254c89bdfc9f370894e85309ddeb2c3d1a4e86ece826c6028b75",
+      "content_hash": "sha256:524efd801f92085a23c25239e64977bb970d8405f4ac5a8614f196f305740dc3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -4588,7 +4588,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b519b3f768ea5ccd04a8e77a447259ff648986c8f18e93b413ae4226d57332fa",
+      "content_hash": "sha256:20fa341b83076060573b103ec0bbe9985609f8d1d07e8c80ee1ae9d6652c7f7f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -4693,7 +4693,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1487a895f7ab86c7f196a8b54a52e10d0195aeb19750550c2c5635ff4346b637",
+      "content_hash": "sha256:0eb7abaab691fd578cb9f48747a6fae037e64b0370873cab72827f8174ca2ea8",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -4763,7 +4763,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:90b8851a30756dc137018f3c1df6dc61b218b1f9710438e08e2dd28b32dbba31",
+      "content_hash": "sha256:1e7b7c9f9ed528eeefa274c631390acf1f3c6101b4d57373fa8dc53a085e9369",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -5353,7 +5353,7 @@
       "verified_by": [],
       "content_hash": "sha256:f13192b144da6c7be56ffd5d667f50d186e857fc9e48e1f00d55fc3b7ae7eb6b",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/packages/**"
       },
@@ -6785,7 +6785,7 @@
       "verified_by": [],
       "content_hash": "sha256:01e3fc6d42dbf185ba8f47658619759f7d810a5a2f1bb1be87b0caa7a7149577",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/runbooks/**"
       },
@@ -6848,7 +6848,7 @@
       "verified_by": [],
       "content_hash": "sha256:eb2dbc66a944bf9793dffa9f2c6ec939234a4e08ee02ccf03e91197e946133d3",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/runbooks/**"
       },
@@ -6890,7 +6890,7 @@
       "verified_by": [],
       "content_hash": "sha256:c23b06f384239b13f8736c7fbc395cbbe56a1a6765c21bab612b50dcb595624d",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/runbooks/**"
       },
@@ -6974,7 +6974,7 @@
       "verified_by": [],
       "content_hash": "sha256:e773b1dc9091965d32b350b6d973746390582d364a6d8f3d5e5e01f7549e6017",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/runbooks/**"
       },
@@ -7245,7 +7245,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2ff22b7f8c3a38200800f79104c3bff377f0a9d878f8c3827ddd707e1d19ca5f",
+      "content_hash": "sha256:3d87b0a645e8606638caf54c843104bc2ed8972194236c9ee5689e809f8b83c4",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7269,7 +7269,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:25e410f451aa1d9fe48dcf5197433d7959dc7ab25509443a3ec51a208943d215",
+      "content_hash": "sha256:15fd36d05231da9b5462fb7895e6dcd1b7e18d028715b865e498b0edb1ad48c6",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -8090,7 +8090,7 @@
       "verified_by": [],
       "content_hash": "sha256:4278188f864afb20c4abf675e33c4679886a117df23c4dad22839a47f90e2fc6",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/templates/**"
       },
@@ -8111,7 +8111,7 @@
       "verified_by": [],
       "content_hash": "sha256:9affa1a0c24e46bd6eda184f19396590e3048c6d5a902fe0fdadc1906e078c47",
       "source": {
-        "frontmatter": true,
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/templates/**"
       },
