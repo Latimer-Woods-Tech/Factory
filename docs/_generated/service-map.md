@@ -14,7 +14,7 @@ source:
 
 # Factory Service Map
 
-**Source hash:** `sha256:25e410f451aa1d9fe48dcf5197433d7959dc7ab25509443a3ec51a208943d215`
+**Source hash:** `sha256:15fd36d05231da9b5462fb7895e6dcd1b7e18d028715b865e498b0edb1ad48c6`
 
 ```mermaid
 flowchart LR
@@ -25,7 +25,7 @@ flowchart LR
   registry --> pages
   workers --> worker_prime_self["prime-self\nhttps://api.selfprime.net"]
   workers --> worker_schedule_worker["schedule-worker\nhttps://schedule.latwoodtech.work"]
-  workers --> worker_video_cron["video-cron\nhttps://video-cron.adrper79.workers.dev"]
+  workers --> worker_video_cron["video-cron\nhttps://video-cron.latwoodtech.work"]
   workers --> worker_synthetic_monitor["synthetic-monitor\nhttps://monitor.latwoodtech.work"]
   workers --> worker_status_prober["status-prober\nhttps://status.latwoodtech.work"]
   workers --> worker_admin_studio_staging["admin-studio-staging\nhttps://api.admin.latimerwoods.dev"]
