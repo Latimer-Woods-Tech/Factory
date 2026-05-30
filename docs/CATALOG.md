@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 417 |
+| total_docs | 426 |
 | canonical | 17 |
-| active | 352 |
+| active | 361 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (352)
+## Active Docs (361)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -171,6 +171,15 @@
 | [docs/introduction.mdx](introduction.mdx) | active | unverified | platform | unknown | Factory Core |
 | [docs/JOURNEY_MAPS_8_FLOWS.md](JOURNEY_MAPS_8_FLOWS.md) | active | unverified | platform | unknown | Journey Maps: 8 Critical Flows for VideoKing |
 | [docs/KPI_TRACKING_BASELINE_SNAPSHOT.md](KPI_TRACKING_BASELINE_SNAPSHOT.md) | active | unverified | platform | unknown | KPI Tracking: Baseline Snapshot |
+| [docs/kpis/capricast.md](kpis/capricast.md) | active | unverified | platform | unknown | capricast KPI brief |
+| [docs/kpis/coh.md](kpis/coh.md) | active | unverified | platform | unknown | coh (CypherOfHealing) KPI brief |
+| [docs/kpis/factory-apps.md](kpis/factory-apps.md) | active | unverified | platform | unknown | Factory apps + packages KPI brief |
+| [docs/kpis/factory-governance.md](kpis/factory-governance.md) | active | unverified | platform | unknown | Factory governance KPI brief |
+| [docs/kpis/humandesign.md](kpis/humandesign.md) | active | unverified | platform | unknown | HumanDesign / selfprime KPI brief |
+| [docs/kpis/kpis/tier1_red_time.md](kpis/kpis/tier1_red_time.md) | active | unverified | platform | unknown | KPI: Tier-1 Red Time |
+| [docs/kpis/metrics/warden_audit.md](kpis/metrics/warden_audit.md) | active | unverified | platform | unknown | Metric: WARDEN_AUDIT |
+| [docs/kpis/README.md](kpis/README.md) | active | unverified | platform | unknown | Governance KPIs — Ground Truth Reference |
+| [docs/kpis/xico-city.md](kpis/xico-city.md) | active | unverified | platform | unknown | xico-city (DJMEXXICO) KPI brief |
 | [docs/marketing/ATTRIBUTION.md](marketing/ATTRIBUTION.md) | active | unverified | marketing | unknown | Attribution |
 | [docs/marketing/BUDGET_CAPS.md](marketing/BUDGET_CAPS.md) | active | unverified | marketing | unknown | Budget Caps |
 | [docs/marketing/CAMPAIGN_TAGGING.md](marketing/CAMPAIGN_TAGGING.md) | active | unverified | marketing | unknown | Campaign Tagging |

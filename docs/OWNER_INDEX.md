@@ -139,7 +139,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (319)
+## platform (328)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -248,6 +248,15 @@
 | [docs/introduction.mdx](introduction.mdx) | active | unverified | unknown | Factory Core |
 | [docs/JOURNEY_MAPS_8_FLOWS.md](JOURNEY_MAPS_8_FLOWS.md) | active | unverified | unknown | Journey Maps: 8 Critical Flows for VideoKing |
 | [docs/KPI_TRACKING_BASELINE_SNAPSHOT.md](KPI_TRACKING_BASELINE_SNAPSHOT.md) | active | unverified | unknown | KPI Tracking: Baseline Snapshot |
+| [docs/kpis/capricast.md](kpis/capricast.md) | active | unverified | unknown | capricast KPI brief |
+| [docs/kpis/coh.md](kpis/coh.md) | active | unverified | unknown | coh (CypherOfHealing) KPI brief |
+| [docs/kpis/factory-apps.md](kpis/factory-apps.md) | active | unverified | unknown | Factory apps + packages KPI brief |
+| [docs/kpis/factory-governance.md](kpis/factory-governance.md) | active | unverified | unknown | Factory governance KPI brief |
+| [docs/kpis/humandesign.md](kpis/humandesign.md) | active | unverified | unknown | HumanDesign / selfprime KPI brief |
+| [docs/kpis/kpis/tier1_red_time.md](kpis/kpis/tier1_red_time.md) | active | unverified | unknown | KPI: Tier-1 Red Time |
+| [docs/kpis/metrics/warden_audit.md](kpis/metrics/warden_audit.md) | active | unverified | unknown | Metric: WARDEN_AUDIT |
+| [docs/kpis/README.md](kpis/README.md) | active | unverified | unknown | Governance KPIs — Ground Truth Reference |
+| [docs/kpis/xico-city.md](kpis/xico-city.md) | active | unverified | unknown | xico-city (DJMEXXICO) KPI brief |
 | [docs/MASTER_SUCCESS_METRICS_BASELINE.md](MASTER_SUCCESS_METRICS_BASELINE.md) | active | unverified | unknown | Master Success Metrics Baseline Table |
 | [docs/MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md](MEDIA_ROOM_PRODUCTION_CONTROL_PLANE.md) | active | unverified | unknown | Media Room Production Control Plane |
 | [docs/migrations/sup-1.4-migration-drift-guard/README.md](migrations/sup-1.4-migration-drift-guard/README.md) | archive | historical | unknown | SUP-1.4 Migration Guide — Migration Drift Guard |
