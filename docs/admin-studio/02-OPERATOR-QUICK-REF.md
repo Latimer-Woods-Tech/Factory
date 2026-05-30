@@ -9,7 +9,7 @@ the safety design lives in [01-ENVIRONMENT-SAFETY.md](./01-ENVIRONMENT-SAFETY.md
 | ---------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | API Worker       | `https://api.admin.latimerwoods.dev`                    | `https://api.apunlimited.com`                                                    |
 | UI (Pages)       | `https://staging.admin.latimerwoods.dev`                | `https://apunlimited.com`                                                        |
-| workers.dev      | `https://admin-studio-staging.adrper79.workers.dev`     | `https://admin-studio-production.adrper79.workers.dev`                           |
+| CF fallback      | `https://admin-studio-staging.adrper79.workers.dev`     | `https://admin-studio-production.adrper79.workers.dev`                           |
 | Health check     | `GET /health` returns `200` with `env: "staging"`       | `GET /health` returns `200` with `env: "production"`                             |
 
 The `workers.dev` URLs are CF infrastructure fallbacks — never link to them from user-facing UI or docs (CLAUDE.md hard constraint). They exist for deploy-verify scripts and direct curl debugging only.
