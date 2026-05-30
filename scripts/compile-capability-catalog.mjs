@@ -72,28 +72,16 @@ async function buildCatalog() {
         tags: concept.tags ?? [],
         menuVisible: Boolean(concept.qualification?.menuVisible),
         approvalTier: concept.qualification?.approvalTier ?? 'unreviewed',
-        parameters: buildParameterIndex(concept.parameterSchema),
+        parameters: concept.parameters ?? [],
         recipeSelection: concept.recipeSelection ?? null,
-        recipes: (concept.recipeCandidates ?? [])
-          .map((recipeId) => {
-            const recipe = recipeMap.get(recipeId);
-            if (!recipe) {
-              return {
-                id: recipeId,
-                summary: 'Unknown recipe',
-                maturity: 'unknown',
-                primitives: [],
-                optionalPrimitives: [],
-              };
-            }
-            return {
-              id: recipe.id,
-              summary: recipe.summary,
-              maturity: recipe.maturity,
-              primitives: recipe.primitives,
-              optionalPrimitives: recipe.optionalPrimitives ?? [],
-            };
-          })
+        recipes: (concept.recipes ?? [])
+          .map((r) => ({
+            id: r.id,
+            summary: r.summary,
+            maturity: r.maturity,
+            primitives: r.primitives,
+            optionalPrimitives: r.optionalPrimitives ?? [],
+          }))
           .sort(byId),
         sourcePrimitives: [...(concept.sourcePrimitives ?? [])].sort(),
         qualification: concept.qualification,

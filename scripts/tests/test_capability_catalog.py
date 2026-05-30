@@ -32,7 +32,7 @@ def test_compile_capability_catalog_creates_governed_menu(tmp_path: Path):
 
     concept = next(item for item in payload['concepts'] if item['id'] == 'outbound-dialer-campaign')
     assert concept['menuVisible'] is True
-    assert concept['approvalTier'] == 'council-reviewed'
+    assert concept['approvalTier'] == 'golden'
     assert any(param['id'] == 'workerDomain' and param['required'] for param in concept['parameters'])
 
     recipe = next(item for item in concept['recipes'] if item['id'] == 'outbound-dialer')
