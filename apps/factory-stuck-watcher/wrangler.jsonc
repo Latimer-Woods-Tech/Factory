@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
   "name": "factory-stuck-watcher",
   "main": "src/index.ts",
-  "compatibility_date": "2026-04-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "triggers": {
     // Every 5 minutes so the worst-case detection lag is 5 min.
@@ -20,3 +20,4 @@
     "ENVIRONMENT": "production"
   }
 }
+

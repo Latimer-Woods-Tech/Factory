@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "admin-studio",
   "main": "src/index.ts",
-  "compatibility_date": "2025-01-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": [
     "nodejs_compat"
   ],
@@ -136,3 +136,4 @@
     "enabled": true
   }
 }
+

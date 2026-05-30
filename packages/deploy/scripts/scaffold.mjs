@@ -393,7 +393,7 @@ coverage/
   // wrangler.jsonc
   write('wrangler.jsonc', `{
   "name": "${APP_NAME}",
-  "compatibility_date": "2024-11-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/index.ts",
 
