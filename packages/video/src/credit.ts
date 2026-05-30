@@ -34,8 +34,12 @@ export interface CreditPolicy {
   formatTerm: Record<VideoFormat, number>;
   /** Monthly credit grant by tier id. */
   tierGrants: Record<string, number>;
-  /** Maximum credits that may roll over (≈ one month's grant). */
-  rolloverCap: number;
+  /**
+   * Maximum credits that may roll over, keyed by tier id (≈ one month's grant
+   * per tier). Per-tier so a higher tier's larger grant is not capped to a
+   * lower tier's carryover; a tier absent from this map carries over nothing.
+   */
+  rolloverCap: Record<string, number>;
 }
 
 /**

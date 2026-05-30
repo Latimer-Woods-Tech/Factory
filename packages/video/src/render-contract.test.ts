@@ -4,6 +4,7 @@ import {
   verifyRenderSignature,
   RENDER_HMAC_SECRET_NAME,
   RENDER_REPLAY_TOLERANCE_SECONDS,
+  RENDER_CONTRACT_VERSION,
 } from './index.js';
 
 // ---------------------------------------------------------------------------
@@ -26,6 +27,33 @@ describe('render-contract constants', () => {
   it('exposes the documented secret name and replay tolerance', () => {
     expect(RENDER_HMAC_SECRET_NAME).toBe('VIDEO_RENDER_HMAC_SECRET');
     expect(RENDER_REPLAY_TOLERANCE_SECONDS).toBe(300);
+  });
+
+  it('stamps a stable contract version', () => {
+    expect(RENDER_CONTRACT_VERSION).toBe(1);
+  });
+
+  it('verifies a version-stamped request body end to end', async () => {
+    const body = JSON.stringify({
+      version: RENDER_CONTRACT_VERSION,
+      videoObjectId: '11111111-1111-1111-1111-111111111111',
+      userId: '22222222-2222-2222-2222-222222222222',
+      callbackUrl: 'https://api.selfprime.net/api/internal/video/callback',
+      spec: { sources: ['blueprint'], format: 'full_film', segments: [] },
+    });
+    const { signature, timestamp } = await signRenderPayload({
+      rawBody: body,
+      secret: SECRET,
+      timestamp: NOW_SECONDS,
+    });
+    const res = await verifyRenderSignature({
+      rawBody: body,
+      signature,
+      timestamp,
+      secret: SECRET,
+      nowMs: NOW_MS,
+    });
+    expect(res.valid).toBe(true);
   });
 });
 

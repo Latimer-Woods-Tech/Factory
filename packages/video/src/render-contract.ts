@@ -36,6 +36,12 @@ export interface ResolvedSegment {
  * render service must reject a duplicate id already in a terminal state.
  */
 export interface RenderRequest {
+  /**
+   * Contract version (see {@link RENDER_CONTRACT_VERSION}). Lets the render
+   * service reject or adapt to a request shape it does not understand instead
+   * of silently mis-rendering. Covered by the signature (it is in the body).
+   */
+  version: number;
   /** Video-object identifier; also the idempotency key. */
   videoObjectId: string;
   /** Owning user identifier (UUID). */
@@ -62,6 +68,12 @@ export interface RenderRequest {
  * Uses the identical signing scheme as {@link RenderRequest}.
  */
 export interface RenderCallback {
+  /**
+   * Contract version (see {@link RENDER_CONTRACT_VERSION}); mirrors
+   * {@link RenderRequest.version} so selfprime can reject an unknown callback
+   * shape. Covered by the signature.
+   */
+  version: number;
   /** Video-object identifier this result is for (the idempotency key). */
   videoObjectId: string;
   /** Terminal render outcome. */
@@ -82,6 +94,13 @@ export interface RenderCallback {
  * hard-coded. Both selfprime and the render service read it under this name.
  */
 export const RENDER_HMAC_SECRET_NAME = 'VIDEO_RENDER_HMAC_SECRET';
+
+/**
+ * Current version of the signed render request/callback contract. Stamped on
+ * every {@link RenderRequest} and {@link RenderCallback}; bumped only when the
+ * payload shape changes in a non-additive way.
+ */
+export const RENDER_CONTRACT_VERSION = 1;
 
 /**
  * Replay tolerance for signed payloads: a signature is rejected as `'stale'`
@@ -140,10 +159,10 @@ async function computeSignature(
 }
 
 /**
- * @internal Constant-time comparison of two hex signature strings. Compares the
- * decoded bytes; mismatched length short-circuits to `false` (after a fixed
- * cheap check) so timing does not leak the position of the first difference for
- * equal-length inputs.
+ * @internal Constant-time comparison of two hex signature strings. Compares
+ * the hex characters code-by-code with an accumulated XOR; mismatched length
+ * short-circuits to `false` so timing does not leak the position of the first
+ * difference for equal-length inputs.
  */
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) {
