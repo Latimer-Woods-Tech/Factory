@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 425,
+    "total_docs": 426,
     "canonical": 17,
-    "active": 360,
+    "active": 361,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -353,7 +353,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:daba47af3d5d6f68dd51f67512c9402dff0bdb895f8556a98de9ff70f514ee4f",
+      "content_hash": "sha256:38ef60708a9e96c8e741c2d2336fdc5c5c00ae3674da0b6025654fbe87fa7e02",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2607,7 +2607,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b2bdd24307919b78035dd5ef83db6398bcff5f2de9f42b952f3a06954f848dec",
+      "content_hash": "sha256:0d5216a34490c249db85b1ddeb000492920a6a7fb7c618f8ddec0919f082866a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2628,7 +2628,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:8f3e4d56ac75547b2942d0b59f13457a9a372008d9f2ffb49caa53abb365f049",
+      "content_hash": "sha256:dc123025842adc61622361cdb3ea5d2ae03eac5e25dbee9089469a36502603dd",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3072,6 +3072,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:a7bc504d1b6a33b99d614502f6f6ada0cee814571a492a8553adaf4d704000c4",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/digest/2026-05-30.md",
+      "title": "Morning digest — 2026-05-30",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:98d6b591eeee0ec83ee5fd43ce137aa1f775ea92f2ca21ed62a485043220d84d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6130,7 +6151,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:69779cf682c1d44f61b8b882a311229b2ad75b02dfc2ff7b5a1b628652da53bb",
+      "content_hash": "sha256:1a971c4803ff3a2b38db07c210e349f9a1d1a43e18dde255174952701be1fa8b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7537,12 +7558,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-05-25",
+      "last_updated": "2026-05-30",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b269056fd985c5990b03e8004001a6a567daae1ebfda6d2eefd94e82f04385b7",
+      "content_hash": "sha256:8a12ca69aaf68f04719c76ec84558455ae1e21770cc7ccf7ed32945d021ee7b3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7573,7 +7594,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-05-27",
+      "title": "Factory State — 2026-05-30",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7584,7 +7605,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:eee7ceccaae50932699288f6c4a4cc8b0c00b7164880ae105f5cff6dd0d2f24a",
+      "content_hash": "sha256:653987f998fe491153184015b47da31c22ca77c3acc54c057e97439b4eaa7d6c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,

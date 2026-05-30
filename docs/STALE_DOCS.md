@@ -110,6 +110,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/digest/2026-05-16.md](digest/2026-05-16.md) | active | unverified | platform | unknown | Morning digest — 2026-05-16 |
 | [docs/digest/2026-05-17.md](digest/2026-05-17.md) | active | unverified | platform | unknown | Morning digest — 2026-05-17 |
 | [docs/digest/2026-05-25.md](digest/2026-05-25.md) | active | unverified | platform | unknown | Morning digest — 2026-05-25 |
+| [docs/digest/2026-05-30.md](digest/2026-05-30.md) | active | unverified | platform | unknown | Morning digest — 2026-05-30 |
 | [docs/DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) | active | unverified | platform | unknown | Documentation Ownership & Update Cadence |
 | [docs/DOCUMENTATION_HIERARCHY.md](DOCUMENTATION_HIERARCHY.md) | active | unverified | platform | unknown | Documentation Hierarchy & Source of Truth |
 | [docs/ENVIRONMENT_VERIFICATION_SETUP.md](ENVIRONMENT_VERIFICATION_SETUP.md) | active | unverified | platform | unknown | Environment Verification Script Setup |
@@ -309,7 +310,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-27 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
