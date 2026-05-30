@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-05-29
+last_generated: 2026-05-30
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -90,6 +90,7 @@ flowchart TB
   Quality --> docs_health_yml["docs-health.yml"]
   Other --> factory_admin_ui_ci_yml["factory-admin-ui-ci.yml"]
   Other --> factory_status_dashboard_yml["factory-status-dashboard.yml"]
+  Quality --> fix_docs_health_yml["fix-docs-health.yml"]
   Reporting --> flaky_check_report_yml["flaky-check-report.yml"]
   Other --> fridge_semantic_check_yml["fridge-semantic-check.yml"]
   Other --> generate_app_lockfiles_yml["generate-app-lockfiles.yml"]

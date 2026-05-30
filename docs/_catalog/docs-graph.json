@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 416,
+    "total_docs": 426,
     "canonical": 17,
-    "active": 351,
+    "active": 361,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -353,7 +353,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1988626b10a0f43a850e4720017c54e20b2ecd44ce30fe0afccb86f622c028ec",
+      "content_hash": "sha256:38ef60708a9e96c8e741c2d2336fdc5c5c00ae3674da0b6025654fbe87fa7e02",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -374,7 +374,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2d8f71b74d3bdfd137485750d4e11c273435b04318e199381b814bb9d866aff0",
+      "content_hash": "sha256:d343ec88d2781e6c6d709b129d6378ac1e59e2adfc19bb8f3e54806264d27778",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:553ebe582da68cc422343af56646a133cc1abf9b244c56f933c126e733ecf9b5",
+      "content_hash": "sha256:192c2f0a7c86d9b04f2452370cdcceea0b0d44d8299d27a84e602ecba434218f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2607,7 +2607,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b2bdd24307919b78035dd5ef83db6398bcff5f2de9f42b952f3a06954f848dec",
+      "content_hash": "sha256:0d5216a34490c249db85b1ddeb000492920a6a7fb7c618f8ddec0919f082866a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2628,7 +2628,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:8f3e4d56ac75547b2942d0b59f13457a9a372008d9f2ffb49caa53abb365f049",
+      "content_hash": "sha256:dc123025842adc61622361cdb3ea5d2ae03eac5e25dbee9089469a36502603dd",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3080,6 +3080,27 @@
       "errors": []
     },
     {
+      "path": "docs/digest/2026-05-30.md",
+      "title": "Morning digest — 2026-05-30",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:98d6b591eeee0ec83ee5fd43ce137aa1f775ea92f2ca21ed62a485043220d84d",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/DOCS_OWNERSHIP.md",
       "title": "Documentation Ownership & Update Cadence",
       "status": "active",
@@ -3497,6 +3518,195 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:188f78eb39c48cf13c943b23edb77c64d6b8e2dfb30e7ddcddae954f4fce19ae",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/capricast.md",
+      "title": "capricast KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:dd3c0a5cd06830f2f05be2f48dbb5fe6c28cb49b49ec4e4b5a9ecd0f9a3438e6",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/coh.md",
+      "title": "coh (CypherOfHealing) KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:b680eba3f48f82aee16c73506a4d548e21f046a044e7e0527a3a3670798f090b",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/factory-apps.md",
+      "title": "Factory apps + packages KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:736b079d36ad08d1e930e55ef773985dfc3f69a66d59a7fb248483a89234ad58",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/factory-governance.md",
+      "title": "Factory governance KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:dfe6f8522d53a9c162bb323b42029f2ec7523e5ce49d8d40ad94efa323ea2a63",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/humandesign.md",
+      "title": "HumanDesign / selfprime KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:010a2c3e4c7a7037df1f2efbc20f5a1a59c77808c24407d1ea74d742aa4cbc07",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/kpis/tier1_red_time.md",
+      "title": "KPI: Tier-1 Red Time",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:38b54d5b0add2b44acde8fe0b01bcb75bf7684534662edd3227ad8e92fe15cc0",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/metrics/warden_audit.md",
+      "title": "Metric: WARDEN_AUDIT",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "audit",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4e2a00d81b1ace725894378ffcc0feb4ac5fe1fd34f58ffbd493502b31fc931c",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/README.md",
+      "title": "Governance KPIs — Ground Truth Reference",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "index",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:b99dc936ec816dd362d2892bd6b64f2ed9f9012528d10dc484acde91f9612ca3",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/kpis/xico-city.md",
+      "title": "xico-city (DJMEXXICO) KPI brief",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:119f5bb9eb216ed58e17a5071c40037e142198c81462cce30b8e2e5e2f9bf157",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -5941,7 +6151,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:69779cf682c1d44f61b8b882a311229b2ad75b02dfc2ff7b5a1b628652da53bb",
+      "content_hash": "sha256:1a971c4803ff3a2b38db07c210e349f9a1d1a43e18dde255174952701be1fa8b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7203,7 +7413,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:40068fbc52ed350840a16b071279bf814ddbb98d9a32b207c7d5a23e2b59fa4d",
+      "content_hash": "sha256:45a2d0f8c383520bfe8c2862e4bef01da1e0b5b7e4fd276ccbb677ceb2708e98",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7224,7 +7434,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f3b2da7e26f6d6b4153c5d60c803153b109862e5a83303a7913980c6d905a3e9",
+      "content_hash": "sha256:bcbba96b6e5092ee4eb039c36e26c060ba4c7ec1b4f2bfd08c3fe39a99a33c56",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7269,7 +7479,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:15fd36d05231da9b5462fb7895e6dcd1b7e18d028715b865e498b0edb1ad48c6",
+      "content_hash": "sha256:5eb93ef8a0f805506403061e76526b92596288cca070bb82e63e34e815ba5a00",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -7348,12 +7558,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-05-25",
+      "last_updated": "2026-05-30",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b269056fd985c5990b03e8004001a6a567daae1ebfda6d2eefd94e82f04385b7",
+      "content_hash": "sha256:8a12ca69aaf68f04719c76ec84558455ae1e21770cc7ccf7ed32945d021ee7b3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7384,7 +7594,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-05-27",
+      "title": "Factory State — 2026-05-30",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7395,7 +7605,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:eee7ceccaae50932699288f6c4a4cc8b0c00b7164880ae105f5cff6dd0d2f24a",
+      "content_hash": "sha256:7cf1a4cbf9d97eeae70d5df40571e35adbaa53cffe3f0ee029b2909ced503657",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
