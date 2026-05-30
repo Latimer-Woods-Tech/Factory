@@ -1301,14 +1301,19 @@ async function main() {
     (llmResult.architectural_concerns?.length ?? 0) > 0;
 
   let decision;
-  if (adminMutation) {
-    // FRIDGE rule 4 — admin mutations always need explicit CODEOWNER ✅ via branch protection.
-    // The bot still posts its verdict (APPROVE when clean, REQUEST_CHANGES when not) so the
-    // human sees the 2-party result before clicking. CODEOWNERS on billing/admin/stripe paths
-    // is @adrper79-dot only — the bot APPROVE is advisory, not the merge gate.
-    decision = hasViolations ? 'REQUEST_CHANGES' : 'APPROVE';
-  } else if (hasViolations) {
-    decision = 'REQUEST_CHANGES';
+  if (hasViolations) {
+    // Model A (solo-operator governance): the canonical reviewer is ADVISORY.
+    // It surfaces concerns as a COMMENT — the full 2-party verdict (deterministic
+    // + LLM) is still in the body for the human to see — but it NEVER posts
+    // REQUEST_CHANGES. A required-CODEOWNER bot that also hard-blocks on
+    // hallucinated "violations" (e.g. flagging marketing copy or a Node build
+    // script as Worker constraint breaches) traps a solo operator who cannot
+    // self-approve. The real merge gates remain: required status checks
+    // (validate / Analyze / dependency-review), CODEOWNERS, and — for the
+    // high-risk paths — the operator's own deliberate admin-merge.
+    // FRIDGE rule 4 (admin-mutation visibility) is preserved: the verdict is
+    // still posted; it is informational, not a block.
+    decision = 'COMMENT';
   } else {
     decision = 'APPROVE';
   }
