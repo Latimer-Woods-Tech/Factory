@@ -31,6 +31,7 @@ export type {
 export {
   RENDER_HMAC_SECRET_NAME,
   RENDER_REPLAY_TOLERANCE_SECONDS,
+  RENDER_CONTRACT_VERSION,
   signRenderPayload,
   verifyRenderSignature,
 } from './render-contract.js';

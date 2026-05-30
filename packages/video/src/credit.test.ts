@@ -18,7 +18,7 @@ const POLICY: CreditPolicy = {
     narrated_stills: 1,
   },
   tierGrants: { free: 0, plus: 50, pro: 200 },
-  rolloverCap: 200,
+  rolloverCap: { free: 0, plus: 50, pro: 200 },
 };
 
 describe('costFn', () => {
