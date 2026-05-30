@@ -2,8 +2,8 @@
   "repo_key": "CH",
   "repo_name": "cypher-healing",
   "repo_path": "Latimer-Woods-Tech/coh",
-  "timestamp": "2026-05-27T08:51:56.701250+00:00",
-  "cohesion": 40,
+  "timestamp": "2026-05-30T08:00:54.521245+00:00",
+  "cohesion": 49,
   "dimensions": [
     {
       "key": "stack",
@@ -61,12 +61,12 @@
         },
         {
           "name": "No console.log in src/",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Typed Env bindings",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -108,16 +108,16 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 0,
+      "score": 60,
       "checks": [
         {
           "name": "Sentry import",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -132,7 +132,7 @@
         },
         {
           "name": "Structured log fields",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -141,7 +141,7 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 20,
+      "score": 40,
       "checks": [
         {
           "name": "CodeQL workflow present",
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
