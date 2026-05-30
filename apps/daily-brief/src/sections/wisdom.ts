@@ -70,7 +70,7 @@ export async function fetchWisdomSection(env: Env): Promise<WisdomSection> {
       VERTEX_PROJECT: env.VERTEX_PROJECT,
       VERTEX_LOCATION: env.VERTEX_LOCATION,
     },
-    { tier: 'fast', temperature: 0.85, maxTokens: 600 },
+    { tier: 'fast', temperature: 0.85, maxTokens: 600, maxCostUsd: 0.05, project: 'daily-brief', actor: 'worker', workload: 'wisdom' },
   );
 
   if (result.error || !result.data?.content) {

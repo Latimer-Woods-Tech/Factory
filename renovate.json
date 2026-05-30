@@ -6,7 +6,7 @@
     ":dependencyDashboard"
   ],
   "schedule": [
-    "before 6am on monday"
+    "every weekend"
   ],
   "packageRules": [
     {
@@ -36,8 +36,13 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "matchPackagePatterns": ["^@cloudflare/", "^wrangler$"],
+      "groupName": "cloudflare workers runtime",
+      "schedule": ["every weekend"]
     }
   ],
-  "prHourlyLimit": 4,
-  "prConcurrentLimit": 10
+  "prHourlyLimit": 8,
+  "prConcurrentLimit": 15
 }

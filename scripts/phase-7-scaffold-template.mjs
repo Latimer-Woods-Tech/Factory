@@ -146,6 +146,33 @@ function cloneAppRepo(appName) {
 }
 
 /**
+ * Step 2b: Write .github/dependabot.yml for the newly cloned repo
+ */
+function writeDependabotConfig(appName) {
+  console.log(`2b️⃣  Writing .github/dependabot.yml...\n`);
+
+  const cwd = path.join(process.cwd(), appName);
+  const githubDir = path.join(cwd, '.github');
+  if (!fs.existsSync(githubDir)) fs.mkdirSync(githubDir, { recursive: true });
+
+  const templatePath = path.join(__dirname, '../docs/templates/dependabot.yml');
+  const destPath = path.join(githubDir, 'dependabot.yml');
+
+  if (fs.existsSync(destPath)) {
+    console.log(`  ℹ️  .github/dependabot.yml already exists, skipping\n`);
+    return;
+  }
+
+  if (!fs.existsSync(templatePath)) {
+    console.warn(`  ⚠️  Template not found at ${templatePath}, skipping\n`);
+    return;
+  }
+
+  fs.copyFileSync(templatePath, destPath);
+  console.log(`✅ .github/dependabot.yml written\n`);
+}
+
+/**
  * Step 3: Install app-specific packages
  */
 function installPackages(appName) {
@@ -659,6 +686,7 @@ Prerequisites:
   }
 
   cloneAppRepo(appName);
+  writeDependabotConfig(appName);
   installPackages(appName);
   writeSchema(appName);
   runMigrations(appName);

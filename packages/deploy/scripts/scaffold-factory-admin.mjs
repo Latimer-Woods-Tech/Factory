@@ -75,7 +75,7 @@ function write(relPath, content) {
 write('wrangler.jsonc', JSON.stringify({
   name: 'factory-admin',
   main: 'src/index.ts',
-  compatibility_date: '2025-04-01',
+  compatibility_date: '2026-05-01',
   compatibility_flags: ['nodejs_compat'],
   hyperdrive: [
     { binding: 'FACTORY_CORE_DB', id: HYPERDRIVE.FACTORY_CORE },

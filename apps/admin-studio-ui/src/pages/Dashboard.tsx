@@ -22,6 +22,8 @@ import {
   ShieldCheck,
   Users,
   LayoutGrid,
+  AlertTriangle,
+  GitBranch,
   Menu,
   X
 } from 'lucide-react';
@@ -38,6 +40,8 @@ const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').the
 const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
 const CouncilTab = lazy(() => import('./tabs/CouncilTab.js').then(m => ({ default: m.CouncilTab })));
 const AppsTab = lazy(() => import('./tabs/AppsTab.js').then(m => ({ default: m.AppsTab })));
+const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
+const GraphComposerTab = lazy(() => import('./tabs/GraphComposerTab.js').then(m => ({ default: m.GraphComposerTab })));
 
 const TABS = [
   { to: '/overview',  label: 'Overview', icon: LayoutDashboard },
@@ -52,6 +56,8 @@ const TABS = [
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
   { to: '/council',   label: 'Council', icon: Users },
   { to: '/apps',      label: 'Apps', icon: LayoutGrid },
+  { to: '/command-center', label: 'Command Center', icon: AlertTriangle },
+  { to: '/graph-composer', label: 'Graph Composer', icon: GitBranch },
 ];
 
 // Mobile bottom nav shows first 4 tabs, rest go in "More"
@@ -122,6 +128,8 @@ export function Dashboard() {
               <Route path="/audit" element={<AuditTab />} />
               <Route path="/council" element={<CouncilTab />} />
               <Route path="/apps" element={<AppsTab />} />
+              <Route path="/command-center" element={<CommandCenterTab />} />
+              <Route path="/graph-composer" element={<GraphComposerTab />} />
             </Routes>
           </Suspense>
         </main>

@@ -118,6 +118,7 @@ async function generateReading(
     {
       tier: 'balanced',
       maxTokens: 300,
+      maxCostUsd: 0.05,
       temperature: 0.8,
       runId: requestId,
       project: 'inbound-oracle',
@@ -126,7 +127,7 @@ async function generateReading(
   );
 
   if (result.error || !result.data) {
-    throw new Error(`LLM completion failed: ${result.error.message}`);
+    throw new Error(`LLM completion failed: ${result.error?.message ?? 'missing response data'}`);
   }
 
   return result.data!.content.trim();

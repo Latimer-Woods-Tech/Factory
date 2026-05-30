@@ -121,7 +121,7 @@
       "additionalProperties": false,
       "properties": {
         "menuVisible": { "type": "boolean" },
-        "approvalTier": { "type": "string" },
+        "approvalTier": { "type": "string", "enum": ["golden", "supported", "experimental"] },
         "requiredCapabilities": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },

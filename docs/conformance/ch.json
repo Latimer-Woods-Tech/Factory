@@ -2,8 +2,8 @@
   "repo_key": "CH",
   "repo_name": "cypher-healing",
   "repo_path": "Latimer-Woods-Tech/coh",
-  "timestamp": "2026-05-25T09:09:44.757998+00:00",
-  "cohesion": 37,
+  "timestamp": "2026-05-30T08:00:54.521245+00:00",
+  "cohesion": 49,
   "dimensions": [
     {
       "key": "stack",
@@ -61,12 +61,12 @@
         },
         {
           "name": "No console.log in src/",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Typed Env bindings",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -108,16 +108,16 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 0,
+      "score": 60,
       "checks": [
         {
           "name": "Sentry import",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -132,7 +132,7 @@
         },
         {
           "name": "Structured log fields",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -141,7 +141,7 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 20,
+      "score": 40,
       "checks": [
         {
           "name": "CodeQL workflow present",
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -174,7 +174,7 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 33,
+      "score": 67,
       "checks": [
         {
           "name": "Migrations directory present",
@@ -182,9 +182,9 @@
           "detail": ""
         },
         {
-          "name": "ROLLBACK block in sample",
-          "passed": false,
-          "detail": ""
+          "name": "ROLLBACK block enforced",
+          "passed": true,
+          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): src/db/migrations/add-product-images.sql"
         },
         {
           "name": "Numbered file naming",
@@ -266,7 +266,7 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 0,
+      "score": 25,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
@@ -281,6 +281,11 @@
         {
           "name": "DSR endpoint hints (export + delete)",
           "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Migration PII columns documented",
+          "passed": true,
           "detail": ""
         }
       ]

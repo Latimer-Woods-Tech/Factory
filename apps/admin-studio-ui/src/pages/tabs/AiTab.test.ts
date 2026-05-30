@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLiveRegionFlushDelayMs, isNearBottom } from './AiTab.js';
+import { STRATEGIES, getLiveRegionFlushDelayMs, isNearBottom } from './AiTab.js';
 
 describe('AiTab accessibility helpers', () => {
   it('treats chat as sticky when user is within 64px of bottom', () => {
@@ -11,5 +11,13 @@ describe('AiTab accessibility helpers', () => {
     expect(getLiveRegionFlushDelayMs(0, 0)).toBe(1000);
     expect(getLiveRegionFlushDelayMs(1000, 1500)).toBe(500);
     expect(getLiveRegionFlushDelayMs(1000, 2200)).toBe(0);
+  });
+
+  it('exposes Workbench as the DeepSeek ticket/backlog strategy', () => {
+    expect(STRATEGIES).toContainEqual({
+      id: 'workbench',
+      label: 'Workbench',
+      hint: 'DeepSeek-oriented ticket and backlog drafting',
+    });
   });
 });

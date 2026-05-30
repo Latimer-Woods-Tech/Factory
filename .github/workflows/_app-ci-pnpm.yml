@@ -8,7 +8,7 @@
 #   Authenticates to GitHub Packages so private @latimer-woods-tech/* deps resolve.
 #
 # WHO CALLS IT
-#   App repos that use pnpm. Currently: videoking.
+#   App repos that use pnpm. Currently: capricast (formerly videoking).
 #   Use _app-ci.yml for npm-based apps.
 #
 # HOW TO CALL
@@ -86,18 +86,18 @@ jobs:
       run:
         working-directory: ${{ inputs.working_directory }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6
         with:
           version: ${{ inputs.pnpm_version }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ inputs.node_version }}
           registry-url: 'https://npm.pkg.github.com'
@@ -120,7 +120,7 @@ jobs:
         env:
           GITHUB_WORKFLOW_REF: ${{ github.workflow_ref }}
       - name: Checkout factory validation scripts
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: Latimer-Woods-Tech/factory
           ref: ${{ steps.factory-ref.outputs.ref }}

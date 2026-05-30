@@ -35,8 +35,8 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     label: 'Admin Studio',
     productionWorkerName: 'admin-studio-production',
     stagingWorkerName: 'admin-studio-staging',
-    productionCustomDomain: 'admin.latwoodtech.work',
-    stagingCustomDomain: 'admin-staging.latwoodtech.work',
+    productionCustomDomain: 'api.apunlimited.com',
+    stagingCustomDomain: 'api.admin.latimerwoods.dev',
   },
   {
     id: 'prime-self',
@@ -60,6 +60,7 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     productionWorkerName: 'video-cron',
     // No distinct staging worker is currently registry-backed for video-cron.
     stagingWorkerName: 'video-cron',
+    productionCustomDomain: 'video-cron.latwoodtech.work',
   },
   {
     id: 'capricast-api',

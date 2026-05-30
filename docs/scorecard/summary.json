@@ -1,32 +1,32 @@
 {
-  "generated": "2026-05-18T11:31:21.390416+00:00",
-  "date": "2026-05-18",
-  "org_composite": 22.8,
+  "generated": "2026-05-30T09:31:07.025679+00:00",
+  "date": "2026-05-30",
+  "org_composite": 65.8,
   "apps": [
     {
       "repo_key": "HD",
       "repo_name": "HumanDesign",
-      "composite": 52.3
+      "composite": 35.3
     },
     {
       "repo_key": "CC",
       "repo_name": "capricast",
-      "composite": 16.0
+      "composite": 28.0
     },
     {
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
-      "composite": 19.3
+      "composite": 41.3
     },
     {
       "repo_key": "CH",
       "repo_name": "cypher-healing",
-      "composite": 16.7
+      "composite": 26.7
     },
     {
       "repo_key": "XC",
       "repo_name": "xico-city",
-      "composite": 34.7
+      "composite": 34.0
     }
   ]
 }

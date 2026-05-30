@@ -2,7 +2,7 @@
   "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
   "name": "synthetic-monitor",
   "main": "src/index.ts",
-  "compatibility_date": "2025-01-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": [
     "nodejs_compat"
   ],
@@ -32,7 +32,7 @@
   ],
   "vars": {
     "ENVIRONMENT": "development",
-    "TARGETS_JSON": "[{\"id\":\"admin-studio.production.health\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane-prod\",\"url\":\"https://admin.latwoodtech.work/health\",\"expectedStatus\":200,\"contains\":\"ok\"}]"
+    "TARGETS_JSON": "[{\"id\":\"admin-studio.production.health\",\"url\":\"https://api.apunlimited.com/health\",\"expectedStatus\":200,\"contains\":\"ok\"},{\"id\":\"slo.journey.operator-plane-prod\",\"url\":\"https://api.apunlimited.com/health\",\"expectedStatus\":200,\"contains\":\"ok\"}]"
   },
   "env": {
     "production": {

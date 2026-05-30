@@ -27,6 +27,7 @@ import { auditMiddleware } from './middleware/audit.js';
 import auth from './routes/auth.js';
 import { runAnalysisCycle } from './routes/ai.js';
 import { runDigest } from './digest/index.js';
+import { runDriftCheck } from './scheduled.js';
 import me from './routes/me.js';
 import tests from './routes/tests.js';
 import deploy from './routes/deploy.js';
@@ -53,6 +54,8 @@ import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.j
 import dsr from './routes/dsr.js';
 import privacy from './routes/privacy.js';
 import { flagship } from './routes/flagship.js';
+import blocking from './routes/blocking.js';
+import commandCenter from './routes/command-center.js';
 
 const app = new Hono<AppEnv>();
 
@@ -172,6 +175,8 @@ app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
 app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
+app.use('/v1/blocking/*', envContextMiddleware());
+app.use('/v1/command-center/*', envContextMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -195,6 +200,8 @@ app.route('/api/admin/payouts', payouts);
 app.route('/dsr', dsr);
 app.route('/privacy', privacy);
 app.route('/api/flags', flagship);
+app.route('/v1/blocking', blocking);
+app.route('/v1/command-center', commandCenter);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
@@ -230,6 +237,9 @@ app.notFound((c) =>
 /** Cron expressions that fire the digest (UTC): 06:30 ET and 18:30 ET */
 const DIGEST_CRONS = new Set(['30 10 * * *', '30 22 * * *']);
 
+/** Cron that fires the drift check (every 6 h). */
+const DRIFT_CHECK_CRONS = new Set(['0 */6 * * *']);
+
 export default {
   fetch: app.fetch,
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
@@ -239,6 +249,11 @@ export default {
     // Run the digest only on the 10:30 UTC and 22:30 UTC crons
     if (DIGEST_CRONS.has(controller.cron)) {
       ctx.waitUntil(runDigest(env));
+    }
+
+    // Run the capability drift check every 6 h
+    if (DRIFT_CHECK_CRONS.has(controller.cron)) {
+      ctx.waitUntil(runDriftCheck(env));
     }
   },
 } satisfies ExportedHandler<Env>;

@@ -26,13 +26,11 @@ npm run build-storybook
 Deployed via Cloudflare Pages — `dist/` is uploaded by the GitHub Actions workflow at [`.github/workflows/deploy-admin-studio-ui.yml`](../../.github/workflows/deploy-admin-studio-ui.yml).
 
 ```
-staging:    https://staging.admin-studio-ui.pages.dev
-production: https://studio.thefactory.dev
-alternate:  https://apunlimited.com
+staging:    https://staging.admin.latimerwoods.dev
+production: https://apunlimited.com
 ```
 
-The staging Pages URL above is the currently verified live staging surface.
-The production custom domain remains the intended production target.
+The branded staging and production URLs above are the canonical operator surfaces.
 
 Storybook visual regression is enforced by Chromatic in
 `.github/workflows/factory-admin-ui-ci.yml` and Storybook static output is
@@ -59,7 +57,7 @@ include an `/api` prefix.
 | Var | Purpose | Value (hardcoded in `deploy-admin-studio-ui.yml`) |
 |-----|---------|---------------------------------------------------|
 | `VITE_API_BASE_LOCAL` | Local dev backend | `http://localhost:8787` |
-| `VITE_API_BASE_STAGING` | Staging backend (custom domain) | `https://admin-staging.latwoodtech.work` |
+| `VITE_API_BASE_STAGING` | Staging backend (custom domain) | `https://api.admin.latimerwoods.dev` |
 | `VITE_API_BASE_PROD` | Production backend | `https://api.apunlimited.com` |
 
 At runtime, `lib/api.ts::getApiBase()` selects the correct base from the active session

@@ -4,9 +4,13 @@
 
 ## New to Factory? Start Here
 
-1. **[IMPLEMENTATION_MASTER_INDEX.md](IMPLEMENTATION_MASTER_INDEX.md)** — The single entry point for all docs. Tells you where to find what you need.
-2. **[Getting Started](runbooks/getting-started.md)** — Set up local development in 5 minutes
-3. **[CLAUDE.md](../CLAUDE.md)** — Standing Orders and Hard Constraints (read this before you code)
+1. **[DOCS_TRUTH_AND_GUARDRAILS.md](DOCS_TRUTH_AND_GUARDRAILS.md)** — How to decide what is current, verified, historical, or unsafe to cite.
+2. **[Documentation Catalog](CATALOG.md)** — Generated inventory of canonical, active, archive, and generated docs.
+3. **[Documentation Debt Index](_catalog/debt-index.md)** — Generated cleanup queue for drift and broken links, grouped by owner.
+4. **[Documentation Control Plane Deployment Plan](runbooks/docs-control-plane-deployment.md)** — How the self-managed catalog, drift, diagram, and verification layer works.
+5. **[CLAUDE.md](../CLAUDE.md)** — Standing Orders and Hard Constraints (read this before you code).
+6. **[Getting Started](runbooks/getting-started.md)** — Set up local development.
+7. **[IMPLEMENTATION_MASTER_INDEX.md](IMPLEMENTATION_MASTER_INDEX.md)** — Historical navigation hub; verify links and status before relying on it.
 
 ## For Different Roles
 
@@ -68,6 +72,11 @@
 
 ### Reference
 - [IMPLEMENTATION_MASTER_INDEX.md](IMPLEMENTATION_MASTER_INDEX.md) — Master navigation
+- [DOCS_TRUTH_AND_GUARDRAILS.md](DOCS_TRUTH_AND_GUARDRAILS.md) — Source-of-truth order and anti-hallucination rules
+- [Documentation Catalog](CATALOG.md) — Generated status, owner, fidelity, and freshness index
+- [Canonical Docs](CANONICAL_DOCS.md) — Generated allowlisted trusted-doc view
+- [Documentation Debt Index](_catalog/debt-index.md) — Generated owner-routed cleanup queue
+- [Documentation Control Plane Deployment Plan](runbooks/docs-control-plane-deployment.md) — Rollout plan for generated catalog, docs graph, drift detection, and diagram contracts
 - [DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) — Who owns each doc, update cadence
 - [App README Template](APP_README_TEMPLATE.md)
 - [ENVIRONMENT_VERIFICATION_SETUP.md](ENVIRONMENT_VERIFICATION_SETUP.md)
@@ -87,12 +96,13 @@ Examples:
 
 ## Keeping Docs Fresh
 
-See [DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) for:
+See [DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) and [DOCS_TRUTH_AND_GUARDRAILS.md](DOCS_TRUTH_AND_GUARDRAILS.md) for:
 - Who owns each doc
 - How often it gets reviewed
 - How to propose changes
+- What evidence is required before a doc can claim current system state
 
-Each doc has a "Last Updated" date at the top so you can see how current it is.
+Dates are useful signals, but they are not proof. For service names, URLs, workflow behavior, package counts, and deployment status, prefer executable evidence and registry-backed validation over prose.
 
 ---
 

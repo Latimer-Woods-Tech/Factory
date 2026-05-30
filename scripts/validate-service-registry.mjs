@@ -50,6 +50,16 @@ const WORKFLOW_RULES = [
     targets: [{ id: 'schedule-worker', key: 'default' }],
   },
   {
+    path: '.github/workflows/deploy-factory-cross-repo.yml',
+    section: 'workers',
+    verifier: 'curl -s -o /dev/null',
+    matchMode: 'base-url',
+    targets: [
+      { id: 'factory-cross-repo', key: 'staging' },
+      { id: 'factory-cross-repo', key: 'production' },
+    ],
+  },
+  {
     path: '.github/workflows/deploy-status-prober.yml',
     section: 'workers',
     verifier: 'verify-http-endpoint.mjs',
@@ -82,6 +92,18 @@ const WORKFLOW_RULES = [
     section: 'workers',
     verifier: 'verify-http-endpoint.mjs',
     targets: [{ id: 'webhook-fanout', key: 'default' }],
+  },
+  {
+    path: '.github/workflows/deploy-factory-core-api.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'factory-core-api', key: 'default' }],
+  },
+  {
+    path: '.github/workflows/deploy-qa-tools-worker.yml',
+    section: 'workers',
+    verifier: 'verify-http-endpoint.mjs',
+    targets: [{ id: 'qa-tools-worker', key: 'default' }],
   },
 ];
 
@@ -158,6 +180,19 @@ const EXPLICIT_EXEMPTIONS = new Map([
   // for both Workers in a dedicated PR.
   ['.github/workflows/deploy-inbound-oracle.yml', 'inbound-oracle Worker — pending service-registry registration'],
   ['.github/workflows/deploy-linkedin-publisher.yml', 'linkedin-publisher Worker — pending service-registry registration'],
+  // Cron-only Worker (workers_dev:false, no public route) — fires */15 to replay
+  // failed derivations. No HTTP verifier step by design, so it cannot use a
+  // URL-based WORKFLOW_RULES entry; the registry entry documents the cron contract.
+  ['.github/workflows/deploy-factory-events-replay.yml', 'factory-events-replay — cron-only Worker, no public route to verify'],
+  // Internal engineering dashboard deployed via _app-deploy-pages.yml reusable workflow.
+  // No custom domain attached in Phase 1 (health_url is empty in the deploy workflow).
+  // Full verification coverage will be added when the domain is provisioned.
+  ['.github/workflows/deploy-qa-tools-ui.yml', 'qa-tools-ui — internal Pages app, no health_url in Phase 1 deploy; pending domain attachment'],
+  // Developer Index Pages site at dev.latimerwoods.dev. Self-verifies via curl
+  // marker check in the deploy workflow itself rather than the standard
+  // verify-http-endpoint.mjs path, so WORKFLOW_RULES coverage would be
+  // redundant. Registry entry: latimerwoods-dev (pages section).
+  ['.github/workflows/deploy-latimerwoods-dev.yml', 'latimerwoods-dev — Pages site self-verifies inline; no per-target verifier needed'],
 ]);
 
 const registry = await loadRegistry(REGISTRY_PATH);

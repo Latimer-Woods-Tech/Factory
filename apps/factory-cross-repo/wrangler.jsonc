@@ -1,0 +1,23 @@
+{
+  "name": "factory-cross-repo",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+
+  // Required secrets (injected by deploy-factory-cross-repo.yml from GitHub repo secrets):
+  //   FACTORY_CROSS_REPO_TOKEN    — Bearer token supervisor uses to authenticate calls here
+  //   FACTORY_APP_ID              — GitHub App numeric ID
+  //   FACTORY_APP_PRIVATE_KEY     — GitHub App RSA private key PEM
+  //   FACTORY_APP_INSTALLATION_ID — GitHub App installation ID for Latimer-Woods-Tech org
+
+  "env": {
+    "production": {
+      "workers_dev": false,
+      "routes": [
+        { "pattern": "factory-cross-repo.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
+      ]
+    }
+  }
+}
+

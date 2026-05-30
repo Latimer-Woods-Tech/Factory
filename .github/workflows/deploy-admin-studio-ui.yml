@@ -64,11 +64,11 @@ jobs:
           # Worker mounts routes at /auth, /synthetic, /ai, etc. — no /api prefix, so do NOT append one here.
           # Staging custom domain attached via apps/admin-studio/wrangler.jsonc env.staging.routes.
           VITE_API_BASE_LOCAL: "http://localhost:8787"
-          VITE_API_BASE_STAGING: "https://admin-staging.latwoodtech.work"
+          VITE_API_BASE_STAGING: "https://api.admin.latimerwoods.dev"
           VITE_API_BASE_PROD: "https://api.apunlimited.com"
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
@@ -81,7 +81,7 @@ jobs:
           if [ "$is_prod" = "true" ] || [ "$target_env" = "production" ]; then
             url="https://apunlimited.com"
           else
-            url="https://staging.admin-studio-ui.pages.dev"
+            url="https://staging.admin.latimerwoods.dev"
           fi
           node scripts/verify-http-endpoint.mjs \
             --url "$url" \

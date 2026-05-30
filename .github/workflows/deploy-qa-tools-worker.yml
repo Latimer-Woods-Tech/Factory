@@ -1,0 +1,187 @@
+name: Deploy QA Tools Worker
+
+# Deploys qa-tools-worker to Cloudflare Workers (production) on every push
+# to main when worker code or its local package deps change.
+#
+# Secrets sourced from GCP Secret Manager via WIF (same pattern as all
+# other Factory workers). See docs/runbooks/github-secrets-and-tokens.md.
+#
+# PRE-DEPLOY CHECKLIST (one-time provisioning, not automated here):
+#   1. wrangler hyperdrive create qa-tools-hyperdrive --connection-string "$NEON_CONNECTION_STRING"
+#      → replace REPLACE_WITH_REAL_HYPERDRIVE_UUID in wrangler.jsonc
+#   2. wrangler kv namespace create QA_RATE_LIMIT_KV
+#      → replace REPLACE_WITH_REAL_KV_NAMESPACE_ID in wrangler.jsonc
+#   3. wrangler r2 bucket create qa-tools
+#   4. Add secrets to GCP Secret Manager (factory-495015):
+#      QA_TOOLS_JWT_SECRET, BROWSER_AGENT_SA_KEY, BROWSER_AGENT_URL,
+#      BROWSER_AGENT_AUDIENCE, GITHUB_QA_TOKEN, SLACK_QA_WEBHOOK_URL.
+#      Operator auth intentionally reuses the Admin Studio credential policy:
+#      ADMIN_STUDIO_GOOGLE_CLIENT_ID, ADMIN_STUDIO_ALLOWED_USERS_JSON,
+#      FACTORY_USER, and FACTORY_PW.
+#
+# See: docs/architecture/QA_TOOLS_ARCHITECTURE.md §9.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/qa-tools-worker/**'
+      - 'packages/browser/**'
+      - 'packages/errors/**'
+      - 'packages/logger/**'
+      - 'packages/monitoring/**'
+      - '.github/workflows/deploy-qa-tools-worker.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+  id-token: write   # Required for WIF → GCP Secret Manager
+
+concurrency:
+  group: deploy-qa-tools-worker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy qa-tools-worker to Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # QA Tools must share the same operator credential policy as AP Unlimited /
+    # Admin Studio. The Google allowlist + break-glass secrets live on the
+    # admin-studio-production GitHub Environment; the Worker still deploys to
+    # the Cloudflare `production` env below.
+    environment: admin-studio-production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      # Authenticate with GCP to fetch secrets from Secret Manager
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env QA_TOOLS_JWT_SECRET   QA_TOOLS_JWT_SECRET
+          fetch_to_env BROWSER_AGENT_SA_KEY  BROWSER_AGENT_SA_KEY
+          fetch_to_env BROWSER_AGENT_URL     BROWSER_AGENT_URL
+          fetch_to_env BROWSER_AGENT_AUDIENCE BROWSER_AGENT_AUDIENCE
+          fetch_to_env GITHUB_QA_TOKEN       GITHUB_QA_TOKEN       FACTORY_GH_PAT
+          fetch_to_env SLACK_QA_WEBHOOK_URL  SLACK_WEBHOOK_OPS
+        env:
+          GCP_PROJECT_ID: factory-495015
+
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for pkg in errors monitoring logger browser; do
+            echo "=== ${pkg} ==="
+            cd "packages/${pkg}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install worker dependencies
+        working-directory: apps/qa-tools-worker
+        run: npm install
+
+      - name: Substitute Hyperdrive and KV IDs
+        working-directory: apps/qa-tools-worker
+        run: |
+          set -euo pipefail
+          sed -i "s/REPLACE_WITH_REAL_HYPERDRIVE_UUID/${{ secrets.HYPERDRIVE_QA_TOOLS }}/g" wrangler.jsonc
+          sed -i "s/REPLACE_WITH_REAL_KV_NAMESPACE_ID/${{ secrets.KV_QA_RATE_LIMIT }}/g" wrangler.jsonc
+          echo "✅ Substituted Hyperdrive and KV IDs"
+
+      - name: Provision secrets and deploy
+        working-directory: apps/qa-tools-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          # Phase 2: encryption key sourced from GitHub secret as primary fallback.
+          # Once GCP Secret Manager has QA_TOOLS_ENCRYPT_KEY, the GCP fetch step above
+          # will overwrite this value (GCP is authoritative long-term).
+          QA_TOOLS_ENCRYPT_KEY: ${{ secrets.QA_TOOLS_ENCRYPT_KEY }}
+          SECRET_FACTORY_USER: ${{ secrets.FACTORY_USER }}
+          SECRET_FACTORY_PW: ${{ secrets.FACTORY_PW }}
+          SECRET_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
+          SECRET_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
+        run: |
+          set -euo pipefail
+
+          # Required secrets (loaded from GCP Secret Manager via fetch_gcp_secrets.sh)
+          printf '%s' "${QA_TOOLS_JWT_SECRET}"    | npx wrangler secret put QA_TOOLS_JWT_SECRET    --env production
+          printf '%s' "${BROWSER_AGENT_SA_KEY}"   | npx wrangler secret put BROWSER_AGENT_SA_KEY   --env production
+          printf '%s' "${BROWSER_AGENT_URL}"      | npx wrangler secret put BROWSER_AGENT_URL      --env production
+          printf '%s' "${BROWSER_AGENT_AUDIENCE}" | npx wrangler secret put BROWSER_AGENT_AUDIENCE --env production
+
+          if [ -z "${SECRET_FACTORY_USER}" ] || [ -z "${SECRET_FACTORY_PW}" ]; then
+            echo "::error::FACTORY_USER and FACTORY_PW are required for QA Tools break-glass auth"
+            exit 1
+          fi
+          if [ -z "${SECRET_GOOGLE_CLIENT_ID}" ] || [ -z "${SECRET_ALLOWED_USERS_JSON}" ]; then
+            echo "::error::ADMIN_STUDIO_GOOGLE_CLIENT_ID and ADMIN_STUDIO_ALLOWED_USERS_JSON are required for QA Tools Google auth"
+            exit 1
+          fi
+
+          password_hash=$(printf '%s' "${SECRET_FACTORY_PW}" | sha256sum | cut -d' ' -f1)
+          printf '%s' "${SECRET_FACTORY_USER}"      | npx wrangler secret put QA_TOOLS_ADMIN_EMAIL --env production
+          printf '%s' "${password_hash}"             | npx wrangler secret put QA_TOOLS_ADMIN_PASSWORD_SHA256 --env production
+          printf '%s' "${SECRET_GOOGLE_CLIENT_ID}"   | npx wrangler secret put GOOGLE_CLIENT_ID --env production
+          printf '%s' "${SECRET_ALLOWED_USERS_JSON}" | npx wrangler secret put QA_TOOLS_ALLOWED_USERS_JSON --env production
+
+          # Optional secrets (fail gracefully if not set)
+          if [ -n "${GITHUB_QA_TOKEN:-}" ]; then
+            printf '%s' "${GITHUB_QA_TOKEN}" | npx wrangler secret put GITHUB_QA_TOKEN --env production
+          fi
+          if [ -n "${SLACK_QA_WEBHOOK_URL:-}" ]; then
+            printf '%s' "${SLACK_QA_WEBHOOK_URL}" | npx wrangler secret put SLACK_QA_WEBHOOK_URL --env production
+          fi
+          if [ -n "${SENTRY_DSN:-}" ]; then
+            printf '%s' "${SENTRY_DSN}" | npx wrangler secret put SENTRY_DSN --env production
+          fi
+
+          # Deploy
+          npx wrangler deploy --env production
+
+      - name: Verify deployment (workers.dev — always reachable post-deploy)
+        run: |
+          echo "🚀 Deployment complete"
+          echo "📍 Primary health check (workers.dev fallback)"
+          node scripts/verify-http-endpoint.mjs \
+            --url https://qa-tools-worker.adrper79.workers.dev/health \
+            --status 200 \
+            --json-field status \
+            --json-equals ok \
+            --retries 8 \
+            --delay-ms 5000
+
+      - name: Verify api.qa.latimerwoods.dev (best-effort)
+        continue-on-error: true
+        run: |
+          # Custom domain DNS + edge cert provisioning can take 1-3 minutes (or
+          # longer for first attach). Best-effort during the cert window;
+          # promote to primary once we observe sustained 200s.
+          echo "📍 Best-effort health check (custom domain)"
+          node scripts/verify-http-endpoint.mjs \
+            --url https://api.qa.latimerwoods.dev/health \
+            --status 200 \
+            --json-field status \
+            --json-equals ok \
+            --retries 6 \
+            --delay-ms 10000 \
+            || echo "::warning::api.qa.latimerwoods.dev not 200 — likely cert/DNS still propagating on first attach."

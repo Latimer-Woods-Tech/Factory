@@ -1,65 +1,113 @@
-app: factory-admin
-repo: Latimer-Woods-Tech/factory
-base_url: https://admin-studio.adrper79.workers.dev
-auth: admin_jwt
-supervisor_access: approved
-tiers_allowed: [green, yellow, red]
+# capabilities.yml — admin-studio-production (P2.17)
+# Schema: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §3.1.1
+# Validated by: .github/workflows/_app-capability-lint.yml (P2.16)
+#
+# Note: id matches service-registry.yml entry `admin-studio-production`.
+# The admin studio is Factory's internal operator console; all routes that
+# mutate production systems require red-tier + codeowner OOB.
+#
+# supervisor_access tiers:
+#   green   — supervisor may call without human review
+#   yellow  — supervisor may call; human confirms before execution
+#   red     — human must explicitly approve; supervisor may only plan, not execute
+#   denied  — never callable by supervisor
 
-capabilities:
-  - id: health.check
-    desc: "Admin-studio liveness check."
-    route: GET /health
+version: 1
+app:
+  id: admin-studio-production
+  name: "factory-admin-studio"
+  repo: Latimer-Woods-Tech/factory
+  custom_domain: api.apunlimited.com
+  product_tier: internal
+
+routes:
+  # ── Health / telemetry ────────────────────────────────────────────────────────
+  - path: /health
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
 
-  - id: deploys.list
-    desc: "List recent Cloudflare Worker deployments across all apps."
-    route: GET /deploys
+  - path: /v1/health
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  # ── Blocking gates (read) ─────────────────────────────────────────────────────
+  - path: /v1/blocking
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
     params_schema:
-      limit: { type: integer, min: 1, max: 50 }
-    side_effects: none
-    required_scope: supervisor.readonly
-
-  - id: deploys.trigger
-    desc: "Dispatch a workflow_dispatch to re-deploy an app. Only for Green-tier deploys (docs-only). Red-tier deploys require human."
-    route: POST /deploys
-    body_schema:
-      app: { type: enum, values: [humandesign, videoking, xico-city, factory-admin] }
-      ref: { type: string, validator: "^[a-zA-Z0-9/_\\-\\.]{1,100}$" }
-      env: { type: enum, values: [staging] }
-    idempotency_key: "app + ref + env"
-    side_effects: write-external
-    reversibility: reversible-with-effort
-    required_scope: supervisor.mutator-deploy
-    extra_guard: requires_codeowner_approval
-
-  - id: observability.summary
-    desc: "Fetch cross-app Sentry error rates and synthetic monitor status."
-    route: GET /observability
-    side_effects: none
-    required_scope: supervisor.readonly
-
-  - id: audit.list
-    desc: "Fetch recent studio audit log entries."
-    route: GET /audit
-    params_schema:
-      limit: { type: integer, min: 1, max: 100 }
       app: { type: string, validator: "^[a-z\\-]{3,40}$", optional: true }
-    side_effects: none
-    required_scope: supervisor.readonly
+      limit: { type: integer, min: 1, max: 100, optional: true }
 
-  - id: catalog.list
-    desc: "List function_catalog entries for an app."
-    route: GET /catalog
-    params_schema:
-      app: { type: string, validator: "^[a-z\\-]{3,40}$" }
+  # ── Command Center (read) ─────────────────────────────────────────────────────
+  - path: /v1/command-center/runs
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
+    params_schema:
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+      status: { type: enum, values: [running, done, failed, cancelled], optional: true }
 
-  - id: timeline.list
-    desc: "Fetch incident/audit timeline for correlation."
-    route: GET /timeline
-    params_schema:
-      limit: { type: integer, min: 1, max: 100 }
+  - path: /v1/command-center/gates
+    method: GET
+    handler_class: read-internal
     side_effects: none
-    required_scope: supervisor.readonly
+    supervisor_access: green
+    params_schema:
+      run_id: { type: string, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+
+  - path: /v1/command-center/artifacts
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      run_id: { type: string, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+
+  # ── Audit log (read) ──────────────────────────────────────────────────────────
+  - path: /v1/audit
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      actor:    { type: string, optional: true }
+      action:   { type: string, optional: true }
+      limit:    { type: integer, min: 1, max: 100, optional: true }
+
+  # ── Audit log (write — requires service key, not supervisor-callable) ─────────
+  - path: /v1/audit
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-app
+    supervisor_access: denied
+
+  # ── Factory events ingest (write — requires service key) ─────────────────────
+  - path: /v1/events
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-app
+    supervisor_access: denied
+
+capabilities_exposed:
+  - command-center-visibility
+  - audit-log-read
+  - gate-status
+
+capabilities_required:
+  - "@latimer-woods-tech/auth@^0.2.0"
+  - "@latimer-woods-tech/neon@^0.2.0"
+  - "@latimer-woods-tech/monitoring@^0.2.0"
+
+side_effects_summary:
+  read_external: ["sentry-api"]
+  write_external: []
+  write_app: ["neon:factory-main"]

@@ -6,7 +6,7 @@
   "name": "webhook-fanout",
   "main": "src/index.ts",
   "workers_dev": true,
-  "compatibility_date": "2026-04-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
 
   "logpush": true,
@@ -26,10 +26,14 @@
     }
   ],
 
+  // NOTE: FACTORY_CORE_API_URL must point to factory-core-api's branded custom
+  // domain (assigned in the Phase A deploy-targeting step; never a *.workers.dev
+  // URL per CLAUDE.md). Update the placeholder below to the real domain.
   "vars": {
     "ENVIRONMENT": "development",
     "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
-    "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com"
+    "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com",
+    "FACTORY_CORE_API_URL": "https://core.latwoodtech.work"
   },
 
   "d1_databases": [
@@ -41,11 +45,14 @@
   ],
 
   // Required secrets (set via `wrangler secret put <NAME>` or org-level GitHub secrets):
-  //   STRIPE_WEBHOOK_SECRET   — from Stripe dashboard after endpoint registration
-  //   POSTHOG_KEY             — PostHog project API key
-  //   RESEND_API_KEY          — Resend API key
+  //   STRIPE_WEBHOOK_SECRET        — from Stripe dashboard after endpoint registration
+  //   POSTHOG_KEY                  — PostHog project API key
+  //   RESEND_API_KEY               — Resend API key
+  //   GH_WEBHOOK_SECRET            — GitHub webhook HMAC secret (X-Hub-Signature-256)
+  //   FACTORY_CORE_API_INGEST_KEY  — gate-ingest service key; must equal
+  //                                  factory-core-api's WEBHOOK_FANOUT_INGEST_KEY
   // Optional secrets:
-  //   SLACK_WEBHOOK_URL       — Slack incoming webhook for landing-page contact intake
+  //   SLACK_WEBHOOK_URL            — Slack incoming webhook for landing-page contact intake
 
   "env": {
     "production": {
@@ -65,7 +72,8 @@
       "vars": {
         "ENVIRONMENT": "production",
         "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
-        "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com"
+        "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com",
+        "FACTORY_CORE_API_URL": "https://core.latwoodtech.work"
       },
       "d1_databases": [
         {
@@ -77,3 +85,4 @@
     }
   }
 }
+

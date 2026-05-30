@@ -99,10 +99,14 @@ export function LoginPage() {
       googleButtonRef.current.innerHTML = '';
 
       try {
+        // Keep account choice explicit. The worker verifies the token audience
+        // and allowlisted email; client-side domain hints and One Tap can bind
+        // to the wrong already-signed-in Google session.
+        google.accounts.id.disableAutoSelect?.();
         google.accounts.id.initialize({
           client_id: googleClientId,
           callback: handleGoogleCallback,
-          hosted_domain: 'apunlimited.com',
+          auto_select: false,
         });
 
         google.accounts.id.renderButton(googleButtonRef.current, {
@@ -111,11 +115,6 @@ export function LoginPage() {
           text: 'continue_with',
           shape: 'pill',
           width: '320',
-        });
-
-        // Try to render the One Tap experience
-        google.accounts.id.prompt(() => {
-          // Prompt callback (notification is shown by Google)
         });
       } catch (err) {
         console.warn('Failed to initialize Google Sign-In:', err);
