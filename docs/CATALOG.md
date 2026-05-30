@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 416 |
+| total_docs | 426 |
 | canonical | 17 |
-| active | 351 |
+| active | 361 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (351)
+## Active Docs (361)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -151,6 +151,7 @@
 | [docs/digest/2026-05-16.md](digest/2026-05-16.md) | active | unverified | platform | unknown | Morning digest — 2026-05-16 |
 | [docs/digest/2026-05-17.md](digest/2026-05-17.md) | active | unverified | platform | unknown | Morning digest — 2026-05-17 |
 | [docs/digest/2026-05-25.md](digest/2026-05-25.md) | active | unverified | platform | unknown | Morning digest — 2026-05-25 |
+| [docs/digest/2026-05-30.md](digest/2026-05-30.md) | active | unverified | platform | unknown | Morning digest — 2026-05-30 |
 | [docs/DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) | active | unverified | platform | unknown | Documentation Ownership & Update Cadence |
 | [docs/DOCUMENT_STATUS_INDEX.md](DOCUMENT_STATUS_INDEX.md) | active | unverified | platform | 2026-05-27 | Document Status Index |
 | [docs/DOCUMENTATION_HIERARCHY.md](DOCUMENTATION_HIERARCHY.md) | active | unverified | platform | unknown | Documentation Hierarchy & Source of Truth |
@@ -170,6 +171,15 @@
 | [docs/introduction.mdx](introduction.mdx) | active | unverified | platform | unknown | Factory Core |
 | [docs/JOURNEY_MAPS_8_FLOWS.md](JOURNEY_MAPS_8_FLOWS.md) | active | unverified | platform | unknown | Journey Maps: 8 Critical Flows for VideoKing |
 | [docs/KPI_TRACKING_BASELINE_SNAPSHOT.md](KPI_TRACKING_BASELINE_SNAPSHOT.md) | active | unverified | platform | unknown | KPI Tracking: Baseline Snapshot |
+| [docs/kpis/capricast.md](kpis/capricast.md) | active | unverified | platform | unknown | capricast KPI brief |
+| [docs/kpis/coh.md](kpis/coh.md) | active | unverified | platform | unknown | coh (CypherOfHealing) KPI brief |
+| [docs/kpis/factory-apps.md](kpis/factory-apps.md) | active | unverified | platform | unknown | Factory apps + packages KPI brief |
+| [docs/kpis/factory-governance.md](kpis/factory-governance.md) | active | unverified | platform | unknown | Factory governance KPI brief |
+| [docs/kpis/humandesign.md](kpis/humandesign.md) | active | unverified | platform | unknown | HumanDesign / selfprime KPI brief |
+| [docs/kpis/kpis/tier1_red_time.md](kpis/kpis/tier1_red_time.md) | active | unverified | platform | unknown | KPI: Tier-1 Red Time |
+| [docs/kpis/metrics/warden_audit.md](kpis/metrics/warden_audit.md) | active | unverified | platform | unknown | Metric: WARDEN_AUDIT |
+| [docs/kpis/README.md](kpis/README.md) | active | unverified | platform | unknown | Governance KPIs — Ground Truth Reference |
+| [docs/kpis/xico-city.md](kpis/xico-city.md) | active | unverified | platform | unknown | xico-city (DJMEXXICO) KPI brief |
 | [docs/marketing/ATTRIBUTION.md](marketing/ATTRIBUTION.md) | active | unverified | marketing | unknown | Attribution |
 | [docs/marketing/BUDGET_CAPS.md](marketing/BUDGET_CAPS.md) | active | unverified | marketing | unknown | Budget Caps |
 | [docs/marketing/CAMPAIGN_TAGGING.md](marketing/CAMPAIGN_TAGGING.md) | active | unverified | marketing | unknown | Campaign Tagging |
@@ -344,9 +354,9 @@
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | platform | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
-| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-05-25 | Stack Manifest |
+| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-05-30 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-27 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | 2026-05-02 | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |

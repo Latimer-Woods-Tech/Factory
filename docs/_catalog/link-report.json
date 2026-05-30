@@ -4,21 +4,21 @@
   "generated_at": "source-derived",
   "ok": false,
   "counts": {
-    "broken": 389,
+    "broken": 394,
     "canonical": 0,
-    "active": 273,
+    "active": 278,
     "archive": 116,
     "generated": 0
   },
   "by_owner": {
-    "platform": 272,
+    "platform": 277,
     "admin-studio": 4,
     "architecture": 3,
     "capricast": 31,
     "marketing": 79
   },
   "by_status": {
-    "active": 273,
+    "active": 278,
     "archive": 116
   },
   "broken": [
@@ -2555,6 +2555,51 @@
       "file": "docs/integration/factory-admin-app-integration.md",
       "line": 216,
       "target": "../packages/auth/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/kpis/humandesign.md",
+      "line": 12,
+      "target": "../../../HumanDesign/PRODUCT_PRINCIPLES.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/kpis/humandesign.md",
+      "line": 52,
+      "target": "../../../HumanDesign/workers/src/handlers/agent-commerce.js",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/kpis/humandesign.md",
+      "line": 58,
+      "target": "../../../HumanDesign/workers/src/db/migrations/077_feature_flags_seed.sql",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/kpis/humandesign.md",
+      "line": 99,
+      "target": "../../../HumanDesign/workers/src/index.js",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/kpis/xico-city.md",
+      "line": 5,
+      "target": "../../../xico-city/DJMEXXICO_BuildRequirements_v1.md",
       "reason": "file not found",
       "owner": "platform",
       "status": "active",
