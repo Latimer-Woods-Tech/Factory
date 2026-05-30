@@ -1,183 +1,210 @@
-# I1 — Per-User Energy Blueprint Video: Implementation Plan
+# I1 — Energy Blueprint Video Engine: Final-State Design
 
 > **Seam I1** from [`../PORTFOLIO_CAPABILITY_RECONCILIATION.md`](../PORTFOLIO_CAPABILITY_RECONCILIATION.md).
-> Goal: make the "your chart rendered as a personal short film" claim true — a per-user
-> Energy Blueprint video, generated from a user's real reading, surfaced on their blueprint
-> page (and, via [I3], shareable through Capricast + Discord).
+> Supersedes earlier "per-user personal film" drafts. Scope was deliberately expanded (see
+> Decisions) from a one-time film into a **personalized, credit-metered, scheduled, multi-source
+> video engine** with multi-channel delivery and an autopilot + exception-console operating model.
 >
-> **Difficulty verdict: Medium–High.** This is *integration*, not greenfield — the expensive parts
-> already exist — but (per review) the MVP is more **contract + orchestration + privacy/cost control**
-> than "just wiring." Realistic MVP: **~3–4 focused weeks** once Phase 0 locks the job/callback
-> schema, the entitlement-enforcement boundary, Stream-only hosting, and selfprime-authored narration.
-> Social attribution (I3) and a dedicated render service (scaling) are follow-on milestones.
+> **Design stance:** specify the **complete final state**, then build in **production-final, additive
+> slices** — no MVP, no version-by-version reshaping, no "ship X then migrate to Y." Every decision is
+> made once. Slices are sequenced so the marketing-claim-satisfying private film lands early, and
+> every later slice is purely additive (no rework of earlier ones).
 >
-> *Revision history: v2 (2026-05-30) tightened Phase 0 contracts and added the public-visibility
-> privacy guard after review.*
+> **Effort (honest):** ~10–14 focused weeks for the full engine. The render *logic* exists and is
+> reused; the build is the credit/billing meter, the scheduler, the modular multi-source composition,
+> multi-channel delivery, the dedicated render service, and the exception console. The private film
+> (the marketing claim) is satisfied by ~week 3–4; the rest is additive.
 
 ---
 
-## Why it's not "hard" (what already exists — the de-risk)
+## 1. What we're building (final state)
 
-| Asset | Repo | State |
-|---|---|---|
-| `EnergyBlueprintVideo` Remotion composition — schema accepts `hdType`, `definedCenters`, `scenes[]`, `forgeTheme`, `script`, `narrationUrl`, branding | Factory `apps/video-studio` | **Built, per-user-capable** |
-| Full render pipeline: script → ElevenLabs narration → Remotion → ffmpeg → R2 → Stream → `publish-to-capricast` → callback | Factory `render-video.yml` + `apps/video-studio/scripts/*` | **Working** (for content videos) |
-| Render dispatcher (`video-cron` → `workflow_dispatch`) + job model with `status`/`webhook`/`done` transitions | Factory `apps/video-cron`, `apps/schedule-worker` | **Built** |
-| Capricast import endpoint `POST /api/admin/videos/import` | capricast `apps/worker/src/routes/admin.ts` | **Built** |
-| Full chart data (type, authority, defined/undefined centers, channels, 64 gates) + synthesis reading text | selfprime `HumanDesign` | **Built** |
+A **personalized Energy Blueprint video engine**. A user composes **video objects** from selectable
+**sources** (their blueprint, current transits, dream-journal reflection, milestones, personality
+tests), on a **cadence they choose**, delivered through **channels they choose** (in-app, email, an
+SMS deep-link). Generation is **metered by credits** (a monthly per-tier grant; overage = a credit
+pack). Videos are **private by default**, with explicit, consented sharing to Capricast/Discord.
 
-## Why it's not "easy" (the actual I1 work — what's missing)
+It has **three faces**:
+1. **The product** — what the user configures, watches, and receives.
+2. **The autopilot** — the system self-governs at hundreds/day: auto-retry with backoff, auto-throttle
+   on a global spend ceiling, auto-screen + quarantine flagged shares, skip-and-notify on zero credits.
+3. **The exception console** — the operator is pulled in *only by alerts* (failures, spend, abuse,
+   moderation) into a triage queue. Not a control room; an alert-first cockpit.
 
-| Gap | Where | Notes |
-|---|---|---|
-| **G1. Per-user trigger** | selfprime | Nothing enqueues a render on reading completion. The schedule-worker queue is content-calendar-driven (topic/brief), not per-user. |
-| **G2. Per-user props not passed** | `render-video.yml` (~L666) | The `EnergyBlueprintVideo` branch passes only `{script, narrationUrl, branding}` — **not** `hdType`/`definedCenters`/`scenes`. So today it renders a *generic* blueprint (scenes auto-derived from text), not the user's chart. |
-| **G3. Chart→scenes mapper** | new (Factory `video-studio` lib or shared pkg) | Map a selfprime profile (type, authority, defined centers, key gates, forge) → `scenes[]` + `hdType` + `forgeTheme`. Net-new; quality-sensitive. |
-| **G4. Narration from the real reading** | `generate-script.mjs` | Today it generates narration from a *topic* via LLM. Per-user needs a mode that condenses the user's **actual synthesis** into a ~75s / ~200-word narration. Must obey the **no-"AI"-in-copy** rule. |
-| **G5. Async job + status + return-to-user** | selfprime + pipeline | Render takes minutes. Need: a `blueprint_video` status on the profile, a signed callback from the pipeline → selfprime to store the video URL, user notification (email + in-app), and a blueprint-page video panel with none/generating/ready/failed states. |
-| **G6. Entitlement + cost gating** | selfprime | Per-user Remotion + ElevenLabs + Stream + CI minutes cost real money. Must gate (paid tiers and/or on-demand, deduped, quota-capped). Free-for-all = cost blowout + GitHub-Actions-as-render-farm abuse. |
-| **G7. Cross-repo auth** | selfprime ↔ schedule-worker ↔ Actions | Enqueue + callback need a shared HMAC secret; workflow dispatch already uses a least-privilege GitHub App token (`create-github-app-token`). |
-| **G8. Identity/attribution** | Capricast (I3) | `publish-to-capricast` attributes every upload to **one** `CAPRICAST_CREATOR_ID`. Per-user/social attribution needs Discord↔selfprime↔Capricast identity linking — **deferred to I3**; I1 MVP hosts on selfprime's own Stream or a system creator. |
-
----
-
-## Target architecture (data flow)
+## 2. Domain model
 
 ```
-selfprime: reading completes (profile.js / profile-stream.js)
-  └─ entitlement + quota check (G6) → enqueue render job
-       POST schedule-worker /jobs  { appId:'prime_self', type:'blueprint_video',
-         idempotencyKey: profileId, userId, callbackUrl, props:{ hdType, definedCenters,
-         forgeTheme, scenes[], sourceReading } }              (HMAC-signed, G7)
-  └─ profile.blueprint_video_status = 'queued'
+VideoObject            rendered asset; one per (subscription occurrence | on-demand request)
+  id, userId, status: requested|metered|rendering|ready|failed, failureReason
+  compositionSpecId, streamUid (private, signed playback), durationS, creditsSpent, createdAt, readyAt
+  share: { visibility: private|unlisted|public, capricastVideoId?, discordAnnouncedAt? }   // default private
 
-Factory video-cron (cron) → dispatch render-video.yml (job_id, composition=EnergyBlueprintVideo,
-  per-user props)                                            (G2: pass full props)
-  └─ generate-script.mjs --from-reading (condense user's synthesis → narration, G4)
-  └─ ElevenLabs narration → R2
-  └─ Remotion render EnergyBlueprintVideo(props incl. real scenes, G3) → ffmpeg → R2 → Stream
-  └─ publish-to-capricast (system creator for MVP; per-user via I3)
-  └─ PATCH schedule-worker job → done
-  └─ signed callback → selfprime: store video URL + status=ready (G5)
+CompositionSpec        the recipe for a render
+  sources: [blueprint, transits, dreamJournal, milestones, personality]   // user-selected subset
+  format:  full_film | short_clip | narrated_stills                       // affects credit cost
+  segments: ordered; each marked cacheable (blueprint, personality) | fresh (transits, dreamJournal, milestones)
 
-selfprime: blueprint page renders video panel (none/generating/ready/failed)
-  └─ notify user (Resend email + in-app)                     (G5)
+VideoSubscription      a standing schedule (0..n per user)
+  id, userId, cadence (rrule/cron), compositionSpec, channels: [in_app, email, sms], active, nextRunAt
+
+CreditLedger           the meter (selfprime billing domain)
+  userId, balance, monthlyGrant (by tier), rolloverCap (~1 month), txns: [grant|debit|purchase|refund]
+  costFn(spec) -> credits   // base + per-source + format multiplier; operator-tunable config
+
+AccountLink            cross-product identity (Slice 5)
+  userId, provider: capricast|discord, externalId, verified, linkedAt
+
+ModerationRecord       for shared videos
+  videoObjectId, autoScreenResult, state: ok|flagged|removed, actor, reason
 ```
 
-**Cohesion principle:** reuse the existing job model and pipeline rather than inventing a parallel
-one. The reading never blocks on the render (fully async). Trigger is **idempotent** (one video per
-`profileId`; re-generation supersedes).
+## 3. Architecture & data flow
 
----
+```
+selfprime (HumanDesign) ── product + meter + scheduler ──────────────┐
+  on-demand "Generate" OR scheduler fires a VideoSubscription          │
+   → resolve CompositionSpec, gather fresh source data                 │
+   → CreditLedger.debit(costFn(spec))  ── insufficient? skip + notify(top-up upsell)
+   → enqueue signed render request (idempotencyKey = videoObjectId)    │
+                                                                       ▼
+Factory ── Render Service (Cloud Run; Remotion + ffmpeg) ──────────────
+   build modular composition from segments (cacheable reused; fresh rendered)
+   author/attach narration (selfprime-supplied text; no Factory LLM)
+   → Cloudflare Stream (private)  → signed callback ─▶ selfprime: store streamUid, status=ready, creditsSpent
+                                                       │
+selfprime ── deliver + surface ◀───────────────────────┘
+   in-app film panel (signed playback) · Resend email · Telnyx SMS deep-link
+   autopilot: retry/backoff · spend auto-throttle · zero-credit skip+notify
 
-## Decisions — LOCKED for MVP (Phase 0)
+  ── explicit "Share" (consent + visibility) ─▶ Capricast import (visibility=chosen, creatorId=linked)
+                                              → optional Discord announce        [Slice 5]
 
-> Tightened after review. The MVP is **contract + orchestration + privacy/cost controls**, not "just
-> wiring" — so these are locked up front to prevent sprawl.
+Cross-cutting: telemetry (Sentry + factory_events + cost/film) → autopilot alerts → Exception Console
+```
 
-1. **Who gets a video — PAID + ON-DEMAND only.** Individual/Practitioner tiers, triggered by an explicit "Generate my film" action (never auto on free/anonymous readings). New `blueprintVideo` feature in `getTierConfig` (default off) + a `blueprint_video_generation` quota via the existing atomic `enforceUsageQuota` machinery.
-2. **Hosting — STREAM-ONLY for MVP.** Render → selfprime's own Cloudflare Stream, surfaced privately on the blueprint page. **Capricast publishing is SKIPPED for personal jobs** (see privacy note below). Per-user Capricast attribution/social is deferred to **I3**.
-3. **Narration — SELFPRIME-AUTHORED.** selfprime condenses the user's real synthesis into the final narration text and passes it in the job. **Personal jobs skip Factory `generate-script.mjs` entirely** — no Factory-side LLM call. This puts the no-"AI"-wording governance where the content already lives and removes a moving part.
-4. **Notification — email (Resend) + in-app.** Both exist.
+The **on-demand and scheduled paths converge** on the same meter → render-request → render-service →
+deliver pipeline. Recurring per-user schedules live on Factory's **schedule-worker**; **Cloud Run** is
+the executor for *all* personal renders (CI `render-video.yml` stays only for scheduled *content*
+videos — a genuinely different workload).
 
-> ⚠️ **Privacy (review finding):** the Capricast import path hardcodes `visibility: "public"`
-> (`capricast .../routes/admin.ts`). A per-user reading auto-published public is a privacy breach.
-> The render workflow's "Publish to Capricast" step is currently **unconditional** — personal jobs
-> MUST skip it (or, in I3, publish only with explicit consent + private/unlisted visibility).
+## 4. Mature engineering decisions (made once)
 
-## Contracts to lock in Phase 0
+| # | Decision | Rationale |
+|---|---|---|
+| D1 | **Video objects are private first-class assets** on selfprime Cloudflare Stream, **signed playback**; never public by default | Personal readings are private; sharing is an explicit act. |
+| D2 | **Dedicated Cloud Run render service** for all personal renders; CI pipeline kept only for scheduled content; composition/scripts shared as a lib | Hundreds/day makes CI-as-render-farm untenable; correct workload placement, no rework. |
+| D3 | **Modular composition** — each source is a segment with a credit cost, marked cacheable vs. fresh-per-render | Enables source selection + recurring freshness without re-rendering static content. |
+| D4 | **Credit-metered** — per-tier monthly grant, `costFn(spec)` debit, overage = Stripe credit pack, zero-credit = skip+notify upsell | User-chosen flexibility (cadence × sources) with bounded, fair cost; clean upsell. |
+| D5 | **Recurring schedules on schedule-worker**; the scheduler resolves spec, gathers fresh data, meters, enqueues | Reuse the platform scheduling infra; on-demand and scheduled share one path. |
+| D6 | **selfprime authors narration** from real source data; Factory never LLM-generates personal narration | No-"AI"-wording governance at source; authentic; one fewer moving part. |
+| D7 | **Multi-channel delivery**: in-app + Resend email + **Telnyx SMS as a deep-link** (SMS can't carry video) | All stacks exist; SMS links to signed playback. |
+| D8 | **Autopilot + exception console** — system self-governs; humans triage alerts only | Matches "automated + exceptions only" operator model at scale. |
+| D9 | **Two-layer cost governance** — per-user credits (user meter) + global spend ceiling with auto-throttle (platform safety) | Protects unit economics and the platform independently. |
+| D10 | **Signed, idempotent async contract** end to end (HMAC, replay window, `idempotencyKey=videoObjectId`) | Mature service-to-service security; safe retries; exactly-once per occurrence. |
+| D11 | **Capricast `visibility` made explicit** (param; default unlisted; never auto-public) — source-level fix for all callers | Fixes the latent privacy bug properly, not a skip-hack. |
+| D12 | **First-class cross-product identity link** (selfprime ↔ Capricast ↔ Discord) | Real attribution for sharing/social; designed up front. |
+| D13 | **Operator-tunable policy in config** (credit grants, `costFn`, spend ceiling, cadence limits) — editable without redeploy | The autopilot's knobs live where the operator can turn them. |
 
-**Personal render job** (extends the schedule-worker `POST /jobs` schema, which today carries only
-`appId`/`type`/`topic`/scheduling/score/idempotency). Add a new render type — the shared
-`RenderJobType` union (`packages/video`) is currently `marketing | training | walkthrough` and must
-gain `personal_blueprint`:
+**Defaults set (flag to change):** credit **rollover** = monthly grant + capped carryover (~1 month);
+sources in the catalog = **blueprint, transits, dream journal, milestones, personality tests**.
 
+## 5. Reused vs net-new
+
+**Reused:** the `EnergyBlueprintVideo` Remotion composition + render scripts (as a shared lib);
+Cloudflare Stream; selfprime chart/synthesis/transits/dream-journal/psychometric data; Resend + Telnyx
++ in-app notifications; Stripe (one-time + agentic) for credit packs; schedule-worker scheduling;
+atomic quota machinery; Sentry + factory_events.
+
+**Net-new:** the Cloud Run render service; modular multi-source composition + per-source segment
+renderers + `chartToScenes()`; CreditLedger + `costFn` + overage; VideoSubscription + scheduler
+resolution; multi-channel delivery; signed render/callback contract; autopilot governance
+(retry/throttle/skip/quarantine); the exception console; the Capricast `visibility` fix; the identity
+link + sharing; the user configuration surface (sources × cadence × channels).
+
+## 6. Build slices (production-final, additive — sequenced for early value)
+
+Each slice is shippable and built to final quality; later slices add capability without reshaping
+earlier ones.
+
+- **Slice 0 — Foundations & contracts.** Domain schemas + migrations (VideoObject, CompositionSpec,
+  CreditLedger, VideoSubscription, AccountLink, ModerationRecord); the signed render-request/callback
+  contract (D10); `costFn` + credit-policy config (D13); extend shared types in `packages/video`.
+  *Immutable source of truth for all later slices.*
+- **Slice 1 — Render service + composition.** Cloud Run Remotion service (signed in/out); modular
+  composition with the blueprint segment + `chartToScenes()`; private Stream upload; snapshot tests.
+  *Verify:* signed request (fixture) → private Stream asset + valid signed callback.
+- **Slice 2 — On-demand private film (satisfies the marketing claim).** selfprime narration authoring
+  (D6); credit debit (D4) for a single on-demand render; `POST /api/profile/:id/video`; VideoObject
+  state machine; signed-playback film panel (none/rendering/ready/failed+retry); in-app + email notify.
+  *Verify:* generate → debit → pending → email → plays privately.
+- **Slice 3 — Sources & composition catalog.** Add the remaining segment renderers (transits, dream
+  journal, milestones, personality), cacheable/fresh handling, per-source credit costs, and the
+  user's **source-selection** UI.
+- **Slice 4 — Subscriptions, scheduling & delivery.** VideoSubscription config (cadence × sources ×
+  channels); schedule-worker resolution → meter → enqueue; recurring freshness; Telnyx SMS deep-link
+  delivery; zero-credit skip+notify+upsell.
+- **Slice 5 — Credits & billing.** Per-tier grants, rollover, the credit-pack Stripe purchase + overage
+  flow, ledger surfacing in-app.
+- **Slice 6 — Autopilot & exception console.** Auto-retry/backoff, global spend ceiling + auto-throttle
+  (D9), alerting, the operator triage console (failures, spend, abuse) with retry/cancel + credit-policy
+  controls (D13).
+- **Slice 7 — Social & moderation.** Capricast `visibility` fix (D11); identity link (D12); consented
+  share → Capricast/Discord; auto-screen + moderation queue.
+
+## 7. Contracts (authored in Slice 0, immutable thereafter)
+
+**Render request** (selfprime → render service, signed):
 ```jsonc
 {
-  "appId": "prime_self",
-  "type": "personal_blueprint",
-  "idempotencyKey": "<profileId>",          // one in-flight render per profile version
+  "videoObjectId": "<uuid>",          // == idempotency key
   "userId": "<uuid>",
-  "profileId": "<uuid>",
-  "callbackUrl": "https://api.selfprime.net/api/internal/blueprint-video/callback",
-  "props": {                                  // → EnergyBlueprintVideo (no Factory LLM)
-    "hdType": "projector",
-    "forgeTheme": "lux",
-    "definedCenters": ["G","Ajna","Throat"],
-    "scenes": [ /* from chartToScenes() */ ],
-    "narration": "<final selfprime-authored text>",
-    "brandColor": "#c9a84c", "logoUrl": "..."
-  }
+  "callbackUrl": "https://api.selfprime.net/api/internal/video/callback",
+  "spec": { "sources": ["blueprint","transits"], "format": "full_film",
+            "segments": [ /* resolved: cacheable refs + fresh props + narration text */ ],
+            "brandColor": "#c9a84c", "logoUrl": "..." }
 }
 ```
+Auth: `X-Signature` = HMAC-SHA256(rawBody, secret) + `X-Timestamp`; **±5-min replay window**; reject
+duplicate `videoObjectId` in a terminal state. **Callback** (same scheme): `{ videoObjectId,
+status: ready|failed, streamUid?, durationSeconds?, creditsSpent?, failureReason? }`.
 
-**Enforcement point (cost gating, review finding):** Factory scheduling does **not** check
-entitlement and `video-cron` dispatches any pending job for an app. So the trust boundary is:
-(a) selfprime enforces tier + quota **before** enqueue, and (b) schedule-worker **rejects personal
-jobs unless they carry a valid signed entitlement proof from a trusted internal caller** (shared
-HMAC, see below). Never accept an unauthenticated `personal_blueprint` job.
+**Segment interface:** `renderSegment(source, ctx) -> { props, narrationText, cacheable }` — the
+contract every source implements; new sources are additive.
 
-**Callback/auth contract:** the existing completion is a *bearer-token PATCH to schedule-worker*
-`{status, streamUid, videoUrl}` — that is **not** a signed selfprime callback. Define:
-- Topology: workflow → schedule-worker (existing PATCH) → **signed** schedule-worker → selfprime callback (keeps the GitHub App token out of selfprime's trust domain).
-- Auth: HMAC-SHA256 over the raw body with a shared secret (GCP Secret Manager); `X-Signature` + `X-Timestamp` headers; **±5-min replay window**; reject stale/duplicate by `idempotencyKey`.
-- Final statuses: `ready | failed` (with `failureReason`); selfprime stores `blueprint_video_url`, `blueprint_video_status`, `blueprint_video_profile_id`.
+**Credit debit:** `costFn(spec) = base + Σ perSource(source) + formatMultiplier(format)` (config-driven);
+debited atomically at enqueue; refunded on `failed`.
 
----
+## 8. Risks & guardrails
 
-## Phased plan
+- **Unit economics (top):** credits bound user cost; the global spend ceiling + auto-throttle bound
+  platform cost; `costFn` is tuned from real cost-per-film telemetry. Refund credits on failed renders.
+- **Privacy:** private-by-default + signed playback; sharing is opt-in with explicit visibility; the
+  Capricast public default is removed at source (D11); SMS is a tokenized deep-link, not a public URL.
+- **Render fidelity:** per-segment snapshot tests + a human review gate; segments must read correctly
+  with real data.
+- **No "AI" in copy:** narration + all UI/notification strings.
+- **Security:** signed both directions (D10); render service least-privilege; secrets in GCP Secret
+  Manager via WIF.
+- **Abuse/moderation:** auto-screen shares; quarantine on flag; exception-queue takedown.
+- **Workers constraints:** selfprime/worker code within platform hard constraints; the render service
+  (Node + Chromium + ffmpeg) runs on Cloud Run, never in a Worker.
 
-### Phase 0 — Lock contracts & decisions (0.5 wk)
-- Ratify the locked decisions above. Land the three contracts as the source of truth: (1) the `personal_blueprint` job payload + extend `RenderJobType` in `packages/video`; (2) the entitlement/enforcement boundary (selfprime quota + schedule-worker rejects unsigned personal jobs); (3) the signed callback schema (HMAC, replay window, statuses). Add `blueprintVideo` feature to `getTierConfig` (default off) and the `blueprint_video_generation` quota.
+## 9. Effort (by slice, final-quality)
 
-### Phase 1 — Render fidelity (Factory) (1 wk)
-- **G3:** `chartToScenes(profile)` mapper in `video-studio` (type→`hdType`/`forgeTheme`, defined centers→`definedCenters`/`showBodyGraph` scenes, signature gates→concept scenes). Snapshot-test the props.
-- **G4:** personal jobs **bypass `generate-script.mjs`** — narration text comes pre-authored from selfprime in the job payload (no-"AI" governance at source). Topic/LLM mode stays only for content videos.
-- **G2:** extend `render-video.yml` props assembly so `EnergyBlueprintVideo` receives the full per-user props (`hdType`/`definedCenters`/`scenes`/`narration`) from the job payload via `job_id`; **skip the Capricast publish step for `personal_blueprint`** (privacy).
-- *Verify:* `dry_run` render of a fixture profile produces a chart-accurate MP4.
-
-### Phase 2 — Trigger & orchestration (selfprime + Factory) (1 wk)
-- **G6 (enforcement):** on-demand endpoint `POST /api/profile/:id/video` enforces tier + `blueprint_video_generation` quota on selfprime **before** enqueue; schedule-worker accepts `personal_blueprint` **only** with a valid signed entitlement proof from the trusted internal caller (no open enqueue).
-- **G1/G7:** selfprime enqueues the HMAC-signed `personal_blueprint` job (payload per the Phase 0 contract) with `idempotencyKey=profileId`; `video-cron` dispatches with per-user props.
-- *Verify:* end-to-end `curl` from enqueue → workflow run → Stream asset; confirm an unsigned/over-quota enqueue is rejected.
-
-### Phase 3 — Return-to-user (selfprime) (0.5–1 wk)
-- **G5:** signed callback endpoint stores `blueprint_video_url` + `status` on the profile; migration for the new columns.
-- Blueprint-page video panel: states none/generating/ready/failed+retry (mirror the existing profile-generation UX).
-- Notify: Resend email + in-app on `ready`.
-- *Verify:* click-through — generate → pending → email → video plays on blueprint page.
-
-### Phase 4 — Capricast attribution & social (I3 overlap) (later)
-- Per-user creator attribution in `publish-to-capricast`; Discord↔selfprime↔Capricast identity linking; watch page + share. Tracked as **I3**.
-
-### Phase 5 — Scale off GitHub Actions (later, volume-gated)
-- GitHub Actions concurrency/cost ceilings make it a poor per-user render farm at volume. Move render to a dedicated service (Cloud Run + Remotion, or a render queue) once demand warrants. MVP volume is fine on Actions with a quota cap.
-
----
-
-## Risk hotspots & guardrails
-
-- **Cost/abuse (highest):** gate by tier + monthly quota (reuse `enforceUsageQuota`), dedupe by `profileId`, daily ceiling. Never render on every anonymous/free reading.
-- **Async UX:** explicit pending/failed states + retry; never imply instant. Email when ready.
-- **Render quality:** the generic composition must look right with real chart data — snapshot tests + a manual review gate in Phase 1.
-- **"No AI" rule:** narration/UI copy must never say "AI" — use "your reading", "synthesis", "the Oracle".
-- **Cross-repo security:** least-privilege GitHub App token (exists); HMAC-sign enqueue + callback; validate signatures both ways.
-- **Idempotency:** one in-flight render per profile; re-gen supersedes; guard against double-dispatch (the job model already marks `rendering`).
-- **Observability:** Sentry + `factory_events`; track render success rate, latency, and per-render cost.
-- **Secrets:** ElevenLabs / Stream / Capricast tokens already sourced from GCP Secret Manager via WIF — add the selfprime↔schedule-worker HMAC secret there.
-
-## Effort summary
-
-| Phase | Scope | Est. |
+| Slice | Scope | Est. |
 |---|---|---|
-| 0 | Spec + decisions + feature flag | 0.5 wk |
-| 1 | Render fidelity (mapper, narration, props) | 1 wk |
-| 2 | Trigger + orchestration + entitlement | 1 wk |
-| 3 | Return-to-user (callback, panel, notify) | 0.5–1 wk |
-| **MVP total** | **Phases 0–3** | **~3–3.5 wk** |
-| 4 | Capricast/social attribution (I3) | follow-on |
-| 5 | Dedicated render service (scale) | follow-on |
+| 0 | Foundations & contracts | ~1 wk |
+| 1 | Render service + composition (blueprint segment) | ~1.5–2 wk |
+| 2 | On-demand private film — **marketing claim satisfied** | ~1.5 wk |
+| 3 | Source catalog (transits, dream journal, milestones, personality) | ~1.5 wk |
+| 4 | Subscriptions, scheduling & multi-channel delivery | ~1.5–2 wk |
+| 5 | Credits & billing (grants, packs, overage) | ~1 wk |
+| 6 | Autopilot & exception console | ~1.5 wk |
+| 7 | Social & moderation (Capricast/Discord, identity) | ~1.5 wk |
+| **Total (final state)** | Slices 0–7 | **~10–14 wk** |
 
-**Bottom line:** medium-high difficulty, low-to-moderate *technical risk* (the engine exists), with
-the real effort in the async orchestration, the chart→scenes mapper quality, and disciplined cost
-gating. It is very achievable as a focused 3–4 week MVP because ~70% of the machinery is already built.
+**Bottom line:** medium-high effort, low technical risk (render logic proven). Designed as the
+complete engine and built in production-final slices — the private film (Slice 2) satisfies the
+marketing claim early, and subscriptions, credits, the console, and social are each additive with no
+rework.
