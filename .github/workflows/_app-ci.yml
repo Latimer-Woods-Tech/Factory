@@ -90,8 +90,6 @@ jobs:
           node-version: ${{ inputs.node_version }}
           registry-url: 'https://npm.pkg.github.com'
           scope: '@latimer-woods-tech'
-          cache: 'npm'
-          cache-dependency-path: '${{ inputs.working_directory }}/package-lock.json'
       - name: Resolve factory workflow ref
         id: factory-ref
         run: |
