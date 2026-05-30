@@ -107,12 +107,17 @@ function collectMarkdownFiles(extraRepoPaths = []) {
     .sort((a, b) => toRepoPath(a).localeCompare(toRepoPath(b)));
 }
 
+function normalizeLineEndings(text) {
+  return String(text).replace(/\r\n/g, '\n');
+}
+
 function parseFrontmatter(text) {
-  if (!text.startsWith('---\n')) return {};
-  const end = text.indexOf('\n---', 4);
+  const normalized = normalizeLineEndings(text);
+  if (!normalized.startsWith('---\n')) return {};
+  const end = normalized.indexOf('\n---', 4);
   if (end === -1) return {};
   try {
-    return yaml.load(text.slice(4, end)) ?? {};
+    return yaml.load(normalized.slice(4, end)) ?? {};
   } catch {
     return {};
   }
@@ -242,7 +247,8 @@ function buildGraph() {
 
   const docs = files.map((filePath) => {
     const repoPath = toRepoPath(filePath);
-    const text = readFileSync(filePath, 'utf8');
+    const rawText = readFileSync(filePath, 'utf8');
+    const text = normalizeLineEndings(rawText);
     const frontmatter = parseFrontmatter(text);
     const canonicalEntry = canonical.map.get(repoPath);
     const override = findOverride(repoPath, overrides);
