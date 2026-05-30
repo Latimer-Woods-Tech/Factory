@@ -1,6 +1,44 @@
 import { InternalError } from '@latimer-woods-tech/errors';
 
 // ---------------------------------------------------------------------------
+// Energy Blueprint Video Engine (I1 Slice 0) — shared contract layer.
+// Domain types, the signed render request/callback contract + HMAC helper, and
+// the pure credit cost function. See docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md.
+// ---------------------------------------------------------------------------
+
+export type {
+  VideoSource,
+  VideoFormat,
+  ShareVisibility,
+  VideoObjectStatus,
+  CreditTxnKind,
+  CompositionSpec,
+  VideoObject,
+  VideoSubscription,
+  AccountLink,
+  ModerationRecord,
+  SegmentContext,
+  SegmentResult,
+  SegmentRenderer,
+} from './engine-types.js';
+
+export type {
+  ResolvedSegment,
+  RenderRequest,
+  RenderCallback,
+  VerifyFailureReason,
+} from './render-contract.js';
+export {
+  RENDER_HMAC_SECRET_NAME,
+  RENDER_REPLAY_TOLERANCE_SECONDS,
+  signRenderPayload,
+  verifyRenderSignature,
+} from './render-contract.js';
+
+export type { CreditPolicy, CostFn } from './credit.js';
+export { costFn } from './credit.js';
+
+// ---------------------------------------------------------------------------
 // Env / configuration
 // ---------------------------------------------------------------------------
 
@@ -98,8 +136,16 @@ export interface StreamVideo {
 
 /**
  * Type of automated video this render job produces.
+ *
+ * `personal_blueprint` is the Energy Blueprint Video Engine workload (I1): a
+ * per-user, credit-metered personal render. The other members are the existing
+ * scheduled-content workloads. New members are additive.
  */
-export type RenderJobType = 'marketing' | 'training' | 'walkthrough';
+export type RenderJobType =
+  | 'marketing'
+  | 'training'
+  | 'walkthrough'
+  | 'personal_blueprint';
 
 /**
  * Lifecycle status of a render job.
