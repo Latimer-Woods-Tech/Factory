@@ -116,8 +116,6 @@ jobs:
           # Push as the three secrets the worker's LLM package expects.
           # See GITHUB_TOKEN push above re: printf vs echo.
           printf '%s' "$ACCESS_TOKEN" | npx wrangler@3 secret put VERTEX_ACCESS_TOKEN --env production
-          printf '%s' "factory-495015" | npx wrangler@3 secret put VERTEX_PROJECT --env production
-          printf '%s' "us-central1" | npx wrangler@3 secret put VERTEX_LOCATION --env production
 
           # Cleanup.
           rm -f /tmp/vertex-sa.json
