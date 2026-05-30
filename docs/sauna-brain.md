@@ -4,6 +4,11 @@
 
 _Auto-synced from Sauna's workspace memory + live GitHub state. Do not edit by hand — regenerated weekly._
 
+> Note: `docs/sauna-brain.md` is an operating snapshot only. It is not the primary
+> source of truth for service registration, worker URLs, monitor targets, or
+> alert configuration. Use `docs/service-registry.yml`, `packages/deploy/scripts/setup-sentry-alerts.mjs`,
+> and the workflow validation scripts in this repo for that contract.
+
 ## Current priorities
 
 - **Day 22 at zero new paying customers.** Stripe balance -$0.92, 0 charges last 24h, latest 3 subs all canceled. ChartMogul flat. The build/sell gap is the only metric moving the wrong way.
