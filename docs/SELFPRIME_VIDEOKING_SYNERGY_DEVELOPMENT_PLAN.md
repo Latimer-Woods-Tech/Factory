@@ -108,8 +108,8 @@ Current live foundation verification:
 
 | Endpoint | Observed result | Action |
 |---|---:|---|
-| `https://schedule-worker.adrper79.workers.dev/health` | `200` | Live verified on 2026-04-29 |
-| `https://video-cron.adrper79.workers.dev/health` | `200` | Live verified on 2026-04-29 |
+| `https://schedule.latwoodtech.work/health` | `200` | Live verified on 2026-04-29 |
+| `https://video-cron.latwoodtech.work/health` | `200` | Live verified on 2026-04-29 |
 
 **Execution status:** Shared Phase 0 infrastructure is live-smoke verified. `Smoke Video Phase 0` run `25094160617` verified health, anonymous `401` protections, idempotent migration, synthetic job creation/read/update-to-failed audit trail, authenticated pending queue access, and the `video-cron` trigger path.
 

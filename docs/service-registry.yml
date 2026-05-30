@@ -123,8 +123,8 @@ workers:
   - id: video-cron
     name: video-cron                                       # matches apps/video-cron/wrangler.jsonc `name`
     repo: Latimer-Woods-Tech/factory
-    url: https://video-cron.adrper79.workers.dev           # canonical workers.dev URL
-    custom_domain: null
+    url: https://video-cron.latwoodtech.work               # canonical branded custom domain
+    custom_domain: video-cron.latwoodtech.work
     health_endpoint: /health
     telemetry_required: false                              # infra worker; telemetry not required
     deployment_status: live_health_verified_2026-04-29
