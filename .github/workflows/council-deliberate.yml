@@ -96,7 +96,7 @@ jobs:
           if [ ${#truncated} -ge 65000 ]; then
             truncated="$truncated
             
-> [Deliberation output truncated — see workflow logs for the full output]"
+ [Deliberation output truncated — see workflow logs for the full output]"
           fi
 
           # Write to GitHub step summary for persistent visibility
