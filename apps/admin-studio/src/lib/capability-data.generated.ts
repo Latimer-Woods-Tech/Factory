@@ -11,12 +11,12 @@ import type {
 const catalog = {
   "schemaVersion": "1.0.0",
   "kind": "capability-catalog",
-  "generatedAt": "sha256:41791e15392a1d9b",
+  "generatedAt": "sha256:233fa21b0b33f281",
   "summary": {
     "conceptCount": 6,
     "primitiveCount": 9,
     "recipeCount": 7,
-    "ruleFileCount": 1
+    "ruleFileCount": 2
   },
   "concepts": [
     {
@@ -951,6 +951,7 @@ const catalog = {
       ],
       "envContract": {
         "secrets": [
+          "ANTHROPIC_API_KEY",
           "CRM_API_KEY"
         ],
         "vars": [
@@ -959,8 +960,10 @@ const catalog = {
       },
       "expectedSurfaces": [
         "/health",
+        "/manifest",
         "/api/campaigns",
-        "/api/leads"
+        "/api/campaigns/:id/start",
+        "/api/dispositions"
       ],
       "goal": "Launch governed outbound calling for CRM-selected contacts.",
       "id": "outbound-dialer",
@@ -978,6 +981,11 @@ const catalog = {
           "expectContains": "ok",
           "expectedStatus": 200,
           "path": "/health"
+        },
+        {
+          "expectContains": "manifestVersion",
+          "expectedStatus": 200,
+          "path": "/manifest"
         }
       ],
       "summary": "CRM-segment driven outbound dialer workflow.",
@@ -1237,6 +1245,15 @@ const catalog = {
   ],
   "ruleBundle": {
     "rules": [
+      {
+        "id": "outbound-telephony-requires-compliance",
+        "ifAllPrimitives": [
+          "telephony"
+        ],
+        "thenRequirePrimitives": [
+          "compliance"
+        ]
+      },
       {
         "id": "telephony-requires-crm",
         "ifAllPrimitives": [
