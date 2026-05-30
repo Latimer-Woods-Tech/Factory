@@ -1,0 +1,315 @@
+feature_id	repo	category	environment	signal_type	signal_locator	current_kpi	proposed_kpi_name	proposed_kpi_threshold	proposed_kpi_window	status	notes
+F-FGOV-001	Factory	governance	prod	audit_log	.github/scripts/workflow-health-warden.mjs:204	none	Tier-1 Red Time	>1h	rolling 24h	LIVE_NO_KPI	Warden code uses >1h; earlier docs claimed >4h
+F-FGOV-002	Factory	governance	prod	workflow	.github/workflows/workflow-health-warden.yml:9	Tier-1 Red Time	T1 Pushover P1	per-run	immediate	LIVE_WITH_KPI	Daily 13:13 UTC; T1 red>1h → P1 + priority/p0 issue
+F-FGOV-003	Factory	governance	prod	audit_log	.github/scripts/workflow-health-warden.mjs:152	none	T3 Quarantine Count	>=10 fails	rolling 7d	LIVE_NO_KPI	T3 quarantine fires at 10 fails; count of currently disabled
+F-FGOV-004	Factory	governance	prod	workflow	.github/workflows/workflow-health-warden.yml	none	T3 Disable Action	per disable	immediate	LIVE_WITH_KPI	gh workflow disable + workflow-quarantined issue + P2
+F-FGOV-005	Factory	governance	prod	audit_log	.github/scripts/workflow-health-warden.mjs:172	none	Tier-2 Red Time	>24h	rolling 24h	LIVE_NO_KPI	T2: red>24h → priority/p1 issue (no Pushover)
+F-FGOV-006	Factory	governance	prod	workflow	.github/workflows/governance-audit.yml	none	Governance Audit Completeness	100% audit lines ingested	monthly	LIVE_NO_KPI	1st of month 13:00 UTC; rolls up *_AUDIT lines
+F-FGOV-007	Factory	governance	prod	audit_log	.github/scripts/governance-audit.mjs:54	none	Governance Audit Signal Coverage	all categories	monthly	NOT_INSTRUMENTED	5 AUDIT_PREFIXES defined; no coverage KPI
+F-FGOV-008	Factory	governance	prod	workflow	.github/workflows/coherence-check.yml	none	Coherence Drift	0 violations	per run	LIVE_NO_KPI	14:14 UTC daily; 7 invariants I1-I7
+F-FGOV-009	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:126	none	Registry Coverage Forward	100% of workflows in REGISTRY	daily	LIVE_NO_KPI	I1: now active since REGISTRY.md landed (PR #919)
+F-FGOV-010	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:148	none	Registry Coverage Reverse	100% rows point to real files	daily	LIVE_NO_KPI	I2: REGISTRY.md rows vs filesystem
+F-FGOV-011	Factory	governance	prod	workflow	.github/workflows/REGISTRY.md	none	Workflow Tier Classification	100% coverage	at merge	LIVE_WITH_KPI	Landed 2026-05-23 PR #919; T1/T2/T3/TR/TM tiers
+F-FGOV-012	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:170	none	Concurrency Coverage	100% push/PR workflows have concurrency:	daily	LIVE_NO_KPI	I3: top-level concurrency block; new workflow-concurrency-check.yml gates PRs
+F-FGOV-013	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:186	none	Kill-Switch Coverage	100% state-mutating scripts check pause	daily	LIVE_NO_KPI	I4: state-mutation pattern detection
+F-FGOV-014	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:200	none	Notify/Paging Coverage	100% state-mutating scripts import notify	daily	LIVE_NO_KPI	I5: must import notify or call Pushover directly
+F-FGOV-015	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:218	none	Documentation Link Validity	100% links resolve	daily	LIVE_NO_KPI	I6: scans docs/decisions + docs/runbooks markdown links
+F-FGOV-016	Factory	governance	prod	audit_log	.github/scripts/coherence-check.mjs:241	none	Automation Pause State	.github/automation-paused absent	daily	LIVE_NO_KPI	I7: kill-switch file must never be on main
+F-FGOV-017	Factory	governance	prod	workflow	.github/workflows/workflow-budget-check.yml	Budget Gate Compliance	100% with retire/exception	at PR	LIVE_WITH_KPI	Emits WORKFLOW_BUDGET_AUDIT; blocks non-compliant PRs
+F-FGOV-018	Factory	governance	prod	audit_log	.github/scripts/workflow-budget-check.mjs	none	Workflow Inventory Growth	no growth without exception	per PR	LIVE_NO_KPI	Prevents workflow count growth without CODEOWNER exception
+F-FGOV-019	Factory	governance	prod	workflow	.github/workflows/snapshot-pr-auto-merge.yml	Snapshot Auto-Merge Rate	>=90% success	per snapshot	LIVE_WITH_KPI	Validates against snapshot-paths.yml; auto-approves+merges
+F-FGOV-020	Factory	governance	prod	workflow	.github/snapshot-paths.yml	none	Snapshot Allowlist	100% matched	at merge	LIVE_NO_KPI	No rejection-rate instrumentation
+F-FGOV-021	Factory	governance	prod	workflow	.github/workflows/auto-merge-approved-prs.yml	none	Auto-Merge Approval Gate	APPROVED + no opt-out labels	at PR event	LIVE_NO_KPI	Event-driven not cron
+F-FGOV-022	Factory	governance	prod	workflow	.github/workflows/cohesion-courtesy-check.yml	none	Service Coherence Check	no credential drift	every 3h	NOT_INSTRUMENTED	Sentry/Stripe/Pushover/GCP coherence; no audit lines
+F-FGOV-023	Factory	governance	prod	workflow	.github/workflows/doc-freshness-audit.yml	none	Documentation Staleness	within cadence	weekly Mon 9am UTC	LIVE_NO_KPI	Opens docs:debt issues; no Pushover
+F-FGOV-024	Factory	governance	prod	workflow	.github/workflows/automation-reliability-loop.yml	none	Daily Failure Digest	non-success summary	daily 01:15 UTC	LIVE_NO_KPI	Publishes step summary; no issue/Pushover
+F-FGOV-025	Factory	governance	prod	workflow	.github/workflows/automation-reliability-loop.yml	none	Weekly Reliability Scorecard	success% across 7d	weekly Mon 14:15 UTC	LIVE_NO_KPI	No alerting threshold
+F-FGOV-026	Factory	governance	prod	workflow	.github/workflows/dead-mans-switch.yml	none	Aggregator Heartbeat	completion-tracker.json age<=26h	daily 11:11 UTC	LIVE_WITH_KPI	Fires P1 Pushover if stale; cold-start exception
+F-FGOV-027	Factory	governance	prod	workflow	.github/workflows/completion-tracker.yml	none	Completion Snapshot Age	daily	daily 10:30 UTC	LIVE_WITH_KPI	Mines 5 org repos; auto-merge drift PR
+F-FGOV-028	Factory	governance	prod	workflow	.github/workflows/cost-observability.yml	none	Daily Cost Digest	CF/Anthropic/Sentry/Stripe/GCP	daily 06:37 UTC	LIVE_NO_KPI	No threshold defined
+F-FGOV-029	Factory	governance	prod	workflow	.github/workflows/revenue-digest.yml	none	Revenue + Reliability Digest	MRR + errors + funnel	daily 07:07 UTC	LIVE_NO_KPI	Pushover optional via input
+F-FGOV-030	Factory	governance	prod	workflow	.github/workflows/platform-conformance.yml	none	Platform Conformance Score	advisory	daily 05:23 UTC	LIVE_NO_KPI	Shadow scores HD/VK/FA/CH/XC; not gating
+F-FGOV-031	Factory	governance	prod	workflow	.github/workflows/generate-state.yml	none	STATE.md Freshness	daily update	daily 12:11 UTC	LIVE_NO_KPI	Auto-merge PR on change
+F-FGOV-032	Factory	governance	prod	workflow	.github/workflows/track-kpis.yml	none	Delivery KPI Snapshot	weekly	weekly Mon 10am UTC	LIVE_NO_KPI	track-delivery-metrics.mjs; Slack webhook optional
+F-FGOV-033	Factory	governance	prod	workflow	.github/workflows/morning-digest.yml	none	Morning Digest	workflow run summary	daily ~08:17 UTC	LIVE_NO_KPI	Content not found in repo
+F-FGOV-034	Factory	governance	prod	workflow	.github/workflows/bootstrap-completion-tracker-private.yml	none	Private Repo Bootstrap	one-shot	manual	NOT_INSTRUMENTED	Rollout helper for coh + xico-city
+F-FGOV-035	Factory	governance	prod	workflow	.github/workflows/capricast-rename.yml	none	Capricast Rename	property cascade	manual	NOT_INSTRUMENTED	Triggered on demand; scope unknown
+F-FGOV-036	Factory	governance	prod	workflow	.github/workflows/copilot-pr-poller.yml	none	Copilot PR Polling	agent PR monitor	periodic	NOT_INSTRUMENTED	No schedule found in file
+F-FGOV-037	Factory	governance	prod	workflow	.github/workflows/launch-readiness.yml	none	Launch Gate	5-criterion readiness	manual	LIVE_NO_KPI	Feature/deployment readiness
+F-FGOV-038	Factory	governance	prod	workflow	.github/workflows/flaky-check-report.yml	none	Flaky Test Report	instability digest	scheduled	NOT_INSTRUMENTED	No audit lines detected
+F-FGOV-039	Factory	governance	prod	audit_log	.github/scripts/pushover-notify.mjs:116	PUSHOVER_AUDIT	Pushover Notification Audit	per-call	immediate	LIVE_WITH_KPI	JSON: priority -2..1; sent flag + reason
+F-FGOV-040	Factory	governance	prod	workflow	.github/workflows/sentry-to-github.yml	none	Sentry Alert Bridge	threshold→issue	scheduled	NOT_INSTRUMENTED	Mapping rules unknown
+F-FGOV-041	Factory	governance	prod	workflow	.github/workflows/rfc-status-gate.yml	none	RFC Status Enforcement	open RFCs block GA	at PR/issue	LIVE_NO_KPI	Event-driven
+F-FGOV-042	Factory	governance	prod	workflow	.github/workflows/pr-queue-digest.yml	none	PR Queue Digest	stale/blocked PRs	scheduled	LIVE_NO_KPI	No audit lines
+F-FGOV-043	Factory	governance	prod	kill-switch	.github/automation-paused	none	Automation Kill Switch	file presence	at check-time	LIVE_WITH_KPI	Canonical existsSync check across all governance scripts
+F-FGOV-044	Factory	governance	prod	doc	docs/decisions/2026-05-23-workflow-lifecycle.md	none	Workflow Lifecycle ADR	present	at merge	LIVE_WITH_KPI	Landed 2026-05-23; defines Phases 1-4
+F-FGOV-045	Factory	governance	prod	workflow	.github/workflows/supervisor-loop.yml	none	Supervisor Loop	every 4h + on agent: label	per-tick	LIVE_NO_KPI	supervisor-core.mjs runs
+F-FGOV-046	Factory	governance	prod	audit_log	.github/scripts/supervisor-core.mjs	none	Supervisor Audit Trail	per dispatch	per dispatch	NOT_INSTRUMENTED	Audit format unknown
+F-FGOV-047	Factory	governance	prod	workflow	.github/workflows/project-sync.yml	none	Project Sync	Projects ↔ repo	scheduled	LIVE_NO_KPI	No audit lines
+F-FGOV-048	Factory	governance	prod	workflow	.github/workflows/label-sync.yml	none	Label Synchronization	canonical set	scheduled	LIVE_NO_KPI	No audit lines
+F-FGOV-049	Factory	governance	prod	workflow	.github/workflows/credential-scrub.yml	none	Credential Scrub	regex secret detection	push/PR	LIVE_NO_KPI	No audit lines
+F-FGOV-050	Factory	governance	prod	workflow	.github/workflows/apply-sec-hardening.yml	none	Security Hardening	ruleset+protection sync	scheduled	LIVE_NO_KPI	No audit lines
+F-FAPP-001	Factory	user-facing	prod	http	apps/admin-studio/src/index.ts:123	none	Admin Studio Liveness	>=99.9%	rolling 7d	LIVE_NO_KPI	/health endpoint with env context
+F-FAPP-002	Factory	user-facing	prod	http	apps/admin-studio/src/index.ts:145	none	Admin Studio Route Coverage	16+ routes available	daily	LIVE_NO_KPI	auth/ai/tests/deploys/audit/etc
+F-FAPP-003	Factory	integration	prod	webhook	apps/admin-studio/src/index.ts:139	none	Stripe Connect Webhook Success	>=99.5%	rolling 7d	LIVE_NO_KPI	/webhooks/stripe-connect ingress
+F-FAPP-004	Factory	integration	prod	webhook	apps/admin-studio/src/index.ts:140	none	Studio Tests Webhook	>=99%	rolling 7d	LIVE_NO_KPI	/webhooks/studio-tests from CI
+F-FAPP-005	Factory	cron	prod	cron	apps/admin-studio/wrangler.jsonc:57	none	Digest Cron Success	>=99%	rolling 7d	LIVE_NO_KPI	2× daily 10:30 + 22:30 UTC
+F-FAPP-006	Factory	data	prod	audit_log	apps/admin-studio/src/index.ts:145	none	Audit Log Completeness	100%	daily	LIVE_NO_KPI	auditMiddleware on writes
+F-FAPP-007	Factory	monitoring	prod	sentry	apps/admin-studio/src/index.ts:103	initMonitoring	Admin Studio Error Capture	>=99.5%	rolling 24h	LIVE_WITH_KPI	Sentry DSN init; request_id tagging
+F-FAPP-008	Factory	data	prod	http	apps/admin-studio/src/index.ts:171	none	Admin Capabilities CRUD	100%	daily	LIVE_NO_KPI	10+ routes
+F-FAPP-009	Factory	cron	prod	cron	apps/video-cron/wrangler.jsonc:11	none	Video Render Dispatch Hourly	>=98%	rolling 24h	LIVE_NO_KPI	Hourly cron processes pending jobs
+F-FAPP-010	Factory	integration	prod	http	apps/video-cron/src/index.ts:107	none	GitHub Actions Dispatch	>=99%	rolling 7d	LIVE_NO_KPI	Dispatches render-video.yml
+F-FAPP-011	Factory	user-facing	prod	http	apps/video-cron/src/index.ts:226	none	Video Cron Liveness	>=99.9%	rolling 7d	LIVE_NO_KPI	/health endpoint
+F-FAPP-012	Factory	infra	prod	http	apps/schedule-worker/src/index.ts:146	none	Schedule Worker Health	>=99.9%	rolling 7d	LIVE_NO_KPI	/health + /stripe/health
+F-FAPP-013	Factory	data	prod	http	apps/schedule-worker/src/index.ts:257	none	Pending Jobs API	>=99%	rolling 7d	LIVE_NO_KPI	GET /jobs/pending
+F-FAPP-014	Factory	user-facing	prod	http	apps/schedule-worker/src/index.ts:341	none	Job Scheduling Success	>=99%	rolling 7d	LIVE_NO_KPI	POST /jobs PATCH /jobs/:id
+F-FAPP-015	Factory	integration	prod	webhook	apps/webhook-fanout/src/index.ts:549	none	Stripe Webhook Verification	>=99.9%	rolling 7d	LIVE_NO_KPI	HMAC-SHA256 constant-time
+F-FAPP-016	Factory	integration	prod	http	apps/webhook-fanout/src/index.ts:500	none	Contact Form Submission	>=98%	rolling 7d	LIVE_NO_KPI	/contact rate-limited per IP
+F-FAPP-017	Factory	data	prod	event	apps/webhook-fanout/src/index.ts:136	insertFactoryEvent	factory_events Insertion	>=99%	rolling 7d	LIVE_WITH_KPI	D1 factory_events writes
+F-FAPP-018	Factory	integration	prod	event	apps/webhook-fanout/src/index.ts:112	capturePostHogEvent	PostHog Capture Rate	>=95%	rolling 7d	LIVE_WITH_KPI	Stripe → PostHog fan-out
+F-FAPP-019	Factory	integration	prod	http	apps/webhook-fanout/src/index.ts:187	sendResendLifecycleEmail	Lifecycle Email Send	>=98%	rolling 7d	LIVE_NO_KPI	Subscription + invoice emails
+F-FAPP-020	Factory	cron	prod	cron	apps/daily-brief/wrangler.jsonc	none	Daily Brief Cron	>=98%	rolling 7d	LIVE_NO_KPI	11:00 UTC daily (7am ET)
+F-FAPP-021	Factory	integration	prod	http	apps/daily-brief/src/index.ts	none	Daily Brief Email Delivery	>=95%	rolling 7d	LIVE_NO_KPI	Resend API dispatch
+F-FAPP-022	Factory	integration	prod	http	apps/daily-brief/src/index.ts	none	News API + GitHub Fetch	>=90%	rolling 7d	LIVE_NO_KPI	External data fetching
+F-FAPP-023	Factory	monitoring	prod	cron	apps/synthetic-monitor/wrangler.jsonc:17	none	Synthetic Check Success	>=98%	rolling 24h	LIVE_NO_KPI	5-min cadence liveness probes
+F-FAPP-024	Factory	monitoring	prod	metric	apps/synthetic-monitor/src/index.ts:30	none	P95 Endpoint Latency	<2000ms	rolling 24h	LIVE_NO_KPI	Puppeteer journey monitoring
+F-FAPP-025	Factory	infra	prod	http	apps/supervisor/wrangler.jsonc	none	Supervisor Liveness	>=99%	rolling 7d	LIVE_NO_KPI	DO + weekly schedule 11am UTC
+F-FAPP-026	Factory	user-facing	all	http	apps/admin-studio-ui/vite.config.ts	none	Admin UI Frontend Availability	>=99%	rolling 7d	LIVE_NO_KPI	Vite + Pages; no /health
+F-FAPP-027	Factory	infra	prod	http	apps/browser-agent	none	Browser Agent Uptime	>=98%	rolling 7d	NOT_INSTRUMENTED	GCP Cloud Run Playwright
+F-FAPP-028	Factory	cron	prod	cron	apps/lead-gen/wrangler.jsonc	none	Lead Gen Cron	>=95%	rolling 7d	LIVE_NO_KPI	10:00 UTC daily
+F-FAPP-029	Factory	data	prod	http	apps/lead-gen/wrangler.jsonc	none	Lead Gen Queue Processing	>=95%	rolling 7d	LIVE_NO_KPI	factory-lead-gen-queue producer
+F-FAPP-030	Factory	user-facing	prod	http	apps/latwoodtech-web	none	latwoodtech.com Availability	>=99.9%	rolling 7d	LIVE_NO_KPI	Static Pages deployment
+F-FAPP-031	Factory	infra	prod	http	apps/prime-self-reference	none	Prime Self Reference API	>=99%	rolling 7d	NOT_INSTRUMENTED	No wrangler.jsonc found
+F-FAPP-032	Factory	monitoring	prod	http	apps/prime-self-smoke	none	Prime Self Smoke Tests	>=98%	rolling 24h	LIVE_NO_KPI	Playwright E2E for selfprime.net
+F-FAPP-033	Factory	data	staging	http	apps/admin-studio-ui	none	Admin UI Staging Availability	>=99%	rolling 7d	LIVE_NO_KPI	staging.admin-studio-ui.pages.dev
+F-FAPP-034	Factory	integration	prod	http	apps/webhook-fanout/wrangler.jsonc	none	Webhook Fanout Availability	>=99.9%	rolling 7d	LIVE_NO_KPI	webhooks.latwoodtech.work
+F-FAPP-035	Factory	infra	prod	package	packages/monitoring	none	Sentry Event Rate (package)	>1000/day	rolling 24h	LIVE_WITH_KPI	Provides initMonitoring + captureError
+F-FAPP-036	Factory	infra	prod	package	packages/analytics	none	Factory Events Emission (package)	>10000/day	rolling 24h	LIVE_WITH_KPI	D1 + PostHog helpers
+F-FAPP-037	Factory	infra	prod	package	packages/logger	none	Log Volume (package)	>1M/day	rolling 24h	LIVE_WITH_KPI	createLogger; request_id tagging
+F-FAPP-038	Factory	infra	prod	package	packages/llm-meter	none	LLM Token Spend	>$50/day	rolling 24h	LIVE_WITH_KPI	Meters Anthropic/Groq/Vertex
+F-FAPP-039	Factory	infra	prod	package	packages/errors	none	Error Type Classification	informational	per-error	LIVE_NO_KPI	ValidationError/AuthError/NotFoundError
+F-FAPP-040	Factory	infra	prod	package	packages/auth	none	Auth Signal Surface	informational	n/a	LIVE_NO_KPI	JWT + OAuth helpers
+F-FAPP-041	Factory	infra	prod	package	packages/neon	none	DB Query Execution	informational	n/a	LIVE_NO_KPI	Neon serverless wrapper
+F-FAPP-042	Factory	infra	prod	package	packages/design-tokens	none	Frontend Theming	informational	n/a	DEAD	Pure config; no signal
+F-FAPP-043	Factory	infra	prod	package	packages/schedule	none	Render Job State Machine	informational	n/a	LIVE_WITH_KPI	getPendingJobs/updateJobStatus
+F-FAPP-044	Factory	infra	prod	package	packages/stripe	none	Stripe SDK Integration	informational	n/a	LIVE_NO_KPI	Payment primitives
+F-FAPP-045	Factory	infra	prod	package	packages/compliance	none	Compliance Tracking	informational	n/a	LIVE_NO_KPI	GDPR + data deletion
+F-FAPP-046	Factory	infra	prod	package	packages/flags	none	Feature Flagging	informational	n/a	LIVE_NO_KPI	FLAG_TELEMETRY D1
+F-FAPP-047	Factory	infra	prod	package	packages/llm	none	LLM Orchestration	informational	n/a	LIVE_WITH_KPI	Anthropic→Grok→Groq chain
+F-FAPP-048	Factory	infra	prod	package	packages/content	none	Content Management	informational	n/a	LIVE_NO_KPI	training-library.json briefs
+F-FAPP-049	Factory	infra	prod	package	packages/validation	none	Input Validation	informational	n/a	LIVE_NO_KPI	Zod/Valibot wrappers
+F-FAPP-050	Factory	infra	prod	package	packages/studio-core	none	Admin Capability CRUD	informational	n/a	LIVE_WITH_KPI	Manifest/deploy/capability schemas
+F-HD-001	HumanDesign	user-facing	prod	http	workers/src/index.js:465	none	Chart Calculate Requests	>1000/day	rolling 7d	LIVE_NO_KPI	trackEvent(CHART_CALCULATE) fires; no funnel KPI
+F-HD-002	HumanDesign	user-facing	prod	http	workers/src/index.js:469	none	Profile Generate Latency	<5s p95	rolling 7d	LIVE_NO_KPI	LLM synthesis endpoint; no SLA
+F-HD-003	HumanDesign	user-facing	prod	http	workers/src/index.js:476	trackEvent(TRANSIT_VIEW)	Transit View Rate	>500/day	rolling 7d	LIVE_NO_KPI	Captured; critical for engagement
+F-HD-004	HumanDesign	user-facing	prod	http	workers/src/index.js:490	trackEvent(CHECKOUT_*)	Checkout Completion Rate	>65%	rolling 7d	LIVE_WITH_KPI	Stripe; disable_checkout=true gates revenue
+F-HD-005	HumanDesign	user-facing	prod	http	workers/src/index.js:518	trackEvent(ACHIEVEMENT_UNLOCK)	Achievement Unlock Rate	>30%	rolling 7d	LIVE_WITH_KPI	Flag ACHIEVEMENTS_VISIBLE=true
+F-HD-006	HumanDesign	user-facing	prod	http	workers/src/index.js:534	trackEvent(SHARE_CREATE)	Share Creation Rate	>200/wk	rolling 7d	LIVE_WITH_KPI	celebrity/chart/achievement/referral shares
+F-HD-007	HumanDesign	user-facing	prod	http	workers/src/index.js:410	trackEvent(SIGNUP)	Signup Completion	>50/day	rolling 7d	LIVE_WITH_KPI	Auth handler logs event
+F-HD-008	HumanDesign	user-facing	prod	http	workers/src/index.js:411	trackEvent(LOGIN)	Login Success Rate	>95%	rolling 7d	LIVE_WITH_KPI	LOGIN + LOGIN_FAIL captured
+F-HD-009	HumanDesign	user-facing	prod	db_column	daily_checkins.created_at	trackEvent(CHECKIN_COMPLETE)	Daily Checkin Adherence	>40%	rolling 7d	LIVE_WITH_KPI	Streak via checkin_reminders
+F-HD-010	HumanDesign	user-facing	prod	db_column	referrals.created_at	trackEvent(REFERRAL_SEND)	Referral Generation Rate	>100/wk	rolling 7d	LIVE_WITH_KPI	referral_signups FK
+F-HD-011	HumanDesign	user-facing	prod	http	workers/src/handlers/analytics.js:121	trackEvent(SHELL_*)	User Engagement Signal	>500 events/day	rolling 7d	LIVE_WITH_KPI	40+ public shell event types
+F-HD-012	HumanDesign	user-facing	prod	http	workers/src/handlers/billing.js:120	trackEvent(UPGRADE/DOWN/CANCEL)	Tier Conversion Funnel	>20/day	rolling 7d	LIVE_WITH_KPI	Subscription lifecycle
+F-HD-013	HumanDesign	user-facing	prod	http	workers/src/index.js:118	none	Agent Commerce Order Claim Rate	>50%	rolling 7d	LIVE_NO_KPI	agentic_orders 30-day claim TTL
+F-HD-014	HumanDesign	user-facing	prod	db_column	agentic_orders.status	none	ACS Fulfillment Completion	awaiting_birth→ready	rolling 7d	LIVE_NO_KPI	8-state lifecycle; no conversion funnel
+F-HD-015	HumanDesign	integration	prod	webhook	workers/src/handlers/stripe-webhook.js:13	trackEvent(PI_SUCCEEDED)	Stripe Webhook Processing	>99%	rolling 7d	LIVE_WITH_KPI	5 event types observed
+F-HD-016	HumanDesign	user-facing	prod	http	workers/src/index.js:81	none	PDF Export Completion	>100/wk	rolling 7d	LIVE_NO_KPI	trackEvent(PDF_EXPORT) fires; no SLA
+F-HD-017	HumanDesign	user-facing	prod	http	workers/src/index.js:152	none	Composite Chart Generation	>50/wk	rolling 7d	LIVE_NO_KPI	trackEvent(COMPOSITE_GENERATE) fires
+F-HD-018	HumanDesign	user-facing	prod	http	workers/src/index.js:481	trackEvent(RECTIFY_RUN)	Rectification Sensitivity	>20/wk	rolling 7d	LIVE_WITH_KPI	Birth-time sensitivity analysis
+F-HD-019	HumanDesign	user-facing	prod	http	workers/src/index.js:34	none	SMS Digest Engagement	>30%	rolling 7d	LIVE_NO_KPI	/api/sms/webhook Telnyx; no delivery metrics
+F-HD-020	HumanDesign	user-facing	prod	db_column	transit_alerts.created_at	trackEvent(TRANSIT_ALERT)	Active Transit Alert Count	>100/day	daily	LIVE_NO_KPI	alert_templates + alert_deliveries
+F-HD-021	HumanDesign	user-facing	prod	http	workers/src/handlers/practitioner.js	none	Practitioner Registration	>5/wk	rolling 7d	LIVE_NO_KPI	No funnel event
+F-HD-022	HumanDesign	user-facing	prod	http	workers/src/handlers/cluster.js	trackEvent(CLUSTER_*)	Cluster Creation Rate	>10/wk	rolling 7d	LIVE_WITH_KPI	Cluster synthesis events
+F-HD-023	HumanDesign	user-facing	prod	db_column	practitioner_session_notes.created_at	trackEvent(SESSION_HANDOFF)	Session Handoff Count	>50/wk	rolling 7d	LIVE_WITH_KPI	B2B2C reflection loop
+F-HD-024	HumanDesign	user-facing	prod	db_column	client_reflections.created_at	trackEvent(CLIENT_REFLECTION_CREATED)	Client Reflection Rate	>30/wk	rolling 7d	LIVE_WITH_KPI	Reflection creation events
+F-HD-025	HumanDesign	feature-flag	prod	feature-flag	workers/src/handlers/divination-readings.js	none	Divination Reading Creation	>20/wk	rolling 7d	LIVE_NO_KPI	Flag DIVINATION_ENABLED=false
+F-HD-026	HumanDesign	user-facing	prod	http	workers/src/handlers/famous.js	trackEvent(CELEBRITY_COMPARE)	Celebrity Match Requests	>500/wk	rolling 7d	LIVE_WITH_KPI	Celebrity compare events
+F-HD-027	HumanDesign	user-facing	prod	http	workers/src/handlers/timing.js	none	Intention Timing Requests	>100/wk	rolling 7d	LIVE_NO_KPI	handleTiming; no trackEvent
+F-HD-028	HumanDesign	user-facing	prod	http	workers/src/handlers/validation.js	none	Behavioral Validation Surveys	>50/wk	rolling 7d	LIVE_NO_KPI	Big Five + VIA; no trackEvent
+F-HD-029	HumanDesign	user-facing	prod	http	workers/src/handlers/psychometric.js	none	Psychometric Assessment	>50/wk	rolling 7d	LIVE_NO_KPI	No event capture
+F-HD-030	HumanDesign	user-facing	prod	http	workers/src/handlers/diary.js	none	Diary Entry Creation	>100/wk	rolling 7d	LIVE_NO_KPI	No dedicated trackEvent
+F-HD-031	HumanDesign	user-facing	prod	http	workers/src/handlers/live-session.js	trackEvent(SESSION_HANDOFF)	Live Session Creation	>30/wk	rolling 7d	LIVE_WITH_KPI	Durable Object WebSocket
+F-HD-032	HumanDesign	user-facing	prod	http	workers/src/handlers/messages.js	none	Practitioner-Client Message Volume	>500/wk	rolling 7d	LIVE_NO_KPI	No trackEvent
+F-HD-033	HumanDesign	feature-flag	prod	feature-flag	workers/src/handlers/notion.js	none	Notion OAuth Connection	>5/wk	rolling 7d	LIVE_NO_KPI	Flag NOTION_SYNC_ACTIVE=false
+F-HD-034	HumanDesign	user-facing	prod	http	workers/src/handlers/email-campaigns.js	none	Email Campaign Delivery	>1000/wk	rolling 7d	LIVE_NO_KPI	email_campaign_sends; no trackEvent
+F-HD-035	HumanDesign	user-facing	prod	db_column	bug_reports.created_at	none	Bug Report Volume	>10/wk	rolling 7d	LIVE_NO_KPI	No trackEvent
+F-HD-036	HumanDesign	user-facing	prod	http	workers/src/handlers/webhooks.js	none	Custom Webhook Deliveries	>100/day	rolling 7d	LIVE_NO_KPI	webhook_deliveries table
+F-HD-037	HumanDesign	data	prod	db_column	analytics_events.event_name	EVENTS enum	Event Volume by Type	>1M/month	rolling 7d	LIVE_WITH_KPI	36 event types; analytics_daily aggregates
+F-HD-038	HumanDesign	data	prod	db_column	analytics_daily.event_date	none	Daily Active Users	>500	rolling 7d	LIVE_NO_KPI	No DAU calculation published
+F-HD-039	HumanDesign	feature-flag	prod	feature-flag	feature_flags.enabled	none	Feature Flag Rollout Health	100% intended	rolling 7d	LIVE_NO_KPI	6 flags; no rollout % tracking
+F-HD-040	HumanDesign	monitoring	prod	sentry	workers/src/lib/sentry.js	initSentry	Error Rate by Handler	<0.1%	rolling 7d	LIVE_NO_KPI	Sentry live; captureException fires; no SLA
+F-HD-041	HumanDesign	monitoring	prod	http	workers/src/index.js:919	none	Health Check Liveness	100%	rolling 7d	LIVE_NO_KPI	GET /health + /api/health; no SLA
+F-HD-042	HumanDesign	monitoring	prod	metric	workers/src/lib/cfMetrics.js	collectCloudflareMetrics	CF Request Metrics	>1M/month	rolling 7d	LIVE_WITH_KPI	CPU/mem/cache via cron
+F-HD-043	HumanDesign	cron	prod	cron	workers/src/cron.js	runDailyTransitCron	Daily Cron Execution	1×/day	daily	LIVE_WITH_KPI	6 AM UTC; 9 steps with withTimeout
+F-HD-044	HumanDesign	integration	prod	webhook	workers/src/handlers/stripe-webhook.js	idempotent	Stripe Event Processing	>99%	rolling 7d	LIVE_WITH_KPI	5 event types; event_id dedup
+F-HD-045	HumanDesign	integration	prod	webhook	workers/src/handlers/calendly-webhook.js	HMAC	Calendly Booking Ingestion	>95%	rolling 7d	LIVE_NO_KPI	Track 3.5; no event capture
+F-HD-046	HumanDesign	integration	prod	webhook	workers/src/handlers/revenuecat-webhook.js	none	Mobile Subscription Sync	>99%	rolling 7d	LIVE_NO_KPI	Handler exists; no trackEvent
+F-HD-047	HumanDesign	integration	prod	http	workers/src/handlers/promo.js	none	Promo Code Redemption	>100/wk	rolling 7d	LIVE_NO_KPI	POST /api/promo/apply; no trackEvent
+F-HD-048	HumanDesign	integration	prod	http	workers/src/handlers/referrals.js	trackEvent(REFERRAL_SEND)	Referral Invite Sends	>100/wk	rolling 7d	LIVE_WITH_KPI	referral_signups FK chain
+F-HD-049	HumanDesign	infra	prod	metric	workers/src/lib/cache.js	kvCache	KV Cache Hit Rate	>80%	rolling 7d	LIVE_WITH_KPI	60s TTL flag cache
+F-HD-050	HumanDesign	infra	prod	metric	workers/src/lib/cache.js	CACHE.put/get	CF Cache Performance	>90%	rolling 7d	LIVE_NO_KPI	No hit metrics
+F-HD-051	HumanDesign	feature-flag	prod	feature-flag	077_feature_flags_seed.sql	enabled=true	ACHIEVEMENTS_VISIBLE	100%	daily	LIVE_WITH_KPI	rollout_pct=100
+F-HD-052	HumanDesign	feature-flag	prod	feature-flag	077_feature_flags_seed.sql	enabled=false	CLUSTERS_VISIBLE	0%	daily	LIVE_NO_KPI	Cluster endpoints gated
+F-HD-053	HumanDesign	feature-flag	prod	feature-flag	077_feature_flags_seed.sql	enabled=false	DIVINATION_ENABLED	0%	daily	LIVE_NO_KPI	divination_readings gated
+F-HD-054	HumanDesign	feature-flag	prod	feature-flag	077_feature_flags_seed.sql	enabled=false	ONE_TIME_PURCHASES_VISIBLE	0%	daily	LIVE_NO_KPI	Synthesis token hidden
+F-HD-055	HumanDesign	feature-flag	prod	feature-flag	077_feature_flags_seed.sql	enabled=false	EXPERIMENTS_ENABLED	0%	daily	LIVE_NO_KPI	Policy: enable when DAU>=500
+F-HD-056	HumanDesign	feature-flag	prod	feature-flag	077_feature_flags_seed.sql	enabled=false	NOTION_SYNC_ACTIVE	0%	daily	LIVE_NO_KPI	Gate until >=5 practitioner requests
+F-HD-057	HumanDesign	feature-flag	prod	feature-flag	workers/src/handlers/agent-commerce.js:158	disable_checkout=true	ACS Checkout Gate	0% disabled	daily	LIVE_NO_KPI	Pending sandbox validation
+F-HD-058	HumanDesign	user-facing	prod	http	workers/src/handlers/profile.js	trackEvent(PROFILE_GENERATE)	Profile Refine Synthesis	>100/wk	rolling 7d	LIVE_WITH_KPI	Track 2.4 incremental
+F-HD-059	HumanDesign	user-facing	prod	http	workers/src/handlers/profile.js	trackEvent(PROFILE_GENERATE)	Profile Preview Teaser	>500/wk	rolling 7d	LIVE_WITH_KPI	Track 4.6 rule-based
+F-HD-060	HumanDesign	user-facing	prod	db_column	profiles.created_at	trackEvent(PROFILE_GENERATE)	Total Synthesis Requests	>1000/day	rolling 7d	LIVE_WITH_KPI	LLM cost via llm_token_tracking
+F-HD-061	HumanDesign	user-facing	prod	db_column	practitioner_reviews.created_at	none	Practitioner Review Submissions	>20/wk	rolling 7d	LIVE_NO_KPI	reviews CRUD; no trackEvent
+F-HD-062	HumanDesign	user-facing	prod	http	workers/src/handlers/admin.js	trackEvent(ADMIN_ACCESS)	Admin Dashboard Access	>5/day	rolling 7d	LIVE_NO_KPI	Fires; no SLA
+F-HD-063	HumanDesign	user-facing	prod	http	workers/src/handlers/admin-analytics.js	none	Admin Analytics Overview	>1/day	rolling 7d	LIVE_NO_KPI	DAU/WAU/MAU endpoints; no trackEvent
+F-HD-064	HumanDesign	user-facing	prod	db_column	email_deliveries.created_at	none	Email Delivery Success	>95%	rolling 7d	LIVE_NO_KPI	No trackEvent
+F-HD-065	HumanDesign	user-facing	prod	http	workers/src/handlers/push.js	via email_weekly_digest_sent	Push Notification Delivery	>90%	rolling 7d	LIVE_NO_KPI	APNs + FCM; no dedicated event
+F-HD-066	HumanDesign	user-facing	prod	db_column	practitioner_inquiries.created_at	none	Practitioner Inquiry Volume	>50/wk	rolling 7d	LIVE_NO_KPI	Contact form; no trackEvent
+F-HD-067	HumanDesign	user-facing	prod	db_column	agency_inquiries.created_at	none	Agency Contact Inquiries	>10/wk	rolling 7d	LIVE_NO_KPI	Contact form; no trackEvent
+F-HD-068	HumanDesign	user-facing	prod	http	workers/src/handlers/client-portal.js	none	Client Portal Session Access	>100/wk	rolling 7d	LIVE_NO_KPI	GC-BACKEND-1; no trackEvent
+F-HD-069	HumanDesign	user-facing	prod	http	workers/src/handlers/session-notes.js	trackEvent via context	Session AI Summary Generation	>50/wk	rolling 7d	LIVE_NO_KPI	AI context; no dedicated event
+F-HD-070	HumanDesign	user-facing	prod	http	workers/src/handlers/session-actions.js	none	Session Action Completion	>200/wk	rolling 7d	LIVE_NO_KPI	Action tracking; no trackEvent
+F-HD-071	HumanDesign	user-facing	prod	db_column	dreams.created_at	none	Dream Journal Entries	>100/wk	rolling 7d	LIVE_NO_KPI	dreams table; no trackEvent
+F-HD-072	HumanDesign	user-facing	prod	http	workers/src/handlers/dream-weaver.js	none	Dream Analysis LLM	>50/wk	rolling 7d	LIVE_NO_KPI	LLM synthesis; no trackEvent
+F-HD-073	HumanDesign	user-facing	prod	http	workers/src/handlers/onboarding.js	trackEvent(ONBOARDING_*)	Onboarding Completion	>60%	rolling 7d	LIVE_WITH_KPI	Savannah story arc; 40+ shell events
+F-HD-074	HumanDesign	user-facing	prod	http	workers/src/handlers/auth.js	trackEvent(PASSWORD_RESET)	Password Reset Completions	>50/wk	rolling 7d	LIVE_WITH_KPI	Fires on reset request
+F-HD-075	HumanDesign	user-facing	prod	http	workers/src/handlers/auth.js	none	Email Verification Rate	>90%	rolling 7d	LIVE_NO_KPI	verify-email; no trackEvent
+F-HD-076	HumanDesign	user-facing	prod	http	workers/src/handlers/auth.js	trackEvent(TOKEN_REFRESH)	Token Refresh Rate	>1000/day	rolling 7d	LIVE_WITH_KPI	JWT rotation
+F-HD-077	HumanDesign	user-facing	prod	http	workers/src/handlers/auth.js	trackEvent(LOGOUT)	Session Logout Rate	>200/day	rolling 7d	LIVE_WITH_KPI	Fires on logout
+F-HD-078	HumanDesign	user-facing	prod	http	workers/src/handlers/stats.js	trackEvent(PAGE_VIEW)	Activity Stats Public View	>500/day	rolling 7d	LIVE_WITH_KPI	Social proof endpoint
+F-HD-079	HumanDesign	user-facing	prod	http	workers/src/handlers/testimonials.js	none	Testimonial Submissions	>10/wk	rolling 7d	LIVE_NO_KPI	BL-TESTIMONIALS-001; no event
+F-HD-080	HumanDesign	user-facing	prod	db_column	platform_testimonials.created_at	none	Platform Testimonial Count	>50	rolling 7d	LIVE_NO_KPI	No trackEvent
+F-HD-081	HumanDesign	user-facing	prod	http	workers/src/handlers/agency.js	none	Agency Account Creation	>2/wk	rolling 7d	LIVE_NO_KPI	White-label; no trackEvent
+F-HD-082	HumanDesign	user-facing	prod	db_column	entitlements.created_at	none	Entitlement Assignment Rate	>50/wk	rolling 7d	LIVE_NO_KPI	Practitioner-client mapping
+F-HD-083	HumanDesign	data	prod	audit_log	073_audit_log.sql	none	Account Deletion Audit Trail	100% logged	daily	LIVE_WITH_KPI	GDPR Article 17 compliance
+F-HD-084	HumanDesign	data	prod	audit_log	039_account_deletions_audit.sql	none	GDPR Right-to-Erasure	>5/wk	rolling 7d	LIVE_NO_KPI	Audit logged; no trackEvent
+F-HD-085	HumanDesign	monitoring	prod	metric	workers/src/lib/analytics.js	aggregateDaily	LLM Token Cost Tracking	tracked	rolling 7d	LIVE_WITH_KPI	llm_token_tracking table
+F-HD-086	HumanDesign	monitoring	prod	sentry	workers/src/lib/sentry.js	captureException	Error Exception Count	<10/day	rolling 7d	LIVE_NO_KPI	No alert threshold
+F-HD-087	HumanDesign	monitoring	prod	metric	workers/src/middleware/rateLimit.js	trackEvent(QUOTA_EXCEEDED)	Rate Limit Violations	<1%	rolling 7d	LIVE_WITH_KPI	QUOTA_EXCEEDED + RATE_LIMITED
+F-HD-088	HumanDesign	monitoring	prod	metric	workers/src/lib/analytics.js	trackEvent(DEGRADE)	Service Degradation Events	0	rolling 7d	LIVE_WITH_KPI	Fires on fail-open paths
+F-CAP-001	capricast	user-facing	prod	http	apps/web/src/app/watch/[videoId]/page.tsx:44	none	Watch Page Load P95	<1s	rolling 7d	LIVE_NO_KPI	SSR metadata + JSON-LD + OpenGraph
+F-CAP-002	capricast	user-facing	prod	http	apps/web/src/components/VideoPlayer.tsx	posthog video_played	Video Playback Success Rate	>=99%	rolling 7d	LIVE_NO_KPI	PostHog client-side; no backend
+F-CAP-003	capricast	integration	prod	http	apps/worker/src/routes/admin.ts:421	none	Import Success Rate	>=99.5%	rolling 30d	LIVE_WITH_KPI	POST /admin/videos/import; 409 on collision
+F-CAP-004	capricast	integration	prod	http	apps/worker/src/routes/admin.ts:252	none	Transcript Sync Time-to-Publish	<5min	per video	LIVE_NO_KPI	POST /admin/videos/:id/sync-captions; 202 until ready
+F-CAP-005	capricast	data	prod	db_column	packages/db/src/schema/videos.ts:54	views_count + likes_count	Video Engagement Metrics	informational	all videos	LIVE_WITH_KPI	Columns present; no UPDATE path found
+F-CAP-006	capricast	user-facing	prod	http	apps/worker/src/routes/feed.ts:17	none	For-You Feed Availability	99.5%	rolling 7d	LIVE_NO_KPI	GET /api/feed; Vectorize + KV taste vectors
+F-CAP-007	capricast	user-facing	prod	http	apps/worker/src/routes/feed.ts:81	none	Feed Like Recording	99%	rolling 7d	LIVE_NO_KPI	Updates taste vector (0.9*old + 0.1*new)
+F-CAP-008	capricast	user-facing	prod	http	apps/worker/src/routes/feed.ts:130	none	Video Completion Signal	informational	rolling 7d	NOT_INSTRUMENTED	POST /api/feed/finish; no completion %
+F-CAP-009	capricast	user-facing	prod	http	apps/worker/src/routes/creator-analytics.ts:34	none	Viewer Retention at 50%	>=60%	rolling 90d	LIVE_WITH_KPI	growth_events.watch_checkpoint
+F-CAP-010	capricast	data	prod	metric	apps/worker/src/routes/analytics.ts:42	none	D7/D14/D30 Retention	>=70% D7	rolling 30d	LIVE_NO_KPI	GET /admin/analytics/cohorts
+F-CAP-011	capricast	data	prod	metric	apps/worker/src/routes/analytics.ts:123	none	Churn Rate	<5%	rolling 30d	LIVE_NO_KPI	GET /admin/analytics/churn
+F-CAP-012	capricast	data	prod	metric	apps/worker/src/routes/analytics.ts:196	none	Conversion Funnel signup→paid	>=25%	rolling 30d	LIVE_NO_KPI	GET /admin/analytics/conversion-funnel
+F-CAP-013	capricast	data	prod	metric	apps/worker/src/routes/analytics.ts:272	none	ARPU Overall	>=$2.00	rolling 30d	LIVE_NO_KPI	GET /admin/analytics/arpu
+F-CAP-014	capricast	user-facing	prod	http	apps/worker/src/routes/creator-analytics.ts:108	none	Creator Revenue by Tier	informational	rolling 30d	LIVE_NO_KPI	subscription/unlock/tip/ad breakdown
+F-CAP-015	capricast	user-facing	prod	http	apps/web/src/app/dashboard/earnings/page.tsx	none	Creator Earnings Dashboard Load	<2s	rolling 7d	LIVE_WITH_KPI	Paginated; 30d lookback default
+F-CAP-016	capricast	user-facing	prod	http	apps/worker/src/index.ts:452	none	Dashboard Video Analytics Load	<5s	rolling 7d	LIVE_NO_KPI	10 concurrent Stream API calls
+F-CAP-017	capricast	user-facing	prod	http	apps/worker/src/index.ts:508	none	Creator Growth Dashboard	<3s	rolling 7d	LIVE_NO_KPI	clips + CTAs + growth_events
+F-CAP-018	capricast	monitoring	prod	metric	apps/worker/src/lib/governance.ts	sentry	Async Operation Failure Rate	<1%	rolling 5m	LIVE_WITH_KPI	/admin/async-failures; replay mechanism
+F-CAP-019	capricast	monitoring	prod	metric	apps/worker/src/routes/admin.ts:181	none	Admin Audit Log Coverage	100%	continuous	LIVE_WITH_KPI	adminAuditLogs table
+F-CAP-020	capricast	user-facing	prod	http	apps/worker/src/routes/seo.ts:21	none	robots.txt Availability	always	uptime	LIVE_WITH_KPI	/robots.txt
+F-CAP-021	capricast	user-facing	prod	http	apps/worker/src/routes/seo.ts:50	none	Sitemap XML Coverage	>=99%	rolling 7d	LIVE_WITH_KPI	GET /sitemap.xml; 10k limit
+F-CAP-022	capricast	data	prod	http	apps/worker/src/routes/seo.ts	none	JSON-LD Schema Validity	100%	per video	LIVE_WITH_KPI	VideoObject with transcript + interactionStatistic
+F-CAP-023	capricast	monitoring	prod	webhook	apps/worker/src/routes/webhooks.ts	none	Webhook Idempotency	no dupes	rolling 7d	LIVE_WITH_KPI	Stripe + Stream webhooks; idempotency_key
+F-CAP-024	capricast	monitoring	prod	cron	apps/worker/src/index.ts:779	cron	Async Failure Check Cron	*/5min	per run	LIVE_WITH_KPI	checkAsyncFailureRates + trending refresh
+F-CAP-025	capricast	monitoring	prod	cron	apps/worker/src/index.ts:773	cron	Creator Re-engagement	Mon 09:00 UTC	weekly	LIVE_WITH_KPI	Inactive-30d email
+F-CAP-026	capricast	monitoring	prod	cron	apps/worker/src/index.ts:789	cron	Trial Expiry Notifications	daily 10:00 UTC	daily	LIVE_WITH_KPI	handleScheduled
+F-CAP-027	capricast	user-facing	prod	http	apps/worker/src/routes/channels.ts	none	Creator Channel Pages	page p95	rolling 7d	LIVE_NO_KPI	GET /api/channels/:username
+F-CAP-028	capricast	user-facing	prod	http	apps/worker/src/routes/search.ts	none	Video Search Latency	<500ms	rolling 7d	LIVE_NO_KPI	Full-text videos+channels
+F-CAP-029	capricast	data	prod	db_column	packages/db/src/schema/interactions.ts:24	none	Chat Message Count	informational	rolling 7d	NOT_INSTRUMENTED	chat_messages + polls + poll_votes
+F-CAP-030	capricast	integration	prod	http	apps/worker/src/routes/auth.ts	none	Auth Success Rate	>=99.5%	rolling 7d	LIVE_NO_KPI	BetterAuth; no explicit error tracking
+F-CAP-031	capricast	data	prod	http	apps/worker/src/routes/stripe.ts	none	Subscription Webhook Processing	100% ack	rolling 7d	LIVE_WITH_KPI	HMAC validation
+F-CAP-032	capricast	data	prod	db_column	packages/db/src/schema/subscriptions.ts	none	Active Subscriber Count	informational	rolling 7d	LIVE_WITH_KPI	subscriptions.status enum
+F-CAP-033	capricast	data	prod	db_column	packages/db/src/schema/earnings.ts	none	Creator Earnings Recorded	informational	rolling 30d	LIVE_WITH_KPI	type + status enums
+F-CAP-034	capricast	user-facing	prod	http	apps/worker/src/routes/notifications.ts	none	Notification Delivery Rate	>=95%	rolling 7d	LIVE_NO_KPI	CORS failure observed in user console
+F-CAP-035	capricast	monitoring	prod	websocket	apps/worker/src/index.ts:297	none	Video Room WebSocket Uptime	>=99.9%	rolling 7d	LIVE_NO_KPI	DO VideoRoom; live chat + presence
+F-CAP-036	capricast	data	prod	db_column	packages/db/src/schema/growth.ts:88	none	Growth Event Tracking	100% logged	rolling 7d	LIVE_WITH_KPI	clip_click + cta_* + watch_checkpoint
+F-CAP-037	capricast	data	prod	db_column	packages/db/src/schema/videos.ts:70	none	Video Metadata Completeness	100% title+desc	per upload	LIVE_NO_KPI	transcript optional via sync-captions
+F-CAP-038	capricast	user-facing	prod	http	apps/worker/src/routes/moderation.ts	none	Content Moderation Latency	<24h	rolling 7d	LIVE_NO_KPI	Unresolved + resolved statuses
+F-CAP-039	capricast	user-facing	prod	http	apps/worker/src/routes/ads.ts	none	Ad Impression Tracking	>=99%	rolling 7d	LIVE_NO_KPI	POST /api/ads/impression; earnings recorded
+F-CAP-040	capricast	integration	prod	http	apps/worker/src/routes/stripe.ts	none	Payout Reconciliation	monthly accurate	monthly	LIVE_WITH_KPI	payout_runs table; currency + tax
+F-CAP-041	capricast	data	prod	http	apps/worker/src/routes/payouts.ts	none	Payout Time-to-Creator	<=3 business days	rolling 30d	LIVE_NO_KPI	stripe_payout_id linkage
+F-CAP-042	capricast	user-facing	prod	http	apps/worker/src/routes/experiments.ts	none	A/B Test Assignment Rate	100% coverage	rolling 7d	LIVE_NO_KPI	GET /api/experiments/:id (placeholder)
+F-CAP-043	capricast	user-facing	prod	http	apps/web/src/components/EntitlementsContext.tsx	posthog.identify	User Entitlement Sync	100% on login	per session	LIVE_WITH_KPI	PostHog identify; resets on logout
+F-CAP-044	capricast	user-facing	prod	http	apps/web/src/components/SignUpForm.tsx	posthog sign_up_completed	Sign-up Conversion	informational	rolling 7d	LIVE_WITH_KPI	No backend duplicate tracking
+F-CAP-045	capricast	user-facing	prod	http	apps/web/src/components/SubscribeButton.tsx	posthog subscription_cta_clicked	Subscription CTA CTR	informational	rolling 7d	LIVE_NO_KPI	No impression metric linked
+F-CAP-046	capricast	monitoring	prod	metric	apps/worker/src/index.ts:155	none	Health Check Endpoint	<100ms	rolling 7d	LIVE_WITH_KPI	GET /health
+F-CAP-047	capricast	data	prod	db_column	packages/db/src/schema/users.ts	none	Creator Verification	informational	rolling 30d	LIVE_WITH_KPI	blerdartVerified flag
+F-CAP-048	capricast	integration	prod	http	apps/worker/src/routes/admin.ts:64	none	Creator Verification Audit	100% logged	continuous	LIVE_WITH_KPI	verify_creator action logged
+F-CAP-049	capricast	user-facing	prod	http	apps/worker/src/routes/feed.ts	none	Feed Cold-Start Handling	100% success	rolling 7d	LIVE_NO_KPI	Falls back to trending + diversity
+F-CAP-050	capricast	integration	prod	http	apps/worker/src/routes/videos.ts:14	none	Video Publish Queue	informational	rolling 7d	NOT_INSTRUMENTED	POST /videos queues to EMBEDDING_QUEUE; 202
+F-COH-001	coh	user-facing	prod	http	src/routes/booking.ts:13	none	Booking Slot Availability	<200ms p95	rolling 24h	LIVE_NO_KPI	GET /api/booking/slots
+F-COH-002	coh	user-facing	prod	http	src/routes/booking.ts:30	none	Appointment Conversion Rate	>8%	daily	LIVE_NO_KPI	POST /api/booking/book; deposit_paid
+F-COH-003	coh	user-facing	prod	http	src/routes/store.ts	none	Product Page Load	<300ms p95	rolling 24h	LIVE_NO_KPI	12 HTTP handlers
+F-COH-004	coh	user-facing	prod	db_column	orders.total	none	Store Revenue	informational	daily	LIVE_NO_KPI	Stripe PI via webhooks.ts:60
+F-COH-005	coh	user-facing	prod	http	src/routes/academy.ts	none	Course Enrollment Rate	>5% of page views	daily	LIVE_NO_KPI	POST /api/academy/enroll
+F-COH-006	coh	user-facing	prod	db_column	enrollments.progress_percent	none	Lesson Completion Rate	>60%	per-enrollment	LIVE_NO_KPI	lesson_progress.completed
+F-COH-007	coh	user-facing	prod	http	src/routes/events.ts	none	Event Registration Rate	>10%	daily	LIVE_NO_KPI	POST /api/events/register
+F-COH-008	coh	user-facing	prod	http	src/routes/subscriptions.ts:33	none	Membership Subscription Conversion	>3%	daily	LIVE_NO_KPI	POST /api/subscriptions/subscribe
+F-COH-009	coh	user-facing	prod	http	src/routes/show.ts:79	none	Podcast Episode Engagement	>40% completion	per-episode	LIVE_NO_KPI	POST /:slug/view increments
+F-COH-010	coh	user-facing	prod	db_column	lessons.audio_narration_url	none	Audio Narration Coverage	>80%	static	LIVE_NO_KPI	ElevenLabs TTS
+F-COH-011	coh	user-facing	prod	http	src/routes/auth.ts	none	Auth Success Rate	>95%	rolling 24h	LIVE_NO_KPI	18 handlers; JWT validation
+F-COH-012	coh	integration	prod	webhook	src/routes/webhooks.ts:34	none	Stripe Webhook Success	>99%	rolling 24h	LIVE_NO_KPI	POST /api/webhooks/stripe; idempotency via KV
+F-COH-013	coh	integration	prod	webhook	src/routes/webhooks.ts:60	none	Order Payment Completion	100% for paid	per-order	LIVE_NO_KPI	checkout.session.completed
+F-COH-014	coh	integration	prod	webhook	src/routes/webhooks.ts:154	none	Subscription State Sync	100% for active	per-subscription	LIVE_NO_KPI	customer.subscription.updated
+F-COH-015	coh	integration	prod	http	src/routes/communications.ts	none	Appointment Reminder Delivery	>90% SMS sent	rolling 24h	LIVE_NO_KPI	Telnyx SMS
+F-COH-016	coh	integration	prod	cron	src/index.ts:192	none	Cron Execution Success	100%	rolling 24h	LIVE_NO_KPI	0 * * * * hourly
+F-COH-017	coh	integration	prod	event	src/db/schema.ts:416	none	User Activity Log Completeness	>95%	per-action	LIVE_NO_KPI	activity_log cross-stream
+F-COH-018	coh	data	prod	db_column	users.stripe_customer_id	none	Stripe Customer Coverage	100% paying	static	LIVE_NO_KPI	Unified across streams
+F-COH-019	coh	data	prod	db_column	users.membership_tier	none	Membership Tier Distribution	informational	weekly	LIVE_NO_KPI	free/vip/inner_circle
+F-COH-020	coh	data	prod	db_column	users.phone	none	Phone Opt-In Coverage	>70%	rolling 24h	LIVE_NO_KPI	smsOptIn voiceOptIn
+F-COH-021	coh	integration	prod	http	src/routes/admin-audio.ts	none	Audio Narration Cost	tracked monthly	monthly	LIVE_NO_KPI	ElevenLabs; 8 endpoints
+F-COH-022	coh	integration	prod	http	src/routes/admin-booking.ts	none	Appointment No-Show Rate	<15%	daily	LIVE_NO_KPI	status.no_show tracking
+F-COH-023	coh	monitoring	prod	http	src/index.ts:83	none	Health Check Latency	<100ms p99	rolling 5m	LIVE_WITH_KPI	GET /health DB-backed
+F-COH-024	coh	monitoring	prod	sentry	src/middleware/errors.ts	none	Error Rate	<0.5%	rolling 24h	LIVE_NO_KPI	@latimer-woods-tech/monitoring
+F-COH-025	coh	monitoring	prod	sentry	src/index.ts:197	none	Unhandled Exception Capture	100%	real-time	LIVE_NO_KPI	withSentry per-request
+F-COH-026	coh	monitoring	prod	http	src/routes/admin-db.ts	none	Database Query Latency	<500ms p95	rolling 24h	LIVE_NO_KPI	5 admin debug endpoints
+F-COH-027	coh	infra	prod	metric	wrangler.jsonc:1	none	Worker Deployment Frequency	>1/week	weekly	LIVE_NO_KPI	cypher-of-healing-api
+F-COH-028	coh	infra	prod	metric	wrangler.jsonc:33	none	KV Session Store Hit Rate	>95%	rolling 24h	LIVE_NO_KPI	SESSIONS KV; idempotency
+F-COH-029	coh	infra	prod	metric	wrangler.jsonc:41	none	R2 Media Bucket Requests	informational	monthly	LIVE_NO_KPI	cypher-healing-media
+F-COH-030	coh	content	prod	db_column	lessons.video_url	none	Video Lesson Coverage	>70%	static	LIVE_NO_KPI	Cloudflare Stream URLs
+F-COH-031	coh	content	prod	db_column	episodes.stream_video_uid	none	Podcast Availability	>90%	static	LIVE_NO_KPI	Stream + membership-gated
+F-COH-032	coh	user-facing	prod	http	src/routes/admin-course.ts	none	Course Management Operations	<2s	per-op	LIVE_NO_KPI	26 admin endpoints
+F-COH-033	coh	user-facing	prod	http	src/routes/admin-events.ts	none	Event Admin Performance	<1s	per-op	LIVE_NO_KPI	11 admin endpoints
+F-COH-034	coh	user-facing	prod	http	src/routes/admin-store.ts	none	Product Admin Responsiveness	<500ms	per-op	LIVE_NO_KPI	12 endpoints; inventory + pricing
+F-COH-035	coh	integration	prod	http	src/routes/communications.ts	none	Video Room Creation	100% success	per-room	LIVE_NO_KPI	Telnyx RTC createRTCRoom
+F-COH-036	coh	data	prod	db_column	appointments.deposits_paid	none	Deposit Collection Rate	>90% confirmed	per-appt	LIVE_NO_KPI	Boolean via Stripe PI
+F-COH-037	coh	data	prod	db_column	orders.source_appointment_id	none	Cross-Stream Appt→Store	>15%	daily	LIVE_NO_KPI	FK tracking
+F-COH-038	coh	data	prod	db_column	enrollments.source_event_id	none	Cross-Stream Event→Academy	>10%	daily	LIVE_NO_KPI	Event-driven course enrollment
+F-COH-039	coh	monitoring	prod	http	src/routes/seo.ts	none	SEO Endpoint Latency	<500ms p95	rolling 24h	LIVE_NO_KPI	sitemap.xml + robots.txt
+F-COH-040	coh	user-facing	dev	http	src/routes/admin-seed.ts	none	Data Seeding Availability	dev/staging only	N/A	LIVE_NO_KPI	2 endpoints
+F-COH-041	coh	data	prod	db_column	coupons.code	none	Coupon Redemption Rate	>8%	daily	LIVE_NO_KPI	appliesToStream logic
+F-COH-042	coh	integration	prod	event	src/routes/webhooks.ts:200	none	Event Webhook Liveness	100% for registered	per-event	LIVE_NO_KPI	event.registration.created
+F-COH-043	coh	monitoring	prod	metric	.github/workflows/deploy.yml:92	none	Deployment Health Check Success	100%	per-deploy	LIVE_WITH_KPI	3-point: root + DB + auth negative
+F-COH-044	coh	integration	prod	http	src/routes/webhooks.ts	none	Webhook Processing Latency	<1s p95	rolling 24h	LIVE_NO_KPI	Stripe 4 event types
+F-COH-045	coh	content	prod	db_column	episodes.audio_url	none	Podcast Audio Fallback	100% for published	static	LIVE_NO_KPI	R2 backup; membershipGated
+F-XC-001	xico-city	monitoring	prod	http	src/routes/health.ts	none	Worker Health Availability	100%	rolling 5m	LIVE_NO_KPI	GET /health; worker/env/commit/uptime
+F-XC-002	xico-city	monitoring	prod	sentry	src/middleware/sentry.ts	none	Error Rate (p50 gate)	<1%	5m	LIVE_NO_KPI	Sentry tagged worker/env/release/route
+F-XC-003	xico-city	data	all	db_column	src/db/schema.ts	none	Tranche A Schema Completeness	10/10 tables	at merge	LIVE_NO_KPI	users/sessions/profiles/assets/jobs/listings/orders/media/lineage/transformations
+F-XC-004	xico-city	integration	prod	workflow	.github/workflows/ci.yml	none	CI Gate Success Rate	100%	per-push	LIVE_NO_KPI	tsc + lint + test + coverage + registry + forbidden-apis
+F-XC-005	xico-city	monitoring	prod	workflow	.github/workflows/deploy.yml	none	Post-Deploy Health Verification	100%	per-deploy	LIVE_NO_KPI	curl /health; auto-rollback on 503+
+F-XC-006	xico-city	user-facing	planned	http	src/routes/auth/register.ts	none	Creator Registration Conversion	>40%	daily	NOT_INSTRUMENTED	BetterAuth; rate-limit 5/1h/IP; factory_events not wired
+F-XC-007	xico-city	user-facing	planned	http	src/routes/auth/login.ts	none	Creator Login Success Rate	>85%	rolling 7d	NOT_INSTRUMENTED	BetterAuth; rate-limit 10/15m/IP
+F-XC-008	xico-city	user-facing	planned	http	src/routes/auth/refresh.ts	none	Session Validity Ratio	>95%	rolling 7d	NOT_INSTRUMENTED	Cookie rotation; Neon-revocable
+F-XC-009	xico-city	user-facing	prod	http	src/routes/uploads/presign.ts	none	Upload Presign Success Rate	>95%	rolling 7d	LIVE_NO_KPI	POST /v1/uploads/presign; tier-gated 25/100/500MB
+F-XC-010	xico-city	user-facing	prod	http	src/routes/uploads/confirm.ts	none	Asset Created After Upload	>90%	rolling 7d	LIVE_NO_KPI	Validates R2 exists; dispatches to Cloud Run
+F-XC-011	xico-city	user-facing	prod	http	src/routes/jobs/get.ts	none	Job Polling Latency	<200ms p95	rolling 5m	LIVE_NO_KPI	GET /v1/jobs/:id
+F-XC-012	xico-city	user-facing	prod	http	src/routes/jobs/cut-points.ts	none	Cut-Point Review Accuracy	>85% accept	rolling 7d	NOT_INSTRUMENTED	UI saves user adjustments; confidence scores stored
+F-XC-013	xico-city	user-facing	prod	http	src/routes/jobs/confirm.ts	none	Slice Render Success Rate	>95%	rolling 7d	NOT_INSTRUMENTED	Phase 2 render; target <10min p95 E2E
+F-XC-014	xico-city	integration	prod	http	src/services/processor.ts	none	Processor Dispatch Success	>99%	rolling 5m	LIVE_NO_KPI	HMAC-SHA256; 202; no latency tracking
+F-XC-015	xico-city	cron	prod	workflow	src/cron/watchdog.ts	none	Stuck Job Recovery Rate	>99%	rolling 5m	LIVE_WITH_KPI	Every 5min; sweeps running>30m
+F-XC-016	xico-city	user-facing	planned	http	src/routes/assets/separate.ts	none	Stem Separation Completion	>90%	rolling 7d	NOT_INSTRUMENTED	Demucs PLANNED
+F-XC-017	xico-city	user-facing	planned	http	src/routes/assets/vocal-process.ts	none	Vocal Processing Completion	>85%	rolling 7d	NOT_INSTRUMENTED	Pitch + breath-trim PLANNED
+F-XC-018	xico-city	user-facing	planned	http	src/routes/me/vocal-profile.ts	none	Vocal Profile Adoption	>30% of vocalists	rolling 7d	NOT_INSTRUMENTED	vocal_range_profile JSONB
+F-XC-019	xico-city	financial	planned	http	src/routes/me/connect.ts	none	Stripe Connect Onboarding	>70%	rolling 7d	NOT_INSTRUMENTED	Express redirect PLANNED
+F-XC-020	xico-city	financial	prod	webhook	src/routes/webhooks/stripe-connect.ts	none	Connect Webhook Idempotency	100%	rolling 5m	LIVE_NO_KPI	stripe_events.event_id PK
+F-XC-021	xico-city	data	planned	http	src/routes/me/notifications.ts	none	Notification Delivery Rate	>95%	rolling 7d	NOT_INSTRUMENTED	Resend transactional + in-app
+F-XC-022	xico-city	user-facing	planned	http	src/routes/me/onboarding.ts	none	Onboarding Completion	>60%	rolling 7d	NOT_INSTRUMENTED	11 creator roles
+F-XC-023	xico-city	user-facing	planned	http	src/routes/me/roles.ts	none	Role Activation Rate	>80% of completers	rolling 7d	NOT_INSTRUMENTED	users.roles JSONB
+F-XC-024	xico-city	user-facing	planned	http	src/routes/listings/index.ts	none	Listing Publication Rate	>50%	rolling 7d	NOT_INSTRUMENTED	listings.status draft→published
+F-XC-025	xico-city	user-facing	planned	webhook	src/routes/webhooks/stripe-checkout.ts	none	Order Completion Rate	>85%	rolling 7d	NOT_INSTRUMENTED	checkout.session.completed; licenses table missing
+F-XC-026	xico-city	user-facing	planned	http	src/routes/listings/search.ts	none	Search Result Latency	<600ms p95	rolling 5m	LIVE_NO_KPI	FTS + Camelot + BPM + license filters
+F-XC-027	xico-city	user-facing	planned	http	src/routes/me/download.ts	none	License Download Success	>98%	rolling 7d	NOT_INSTRUMENTED	Presigned URL relay; licenses table missing
+F-XC-028	xico-city	data	planned	db_column	assetAnalyses	none	Musical Analysis Coverage	>95% of audio	rolling 7d	PLANNED	BPM/Camelot/chords/loudness/mix; Demucs not integrated
+F-XC-029	xico-city	compliance	planned	cron	(not in code)	none	GDPR Deletion Compliance	100% at day 31	per-deletion	PLANNED	gdpr-erase cron; data_deletion_requests table missing
+F-XC-030	xico-city	compliance	planned	http	(not in code)	none	Consent Log Completeness	100%	per-action	PLANNED	consent_logs schema present; no handlers wired
+F-XC-031	xico-city	compliance	planned	http	(not in code)	none	DMCA Takedown Response	<24h SLA	per-takedown	PLANNED	dmca_takedowns table missing; 3-strike policy in spec

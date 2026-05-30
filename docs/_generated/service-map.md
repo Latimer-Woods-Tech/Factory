@@ -7,14 +7,14 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Service Map"
 generator: npm run docs:diagrams
-last_generated: 2026-05-29
+last_generated: 2026-05-30
 source:
   - docs/service-registry.yml
 ---
 
 # Factory Service Map
 
-**Source hash:** `sha256:15fd36d05231da9b5462fb7895e6dcd1b7e18d028715b865e498b0edb1ad48c6`
+**Source hash:** `sha256:5eb93ef8a0f805506403061e76526b92596288cca070bb82e63e34e815ba5a00`
 
 ```mermaid
 flowchart LR
