@@ -19,11 +19,21 @@ export interface HealthRollup {
 }
 
 const WORKERS: Array<{ name: string; url: string }> = [
-  { name: 'supervisor', url: 'https://factory-supervisor.adrper79.workers.dev/health' },
-  { name: 'schedule-worker', url: 'https://schedule-worker.adrper79.workers.dev/health' },
-  { name: 'video-cron', url: 'https://video-cron.adrper79.workers.dev/health' },
-  { name: 'synthetic-monitor', url: 'https://synthetic-monitor.adrper79.workers.dev/health' },
+  // Canonical branded URLs from docs/service-registry.yml (url field)
+  { name: 'supervisor', url: 'https://supervisor.latwoodtech.work/health' },
+  { name: 'schedule-worker', url: 'https://schedule.latwoodtech.work/health' },
+  { name: 'video-cron', url: 'https://video-cron.latwoodtech.work/health' },
+  { name: 'synthetic-monitor', url: 'https://monitor.latwoodtech.work/health' },
+  { name: 'status-prober', url: 'https://status.latwoodtech.work/health' },
+  { name: 'admin-studio', url: 'https://api.apunlimited.com/health' },
+  { name: 'capricast-api', url: 'https://api.capricast.com/health' },
+  { name: 'cypher-healing', url: 'https://api.cipherofhealing.com/health' },
+  { name: 'factory-core-api', url: 'https://core.latwoodtech.work/health' },
+  { name: 'webhook-fanout', url: 'https://webhooks.latwoodtech.work/health' },
+  // Workers without branded domains — keep workers.dev for internal infra
   { name: 'daily-brief', url: 'https://daily-brief.adrper79.workers.dev/health' },
+  { name: 'qa-tools-worker', url: 'https://api.qa.latimerwoods.dev/health' },
+  { name: 'lead-gen', url: 'https://lead-gen.adrper79.workers.dev/health' },
 ];
 
 export async function fetchWorkerHealth(): Promise<HealthRollup> {
