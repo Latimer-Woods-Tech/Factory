@@ -17,12 +17,14 @@
 # Secrets are injected from GCP Secret Manager at deploy time (never in source
 # or in cloudbuild vars). The render service reads them from the environment:
 #   VIDEO_RENDER_HMAC_SECRET  <- VIDEO_RENDER_HMAC_SECRET   (signed contract, D10)
-#   CF_ACCOUNT_ID             <- CLOUDFLARE_ACCOUNT_ID      (Cloudflare account)
-#   CF_STREAM_TOKEN           <- cf-stream-token            (Stream API token)
-#   R2_ACCESS_KEY_ID          <- r2-access-key-id           (R2 S3 access key)
-#   R2_SECRET_ACCESS_KEY      <- r2-secret-access-key        (R2 S3 secret)
-#   R2_BUCKET_NAME            <- r2-bucket-name              (R2 bucket)
-#   R2_PUBLIC_DOMAIN          <- r2-public-domain            (public R2 host)
+#   CF_ACCOUNT_ID             <- CF_ACCOUNT_ID              (Cloudflare account)
+#   CF_STREAM_TOKEN           <- CF_STREAM_TOKEN            (Stream API token)
+#   R2_ACCESS_KEY_ID          <- R2_ACCESS_KEY_ID           (R2 S3 access key)
+#   R2_SECRET_ACCESS_KEY      <- R2_SECRET_ACCESS_KEY        (R2 S3 secret)
+#   R2_BUCKET_NAME            <- R2_BUCKET_NAME              (R2 bucket)
+#   R2_PUBLIC_DOMAIN          <- R2_PUBLIC_DOMAIN            (public R2 host)
+# (Secret names match the FIRST candidate fetch_to_env uses in render-video.yml;
+#  the lowercase variants are not present in this project.)
 # R2_ACCOUNT_ID is the Cloudflare account id (R2 is account-scoped); injected as
 # a non-secret substitution to match apps/browser-agent.
 #
@@ -85,7 +87,7 @@ steps:
       # PRIVATE: HMAC-gated, server-to-server only. Never public.
       - --no-allow-unauthenticated
       - --set-env-vars=R2_ACCOUNT_ID=${_R2_ACCOUNT_ID}
-      - --set-secrets=VIDEO_RENDER_HMAC_SECRET=VIDEO_RENDER_HMAC_SECRET:latest,CF_ACCOUNT_ID=CLOUDFLARE_ACCOUNT_ID:latest,CF_STREAM_TOKEN=cf-stream-token:latest,R2_ACCESS_KEY_ID=r2-access-key-id:latest,R2_SECRET_ACCESS_KEY=r2-secret-access-key:latest,R2_BUCKET_NAME=r2-bucket-name:latest,R2_PUBLIC_DOMAIN=r2-public-domain:latest
+      - --set-secrets=VIDEO_RENDER_HMAC_SECRET=VIDEO_RENDER_HMAC_SECRET:latest,CF_ACCOUNT_ID=CF_ACCOUNT_ID:latest,CF_STREAM_TOKEN=CF_STREAM_TOKEN:latest,R2_ACCESS_KEY_ID=R2_ACCESS_KEY_ID:latest,R2_SECRET_ACCESS_KEY=R2_SECRET_ACCESS_KEY:latest,R2_BUCKET_NAME=R2_BUCKET_NAME:latest,R2_PUBLIC_DOMAIN=R2_PUBLIC_DOMAIN:latest
 
 images:
   - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}
