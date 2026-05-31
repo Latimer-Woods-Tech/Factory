@@ -10,11 +10,23 @@ import { serve } from '@hono/node-server';
 import { createApp } from './index.js';
 import { createRenderPipeline } from './pipeline.js';
 
-/** @internal Read a required env var or throw a clear startup error. */
+/**
+ * @internal Read a required env var or throw a clear startup error.
+ *
+ * GCP Secret Manager values are sometimes stored with a leading UTF-8 BOM or a
+ * trailing newline (Windows editors / `echo`). Read raw, those corrupt URLs and
+ * headers — e.g. a BOM on `CF_ACCOUNT_ID` makes the Stream API path invalid and
+ * `/copy` returns HTTP 400. Strip the leading BOM and trim, matching
+ * `scripts/fetch_gcp_secrets.sh` (the documented BOM trap).
+ */
 function requireEnv(key: string): string {
-  const value = process.env[key];
-  if (!value) {
+  const raw = process.env[key];
+  if (!raw) {
     throw new Error(`Missing required environment variable: ${key}`);
+  }
+  const value = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim();
+  if (!value) {
+    throw new Error(`Environment variable is empty after trim: ${key}`);
   }
   return value;
 }
