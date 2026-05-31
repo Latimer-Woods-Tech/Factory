@@ -361,7 +361,7 @@ export function LoginPage() {
                   <button
                     type="submit"
                     disabled={submitting || !env}
-                    className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
+                    className="target-primary w-full rounded bg-emerald-600 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
                   >
                     {submitting ? (
                       <span className="flex items-center justify-center gap-2">
