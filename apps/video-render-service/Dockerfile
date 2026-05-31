@@ -17,6 +17,11 @@
 FROM mcr.microsoft.com/playwright:v1.60.0-noble AS build
 WORKDIR /repo
 
+# Root-level shared configs the packages' tsconfig/eslint extend (the package
+# tsconfig files do `extends: ../../tsconfig.internal-packages.json`). Without
+# these at the repo root the tsup `--dts` build errors with TS5083.
+COPY tsconfig.internal-packages.json .eslintrc.base.json ./
+
 # Build the local package dependency chain in CLAUDE.md order. The render
 # service consumes `video` (signed contract + private Stream upload) and
 # `video-studio` (composition + blueprint segment); video-studio needs its
@@ -27,16 +32,19 @@ COPY packages/logger        ./packages/logger
 COPY packages/video         ./packages/video
 COPY packages/video-studio  ./packages/video-studio
 
+# `--ignore-scripts` on every install: skip lifecycle hooks (video-studio's
+# `prepublish` runs lint+test+build, which needs the full repo eslint setup and
+# is redundant here — CI already gates those). We build each package explicitly.
 RUN set -eux; \
     for pkg in errors monitoring logger video; do \
       cd "/repo/packages/$pkg"; npm ci --ignore-scripts; npm run build; \
     done; \
-    cd /repo/packages/video-studio; npm install --no-audit --no-fund; npm run build
+    cd /repo/packages/video-studio; npm install --ignore-scripts --no-audit --no-fund; npm run build
 
 # Install + build the service against the freshly built local packages.
 COPY apps/video-render-service/package.json ./apps/video-render-service/package.json
 WORKDIR /repo/apps/video-render-service
-RUN npm install --no-audit --no-fund
+RUN npm install --ignore-scripts --no-audit --no-fund
 COPY apps/video-render-service/tsconfig.json apps/video-render-service/.eslintrc.json ./
 COPY apps/video-render-service/src ./src
 RUN npm run build
