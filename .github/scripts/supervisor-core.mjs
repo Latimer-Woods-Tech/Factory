@@ -56,13 +56,62 @@ async function removeLabel(repo, issueNumber, label) {
   }
 }
 
+async function ghGraphql(query, variables) {
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${GH_TOKEN}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'factory-supervisor',
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.errors) {
+    throw new Error(`GraphQL ${res.status}: ${(json.errors ?? []).map((e) => e.message).join('; ') || res.statusText}`);
+  }
+  return json.data;
+}
+
+// Assign the Copilot coding agent to an issue. Returns true only if it attached.
+//
+// CRITICAL: Copilot is a *Bot* actor, and the REST `assignees` API silently
+// DROPS bot actors — which is why prior REST-based assignment never stuck and
+// Copilot authored 0 PRs despite being licensed/available. Verified 2026-05-30:
+// copilot-swe-agent IS in every org repo's CAN_BE_ASSIGNED suggestedActors (via
+// personal Copilot Pro+ — no org seat needed), and the GraphQL
+// `replaceActorsForAssignable` mutation attaches it correctly (proved live on
+// Factory#506). If Copilot isn't in this repo's suggestedActors it isn't enabled
+// here → bail loudly and leave the issue for a human.
 async function assignCopilot(repo, issueNumber) {
   try {
-    await gh('POST', `/repos/${ORG}/${repo}/issues/${issueNumber}/assignees`, {
-      assignees: ['copilot-swe-agent'],
-    });
+    const data = await ghGraphql(
+      `query($owner:String!,$name:String!,$num:Int!){repository(owner:$owner,name:$name){issue(number:$num){id} suggestedActors(capabilities:[CAN_BE_ASSIGNED],first:100){nodes{login __typename ... on Bot{id}}}}}`,
+      { owner: ORG, name: repo, num: issueNumber },
+    );
+    const issueId = data?.repository?.issue?.id;
+    const copilot = (data?.repository?.suggestedActors?.nodes ?? []).find((n) => /copilot/i.test(n.login || ''));
+    if (!issueId || !copilot?.id) {
+      console.error(`[ERROR] Copilot coding agent not assignable on ${repo}#${issueNumber} — not enabled for this repo. Leaving for a human coder.`);
+      await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
+      return false;
+    }
+    const result = await ghGraphql(
+      `mutation($a:ID!,$ids:[ID!]!){replaceActorsForAssignable(input:{assignableId:$a,actorIds:$ids}){assignable{... on Issue{assignees(first:10){nodes{login}}}}}}`,
+      { a: issueId, ids: [copilot.id] },
+    );
+    const attached = (result?.replaceActorsForAssignable?.assignable?.assignees?.nodes ?? []).some((n) => /copilot/i.test(n.login || ''));
+    if (!attached) {
+      console.error(`[ERROR] Copilot did not attach to ${repo}#${issueNumber} after GraphQL assign. Leaving for a human coder.`);
+      await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
+      return false;
+    }
+    console.log(`[OK] Copilot coding agent assigned to ${repo}#${issueNumber} (GraphQL replaceActorsForAssignable)`);
+    return true;
   } catch (e) {
-    console.warn(`[WARN] assign copilot on ${repo}#${issueNumber}: ${e.message}`);
+    console.error(`[ERROR] assign copilot on ${repo}#${issueNumber}: ${e.message}`);
+    await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
+    return false;
   }
 }
 
@@ -1098,9 +1147,14 @@ async function main() {
       const template = matchTemplate(ctx, templates);
       if (!template) {
         if (isCopilotRerouteCandidate(repo, issue)) {
-          await addLabels(repo, issue.number, ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']);
+          // Only claim the issue for Copilot if the agent actually attached.
+          // If Copilot isn't enabled, assignCopilot labels agent:copilot-unavailable;
+          // we then mark it needs-human/blocked instead of pretending Copilot owns it.
+          const copilotOk = await assignCopilot(repo, issue.number);
+          await addLabels(repo, issue.number, copilotOk
+            ? ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']
+            : ['supervisor:no-template', 'needs-human', 'status:blocked']);
           await removeLabel(repo, issue.number, 'agent:claimed:supervisor');
-          await assignCopilot(repo, issue.number);
           await postComment(
             repo,
             issue.number,

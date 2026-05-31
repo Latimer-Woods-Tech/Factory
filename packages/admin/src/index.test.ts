@@ -118,6 +118,27 @@ describe('validateSlots', () => {
   it('throws on missing slot', async () => {
     await expect(validateSlots({ x: { type: 'string' } }, {})).rejects.toThrow(/missing slot/);
   });
+  it('validates string minLen and maxLen', async () => {
+    await expect(validateSlots({ s: { type: 'string', minLen: 3 } }, { s: 'ab' })).rejects.toThrow(/too short/);
+    await expect(validateSlots({ s: { type: 'string', maxLen: 5 } }, { s: 'toolongvalue' })).rejects.toThrow(/too long/);
+    await expect(validateSlots({ s: { type: 'string', minLen: 2, maxLen: 10 } }, { s: 'ok' })).resolves.toBeUndefined();
+  });
+  it('rejects non-string for string slot', async () => {
+    await expect(validateSlots({ s: { type: 'string' } }, { s: 42 })).rejects.toThrow(/expected string/);
+  });
+  it('rejects NaN for number slot', async () => {
+    await expect(validateSlots({ n: { type: 'number' } }, { n: Number.NaN })).rejects.toThrow(/expected number/);
+  });
+  it('rejects above-max number', async () => {
+    await expect(validateSlots({ n: { type: 'number', max: 10 } }, { n: 15 })).rejects.toThrow(/above max/);
+  });
+  it('accepts number at exact min and max bounds', async () => {
+    await expect(validateSlots({ n: { type: 'number', min: 5, max: 5 } }, { n: 5 })).resolves.toBeUndefined();
+  });
+  it('referential check rejects non-string value', async () => {
+    const check = vi.fn().mockResolvedValue(true);
+    await expect(validateSlots({ r: { type: 'referential', check, kind: 'user' } }, { r: 99 })).rejects.toThrow(/expected string/);
+  });
 });
 
 describe('createCapabilityMiddleware', () => {
@@ -275,6 +296,250 @@ describe('createCapabilityMiddleware', () => {
     });
     expect(r.status).toBe(200);
     expect(audit.records[0]!.actor).toBe('bot_123-via-hook');
+  });
+});
+
+describe('createCapabilityMiddleware — branch gaps', () => {
+  function makeAudit() {
+    const records: AuditRecord[] = [];
+    return { sink: { write: (r: AuditRecord) => { records.push(r); } }, records };
+  }
+
+  const cap: RouteCapability = {
+    route: 'POST /admin/users/:id/suspend',
+    side_effects: 'write-app',
+    required_scope: 'admin:write',
+    slots: {
+      id: { type: 'string', regex: '^u_' },
+      reason: { type: 'enum', values: ['spam', 'fraud', 'other'] },
+    },
+    extra_guard: 'requires_codeowner_approval',
+  };
+
+  const capNoGuard: RouteCapability = {
+    route: 'POST /admin/users/:id/suspend',
+    side_effects: 'write-app',
+    required_scope: 'admin:write',
+    slots: {
+      id: { type: 'string', regex: '^u_' },
+      reason: { type: 'enum', values: ['spam', 'fraud', 'other'] },
+    },
+  };
+
+  async function request(app: Hono, path: string, init: RequestInit) {
+    return app.request(`http://test${path}`, init);
+  }
+
+  // Line 418: ?? '' fires when content-type header is absent
+  it('extracts slots from path + query when content-type header is absent', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'admin', scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: capNoGuard, jwt: { secret: SECRET }, audit: audit.sink,
+    }), (c) => c.json({ ok: true }));
+    const r = await request(app, '/admin/users/u_123/suspend?reason=spam', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}` }, // no content-type
+    });
+    expect(r.status).toBe(200);
+    expect(audit.records[0]!.slots).toMatchObject({ id: 'u_123', reason: 'spam' });
+  });
+
+  // Lines 435-437: actor ?? 'unknown' when JWT payload has no sub
+  it('records actor as unknown when JWT has no sub and slot validation fails', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 }); // no sub
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      checkCodeownerApproval: () => Promise.resolve({ approved: true }),
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 422));
+    const r = await request(app, '/admin/users/bad-id/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(422);
+    expect(audit.records[0]!.actor).toBe('unknown');
+  });
+
+  // Lines 448-452: check.reason ?? 'codeowner approval required'
+  it('uses default message when codeowner rejection has no reason field', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'bot', scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      checkCodeownerApproval: () => Promise.resolve({ approved: false }), // no reason
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 403));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(403);
+    expect(audit.records[0]!.reason).toBe('codeowner approval required');
+  });
+
+  // Lines 448-452: actor ?? 'unknown' when JWT has no sub and codeowner rejects
+  it('records unknown actor when JWT has no sub and codeowner rejects', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 }); // no sub
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      checkCodeownerApproval: () => Promise.resolve({ approved: false, reason: 'no codeowner' }),
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 403));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(403);
+    expect(audit.records[0]!.actor).toBe('unknown');
+  });
+
+  // Line 458: actor ?? 'unknown' on allowed path when JWT has no sub
+  it('records unknown actor on allowed request when JWT has no sub', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 }); // no sub
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: capNoGuard, jwt: { secret: SECRET }, audit: audit.sink,
+    }), (c) => c.json({ ok: true }));
+    const r = await request(app, '/admin/users/u_123/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(200);
+    expect(audit.records[0]!.actor).toBe('unknown');
+  });
+
+  // Line 406: actorFromPayload IS defined on scope-deny path
+  it('uses actorFromPayload result on scope-deny audit', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'svc', scope: 'users:read', exp: Math.floor(Date.now() / 1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      actorFromPayload: (p) => `actor:${String(p.sub)}`,
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 403));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(403);
+    expect(audit.records[0]!.actor).toBe('actor:svc');
+  });
+
+  // Line 406 branch: actor ?? 'unknown' on scope-deny when payload has no sub
+  it('records unknown actor on scope-deny when JWT has no sub', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ scope: 'users:read', exp: Math.floor(Date.now() / 1000) + 60 }); // no sub, wrong scope
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 403));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(403);
+    expect(audit.records[0]!.actor).toBe('unknown');
+  });
+
+  // Lines 435, 448: actorFromPayload IS called in slot-fail and codeowner-deny paths
+  it('uses actorFromPayload result in slot-validation-fail audit', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'svc', scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      actorFromPayload: (p) => `actor:${String(p.sub)}`,
+      checkCodeownerApproval: () => Promise.resolve({ approved: true }),
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 422));
+    const r = await request(app, '/admin/users/bad-id/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(422);
+    expect(audit.records[0]!.actor).toBe('actor:svc');
+  });
+
+  it('uses actorFromPayload result in codeowner-deny audit', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'svc', scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      actorFromPayload: (p) => `actor:${String(p.sub)}`,
+      checkCodeownerApproval: () => Promise.resolve({ approved: false, reason: 'not approved' }),
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 403));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(403);
+    expect(audit.records[0]!.actor).toBe('actor:svc');
+  });
+
+  // Line 322: referential slot with non-string value
+  it('rejects non-string value for referential slot', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'admin', scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 });
+    const capWithRef: RouteCapability = {
+      route: 'POST /admin/users/:id/suspend',
+      side_effects: 'write-app',
+      required_scope: 'admin:write',
+      slots: {
+        id: { type: 'string', regex: '^u_' },
+        userId: { type: 'referential', kind: 'user', check: vi.fn().mockResolvedValue(true) },
+      },
+    };
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: capWithRef, jwt: { secret: SECRET }, audit: audit.sink,
+    }), (c) => c.json({ ok: true }));
+    app.onError((err, c) => c.json({ error: err.message }, 422));
+    // userId comes from JSON body as a number, not a string
+    const r = await request(app, '/admin/users/u_123/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ userId: 42 }),
+    });
+    expect(r.status).toBe(422);
+    expect(audit.records[0]!.reason).toMatch(/expected string/);
+  });
+
+  // extra_guard present but no checkCodeownerApproval fn provided — guard is skipped
+  it('skips codeowner guard when checkCodeownerApproval is not provided', async () => {
+    const audit = makeAudit();
+    const tok = await mintHs256({ sub: 'admin', scope: 'admin:write', exp: Math.floor(Date.now() / 1000) + 60 });
+    const app = new Hono();
+    app.post('/admin/users/:id/suspend', createCapabilityMiddleware({
+      capability: cap, jwt: { secret: SECRET }, audit: audit.sink,
+      // no checkCodeownerApproval
+    }), (c) => c.json({ ok: true }));
+    const r = await request(app, '/admin/users/u_1/suspend', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    });
+    expect(r.status).toBe(200);
+    expect(audit.records[0]!.status).toBe('allowed');
   });
 });
 
