@@ -86,12 +86,19 @@ interface GhTreeResponse {
  * Fetch the full repo tree for `ref` (recursive). For Factory this is
  * around 1500–2000 entries — well under the GitHub 100k-entry cap, but we
  * forward the `truncated` flag in case it ever changes.
+ *
+ * @param owner - GitHub org/user (defaults to FACTORY_OWNER = 'Latimer-Woods-Tech')
+ * @param repo  - Repository name (defaults to FACTORY_REPO = 'Factory')
  */
 export async function fetchTree(
   token: string,
   ref: string,
+  owner?: string,
+  repo?: string,
 ): Promise<{ nodes: RepoTreeNode[]; truncated: boolean; treeSha: string }> {
-  const res = await gh(token, `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/git/trees/${encodeURIComponent(ref)}?recursive=1`);
+  const o = owner ?? FACTORY_OWNER;
+  const r = repo ?? FACTORY_REPO;
+  const res = await gh(token, `/repos/${o}/${r}/git/trees/${encodeURIComponent(ref)}?recursive=1`);
   const data = await readJson<GhTreeResponse>(res);
   return {
     treeSha: data.sha,
@@ -118,13 +125,20 @@ interface GhContentResponse {
 /**
  * Read a single file at `path` on `ref`. Returns `binary: true` and omits
  * the text payload when the blob looks non-textual or exceeds {@link MAX_FILE_BYTES}.
+ *
+ * @param owner - GitHub org/user (defaults to FACTORY_OWNER = 'Latimer-Woods-Tech')
+ * @param repo  - Repository name (defaults to FACTORY_REPO = 'Factory')
  */
 export async function fetchFile(
   token: string,
   path: string,
   ref: string,
+  owner?: string,
+  repo?: string,
 ): Promise<RepoFileContent> {
-  const url = `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`;
+  const o = owner ?? FACTORY_OWNER;
+  const r = repo ?? FACTORY_REPO;
+  const url = `/repos/${o}/${r}/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`;
   const res = await gh(token, url);
   const data = await readJson<GhContentResponse>(res);
   if (data.type !== 'file') {
@@ -369,14 +383,21 @@ interface GhRunsResponse {
 
 /**
  * List issues in the repo, optionally filtered by labels.
+ *
+ * @param owner - GitHub org/user (defaults to FACTORY_OWNER = 'Latimer-Woods-Tech')
+ * @param repo  - Repository name (defaults to FACTORY_REPO = 'Factory')
  */
 export async function listIssues(
   token: string,
   state: 'open' | 'closed' = 'open',
   labels: string = '',
+  owner?: string,
+  repo?: string,
 ): Promise<Array<{ number: number; title: string; state: string; labels: string[]; url: string }>> {
+  const o = owner ?? FACTORY_OWNER;
+  const r = repo ?? FACTORY_REPO;
   const labelQuery = labels ? `&labels=${encodeURIComponent(labels)}` : '';
-  const res = await gh(token, `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/issues?state=${state}&per_page=30${labelQuery}`);
+  const res = await gh(token, `/repos/${o}/${r}/issues?state=${state}&per_page=30${labelQuery}`);
   const data = await readJson<GhIssueResponse[]>(res);
   return data.map((i) => ({
     number: i.number,
@@ -389,18 +410,56 @@ export async function listIssues(
 
 /**
  * List pull requests in the repo.
+ *
+ * @param owner - GitHub org/user (defaults to FACTORY_OWNER = 'Latimer-Woods-Tech')
+ * @param repo  - Repository name (defaults to FACTORY_REPO = 'Factory')
  */
 export async function listPullRequests(
   token: string,
   state: 'open' | 'closed' | 'all' = 'open',
+  owner?: string,
+  repo?: string,
 ): Promise<Array<{ number: number; title: string; state: string; url: string }>> {
-  const res = await gh(token, `/repos/${FACTORY_OWNER}/${FACTORY_REPO}/pulls?state=${state}&per_page=30`);
+  const o = owner ?? FACTORY_OWNER;
+  const r = repo ?? FACTORY_REPO;
+  const res = await gh(token, `/repos/${o}/${r}/pulls?state=${state}&per_page=30`);
   const data = await readJson<GhPullListResponse[]>(res);
   return data.map((p) => ({
     number: p.number,
     title: p.title,
     state: p.state,
     url: p.html_url,
+  }));
+}
+
+interface GhOrgRepo {
+  name: string;
+  full_name: string;
+  description: string | null;
+  html_url: string;
+  pushed_at: string;
+  private: boolean;
+}
+
+/**
+ * List repositories for the Latimer-Woods-Tech org, sorted by last push.
+ * Enables the AI to discover the full portfolio across Factory, HumanDesign,
+ * capricast, coh, xico-city, and other repos.
+ */
+export async function listOrgRepos(
+  token: string,
+  org: string = FACTORY_OWNER,
+  perPage = 30,
+): Promise<Array<{ name: string; fullName: string; description: string | null; url: string; pushedAt: string; private: boolean }>> {
+  const res = await gh(token, `/orgs/${encodeURIComponent(org)}/repos?sort=pushed&per_page=${perPage}`);
+  const data = await readJson<GhOrgRepo[]>(res);
+  return data.map((r) => ({
+    name: r.name,
+    fullName: r.full_name,
+    description: r.description,
+    url: r.html_url,
+    pushedAt: r.pushed_at,
+    private: r.private,
   }));
 }
 
