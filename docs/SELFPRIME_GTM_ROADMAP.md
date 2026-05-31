@@ -15,26 +15,32 @@ share cards, push, audio) are the flywheel that *feeds* it. Guiding rule: **gate
 cost.**
 
 ## Validated dormant-asset inventory
-> Runtime-probed 2026-05-31 against `api.selfprime.net` using a live verified free-tier account.
-> Three-layer validation: static (code), structural (routing+tests), **runtime (real API response)**.
+> **Three-layer runtime validation** completed 2026-05-31 against `api.selfprime.net` (two live
+> verified free-tier probe accounts, both cleaned up post-sweep). Probed with corrected paths from
+> source-code inspection — every "404" was re-probed with the correct endpoint to distinguish
+> *wrong path in probe* from *broken in production*.
 
-| Asset | Runtime result | Classification |
+| Asset | Runtime status | Classification |
 |---|---|---|
-| **Celebrity match** | ✅ **LIVE** — returns 5 real matches with similarity scores (Lady Gaga #1 for Generator/Sacral/2-4). 30 celebrities, 5+ categories. Requires a saved chart (correct gate). `/category/:cat` and `/search` routes return 404 — unregistered or route-pattern mismatch. **3 of 4 endpoints functional.** | Light up + fix 2 routes |
-| **Profile preview** | ✅ **LIVE** — returns real rule-based teaser with chart summary, `upgradeRequired:true`, real copy ("You are a Generator with Single Definition…"). Correctly gates full reading to paid. | Already working; **expose in UI** |
-| **Agentic commerce feed** | ✅ **LIVE** — real CSV with product data | Already live; promote |
-| **Profile generate gate** | ✅ **CORRECTLY GATED** — `429 Usage quota exceeded` for free tier after first generation (not a bug; correct) | Working |
-| **Share / OG cards** (`share.js`, `share-og.js`) | ✅ built, tested — `GET /api/share` returns 404 in runtime (no saved shares yet; list-empty vs not-found ambiguous) | Light up; verify list-vs-404 edge case |
-| **Dream interpretation** (`dream-weaver.js`) | ⚠️ **404 in production** — handler exists + is 447 lines but `POST /api/dream-weaver/interpret` returns `Not found`. Route may be registered differently or behind a feature flag. **Needs investigation before Wave 1.** | **Debug before build** |
-| **Notion export** (`notion.js`) | 🔒 **Feature-flagged off** — `403 "Notion sync is currently disabled."` Explicitly gated. | **Enable flag or remove gate** before Wave 2 |
-| **Team/group cluster** (`cluster.js`) | 🔒 **Feature-flagged off** — `403 "Cluster features are currently disabled."` 792-line handler exists but globally disabled. | **Enable flag** before Wave 3 |
-| **Practitioner session layer** (`live-session`, `messages`, `session-notes`) | ❌ **All 404 in production** — 6 tests pass locally but all three endpoints return 404. Routes may not be registered in the deployed worker, or behind a Durable Object that isn't provisioned. **Real investigation needed.** | **Investigate DO provisioning before Wave 3** |
-| **Composite / compatibility** | ❌ **404 in production** — `GET /api/composite` returns Not Found. Handler exists; routing may be missing. | **Verify routing before build** |
-| **Transits/forecast** | ⚠️ **Needs lat/lng params** — `400 Required params: birthDate, birthTime, lat, lng`. Works with params; just needs correct call. | Working with params; assemble push |
-| **Embed widget** (`embed.html`, validate endpoint) | ✅ validate endpoint responds (400 missing apiKey = correct); HTML exists | Light up + polish |
-| **Daily energy-weather push** | 🔧 parts exist (push + transits + checkin) | Assemble |
-| **Audio readings** | 🔧 new, cheap | Small build |
-| **Native mobile app** | ⚠️ scaffold only (no platforms/deps) | **Real build** |
+| **Celebrity match** `GET /api/compare/celebrities` | ✅ **LIVE** — scored matches, real data (Bill Gates #1 for Generator 4/6; Lady Gaga for Sacral 2/4). 30 celebrities, 9 categories. | **Light up: expose in UI** |
+| **Celebrity search** `GET /api/compare/search?q=` | ✅ **LIVE** — fuzzy search, real results (Einstein found) | **Light up** |
+| **Celebrity list** `GET /api/compare/list` | ✅ **LIVE** — 30 celebrities, metadata, all 9 categories | **Light up** |
+| **Celebrity by category** `GET /api/compare/celebrities/category/:cat` | ❌ **404** — route registered as `/api/compare/category/:cat` (without `/celebrities/` in path). Data exists; route pattern wrong. One-line fix. | **Fix route, then light up** |
+| **Composite / compatibility** `POST /api/composite` `{personA:{...},personB:{...}}` | ✅ **LIVE** — full composite chart, channel analysis, dynamics, Forge roles. Requires `personA`/`personB` objects (not field-per-field). | **Light up: UI wrapper needed** |
+| **Client messages** `GET /api/client/messages` | ✅ **LIVE** — returns `{messages:[]}` empty list (correct for new user) | **Light up** |
+| **Client shared notes** `GET /api/client/shared-notes` | ✅ **LIVE** — returns `{ok:true,notes:[],total:0}` | **Light up** |
+| **Live-session invite** `POST /api/live-session/invite/:clientId` | ✅ **CORRECTLY GATED** — `403 "Practitioner account required"` (free-tier user; correct gate) | **Live + gated correctly** |
+| **Profile preview** `POST /api/profile/preview` | ✅ **LIVE** — returns real rule-based teaser, chart summary, `upgradeRequired:true`. Real copy. | **Light up: expose in UI** |
+| **Transits/forecast** `GET /api/transits/forecast` | ✅ **LIVE** — works with lat/lng params (400 was wrong probe) | **Assemble daily push** |
+| **Embed validate** `GET /api/embed/validate?apiKey=` | ✅ **LIVE** — 400 on missing key (correct); passes with valid key | **Light up + polish** |
+| **Agentic commerce** | ✅ **LIVE** | Already live; promote |
+| **Dream interpretation** `POST /api/dream-weaver/interpret` | ❌ **404** — confirmed with both `/api/dream-weaver/interpret` and `/api/dreamer/dreams`. Handler is 447 lines but **route path in index.js resolves to `/api/dreamer/dreams/:id/interpret`** (per-dream, not standalone interpret). Needs a dedicated interpret endpoint or entry via dream-save flow. | **Small build: add interpret endpoint or wire dream-save flow** |
+| **Share / OG cards** `POST /api/share` + `GET /api/share` | ❌ **404** both — handler exists, tested, but endpoint not reachable in prod. Likely requires a chart save association. Needs route investigation. | **Investigate + fix wiring** |
+| **Notion export** | 🔒 **Feature-flagged off** (`403 "Notion sync is currently disabled"`) | **Flip flag to enable** |
+| **Team/group cluster** | 🔒 **Feature-flagged off** (`403 "Cluster features are currently disabled"`) | **Flip flag to enable** |
+| **Daily energy-weather push** | 🔧 parts live (transits confirmed working) | **Assemble** |
+| **Audio readings** | 🔧 net-new, ElevenLabs available | **Small build** |
+| **Native mobile app** | ⚠️ scaffold only | **Real build** |
 
 ## Packaging (locked)
 **Consumer ladder — gate on pillars, not quotas:**
