@@ -1,0 +1,98 @@
+# Google Cloud Build pipeline for the Energy Blueprint Video Engine render
+# service (I1 Slice 1, Wave 2).
+#
+# Pipeline steps:
+#   1. Build the Docker image from apps/video-render-service/Dockerfile, with the
+#      REPO ROOT as build context (the service depends on local
+#      @latimer-woods-tech/* packages via file:).
+#   2. Push the image to Artifact Registry.
+#   3. Deploy to Cloud Run (us-central1), PRIVATE (--no-allow-unauthenticated):
+#      the endpoint is HMAC-gated and called server-to-server by selfprime,
+#      never public.
+#
+# Project: factory-495015
+# Service: video-render-service
+# Region:  us-central1
+#
+# Secrets are injected from GCP Secret Manager at deploy time (never in source
+# or in cloudbuild vars). The render service reads them from the environment:
+#   VIDEO_RENDER_HMAC_SECRET  <- VIDEO_RENDER_HMAC_SECRET   (signed contract, D10)
+#   CF_ACCOUNT_ID             <- CF_ACCOUNT_ID              (Cloudflare account)
+#   CF_STREAM_TOKEN           <- CF_STREAM_TOKEN            (Stream API token)
+#   R2_ACCESS_KEY_ID          <- R2_ACCESS_KEY_ID           (R2 S3 access key)
+#   R2_SECRET_ACCESS_KEY      <- R2_SECRET_ACCESS_KEY        (R2 S3 secret)
+#   R2_BUCKET_NAME            <- R2_BUCKET_NAME              (R2 bucket)
+#   R2_PUBLIC_DOMAIN          <- R2_PUBLIC_DOMAIN            (public R2 host)
+# (Secret names match the FIRST candidate fetch_to_env uses in render-video.yml;
+#  the lowercase variants are not present in this project.)
+# R2_ACCOUNT_ID is the Cloudflare account id (R2 is account-scoped); injected as
+# a non-secret substitution to match apps/browser-agent.
+#
+# Trigger filter: apps/video-render-service/**
+
+substitutions:
+  _REGION: us-central1
+  _PROJECT_ID: factory-495015
+  _SERVICE: video-render-service
+  _REPOSITORY: factory
+  _IMAGE_NAME: video-render-service
+  # Cloudflare account id (== R2 account id). Same account used by browser-agent.
+  _R2_ACCOUNT_ID: a1c8a33cbe8a3c9e260480433a0dbb06
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  # Remotion bundling + render is memory/CPU heavy; give the builder headroom.
+  machineType: E2_HIGHCPU_8
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - apps/video-render-service/Dockerfile
+      - --tag
+      - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}
+      - --tag
+      - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:latest
+      # Build context is the repo root so the local file: packages are available.
+      - .
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --platform=managed
+      # A render is CPU + memory heavy and long-running; size for one render at
+      # a time per instance.
+      - --memory=4Gi
+      - --cpu=2
+      - --min-instances=0
+      - --max-instances=5
+      - --concurrency=1
+      - --timeout=900
+      - --port=8080
+      # PRIVATE: HMAC-gated, server-to-server only. Never public.
+      - --no-allow-unauthenticated
+      # CPU always allocated: the handler replies 202 then renders in the
+      # background (fire-and-forget); without this Cloud Run reclaims CPU after
+      # the response and the render starves.
+      - --no-cpu-throttling
+      - --set-env-vars=R2_ACCOUNT_ID=${_R2_ACCOUNT_ID}
+      - --set-secrets=VIDEO_RENDER_HMAC_SECRET=VIDEO_RENDER_HMAC_SECRET:latest,CF_ACCOUNT_ID=CF_ACCOUNT_ID:latest,CF_STREAM_TOKEN=CF_STREAM_TOKEN:latest,R2_ACCESS_KEY_ID=R2_ACCESS_KEY_ID:latest,R2_SECRET_ACCESS_KEY=R2_SECRET_ACCESS_KEY:latest,R2_BUCKET_NAME=R2_BUCKET_NAME:latest,R2_PUBLIC_DOMAIN=R2_PUBLIC_DOMAIN:latest
+
+images:
+  - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}
+  - us-central1-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:latest

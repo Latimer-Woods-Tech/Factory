@@ -208,7 +208,6 @@ const CenterShape: React.FC<CenterShapeProps> = ({ def, defined, typeColor, fram
  */
 export const BodyGraph: React.FC<BodyGraphProps> = ({
   frame,
-  fps,
   definedCenters = [],
   typeColor = '#c9a84c',
   scale = 1.0,

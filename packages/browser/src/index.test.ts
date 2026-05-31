@@ -74,4 +74,182 @@ describe('createBrowserClient', () => {
     expect(body.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:jwt-bearer');
     expect(body.get('assertion')?.split('.')).toHaveLength(3);
   });
+
+  it('accepts a string-form service account key', async () => {
+    const key = await createServiceAccountKey();
+    const keyStr = JSON.stringify(key);
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id_token: 'str-token' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    const token = await mintBrowserAgentIdToken(keyStr, 'https://browser-agent.example.run.app', {
+      fetch,
+      now: () => 1_765_000_000_000,
+    });
+    expect(token).toBe('str-token');
+  });
+
+  it('uses a custom token_uri when provided in the key', async () => {
+    const base = await createServiceAccountKey();
+    const key = { ...base, token_uri: 'https://custom-token.example.com/token' };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id_token: 'custom-tok' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    await mintBrowserAgentIdToken(key, 'https://browser-agent.example.run.app', { fetch, now: () => 1_765_000_000_000 });
+    expect(fetch.mock.calls[0]![0]).toBe('https://custom-token.example.com/token');
+  });
+
+  it('throws InternalError when Google token exchange returns non-OK', async () => {
+    const key = await createServiceAccountKey();
+    const fetch = vi.fn().mockResolvedValue(new Response('Unauthorized', { status: 401 }));
+    await expect(
+      mintBrowserAgentIdToken(key, 'https://browser-agent.example.run.app', { fetch, now: () => 1_765_000_000_000 }),
+    ).rejects.toThrow(/Google token exchange failed.*401/);
+  });
+
+  it('throws InternalError when response body has error field', async () => {
+    const key = await createServiceAccountKey();
+    const fetch = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ error: 'access_denied' }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    ));
+    await expect(
+      mintBrowserAgentIdToken(key, 'https://browser-agent.example.run.app', { fetch, now: () => 1_765_000_000_000 }),
+    ).rejects.toThrow(/Google token exchange failed.*access_denied/);
+  });
+
+  it('throws InternalError when response has neither id_token nor error', async () => {
+    const key = await createServiceAccountKey();
+    const fetch = vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ unexpected: 'value' }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    ));
+    await expect(
+      mintBrowserAgentIdToken(key, 'https://browser-agent.example.run.app', { fetch, now: () => 1_765_000_000_000 }),
+    ).rejects.toThrow(/did not return id_token/);
+  });
+
+  it('throws ValidationError for invalid service account key object', async () => {
+    await expect(
+      mintBrowserAgentIdToken({ private_key: 'k' } as never, 'https://x.example.com', {}),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe('createBrowserClient — screenshot', () => {
+  it('calls the screenshot endpoint and returns result', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      url: 'https://example.com/',
+      capturedAt: '2026-05-15T00:00:00.000Z',
+      mimeType: 'image/png',
+      dataBase64: 'abc123==',
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    const getIdToken = vi.fn().mockResolvedValue('id-token');
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken });
+
+    const result = await client.screenshot('https://example.com');
+
+    expect(result.dataBase64).toBe('abc123==');
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://browser-agent.example.run.app/screenshot');
+    expect(JSON.parse(init.body as string)).toEqual({ url: 'https://example.com/' });
+  });
+
+  it('throws InternalError when browser agent returns non-OK on screenshot', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response('Not Found', { status: 404 }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('id-token') });
+    await expect(client.screenshot('https://example.com')).rejects.toThrow(/Browser Agent request failed.*404/);
+  });
+});
+
+describe('createBrowserClient — scrape error paths', () => {
+  it('throws InternalError when browser agent returns non-OK on scrape', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response('Internal Server Error', { status: 500 }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('id-token') });
+    await expect(client.scrape('https://example.com', { title: 'h1' })).rejects.toThrow(/Browser Agent request failed.*500/);
+  });
+
+  it('validates the target url before calling the agent', async () => {
+    const fetch = vi.fn();
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('id-token') });
+    await expect(client.scrape('', { title: 'h1' })).rejects.toBeInstanceOf(ValidationError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('logs scrape and screenshot via logger when provided', async () => {
+    const scrapeResp = { url: '', scrapedAt: '', results: {} };
+    const screenshotResp = { url: '', capturedAt: '', mimeType: 'image/png', dataBase64: '' };
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(scrapeResp), { status: 200, headers: { 'content-type': 'application/json' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(screenshotResp), { status: 200, headers: { 'content-type': 'application/json' } }));
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const getIdToken = vi.fn().mockResolvedValue('id-token');
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken, logger });
+
+    await client.scrape('https://example.com', { title: 'h1' });
+    await client.screenshot('https://example.com');
+
+    expect(logger.info).toHaveBeenCalledWith('browser.scrape', expect.objectContaining({ url: expect.any(String) }));
+    expect(logger.info).toHaveBeenCalledWith('browser.screenshot', expect.objectContaining({ url: expect.any(String) }));
+  });
+});
+
+describe('createBrowserClient — config validation', () => {
+  it('throws ValidationError for empty agentUrl', () => {
+    expect(() => createBrowserClient({
+      agentUrl: '',
+      audience: 'https://x.example.com',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    })).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError for non-http agentUrl', () => {
+    expect(() => createBrowserClient({
+      agentUrl: 'ftp://x.example.com',
+      audience: 'https://x.example.com',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    })).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError for empty audience', () => {
+    expect(() => createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: '',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    })).toThrow(ValidationError);
+  });
+
+  it('strips trailing slash from agentUrl', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ url: '', scrapedAt: '', results: {} }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app/',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('token') });
+    await client.scrape('https://example.com', { h: 'h1' });
+    expect(fetch.mock.calls[0]![0]).toBe('https://browser-agent.example.run.app/scrape');
+  });
 });

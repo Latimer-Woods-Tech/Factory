@@ -97,6 +97,32 @@ shred -u /tmp/key.json
 
 ---
 
+## 6. Assign Copilot via GraphQL, not REST (Bot actors are silently dropped)
+
+**Triggered by:** 2026-05-30 audit — `copilot-swe-agent` had authored 0 PRs despite being licensed and visible in every org repo's `suggestedActors`. The supervisor had been assigning it via `POST /repos/{org}/{repo}/issues/{n}/assignees` since inception.
+
+**Pattern:** Always assign the Copilot coding agent (and any Bot actor) via the GraphQL `replaceActorsForAssignable` mutation, not the REST assignees endpoint. The REST API silently drops Bot actors — the assignment returns HTTP 200 but the assignee list is unchanged. GraphQL attaches correctly.
+
+**Why:** GitHub's REST `assignees` API only accepts `User` and `Team` actors. `copilot-swe-agent` is a `Bot` type; bots must be assigned via GraphQL. There is no error, no warning — it just doesn't stick. Verified live 2026-05-30: GraphQL assign on Factory#506 attached the agent immediately.
+
+**Scope:** `supervisor-core.mjs` `assignCopilot()` (fixed in PR #1217). Any future template that assigns a GitHub App or Bot must use the same GraphQL path. The fix pattern: (1) resolve the issue node id and the bot actor id from `suggestedActors(capabilities:[CAN_BE_ASSIGNED])`, (2) call `replaceActorsForAssignable(input:{assignableId,actorIds})`, (3) verify the returned assignees list contains the bot login.
+
+**Resolved:** PR #1217 — `assignCopilot` now uses `ghGraphql()` + `replaceActorsForAssignable`. Licensing note: Copilot Pro+ (personal) covers org repos — no Business seat or Enterprise needed. Copilot credits exhaust mid-cycle and reset on the billing date; the agent posts a "insufficient AI Credits" comment and goes idle (not a bug to chase).
+
+---
+
+## 7. factory-cross-repo canonical reviewer is advisory — COMMENT, never REQUEST_CHANGES
+
+**Triggered by:** 2026-05-30 governance audit — the bot was hard-blocking PRs on hallucinated violations (e.g., it flagged HTML marketing copy containing literal `<code>process.env</code>` and a Node build script as "Worker constraint breaches" on #944). A required-CODEOWNER bot that also blocks is a trap for a solo operator who cannot self-approve.
+
+**Pattern:** The canonical reviewer's `decision` must be `COMMENT` when violations are found, never `REQUEST_CHANGES`. APPROVEs remain. The full 2-party verdict (deterministic + LLM) stays in the comment body for human visibility. The merge gates are the *required status checks* (validate / Analyze / dependency-review), CODEOWNERS, and deliberate admin-merge on Red-tier paths — not the advisory bot review.
+
+**Why:** `REQUEST_CHANGES` from a CODEOWNER hard-blocks merge and requires an explicit dismissal. A false-positive block on a solo operator's PR means they must dismiss manually every time, which defeats the autonomous factory. Making it advisory preserves the insight without the obstruction. The "review limit reached" escalation (which stranded #1027/#1084 for a week behind already-merged PRs) also disappears because `priorRejections` stays 0.
+
+**Scope:** `.github/scripts/pr-review.mjs` decision logic (fixed in PR #1208). Operator PRs (`adrper79-dot`) auto-approve on green CI without a label gate; the LLM judge panel still runs as advisory. Red-tier paths (`.github/workflows/`, `packages/`, wrangler, billing/admin/stripe handlers, `memory/`) remain deliberate admin-merge for all authors.
+
+---
+
 ## How this file evolves
 
 - **Today (manual):** append a new section when a CODEOWNER rejection surfaces a generalizable pattern. Number sequentially; do not renumber existing sections (numbering is link-stable from commit messages).

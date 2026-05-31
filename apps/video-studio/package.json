@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@latimer-woods-tech/llm": "file:../../packages/llm",
+    "@latimer-woods-tech/video-studio": "file:../../packages/video-studio",
     "@remotion/bundler": "^4.0.464",
     "@remotion/cli": "^4.0.464",
     "@remotion/renderer": "^4.0.464",
