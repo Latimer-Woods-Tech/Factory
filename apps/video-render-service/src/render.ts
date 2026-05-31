@@ -10,22 +10,26 @@
 // Excluded from unit coverage; exercised by the live Cloud Run E2E.
 // ---------------------------------------------------------------------------
 
-import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 import type { EnergyBlueprintProps } from '@latimer-woods-tech/video-studio';
 
-const require = createRequire(import.meta.url);
-
 /**
- * Resolves the absolute path to the video-studio Remotion Root entry. The
- * package ships its `src/` (see its `files`), so the bundler compiles the TSX
- * directly — matching how render-video.yml renders from `src/Root.tsx`.
+ * Resolves the absolute path to the video-studio Remotion Root entry
+ * (`src/Root.tsx`). The package's `exports` map only exposes its `.` ESM dist
+ * entry, so we resolve that with `import.meta.resolve` (which honours the ESM
+ * exports), walk up from `dist/index.mjs` to the package root, and join the
+ * shipped `src/Root.tsx`. The package ships `src/` (see its `files`), and the
+ * bundler compiles the TSX directly — matching how `render-video.yml` renders
+ * from `src/Root.tsx`.
  */
 function resolveRootEntry(): string {
-  // Resolve via the package's published entry, then swap to the Root source the
-  // package ships alongside it. `require.resolve` honours the file: install.
-  return require.resolve('@latimer-woods-tech/video-studio/src/Root.tsx');
+  const mainUrl = import.meta.resolve('@latimer-woods-tech/video-studio');
+  const mainPath = fileURLToPath(mainUrl); // .../<pkg>/dist/index.mjs
+  const packageRoot = dirname(dirname(mainPath)); // -> .../<pkg>
+  return join(packageRoot, 'src', 'Root.tsx');
 }
 
 /** The Remotion composition id registered in the video-studio Root. */
