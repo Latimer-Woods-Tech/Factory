@@ -1,0 +1,39 @@
+{
+  "name": "@latimer-woods-tech/video-render-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Energy Blueprint Video Engine render service (Cloud Run; Remotion + ffmpeg). Signed render-request in, signed callback out, private Cloudflare Stream upload (I1 Slice 1, D2).",
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts src/server.ts --format esm --dts",
+    "start": "node dist/server.js",
+    "test": "vitest run --coverage",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.757.0",
+    "@hono/node-server": "^1.19.13",
+    "@latimer-woods-tech/video": "file:../../packages/video",
+    "@latimer-woods-tech/video-studio": "file:../../packages/video-studio",
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "hono": "^4.12.18",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "remotion": "^4.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^8.57.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.4.5",
+    "vitest": "^3.2.4"
+  }
+}

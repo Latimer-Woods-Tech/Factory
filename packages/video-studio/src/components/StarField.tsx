@@ -48,7 +48,7 @@ interface Star {
 /** Build the full star array from a seed — called once per component render. */
 const buildStars = (seed: number, density: number, goldenRatio: number): Star[] => {
   const stars: Star[] = [];
-  let s = seed;
+  const s = seed;
 
   for (let i = 0; i < density; i++) {
     // Advance seed 8 times per star so each property is independent.
