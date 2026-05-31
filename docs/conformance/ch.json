@@ -2,8 +2,8 @@
   "repo_key": "CH",
   "repo_name": "cypher-healing",
   "repo_path": "Latimer-Woods-Tech/coh",
-  "timestamp": "2026-05-30T08:00:54.521245+00:00",
-  "cohesion": 49,
+  "timestamp": "2026-05-31T08:25:18.973406+00:00",
+  "cohesion": 43,
   "dimensions": [
     {
       "key": "stack",
@@ -61,12 +61,12 @@
         },
         {
           "name": "No console.log in src/",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Typed Env bindings",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -108,16 +108,16 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 60,
+      "score": 0,
       "checks": [
         {
           "name": "Sentry import",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -132,7 +132,7 @@
         },
         {
           "name": "Structured log fields",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
