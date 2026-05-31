@@ -50,7 +50,21 @@ export async function renderBlueprintMp4(
 
   const serveUrl = await bundle({
     entryPoint: entry,
-    webpackOverride: (config) => config,
+    // video-studio's TSX source uses ESM `.js` import specifiers (e.g.
+    // `./compositions/EnergyBlueprintVideo.js`) that map to `.tsx`/`.ts` files.
+    // Remotion's webpack can't resolve those without an extensionAlias, so map
+    // `.js` → the TS sources (this is what tsc/tsup do for the same imports).
+    webpackOverride: (config) => ({
+      ...config,
+      resolve: {
+        ...config.resolve,
+        extensionAlias: {
+          ...(config.resolve?.extensionAlias ?? {}),
+          '.js': ['.ts', '.tsx', '.js'],
+          '.mjs': ['.mts', '.mjs'],
+        },
+      },
+    }),
   });
 
   const composition = await selectComposition({

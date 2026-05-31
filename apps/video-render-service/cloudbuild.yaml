@@ -86,6 +86,10 @@ steps:
       - --port=8080
       # PRIVATE: HMAC-gated, server-to-server only. Never public.
       - --no-allow-unauthenticated
+      # CPU always allocated: the handler replies 202 then renders in the
+      # background (fire-and-forget); without this Cloud Run reclaims CPU after
+      # the response and the render starves.
+      - --no-cpu-throttling
       - --set-env-vars=R2_ACCOUNT_ID=${_R2_ACCOUNT_ID}
       - --set-secrets=VIDEO_RENDER_HMAC_SECRET=VIDEO_RENDER_HMAC_SECRET:latest,CF_ACCOUNT_ID=CF_ACCOUNT_ID:latest,CF_STREAM_TOKEN=CF_STREAM_TOKEN:latest,R2_ACCESS_KEY_ID=R2_ACCESS_KEY_ID:latest,R2_SECRET_ACCESS_KEY=R2_SECRET_ACCESS_KEY:latest,R2_BUCKET_NAME=R2_BUCKET_NAME:latest,R2_PUBLIC_DOMAIN=R2_PUBLIC_DOMAIN:latest
 
