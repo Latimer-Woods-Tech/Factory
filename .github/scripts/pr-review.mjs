@@ -20,7 +20,13 @@ const MAX_DIFF_CHARS = 28_000;
 const {
   GH_TOKEN,
   ANTHROPIC_API_KEY,
-  ANTHROPIC_MODEL = 'claude-sonnet-4-20250514',
+  // Model A: this canonical review is now ADVISORY (posts COMMENT, never blocks),
+  // so it no longer needs a premium model. Haiku is plenty for a courtesy
+  // violation/architecture signal and is ~4x cheaper than Sonnet ($0.80/$4 vs
+  // $3/$15 per 1M) on the highest-volume LLM call in the system (every PR).
+  // Prompt-caching (anthropic-beta below) further amortizes the system prompt.
+  // Override via the ANTHROPIC_MODEL repo/org var if a deeper review is wanted.
+  ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001',
   GROK_API_KEY,
   GROK_MODEL = 'grok-3',
   PR_NUMBER,
