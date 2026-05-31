@@ -64,7 +64,7 @@ export function Dashboard() {
   const currentTabObj = TABS.find(t => t.to === activeTab) || TABS[0]!;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background text-foreground pt-safe-top md:pt-0">
       {/* Top Header (Mobile & Desktop) */}
       <EnvironmentBanner />
       <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
@@ -106,7 +106,7 @@ export function Dashboard() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 md:pb-6 relative">
+        <main className="flex-1 overflow-auto p-4 pb-[calc(env(safe-area-inset-bottom)+4rem)] md:p-6 md:pb-6 relative">
           <Suspense fallback={<div className="flex items-center justify-center h-32 text-slate-500 text-sm">Loading…</div>}>
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -128,7 +128,7 @@ export function Dashboard() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card pb-safe z-40">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card pb-safe pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] z-40">
         <div className="flex items-center justify-around px-2 py-2">
           {MOBILE_MAIN_TABS.map((tab) => {
             const Icon = tab.icon;
