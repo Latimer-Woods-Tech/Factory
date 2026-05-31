@@ -254,6 +254,14 @@ await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
+// /stack/ — annotated architecture + "what we refuse to ship with" page.
+await mkdir(join(distDir, 'stack'), { recursive: true });
+await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
+// Credibility signals: humans.txt (humanstxt.org) at root, security.txt
+// (RFC 9116) under /.well-known/. Absence reads "not yet a real platform".
+await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
+await mkdir(join(distDir, '.well-known'), { recursive: true });
+await copyFile(join(srcDir, '.well-known', 'security.txt'), join(distDir, '.well-known', 'security.txt'));
 // /status/ — near-live brand surface health page that fetches the
 // status-prober Worker with graceful fall-back to data/pulse.json.
 await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
