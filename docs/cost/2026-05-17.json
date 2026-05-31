@@ -1,6 +1,6 @@
 {
   "date": "2026-05-17",
-  "generated": "2026-05-18T10:49:04.696661+00:00",
+  "generated": "2026-05-27T15:25:51.017733+00:00",
   "lines": [
     {
       "provider": "cloudflare",
@@ -20,9 +20,10 @@
     {
       "provider": "anthropic",
       "label": "LLM tokens",
-      "amount_usd": 68.74,
+      "amount_usd": 0.69,
       "detail": {
         "daily_cap_usd": 50,
+        "raw_minor_units": 68.7398,
         "window": [
           "2026-05-17T00:00:00+00:00",
           "2026-05-18T00:00:00+00:00"
@@ -36,9 +37,12 @@
       "provider": "sentry",
       "label": "Event ingestion",
       "amount_usd": 0.0,
-      "detail": {},
-      "skipped": true,
-      "skip_reason": "API status 403"
+      "detail": {
+        "events_24h": 0,
+        "rate_per_event_usd": 0.0003
+      },
+      "skipped": false,
+      "skip_reason": ""
     },
     {
       "provider": "stripe",

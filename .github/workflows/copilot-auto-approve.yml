@@ -64,10 +64,17 @@ jobs:
           esac
 
           labels=$(echo "$v" | jq -r '[.labels[].name]|join(",")')
-          case ",$labels," in
-            *,area:ux,*|*,area:a11y,*|*,area:perf,*) ;;
-            *) echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0;;
-          esac
+          # Model A: operator (adrper79-dot) PRs are gated by green CI, not by label.
+          # You authored it = you reviewed it; the LLM-judge panel below still runs as
+          # an advisory second look. Copilot/agent PRs stay scoped to the autonomous
+          # UX surface (ux/a11y/perf) where the judge panel is the substantive review.
+          # Red-tier paths (checked next) remain a deliberate admin-merge for ALL authors.
+          if [ "$author" != "adrper79-dot" ]; then
+            case ",$labels," in
+              *,area:ux,*|*,area:a11y,*|*,area:perf,*) ;;
+              *) echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0;;
+            esac
+          fi
 
           if echo "$v" | jq -r '.files[].path' | grep -qE '^(\.github/workflows/|packages/|memory/|apps/[^/]+/wrangler\.|apps/[^/]+/capabilities\.yml|apps/[^/]+/workers/src/handlers/(billing|admin|stripe))'; then
             echo "Red-tier path"; echo "proceed=0" >> "$GITHUB_OUTPUT"; exit 0
@@ -174,7 +181,7 @@ jobs:
     steps:
       - name: Mint App token
         id: tok
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}

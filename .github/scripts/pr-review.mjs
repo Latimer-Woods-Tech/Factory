@@ -20,7 +20,13 @@ const MAX_DIFF_CHARS = 28_000;
 const {
   GH_TOKEN,
   ANTHROPIC_API_KEY,
-  ANTHROPIC_MODEL = 'claude-sonnet-4-20250514',
+  // Model A: this canonical review is now ADVISORY (posts COMMENT, never blocks),
+  // so it no longer needs a premium model. Haiku is plenty for a courtesy
+  // violation/architecture signal and is ~4x cheaper than Sonnet ($0.80/$4 vs
+  // $3/$15 per 1M) on the highest-volume LLM call in the system (every PR).
+  // Prompt-caching (anthropic-beta below) further amortizes the system prompt.
+  // Override via the ANTHROPIC_MODEL repo/org var if a deeper review is wanted.
+  ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001',
   GROK_API_KEY,
   GROK_MODEL = 'grok-3',
   PR_NUMBER,
@@ -39,6 +45,10 @@ const {
   // Shape: Array<{ class: string; label: string; patterns: string[]; reviewers: string[] }>
   // When set, these entries are merged with (and override) the built-in defaults.
   REVIEWER_HINTS_MAP,
+  // Factory Core API — ingest gate rows for the Command Center (P2.3).
+  // Both vars are optional; gate writes are best-effort and never block reviews.
+  FACTORY_CORE_API_URL,
+  FACTORY_CORE_API_INGEST_KEY,
 } = process.env;
 
 const MAX_ATTEMPTS = parseInt(MAX_REVIEW_ATTEMPTS, 10);
@@ -432,8 +442,28 @@ function loadDoc(filePath, maxChars = 8000) {
 // Tracks which docs were missing at load time so the review body can surface the gap.
 const MISSING_DOCS = [];
 
+function extractHardConstraints(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    // Extract "## Hard Constraints" section and everything until the next ## header
+    const match = content.match(/## Hard Constraints\n([\s\S]*?)(?:\n## |\Z)/);
+    if (!match) return null;
+    return `## Hard Constraints\n${match[1].trim()}`;
+  } catch {
+    return null;
+  }
+}
+
 function buildConstraintBlock(repoName) {
   const sections = [];
+
+  // Prepend the focused Hard Constraints block (parsed live from CLAUDE.md) so
+  // the LLM always sees it at the top of the context, before any truncation
+  // risk from the 8 000-char loading limit on the full CLAUDE.md below.
+  // For cross-repo reviews we still load from factory CLAUDE.md because that
+  // is the authoritative source; per-repo extensions are handled further down.
+  const hardConstraintsBlock = extractHardConstraints('CLAUDE.md');
+  if (hardConstraintsBlock) sections.push(hardConstraintsBlock);
 
   const claudeMd = loadDoc('CLAUDE.md');
   if (claudeMd) {
@@ -1163,6 +1193,45 @@ async function main() {
     console.log('[INFO] Dependabot PR includes non-lockfile changes — falling through to full review');
   }
 
+  // ── Housekeeping fast-path: trusted generator bots, docs/data-only diffs ────
+  // STATE / digest / cost / conformance / stack / scorecard PRs from
+  // github-actions[bot] are deterministic doc/data regenerations. CI gates them;
+  // a 2-party Grok+Claude review on the highest-volume PR class adds zero safety
+  // and is the bulk of the per-PR LLM spend. Skip the LLM and APPROVE so they
+  // auto-merge instead of piling up. Any file outside docs/ falls through to the
+  // full review. (factory-cross-repo's own PRs are already skipped as self-authored.)
+  const HOUSEKEEPING_AUTHORS = new Set(['github-actions[bot]', 'app/github-actions']);
+  if (HOUSEKEEPING_AUTHORS.has(pr.user?.login ?? '')) {
+    const docDataOnly = filenames.length > 0 && filenames.every(f => /^docs\//.test(f));
+    if (docDataOnly) {
+      console.log(`[INFO] Housekeeping doc/data-only diff (${filenames.length} files) — short-circuiting to APPROVE (no LLM)`);
+      const body = [
+        '## Factory Canonical Review — Housekeeping fast-path',
+        '',
+        '**Decision:** APPROVED — trusted generator, docs/data-only diff',
+        '**Reviewer:** Housekeeping fast-path (skips Grok+Claude consensus)',
+        '',
+        `This PR is from \`${pr.user?.login}\` and touches only \`docs/\` (${filenames.length} file${filenames.length === 1 ? '' : 's'}) — a deterministic regeneration (STATE/digest/cost/conformance/stack/scorecard). The LLM review is skipped because:`,
+        '',
+        '- The content is mechanically generated, not hand-authored logic',
+        '- CI already gates the substantive risk',
+        '- A 2-party LLM review on the highest-volume PR class adds no safety and is the bulk of per-PR LLM spend',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Housekeeping fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge label: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (housekeeping fast-path)`);
+      return;
+    }
+    console.log('[INFO] Housekeeping author but non-docs files present — falling through to full review');
+  }
+
   const tier = detectTier(filenames);
   const adminMutation = hasAdminMutation(filenames);
   const totalDiffChars = files.reduce((n, f) => n + (f.patch?.length ?? 0), 0);
@@ -1277,14 +1346,19 @@ async function main() {
     (llmResult.architectural_concerns?.length ?? 0) > 0;
 
   let decision;
-  if (adminMutation) {
-    // FRIDGE rule 4 — admin mutations always need explicit CODEOWNER ✅ via branch protection.
-    // The bot still posts its verdict (APPROVE when clean, REQUEST_CHANGES when not) so the
-    // human sees the 2-party result before clicking. CODEOWNERS on billing/admin/stripe paths
-    // is @adrper79-dot only — the bot APPROVE is advisory, not the merge gate.
-    decision = hasViolations ? 'REQUEST_CHANGES' : 'APPROVE';
-  } else if (hasViolations) {
-    decision = 'REQUEST_CHANGES';
+  if (hasViolations) {
+    // Model A (solo-operator governance): the canonical reviewer is ADVISORY.
+    // It surfaces concerns as a COMMENT — the full 2-party verdict (deterministic
+    // + LLM) is still in the body for the human to see — but it NEVER posts
+    // REQUEST_CHANGES. A required-CODEOWNER bot that also hard-blocks on
+    // hallucinated "violations" (e.g. flagging marketing copy or a Node build
+    // script as Worker constraint breaches) traps a solo operator who cannot
+    // self-approve. The real merge gates remain: required status checks
+    // (validate / Analyze / dependency-review), CODEOWNERS, and — for the
+    // high-risk paths — the operator's own deliberate admin-merge.
+    // FRIDGE rule 4 (admin-mutation visibility) is preserved: the verdict is
+    // still posted; it is informational, not a block.
+    decision = 'COMMENT';
   } else {
     decision = 'APPROVE';
   }
@@ -1314,6 +1388,58 @@ async function main() {
   }
 
   console.log(`[DONE] ${repo}#${prNum} → ${decision}`);
+
+  // ─── Gate ingest (best-effort, non-blocking) ──────────────────────────────
+  // POST to factory-core-api so the Command Center reflects claude-review gate
+  // outcomes in near-real-time. Silently skipped when credentials are absent.
+  await postGateRow({
+    repo,
+    prNum,
+    prSha: PR_SHA ?? '',
+    tier,
+    decision,
+    violationCount: deterministicResult.violations.length +
+      (llmResult?.architectural_concerns?.length ?? 0),
+  }).catch(err => console.warn(`[WARN] Gate ingest skipped: ${err.message.slice(0, 120)}`));
+}
+
+/**
+ * Posts a claude-review gate row to factory-core-api (P2.3).
+ * Fire-and-forget: caller wraps in .catch() so failures never block the review.
+ */
+async function postGateRow({ repo, prNum, prSha, tier, decision, violationCount }) {
+  if (!FACTORY_CORE_API_URL || !FACTORY_CORE_API_INGEST_KEY) return;
+
+  const prUrl = `https://github.com/${ORG}/${repo}/pull/${prNum}`;
+  const state = decision === 'APPROVE' ? 'passed' : 'failed';
+
+  const body = {
+    gate_type: 'claude-review',
+    source_system: 'factory-cross-repo',
+    source_ref: prUrl,
+    source_event_id: `${repo}#PR-${prNum}@${prSha}`,
+    subject_type: 'pr',
+    subject_repo: `${ORG}/${repo}`,
+    subject_ref: String(prNum),
+    state,
+    evidence_url: prUrl,
+    evidence_summary: { tier, decision, violation_count: violationCount },
+    observed_at: new Date().toISOString(),
+  };
+
+  const res = await fetch(`${FACTORY_CORE_API_URL}/v1/gates`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${FACTORY_CORE_API_INGEST_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`factory-core-api ${res.status}: ${text.slice(0, 200)}`);
+  }
+  console.log(`[OK] Gate row posted: ${state} (violation_count=${violationCount})`);
 }
 
 main().catch(err => {

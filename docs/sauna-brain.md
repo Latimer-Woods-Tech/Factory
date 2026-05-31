@@ -4,6 +4,11 @@
 
 _Auto-synced from Sauna's workspace memory + live GitHub state. Do not edit by hand — regenerated weekly._
 
+> Note: `docs/sauna-brain.md` is an operating snapshot only. It is not the primary
+> source of truth for service registration, worker URLs, monitor targets, or
+> alert configuration. Use `docs/service-registry.yml`, `packages/deploy/scripts/setup-sentry-alerts.mjs`,
+> and the workflow validation scripts in this repo for that contract.
+
 ## Current priorities
 
 - **Day 22 at zero new paying customers.** Stripe balance -$0.92, 0 charges last 24h, latest 3 subs all canceled. ChartMogul flat. The build/sell gap is the only metric moving the wrong way.
@@ -97,9 +102,9 @@ _Auto-synced from Sauna's workspace memory + live GitHub state. Do not edit by h
 ## Revenue state
 
 - **Stripe:** balance -$0.92, 0 charges in last 24h, latest 3 subscriptions all canceled.
-- **ChartMogul:** flat at $19 MRR / 1 trialing subscriber (custom data source `ds_036fc9e8…`); March $12 → April $0 churn → May trialing reactivation pending.
+- **ChartMogul:** $0 MRR / 0 active / 0 trialing (custom data source `ds_036fc9e8…`); March $12 → April $0 churn → May $19 trialing sub canceled 2026-05-27. No active revenue signals.
 - **Loops:** 4 contacts seeded with subscription metadata; 4 lifecycle templates still TODO.
-- **Day 22 streak:** zero new paying customers while shipping velocity (80 PRs in 24h) is at all-time high. Operating Framework Stage 2 (revenue surfaces) is the explicit gate.
+- **Day 25:** zero new paying customers. The $19 HumanDesign Explorer trial canceled 2026-05-27 — 0 active subscribers, 0 trialing, 3 canceled in the active window. Operating Framework Stage 2 (revenue surfaces) is the explicit gate.
 
 ## Open decisions
 

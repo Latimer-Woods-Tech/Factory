@@ -43,11 +43,12 @@ app.post('/run', async (c) => {
       AI_GATEWAY_BASE_URL: c.env.AI_GATEWAY_BASE_URL,
       ANTHROPIC_API_KEY: c.env.ANTHROPIC_API_KEY,
       GROQ_API_KEY: c.env.GROQ_API_KEY,
+      GROK_API_KEY: c.env.GROK_API_KEY,
       VERTEX_ACCESS_TOKEN: c.env.VERTEX_ACCESS_TOKEN,
       VERTEX_PROJECT: c.env.VERTEX_PROJECT,
       VERTEX_LOCATION: c.env.VERTEX_LOCATION,
     },
-    { tier: 'balanced' }
+    { tier: 'fast', maxTokens: 350, maxCostUsd: 0.05, project: 'lead-gen', actor: 'worker', workload: 'lead-qualification' }
   );
 
   if (qualification.error) {
@@ -133,6 +134,7 @@ async function runRedditSniper(env: Env, logger: ReturnType<typeof createLogger>
     AI_GATEWAY_BASE_URL: env.AI_GATEWAY_BASE_URL,
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
     GROQ_API_KEY: env.GROQ_API_KEY,
+    GROK_API_KEY: env.GROK_API_KEY,
     VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN,
     VERTEX_PROJECT: env.VERTEX_PROJECT,
     VERTEX_LOCATION: env.VERTEX_LOCATION,
@@ -169,7 +171,7 @@ async function runRedditSniper(env: Env, logger: ReturnType<typeof createLogger>
           { role: 'user', content: userContent },
         ],
         llmEnv,
-        { tier: 'fast' }
+        { tier: 'fast', maxTokens: 220, maxCostUsd: 0.03, project: 'lead-gen', actor: 'worker', workload: 'reddit-reply' }
       );
 
       const reply = result.error

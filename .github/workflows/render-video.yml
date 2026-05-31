@@ -76,6 +76,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/render-video.yml'
+      - 'tools/media-room/**'
       - 'apps/video-studio/**'
       - 'apps/video-cron/**'
   # Also run on push to non-main branches so dry-run executes from the PR
@@ -87,11 +88,18 @@ on:
       - main
     paths:
       - '.github/workflows/render-video.yml'
+      - 'tools/media-room/**'
       - 'apps/video-studio/**'
       - 'apps/video-cron/**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  # factory-core-api base URL for the read-layer artifact ingest (P1.7). When
+  # empty, the artifact ingest step is skipped — the render still succeeds.
+  # Set this to the branded factory-core-api domain once the worker is
+  # deployed and registered in docs/service-registry.yml. Do NOT use a
+  # *.workers.dev URL in committed code (CLAUDE.md Hard Constraints).
+  FACTORY_CORE_API_URL: ''
 
 permissions:
   contents: read
@@ -149,11 +157,25 @@ jobs:
       - name: Validate generate-script.mjs is parseable
         run: node --check apps/video-studio/scripts/generate-script.mjs
 
+      - name: Validate post-render-artifacts.mjs is parseable
+        run: node --check apps/video-studio/scripts/post-render-artifacts.mjs
+
       - name: Validate render.ts entry exists
         run: |
           set -euo pipefail
           test -f apps/video-studio/src/render.ts
           test -f apps/video-studio/src/Root.tsx
+
+      - name: Validate Media Room Prime Self tutorial readiness
+        run: |
+          set -euo pipefail
+          node tools/media-room/src/cli.js validate-briefs \
+            --brief-dir apps/video-studio/content-briefs/prime-self \
+            --brief-key homepage-welcome \
+            --brief-key daily-transits-guide \
+            --brief-key blueprint-reading-guide \
+            --brief-key energy-type-overview \
+            --strict
 
       - name: Install jq
         run: |
@@ -266,9 +288,15 @@ jobs:
   render:
     if: github.event_name == 'workflow_dispatch' && inputs.dry_run != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     name: Render and publish video
     environment: production
+    permissions:
+      contents: read
+      # Required so the artifact-ingest step can request a GitHub OIDC token
+      # and exchange it at factory-core-api /v1/auth/token for a scoped JWT
+      # (aud: artifacts-video). Mirrors _app-constraints-gate.yml.
+      id-token: write
 
     steps:
       - name: Generate GitHub App token
@@ -410,6 +438,9 @@ jobs:
           key_points='[]'
           forbidden_claims='[]'
           screenshot_urls='[]'
+          steps='[]'
+          visual_beats='[]'
+          duration_seconds=''
 
           if [ -n "$INPUT_BRIEF_KEY" ]; then
             brief_json="$brief_dir/$INPUT_BRIEF_KEY.json"
@@ -427,6 +458,9 @@ jobs:
             key_points="$(jq -c '.keyPoints // []' "$brief_json")"
             forbidden_claims="$(jq -c '.forbiddenClaims // []' "$brief_json")"
             screenshot_urls="$(jq -c '.screenshotUrls // []' "$brief_json")"
+            steps="$(jq -c '.renderPlan.steps // .steps // []' "$brief_json")"
+            visual_beats="$(jq -c '.renderPlan.visualBeats // .visualBeats // []' "$brief_json")"
+            duration_seconds="$(jq -r '.renderPlan.durationSeconds // .durationSeconds // .duration_seconds // empty' "$brief_json")"
           fi
 
           if [ -z "$topic" ]; then
@@ -446,6 +480,9 @@ jobs:
             echo "key_points=$key_points"
             echo "forbidden_claims=$forbidden_claims"
             echo "screenshot_urls=$screenshot_urls"
+            echo "steps=$steps"
+            echo "visual_beats=$visual_beats"
+            echo "duration_seconds=$duration_seconds"
           } >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
@@ -463,6 +500,7 @@ jobs:
           BRIEF_FORBIDDEN_CLAIMS: ${{ steps.brief.outputs.forbidden_claims }}
           BRIEF_TONE_NOTES: ${{ steps.brief.outputs.tone_notes }}
           STATIC_SCRIPT_OVERRIDE: ${{ steps.brief.outputs.script_override }}
+          BRIEF_STEPS: ${{ steps.brief.outputs.steps }}
         run: |
           set -euo pipefail
           BRIEF_DIR="apps/video-studio/content-briefs/${APP_ID//_/-}"
@@ -499,6 +537,9 @@ jobs:
               echo "EOF"
               echo "narration<<EOF"
               echo "$STATIC_SCRIPT_OVERRIDE"
+              echo "EOF"
+              echo "steps<<EOF"
+              echo "$BRIEF_STEPS"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
             exit 0
@@ -567,7 +608,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Render MP4
         id: render
-        timeout-minutes: 15
+        timeout-minutes: 75
         env:
           COMPOSITION_ID: ${{ inputs.composition_id }}
           APP_ID: ${{ inputs.app_id }}
@@ -578,9 +619,31 @@ jobs:
           NARRATION_URL: ${{ steps.narration_upload.outputs.narration_url }}
           SCRIPT_TEXT: ${{ steps.script.outputs.narration }}
           SCREENSHOT_URLS_JSON: ${{ steps.brief.outputs.screenshot_urls }}
+          STEPS_JSON: ${{ steps.script.outputs.steps || steps.brief.outputs.steps }}
+          VISUAL_BEATS_JSON: ${{ steps.brief.outputs.visual_beats }}
+          DURATION_SECONDS: ${{ steps.brief.outputs.duration_seconds }}
         run: |
           set -euo pipefail
-          # Build props JSON with jq so multi-line scripts survive cleanly.
+          write_json_array() {
+            local value="$1"
+            local file="$2"
+            if [ -z "$value" ]; then
+              printf '[]' > "$file"
+            else
+              printf '%s' "$value" > "$file"
+            fi
+            jq -e 'type == "array"' "$file" >/dev/null
+          }
+
+          write_json_array "$SCREENSHOT_URLS_JSON" /tmp/screenshot-urls.json
+          write_json_array "$STEPS_JSON" /tmp/render-steps.json
+          write_json_array "$VISUAL_BEATS_JSON" /tmp/visual-beats.json
+
+          if [ -n "$DURATION_SECONDS" ]; then
+            jq -e -n --arg value "$DURATION_SECONDS" '$value | tonumber | . > 0' >/dev/null
+          fi
+
+          # Build props JSON with jq so multi-line scripts and brief JSON survive cleanly.
           PROPS=$(jq -n \
             --arg composition  "$COMPOSITION_ID" \
             --arg appId        "$APP_ID" \
@@ -590,9 +653,16 @@ jobs:
             --arg brandColor   "$BRAND_COLOR" \
             --arg brandAccent  "$BRAND_ACCENT" \
             --arg logoUrl      "$LOGO_URL" \
-            --argjson screenshotUrls "$SCREENSHOT_URLS_JSON" \
+            --slurpfile screenshotUrls /tmp/screenshot-urls.json \
+            --slurpfile steps /tmp/render-steps.json \
+            --slurpfile visualBeats /tmp/visual-beats.json \
+            --arg durationSeconds "$DURATION_SECONDS" \
             'if $composition == "WalkthroughVideo"
-             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls}
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls[0]}
+             elif $composition == "TrainingVideo"
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps[0],durationSeconds:($durationSeconds | if . == "" then 30 else tonumber end)}
+             elif $composition == "MarketingVideo"
+             then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats[0],durationSeconds:($durationSeconds | if . == "" then 15 else tonumber end)}
              else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl}
              end')
           cd apps/video-studio
@@ -758,6 +828,31 @@ jobs:
           YOUTUBE_URL=$(echo "$RESULT" | jq -r '.url // empty')
           echo "youtube_url=$YOUTUBE_URL" >> "$GITHUB_OUTPUT"
           echo "::notice::YouTube upload complete: $YOUTUBE_URL"
+
+      # -----------------------------------------------------------------------
+      # Step 11c — Record artifacts in the Factory admin read-layer (P1.7).
+      # Runs only after the render + upload + Capricast publish all succeeded,
+      # so a factory_artifacts row only ever describes a video that exists.
+      # Best-effort: continue-on-error keeps a read-layer hiccup from failing
+      # the render; the script also always exits 0 and surfaces any non-2xx.
+      # Skipped entirely when FACTORY_CORE_API_URL is unset.
+      # -----------------------------------------------------------------------
+      - name: Record artifacts in factory-core-api
+        id: artifacts
+        continue-on-error: true
+        env:
+          # ACTIONS_ID_TOKEN_REQUEST_TOKEN / _URL are injected automatically by
+          # GitHub because this job declares `id-token: write`.
+          JOB_ID: ${{ inputs.job_id }}
+          APP_ID: ${{ inputs.app_id }}
+          STREAM_UID: ${{ steps.stream.outputs.stream_uid }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          VIDEO_URL: ${{ steps.video_upload.outputs.video_url }}
+          NARRATION_URL: ${{ steps.narration_upload.outputs.narration_url }}
+          THUMBNAIL_URL: ${{ steps.stream.outputs.thumbnail_url }}
+          TRANSCRIPT: ${{ steps.script.outputs.narration }}
+          DURATION_SECONDS: ${{ steps.stream.outputs.duration_seconds }}
+        run: node apps/video-studio/scripts/post-render-artifacts.mjs
 
       # -----------------------------------------------------------------------
       # Step 12 — PATCH schedule-worker → status=done

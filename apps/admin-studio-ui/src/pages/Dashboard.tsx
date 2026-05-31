@@ -9,17 +9,19 @@ import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'reac
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { EnvironmentBanner } from '../components/EnvironmentBanner.js';
-import { 
-  LayoutDashboard, 
-  TestTube, 
-  Code2, 
-  Bot, 
-  Zap, 
-  Wrench, 
-  BookOpen, 
-  Clock, 
-  Flag, 
+import {
+  LayoutDashboard,
+  TestTube,
+  Code2,
+  Bot,
+  Zap,
+  Wrench,
+  BookOpen,
+  Clock,
+  Flag,
   ShieldCheck,
+  AlertTriangle,
+  GitBranch,
   Menu,
   X
 } from 'lucide-react';
@@ -34,6 +36,8 @@ const TimelineTab = lazy(() => import('./tabs/TimelineTab.js').then(m => ({ defa
 const FlagsTab = lazy(() => import('./tabs/FlagsTab.js').then(m => ({ default: m.FlagsTab })));
 const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').then(m => ({ default: m.TrainingLibraryTab })));
 const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
+const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
+const GraphComposerTab = lazy(() => import('./tabs/GraphComposerTab.js').then(m => ({ default: m.GraphComposerTab })));
 
 const TABS = [
   { to: '/overview',  label: 'Overview', icon: LayoutDashboard },
@@ -46,6 +50,8 @@ const TABS = [
   { to: '/timeline',  label: 'Timeline', icon: Clock },
   { to: '/flags',     label: 'Flags', icon: Flag },
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
+  { to: '/command-center', label: 'Command Center', icon: AlertTriangle },
+  { to: '/graph-composer', label: 'Graph Composer', icon: GitBranch },
 ];
 
 // Mobile bottom nav shows first 4 tabs, rest go in "More"
@@ -58,7 +64,7 @@ export function Dashboard() {
   const currentTabObj = TABS.find(t => t.to === activeTab) || TABS[0]!;
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background text-foreground pt-safe-top md:pt-0">
       {/* Top Header (Mobile & Desktop) */}
       <EnvironmentBanner />
       <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
@@ -100,7 +106,7 @@ export function Dashboard() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 md:pb-6 relative">
+        <main className="flex-1 overflow-auto p-4 pb-[calc(env(safe-area-inset-bottom)+4rem)] md:p-6 md:pb-6 relative">
           <Suspense fallback={<div className="flex items-center justify-center h-32 text-slate-500 text-sm">Loading…</div>}>
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />
@@ -114,13 +120,15 @@ export function Dashboard() {
               <Route path="/timeline" element={<TimelineTab />} />
               <Route path="/flags" element={<FlagsTab />} />
               <Route path="/audit" element={<AuditTab />} />
+              <Route path="/command-center" element={<CommandCenterTab />} />
+              <Route path="/graph-composer" element={<GraphComposerTab />} />
             </Routes>
           </Suspense>
         </main>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card pb-safe z-40">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card pb-safe pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] z-40">
         <div className="flex items-center justify-around px-2 py-2">
           {MOBILE_MAIN_TABS.map((tab) => {
             const Icon = tab.icon;

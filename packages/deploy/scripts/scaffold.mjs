@@ -104,10 +104,11 @@ function write(relPath, content) {
 // augment the generated files with:
 //
 //   1. plan.packages → package.json dependencies (versionRange preserved)
-//   2. plan.env.secrets → .dev.vars.example entries
-//   3. plan.env.vars   → wrangler.jsonc vars block
+//   2. plan.env.secrets → .dev.vars.example entries (all secrets, idempotent)
+//   3. the full handoff → factory/handoff.json (audit trail in the new repo)
 //   4. plan.smokeChecks + plan.expectedSurfaces → factory/SMOKE.md
-//   5. the full handoff → factory/handoff.json (audit trail in the new repo)
+//   5. plan.env.secrets (recipe-specific) → src/env.ts Env interface
+//   6. plan.env.vars (recipe-specific) → src/env.ts Env interface + wrangler.jsonc vars blocks
 
 function loadHandoff(path) {
   if (!path) return null;
@@ -204,6 +205,72 @@ function applyHandoffToScaffold(handoff) {
   ].filter((line) => line !== '');
   write('factory/SMOKE.md', smokeLines.join('\n') + '\n');
 
+  // 5. Thread recipe-specific secrets into src/env.ts (Env interface).
+  //    The scaffold template ships a fixed set of base secrets. Any additional
+  //    secrets declared in the recipe's envContract are injected here so the
+  //    Worker's TypeScript types stay in sync with what the recipe requires.
+  const BASE_ENV_SECRETS = new Set([
+    'JWT_SECRET', 'SENTRY_DSN', 'POSTHOG_KEY',
+    'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'DEEPSEEK_API_KEY', 'RESEND_API_KEY',
+  ]);
+  const secretAdditions = (plan.env?.secrets ?? []).filter((s) => !BASE_ENV_SECRETS.has(s));
+
+  // 6. Thread recipe-specific vars into src/env.ts and wrangler.jsonc.
+  const BASE_ENV_VARS = new Set(['ENVIRONMENT', 'WORKER_NAME']);
+  const varAdditions = (plan.env?.vars ?? []).filter((v) => !BASE_ENV_VARS.has(v));
+
+  const envTsPath = join(TARGET, 'src/env.ts');
+  if (secretAdditions.length > 0 || varAdditions.length > 0) {
+    // Use try/catch instead of existsSync+readFileSync to avoid TOCTOU (CWE-367).
+    let envTs;
+    try { envTs = readFileSync(envTsPath, 'utf8'); } catch { envTs = null; }
+    if (envTs !== null) {
+      if (secretAdditions.length > 0) {
+        // Insert recipe secrets before the "Non-secret vars" comment so the
+        // logical grouping (secrets vs vars) in the generated file is preserved.
+        const secretLines = secretAdditions.map((s) => `  ${s}: string;`).join('\n');
+        const secretBlock = `\n  // ── Recipe secrets (${handoff.recipeId}) ─────────────────────────────────────\n${secretLines}\n`;
+        envTs = envTs.replace(
+          /(\n  \/\/ ── Non-secret vars)/,
+          `${secretBlock}$1`,
+        );
+        console.log(`  🔐 +${secretAdditions.length} secret type(s) → src/env.ts`);
+      }
+      if (varAdditions.length > 0) {
+        // Append recipe vars at the end of the Env interface, before the closing `}`.
+        const varLines = varAdditions.map((v) => `  ${v}: string;`).join('\n');
+        const varBlock = `\n  // ── Recipe vars (${handoff.recipeId}) ───────────────────────────────────────\n${varLines}\n`;
+        envTs = envTs.replace(/(\n}\s*\n?)$/, `${varBlock}$1`);
+        console.log(`  ⚙️  +${varAdditions.length} var type(s) → src/env.ts`);
+      }
+      writeFileSync(envTsPath, envTs, 'utf8');
+    }
+  }
+
+  // Thread recipe vars into wrangler.jsonc (both root and staging vars blocks).
+  if (varAdditions.length > 0) {
+    const wranglerPath = join(TARGET, 'wrangler.jsonc');
+    // Use try/catch instead of existsSync+readFileSync to avoid TOCTOU (CWE-367).
+    let wrangler;
+    try { wrangler = readFileSync(wranglerPath, 'utf8'); } catch { wrangler = null; }
+    if (wrangler !== null) {
+      // Root vars block: 4-space indent, WORKER_NAME is the last key.
+      const rootVarLines = varAdditions.map((v) => `    "${v}": ""`).join(',\n');
+      wrangler = wrangler.replace(
+        `    "WORKER_NAME": "${APP_NAME}"\n  },`,
+        `    "WORKER_NAME": "${APP_NAME}",\n${rootVarLines}\n  },`,
+      );
+      // Staging vars block: 8-space indent, WORKER_NAME is the last key.
+      const stagingVarLines = varAdditions.map((v) => `        "${v}": ""`).join(',\n');
+      wrangler = wrangler.replace(
+        `        "WORKER_NAME": "${APP_NAME}-staging"\n      }`,
+        `        "WORKER_NAME": "${APP_NAME}-staging",\n${stagingVarLines}\n      }`,
+      );
+      writeFileSync(wranglerPath, wrangler, 'utf8');
+      console.log(`  ⚙️  +${varAdditions.length} var(s) → wrangler.jsonc (root + staging)`);
+    }
+  }
+
   console.log('  ✅ Handoff applied. See factory/handoff.json and factory/SMOKE.md.');
 }
 
@@ -270,6 +337,8 @@ coverage/
       deploy: 'wrangler deploy',
       'deploy:staging': 'wrangler deploy --env staging',
       typecheck: 'tsc --noEmit',
+      lint: 'biome check src',
+      format: 'biome format --write src',
       test: 'vitest run',
       'test:watch': 'vitest',
     },
@@ -286,7 +355,9 @@ coverage/
       hono: '^4.12.15',
     },
     devDependencies: {
+      '@latimer-woods-tech/biome-config': '^0.1.0',
       '@latimer-woods-tech/testing': '^0.2.0',
+      '@biomejs/biome': '^1.9.4',
       '@cloudflare/workers-types': '^4.20260426.1',
       '@cloudflare/vitest-pool-workers': '^0.8.0',
       'drizzle-kit': '^0.31.0',
@@ -295,6 +366,12 @@ coverage/
       vitest: '^1.6.0',
       '@vitest/coverage-v8': '^1.6.0',
     },
+  }, null, 2) + '\n');
+
+  // biome.json — extends shared config; existing apps are unaffected.
+  write('biome.json', JSON.stringify({
+    $schema: 'https://biomejs.dev/schemas/1.9.4/schema.json',
+    extends: ['@latimer-woods-tech/biome-config/biome.json'],
   }, null, 2) + '\n');
 
   // tsconfig.json
@@ -316,7 +393,7 @@ coverage/
   // wrangler.jsonc
   write('wrangler.jsonc', `{
   "name": "${APP_NAME}",
-  "compatibility_date": "2024-11-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/index.ts",
 
@@ -384,6 +461,7 @@ export interface Env {
   POSTHOG_KEY: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  DEEPSEEK_API_KEY?: string;
   RESEND_API_KEY: string;
 
   // ── Non-secret vars (wrangler.jsonc [vars]) ──────────────────────────────
@@ -571,6 +649,7 @@ JWT_SECRET=dev-secret-at-least-32-characters-long
 SENTRY_DSN=
 POSTHOG_KEY=
 ANTHROPIC_API_KEY=
+DEEPSEEK_API_KEY=
 GROK_API_KEY=
 GROQ_API_KEY=
 RESEND_API_KEY=
@@ -692,6 +771,7 @@ async function configureSecrets() {
     'SENTRY_DSN',
     'POSTHOG_KEY',
     'ANTHROPIC_API_KEY',
+    'DEEPSEEK_API_KEY',
     'GROK_API_KEY',
     'GROQ_API_KEY',
     'RESEND_API_KEY',

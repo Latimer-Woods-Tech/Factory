@@ -23,7 +23,7 @@ After a month of hopping across configurations searching for an alignment that p
 |---|---|
 | GHAS Code Security disabled (HD + capricast) — CodeQL/lint noise eliminated | ✅ shipped via API |
 | GHAS Secret Protection preserved on 7 private repos — push-time credential block | ✅ active ($19/mo, 1 active committer) |
-| HD CI consolidation: 6 PR-triggered workflows → 1 matrix workflow with shared cache | ⏳ PR #298 mergeable, pending CODEOWNER review |
+| HD CI consolidation: 6 PR-triggered workflows → 1 matrix workflow with shared cache | ✅ PR #298 merged 2026-05-27 |
 | GCP $50/mo budget on factory-495015 with 50/90/100% alerts | ✅ active (budget id `0a030ee8-17f6...`) |
 | Org Copilot Business — declined; personal Pro+ ($39/mo on adrper79-dot) is sufficient | ✅ explicit non-decision |
 | CodeQL workflow files disabled on HD + capricast | ✅ shipped via API |
@@ -123,9 +123,9 @@ Ordered by ROI × strategic-alignment.
 
 ### Tier 0 — Immediate (this week)
 
-1. **Merge HD PR #298** — activates ~$18/mo savings + faster PR feedback. Just needs CODEOWNER review.
-2. **Set Actions org spending limit ($25/mo)** — UI-only. The only defense against wordis-bond-class billing anomalies.
-3. **Ship the "better gate" PR to Factory** — Layer 1 (`_app-constraints-gate.yml`) + Layer 3 augmentation (`pr-review.mjs` reads CLAUDE.md Hard Constraints section). ~1 day of focused work. Immediately unblocks tier-1 work.
+1. ✅ **Merge HD PR #298** — merged 2026-05-27 after pinning `slackapi/slack-github-action` to an immutable SHA and removing CodeQL from the consolidated PR suite because GHAS Code Security is disabled.
+2. ✅ **Set Actions org spending limit ($25/mo)** — verified 2026-05-27 via GitHub billing budgets API: Actions budget is `$25`, `prevent_further_usage: true`, alerts to `adrper79-dot`.
+3. ✅ **Ship the "better gate" PR to Factory** — Layer 1 (`_app-constraints-gate.yml` + `constraints-check.mjs`) and Layer 3 (`pr-review.mjs` live-loads CLAUDE.md Hard Constraints) are present in Factory.
 
 ### Tier 1 — Foundation (next 2 weeks)
 
@@ -133,6 +133,8 @@ Ordered by ROI × strategic-alignment.
 5. **`@lwt/llm-meter` package publish** — D1 ledger + per-run budget enforcement (gap register G-7). Closes the metering gap so the supervisor can self-bound LLM spend.
 6. **Migration drift guard** — `_migration-drift-guard.yml` per app (gap register G-5). Catches the HD#65-class incident where prod schema lags repo migrations.
 7. **Template library expansion** — author 6-8 starter templates from closed PR history (gap register G-3). Required before SUP-4 EXEC leg can ride live work.
+
+**Reconciled 2026-05-27.** Some Tier 1 foundation work already exists in Factory and should not be rebuilt: `@latimer-woods-tech/llm-meter@0.2.2`, `@latimer-woods-tech/llm@0.3.3`, `_migration-drift-guard.yml`, `_app-reliability-gate.yml`, and the seeded template library under `docs/supervisor/plans/`. The remaining work is adoption and proof: per-app `capabilities.yml`, per-app caller workflows, budget/gate rows visible in Admin Command Center, and blessed templates from real successful runs.
 
 ### Tier 2 — Hardening (next month)
 

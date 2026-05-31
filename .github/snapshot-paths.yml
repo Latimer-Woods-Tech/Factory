@@ -33,7 +33,8 @@ paths:
   - docs/launch-readiness/**
   - docs/scorecard/**
 
-  # Daily digests
+  # Daily digests (both singular and plural path variants used by different bots)
+  - docs/digest/**
   - docs/digests/**
 
   # Completion tracker (both legacy + canonical paths)
@@ -42,6 +43,12 @@ paths:
 
   # KPI tracking
   - docs/kpis/**
+
+  # Generated docs artifacts created by docs health / snapshot PRs
+  - docs/_catalog/docs-graph.json
+  - docs/_generated/docs-trust-map.md
+  - docs/_generated/service-map.md
+  - docs/_generated/workflow-map.md
 
 # Branch prefixes — PR must originate from a branch whose name starts with
 # one of these. Independent guard layered on top of the path check to defend

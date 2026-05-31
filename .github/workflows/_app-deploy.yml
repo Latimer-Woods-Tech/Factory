@@ -73,6 +73,10 @@ on:
       health_url:
         type: string
         default: ''
+      # Factory Core API URL for artifact ingest (P2.10). Optional — skipped when empty.
+      factory_core_api_url:
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -87,15 +91,15 @@ jobs:
       run:
         working-directory: ${{ inputs.working_directory }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ inputs.node_version }}
           registry-url: 'https://npm.pkg.github.com'
@@ -106,7 +110,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v4
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
@@ -124,3 +128,57 @@ jobs:
           done
           echo "Health check failed after 5 attempts"
           exit 1
+
+      - name: Ingest deploy artifact rows
+        if: always()
+        env:
+          FACTORY_CORE_API_URL: ${{ inputs.factory_core_api_url }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ -z "${FACTORY_CORE_API_URL:-}" ] || [ -z "${FACTORY_CORE_API_INGEST_KEY:-}" ]; then
+            echo "Skipping deploy artifact ingest (FACTORY_CORE_API_URL or FACTORY_CORE_API_INGEST_KEY not set)"
+            exit 0
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # deploy-url artifact — the health URL or the run URL as evidence
+          DEPLOY_URI="${{ inputs.health_url }}"
+          if [ -z "$DEPLOY_URI" ]; then DEPLOY_URI="$RUN_URL"; fi
+          DEPLOY_PAYLOAD=$(jq -n \
+            --arg at "deploy-url" \
+            --arg pt "cloudflare-deploy" \
+            --arg pr "${{ github.run_id }}" \
+            --arg ss "github-actions" \
+            --arg sei "deploy-url-${{ github.repository }}-${{ github.run_id }}" \
+            --arg srepo "${{ github.repository }}" \
+            --arg sref "${{ inputs.environment }}" \
+            --arg uri "$DEPLOY_URI" \
+            --arg ts "$TS" \
+            '{artifact_type:$at,producer_type:$pt,producer_ref:$pr,source_system:$ss,
+              source_event_id:$sei,subject_repo:$srepo,subject_ref:$sref,
+              uri:$uri,observed_at:$ts}')
+          curl -s -o /dev/null -w "Deploy-url artifact HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/artifacts" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$DEPLOY_PAYLOAD" || echo "::warning::Deploy artifact ingest failed (non-blocking)"
+          # build-artifact — the GitHub Actions run URL
+          BUILD_PAYLOAD=$(jq -n \
+            --arg at "build-artifact" \
+            --arg pt "github-workflow" \
+            --arg pr "${{ github.run_id }}" \
+            --arg ss "github-actions" \
+            --arg sei "build-${{ github.repository }}-${{ github.run_id }}" \
+            --arg srepo "${{ github.repository }}" \
+            --arg sref "${{ inputs.environment }}" \
+            --arg uri "$RUN_URL" \
+            --arg ts "$TS" \
+            '{artifact_type:$at,producer_type:$pt,producer_ref:$pr,source_system:$ss,
+              source_event_id:$sei,subject_repo:$srepo,subject_ref:$sref,
+              uri:$uri,observed_at:$ts}')
+          curl -s -o /dev/null -w "Build-artifact HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/artifacts" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$BUILD_PAYLOAD" || echo "::warning::Build artifact ingest failed (non-blocking)"

@@ -1,0 +1,145 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`chartToScenes — snapshot fixtures > maps a Generator profile to its scene arc 1`] = `
+[
+  {
+    "durationFrames": 150,
+    "showBodyGraph": false,
+    "text": undefined,
+    "type": "arrival",
+    "typeColor": "#e8923a",
+  },
+  {
+    "durationFrames": 300,
+    "showBodyGraph": false,
+    "text": "A Generator — built to respond.",
+    "type": "revelation",
+    "typeColor": "#e8923a",
+  },
+  {
+    "definedCenters": [
+      "Sacral",
+      "Root",
+      "Spleen",
+    ],
+    "durationFrames": 480,
+    "showBodyGraph": true,
+    "text": "This is your defined centres: Sacral, Root and Spleen. Where energy is consistent in you.",
+    "type": "concept",
+    "typeColor": "#e8923a",
+  },
+  {
+    "definedCenters": [
+      "Sacral",
+      "Root",
+      "Spleen",
+    ],
+    "durationFrames": 90,
+    "showBodyGraph": true,
+    "type": "breath",
+    "typeColor": "#e8923a",
+  },
+  {
+    "durationFrames": 360,
+    "showBodyGraph": false,
+    "triad": [
+      "Shadow",
+      "Gift",
+      "Siddhi",
+    ],
+    "type": "triad",
+    "typeColor": "#e8923a",
+  },
+  {
+    "durationFrames": 390,
+    "showBodyGraph": false,
+    "text": "Your authority is Sacral. Trust the signal it gives.",
+    "type": "invitation",
+    "typeColor": "#e8923a",
+  },
+]
+`;
+
+exports[`chartToScenes — snapshot fixtures > maps a Projector profile to its scene arc 1`] = `
+[
+  {
+    "durationFrames": 150,
+    "showBodyGraph": false,
+    "text": "Ada — your pattern was already complete.",
+    "type": "arrival",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "durationFrames": 300,
+    "showBodyGraph": false,
+    "text": "A Projector — built to guide, when recognised and invited.",
+    "type": "revelation",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "definedCenters": [
+      "G",
+      "Throat",
+      "Ajna",
+    ],
+    "durationFrames": 480,
+    "showBodyGraph": true,
+    "text": "This is your defined centres: G (Identity), Throat and Ajna. Where energy is consistent in you.",
+    "type": "concept",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "definedCenters": [
+      "G",
+      "Throat",
+      "Ajna",
+    ],
+    "durationFrames": 90,
+    "showBodyGraph": true,
+    "type": "breath",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "definedCenters": [
+      "G",
+      "Throat",
+      "Ajna",
+    ],
+    "durationFrames": 300,
+    "showBodyGraph": true,
+    "text": "Gate 20 — a defining frequency in your design.",
+    "type": "concept",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "definedCenters": [
+      "G",
+      "Throat",
+      "Ajna",
+    ],
+    "durationFrames": 300,
+    "showBodyGraph": true,
+    "text": "Gate 57 — a defining frequency in your design.",
+    "type": "concept",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "durationFrames": 360,
+    "showBodyGraph": false,
+    "triad": [
+      "Shadow",
+      "Gift",
+      "Siddhi",
+    ],
+    "type": "triad",
+    "typeColor": "#7b6fd4",
+  },
+  {
+    "durationFrames": 390,
+    "showBodyGraph": false,
+    "text": "Your authority is Splenic. Trust the signal it gives.",
+    "type": "invitation",
+    "typeColor": "#7b6fd4",
+  },
+]
+`;

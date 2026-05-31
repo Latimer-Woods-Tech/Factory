@@ -17,7 +17,7 @@ name: Auto-dispatch capability provision
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '45 * * * *'   # hourly (was */15) — cost trim
   workflow_dispatch: {}
 
 permissions:
@@ -32,19 +32,19 @@ jobs:
       actions: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '20'
 
       - name: Authenticate to GCP
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.VERTEX_SA_KEY }}
 
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v3
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
 
       - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
         run: |
@@ -127,6 +127,33 @@ jobs:
             });
           }
 
+          async function resolveConceptId(handoffId, handoffHash) {
+            // Primary: id-based lookup (fast path, no hash needed).
+            try {
+              const payload = await apiFetch('/capabilities/handoffs/' + handoffId);
+              if (payload.handoff?.conceptId) return payload.handoff.conceptId;
+            } catch (err) {
+              console.warn('id-based handoff lookup failed (' + handoffId + '):', err.message);
+            }
+            // Fallback: hash-based lookup. Closes the Hyperdrive read-after-write
+            // race where a freshly-inserted handoff is not yet visible on the
+            // pooled connection the id-lookup lands on. The hash is supplied by
+            // GET /capabilities/provision-requests via a LEFT JOIN so no extra
+            // round-trip is needed here.
+            if (handoffHash) {
+              try {
+                const hashPayload = await apiFetch('/capabilities/handoffs/by-hash/' + handoffHash);
+                if (hashPayload.handoff?.conceptId) {
+                  console.log('Hash fallback resolved conceptId for handoff ' + handoffId);
+                  return hashPayload.handoff.conceptId;
+                }
+              } catch (hashErr) {
+                console.warn('Hash-based handoff lookup also failed (' + handoffHash + '):', hashErr.message);
+              }
+            }
+            return 'unknown-concept';
+          }
+
           async function main() {
             const rows = JSON.parse(fs.readFileSync('.auto-dispatch/pending.json', 'utf8'));
             if (rows.length === 0) {
@@ -135,18 +162,13 @@ jobs:
             }
             for (const row of rows) {
               const handoffId = row.handoffId;
+              const handoffHash = row.handoffHash; // from LEFT JOIN on provision-requests list
               const requestId = row.id;
               if (!handoffId || !requestId) {
                 console.warn('Skipping row missing handoffId or id:', JSON.stringify(row));
                 continue;
               }
-              let conceptId = 'unknown-concept';
-              try {
-                const payload = await apiFetch('/capabilities/handoffs/' + handoffId);
-                conceptId = payload.handoff?.conceptId ?? conceptId;
-              } catch (err) {
-                console.warn('Could not fetch handoff ' + handoffId + ':', err.message);
-              }
+              const conceptId = await resolveConceptId(handoffId, handoffHash);
               const appName = conceptId.replace(/-api$/, '');
               const cmd = [
                 'gh workflow run dispatch-capability-provision.yml',
@@ -155,7 +177,7 @@ jobs:
                 '--field app_name=' + appName,
                 '--field no_deploy=true',
               ].join(' ');
-              console.log('Dispatching:', appName, '(request=' + requestId + ')');
+              console.log('Dispatching:', appName, '(request=' + requestId + ', conceptId=' + conceptId + ')');
               execSync(cmd, { stdio: 'inherit' });
             }
           }

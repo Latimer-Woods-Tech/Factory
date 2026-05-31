@@ -13,7 +13,9 @@ export default defineConfig({
         branches: 85,
       },
       include: ['src/**'],
-      exclude: ['src/**/*.test.ts'],
+      // engine-types.ts is type-only (no runtime code emitted), so it has no
+      // statements to cover; excluding it keeps the threshold meaningful.
+      exclude: ['src/**/*.test.ts', 'src/engine-types.ts'],
     },
   },
 });

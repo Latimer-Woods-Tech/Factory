@@ -22,8 +22,8 @@
 |---|---|---|---|---|---|
 | Package integration CI | `.github/workflows/package-integration.yml` | PR / package-sensitive changes | Published/local package graph | Package chain build + cross-package smoke passes | OWR-020, W360-022 |
 | Render video | `.github/workflows/render-video.yml` | `workflow_dispatch` from schedule-worker/video-cron | R2, Cloudflare Stream, ElevenLabs, Anthropic, schedule-worker job API | Job reaches `done`, Stream UID exists, R2 upload succeeds, PostHog event emitted | OWR-007, W360-023 |
-| Schedule Worker deploy | `apps/schedule-worker` workflow | Push / manual deploy | Hyperdrive binding, DB migration, service token secrets | `curl https://schedule-worker.adrper79.workers.dev/health` returns `200` | OWR-005, OWR-007 |
-| Video Cron deploy | `apps/video-cron` workflow | Push / manual deploy | Schedule Worker URL/token, cron config | `curl https://video-cron.adrper79.workers.dev/health` returns `200` | OWR-007 |
+| Schedule Worker deploy | `apps/schedule-worker` workflow | Push / manual deploy | Hyperdrive binding, DB migration, service token secrets | `curl https://schedule.latwoodtech.work/health` returns `200` | OWR-005, OWR-007 |
+| Video Cron deploy | `apps/video-cron` workflow | Push / manual deploy | Schedule Worker URL/token, cron config | `curl https://video-cron.latwoodtech.work/health` returns `200` | OWR-007 |
 | Synthetic Monitor deploy | `apps/synthetic-monitor` workflow | Push / manual deploy | Target registry entries | `/health` and `/checks/run` return `200`; cron schedule active | OWR-013, W360-023 |
 | SelfPrime UI smoke | `apps/prime-self-smoke` / external `prime-self-ui` workflow | Pull request / deploy | `selfprime.net`, real smoke credentials | Live Playwright tests pass against `selfprime.net`; no localhost target | OWR-015, OWR-023 |
 | SelfPrime accessibility | `apps/prime-self-smoke` a11y job | PR / deploy | Live SelfPrime pages | 0 critical/serious axe violations | OWR-016 |

@@ -1,10 +1,82 @@
-import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { copyFile, cp, mkdir, readFile, writeFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { generateTopology } from './scripts/generate-topology.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(__dirname, 'src');
 const distDir = join(__dirname, 'dist');
+
+const BRAND_SURFACES = [
+	{ name: 'Prime Self', url: 'https://selfprime.net', category: 'Practitioner intelligence' },
+	{ name: 'Capricast', url: 'https://capricast.com', category: 'Interactive creator video' },
+	{ name: 'Cypher of Healing', url: 'https://cypherofhealing.com', category: 'Restoration ecosystem' },
+	{ name: 'AP Unlimited', url: 'https://apunlimited.com', category: 'Governance studio' },
+];
+
+async function probeSurface(surface) {
+	const start = Date.now();
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), 6000);
+	try {
+		const res = await fetch(surface.url, {
+			method: 'GET',
+			redirect: 'follow',
+			signal: controller.signal,
+			headers: { 'user-agent': 'latwoodtech-web-build-probe/1.0' },
+		});
+		const durationMs = Date.now() - start;
+		return {
+			name: surface.name,
+			url: surface.url,
+			category: surface.category,
+			alive: res.ok,
+			status: res.status,
+			durationMs,
+			error: null,
+		};
+	} catch (error) {
+		return {
+			name: surface.name,
+			url: surface.url,
+			category: surface.category,
+			alive: false,
+			status: 0,
+			durationMs: Date.now() - start,
+			error: error?.message || String(error),
+		};
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+async function probeSurfaces() {
+	return Promise.all(BRAND_SURFACES.map(probeSurface));
+}
+
+function buildFallbackSurfaceHealth() {
+	return BRAND_SURFACES.map((surface) => ({
+		name: surface.name,
+		url: surface.url,
+		category: surface.category,
+		alive: false,
+		status: 0,
+		durationMs: 7000,
+		error: 'probe timeout',
+	}));
+}
+
+async function withTimeout(promise, ms, fallback) {
+	let timeoutId;
+	const result = await Promise.race([
+		promise,
+		new Promise((resolve) => {
+			timeoutId = setTimeout(() => resolve(fallback), ms);
+		}),
+	]);
+	clearTimeout(timeoutId);
+	return result;
+}
 
 const PUBLIC_SURFACES = [
 	{
@@ -62,7 +134,7 @@ function summarizeRepoRows(rows, repoKey) {
 	return { verifiedCount, trackedCount };
 }
 
-async function buildPulseSnapshot() {
+async function buildPulseSnapshot(surfaceHealth) {
 	const trackerPath = join(__dirname, '..', '..', 'docs', 'completion-tracker.json');
 	const tracker = JSON.parse(await readFile(trackerPath, 'utf8'));
 	const rows = Array.isArray(tracker.rows) ? tracker.rows : [];
@@ -160,28 +232,52 @@ async function buildPulseSnapshot() {
 				'Every visible metric is intentionally curated to communicate craft, readiness, and velocity with minimal risk surface.',
 			],
 			surfaces: PUBLIC_SURFACES,
+			surfaceHealth,
 			vectors,
 			provenance: [
 				'docs/completion-tracker.json',
-				'Curated public-domain allowlist in build.js',
+				'Curated public-domain allowlist in build.js (filtered by build-time liveness probe)',
 			],
 		},
 	};
 }
 
+// Regenerate the deterministic topology and emit it into dist/data so the
+// fresh JSON is included in the dist payload without tracking the generated
+// source artifact in git.
+const { topology } = await generateTopology({ outDir: join(distDir, 'data') });
+
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
+await copyFile(join(srcDir, 'privacy.html'), join(distDir, 'privacy.html'));
 await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
+await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
+// /stack/ — annotated architecture + "what we refuse to ship with" page.
+await mkdir(join(distDir, 'stack'), { recursive: true });
+await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
+// Credibility signals: humans.txt (humanstxt.org) at root, security.txt
+// (RFC 9116) under /.well-known/. Absence reads "not yet a real platform".
+await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
+await mkdir(join(distDir, '.well-known'), { recursive: true });
+await copyFile(join(srcDir, '.well-known', 'security.txt'), join(distDir, '.well-known', 'security.txt'));
 // /status/ — near-live brand surface health page that fetches the
 // status-prober Worker with graceful fall-back to data/pulse.json.
 await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
 await mkdir(join(distDir, 'data'), { recursive: true });
+
+// Liveness probes run in parallel; on CI without outbound network they all
+// degrade and the runtime still renders a static topology. Bound the overall
+// probe batch so the build does not stall longer than 7 seconds.
+const surfaceHealth = await withTimeout(probeSurfaces(), 7000, buildFallbackSurfaceHealth());
 await writeFile(
 	join(distDir, 'data', 'pulse.json'),
-	`${JSON.stringify(await buildPulseSnapshot(), null, 2)}\n`,
+	`${JSON.stringify(await buildPulseSnapshot(surfaceHealth), null, 2)}\n`,
 	'utf8',
 );
 
-console.log('Built static site to dist/');
+const brandTraceCount = topology.traces.filter((t) => t.brand).length;
+console.log(
+	`Built static site to dist/ — topology: ${topology.nodes.length} nodes / ${topology.traces.length} traces (${brandTraceCount} branded).`,
+);

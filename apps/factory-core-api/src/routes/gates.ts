@@ -104,7 +104,7 @@ export function createGatesRouter(): Hono<{ Bindings: Env }> {
       if (existing) return c.json({ ok: true, event_id: existing.id });
     }
 
-    const eventId = await twoStepIngest(
+    const { eventId, created } = await twoStepIngest(
       db,
       {
         sourceSystem: body.source_system,
@@ -133,7 +133,9 @@ export function createGatesRouter(): Hono<{ Bindings: Env }> {
       },
     );
 
-    return c.json({ ok: true, event_id: eventId }, 201);
+    // 201 for a freshly inserted event; 200 when the DB unique index detected a
+    // duplicate source_event_id under concurrency (derivation was skipped).
+    return c.json({ ok: true, event_id: eventId }, created ? 201 : 200);
   });
 
   return router;

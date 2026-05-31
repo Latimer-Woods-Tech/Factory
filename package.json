@@ -3,33 +3,37 @@
   "private": true,
   "type": "module",
   "description": "Factory Core monorepo root — shared tooling and base configurations",
-  "dependencies": {
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo 'No root-level tests — run tests in individual packages.' && exit 0",
+    "validate:compatibility-date": "node scripts/check-compatibility-date.mjs",
+    "validate:service-registry": "node scripts/validate-service-registry.mjs",
+    "validate:docs": "node scripts/validate-docs-quality.mjs",
+    "audit:docs-freshness": "node scripts/doc-freshness-audit.js",
+    "docs:bootstrap": "node scripts/docs/bootstrap-repo.mjs",
+    "docs:catalog": "node scripts/docs/catalog.mjs",
+    "docs:check-generated": "node scripts/docs/check-generated-current.mjs",
+    "docs:diagrams": "node scripts/docs/diagrams.mjs",
+    "docs:drift": "node scripts/docs/drift.mjs",
+    "docs:health": "node scripts/docs/health.mjs",
+    "docs:metadata": "node scripts/docs/validate-metadata.mjs",
+    "docs:self-check": "node scripts/docs/self-check.mjs"
+  },
+  "devDependencies": {
     "@latimer-woods-tech/errors": "file:packages/errors",
     "@latimer-woods-tech/logger": "file:packages/logger",
     "@latimer-woods-tech/monitoring": "file:packages/monitoring",
-    "hono": "^4.12.14"
-  },
-  "devDependencies": {
+    "hono": "^4.12.18",
     "js-yaml": "^4.1.1",
     "jsonc-parser": "^3.3.1",
-    "typescript": "^5.4.0"
-  },
-  "version": "1.0.0",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "validate:service-registry": "node scripts/validate-service-registry.mjs"
+    "puppeteer": "^25.1.0",
+    "typescript": "^5.8.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Latimer-Woods-Tech/factory.git"
   },
   "keywords": [],
-  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Latimer-Woods-Tech/factory/issues"

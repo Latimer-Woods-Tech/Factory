@@ -1,5 +1,77 @@
 # Changelog
 
+## 0.3.4 — 2026-05-28
+
+### Added (no breaking changes)
+
+- **`workbench` tier** routes to `deepseek-chat` with Groq fallback for boring,
+  reviewable, non-sensitive internal batch work.
+- **`DEEPSEEK_API_KEY`** added as an optional `LLMEnv` binding. It is required only
+  for `tier: 'workbench'` or explicit `deepseek-*` model overrides.
+- **DeepSeek pricing entries** for `deepseek-chat` and `deepseek-reasoner` so cost
+  caps and ledger rows use known rates instead of the conservative Opus fallback.
+
+### Guardrail
+
+- `workbench` is for docs summaries, changelog drafts, issue triage, and classification.
+  Do not route secrets, customer PII, billing data, production ops, or final
+  customer-facing answers through DeepSeek.
+
+---
+
+## 0.3.3 — 2026-05-27
+
+### Changed (no breaking changes)
+
+- **`fast` tier now routes to Grok 4.3 (primary) → Anthropic Haiku (fallback).**
+  When `GROK_API_KEY` is present in `LLMEnv`, the `fast` tier sends completions to
+  `grok-4.3` first and falls back to `claude-haiku-4-20250514` if Grok is unavailable
+  or returns an error. When `GROK_API_KEY` is absent, the request goes directly to
+  Anthropic Haiku (same behaviour as before). Callers that already set `tier: 'fast'`
+  pick up Grok routing automatically; no code change needed.
+
+### Added
+
+- **`LLMOptions.reasoningEffort`** — `'none' | 'low' | 'medium' | 'high'`
+  (optional, defaults to `'none'`). Forwarded to the Grok `reasoning_effort` parameter
+  for `grok-4.3`; ignored for all other providers.
+- **`MODELS.grok.fast`** updated from `'grok-4-fast'` to `'grok-4.3'`. Old alias
+  `'grok-4-fast'` retained as deprecated with updated pricing so historical ledger
+  rows remain accurate.
+- **Grok pricing update**: `grok-4.3` at $1.25/$2.50 per MTok (in/out).
+  Old `grok-4-fast` and `grok-3-mini-latest` re-priced to the same $1.25/$2.50 rate.
+- **`for (const [legIndex, leg] of routeLegs.entries())`** — renamed loop variable so
+  `legIndex` is accessible for the last-leg 429 rate-limit short-circuit.
+
+### Consumers
+
+- To opt-in to Grok 4.3: add `GROK_API_KEY` to your `LLMEnv` binding. No other code
+  change required for `tier: 'fast'` callers.
+- `GROK_API_KEY` is optional. If absent, fast-tier routing is identical to 0.3.2
+  (Anthropic Haiku only).
+
+---
+
+## 0.3.2 — 2026-05-27
+
+### Added (no breaking changes)
+
+- **`LLMOptions.workload`** — optional string label (`'insights'`, `'copy'`, `'lead-qualification'`, …)
+  forwarded to cost-recording calls for per-workload cost attribution in dashboards.
+- **Missing model pricing entries** in `MODEL_PRICE_PER_1M`:
+  `claude-haiku-4-5-20251001`, `claude-sonnet-4-20250514`, `claude-opus-4-20250514`
+  (aliases for variants that share pricing with their shorthand names; prevents
+  `estimateCostUsd` from silently returning `$0` for these model IDs).
+- **`workload` forwarded** to `recordOrgCostUsage` so per-workload breakdowns appear
+  in the cost-tracking KV store.
+
+### Consumers
+
+- Existing callers do not need to set `workload`; it is optional and defaults to `undefined`.
+- The `recordOrgCostUsage` signature is unchanged; `workload` is an additive internal field.
+
+---
+
 ## 0.3.1 — 2026-05-02 PM
 
 ### Added (no breaking changes)

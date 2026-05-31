@@ -77,6 +77,16 @@ jobs:
         run: npm install
         working-directory: apps/daily-brief
 
+      - name: Overlay locally-built packages over npm installs
+        # Ensures daily-brief typechecks against the monorepo's current source rather
+        # than the last published tarball (handles source-ahead-of-publish gap).
+        run: |
+          for pkg in errors monitoring logger llm telephony email; do
+            if [ -d "packages/${pkg}/dist" ] && [ -d "apps/daily-brief/node_modules/@latimer-woods-tech/${pkg}" ]; then
+              cp -r "packages/${pkg}/dist/." "apps/daily-brief/node_modules/@latimer-woods-tech/${pkg}/dist/"
+            fi
+          done
+
       - name: Typecheck
         run: npm run typecheck
         working-directory: apps/daily-brief

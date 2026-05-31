@@ -8,7 +8,7 @@
   "name": "factory-core-api",
   "main": "src/index.ts",
   "workers_dev": true,
-  "compatibility_date": "2026-04-01",
+  "compatibility_date": "2026-05-01",
   // nodejs_compat is required by @sentry/cloudflare (AsyncLocalStorage).
   "compatibility_flags": ["nodejs_compat"],
 
@@ -23,7 +23,7 @@
   "hyperdrive": [
     {
       "binding": "DB",
-      "id": "00000000000000000000000000000000"
+      "id": "efe957f404bb457593e6bd08b733b7c4"
     }
   ],
 
@@ -42,15 +42,24 @@
   //   JWT_SIGNING_KEY — root HS256 signing key for minted scoped JWTs.
   //                     Rotated quarterly per tech guide §1.5.2.
   // Optional secrets:
-  //   SENTRY_DSN      — error reporting via @latimer-woods-tech/monitoring.
+  //   SENTRY_DSN              — error reporting via @latimer-woods-tech/monitoring.
+  //   WEBHOOK_FANOUT_INGEST_KEY — service key honoured only on POST /v1/gates.
+  //   SUPERVISOR_PUSH_KEY     — service key honoured only on POST /v1/runs/mirror (P1.9).
   //
   // BUILD_SHA is injected as a var by the deploy workflow (surfaced by /version).
 
   "env": {
     "production": {
       "name": "factory-core-api",
-      // Custom domain (api.factory.latwood-tech.internal) + service-registry
-      // entry are added with the deploy workflow in the Phase A targeting step.
+      // Branded custom domain (zone latwoodtech.work). Reached server-to-server by
+      // the supervisor push-on-write (P1.9) and by GitHub Actions OIDC token exchange.
+      "routes": [
+        { "pattern": "core.latwoodtech.work", "custom_domain": true }
+      ],
+      // Hyperdrive is a non-inheritable binding — must be repeated per environment.
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
       "vars": {
         "ENVIRONMENT": "production",
         "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
@@ -60,6 +69,9 @@
     },
     "staging": {
       "name": "factory-core-api-staging",
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
       "vars": {
         "ENVIRONMENT": "staging",
         "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
@@ -69,3 +81,4 @@
     }
   }
 }
+

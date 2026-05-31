@@ -7,9 +7,9 @@ the safety design lives in [01-ENVIRONMENT-SAFETY.md](./01-ENVIRONMENT-SAFETY.md
 
 | Surface          | Staging                                                 | Production                                                                       |
 | ---------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| API Worker       | `https://admin-staging.latwoodtech.work`                | `https://api.apunlimited.com` (primary), `https://admin.latwoodtech.work` (alias) |
-| UI (Pages)       | `https://staging.admin-studio-ui.pages.dev`             | `https://apunlimited.com` (primary), `https://studio.thefactory.dev` (alias)     |
-| workers.dev      | `https://admin-studio-staging.adrper79.workers.dev`     | `https://admin-studio-production.adrper79.workers.dev`                           |
+| API Worker       | `https://api.admin.latimerwoods.dev`                    | `https://api.apunlimited.com`                                                    |
+| UI (Pages)       | `https://staging.admin.latimerwoods.dev`                | `https://apunlimited.com`                                                        |
+| CF fallback      | `https://admin-studio-staging.adrper79.workers.dev`     | `https://admin-studio-production.adrper79.workers.dev`                           |
 | Health check     | `GET /health` returns `200` with `env: "staging"`       | `GET /health` returns `200` with `env: "production"`                             |
 
 The `workers.dev` URLs are CF infrastructure fallbacks — never link to them from user-facing UI or docs (CLAUDE.md hard constraint). They exist for deploy-verify scripts and direct curl debugging only.
@@ -17,7 +17,7 @@ The `workers.dev` URLs are CF infrastructure fallbacks — never link to them fr
 Always confirm env via `curl`:
 
 ```bash
-curl https://admin-staging.latwoodtech.work/health
+curl https://api.admin.latimerwoods.dev/health
 # Must return { "env": "staging", ... }
 
 curl https://api.apunlimited.com/health

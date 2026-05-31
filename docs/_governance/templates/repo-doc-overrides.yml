@@ -1,0 +1,27 @@
+version: 1
+last_updated: 2026-05-28
+purpose: Pattern-based classification for repo documentation.
+overrides:
+  - pattern: "docs/_generated/**"
+    status: generated
+    owner: platform
+    doc_type: diagram
+    fidelity: generated
+  - pattern: "docs/_governance/**"
+    status: active
+    owner: platform
+    doc_type: policy
+  - pattern: "docs/archive/**"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/runbooks/**"
+    status: active
+    owner: platform
+    doc_type: runbook
+  - pattern: "docs/**"
+    status: active
+    owner: platform
+  - pattern: "*.md"
+    status: active
+    owner: platform

@@ -1,0 +1,169 @@
+# capabilities.yml — coh / cypher-of-healing (P2.17)
+# Schema: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §3.1.1
+# Validated by: .github/workflows/_app-capability-lint.yml (P2.16)
+#
+# Five-stream personal brand platform: Chair / Vault / Academy / Stage / Store.
+# Practitioner platform with booking, subscriptions, and AI-powered readings.
+#
+# supervisor_access tiers:
+#   green   — supervisor may call without human review
+#   yellow  — supervisor may call; human confirms before execution
+#   red     — human must explicitly approve; supervisor may only plan, not execute
+#   denied  — never callable by supervisor; user-facing or payment surface
+
+version: 1
+app:
+  id: coh
+  name: "cypher-of-healing"
+  repo: Latimer-Woods-Tech/coh
+  custom_domain: api.cypherofhealing.com
+  product_tier: revenue
+
+routes:
+  # ── Admin telemetry (mandatory per service-registry.yml) ────────────────────
+  - path: /health
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  - path: /api/admin/health
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  - path: /api/admin/metrics
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      window: { type: enum, values: [1h, 6h, 24h, 7d], optional: true }
+
+  - path: /api/admin/events
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      severity: { type: enum, values: [error, warn, info], optional: true }
+      limit:    { type: integer, min: 1, max: 100, optional: true }
+
+  # ── Auth (never callable by supervisor) ─────────────────────────────────────
+  - path: /auth/login
+    method: POST
+    handler_class: auth-internal
+    side_effects: none
+    supervisor_access: denied
+
+  - path: /auth/refresh
+    method: POST
+    handler_class: auth-internal
+    side_effects: none
+    supervisor_access: denied
+
+  # ── Bookings / Chair ─────────────────────────────────────────────────────────
+  - path: /api/admin/bookings
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      page:   { type: integer, min: 1, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+      status: { type: enum, values: [pending, confirmed, completed, cancelled], optional: true }
+
+  - path: /api/admin/bookings/:id
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  - path: /api/admin/bookings/:id/cancel
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-app
+    supervisor_access: yellow
+    reversibility: reversible-with-effort
+    requires_codeowner_oob: true
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+
+  # ── Practitioners ────────────────────────────────────────────────────────────
+  - path: /api/admin/practitioners
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      page:   { type: integer, min: 1, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+      status: { type: enum, values: [active, pending, suspended], optional: true }
+
+  - path: /api/admin/practitioners/:id
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  - path: /api/admin/practitioners/:id/suspend
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-app
+    supervisor_access: yellow
+    reversibility: reversible-with-effort
+    requires_codeowner_oob: true
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+
+  # ── Subscriptions / Vault ────────────────────────────────────────────────────
+  - path: /api/admin/subscriptions
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+    params_schema:
+      page:   { type: integer, min: 1, optional: true }
+      limit:  { type: integer, min: 1, max: 100, optional: true }
+      status: { type: enum, values: [active, cancelled, past_due, trialing], optional: true }
+
+  - path: /api/admin/subscriptions/:id/cancel
+    method: POST
+    handler_class: mutate-internal
+    side_effects: write-external
+    supervisor_access: red
+    reversibility: reversible-with-effort
+    requires_codeowner_oob: true
+    body_schema:
+      reason: { type: string, validator: "^[\\w\\s,\\.\\-]{10,200}$" }
+      at_period_end: { type: boolean, optional: true }
+
+  # ── Webhooks (never callable by supervisor) ──────────────────────────────────
+  - path: /api/stripe/webhook
+    method: POST
+    handler_class: webhook-external
+    side_effects: write-external
+    supervisor_access: denied
+
+  - path: /webhooks/stripe
+    method: POST
+    handler_class: webhook-external
+    side_effects: write-external
+    supervisor_access: denied
+
+capabilities_exposed:
+  - booking-management
+  - practitioner-management
+  - subscription-management
+
+capabilities_required:
+  - "@latimer-woods-tech/auth@^0.2.0"
+  - "@latimer-woods-tech/neon@^0.2.0"
+  - "@latimer-woods-tech/stripe@^0.2.0"
+  - "@latimer-woods-tech/llm@^0.3.0"
+
+side_effects_summary:
+  read_external: ["sentry-api", "posthog"]
+  write_external: ["stripe", "resend", "anthropic"]
+  write_app: ["neon:coh"]

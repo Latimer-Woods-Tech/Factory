@@ -37,6 +37,14 @@ curl -sS -X POST https://<host>/v1/auth/token \
   -d '{"audience":"gates-ci"}'
 ```
 
+### Idempotent ingestion (`/v1/gates`, `/v1/artifacts`)
+
+Both ingest endpoints accept an optional `source_event_id`. When provided, a
+second POST carrying the same id returns the original `event_id` with `200`
+instead of inserting a duplicate. Callers that may retry (e.g. the
+`render-video.yml` artifact step, keyed on the workflow run id + artifact type)
+should always send a stable `source_event_id` so retries dedupe server-side.
+
 ## Configuration
 
 **Vars** (`wrangler.jsonc`): `ENVIRONMENT`, `OIDC_ISSUER`, `OIDC_AUDIENCE`,

@@ -65,7 +65,7 @@ let mockDb: IngestDb;
 beforeEach(() => {
   mockDb = {
     findEventBySourceId: vi.fn().mockResolvedValue(null),
-    insertEvent: vi.fn().mockResolvedValue({ id: 'evt-art-456' }),
+    insertEvent: vi.fn().mockResolvedValue({ id: 'evt-art-456', inserted: true }),
     insertGate: vi.fn().mockResolvedValue(undefined),
     insertArtifact: vi.fn().mockResolvedValue(undefined),
     markDerived: vi.fn().mockResolvedValue(undefined),
@@ -142,5 +142,119 @@ describe('POST /v1/artifacts', () => {
     expect(res.status).toBe(500);
     expect(mockDb.markFailed).toHaveBeenCalledWith('evt-art-456', 'unique constraint');
     expect(mockDb.markDerived).not.toHaveBeenCalled();
+  });
+
+  describe('source_event_id idempotency', () => {
+    const BODY_WITH_ID = { ...VALID_BODY, source_event_id: 'render-run-12345-video' };
+
+    it('201 + ingests when source_event_id is new', async () => {
+      const token = await mintToken();
+      const res = await app.fetch(artifactRequest(token, BODY_WITH_ID), baseEnv(), makeCtx());
+      expect(res.status).toBe(201);
+      expect(mockDb.findEventBySourceId).toHaveBeenCalledWith(
+        'video-pipeline',
+        'render-run-12345-video',
+      );
+      expect(mockDb.insertEvent).toHaveBeenCalledOnce();
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceEventId: 'render-run-12345-video',
+      });
+    });
+
+    it('200 + returns existing event without re-inserting on duplicate source_event_id', async () => {
+      vi.mocked(mockDb.findEventBySourceId).mockResolvedValue({ id: 'evt-existing-999' });
+      const token = await mintToken();
+      const res = await app.fetch(artifactRequest(token, BODY_WITH_ID), baseEnv(), makeCtx());
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body['ok']).toBe(true);
+      expect(body['event_id']).toBe('evt-existing-999');
+      expect(mockDb.insertEvent).not.toHaveBeenCalled();
+      expect(mockDb.insertArtifact).not.toHaveBeenCalled();
+    });
+
+    it('does not consult the idempotency index when source_event_id is omitted', async () => {
+      const token = await mintToken();
+      const res = await app.fetch(artifactRequest(token, VALID_BODY), baseEnv(), makeCtx());
+      expect(res.status).toBe(201);
+      expect(mockDb.findEventBySourceId).not.toHaveBeenCalled();
+    });
+
+    it('200 + no duplicate artifact when a concurrent writer wins the insert race', async () => {
+      // Fast-path lookup misses (TOCTOU window), but the DB unique index fires:
+      // insertEvent reports inserted=false and derivation must be skipped.
+      vi.mocked(mockDb.findEventBySourceId).mockResolvedValue(null);
+      vi.mocked(mockDb.insertEvent).mockResolvedValue({ id: 'race-art-evt', inserted: false });
+      const token = await mintToken();
+      const bodyWithSourceId = { ...VALID_BODY, source_event_id: 'render-job-concurrent' };
+      const res = await app.fetch(artifactRequest(token, bodyWithSourceId), baseEnv(), makeCtx());
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body['event_id']).toBe('race-art-evt');
+      expect(mockDb.insertArtifact).not.toHaveBeenCalled();
+      expect(mockDb.markDerived).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('service key auth (GitHub Actions deploy workflows)', () => {
+    const SERVICE_KEY = 'test-ingest-service-key-abc';
+    const DEPLOY_BODY = {
+      artifact_type: 'deploy-url',
+      producer_type: 'cloudflare-deploy',
+      producer_ref: 'run-12345',
+      source_system: 'github-actions',
+      source_event_id: 'deploy-myapp-production-12345',
+      subject_repo: 'Latimer-Woods-Tech/myapp',
+      subject_ref: 'production',
+      uri: 'https://myapp.adrper79.workers.dev',
+      observed_at: new Date().toISOString(),
+    };
+
+    it('201 when authenticated with the service key', async () => {
+      const res = await app.fetch(
+        artifactRequest(SERVICE_KEY, DEPLOY_BODY),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(201);
+      const body = (await res.json()) as Record<string, unknown>;
+      expect(body['ok']).toBe(true);
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceSystem: 'github-actions',
+        ingestActor: 'service:github-actions',
+      });
+    });
+
+    it('401 when service key does not match', async () => {
+      const res = await app.fetch(
+        artifactRequest('wrong-key', DEPLOY_BODY),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it('defaults source_system to github-actions when omitted with service key', async () => {
+      const { source_system: _, ...bodyNoSS } = DEPLOY_BODY;
+      const res = await app.fetch(
+        artifactRequest(SERVICE_KEY, bodyNoSS),
+        baseEnv({ WEBHOOK_FANOUT_INGEST_KEY: SERVICE_KEY }),
+        makeCtx(),
+      );
+      expect(res.status).toBe(201);
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceSystem: 'github-actions',
+      });
+    });
+
+    it('defaults source_system to video-pipeline when JWT auth omits source_system', async () => {
+      const { source_system: _, ...bodyNoSS } = DEPLOY_BODY;
+      const token = await mintToken('artifacts-video');
+      const res = await app.fetch(artifactRequest(token, bodyNoSS), baseEnv(), makeCtx());
+      expect(res.status).toBe(201);
+      expect(vi.mocked(mockDb.insertEvent).mock.calls[0]![0]).toMatchObject({
+        sourceSystem: 'video-pipeline',
+      });
+    });
   });
 });

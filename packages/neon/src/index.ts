@@ -32,7 +32,7 @@ export type FactoryDb = Omit<HyperdriveDrizzleDb, 'execute'> & {
   ): Promise<FactoryQueryResult<TRow>>;
 };
 
-export { sql, eq } from 'drizzle-orm';
+export { sql, eq, and } from 'drizzle-orm';
 
 /**
  * Minimal Cloudflare Hyperdrive-compatible binding shape.
@@ -134,6 +134,12 @@ export async function runMigrations(
   const migrator = await import(migratorModule) as PostgresJsMigratorModule;
   await migrator.migrate(db as unknown as PostgresJsDatabase<Record<string, never>>, { migrationsFolder: options.migrationsFolder });
 }
+
+/**
+ * PostgreSQL Row-Level Security template helpers.
+ * Generates ALTER TABLE + CREATE POLICY SQL for migration files.
+ */
+export * from './rls.js';
 
 /**
  * W360-005: Practitioner Studio Entitlements Module

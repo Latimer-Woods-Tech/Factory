@@ -9,6 +9,8 @@ export interface Env {
 
   // ── Bindings ────────────────────────────────────────────────────────────────────────────────
   DB: Hyperdrive;
+  /** Hyperdrive binding to THE_FACTORY Neon project for Command Center reads. */
+  FACTORY_DB?: Hyperdrive;
 
   // ── Secrets (wrangler secret put) ───────────────────────────────────────────────────────────────────────
   /** Signing key for Studio-issued JWTs */
@@ -21,10 +23,14 @@ export interface Env {
   GITHUB_TOKEN: string;
   /** Anthropic API key for AI chat */
   ANTHROPIC_API_KEY: string;
+  /** GCP service account key (base64-encoded JSON) for Secret Manager access */
+  GCP_SA_KEY?: string;
   /** Grok fallback */
   XAI_API_KEY?: string;
   /** Groq fallback */
   GROQ_API_KEY?: string;
+  /** DeepSeek bargain workbench for low-risk internal batch work */
+  DEEPSEEK_API_KEY?: string;
   /** AI Gateway base URL (optional) */
   AI_GATEWAY_BASE_URL?: string;
   /** Vertex AI access token */
@@ -35,6 +41,8 @@ export interface Env {
   VERTEX_LOCATION?: string;
   /** Google OAuth 2.0 client ID for /auth/google endpoint */
   GOOGLE_CLIENT_ID?: string;
+  /** Required Google Workspace hosted domain for /auth/google, e.g. "latwoodtech.com". */
+  STUDIO_GOOGLE_WORKSPACE_DOMAIN?: string;
   /** JSON map of allowlisted users for Google OAuth: {"email@example.com": {"role": "owner"}} */
   STUDIO_ALLOWED_USERS_JSON?: string;
   /** Sentry DSN for error reporting */
