@@ -70,7 +70,7 @@ Every **user/developer-facing** endpoint resolves to a branded custom domain; in
 | Embed widget | `selfprime.net/embed.html` | ensure its calls hit `api.selfprime.net`, not workers.dev |
 | Capricast sharing | `api.capricast.com` / `capricast.com` | branded already |
 | **Render service (Cloud Run)** | internal `run.app` | server-to-server, signed-only; **deliberately not** branded/public |
-| Shareable film playback | `watch.selfprime.net` *(recommended, pending)* | brand the Stream playback for the viral film vs. raw `customer-*.cloudflarestream.com` |
+| Shareable film playback | **`watch.selfprime.net`** — decided + registered (`planned`) | Branded vs. raw `customer-*.cloudflarestream.com`. Subdomain of the selfprime.net zone; DNS + worker/Pages player provisioned **with the engine sharing slice (Slice 7)** — no live DNS until an origin exists (dangling-DNS/takeover risk). |
 
 Provisioning per surface: register in `service-registry.yml` → attach CF custom domain (worker
 `custom_domain`) → for new top-level `selfprime.net` patterns, add the CF API worker-route → update
