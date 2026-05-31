@@ -1193,6 +1193,45 @@ async function main() {
     console.log('[INFO] Dependabot PR includes non-lockfile changes — falling through to full review');
   }
 
+  // ── Housekeeping fast-path: trusted generator bots, docs/data-only diffs ────
+  // STATE / digest / cost / conformance / stack / scorecard PRs from
+  // github-actions[bot] are deterministic doc/data regenerations. CI gates them;
+  // a 2-party Grok+Claude review on the highest-volume PR class adds zero safety
+  // and is the bulk of the per-PR LLM spend. Skip the LLM and APPROVE so they
+  // auto-merge instead of piling up. Any file outside docs/ falls through to the
+  // full review. (factory-cross-repo's own PRs are already skipped as self-authored.)
+  const HOUSEKEEPING_AUTHORS = new Set(['github-actions[bot]', 'app/github-actions']);
+  if (HOUSEKEEPING_AUTHORS.has(pr.user?.login ?? '')) {
+    const docDataOnly = filenames.length > 0 && filenames.every(f => /^docs\//.test(f));
+    if (docDataOnly) {
+      console.log(`[INFO] Housekeeping doc/data-only diff (${filenames.length} files) — short-circuiting to APPROVE (no LLM)`);
+      const body = [
+        '## Factory Canonical Review — Housekeeping fast-path',
+        '',
+        '**Decision:** APPROVED — trusted generator, docs/data-only diff',
+        '**Reviewer:** Housekeeping fast-path (skips Grok+Claude consensus)',
+        '',
+        `This PR is from \`${pr.user?.login}\` and touches only \`docs/\` (${filenames.length} file${filenames.length === 1 ? '' : 's'}) — a deterministic regeneration (STATE/digest/cost/conformance/stack/scorecard). The LLM review is skipped because:`,
+        '',
+        '- The content is mechanically generated, not hand-authored logic',
+        '- CI already gates the substantive risk',
+        '- A 2-party LLM review on the highest-volume PR class adds no safety and is the bulk of per-PR LLM spend',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Housekeeping fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge label: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (housekeeping fast-path)`);
+      return;
+    }
+    console.log('[INFO] Housekeeping author but non-docs files present — falling through to full review');
+  }
+
   const tier = detectTier(filenames);
   const adminMutation = hasAdminMutation(filenames);
   const totalDiffChars = files.reduce((n, f) => n + (f.patch?.length ?? 0), 0);
