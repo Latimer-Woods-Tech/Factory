@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   uploadFromUrl,
+  uploadPrivateFromUrl,
+  getStreamSignedToken,
+  getSignedStreamPlaybackUrl,
   getStreamVideo,
   listStreamVideos,
   deleteStreamVideo,
@@ -113,6 +116,128 @@ describe('uploadFromUrl', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(makeResponse(streamOk(MOCK_VIDEO), true, 200)));
     const result = await uploadFromUrl('https://example.com/video.mp4', {}, MOCK_ENV);
     expect(result.uid).toBe('abc123def456');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// uploadPrivateFromUrl (D1 — private, signed-playback assets)
+// ---------------------------------------------------------------------------
+
+describe('uploadPrivateFromUrl', () => {
+  it('posts to /stream/copy with requireSignedURLs: true', async () => {
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
+      makeResponse(streamOk(MOCK_VIDEO), true, 200),
+    );
+
+    const result = await uploadPrivateFromUrl(
+      'https://r2.example.com/renders/vo-123.mp4',
+      { videoObjectId: '123' },
+      MOCK_ENV,
+      { fetch: mockFetch },
+    );
+
+    expect(result.uid).toBe('abc123def456');
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/stream/copy');
+    expect(init?.method).toBe('POST');
+    const sentBody = JSON.parse(init?.body as string) as {
+      url: string;
+      meta: Record<string, string>;
+      requireSignedURLs: boolean;
+    };
+    expect(sentBody.url).toBe('https://r2.example.com/renders/vo-123.mp4');
+    expect(sentBody.meta).toEqual({ videoObjectId: '123' });
+    expect(sentBody.requireSignedURLs).toBe(true);
+  });
+
+  it('throws InternalError on non-OK HTTP status', async () => {
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
+      makeResponse('boom', false, 500),
+    );
+    await expect(
+      uploadPrivateFromUrl('https://example.com/v.mp4', {}, MOCK_ENV, { fetch: mockFetch }),
+    ).rejects.toBeInstanceOf(InternalError);
+  });
+
+  it('uses global fetch when no deps provided', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(makeResponse(streamOk(MOCK_VIDEO), true, 200)));
+    const result = await uploadPrivateFromUrl('https://example.com/video.mp4', {}, MOCK_ENV);
+    expect(result.uid).toBe('abc123def456');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getStreamSignedToken + getSignedStreamPlaybackUrl (D1 — signed playback)
+// ---------------------------------------------------------------------------
+
+describe('getStreamSignedToken', () => {
+  it('posts to /stream/{uid}/token and returns the token', async () => {
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
+      makeResponse(streamOk({ token: 'signed.jwt.token' }), true, 200),
+    );
+
+    const token = await getStreamSignedToken('abc123', MOCK_ENV, {}, { fetch: mockFetch });
+
+    expect(token).toBe('signed.jwt.token');
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('/abc123/token');
+    expect(init?.method).toBe('POST');
+  });
+
+  it('defaults exp to ~1 hour from now', async () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
+      makeResponse(streamOk({ token: 't' }), true, 200),
+    );
+    await getStreamSignedToken('abc123', MOCK_ENV, {}, { fetch: mockFetch });
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init?.body as string) as { exp: number };
+    expect(body.exp).toBeGreaterThanOrEqual(nowSec + 3600 - 2);
+    expect(body.exp).toBeLessThanOrEqual(nowSec + 3600 + 2);
+  });
+
+  it('honours expiresInSeconds, downloadable, and accessRules', async () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
+      makeResponse(streamOk({ token: 't' }), true, 200),
+    );
+    await getStreamSignedToken(
+      'abc123',
+      MOCK_ENV,
+      { expiresInSeconds: 600, downloadable: true, accessRules: [{ type: 'ip.geoip.country', country: ['US'] }] },
+      { fetch: mockFetch },
+    );
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init?.body as string) as {
+      exp: number;
+      downloadable: boolean;
+      accessRules: unknown[];
+    };
+    expect(body.exp).toBeLessThanOrEqual(nowSec + 600 + 2);
+    expect(body.downloadable).toBe(true);
+    expect(body.accessRules).toHaveLength(1);
+  });
+
+  it('throws InternalError when the token API fails', async () => {
+    const mockFetch = vi.fn<FetchFn>().mockResolvedValueOnce(
+      makeResponse('forbidden', false, 403),
+    );
+    await expect(
+      getStreamSignedToken('abc123', MOCK_ENV, {}, { fetch: mockFetch }),
+    ).rejects.toBeInstanceOf(InternalError);
+  });
+
+  it('uses global fetch when no deps provided', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(makeResponse(streamOk({ token: 'g' }), true, 200)));
+    const token = await getStreamSignedToken('abc123', MOCK_ENV);
+    expect(token).toBe('g');
+  });
+});
+
+describe('getSignedStreamPlaybackUrl', () => {
+  it('builds the HLS manifest URL from a token', () => {
+    const url = getSignedStreamPlaybackUrl('signed.jwt.token');
+    expect(url).toBe('https://videodelivery.net/signed.jwt.token/manifest/video.m3u8');
   });
 });
 

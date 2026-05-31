@@ -1227,3 +1227,111 @@ canvas[data-circuitry] {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* /stack page — annotated architecture diagram + decisions list.
+   Reuses page-shell, hero typography, and the card system so the page
+   feels native to the brand without a second stylesheet. */
+.stack-hero {
+  padding-top: 12px;
+  margin-bottom: 64px;
+}
+.stack-hero h1 {
+  font-size: clamp(2.6rem, 5vw, 4.4rem);
+  max-width: 18ch;
+}
+.stack-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-decoration: none;
+  margin-bottom: 28px;
+}
+.stack-back:hover {
+  color: var(--accent-strong);
+}
+.stack-diagram {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(18, 11, 6, 0.84), rgba(7, 4, 2, 0.92));
+  padding: 36px;
+  margin: 48px 0;
+  overflow-x: auto;
+}
+.stack-diagram svg {
+  width: 100%;
+  height: auto;
+  max-width: 920px;
+  display: block;
+  margin: 0 auto;
+}
+.stack-decisions {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  margin: 32px 0;
+}
+.stack-decision {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  padding: 28px;
+}
+.stack-decision h3 {
+  font-size: 1.3rem;
+  margin-bottom: 8px;
+}
+.stack-decision-tag {
+  display: inline-block;
+  font-family: var(--font-ui);
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+.stack-decision p {
+  color: #d8c9a3;
+  font-size: 0.96rem;
+  line-height: 1.6;
+  margin: 0;
+}
+.stack-decision code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  background: rgba(240, 207, 122, 0.08);
+  color: var(--accent-strong);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.stack-bans {
+  margin-top: 56px;
+  padding: 32px;
+  border: 1px solid rgba(217, 90, 67, 0.28);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(217, 90, 67, 0.06), rgba(7, 4, 2, 0.4));
+}
+.stack-bans h2 {
+  font-size: 1.8rem;
+}
+.stack-bans ul {
+  margin: 16px 0 0;
+  padding-left: 22px;
+  color: #d8c9a3;
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+.stack-bans li {
+  margin-bottom: 6px;
+}
+.stack-bans li code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.84em;
+  color: var(--accent-strong);
+}
+

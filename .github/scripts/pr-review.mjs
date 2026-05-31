@@ -20,7 +20,13 @@ const MAX_DIFF_CHARS = 28_000;
 const {
   GH_TOKEN,
   ANTHROPIC_API_KEY,
-  ANTHROPIC_MODEL = 'claude-sonnet-4-20250514',
+  // Model A: this canonical review is now ADVISORY (posts COMMENT, never blocks),
+  // so it no longer needs a premium model. Haiku is plenty for a courtesy
+  // violation/architecture signal and is ~4x cheaper than Sonnet ($0.80/$4 vs
+  // $3/$15 per 1M) on the highest-volume LLM call in the system (every PR).
+  // Prompt-caching (anthropic-beta below) further amortizes the system prompt.
+  // Override via the ANTHROPIC_MODEL repo/org var if a deeper review is wanted.
+  ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001',
   GROK_API_KEY,
   GROK_MODEL = 'grok-3',
   PR_NUMBER,
@@ -1187,6 +1193,45 @@ async function main() {
     console.log('[INFO] Dependabot PR includes non-lockfile changes — falling through to full review');
   }
 
+  // ── Housekeeping fast-path: trusted generator bots, docs/data-only diffs ────
+  // STATE / digest / cost / conformance / stack / scorecard PRs from
+  // github-actions[bot] are deterministic doc/data regenerations. CI gates them;
+  // a 2-party Grok+Claude review on the highest-volume PR class adds zero safety
+  // and is the bulk of the per-PR LLM spend. Skip the LLM and APPROVE so they
+  // auto-merge instead of piling up. Any file outside docs/ falls through to the
+  // full review. (factory-cross-repo's own PRs are already skipped as self-authored.)
+  const HOUSEKEEPING_AUTHORS = new Set(['github-actions[bot]', 'app/github-actions']);
+  if (HOUSEKEEPING_AUTHORS.has(pr.user?.login ?? '')) {
+    const docDataOnly = filenames.length > 0 && filenames.every(f => /^docs\//.test(f));
+    if (docDataOnly) {
+      console.log(`[INFO] Housekeeping doc/data-only diff (${filenames.length} files) — short-circuiting to APPROVE (no LLM)`);
+      const body = [
+        '## Factory Canonical Review — Housekeeping fast-path',
+        '',
+        '**Decision:** APPROVED — trusted generator, docs/data-only diff',
+        '**Reviewer:** Housekeeping fast-path (skips Grok+Claude consensus)',
+        '',
+        `This PR is from \`${pr.user?.login}\` and touches only \`docs/\` (${filenames.length} file${filenames.length === 1 ? '' : 's'}) — a deterministic regeneration (STATE/digest/cost/conformance/stack/scorecard). The LLM review is skipped because:`,
+        '',
+        '- The content is mechanically generated, not hand-authored logic',
+        '- CI already gates the substantive risk',
+        '- A 2-party LLM review on the highest-volume PR class adds no safety and is the bulk of per-PR LLM spend',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Housekeeping fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge label: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (housekeeping fast-path)`);
+      return;
+    }
+    console.log('[INFO] Housekeeping author but non-docs files present — falling through to full review');
+  }
+
   const tier = detectTier(filenames);
   const adminMutation = hasAdminMutation(filenames);
   const totalDiffChars = files.reduce((n, f) => n + (f.patch?.length ?? 0), 0);
@@ -1301,14 +1346,19 @@ async function main() {
     (llmResult.architectural_concerns?.length ?? 0) > 0;
 
   let decision;
-  if (adminMutation) {
-    // FRIDGE rule 4 — admin mutations always need explicit CODEOWNER ✅ via branch protection.
-    // The bot still posts its verdict (APPROVE when clean, REQUEST_CHANGES when not) so the
-    // human sees the 2-party result before clicking. CODEOWNERS on billing/admin/stripe paths
-    // is @adrper79-dot only — the bot APPROVE is advisory, not the merge gate.
-    decision = hasViolations ? 'REQUEST_CHANGES' : 'APPROVE';
-  } else if (hasViolations) {
-    decision = 'REQUEST_CHANGES';
+  if (hasViolations) {
+    // Model A (solo-operator governance): the canonical reviewer is ADVISORY.
+    // It surfaces concerns as a COMMENT — the full 2-party verdict (deterministic
+    // + LLM) is still in the body for the human to see — but it NEVER posts
+    // REQUEST_CHANGES. A required-CODEOWNER bot that also hard-blocks on
+    // hallucinated "violations" (e.g. flagging marketing copy or a Node build
+    // script as Worker constraint breaches) traps a solo operator who cannot
+    // self-approve. The real merge gates remain: required status checks
+    // (validate / Analyze / dependency-review), CODEOWNERS, and — for the
+    // high-risk paths — the operator's own deliberate admin-merge.
+    // FRIDGE rule 4 (admin-mutation visibility) is preserved: the verdict is
+    // still posted; it is informational, not a block.
+    decision = 'COMMENT';
   } else {
     decision = 'APPROVE';
   }

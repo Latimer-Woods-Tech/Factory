@@ -10,7 +10,7 @@ name: Auto-Merge Spotter
 # left alone — those need real human attention.
 on:
   schedule:
-    - cron: '*/10 * * * *' # every 10 minutes
+    - cron: '5 * * * *' # hourly (was */10) — cost trim; native auto-merge handles fast path
   workflow_dispatch:
 
 concurrency:

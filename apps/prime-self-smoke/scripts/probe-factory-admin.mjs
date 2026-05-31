@@ -53,6 +53,10 @@ const ignoreUrlPatterns = [
   /\/cdn-cgi\/rum/,             // Cloudflare RUM
   /\.posthog\.com/,             // PostHog telemetry
   /sentry\.io\/api/,            // Sentry envelope
+  /accounts\.google\.com\/gsi/, // Google Identity Services button iframe —
+                                // net::ERR_ABORTED when the page navigates away
+                                // on a successful email/password login. Third-
+                                // party widget; not an admin-studio health signal.
 ];
 function shouldIgnore(url) {
   return ignoreUrlPatterns.some((re) => re.test(url));

@@ -11,7 +11,7 @@ name: Copilot PR Poller
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # every 10 min
+    - cron: '25 * * * *'   # hourly (was */10) — cost trim
   workflow_dispatch:          # manual kick from Actions tab
 
 permissions:

@@ -6,6 +6,11 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Safe-area aliases for notched/gesture devices.
+      spacing: {
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

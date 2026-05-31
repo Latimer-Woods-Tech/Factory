@@ -3,7 +3,10 @@ import { Composition, registerRoot } from 'remotion';
 import { MarketingVideo, marketingSchema } from './compositions/MarketingVideo';
 import { TrainingVideo, trainingSchema } from './compositions/TrainingVideo';
 import { WalkthroughVideo, walkthroughSchema } from './compositions/WalkthroughVideo';
-import { EnergyBlueprintVideo, blueprintSchema } from './compositions/EnergyBlueprintVideo';
+import {
+  EnergyBlueprintVideo,
+  blueprintSchema,
+} from '@latimer-woods-tech/video-studio';
 
 export const VIDEO_FPS = 30;
 export const VIDEO_WIDTH = 1920;
