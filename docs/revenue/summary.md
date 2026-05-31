@@ -1,6 +1,6 @@
 # Revenue + Reliability Digest — Stage 2
 
-*Generated: 2026-05-30T09:24:58.962971+00:00*
+*Generated: 2026-05-31T09:50:35.070061+00:00*
 
 ## The 5 Stage 2 questions
 
@@ -8,7 +8,7 @@
 |---|---|--:|
 | Are people buying? | New charges (24h) | (see cost digest) |
 | Are people staying? | MRR (USD) | $0.00 |
-| Are we shipping right? | User-facing errors (24h) | 0 |
+| Are we shipping right? | User-facing errors (24h) | 1 |
 | Are we shipping? | (completion tracker) | (see completion digest) |
 | Is it affordable? | (cost digest) | (see cost digest) |
 
@@ -20,6 +20,6 @@
 
 ## Reliability
 
-- User-facing error events (24h): 0
-- Total error events (24h): 0
+- User-facing error events (24h): 1
+- Total error events (24h): 1
 - Funnel conversion (latest): 0.00%
