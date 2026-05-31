@@ -52,9 +52,29 @@ credit grant). **Credits = practitioner/agency only.** Consumers never get credi
 **New B2B SKU — Team/Corporate** (powered by `cluster.js`): group readings, team composition, role/gap
 analysis. High-ACV; differentiated; nobody in HD does it well.
 
-**API surface (different surface, same engine):** a **synthesis API** + a **usage-metered video-gen
-API**, priced *above* humandesignhub's commodity data floor (their tiers ≈ $10/$30/$100/mo for raw
-chart/transit data). Do **not** compete on raw chart-data price; sell the interpretation + render.
+**API surface — its own brand: `mysticapi.com`** (different surface, same engine): a **synthesis API**
++ a **usage-metered video-gen API**, priced *above* humandesignhub's commodity data floor (their tiers
+≈ $10/$30/$100/mo for raw chart/transit data). Do **not** compete on raw chart-data price; sell the
+interpretation + render. A dedicated API brand (vs. `api.selfprime.net/v1`) signals a real developer
+product and decouples it from the consumer brand.
+- **`mysticapi.com`** = developer portal / docs / landing.
+- **`api.mysticapi.com`** = the versioned API endpoints (`/v1/...`). Registered (planned) in
+  `service-registry.yml`; CF zone added 2026-05-31. **Never** ship a `*.workers.dev` URL in the SDK/docs.
+
+### URL & domain resolution (per `CLAUDE.md` + `service-registry.yml` + `SURFACES.md`)
+Every **user/developer-facing** endpoint resolves to a branded custom domain; internal infra does not.
+| Surface | Domain | Notes |
+|---|---|---|
+| Developer API | `api.mysticapi.com` (+ `mysticapi.com` portal) | planned entry registered; attach CF custom domain when the API worker ships |
+| Consumer app + features | `selfprime.net` / `api.selfprime.net` | existing branded surfaces; celebrity/compat/team/sessions live here |
+| Embed widget | `selfprime.net/embed.html` | ensure its calls hit `api.selfprime.net`, not workers.dev |
+| Capricast sharing | `api.capricast.com` / `capricast.com` | branded already |
+| **Render service (Cloud Run)** | internal `run.app` | server-to-server, signed-only; **deliberately not** branded/public |
+| Shareable film playback | `watch.selfprime.net` *(recommended, pending)* | brand the Stream playback for the viral film vs. raw `customer-*.cloudflarestream.com` |
+
+Provisioning per surface: register in `service-registry.yml` → attach CF custom domain (worker
+`custom_domain`) → for new top-level `selfprime.net` patterns, add the CF API worker-route → update
+consumers first (Worker Rename Protocol) → curl-verify `/health`.
 
 ## The sequenced plan
 Sized S/M/L. "Light up" = the code exists, validated; the work is exposure + polish + marketing.
@@ -86,7 +106,7 @@ All near-zero marginal cost — your cheapest growth, currently dark:
 - **Practitioner session layer** — light up `live-session`/`messages`/`session-notes` (your 1-on-1
   infra already exists + tested). This is the anti-disintermediation stickiness; likely no Capricast
   build needed for consultations.
-- **API tier** — synthesis API can ship now; the video-gen API rides the engine (after engine Slice 1–2).
+- **API tier** (on **`api.mysticapi.com`**) — synthesis API can ship now; the video-gen API rides the engine (after engine Slice 1–2). Attach the CF custom domain + flip the `service-registry.yml` entry from `planned` → `attached` when the worker ships.
 
 ### Parallel track — Video Engine (already in motion)
 Slices 0–7 from the engine doc, running in a separate agent. Wave 0 pricing feeds its consumer

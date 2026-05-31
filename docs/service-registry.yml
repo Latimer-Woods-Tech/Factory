@@ -875,6 +875,36 @@ workers:
     notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
     consumers: []
 
+  # ─── mysticapi — productized developer API (GTM roadmap Wave 3) ──────────────
+  # Dedicated API brand; CF zone added 2026-05-31. mysticapi.com = developer
+  # portal/docs; api.mysticapi.com = the versioned API endpoints (synthesis +
+  # usage-metered video-gen) on top of the Energy Blueprint engine. Competes with
+  # humandesignhub.app on the value layer (interpretation + render), NOT raw chart
+  # data. Worker not yet built — when it ships, attach the CF custom domain, run
+  # the Worker Rename Protocol, and register consumers. Never expose a workers.dev
+  # URL in the SDK, docs, or client code.
+  - id: mysticapi
+    name: mysticapi                                        # worker name TBD; may be served by the selfprime engine or a dedicated worker
+    repo: Latimer-Woods-Tech/HumanDesign                   # likely reuses selfprime's chart/synthesis/video engine
+    url: https://api.mysticapi.com                         # canonical branded API domain
+    custom_domain: api.mysticapi.com
+    custom_domain_status: planned                          # CF zone added 2026-05-31; worker not yet built
+    health_endpoint: /health
+    verification_targets:
+      production: https://api.mysticapi.com/health
+    telemetry_required: true
+    critical_endpoints:
+      - /health
+      - /v1/chart
+      - /v1/synthesis
+      - /v1/video
+    notes: >
+      Productized developer API surface (GTM roadmap Wave 3). mysticapi.com is the
+      developer portal/docs; api.mysticapi.com serves the versioned API (synthesis +
+      usage-metered video-gen) on top of the Energy Blueprint engine. Priced above
+      humandesignhub.app's commodity data floor. Planned — not yet deployed.
+    consumers: []
+
   - id: referrals
     name: referrals
     repo: Latimer-Woods-Tech/factory
