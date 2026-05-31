@@ -15,20 +15,26 @@ share cards, push, audio) are the flywheel that *feeds* it. Guiding rule: **gate
 cost.**
 
 ## Validated dormant-asset inventory
-| Asset | Status (validated) | Classification |
+> Runtime-probed 2026-05-31 against `api.selfprime.net` using a live verified free-tier account.
+> Three-layer validation: static (code), structural (routing+tests), **runtime (real API response)**.
+
+| Asset | Runtime result | Classification |
 |---|---|---|
-| Celebrity match (`famous.js` + `celebrities.json` + `celebrityMatch.js`, 4 endpoints, test) | ✅ built | Light up |
-| Share / OG cards (`share.js`, `share-og.js` image-gen, test) | ✅ built | Light up |
-| Dream interpretation (`dream-weaver.js`, LLM) | ✅ built | Light up |
-| Notion export (`notion.js`, 17 real calls) | ✅ built | Light up |
-| Team/group (`cluster.js`, 792 ln: Forge roles + LLM group synthesis + gap analysis) | ✅ built | Light up + **new B2B SKU** |
-| Practitioner session layer (`live-session` DO + `messages` + `session-notes/actions/templates`, 6 tests) | ✅ built + tested | Light up |
-| Embed widget (`embed.html` + `embed-page.js` + validate endpoint) | ✅ built | Light up + polish |
-| Composite / compatibility (`composite.js`) | ✅ built | Light up; social wrapper = small build |
-| Daily energy-weather push (push + transits/forecast + checkin) | 🔧 parts exist | Assemble |
-| Audio readings (ElevenLabs already in use) | 🔧 new, cheap | Small build, no render cost |
-| Native mobile app (native-bridge + config + cap scripts; **no platforms, no cap deps**) | ⚠️ scaffold only | **Real build** (platforms + deps + RevenueCat + store) |
-| Agentic commerce (Stripe ACS feed) | ✅ shipped | Already live; promote |
+| **Celebrity match** | ✅ **LIVE** — returns 5 real matches with similarity scores (Lady Gaga #1 for Generator/Sacral/2-4). 30 celebrities, 5+ categories. Requires a saved chart (correct gate). `/category/:cat` and `/search` routes return 404 — unregistered or route-pattern mismatch. **3 of 4 endpoints functional.** | Light up + fix 2 routes |
+| **Profile preview** | ✅ **LIVE** — returns real rule-based teaser with chart summary, `upgradeRequired:true`, real copy ("You are a Generator with Single Definition…"). Correctly gates full reading to paid. | Already working; **expose in UI** |
+| **Agentic commerce feed** | ✅ **LIVE** — real CSV with product data | Already live; promote |
+| **Profile generate gate** | ✅ **CORRECTLY GATED** — `429 Usage quota exceeded` for free tier after first generation (not a bug; correct) | Working |
+| **Share / OG cards** (`share.js`, `share-og.js`) | ✅ built, tested — `GET /api/share` returns 404 in runtime (no saved shares yet; list-empty vs not-found ambiguous) | Light up; verify list-vs-404 edge case |
+| **Dream interpretation** (`dream-weaver.js`) | ⚠️ **404 in production** — handler exists + is 447 lines but `POST /api/dream-weaver/interpret` returns `Not found`. Route may be registered differently or behind a feature flag. **Needs investigation before Wave 1.** | **Debug before build** |
+| **Notion export** (`notion.js`) | 🔒 **Feature-flagged off** — `403 "Notion sync is currently disabled."` Explicitly gated. | **Enable flag or remove gate** before Wave 2 |
+| **Team/group cluster** (`cluster.js`) | 🔒 **Feature-flagged off** — `403 "Cluster features are currently disabled."` 792-line handler exists but globally disabled. | **Enable flag** before Wave 3 |
+| **Practitioner session layer** (`live-session`, `messages`, `session-notes`) | ❌ **All 404 in production** — 6 tests pass locally but all three endpoints return 404. Routes may not be registered in the deployed worker, or behind a Durable Object that isn't provisioned. **Real investigation needed.** | **Investigate DO provisioning before Wave 3** |
+| **Composite / compatibility** | ❌ **404 in production** — `GET /api/composite` returns Not Found. Handler exists; routing may be missing. | **Verify routing before build** |
+| **Transits/forecast** | ⚠️ **Needs lat/lng params** — `400 Required params: birthDate, birthTime, lat, lng`. Works with params; just needs correct call. | Working with params; assemble push |
+| **Embed widget** (`embed.html`, validate endpoint) | ✅ validate endpoint responds (400 missing apiKey = correct); HTML exists | Light up + polish |
+| **Daily energy-weather push** | 🔧 parts exist (push + transits + checkin) | Assemble |
+| **Audio readings** | 🔧 new, cheap | Small build |
+| **Native mobile app** | ⚠️ scaffold only (no platforms/deps) | **Real build** |
 
 ## Packaging (locked)
 **Consumer ladder — gate on pillars, not quotas:**
