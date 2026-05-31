@@ -56,13 +56,31 @@ async function removeLabel(repo, issueNumber, label) {
   }
 }
 
+// Returns true only if the Copilot coding agent actually attached. GitHub
+// silently ignores assignees it can't honor (Copilot not enabled / 0 seats),
+// so we verify the assignment stuck — otherwise a missing seat leaves the issue
+// claimed-by-a-ghost forever. On failure we surface it loudly + label so a human
+// picks it up, instead of the old silent swallow. Once an org Copilot seat is
+// assigned, this starts succeeding with no further change.
 async function assignCopilot(repo, issueNumber) {
   try {
-    await gh('POST', `/repos/${ORG}/${repo}/issues/${issueNumber}/assignees`, {
+    const res = await gh('POST', `/repos/${ORG}/${repo}/issues/${issueNumber}/assignees`, {
       assignees: ['copilot-swe-agent'],
     });
+    const attached = (res?.assignees ?? []).some(
+      (a) => a?.login === 'copilot-swe-agent' || a?.login === 'Copilot',
+    );
+    if (!attached) {
+      console.error(`[ERROR] Copilot coding agent did NOT attach to ${repo}#${issueNumber} — Copilot is not enabled for this org (0 seats / unconfigured). Leaving for a human coder.`);
+      await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
+      return false;
+    }
+    console.log(`[OK] Copilot coding agent assigned to ${repo}#${issueNumber}`);
+    return true;
   } catch (e) {
-    console.warn(`[WARN] assign copilot on ${repo}#${issueNumber}: ${e.message}`);
+    console.error(`[ERROR] assign copilot on ${repo}#${issueNumber}: ${e.message} — Copilot likely not enabled. Leaving for a human coder.`);
+    await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
+    return false;
   }
 }
 
@@ -1098,9 +1116,14 @@ async function main() {
       const template = matchTemplate(ctx, templates);
       if (!template) {
         if (isCopilotRerouteCandidate(repo, issue)) {
-          await addLabels(repo, issue.number, ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']);
+          // Only claim the issue for Copilot if the agent actually attached.
+          // If Copilot isn't enabled, assignCopilot labels agent:copilot-unavailable;
+          // we then mark it needs-human/blocked instead of pretending Copilot owns it.
+          const copilotOk = await assignCopilot(repo, issue.number);
+          await addLabels(repo, issue.number, copilotOk
+            ? ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']
+            : ['supervisor:no-template', 'needs-human', 'status:blocked']);
           await removeLabel(repo, issue.number, 'agent:claimed:supervisor');
-          await assignCopilot(repo, issue.number);
           await postComment(
             repo,
             issue.number,
