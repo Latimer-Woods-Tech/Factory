@@ -24,7 +24,10 @@ import { AGENT_TOOLS, executeTool, extractToolUse } from '../lib/ai-tools.js';
 import type { ToolUseBlock } from '../lib/ai-tools.js';
 
 // ---------------------------------------------------------------------------
-// Module-level CONTEXT.md cache — fetched once per worker cold start
+// Module-level context cache — fetched once per worker cold start
+// CONTEXT.md supplies the immutable architectural rules prefix.
+// STATE.md supplies the auto-generated daily state (live numbers, decisions,
+// open debt, oldest APPROVED PRs). Both are concatenated as the system prefix.
 // ---------------------------------------------------------------------------
 
 let _factoryContextCache: string | null = null;
@@ -32,8 +35,14 @@ let _factoryContextCache: string | null = null;
 async function loadFactoryContext(githubToken: string): Promise<string> {
   if (_factoryContextCache !== null) return _factoryContextCache;
   try {
-    const file = await fetchFile(githubToken, 'docs/supervisor/CONTEXT.md', 'main');
-    _factoryContextCache = file.text ?? '';
+    const [contextFile, stateFile] = await Promise.allSettled([
+      fetchFile(githubToken, 'docs/supervisor/CONTEXT.md', 'main'),
+      fetchFile(githubToken, 'docs/STATE.md', 'main'),
+    ]);
+    const contextText = contextFile.status === 'fulfilled' ? (contextFile.value.text ?? '') : '';
+    const stateText = stateFile.status === 'fulfilled' ? (stateFile.value.text ?? '') : '';
+    _factoryContextCache = contextText
+      + (stateText ? '\n\n---\n[FACTORY STATE — auto-generated daily; current numbers, decisions, open debt]\n' + stateText : '');
   } catch {
     _factoryContextCache = ''; // fail open — don't block LLM calls if GitHub is unreachable
   }
@@ -428,15 +437,15 @@ ai.post('/chat', async (c) => {
   const agentMessages: AgentMessage[] = [...messages];
   let finalText = '';
   let loopCount = 0;
-  const maxLoops = 3; // Prevent expensive runaway tool loops
+  const maxLoops = 8; // Allow deeper agentic tool chains
 
   while (loopCount < maxLoops) {
     loopCount++;
 
     // Call Anthropic with tools (non-streaming for tool-use loop)
     const payload = {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096
         ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]

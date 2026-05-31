@@ -95,6 +95,9 @@ export async function runDailyBrief(env: Env): Promise<void> {
     news: safeNews,
     activity: safeActivity,
     health: safeHealth,
+    stripeMrr: safeStripeMrr,
+    postHog: safePostHog,
+    sentry: safeSentry,
     env,
     dateLabel,
   });
