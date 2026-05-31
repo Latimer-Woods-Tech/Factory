@@ -56,29 +56,60 @@ async function removeLabel(repo, issueNumber, label) {
   }
 }
 
-// Returns true only if the Copilot coding agent actually attached. GitHub
-// silently ignores assignees it can't honor (Copilot not enabled / 0 seats),
-// so we verify the assignment stuck — otherwise a missing seat leaves the issue
-// claimed-by-a-ghost forever. On failure we surface it loudly + label so a human
-// picks it up, instead of the old silent swallow. Once an org Copilot seat is
-// assigned, this starts succeeding with no further change.
+async function ghGraphql(query, variables) {
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${GH_TOKEN}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'factory-supervisor',
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.errors) {
+    throw new Error(`GraphQL ${res.status}: ${(json.errors ?? []).map((e) => e.message).join('; ') || res.statusText}`);
+  }
+  return json.data;
+}
+
+// Assign the Copilot coding agent to an issue. Returns true only if it attached.
+//
+// CRITICAL: Copilot is a *Bot* actor, and the REST `assignees` API silently
+// DROPS bot actors — which is why prior REST-based assignment never stuck and
+// Copilot authored 0 PRs despite being licensed/available. Verified 2026-05-30:
+// copilot-swe-agent IS in every org repo's CAN_BE_ASSIGNED suggestedActors (via
+// personal Copilot Pro+ — no org seat needed), and the GraphQL
+// `replaceActorsForAssignable` mutation attaches it correctly (proved live on
+// Factory#506). If Copilot isn't in this repo's suggestedActors it isn't enabled
+// here → bail loudly and leave the issue for a human.
 async function assignCopilot(repo, issueNumber) {
   try {
-    const res = await gh('POST', `/repos/${ORG}/${repo}/issues/${issueNumber}/assignees`, {
-      assignees: ['copilot-swe-agent'],
-    });
-    const attached = (res?.assignees ?? []).some(
-      (a) => a?.login === 'copilot-swe-agent' || a?.login === 'Copilot',
+    const data = await ghGraphql(
+      `query($owner:String!,$name:String!,$num:Int!){repository(owner:$owner,name:$name){issue(number:$num){id} suggestedActors(capabilities:[CAN_BE_ASSIGNED],first:100){nodes{login __typename ... on Bot{id}}}}}`,
+      { owner: ORG, name: repo, num: issueNumber },
     );
-    if (!attached) {
-      console.error(`[ERROR] Copilot coding agent did NOT attach to ${repo}#${issueNumber} — Copilot is not enabled for this org (0 seats / unconfigured). Leaving for a human coder.`);
+    const issueId = data?.repository?.issue?.id;
+    const copilot = (data?.repository?.suggestedActors?.nodes ?? []).find((n) => /copilot/i.test(n.login || ''));
+    if (!issueId || !copilot?.id) {
+      console.error(`[ERROR] Copilot coding agent not assignable on ${repo}#${issueNumber} — not enabled for this repo. Leaving for a human coder.`);
       await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
       return false;
     }
-    console.log(`[OK] Copilot coding agent assigned to ${repo}#${issueNumber}`);
+    const result = await ghGraphql(
+      `mutation($a:ID!,$ids:[ID!]!){replaceActorsForAssignable(input:{assignableId:$a,actorIds:$ids}){assignable{... on Issue{assignees(first:10){nodes{login}}}}}}`,
+      { a: issueId, ids: [copilot.id] },
+    );
+    const attached = (result?.replaceActorsForAssignable?.assignable?.assignees?.nodes ?? []).some((n) => /copilot/i.test(n.login || ''));
+    if (!attached) {
+      console.error(`[ERROR] Copilot did not attach to ${repo}#${issueNumber} after GraphQL assign. Leaving for a human coder.`);
+      await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
+      return false;
+    }
+    console.log(`[OK] Copilot coding agent assigned to ${repo}#${issueNumber} (GraphQL replaceActorsForAssignable)`);
     return true;
   } catch (e) {
-    console.error(`[ERROR] assign copilot on ${repo}#${issueNumber}: ${e.message} — Copilot likely not enabled. Leaving for a human coder.`);
+    console.error(`[ERROR] assign copilot on ${repo}#${issueNumber}: ${e.message}`);
     await addLabels(repo, issueNumber, ['agent:copilot-unavailable']);
     return false;
   }
