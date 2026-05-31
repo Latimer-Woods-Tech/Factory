@@ -29,6 +29,13 @@ export {
   blueprintSchema,
 } from './compositions/EnergyBlueprintVideo.js';
 
+// The blueprint segment renderer (implements the `SegmentRenderer` contract).
+export type { BlueprintSourceData } from './blueprintSegment.js';
+export {
+  renderBlueprintSegment,
+  buildBlueprintProps,
+} from './blueprintSegment.js';
+
 // Remotion Root registration + render dimensions (consumed by the render
 // service / app bundlers).
 export {
