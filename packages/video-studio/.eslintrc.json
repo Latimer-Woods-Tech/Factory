@@ -8,5 +8,15 @@
     "../../.eslintrc.base.json"
   ],
   "parserOptions": { "project": "./tsconfig.json" },
-  "env": { "browser": true, "es2022": true }
+  "env": { "browser": true, "es2022": true },
+  "overrides": [
+    {
+      "files": ["src/render.ts"],
+      "env": { "node": true, "browser": false },
+      "rules": {
+        "no-restricted-globals": "off",
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
 }

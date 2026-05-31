@@ -35,11 +35,19 @@
     "@latimer-woods-tech/video": "file:../video"
   },
   "peerDependencies": {
+    "@remotion/bundler": ">=4",
+    "@remotion/renderer": ">=4",
     "react": ">=18",
     "remotion": ">=4",
     "zod": ">=3"
   },
+  "peerDependenciesMeta": {
+    "@remotion/bundler": { "optional": true },
+    "@remotion/renderer": { "optional": true }
+  },
   "devDependencies": {
+    "@remotion/bundler": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
     "@types/node": "^25.6.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",

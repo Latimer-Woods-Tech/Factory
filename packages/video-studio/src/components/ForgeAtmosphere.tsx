@@ -166,7 +166,6 @@ const PhoenixAtmosphere: React.FC<{ frame: number; intensity: number }> = ({ fra
 export const ForgeAtmosphere: React.FC<ForgeAtmosphereProps> = ({
   forge,
   frame,
-  fps = 30,
   intensity = 0.7,
 }) => {
   const fadeIn = interpolate(frame, [0, 30], [0, 1], {

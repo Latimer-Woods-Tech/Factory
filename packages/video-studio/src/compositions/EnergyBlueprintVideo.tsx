@@ -8,10 +8,11 @@ import {
   useVideoConfig,
 } from 'remotion';
 import { z } from 'zod';
-import { StarField } from '../components/StarField';
-import { BodyGraph } from '../components/BodyGraph';
-import { KineticReveal } from '../components/KineticReveal';
-import { ForgeAtmosphere, type ForgeKey } from '../components/ForgeAtmosphere';
+import { StarField } from '../components/StarField.js';
+import { BodyGraph } from '../components/BodyGraph.js';
+import { KineticReveal } from '../components/KineticReveal.js';
+import { ForgeAtmosphere, type ForgeKey } from '../components/ForgeAtmosphere.js';
+import { TYPE_COLORS, DEFAULT_BRAND_COLOR } from '../blueprint-types.js';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -25,8 +26,8 @@ export const blueprintSchema = z.object({
   script: z.string(),
   /** ElevenLabs narration audio URL. Empty string = no audio. */
   narrationUrl: z.string(),
-  brandColor: z.string().default('#c9a84c'),
-  brandAccent: z.string().default('#c9a84c'),
+  brandColor: z.string().default(DEFAULT_BRAND_COLOR),
+  brandAccent: z.string().default(DEFAULT_BRAND_COLOR),
   logoUrl: z.string(),
   /**
    * Scene definitions. If omitted, the composition derives scenes from
@@ -50,17 +51,8 @@ export const blueprintSchema = z.object({
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
 
-// ---------------------------------------------------------------------------
-// HD Type → glow colour
-// ---------------------------------------------------------------------------
-
-const TYPE_COLORS: Record<string, string> = {
-  generator:            '#e8923a',
-  manifesting_generator:'#d4742a',
-  projector:            '#7b6fd4',
-  manifestor:           '#c42b2b',
-  reflector:            '#b8d4e8',
-};
+// HD-type → glow colour and the brand accent both come from `blueprint-types`
+// (the single source of truth shared with `chartToScenes`), imported above.
 
 // ---------------------------------------------------------------------------
 // Default scene layout for a 75-second (2250-frame) video
@@ -248,7 +240,7 @@ interface TriadSceneProps extends SceneProps {
   triad: [string, string, string];
 }
 
-const TriadScene: React.FC<TriadSceneProps> = ({ sceneFrame, fps, triad }) => {
+const TriadScene: React.FC<TriadSceneProps> = ({ sceneFrame, triad }) => {
   const [shadow, gift, siddhi] = triad;
 
   // Each word gets ~100 frames: arrive 80 frames, hold 20, then fade
@@ -267,8 +259,6 @@ const TriadScene: React.FC<TriadSceneProps> = ({ sceneFrame, fps, triad }) => {
   const lineWidth = interpolate(sceneFrame, [240, 300], [0, 400], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
   });
-  // Siddhi glow pulse
-  const glowOpacity = siddhi ? 0.3 + 0.1 * Math.sin(sceneFrame / 20) : 0;
 
   const wordStyle = (opacity: number, color: string, glow?: boolean): React.CSSProperties => ({
     position: 'absolute',
@@ -312,11 +302,10 @@ const TriadScene: React.FC<TriadSceneProps> = ({ sceneFrame, fps, triad }) => {
 interface InvitationSceneProps extends SceneProps {
   text: string;
   logoUrl: string;
-  topic: string;
 }
 
 const InvitationScene: React.FC<InvitationSceneProps> = ({
-  sceneFrame, durationFrames, fps, text, logoUrl, topic,
+  sceneFrame, durationFrames, fps, text, logoUrl,
 }) => {
   const appear = interpolate(sceneFrame, [0, 30], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
@@ -382,13 +371,12 @@ const InvitationScene: React.FC<InvitationSceneProps> = ({
 // ---------------------------------------------------------------------------
 
 export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
-  topic,
   script,
   narrationUrl,
   scenes: sceneProp,
   forgeTheme = 'self',
   hdType,
-  brandColor = '#c9a84c',
+  brandColor = DEFAULT_BRAND_COLOR,
   logoUrl,
 }) => {
   const frame = useCurrentFrame();
@@ -457,7 +445,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
       )}
 
       {scene.type === 'invitation' && scene.text && (
-        <InvitationScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} logoUrl={logoUrl} topic={topic} />
+        <InvitationScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} logoUrl={logoUrl} />
       )}
 
       {/* Narration audio */}

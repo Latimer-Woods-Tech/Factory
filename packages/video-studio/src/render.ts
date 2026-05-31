@@ -1,14 +1,22 @@
 /**
- * Remotion render entry point — invoked by the GitHub Actions render workflow.
+ * Remotion render entry point for `@latimer-woods-tech/video-studio`.
+ *
+ * Bundles this package's `Root.tsx` (the `EnergyBlueprintVideo` composition) and
+ * renders an MP4. Invoked by the Cloud Run render service (Wave 2) for per-user
+ * personal renders; the same CLI shape is reused by the scheduled-content
+ * workflow when it targets the blueprint composition.
+ *
+ * Node-only glue (uses `node:path`, `process`): it runs in the render service /
+ * CI, never inside a Cloudflare Worker.
  *
  * Usage:
  *   node -r ts-node/register src/render.ts \
- *     --composition MarketingVideo \
- *     --props '{"appId":"prime_self","topic":"Q4 launch",...}' \
+ *     --composition EnergyBlueprintVideo \
+ *     --props '{"appId":"prime_self","topic":"…", ...}' \
  *     --output /tmp/output.mp4
  *
- * Environment variables required:
- *   COMPOSITION_ID  — One of: MarketingVideo, TrainingVideo, WalkthroughVideo
+ * Environment variables (fallback when the matching flag is absent):
+ *   COMPOSITION_ID  — composition id (e.g. EnergyBlueprintVideo)
  *   PROPS_JSON      — JSON-encoded composition props
  *   OUTPUT_PATH     — Absolute path for the rendered MP4
  */
@@ -21,19 +29,19 @@ import { renderMedia, selectComposition } from '@remotion/renderer';
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
-function getArg(flag: string): string {
-  const args = process.argv.slice(2);
-  const idx = args.indexOf(flag);
-  if (idx === -1 || idx + 1 >= args.length) {
-    throw new Error(`Missing argument: ${flag}`);
-  }
-  return args[idx + 1] as string;
-}
-
+/** @internal Read a required env var, throwing a clear error when unset. */
 function getEnv(key: string): string {
   const val = process.env[key];
   if (!val) throw new Error(`Missing environment variable: ${key}`);
   return val;
+}
+
+/** @internal Return the value following `flag` in argv, or `null` if absent. */
+function flagOrNull(flag: string): string | null {
+  const args = process.argv.slice(2);
+  const idx = args.indexOf(flag);
+  if (idx === -1 || idx + 1 >= args.length) return null;
+  return args[idx + 1] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,13 +103,6 @@ async function render(): Promise<void> {
 
   process.stdout.write('\n');
   console.log(`[render] Done → ${outputPath}`);
-}
-
-function flagOrNull(flag: string): string | null {
-  const args = process.argv.slice(2);
-  const idx = args.indexOf(flag);
-  if (idx === -1 || idx + 1 >= args.length) return null;
-  return args[idx + 1] ?? null;
 }
 
 // ---------------------------------------------------------------------------
