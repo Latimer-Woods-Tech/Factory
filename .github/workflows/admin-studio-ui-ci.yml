@@ -1,0 +1,100 @@
+name: admin-studio-ui CI
+
+on:
+  pull_request:
+    paths:
+      - 'apps/admin-studio-ui/**'
+      - 'packages/studio-core/**'
+      - '.github/workflows/admin-studio-ui-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/admin-studio-ui/**'
+      - 'packages/studio-core/**'
+      - '.github/workflows/admin-studio-ui-ci.yml'
+
+concurrency:
+  group: admin-studio-ui-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install + build studio-core
+        working-directory: packages/studio-core
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+
+      - name: Install admin-studio-ui
+        working-directory: apps/admin-studio-ui
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: apps/admin-studio-ui
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: apps/admin-studio-ui
+        run: npm test
+
+      - name: Build
+        working-directory: apps/admin-studio-ui
+        run: npm run build
+
+      - name: Build bundle visualizer report
+        working-directory: apps/admin-studio-ui
+        run: npm run build -- --mode analyze
+
+      - name: Upload bundle visualizer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-studio-ui-bundle-visualizer
+          path: apps/admin-studio-ui/dist/bundle-visualizer.html
+          if-no-files-found: error
+
+  lighthouse:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Install + build studio-core
+        working-directory: packages/studio-core
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+
+      - name: Install admin-studio-ui
+        working-directory: apps/admin-studio-ui
+        run: npm ci
+
+      - name: Build admin-studio-ui for Lighthouse
+        working-directory: apps/admin-studio-ui
+        run: npm run build
+
+      - name: Lighthouse CI mobile budget gate
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ./apps/admin-studio-ui/.lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
