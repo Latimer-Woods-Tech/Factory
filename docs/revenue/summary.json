@@ -1,12 +1,12 @@
 {
-  "generated": "2026-05-30T09:24:58.962971+00:00",
-  "window_days": 7,
+  "generated": "2026-06-01T12:47:33.954766+00:00",
+  "window_days": 8,
   "mrr_now_usd": 0.0,
   "mrr_30d_ago_usd": 0.0,
   "mrr_delta_usd": 0.0,
   "mrr_delta_pct": null,
   "arr_estimate_usd": 0.0,
-  "user_facing_errors_latest": 0.0,
-  "total_errors_latest": 0.0,
+  "user_facing_errors_latest": 2.0,
+  "total_errors_latest": 7.0,
   "funnel_conversion_latest": 0.0
 }
