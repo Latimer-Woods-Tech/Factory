@@ -13,6 +13,9 @@ import type { WeatherData } from './weather';
 import type { NewsSection } from './news';
 import type { GitHubActivity } from './github';
 import type { HealthRollup } from './health';
+import type { StripeMrrData } from './stripe';
+import type { PostHogSnapshot } from './posthog';
+import type { SentryErrorData } from './sentry';
 
 export interface BriefInsights {
   /** Full multi-paragraph PM narration — used for TTS audio */
@@ -37,6 +40,9 @@ interface InsightsInput {
   news: NewsSection | null;
   activity: GitHubActivity | null;
   health: HealthRollup | null;
+  stripeMrr: StripeMrrData | null;
+  postHog: PostHogSnapshot | null;
+  sentry: SentryErrorData | null;
   env: Env;
   dateLabel: string;
 }
@@ -149,6 +155,44 @@ function buildDataContext(input: InsightsInput): string {
       const localHeads = input.news.local.map((a) => a.title).join(' | ');
       parts.push(`LOCAL NEWS (Gwinnett County): ${localHeads}`);
     }
+  }
+
+  // Stripe MRR / revenue
+  if (input.stripeMrr) {
+    const s = input.stripeMrr;
+    parts.push(
+      `STRIPE REVENUE: MRR ${s.mrrFormatted} (${s.deltaFormatted} vs yesterday, trend: ${s.deltaDirection}). ` +
+        `Active subscriptions: ${s.activeSubscriptions}. ` +
+        `New today: ${s.newSubscriptionsToday}. ` +
+        `Cancelled today: ${s.cancelledToday}. ` +
+        `Trials: ${s.trialCount}.`,
+    );
+  }
+
+  // PostHog user analytics
+  if (input.postHog) {
+    const p = input.postHog;
+    parts.push(
+      `USER ANALYTICS (PostHog): DAU ${p.dailyActiveUsers} (7-day avg: ${p.dailyActiveUsersVs7dAvg}, trend: ${p.dailyActiveUsersTrend}). ` +
+        `Sessions 24h: ${p.sessions24h}. Signups 24h: ${p.signups24h}.` +
+        (p.topEvents.length > 0
+          ? ` Top events: ${p.topEvents.map((e) => `${e.event}(${e.count})`).join(', ')}.`
+          : ''),
+    );
+  }
+
+  // Sentry error rates
+  if (input.sentry) {
+    const e = input.sentry;
+    const spikeMsg = e.spikeDetected
+      ? ` ⚠️ SPIKE DETECTED: ${e.spikePercent > 0 ? '+' : ''}${e.spikePercent}% above 7-day average.`
+      : '';
+    parts.push(
+      `SENTRY ERRORS: Total 24h errors: ${e.totalErrors24h} (7-day avg: ${e.totalErrors7dAvg}).${spikeMsg}` +
+        (e.projects.some((p) => p.trend === 'spike')
+          ? ` Spiking projects: ${e.projects.filter((p) => p.trend === 'spike').map((p) => p.projectSlug).join(', ')}.`
+          : ''),
+    );
   }
 
   return parts.join('\n\n');
