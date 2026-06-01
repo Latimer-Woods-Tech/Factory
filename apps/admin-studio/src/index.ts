@@ -40,7 +40,6 @@ import repo from './routes/repo.js';
 import capabilities from './routes/capabilities.js';
 import manifest from './routes/manifest.js';
 import catalog from './routes/catalog.js';
-import capabilities from './routes/capabilities.js';
 import smoke from './routes/smoke.js';
 import slo from './routes/slo.js';
 import synthetic from './routes/synthetic.js';
@@ -160,8 +159,6 @@ app.use('/capabilities/*', envContextMiddleware(), auditMiddleware());
 app.use('/repo/*', envContextMiddleware(), auditMiddleware());
 // Catalog GETs are read-only; refresh POST is audited automatically.
 app.use('/catalog/*', envContextMiddleware(), auditMiddleware());
-// Capability GETs are read-only; resolve POSTs are audited automatically.
-app.use('/capabilities/*', envContextMiddleware(), auditMiddleware());
 // Smoke tests are auditable but not critical
 app.use('/smoke/*', envContextMiddleware(), auditMiddleware());
 // SLO panel � reads only, no audit.
@@ -189,7 +186,6 @@ app.route('/observability', observability);
 app.route('/capabilities', capabilities);
 app.route('/repo', repo);
 app.route('/catalog', catalog);
-app.route('/capabilities', capabilities);
 app.route('/smoke', smoke);
 app.route('/slo', slo);
 app.route('/synthetic', synthetic);
