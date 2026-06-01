@@ -1,0 +1,73 @@
+# =============================================================================
+# Snapshot Path Allowlist — Phase 2 of the workflow lifecycle decision
+# (docs/decisions/2026-05-23-workflow-lifecycle.md, Pillar 3).
+#
+# A PR is eligible for bot-driven auto-approval + auto-merge IFF every file
+# it touches is matched by one of these glob patterns AND its branch name
+# matches one of the allowed prefixes below.
+#
+# Mixed PRs (one allowlisted path + one non-allowlisted path) are rejected.
+# Failure mode is INTENTIONAL — the bot must never approve a PR it can't
+# fully reason about.
+#
+# Expanding this allowlist requires a CODEOWNER PR. Anyone adding a new
+# snapshot-generating workflow must update this file in the same PR.
+# =============================================================================
+
+# File globs — every changed file in the PR must match at least one pattern.
+# Globs follow gitignore-style semantics:
+#   *       matches a single path segment
+#   **      matches zero or more path segments
+#   *.ext   matches files with extension `.ext` in a single segment
+paths:
+  # State / status snapshots
+  - docs/STATE.md
+  - docs/state/**
+
+  # Cost + revenue observability
+  - docs/cost/**
+  - docs/revenue/**
+
+  # Conformance + readiness scoring
+  - docs/conformance/**
+  - docs/launch-readiness/**
+  - docs/scorecard/**
+
+  # Daily digests (both singular and plural path variants used by different bots)
+  - docs/digest/**
+  - docs/digests/**
+
+  # Completion tracker (both legacy + canonical paths)
+  - completion-tracker.json
+  - docs/completion-tracker.json
+
+  # KPI tracking
+  - docs/kpis/**
+
+  # Generated docs artifacts created by docs health / snapshot PRs
+  - docs/_catalog/docs-graph.json
+  - docs/_generated/docs-trust-map.md
+  - docs/_generated/service-map.md
+  - docs/_generated/workflow-map.md
+
+# Branch prefixes — PR must originate from a branch whose name starts with
+# one of these. Independent guard layered on top of the path check to defend
+# against an attacker who learns the path list but can't predict the bot's
+# branch convention.
+branch_prefixes:
+  - chore/state-snapshot-
+  - chore/cost-snapshot-
+  - chore/revenue-snapshot-
+  - chore/conformance-snapshot-
+  - chore/scorecard-snapshot-
+  - chore/morning-digest-
+  - completion-tracker/
+  - chore/kpis-snapshot-
+
+# Author allowlist — PR author must be one of these identities. Closes the
+# attack vector where a human contributor opens a PR with a snapshot-style
+# branch name to inherit the auto-approve path.
+authors:
+  - github-actions[bot]
+  - factory-cross-repo[bot]
+  - adrper79-dot

@@ -1,0 +1,71 @@
+name: Validate Service Registry
+
+# Config-validation workflow. Hosts the service-registry coverage check and the
+# wrangler compatibility_date normalization check (FRH-CFG-001 / #585) so the
+# fleet stays on a single canonical compatibility_date. Folded in here rather
+# than as a separate workflow to respect the workflow budget gate
+# (docs/decisions/2026-05-23-workflow-lifecycle.md, Pillar 4).
+
+on:
+  pull_request:
+    paths:
+      - 'docs/service-registry.yml'
+      - '.github/workflows/deploy-*.yml'
+      - '.github/workflows/validate-service-registry.yml'
+      - 'scripts/validate-service-registry.mjs'
+      - 'scripts/check-compatibility-date.mjs'
+      - 'apps/*/wrangler.jsonc'
+      - 'packages/deploy/templates/wrangler.jsonc'
+      - 'packages/deploy/scripts/scaffold.mjs'
+      - 'packages/deploy/scripts/scaffold-factory-admin.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/service-registry.yml'
+      - '.github/workflows/deploy-*.yml'
+      - '.github/workflows/validate-service-registry.yml'
+      - 'scripts/validate-service-registry.mjs'
+      - 'scripts/check-compatibility-date.mjs'
+      - 'apps/*/wrangler.jsonc'
+      - 'packages/deploy/templates/wrangler.jsonc'
+      - 'packages/deploy/scripts/scaffold.mjs'
+      - 'packages/deploy/scripts/scaffold-factory-admin.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+      - name: Install root dependencies
+        # No root package-lock.json (monorepo: each package owns its lock),
+        # so use `npm install` with --ignore-scripts for a deterministic-enough
+        # CI-only install of js-yaml + jsonc-parser used by the validator.
+        run: npm install --no-audit --no-fund --ignore-scripts
+
+      - name: Validate service registry coverage
+        run: npm run validate:service-registry
+
+      - name: Validate wrangler compatibility_date is normalized
+        run: npm run validate:compatibility-date

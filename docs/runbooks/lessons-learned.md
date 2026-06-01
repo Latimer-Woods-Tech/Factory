@@ -713,3 +713,350 @@ mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $contentId: String!) {
 
 **Implementation:** Bounded traversal of docs/, pps/*/README.md, and root *.md only. Skips symlinks, 
 ode_modules, dist, .wrangler. Builds an anchor index from headings and id= attributes. Extracts relative Markdown links and resolves against the filesystem. Exits 1 with one FILE:LINE → TARGET (reason) line per broken link.
+
+
+---
+
+## Wedged Deploys, Token Rotators, and Production Drift — May 2026
+
+The admin-studio production worker drifted six days stale because the GitHub Actions deploy pipeline silently wedged at the scheduling layer. Bringing production back exposed a chain of latent bugs that had been masked by the deploy stall. Each is its own lesson.
+
+### `actions/create-github-app-token@v3` revokes the token in its post-step
+
+**Problem:** A scheduled workflow minted a factory[bot] installation token, pushed it as a Cloudflare Worker secret via `wrangler secret put GITHUB_TOKEN`, the push succeeded — and every subsequent `/repo/*` call from the worker returned `401 Bad credentials`. Manual rotation with the same App credentials produced a working token. Token format was identical between the two paths.
+
+**Root cause:** `actions/create-github-app-token@v3` (and v2) defaults to revoking the minted token in its post-job cleanup step. The whole point of the rotator was to push a token that lives for the next hour, so the default revocation defeats the entire workflow — the secret is uploaded, then invalidated within seconds of the runner shutting down.
+
+**Fix:** Always set `skip-token-revoke: true` on the action when the token is consumed *outside* the workflow run that minted it (Worker secrets, downstream queue messages, persisted artifacts). Default revocation is correct for in-run use only.
+
+```yaml
+- uses: actions/create-github-app-token@v3
+  with:
+    app-id: ${{ secrets.FACTORY_APP_ID }}
+    private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+    owner: Latimer-Woods-Tech
+    repositories: factory
+    skip-token-revoke: true   # token lives past this run
+```
+
+**Lesson:** Any third-party action you use to mint short-lived credentials probably has a "revoke at end of job" knob. If your workflow's purpose is to hand the credential off to another system, double-check the knob — `gh run view` won't surface revocation as a distinct error, only the downstream consumer's `401`.
+
+### CORS middleware that pre-decorates the Hono context does not cover raw `Response` returns
+
+**Problem:** `POST /ai/chat` returned `HTTP 200` with a `text/event-stream` body, but the browser blocked it: `Access to fetch at … has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource`. Affected `/ai/chat` (SSE) and `/tests/runs/:id` (also SSE).
+
+**Root cause:** The CORS middleware called `c.header('Access-Control-Allow-Origin', origin)` **before** `await next()`. Hono's header table is applied when responses are built via `c.json/c.body/c.text`. SSE handlers construct their response with `new Response(stream, { headers: { ... } })` directly — those bypass the header table entirely.
+
+**Fix:** Move header writes to **after** `next()` and set them on `c.res.headers` directly:
+
+```ts
+export function corsMiddleware(): MiddlewareHandler<AppEnv> {
+  return async (c, next) => {
+    const origin = c.req.header('Origin');
+    const allowed = c.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim());
+    const isAllowed = Boolean(origin && allowed.includes(origin));
+
+    if (c.req.method === 'OPTIONS') { /* preflight, return early */ }
+
+    await next();
+
+    if (isAllowed && origin && c.res) {
+      c.res.headers.set('Access-Control-Allow-Origin', origin);
+      c.res.headers.set('Access-Control-Allow-Credentials', 'true');
+    }
+  };
+}
+```
+
+**Lesson:** Any middleware that's supposed to apply universally must run *after* the route handler. Pre-handler `c.header()` only works for responses Hono builds itself; once a route returns a raw `Response`, only `c.res.headers.set(...)` after `next()` will decorate it.
+
+### `db.execute()` shape changed in @latimer-woods-tech/neon — six callers never noticed
+
+**Problem:** `/catalog` returned `500 "rows.map is not a function"`. `/audit` returned `500 "Audit query failed"`. Both predated any recent changes.
+
+**Root cause:** The `neon` package's `FactoryDb.execute()` returns `{ rows: TRow[], rowCount: number }`. Older drizzle/neon-http versions returned the rows array directly. Six call sites in `apps/admin-studio/src/lib/` (catalog-store, audit-store, test-store) cast the whole result as the array — including a stale comment that explicitly claimed "drizzle/neon-http returns an array directly for SELECT." That comment was correct when written; the package upgrade silently broke every consumer that trusted it.
+
+**Fix:** Access `.rows` explicitly. The pattern:
+
+```ts
+// Wrong — stale comment from a previous drizzle version
+const rows = (result as unknown as AuditRow[]) ?? [];
+
+// Right
+const rows = result.rows as unknown as AuditRow[];
+```
+
+**Lesson:** Comments that document driver-specific behavior age into lies. When upgrading a data package, grep the monorepo for callers and verify the call shape against current types — don't trust the comments. The type system should have caught this; the `as unknown as Foo[]` cast on the result deliberately bypassed it.
+
+### `wrangler.jsonc` invalid fields are warnings in v3, errors in v4
+
+**Problem:** A scheduled workflow that ran `npx wrangler@latest secret put` started failing with `The field "flagship" should be an array but got {"binding":"FLAGS"}`. Earlier deploys (wrangler v3) had only warned about the same field.
+
+**Root cause:** Wrangler v3 ignored unknown top-level fields with a warning. Wrangler v4 errors out. Our `wrangler.jsonc` had a `"flagship": { "binding": "FLAGS" }` field that wasn't a real wrangler config item — `FLAGS` wasn't bound anywhere in the worker code either. Dead config.
+
+**Fix:** Remove the dead field. If you want to delay the wrangler v4 upgrade, pin: `npx wrangler@3 secret put …`. The pin is a temporary patch; the canonical fix is to schema-validate `wrangler.jsonc` against the actual binding set.
+
+**Lesson:** "Warnings I've been seeing for months" become "errors that block deploys" after a major-version upgrade. Treat wrangler warnings as TODO items, not noise — and consider running `wrangler@next` in a non-deploy job (lint-style) to catch upgrade-blocking issues before the canonical deploy path is forced.
+
+### Hono trailing-slash strictness
+
+**Problem:** The UI called `/timeline/` (with trailing slash); the worker returned `404 "Not found"`. `/timeline` (no slash) returned 200.
+
+**Root cause:** Hono treats `/timeline/` as a distinct path from `/timeline` when the router is mounted at `/timeline` with `timeline.get('/', ...)`. The trailing slash doesn't get stripped by default.
+
+**Fix (UI):** drop the trailing slash in the fetch URL.
+
+```ts
+// Wrong
+apiFetch<TimelinePage>(`/timeline/${buildQuery(filters, cursor)}`);
+
+// Right — buildQuery returns "?key=val" or "", composing without the slash
+apiFetch<TimelinePage>(`/timeline${buildQuery(filters, cursor)}`);
+```
+
+**Lesson:** When the SPA-side path includes a trailing slash, it's almost always wrong unless the worker registered `get('/')` specifically and you tested the slash form. Standardize on no-trailing-slash for Hono routes.
+
+### GCP Secret Manager values often carry BOM, CRLF, and other clipboard artifacts
+
+**Problem:** Three separate secrets fetched from GCP Secret Manager broke their downstream consumer differently:
+
+- `CF_ACCOUNT_ID` — UTF-8 BOM prefix. Wrangler URL-encoded the BOM into the API path, producing `7003 "Could not route … perhaps your object identifier is invalid?"`.
+- `FACTORY_APP_PRIVATE_KEY` — `\r\r\n` line endings (CR+CRLF). The Python `cryptography` lib refused to parse with `InvalidHeader("MIIEoQI…")`.
+- `VERTEX_SA_KEY` — BOM + CRLF + **missing outer `{` brace**. `gcloud auth activate-service-account` rejected with `Extra data: line 1 column 7 (char 6)`.
+
+**Root cause:** The values were uploaded via clipboard from a Windows host. Notepad / similar tools add BOM markers and CRLF line endings; copy/paste from a multi-line PEM occasionally drops the wrapping braces.
+
+**Fixes (in order of preference):**
+
+1. **Re-upload clean.** Once. `gcloud secrets versions add SECRET_NAME --data-file=clean.json` writes the file's bytes verbatim. Subsequent consumers see clean data and need no defensive normalization.
+2. **Strip on read** when re-upload isn't possible. For string values: `python -c "import sys; print(sys.stdin.buffer.read().decode('utf-8-sig').strip())"`. For JSON files, also normalize CRLF and round-trip through `json.loads/dumps`.
+
+**Lesson:** Treat Secret Manager output as untrusted bytes, not trusted text. The bash idiom `MY_SECRET=$(gcloud secrets versions access …)` looks clean but inherits whatever encoding artifacts the writer left behind. The cleanest path is to fix the data once at the source; the next-cleanest is to normalize at every read.
+
+### `echo "$VAR" | wrangler secret put` appends a newline
+
+**Problem:** Wrangler stored the trailing newline from `echo` verbatim in the secret value, which made the Worker's `Authorization: Bearer ${c.env.GITHUB_TOKEN}` produce `Bad credentials` (the newline corrupts the Bearer header).
+
+**Fix:** `printf '%s' "$VAR"` instead of `echo`.
+
+```bash
+printf '%s' "$NEW_TOKEN" | npx wrangler secret put GITHUB_TOKEN --env production
+```
+
+**Lesson:** `echo` is a footgun for any pipeline that hands bytes to a parser that doesn't tolerate trailing whitespace. Bearer tokens, JWTs, JSON values via `-d @-`, AWS signatures — all of them. Default to `printf '%s'` in scripted secret pushes and curl bodies.
+
+### Hyperdrive bindings can be shared across environments
+
+**Problem:** Migration scripts had to be re-applied to "production" — but the staging deploy had already applied them, and production immediately reflected the changes without a separate run.
+
+**Root cause:** `apps/admin-studio/wrangler.jsonc` declares the same Hyperdrive id (`efe957f404bb457593e6bd08b733b7c4`) under both `env.staging` and `env.production`. Both workers point at the same Neon database. The "staging vs production" split exists at the worker layer but not at the data layer.
+
+**Lesson:** Don't assume `env.staging.hyperdrive` and `env.production.hyperdrive` are different databases. Read `wrangler.jsonc` before designing test-vs-prod data isolation. If they share an id, a "staging migration" is a "production migration" — every deploy of either environment touches prod data. Either accept that explicitly or split the binding into two Hyperdrive instances (and two Neon branches).
+
+### GitHub Actions production-environment runs can wedge at registration
+
+**Problem:** Workflows that resolve to the `production` GitHub deployment environment stay in `status: pending` indefinitely with `pending_deployments: []`, `jobs: []`, and `updated_at == run_started_at`. Same workflow file dispatched against `staging` registers in seconds. Both environments declare the same `required_reviewers` rule, so the protection model is not the cause.
+
+**Diagnostic:** `gh api repos/OWNER/REPO/actions/runs/RUN_ID/pending_deployments` returns `[]`. If the run were waiting on env approval, that endpoint returns the approval request; an empty array confirms the wedge is at the GH Actions scheduling layer, not the approval layer.
+
+**Workaround:** Deploy via wrangler bypass — `npx wrangler deploy --env production` from a workstation with `CF_API_TOKEN` (pulled from GCP Secret Manager). This skips the entire GitHub Actions path. Side effect: no canary watcher runs, no Sentry release marker, no deploy event in the audit trail. Document the bypass in the issue.
+
+**Lesson:** When a workflow goes pending with zero jobs, check `pending_deployments` first. `[]` means scheduling failure (uncommon, escalate); a populated array means env approval (common, click approve). The two paths produce identical-looking UIs but need different responses.
+
+### When the canonical deploy pipeline is wedged, your token rotators still need to work
+
+**Problem:** Once production deploys went via manual wrangler bypass, the worker's short-lived secrets (`GITHUB_TOKEN`, `VERTEX_ACCESS_TOKEN`) had no refresh path. Both turned into recurring 401/503 errors at the 1-hour mark.
+
+**Fix:** A cron workflow that mints and rotates these secrets — see `.github/workflows/rotate-admin-studio-tokens.yml`. The workflow runs without declaring an `environment:` directive, so it sidesteps the production-env scheduling wedge.
+
+**Lesson:** Token refresh and code deploy are independent failure domains. A long deploy outage should not silently invalidate all your bearer-style secrets along with it. Always separate "rotate credentials" from "deploy code" — they have different cadences and different failure modes, and one being broken should never block the other.
+
+### Hono `onError` that returns a generic 500 without logging silently consumes debug time
+
+**Problem:** Every Playwright endpoint on the Cloud Run browser-agent returned `500 {"error":"Internal server error"}`. Cloud Run logs showed only empty `{}` ERROR payloads — no stack, no message.
+
+**Root cause:** The Hono error handler returned `c.json({ error: 'Internal server error' }, 500)` without writing to stderr. Cloud Run's log pipeline doesn't see anything to attach to the error event, so the operator sees a structureless `{}`.
+
+**Fix:** `console.error(err.stack ?? err.message)` *before* returning the generic 500.
+
+```ts
+app.onError((err, c) => {
+  if (err instanceof HttpError) return c.json({ error: err.message }, err.status);
+  // Cloud Run / Workers Logs only show what reaches stderr — without this,
+  // operators see "{}" payloads on every 500 and have nothing to debug.
+  console.error('agent error:', err instanceof Error ? err.stack ?? err.message : err);
+  return c.json({ error: 'Internal server error' }, 500);
+});
+```
+
+**Lesson:** Generic 500 responses are fine for clients; silent 500 responses are a debug black hole for operators. Always log to stderr inside the `onError` handler, even if the response body stays opaque.
+
+### Playwright in Cloud Run needs `--no-sandbox` and a matching base image version
+
+**Problem:** After deploying `apps/browser-agent` to Cloud Run, every browser endpoint returned 500. After fixing logging, the actual error surfaced:
+
+```
+browserType.launch: Executable doesn't exist at
+/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell
+```
+
+**Root cause:** Two stacked issues.
+
+1. `chromium.launch({ headless: true })` was missing `--no-sandbox`. Cloud Run's gVisor runtime doesn't support Chromium's namespace-based sandbox, so the launch threw before any further diagnostics.
+2. After adding the flag, `package-lock.json` had resolved `playwright@1.60.0` while the Dockerfile pinned the **v1.55.1** base image. The 1.60.0 npm package expects build-1223 of `chrome-headless-shell`, which the 1.55.1 image doesn't ship.
+
+**Fix:** Both, in this order:
+
+```ts
+chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+```
+
+```Dockerfile
+FROM mcr.microsoft.com/playwright:v1.60.0-noble   # match package.json/lock
+```
+
+**Lesson:** Container-managed browser tools need the runtime and the binary to agree on a build number. Pin the Dockerfile to whatever version `package-lock.json` resolved, or pin both to the same minor and bump together.
+
+### Worktree branch switches drop uncommitted edits silently
+
+**Problem:** Edits to four files made on a worktree branch appeared to vanish after running `git checkout -b NEW_BRANCH origin/main`. The files reverted to their `origin/main` content.
+
+**Root cause:** Uncommitted edits travel with the working tree across branch switches. `git checkout -b NEW_BRANCH origin/main` resets the working tree to `origin/main` content, overwriting anything not committed. The branches' commits are unaffected; only the in-flight edits are lost.
+
+**Fix:** Commit before switching. If you mean to carry edits onto a new branch from a different base, `git stash` first.
+
+**Lesson:** In a multi-worktree workflow, treat uncommitted edits as ephemeral. Either commit (`git commit -m "wip: …"`, amend or squash later) or stash before any branch switch — including `git checkout -b` operations that look like "fresh start." Don't trust that the same files will be on the new branch.
+
+### `gh pr merge --admin` can self-approve when branch protection requires review
+
+**Problem:** A PR with `reviewDecision: REVIEW_REQUIRED` blocked merge after dismissing bot-only `CHANGES_REQUESTED` reviews. The author (org owner) could not approve their own PR via `gh pr review --approve`.
+
+**Workaround:** `gh pr merge --admin --squash` bypasses required-review checks when the caller has admin permissions on the repo. Use sparingly — the audit trail records "merged by admin override," not "approved by reviewer."
+
+**Lesson:** Admin override is the correct tool when the only blocker is a bot-review-without-human-counterpart pattern, and the human (you, as owner) has the same context the absent reviewer would have. Log the rationale in a PR comment before merging so the future archaeologist sees why the override was used.
+
+
+---
+
+## Probe Round 2 — Cache Poisoning, Cross-Origin Redirects, and the Silently Broken Probe — May 2026
+
+A re-probe of the production admin-studio worker after the earlier fixes (PR #783, #784) surfaced three more issues the first probe round missed — including one where the probe itself had been lying about the state of the system. Each lesson maps to a fix in PR #821.
+
+### A WeakMap-cached postgres-js client poisons every subsequent request when one query dies
+
+**Problem:** `/catalog` returned `500 "Failed query: ..."` on 40% of calls; `/audit` on 50%. Both endpoints intermittent. `/timeline` (which calls the same `queryAuditEntries`) was 100% green only because the timeline route swallows DB errors and returns `[]` — the underlying flakiness was identical.
+
+**Root cause:** The `dbCache = new WeakMap<HyperdriveBinding, FactoryDb>()` pattern in `catalog-store` and `audit-store` memoises a single drizzle/postgres-js client per Worker isolate. When a query gets aborted (network blip, statement cancellation, etc.), the postgres-js pool connection enters a bad state — and every subsequent `db.execute()` call on the *same cached client* then fails until the isolate cold-starts. Worker isolates can live for hours, so a single bad request can poison the connection cache for the entire isolate's lifetime.
+
+**Fix:** Wrap the cached client in a retry helper that evicts the cache and rebuilds the client on first failure.
+
+```ts
+async function withDbRetry<T>(
+  hyperdrive: HyperdriveBinding,
+  op: (db: FactoryDb) => Promise<T>,
+): Promise<T> {
+  try {
+    return await op(getDb(hyperdrive));
+  } catch (err) {
+    console.error('[store] DB query failed; evicting cache and retrying:', (err as Error).message);
+    dbCache.delete(hyperdrive);
+    return await op(getDb(hyperdrive));
+  }
+}
+```
+
+Use at every read site: `const result = await withDbRetry(hyperdrive, (db) => db.execute(sql ...))`. Verified: sticky 50% flake to 0/20 failures after deploy.
+
+**Lesson:** "Memoise the client" is a tempting micro-optimization but is only safe if the underlying connection pool is itself fault-tolerant. postgres-js's pool isn't — a single bad query can leave a stuck connection that the pool will hand out again. Either don't cache (create the client per request — cheap for Hyperdrive) or wrap every read in retry+evict. Caching without recovery is a footgun.
+
+### A worker-level trailing-slash redirect needs CORS headers inline, and must skip OPTIONS
+
+**Problem:** After the UI fix in #783, the production Pages bundle still calls `/timeline/` (with slash) because the admin-studio-ui deploy never picked up the new code. The worker registered routes at the bare path (`/timeline`), so trailing-slash requests 404'd.
+
+**The naive fix:** add a worker middleware that redirects `/foo/` to `/foo` via 308.
+
+**The two non-obvious gotchas:**
+
+1. **The redirect response must carry CORS headers itself.** Chrome treats every leg of a cross-origin redirect chain as a separate CORS check. If the 308 response lacks `Access-Control-Allow-Origin`, the fetch fails with `net::ERR_FAILED` — *even though* the final redirected response would have had CORS headers. The cors middleware decorates `c.res` *after* `next()`, but a redirect handler returns before `next()` is called, so it must inline the CORS logic.
+
+2. **The redirect MUST skip OPTIONS preflights.** Browsers refuse to follow redirects during a CORS preflight — a 308 on the preflight aborts the entire fetch chain. The trailing-slash middleware must let `OPTIONS /foo/` fall through to the cors middleware, which returns a 204 preflight response inline.
+
+```ts
+app.use('*', async (c, next) => {
+  // Preflights cannot be redirected.
+  if (c.req.method === 'OPTIONS') return next();
+
+  const url = new URL(c.req.url);
+  if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+    url.pathname = url.pathname.replace(/\/+$/, '');
+    const origin = c.req.header('Origin');
+    const allowed = c.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()) ?? [];
+    const headers = new Headers({ Location: url.toString() });
+    if (origin && allowed.includes(origin)) {
+      headers.set('Access-Control-Allow-Origin', origin);
+      headers.set('Access-Control-Allow-Credentials', 'true');
+      headers.set('Vary', 'Origin');
+    }
+    return new Response(null, { status: 308, headers });
+  }
+  return next();
+});
+```
+
+**Lesson:** Any middleware that short-circuits before `next()` and returns its own response must self-inline whatever cross-cutting concerns the after-`next()` middleware would have added. For Workers serving SPA bundles, that's at minimum CORS — and for preflights specifically, the answer is always "skip and let the dedicated CORS handler answer."
+
+### The smoke probe was silently broken: every tab click timed out and the failure was reported as "no network failures"
+
+**Problem:** A re-probe of production reported `no network failures` for several runs in a row. Inspection of the captured steps showed every tab from `03-overview` through `10-audit` had `finalUrl: ?` and ms timings of exactly 5008–5014ms — the click timeout. **Every nav click had failed, no tab was loaded, no API call ever fired, and the probe celebrated.**
+
+**Root cause:** The probe used `page.getByRole('link', { name: ... })` to find nav elements. Mobile uses `<NavLink>` (role=link) but desktop nav uses Radix `<TabsTrigger>` (role=tab) — the probe ran at a 1280x800 viewport (desktop), where no element matches role=link. The `.click({ timeout: 5_000 })` timed out for every tab, the handler returned without firing any `goto` or API request, and the probe's "no failures" report was technically accurate but operationally meaningless.
+
+**Fix:** Try multiple roles + fall back to text:
+
+```ts
+const candidates = [
+  () => page.getByRole('tab',  { name: new RegExp('^' + linkText + '$', 'i') }),
+  () => page.getByRole('link', { name: new RegExp('^' + linkText + '$', 'i') }),
+  () => page.getByText(new RegExp('^' + linkText + '$', 'i'), { exact: false }),
+];
+for (const factory of candidates) {
+  try { await factory().first().click({ timeout: 4_000 }); break; }
+  catch { /* try next */ }
+}
+```
+
+**Lesson:** A probe that reports "all clear" while doing nothing is worse than one that throws. Whenever an automated check appears to pass with zero work, audit the workload — duration per step is a good tell. If every tab took the timeout duration exactly, no real navigation happened. Add a positive assertion at the end of each step (e.g. `expect URL change` or `expect named element to appear`) so silent no-ops surface as failures, not as success.
+
+### Factory canonical reviewer CHANGES_REQUESTED for "No secrets in wrangler vars" when none are present
+
+**Problem:** `factory-cross-repo[bot]` posts CHANGES_REQUESTED — "No secrets in wrangler vars: Use wrangler secret put — never put secrets in the vars block" — but the PR adds no secret-looking keys to any wrangler config.
+
+**Root cause:** The deterministic check in `.github/scripts/pr-review.mjs` previously ran the pattern `/vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im` over **all** added lines from all files in the PR concatenated. A TypeScript type definition (`vars: string[]`) in a capability plan type provides the `vars:` anchor; a GitHub Actions workflow env block (`STUDIO_DISPATCH_TOKEN: ${{ secrets.X }}`) provides the `TOKEN:` match. The cross-file blob match fires even though no wrangler file was modified.
+
+**Fix (already applied):** The check is scoped to added lines from wrangler config files only. If you see the false positive again, verify the fix is in place at line ~395 of `.github/scripts/pr-review.mjs`.
+
+**When the check is correct:** If a wrangler config file genuinely adds a `vars:` block containing a key named `*_KEY`, `*_SECRET`, `*_TOKEN`, or `*_PASSWORD`, the check is not a false positive — move the value to `wrangler secret put`.
+
+**Reference:** PATTERNS.md §9 · PR [#910](https://github.com/Latimer-Woods-Tech/Factory/pull/910)
+
+---
+
+### Playwright fires `requestfailed` on the source side of a redirect chain
+
+**Problem:** Even after the worker properly redirected `/timeline/` to `/timeline` with CORS headers, the smoke probe kept reporting `failed GET https://api.apunlimited.com/timeline/` with reason `net::ERR_FAILED`. The actual fetch returned 200; the user's browser saw the redirected response.
+
+**Root cause:** Playwright's `request` lifecycle treats redirects as creating a *new* Request for the target URL. The original Request (pointing at the pre-redirect URL) is then marked failed with `net::ERR_FAILED` — even though, from the fetch caller's perspective, the request succeeded by following to the redirect target. The probe's `page.on('requestfailed', ...)` handler was capturing the redirect-source side and falsely counting it as a failure.
+
+**Fix:** Filter out failures whose request has a non-null `redirectedTo()`:
+
+```ts
+page.on('requestfailed', (req) => {
+  if (shouldIgnore(req.url())) return;
+  // Source side of a redirect chain — the actual final response is on the
+  // redirect target. Skip.
+  if (typeof req.redirectedTo === 'function' && req.redirectedTo()) return;
+  networkFailures.push({ /* ... */ });
+});
+```
+
+**Lesson:** Playwright's request lifecycle does NOT model redirects as "one request, multiple legs." It models them as "two distinct requests, the first marked failed when the redirect fires." For network-failure-counting probes, this means a 100%-clean redirect chain still produces one `requestfailed` event per redirect leg. Use `redirectedTo()` / `redirectedFrom()` to distinguish probe-relevant failures from redirect-chain artifacts. The same shape applies to any tool inspecting raw request events (HAR analyzers, Chrome DevTools Protocol consumers, etc.).

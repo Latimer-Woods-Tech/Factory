@@ -56,7 +56,7 @@ What works end-to-end today:
 ```bash
 # 1. Worker (this folder)
 cd apps/admin-studio
-cp .dev.vars.example .dev.vars   # fill JWT_SECRET, GITHUB_TOKEN, ANTHROPIC_API_KEY
+cp .dev.vars.example .dev.vars   # fill JWT_SECRET, GITHUB_TOKEN, ANTHROPIC_API_KEY, STUDIO_WEBHOOK_SECRET
 npm install
 npm run dev                       # → http://localhost:8787
 
@@ -78,14 +78,14 @@ curl http://localhost:8787/health
 ```bash
 # Staging
 npm run deploy:staging
-curl https://admin-studio-staging.adrper79.workers.dev/health
+curl https://api.admin.latimerwoods.dev/health
 
 # Production (requires owner role + type-to-confirm in UI)
 npm run deploy:production
-curl https://admin-studio-production.adrper79.workers.dev/health
+curl https://api.apunlimited.com/health
 ```
 
-⚠ Before deploy: set `hyperdrive.id` for both envs in [`wrangler.jsonc`](./wrangler.jsonc) and run `wrangler secret put` for `JWT_SECRET`, `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`.
+⚠ Before deploy: set `hyperdrive.id` for both envs in [`wrangler.jsonc`](./wrangler.jsonc) and run `wrangler secret put` for `JWT_SECRET`, `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`, and `STUDIO_WEBHOOK_SECRET`.
 
 ## Quality gates
 

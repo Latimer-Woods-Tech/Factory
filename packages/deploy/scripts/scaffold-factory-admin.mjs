@@ -44,6 +44,7 @@ const HYPERDRIVE = {
   IJUSTUS:       env('HYPERDRIVE_IJUSTUS'),
   THE_CALLING:   env('HYPERDRIVE_THE_CALLING'),
   NEIGHBOR_AID:  env('HYPERDRIVE_NEIGHBOR_AID'),
+  XICO_CITY:     env('HYPERDRIVE_XICO_CITY'),
 };
 
 const run = (cmd, opts = {}) =>
@@ -74,7 +75,7 @@ function write(relPath, content) {
 write('wrangler.jsonc', JSON.stringify({
   name: 'factory-admin',
   main: 'src/index.ts',
-  compatibility_date: '2025-04-01',
+  compatibility_date: '2026-05-01',
   compatibility_flags: ['nodejs_compat'],
   hyperdrive: [
     { binding: 'FACTORY_CORE_DB', id: HYPERDRIVE.FACTORY_CORE },
@@ -84,6 +85,7 @@ write('wrangler.jsonc', JSON.stringify({
     { binding: 'IJUSTUS_DB',      id: HYPERDRIVE.IJUSTUS },
     { binding: 'THE_CALLING_DB',  id: HYPERDRIVE.THE_CALLING },
     { binding: 'NEIGHBOR_AID_DB', id: HYPERDRIVE.NEIGHBOR_AID },
+    { binding: 'XICO_CITY_DB',    id: HYPERDRIVE.XICO_CITY },
   ],
 }, null, 2) + '\n');
 
@@ -156,6 +158,8 @@ export interface Env {
   THE_CALLING_DB:  Hyperdrive;
   /** neighbor-aid app DB */
   NEIGHBOR_AID_DB: Hyperdrive;
+  /** xico-city app DB */
+  XICO_CITY_DB:    Hyperdrive;
   /** Admin JWT secret — independent of any per-app secret */
   ADMIN_JWT_SECRET: string;
 }
@@ -210,6 +214,7 @@ const BINDINGS: Array<{ label: string; key: keyof Env }> = [
   { label: 'ijustus',      key: 'IJUSTUS_DB' },
   { label: 'the-calling',  key: 'THE_CALLING_DB' },
   { label: 'neighbor-aid', key: 'NEIGHBOR_AID_DB' },
+  { label: 'xico-city',    key: 'XICO_CITY_DB' },
 ];
 
 /** GET /health — ping all 7 Hyperdrive connections */
@@ -270,6 +275,7 @@ const APPS = [
   'ijustus',
   'the-calling',
   'neighbor-aid',
+  'xico-city',
 ] as const;
 
 /** GET /apps — list all managed apps */

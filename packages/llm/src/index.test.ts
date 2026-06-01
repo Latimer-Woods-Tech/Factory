@@ -8,12 +8,14 @@ import {
   clearProviderCooldown,
   PROVIDER_COOLDOWN_MS,
   type LLMEnv,
+  type LLMRecordRow,
 } from './index.js';
 
 const ENV: LLMEnv = {
   AI_GATEWAY_BASE_URL: 'https://gateway.test/v1',
   ANTHROPIC_API_KEY: 'ak-test',
   GROQ_API_KEY: 'grq-test',
+  DEEPSEEK_API_KEY: 'dsk-test',
   VERTEX_ACCESS_TOKEN: 'vertex-test',
   VERTEX_PROJECT: 'factory-495015',
   VERTEX_LOCATION: 'us-central1',
@@ -53,6 +55,17 @@ function groqResponse(text = 'verdict') {
       model: 'llama-3.3-70b-versatile',
     }),
     { status: 200 },
+  );
+}
+
+function deepSeekResponse(text = 'workbench') {
+  return new Response(
+    JSON.stringify({
+      choices: [{ message: { content: text } }],
+      usage: { prompt_tokens: 11, completion_tokens: 6 },
+      model: 'deepseek-chat',
+    }),
+    { status: 200, headers: { 'cf-aig-request-id': 'deepseek-aig' } },
   );
 }
 
@@ -127,6 +140,7 @@ beforeEach(() => {
   clearProviderCooldown('gemini');
   clearProviderCooldown('groq');
   clearProviderCooldown('grok');
+  clearProviderCooldown('deepseek');
 });
 
 // â”€â”€â”€ Existing complete() tests (unchanged) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -151,7 +165,7 @@ describe('complete', () => {
     expect(String(call[0])).toContain('anthropic/v1/messages');
   });
 
-  it('fast tier uses Haiku and no fallback leg', async () => {
+  it('fast tier falls back to Haiku when Grok key is unavailable', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(anthropicResponse('fast')));
     const res = await complete(
       [{ role: 'user', content: 'hi' }],
@@ -161,7 +175,36 @@ describe('complete', () => {
     );
     expect(res.error).toBeNull();
     expect(res.data!.tier).toBe('fast');
+    expect(res.data!.provider).toBe('anthropic');
     expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('fast tier uses Grok 4.3 with no reasoning when Grok key is available', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: 'grok-fast' }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 7, completion_tokens: 4 },
+            model: 'grok-4.3',
+          }),
+          { status: 200, headers: { 'cf-aig-request-id': 'grok-aig' } },
+        ),
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV, GROK_API_KEY: 'gk-test' },
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('grok');
+    expect(res.data!.model).toBe('grok-4.3');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { model: string; reasoning_effort: string };
+    expect(body.model).toBe('grok-4.3');
+    expect(body.reasoning_effort).toBe('none');
   });
 
   it('smart tier with long-context goes to Gemini primary', async () => {
@@ -279,6 +322,57 @@ describe('complete', () => {
     expect(res.data!.provider).toBe('groq');
     const call = fetchImpl.mock.calls[0] as unknown as [string | URL | Request, RequestInit?];
     expect(String(call[0])).toContain('groq/openai/v1/chat/completions');
+  });
+
+  it('workbench tier routes to DeepSeek for cheap internal batch work', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(deepSeekResponse('cheap-draft')));
+    const res = await complete(
+      [{ role: 'user', content: 'summarize this non-sensitive changelog' }],
+      ENV,
+      { tier: 'workbench', workload: 'docs-summary' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('deepseek');
+    expect(res.data!.model).toBe('deepseek-chat');
+    expect(res.data!.tier).toBe('workbench');
+    expect(res.data!.gatewayRequestId).toBe('deepseek-aig');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string; headers: Record<string, string> }];
+    expect(String(call[0])).toContain('/deepseek/chat/completions');
+    expect(call[1].headers.authorization).toBe('Bearer dsk-test');
+    const body = JSON.parse(call[1].body) as { model: string };
+    expect(body.model).toBe('deepseek-chat');
+  });
+
+  it('workbench tier falls back to Groq when DeepSeek key is unavailable', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(groqResponse('fallback-verdict')));
+    const envWithoutDeepSeek = { ...ENV, DEEPSEEK_API_KEY: undefined };
+    const res = await complete(
+      [{ role: 'user', content: 'classify these public docs' }],
+      envWithoutDeepSeek,
+      { tier: 'workbench' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('groq');
+    expect(res.data!.tier).toBe('workbench');
+    const call = fetchImpl.mock.calls[0] as unknown as [string | URL | Request, RequestInit?];
+    expect(String(call[0])).toContain('groq/openai/v1/chat/completions');
+  });
+
+  it('routes deepseek-* model override through DeepSeek', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(deepSeekResponse('reasoned')));
+    const res = await complete(
+      [{ role: 'user', content: 'outline a doc cleanup plan' }],
+      ENV,
+      { model: 'deepseek-reasoner' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.provider).toBe('deepseek');
+    const call = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    const body = JSON.parse(call[1].body) as { model: string };
+    expect(body.model).toBe('deepseek-reasoner');
   });
 
   it('enables prompt caching for long system prompt', async () => {
@@ -1127,5 +1221,205 @@ describe('assertGrounding', () => {
 
   it('returns false when sources array contains only empty strings', () => {
     expect(assertGrounding('some response text here today', ['', '   '])).toBe(false);
+  });
+});
+
+// ─── org-level KV cost cap enforcement ───────────────────────────────────────
+
+describe('complete - org-level KV daily cap', () => {
+  function makeCostKv(stored: Record<string, string> = {}): import('./index.js').CostKvStore {
+    const store: Record<string, string> = { ...stored };
+    return {
+      get: (key: string) => Promise.resolve(store[key] ?? null),
+      put: (key: string, value: string) => { store[key] = value; return Promise.resolve(); },
+    };
+  }
+
+  it('blocks call when today spend >= dailyCapUsd', async () => {
+    const kv = makeCostKv();
+    // Pre-load today's spend at cap
+    const today = new Date().toISOString().slice(0, 10);
+    await kv.put(`llm:daily-cost:${today}`, '50');
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { dailyCapUsd: 50 },
+    );
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+
+  it('allows call when today spend < dailyCapUsd', async () => {
+    const kv = makeCostKv();
+    const today = new Date().toISOString().slice(0, 10);
+    await kv.put(`llm:daily-cost:${today}`, '10');
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { dailyCapUsd: 50 },
+      { fetch: () => Promise.resolve(anthropicResponse('ok')) },
+    );
+    // Should pass cap check — result depends on fetch working
+    expect(result.error?.code).not.toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+
+  it('blocks call when monthly spend >= monthlyCapUsd', async () => {
+    const kv = makeCostKv();
+    const month = new Date().toISOString().slice(0, 7);
+    await kv.put(`llm:monthly-cost:${month}`, '500');
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { monthlyCapUsd: 500 },
+    );
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_MONTHLY_CAP_EXCEEDED');
+  });
+
+  it('does not enforce cap when LLM_COST_KV is not provided', async () => {
+    // Without KV, even setting dailyCapUsd should not block
+    const daily = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV }, // no LLM_COST_KV
+      { dailyCapUsd: 0 },
+      { fetch: daily },
+    );
+    // No KV means no cap check — call proceeds
+    expect(result.error?.code).not.toBe('LLM_DAILY_CAP_EXCEEDED');
+  });
+
+  it('returns LLM_COST_CAP_EXCEEDED when per-call cost exceeds maxCostUsd', async () => {
+    // maxCostUsd=0 means any real call cost will exceed it
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV },
+      { maxCostUsd: 0 },
+      { fetch: fetchImpl },
+    );
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_COST_CAP_EXCEEDED');
+  });
+
+  it('updates daily and monthly KV accumulators when maxCostUsd is exceeded', async () => {
+    const kv = makeCostKv();
+    const today = new Date().toISOString().slice(0, 10);
+    const month = new Date().toISOString().slice(0, 7);
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { maxCostUsd: 0, dailyCapUsd: 100, monthlyCapUsd: 500 },
+      { fetch: fetchImpl },
+    );
+
+    expect(result.error).not.toBeNull();
+    expect(result.error?.message).toBe('LLM_COST_CAP_EXCEEDED');
+    expect(parseFloat((await kv.get(`llm:daily-cost:${today}`)) ?? '0')).toBeGreaterThan(0);
+    expect(parseFloat((await kv.get(`llm:monthly-cost:${month}`)) ?? '0')).toBeGreaterThan(0);
+  });
+
+  it('accumulates monthly cost in KV after successful call', async () => {
+    const kv = makeCostKv();
+    const month = new Date().toISOString().slice(0, 7);
+    await kv.put(`llm:monthly-cost:${month}`, '10');
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('ok'));
+    const result = await complete(
+      [{ role: 'user', content: 'hello' }],
+      { ...ENV, LLM_COST_KV: kv },
+      { monthlyCapUsd: 100 },
+      { fetch: fetchImpl },
+    );
+    expect(result.error).toBeNull();
+    const raw = await kv.get(`llm:monthly-cost:${month}`);
+    // Accumulated value should be > 10 (initial) after a successful call
+    expect(parseFloat(raw ?? '0')).toBeGreaterThan(10);
+  });
+});
+
+// ─── onRecord metering callback ───────────────────────────────────────────────
+
+describe('onRecord metering callback', () => {
+  it('calls onRecord with a fully-populated row after a successful completion', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('done'));
+    const onRecord = vi.fn().mockResolvedValue(undefined);
+    const result = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV },
+      { ledger: { project: 'test-proj', actor: 'test-actor', runId: 'run-1', workload: 'summary', tenantId: 'org-1' } },
+      { fetch: fetchImpl, onRecord },
+    );
+    expect(result.error).toBeNull();
+    expect(onRecord).toHaveBeenCalledOnce();
+    const row = onRecord.mock.calls[0]![0] as LLMRecordRow;
+    expect(row.project).toBe('test-proj');
+    expect(row.actor).toBe('test-actor');
+    expect(row.runId).toBe('run-1');
+    expect(row.workload).toBe('summary');
+    expect(row.tenantId).toBe('org-1');
+    expect(row.provider).toBe('anthropic');
+    expect(typeof row.model).toBe('string');
+    expect(typeof row.inputTokens).toBe('number');
+    expect(typeof row.outputTokens).toBe('number');
+    expect(typeof row.costUsd).toBe('number');
+    expect(row.costUsd).toBeGreaterThanOrEqual(0);
+    expect(typeof row.yyyyMm).toBe('string');
+    expect(row.yyyyMm).toMatch(/^\d{4}-\d{2}$/);
+  });
+
+  it('does not call onRecord when ledger is absent', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('done'));
+    const onRecord = vi.fn().mockResolvedValue(undefined);
+    await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV },
+      {},
+      { fetch: fetchImpl, onRecord },
+    );
+    expect(onRecord).not.toHaveBeenCalled();
+  });
+
+  it('does not call onRecord when onRecord is absent', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('done'));
+    // Should complete without error even when onRecord is not set
+    const result = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV },
+      { ledger: { project: 'proj', actor: 'a' } },
+      { fetch: fetchImpl },
+    );
+    expect(result.error).toBeNull();
+  });
+
+  it('swallows onRecord Error and logs a warning without failing the call', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('done'));
+    const warnSpy = vi.fn();
+    const onRecord = vi.fn().mockRejectedValue(new Error('db write failed'));
+    const result = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV },
+      { ledger: { project: 'p', actor: 'a' } },
+      { fetch: fetchImpl, onRecord, logger: { warn: warnSpy } as never },
+    );
+    // Give the fire-and-forget rejection a tick to propagate
+    await new Promise((r) => setTimeout(r, 0));
+    expect(result.error).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith('llm.onRecord.error', expect.objectContaining({ message: 'db write failed' }));
+  });
+
+  it('swallows non-Error thrown by onRecord (covers String(e) branch)', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('done'));
+    const warnSpy = vi.fn();
+    const onRecord = vi.fn().mockRejectedValue('timeout');
+    const result = await complete(
+      [{ role: 'user', content: 'hi' }],
+      { ...ENV },
+      { ledger: { project: 'p', actor: 'a' } },
+      { fetch: fetchImpl, onRecord, logger: { warn: warnSpy } as never },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    expect(result.error).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith('llm.onRecord.error', expect.objectContaining({ message: 'timeout' }));
   });
 });

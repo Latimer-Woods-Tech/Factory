@@ -36,6 +36,18 @@ import { createInterface } from 'readline';
 
 const APPS = [
   {
+    name: 'daily-brief',
+    isMonorepo: true,
+    workerName: 'daily-brief',
+    envKey: 'DAILY_BRIEF',
+    extraSecrets: [
+      'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'GROK_API_KEY', 'DEEPSEEK_API_KEY', 'VERTEX_ACCESS_TOKEN',
+      'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID', 'RESEND_API_KEY',
+      'GITHUB_TOKEN', 'NEWS_API_KEY', 'STRIPE_SECRET_KEY',
+      'POSTHOG_API_KEY', 'POSTHOG_PROJECT_ID', 'SENTRY_AUTH_TOKEN', 'SENTRY_ORG'
+    ],
+  },
+  {
     name: 'wordis-bond',
     workerName: 'wordis-bond',
     envKey: 'WORDIS_BOND',
@@ -45,19 +57,19 @@ const APPS = [
     name: 'cypher-healing',
     workerName: 'cypher-healing',
     envKey: 'CYPHER_HEALING',
-    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
+    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
   },
   {
     name: 'prime-self',
     workerName: 'prime-self-api',
     envKey: 'PRIME_SELF',
-    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
+    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'RESEND_API_KEY'],
   },
   {
     name: 'ijustus',
     workerName: 'ijustus',
     envKey: 'IJUSTUS',
-    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'TELNYX_API_KEY'],
+    extraSecrets: ['STRIPE_SECRET_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'TELNYX_API_KEY'],
   },
   {
     name: 'the-calling',
@@ -76,6 +88,12 @@ const APPS = [
     workerName: 'nichestream-api', // legacy Worker name preserved so api.itsjusus.com deployments keep targeting the live service
     envKey: 'VIDEOKING',
     extraSecrets: ['STRIPE_SECRET_KEY', 'BETTER_AUTH_SECRET', 'STRIPE_WEBHOOK_SECRET', 'EMAIL_API_KEY'],
+  },
+  {
+    name: 'xico-city',
+    workerName: 'xico-city',
+    envKey: 'XICO_CITY',
+    extraSecrets: ['STRIPE_SECRET_KEY'],
   },
 ];
 
@@ -212,7 +230,15 @@ async function setupApp(app) {
   // ── GitHub Secrets ──────────────────────────────────────────────
   console.log('\n  [GitHub Secrets]');
 
-  setGitHubSecret(name, 'PACKAGES_READ_TOKEN', requireEnv('PACKAGES_READ_TOKEN'));
+  if (app.isMonorepo) {
+    console.log(`  [skipped] ${name} is a monorepo app, skipping GitHub repo secrets`);
+  } else {
+    setGitHubSecret(name, 'PACKAGES_READ_TOKEN', requireEnv('PACKAGES_READ_TOKEN'));
+  }
+
+  // Cloudflare deploy credentials and environment setup are required for every
+  // app, including monorepo-hosted apps, because they are consumed by the
+  // app's CI workflow or inherited from the parent repo deployment pipeline.
   setGitHubSecret(name, 'CF_API_TOKEN', requireEnv('CF_API_TOKEN'));
   setGitHubSecret(name, 'CF_ACCOUNT_ID', requireEnv('CF_ACCOUNT_ID'));
   ensureGitHubEnvironment(name, 'staging');

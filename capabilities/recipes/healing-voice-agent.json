@@ -1,0 +1,28 @@
+{
+  "id": "healing-voice-agent",
+  "version": "1.0.0",
+  "maturity": "beta",
+  "summary": "Inbound healing voice agent with LLM-guided intake, CRM routing, and optional email follow-up.",
+  "goal": "Receive inbound calls, triage with LLM-guided conversation, capture structured intent, route to CRM, and send email follow-ups to callers.",
+  "primitives": ["telephony", "llm", "crm", "analytics"],
+  "optionalPrimitives": ["compliance", "email"],
+  "expectedSurfaces": ["/health", "/api/calls", "/api/intake", "/api/sessions"],
+  "smokeChecks": [
+    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" },
+    { "path": "/api/intake", "expectedStatus": 200 }
+  ],
+  "constraints": [
+    "Use a branded custom domain.",
+    "Voice transcripts must be redacted before storage.",
+    "HIPAA-adjacent data handling — compliance primitive is recommended.",
+    "Verify intake smoke checks before production."
+  ],
+  "envContract": {
+    "secrets": ["TELNYX_INBOUND_TOKEN", "DEEPGRAM_API_KEY", "ANTHROPIC_API_KEY"],
+    "vars": ["WORKER_DOMAIN", "INTAKE_PHONE_NUMBER"]
+  },
+  "bindingContract": {
+    "required": ["INTAKE_QUEUE", "DB"],
+    "optional": ["ANALYTICS"]
+  }
+}

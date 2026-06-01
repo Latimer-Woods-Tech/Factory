@@ -1,0 +1,78 @@
+id: extract-from-wordis-bond
+version: 1
+tier: yellow
+triggers:
+  labels_any_of: [engineering, epic:wordis-bond-engine]
+  title_pattern: "^WB-\\d+:\\s*\\[Extract\\]"
+  body_patterns:
+    - "wordis-bond/(src/(handlers|workers|lib)|engine)"
+    - "packages/[a-z\\-]+/src/"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+slots:
+  - name: wb_ticket
+    type: string
+    validator: "^WB-\\d+$"
+    source: issue_title
+  - name: source_file
+    type: string
+    validator: "^wordis-bond/src/(handlers|workers|lib)/[a-zA-Z0-9_.\\-/]+\\.(ts|mjs)$"
+    source: issue_body
+  - name: target_package
+    type: enum
+    values: [call-analytics, llm, telephony, realtime, content, copy, analytics]
+    source: issue_body
+    default: call-analytics
+  - name: target_file
+    type: string
+    validator: "^packages/[a-z\\-]+/src/(handlers|workers|lib)/[a-zA-Z0-9_.\\-/]+\\.(ts|mjs)$"
+    source: issue_body
+  - name: export_contract
+    type: string
+    validator: "^[a-zA-Z][a-zA-Z0-9_]*\\([^)]*\\):\\s*Promise<[^>]+>$"
+    source: issue_body
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: factory
+      path: "docs/supervisor/FRIDGE.md"
+      ref: main
+    intent: "Confirm rule 1 (wordis-bond UI off-limits) before proceeding. Engine-layer files only; abort if source_file path looks like a UI/frontend asset."
+    requires_human_review: false
+  - id: s2
+    tool: github.comment
+    depends_on: s1
+    params:
+      issue_ref: "$triggers.issue_number"
+      body: "Supervisor plan for **$slots.wb_ticket**\n\n**Source (wordis-bond engine):** `$slots.source_file`\n**Target (Factory package):** `$slots.target_file`\n**Contract:** `$slots.export_contract`\n**Package:** `@latimer-woods-tech/$slots.target_package`\n\nPlanned execution (after CODEOWNER ✅):\n1. Audit source file for TCPA/FDCPA/PII compliance code — abort and re-classify Red if any found.\n2. Copy clean code to target path; rewrite imports to use `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`.\n3. Verify no `process.env`, no Node.js built-ins, no `Buffer`, no `require()` (Hard Constraints).\n4. Write unit tests (≥5 cases) and one integration test fixture.\n5. Run `npm run typecheck && npm test && npm run lint`.\n6. Open draft PR targeting `main` with scope `($slots.target_package)`; tag CODEOWNER.\n\n@adrper79-dot — React ✅ to proceed, or comment with changes needed.\n\n_FRIDGE rule 1: this template never touches wordis-bond UI/frontend files. Only `wordis-bond/src/{handlers,workers,lib}/**` is in scope._"
+    intent: "Post plan comment and wait for CODEOWNER ✅ before any file mutation."
+    requires_human_review: true
+  - id: s3
+    tool: github.openPR
+    depends_on: s2
+    params:
+      repo: factory
+      base: main
+      head: "supervisor/wb-extract-$slots.wb_ticket"
+      title: "feat($slots.target_package): extract `$slots.source_file` into Factory ($slots.wb_ticket)"
+      body: "Closes #$triggers.issue_number\n\nExtracts engine handler from wordis-bond into `$slots.target_file`.\n\n**Contract:** `$slots.export_contract`\n**Source:** wordis-bond engine — `$slots.source_file`\n**FRIDGE rule 1:** wordis-bond UI layer untouched. Engine-only extraction.\n\n## Acceptance gate\n- TypeScript strict passes\n- ≥5 unit tests + 1 integration test\n- No `process.env`, no Node built-ins, no `Buffer`, no `require()`\n- Uses `@latimer-woods-tech/errors` and `@latimer-woods-tech/logger`\n\nDraft for CODEOWNER review per Yellow-tier policy."
+      draft: true
+    intent: "Open draft PR with the extracted handler. Yellow tier requires CODEOWNER review before merge."
+    requires_human_review: true
+acceptance_gate:
+  description: "Draft PR exists targeting `packages/<pkg>/src/...` with the declared contract; the wordis-bond source path is unchanged in the diff."
+  verifier_query:
+    tool: github.searchPRFiles
+    query: "pr=$s3.pr_number AND NOT path:wordis-bond/src/ui AND path:packages/$slots.target_package/src/"
+    assert: "result_count >= 1"
+rollback:
+  - on_step: s3
+    action: github.closePR
+    params:
+      repo: factory
+      pr_number: "$s3.pr_number"
+      comment: "Supervisor rollback: closing auto-generated WB extraction PR. Manual extraction required."

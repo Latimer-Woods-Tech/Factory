@@ -19,27 +19,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [wordis-bond, cypher-healing, ijustus, the-calling]
+        include:
+          - app: wordis-bond
+            conn_secret: WORDISBOND_CONNECTION_STRING
+          - app: cypher-healing
+            conn_secret: CYPHEROFHEALING_CONNECTION_STRING
+          - app: ijustus
+            conn_secret: KAIROSCOUNCIL_CONNECTION_STRING
+          - app: the-calling
+            conn_secret: THECALLING_CONNECTION_STRING
+          - app: xico-city
+            conn_secret: XICOCITY_CONNECTION_STRING
 
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
       - name: Checkout app repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: Latimer-Woods-Tech/${{ matrix.app }}
           token: ${{ steps.app-token.outputs.token }}
           path: app
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           registry-url: 'https://npm.pkg.github.com'
           scope: '@adrper79-dot'
 
@@ -57,14 +67,9 @@ jobs:
         working-directory: app
 
       - name: Apply migration to Neon
+        env:
+          DATABASE_URL: ${{ secrets[matrix.conn_secret] }}
         run: |
-          case "${{ matrix.app }}" in
-            wordis-bond)    export DATABASE_URL="${{ secrets.WORDISBOND_CONNECTION_STRING }}" ;;
-            cypher-healing) export DATABASE_URL="${{ secrets.CYPHEROFHEALING_CONNECTION_STRING }}" ;;
-            prime-self)     export DATABASE_URL="${{ secrets.SELFPRIME_CONNECTION_STRING }}" ;;
-            ijustus)        export DATABASE_URL="${{ secrets.KAIROSCOUNCIL_CONNECTION_STRING }}" ;;
-            the-calling)    export DATABASE_URL="${{ secrets.THECALLING_CONNECTION_STRING }}" ;;
-          esac
           npx drizzle-kit migrate
         working-directory: app
 

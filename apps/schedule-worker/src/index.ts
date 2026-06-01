@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { createDb, sql } from '@latimer-woods-tech/neon';
-import { toErrorResponse, ValidationError, AuthError } from '@latimer-woods-tech/errors';
+import { toErrorResponse, ValidationError, AuthError, NotFoundError } from '@latimer-woods-tech/errors';
+import trainingLibraryManifest from '../../video-studio/content-briefs/prime-self/training-library.json';
 import {
   getPendingJobs,
   getVideoJob,
@@ -70,6 +71,40 @@ function enforceAppScope(auth: ServiceAuth, requestedAppId: string): string {
 function requireString(value: unknown, field: string): string {
   if (typeof value !== 'string' || !value.trim()) throw new ValidationError(`${field} is required`);
   return value.trim();
+}
+
+type TrainingLibraryComposition = 'MarketingVideo' | 'TrainingVideo' | 'WalkthroughVideo';
+
+type TrainingLibraryModule = {
+  briefKey: string;
+  composition: TrainingLibraryComposition;
+  audience: string;
+  area: string;
+  status: string;
+  topic: string;
+};
+
+type TrainingLibraryManifest = {
+  appId: string;
+  library: string;
+  version: number;
+  updatedAt: string;
+  description: string;
+  modules: TrainingLibraryModule[];
+};
+
+function getTrainingLibrary(appId: string): TrainingLibraryManifest | null {
+  if (appId === 'prime_self') {
+    return trainingLibraryManifest as TrainingLibraryManifest;
+  }
+  return null;
+}
+
+function resolveRenderType(composition: TrainingLibraryComposition): RenderType {
+  if (composition === 'MarketingVideo') return 'marketing';
+  if (composition === 'TrainingVideo') return 'training';
+  if (composition === 'WalkthroughVideo') return 'walkthrough';
+  throw new ValidationError('Unsupported composition type');
 }
 
 function parseRenderType(value: unknown): RenderType {
@@ -161,6 +196,24 @@ app.get('/manifest', (c) => {
       },
       {
         method: 'GET',
+        path: '/training-library',
+        auth: 'admin',
+        summary: 'List the training library manifest for a given app',
+        reversibility: 'reversible',
+        slo: { p95Ms: 500, errorRate: 0.01 },
+        tags: ['video', 'library'],
+      },
+      {
+        method: 'POST',
+        path: '/jobs/from-brief',
+        auth: 'admin',
+        summary: 'Schedule a render job from a manifest brief key',
+        reversibility: 'reversible',
+        slo: { p95Ms: 600, errorRate: 0.01 },
+        tags: ['video', 'jobs', 'library'],
+      },
+      {
+        method: 'GET',
         path: '/jobs/:id',
         auth: 'admin',
         summary: 'Fetch single render job by ID',
@@ -203,6 +256,70 @@ app.get('/manifest', (c) => {
 
 app.get('/jobs/pending', async (c) => {
   return handlePendingJobs(c);
+});
+
+app.get('/training-library', async (c) => {
+  const auth = requireApiToken(c.env, c.req.header('authorization'));
+  const requestedAppId = c.req.query('appId') ?? auth.appId ?? undefined;
+  if (!requestedAppId) {
+    throw new ValidationError('appId is required');
+  }
+  const appId = enforceAppScope(auth, String(requestedAppId));
+  const library = getTrainingLibrary(appId);
+  if (!library) {
+    throw new NotFoundError(`Training library not found for appId ${appId}`);
+  }
+  return c.json({ data: library });
+});
+
+app.post('/jobs/from-brief', async (c) => {
+  const auth = requireApiToken(c.env, c.req.header('authorization'));
+
+  type Body = {
+    appId?: unknown;
+    briefKey?: unknown;
+    triggerSource?: unknown;
+    scheduledAt?: unknown;
+    performanceScore?: unknown;
+    idempotencyKey?: unknown;
+  };
+
+  const body = await c.req.json<Body>();
+  const { appId, briefKey, triggerSource, scheduledAt, performanceScore, idempotencyKey } = body;
+
+  const scopedAppId = enforceAppScope(auth, requireString(appId, 'appId'));
+  const briefKeyValue = requireString(briefKey, 'briefKey');
+  const library = getTrainingLibrary(scopedAppId);
+  if (!library) {
+    throw new NotFoundError(`Training library not found for appId ${scopedAppId}`);
+  }
+
+  const module = library.modules.find((item) => item.briefKey === briefKeyValue);
+  if (!module) {
+    throw new NotFoundError(`Training brief not found: ${briefKeyValue}`);
+  }
+
+  const renderType = resolveRenderType(module.composition);
+  const source = triggerSource ? parseTriggerSource(triggerSource) : 'manual';
+  const scheduledAtDate = scheduledAt ? new Date(String(scheduledAt)) : new Date();
+  if (Number.isNaN(scheduledAtDate.getTime())) {
+    throw new ValidationError('scheduledAt must be a valid ISO 8601 timestamp');
+  }
+
+  const db = createDb(c.env.DB);
+  const job = await scheduleVideo(db, {
+    appId: scopedAppId,
+    type: renderType,
+    briefKey: briefKeyValue,
+    compositionId: module.composition,
+    topic: module.topic,
+    triggerSource: source,
+    scheduledAt: scheduledAtDate,
+    performanceScore: typeof performanceScore === 'number' ? performanceScore : 50,
+    idempotencyKey: idempotencyKey === undefined ? undefined : requireString(idempotencyKey, 'idempotencyKey'),
+  });
+
+  return c.json({ data: job }, 201);
 });
 
 // ---------------------------------------------------------------------------

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/create-github-app-token@v3
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         id: app-token
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
@@ -88,6 +88,114 @@ jobs:
             exit 1
           fi
 
+      - name: Verify The_Calling is archived (OPS-2.1)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          body=$(mktemp)
+          code=$(curl -sS -o "$body" -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Latimer-Woods-Tech/The_Calling")
+
+          if [ "$code" = "404" ]; then
+            echo "The_Calling: repo not found (may have been deleted) — OK"
+            exit 0
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::warning::Could not fetch The_Calling (HTTP $code) — skipping check"
+            exit 0
+          fi
+          archived=$(jq -r '.archived' "$body")
+          echo "The_Calling archived=$archived"
+          if [ "$archived" != "true" ]; then
+            echo "::error::The_Calling is not archived. Run the 'Align Legacy Repos (OPS-2.1)' workflow."
+            exit 1
+          fi
+
+      - name: Verify legacy repos comply with Factory policy (OPS-2.1)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          failed=0
+
+          check_repo() {
+            local repo="$1"
+            local body code
+            body=$(mktemp)
+            code=$(curl -sS -o "$body" -w "%{http_code}" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/Latimer-Woods-Tech/${repo}")
+
+            if [ "$code" = "404" ]; then
+              echo "${repo}: not found — skipping"
+              return
+            fi
+            if [ "$code" != "200" ]; then
+              echo "::warning::Could not fetch ${repo} (HTTP $code) — skipping check"
+              return
+            fi
+
+            local archived allow_rebase allow_merge_commit allow_squash delete_branch description
+            archived=$(jq -r '.archived' "$body")
+            if [ "$archived" = "true" ]; then
+              echo "${repo}: archived — skipping policy check"
+              return
+            fi
+
+            allow_rebase=$(jq -r '.allow_rebase_merge' "$body")
+            allow_merge_commit=$(jq -r '.allow_merge_commit' "$body")
+            allow_squash=$(jq -r '.allow_squash_merge' "$body")
+            delete_branch=$(jq -r '.delete_branch_on_merge' "$body")
+            description=$(jq -r '.description // ""' "$body")
+
+            echo "${repo}: allow_rebase_merge=${allow_rebase} allow_merge_commit=${allow_merge_commit} allow_squash_merge=${allow_squash} delete_branch_on_merge=${delete_branch} description='${description}'"
+
+            if [ "$allow_rebase" != "false" ]; then
+              echo "::error::${repo}: allow_rebase_merge must be false (Factory squash-only policy). Run align-legacy-repos workflow."
+              failed=1
+            fi
+            if [ "$allow_merge_commit" != "false" ]; then
+              echo "::error::${repo}: allow_merge_commit must be false (Factory squash-only policy). Run align-legacy-repos workflow."
+              failed=1
+            fi
+            if [ "$allow_squash" != "true" ]; then
+              echo "::error::${repo}: allow_squash_merge must be true (Factory squash-only policy). Run align-legacy-repos workflow."
+              failed=1
+            fi
+            if [ "$delete_branch" != "true" ]; then
+              echo "::error::${repo}: delete_branch_on_merge must be true. Run align-legacy-repos workflow."
+              failed=1
+            fi
+            if [ -z "$description" ]; then
+              echo "::error::${repo}: description is empty. Run align-legacy-repos workflow."
+              failed=1
+            fi
+
+            # Check SECURITY.md exists
+            local sec_code
+            sec_code=$(curl -sS -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/Latimer-Woods-Tech/${repo}/contents/SECURITY.md")
+            if [ "$sec_code" = "404" ]; then
+              echo "::error::${repo}: SECURITY.md missing. Run align-legacy-repos workflow."
+              failed=1
+            elif [ "$sec_code" != "200" ]; then
+              echo "::warning::${repo}: Could not check SECURITY.md (HTTP ${sec_code})"
+            else
+              echo "${repo}: SECURITY.md present ✓"
+            fi
+          }
+
+          check_repo "coh"
+          check_repo "focusbro"
+
+          exit $failed
+
       # SEC-1.2 — factory main branch protection
       - name: Verify factory main branch protection (SEC-1.2)
         env:
@@ -108,7 +216,7 @@ jobs:
             echo "::warning::Skipping branch protection check: token lacks admin access (HTTP 403)."
           elif [ "$code" = "200" ]; then
             FAILED=0
-            REQUIRED_CONTEXTS='["CI / validate","CodeQL Security Analysis / Analyze (javascript)","Dependency Review / dependency-review"]'
+            REQUIRED_CONTEXTS='["validate","Analyze (javascript)","dependency-review"]'
 
             # Require pull requests
             require_pr=$(jq -r 'if .required_pull_request_reviews then "true" else "false" end' "$body")

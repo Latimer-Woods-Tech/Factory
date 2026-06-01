@@ -1,0 +1,26 @@
+# Expected gates per supervisor run.
+#
+# The factory-stuck-watcher cron (P2.13b) reads this config and writes a
+# gate_type='stuck-detection' row into factory_gates when a running supervisor
+# run has been active for longer than grace_minutes without the required gate
+# type appearing in factory_gates_latest.
+#
+# Fields:
+#   gate_type:      Gate type expected to appear (must be in GATE_TYPES schema).
+#   grace_minutes:  How many minutes a run may stay 'running' without this gate
+#                   before a stuck-detection row is written.
+#   description:    Human-readable explanation shown in the stuck-detection
+#                   evidence_summary.
+
+checks:
+  - gate_type: constraints
+    grace_minutes: 15
+    description: "Constraints check gate expected within 15 min of run start"
+
+  - gate_type: ci
+    grace_minutes: 30
+    description: "CI gate expected within 30 min of run start"
+
+  - gate_type: verifier
+    grace_minutes: 60
+    description: "Verifier gate expected within 60 min of run start"

@@ -1,0 +1,23 @@
+{
+  "name": "lead-gen",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "ENVIRONMENT": "production"
+  },
+  "triggers": {
+    "crons": ["0 10 * * *"]
+  },
+  "queues": {
+    "producers": [
+      {
+        "binding": "LEAD_GEN_QUEUE",
+        "queue": "factory-lead-gen-queue"
+      }
+    ]
+  }
+}

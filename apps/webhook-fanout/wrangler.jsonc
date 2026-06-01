@@ -1,0 +1,88 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // webhook-fanout — Stripe → PostHog/factory_events + Resend fan-out Worker
+  // Deployed at: https://webhooks.latwoodtech.work/stripe
+  // Issue: Latimer-Woods-Tech/factory#641
+  "name": "webhook-fanout",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": {
+    "enabled": true
+  },
+
+  // NOTE: Provision the KV namespace before first deploy:
+  //   wrangler kv namespace create webhook-fanout-idempotency
+  //   wrangler kv namespace create webhook-fanout-idempotency --preview
+  // Then replace the placeholder IDs below with the real namespace IDs.
+  "kv_namespaces": [
+    {
+      "binding": "IDEMPOTENCY_KV",
+      "id": "eb85796a56304eaebd4a269ee6965b7c",
+      "preview_id": "b71c5823855c42598f32cb67f167c3e3"
+    }
+  ],
+
+  // NOTE: FACTORY_CORE_API_URL must point to factory-core-api's branded custom
+  // domain (assigned in the Phase A deploy-targeting step; never a *.workers.dev
+  // URL per CLAUDE.md). Update the placeholder below to the real domain.
+  "vars": {
+    "ENVIRONMENT": "development",
+    "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
+    "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com",
+    "FACTORY_CORE_API_URL": "https://core.latwoodtech.work"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "FACTORY_EVENTS_DB",
+      "database_name": "factory-events",
+      "database_id": "c4823386-8860-490b-88da-187fbb4aba84"
+    }
+  ],
+
+  // Required secrets (set via `wrangler secret put <NAME>` or org-level GitHub secrets):
+  //   STRIPE_WEBHOOK_SECRET        — from Stripe dashboard after endpoint registration
+  //   POSTHOG_KEY                  — PostHog project API key
+  //   RESEND_API_KEY               — Resend API key
+  //   GH_WEBHOOK_SECRET            — GitHub webhook HMAC secret (X-Hub-Signature-256)
+  //   FACTORY_CORE_API_INGEST_KEY  — gate-ingest service key; must equal
+  //                                  factory-core-api's WEBHOOK_FANOUT_INGEST_KEY
+  // Optional secrets:
+  //   SLACK_WEBHOOK_URL            — Slack incoming webhook for landing-page contact intake
+
+  "env": {
+    "production": {
+      "name": "webhook-fanout",
+      "routes": [
+        {
+          "pattern": "webhooks.latwoodtech.work",
+          "custom_domain": true
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "IDEMPOTENCY_KV",
+          "id": "eb85796a56304eaebd4a269ee6965b7c"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "RESEND_FROM": "Factory <noreply@latwoodtech.com>",
+        "CONTACT_NOTIFY_EMAIL": "aperry@latwoodtech.com",
+        "FACTORY_CORE_API_URL": "https://core.latwoodtech.work"
+      },
+      "d1_databases": [
+        {
+          "binding": "FACTORY_EVENTS_DB",
+          "database_name": "factory-events",
+          "database_id": "c4823386-8860-490b-88da-187fbb4aba84"
+        }
+      ]
+    }
+  }
+}
+

@@ -12,6 +12,17 @@ import { fetchSentryErrors } from './sections/sentry';
 import { synthesizeAndStore } from './render/tts';
 import { buildEmailHtml } from './render/email';
 
+const BRIEF_TIME_ZONE = 'America/New_York';
+
+export function getBriefDateKey(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: BRIEF_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 /**
  * Top-level orchestrator. Gathers all data sections, runs the LLM,
  * generates TTS audio, and fires the email to all recipients.
@@ -31,22 +42,22 @@ import { buildEmailHtml } from './render/email';
  */
 export async function runDailyBrief(env: Env): Promise<void> {
   const now = new Date();
-  const isoDate = now.toISOString().slice(0, 10);
+  const briefDateKey = getBriefDateKey(now);
   const dateLabel = now.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: 'America/New_York',
+    timeZone: BRIEF_TIME_ZONE,
   });
 
   // R2 dedup guard — prevents duplicate sends on manual re-runs or cron double-fires.
   // R2.head() returns null when the key doesn't exist; any error (permissions, etc.)
   // is treated as "not yet sent" so the brief proceeds rather than silently skipping.
-  const sentMarkerKey = `briefs/${isoDate}-sent.json`;
+  const sentMarkerKey = `briefs/${briefDateKey}-sent.json`;
   const alreadySent = await env.AUDIO_BUCKET.head(sentMarkerKey).catch(() => null);
   if (alreadySent !== null) {
-    console.warn(`[daily-brief] skipping — brief for ${isoDate} already sent`);
+    console.warn(`[daily-brief] skipping — brief for ${briefDateKey} already sent`);
     return;
   }
 
@@ -84,6 +95,9 @@ export async function runDailyBrief(env: Env): Promise<void> {
     news: safeNews,
     activity: safeActivity,
     health: safeHealth,
+    stripeMrr: safeStripeMrr,
+    postHog: safePostHog,
+    sentry: safeSentry,
     env,
     dateLabel,
   });
@@ -95,7 +109,7 @@ export async function runDailyBrief(env: Env): Promise<void> {
   // connection consuming Worker CPU budget.
   const audioUrl = await synthesizeAndStore({
     text: insights.narration,
-    dateLabel: isoDate,
+    dateLabel: briefDateKey,
     env,
   }).catch(() => null);
 
@@ -120,8 +134,8 @@ export async function runDailyBrief(env: Env): Promise<void> {
 
   const emailClient = createEmailClient({
     resendApiKey: env.RESEND_API_KEY,
-    fromAddress: 'brief@apunlimited.com',
-    fromName: 'Daily Brief',
+    fromAddress: env.RESEND_FROM_ADDRESS,
+    fromName: env.RESEND_FROM_NAME,
   });
 
   /**

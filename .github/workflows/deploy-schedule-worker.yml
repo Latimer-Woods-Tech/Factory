@@ -20,18 +20,17 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     name: Deploy schedule-worker to Cloudflare
-    
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
-
+          node-version-file: .nvmrc
       - name: Build local package dependencies
         run: |
           set -euo pipefail
@@ -55,25 +54,57 @@ jobs:
           echo "✅ Updated wrangler.jsonc with Hyperdrive ID"
           cat wrangler.jsonc
 
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          workingDirectory: apps/schedule-worker
-          command: deploy --env production
-          secrets: |
-            WORKER_API_TOKEN
-          environment: production
+      - name: Install Sentry CLI
+        run: npm install -g @sentry/cli
+
+      - name: Build worker bundle (dry-run for Sentry sourcemaps)
+        working-directory: apps/schedule-worker
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          mkdir -p .sentry-dist
+          npx wrangler deploy --env production --dry-run --outdir .sentry-dist
+
+      - name: Inject Sentry debug IDs into bundle
+        working-directory: apps/schedule-worker
+        run: sentry-cli sourcemaps inject .sentry-dist/
+
+      - name: Upload sourcemaps to Sentry
+        working-directory: apps/schedule-worker
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.FACTORY_SENTRY_API }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG || 'latwood-tech' }}
+        run: |
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "::warning::FACTORY_SENTRY_API missing; sourcemap upload skipped"
+            exit 0
+          fi
+          if ! sentry-cli sourcemaps upload \
+            --project schedule-worker \
+            .sentry-dist/; then
+            echo "::warning::Sentry sourcemap upload failed; continuing deployment"
+          fi
+
+      - name: Provision secrets and deploy to Cloudflare Workers
+        working-directory: apps/schedule-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$WORKER_API_TOKEN" | npx wrangler secret put WORKER_API_TOKEN --env production
+          BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
+          echo "Deploying pre-built bundle: $BUILT_FILE"
+          npx wrangler deploy --no-bundle "$BUILT_FILE" --env production
 
       - name: Verify deployment
         run: |
           echo "🚀 Deployment complete"
-          echo "📍 Health check: https://schedule-worker.adrper79.workers.dev/health"
+          echo "📍 Health check: https://schedule.latwoodtech.work/health"
           node scripts/verify-http-endpoint.mjs \
-            --url https://schedule-worker.adrper79.workers.dev/health \
+            --url https://schedule.latwoodtech.work/health \
             --status 200 \
             --json-field status \
             --json-equals ok \

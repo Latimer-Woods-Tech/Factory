@@ -1,0 +1,296 @@
+# =============================================================================
+# Project Sync — unified GitHub Project board automation. Closes #540.
+#
+# Replaces 5 workflows that previously competed on the same Project board:
+#   - auto-add-to-project.yml
+#   - project-board-sync.yml
+#   - project-status-sync.yml
+#   - pr-triage.yml
+#   - auto-triage.yml
+#
+# Design notes:
+#   - One workflow → one run-log per event → unified observability.
+#   - Per-job (not workflow-level) bot/Copilot gates. Copilot PRs MUST receive
+#     triage labels and must be added to the board (per #540 CRITICAL concern).
+#   - Project queries use projectItems(first: 10) per content node — DO NOT
+#     regress to items(first: 100) full-board scan.
+#   - Token: factory-cross-repo App (short-lived), per repo standard.
+#
+# Project ID PVT_kwDOEL0sNc4BWWtg is org-specific to LatWood Operations.
+# =============================================================================
+name: Project Sync
+
+on:
+  issues:
+    types: [opened, reopened, assigned, labeled, unlabeled, closed]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, reopened, ready_for_review, synchronize, closed]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * *"   # daily reconcile (was project-board-sync.yml)
+
+# Per-event concurrency: bursts of issue/PR webhooks otherwise queue redundant
+# reconciles. Cancel-in-progress drops obsolete runs from the same item.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # ISSUE TRIAGE — classify + label new/reopened issues. Runs for ALL
+  # authors (humans, Copilot, dependabot) so triage labels are always present.
+  # ─────────────────────────────────────────────────────────────────────────
+  issue-triage:
+    if: github.event_name == 'issues' && (github.event.action == 'opened' || github.event.action == 'reopened')
+    name: Issue triage (auto-triage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Run auto-triage
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/auto-triage.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # PR TRIAGE — apply author/path-based labels. Runs for ALL authors,
+  # including Copilot (per #540 CRITICAL concern: do NOT skip bot PRs).
+  # ─────────────────────────────────────────────────────────────────────────
+  pr-triage:
+    if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
+    name: PR triage labels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Apply triage labels
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/pr-triage.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # ISSUE LIFECYCLE → BOARD
+  # opened/reopened: add card + (opened only) auto-assign Copilot
+  # assigned: → In Progress
+  # closed: → Done
+  # ─────────────────────────────────────────────────────────────────────────
+  issue-lifecycle:
+    if: |
+      github.event_name == 'issues' && (
+        github.event.action == 'opened' ||
+        github.event.action == 'reopened' ||
+        github.event.action == 'assigned' ||
+        github.event.action == 'closed'
+      )
+    name: Sync issue lifecycle to board
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Compute event kind
+        id: kind
+        run: |
+          case "${{ github.event.action }}" in
+            opened)   echo "kind=issue.opened"   >> "$GITHUB_OUTPUT" ;;
+            reopened) echo "kind=issue.reopened" >> "$GITHUB_OUTPUT" ;;
+            assigned) echo "kind=issue.assigned" >> "$GITHUB_OUTPUT" ;;
+            closed)   echo "kind=issue.closed"   >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Sync to project board
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_KIND: ${{ steps.kind.outputs.kind }}
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+        run: node .github/scripts/project-sync.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # ISSUE LABEL EVENTS → BOARD FIELDS
+  # status:* labels → Status field
+  # agent:claimed:* labels → Agent text field
+  # ─────────────────────────────────────────────────────────────────────────
+  issue-label-status:
+    if: |
+      github.event_name == 'issues' &&
+      github.event.action == 'labeled' &&
+      startsWith(github.event.label.name, 'status:')
+    name: Status label → board
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_KIND: issue.labeled.status
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          LABEL_NAME: ${{ github.event.label.name }}
+        run: node .github/scripts/project-sync.mjs
+
+  issue-label-agent:
+    if: |
+      github.event_name == 'issues' &&
+      (github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
+      startsWith(github.event.label.name, 'agent:claimed:')
+    name: Agent label → board
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_KIND: issue.labeled.agent
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          LABEL_ACTION: ${{ github.event.action }}
+        run: node .github/scripts/project-sync.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # /status COMMENT → BOARD STATUS
+  # Accepts both human and bot comments so automation can drive board state.
+  # ─────────────────────────────────────────────────────────────────────────
+  comment-status:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.action == 'created' &&
+      startsWith(github.event.comment.body, '/status')
+    name: /status comment → board
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_KIND: issue_comment.status
+          REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: node .github/scripts/project-sync.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # PR LIFECYCLE → BOARD
+  # opened/reopened/ready_for_review: add PR card + → In Progress, also move
+  #   linked issues to In Progress.
+  # synchronize: just ensure card exists (don't override status).
+  # closed (any): → Done; if merged: also propagate Deploy SHA + Done to
+  #   linked issues.
+  # ─────────────────────────────────────────────────────────────────────────
+  pr-lifecycle:
+    if: github.event_name == 'pull_request'
+    name: Sync PR lifecycle to board
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Compute event kind
+        id: kind
+        run: |
+          case "${{ github.event.action }}" in
+            opened)            echo "kind=pr.opened"            >> "$GITHUB_OUTPUT" ;;
+            reopened)          echo "kind=pr.reopened"          >> "$GITHUB_OUTPUT" ;;
+            ready_for_review)  echo "kind=pr.ready_for_review"  >> "$GITHUB_OUTPUT" ;;
+            synchronize)       echo "kind=pr.synchronize"       >> "$GITHUB_OUTPUT" ;;
+            closed)            echo "kind=pr.closed"            >> "$GITHUB_OUTPUT" ;;
+            *)                 echo "kind=skip"                  >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Sync to project board
+        if: steps.kind.outputs.kind != 'skip'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_KIND: ${{ steps.kind.outputs.kind }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NODE_ID: ${{ github.event.pull_request.node_id }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: node .github/scripts/project-sync.mjs
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # DAILY RECONCILE — close drift between repo state and board state.
+  # ─────────────────────────────────────────────────────────────────────────
+  reconcile:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: Daily board reconcile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_KIND: reconcile
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/project-sync.mjs

@@ -1,5 +1,15 @@
 /**
- * Remotion render entry point — invoked by the GitHub Actions render workflow.
+ * Remotion render entry point — invoked by the scheduled-content render
+ * workflow (`.github/workflows/render-video.yml`).
+ *
+ * Bundles this app's `Root.tsx` (which registers the scheduled-content
+ * compositions — Marketing / Training / Walkthrough — plus the shared
+ * EnergyBlueprintVideo imported from `@latimer-woods-tech/video-studio`) and
+ * renders an MP4.
+ *
+ * Per-user *personal* blueprint renders run on the Cloud Run render service
+ * (Wave 2) via the package's own `render.ts`; this app entrypoint stays for the
+ * genuinely different scheduled-content workload.
  *
  * Usage:
  *   node -r ts-node/register src/render.ts \
@@ -7,8 +17,9 @@
  *     --props '{"appId":"prime_self","topic":"Q4 launch",...}' \
  *     --output /tmp/output.mp4
  *
- * Environment variables required:
- *   COMPOSITION_ID  — One of: MarketingVideo, TrainingVideo, WalkthroughVideo
+ * Environment variables (fallback when the matching flag is absent):
+ *   COMPOSITION_ID  — One of: MarketingVideo, TrainingVideo, WalkthroughVideo,
+ *                     EnergyBlueprintVideo
  *   PROPS_JSON      — JSON-encoded composition props
  *   OUTPUT_PATH     — Absolute path for the rendered MP4
  */
@@ -18,22 +29,22 @@ import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 
 // ---------------------------------------------------------------------------
-// CLI argument parsing
+// CLI / env argument parsing
 // ---------------------------------------------------------------------------
 
-function getArg(flag: string): string {
-  const args = process.argv.slice(2);
-  const idx = args.indexOf(flag);
-  if (idx === -1 || idx + 1 >= args.length) {
-    throw new Error(`Missing argument: ${flag}`);
-  }
-  return args[idx + 1] as string;
-}
-
+/** Read a required env var, throwing a clear error when unset. */
 function getEnv(key: string): string {
   const val = process.env[key];
   if (!val) throw new Error(`Missing environment variable: ${key}`);
   return val;
+}
+
+/** Return the value following `flag` in argv, or `null` if absent. */
+function flagOrNull(flag: string): string | null {
+  const args = process.argv.slice(2);
+  const idx = args.indexOf(flag);
+  if (idx === -1 || idx + 1 >= args.length) return null;
+  return args[idx + 1] ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,13 +52,9 @@ function getEnv(key: string): string {
 // ---------------------------------------------------------------------------
 
 async function render(): Promise<void> {
-  // Prefer CLI flags; fall back to env vars for workflow compatibility
-  const compositionId =
-    flagOrNull('--composition') ?? getEnv('COMPOSITION_ID');
-  const propsJson =
-    flagOrNull('--props') ?? getEnv('PROPS_JSON');
-  const outputPath =
-    flagOrNull('--output') ?? getEnv('OUTPUT_PATH');
+  const compositionId = flagOrNull('--composition') ?? getEnv('COMPOSITION_ID');
+  const propsJson = flagOrNull('--props') ?? getEnv('PROPS_JSON');
+  const outputPath = flagOrNull('--output') ?? getEnv('OUTPUT_PATH');
 
   console.log(`[render] Composition: ${compositionId}`);
   console.log(`[render] Output: ${outputPath}`);
@@ -59,7 +66,6 @@ async function render(): Promise<void> {
     throw new Error(`Invalid JSON in props: ${propsJson}`);
   }
 
-  // Bundle the Remotion project
   const entry = path.resolve(__dirname, 'Root.tsx');
   console.log(`[render] Bundling ${entry}…`);
 
@@ -70,7 +76,6 @@ async function render(): Promise<void> {
 
   console.log(`[render] Bundle ready at ${bundleLocation}`);
 
-  // Select the composition
   const composition = await selectComposition({
     serveUrl: bundleLocation,
     id: compositionId,
@@ -81,7 +86,6 @@ async function render(): Promise<void> {
     `[render] Rendering ${String(composition.durationInFrames)} frames at ${String(composition.fps)} fps…`,
   );
 
-  // Render to MP4
   await renderMedia({
     composition,
     serveUrl: bundleLocation,
@@ -95,13 +99,6 @@ async function render(): Promise<void> {
 
   process.stdout.write('\n');
   console.log(`[render] Done → ${outputPath}`);
-}
-
-function flagOrNull(flag: string): string | null {
-  const args = process.argv.slice(2);
-  const idx = args.indexOf(flag);
-  if (idx === -1 || idx + 1 >= args.length) return null;
-  return args[idx + 1] ?? null;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,49 @@
+{
+  "briefKey": "user-guide-first-look-at-your-blueprint",
+  "key": "user-guide-first-look-at-your-blueprint",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "user-guide",
+  "title": "Your First Look at Your Blueprint",
+  "description": "The moment your Energy Blueprint appears, and the first map of your architecture comes into view.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Your First Look at Your Blueprint",
+  "learningGoal": "User has just generated their first Energy Blueprint and can orient themselves on the body graph without overwhelm.",
+  "targetPersona": "new_user",
+  "keyPoints": [
+    "The body graph is a map of your energetic architecture, drawn from your birth moment",
+    "Nine centers show how energy enters, transforms, and leaves your system",
+    "Channels are the consistent traits your design carries; gates are the entry points",
+    "You do not need to understand all of it at once — choose one center and stay with it"
+  ],
+  "forbiddenClaims": [
+    "scientifically proven",
+    "predict your future",
+    "guaranteed accuracy",
+    "replaces self-knowledge"
+  ],
+  "toneNotes": "Calm and orienting. The viewer is staring at something they have never seen before. Slow down. Give permission to not understand everything.",
+  "narration_script": "What you are looking at is a map of your energetic architecture.\n\nIt was drawn from one specific moment. The hour and the place of your birth. The planets in the sky at that instant. Translated, line by line, into the body graph in front of you.\n\nNine centers. Each one a station where a particular kind of energy is processed. Defined centers, shown in color, carry a consistent signal. They are where you reliably broadcast. Undefined centers, shown empty, are open to the field around you. They are where you receive, sample, and become wise about that energy over time.\n\nThe lines between centers are channels. When a channel is fully colored, you carry that trait as a constant. It is part of how you show up, every day, whether you notice it or not.\n\nThe small numbers around the edge are gates. Sixty-four of them, mirroring the I Ching. Each one is an entry point for a specific theme into your design.\n\nDo not try to read everything at once.\n\nChoose one center. Look at whether it is colored or open. Sit with that single fact for a moment. Then come back tomorrow.\n\nYour blueprint will still be here. So will you.",
+  "script": "What you are looking at is a map of your energetic architecture.\n\nIt was drawn from one specific moment. The hour and the place of your birth. The planets in the sky at that instant. Translated, line by line, into the body graph in front of you.\n\nNine centers. Each one a station where a particular kind of energy is processed. Defined centers, shown in color, carry a consistent signal. They are where you reliably broadcast. Undefined centers, shown empty, are open to the field around you. They are where you receive, sample, and become wise about that energy over time.\n\nThe lines between centers are channels. When a channel is fully colored, you carry that trait as a constant. It is part of how you show up, every day, whether you notice it or not.\n\nThe small numbers around the edge are gates. Sixty-four of them, mirroring the I Ching. Each one is an entry point for a specific theme into your design.\n\nDo not try to read everything at once.\n\nChoose one center. Look at whether it is colored or open. Sit with that single fact for a moment. Then come back tomorrow.\n\nYour blueprint will still be here. So will you.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "What you are looking at is a map of your energetic architecture.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Nine centers. Defined centers, shown in color, carry a consistent signal. Undefined centers, shown empty, are open to the field around you.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "Channels are the consistent traits your design carries. Gates are the entry points for sixty-four themes drawn from the I Ching.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Map", "Center", "Recognition"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "Choose one center. Sit with that single fact. Your blueprint will still be here tomorrow.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Your First Look at Your Energy Blueprint",
+    "description": "A calm walkthrough of the body graph the moment it appears. Centers, channels, gates — and permission to take it slowly."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

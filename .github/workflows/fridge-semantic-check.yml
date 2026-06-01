@@ -1,0 +1,126 @@
+# =============================================================================
+# FRIDGE Semantic Check — Phase 5 of the workflow lifecycle.
+#
+# Judgment proxy for the button-presser CODEOWNER model. On every PR
+# touching Red-tier paths, asks an LLM to evaluate compliance with the 5
+# FRIDGE rules that require code-semantic judgment (rules 1, 2, 4, 6, 8).
+#
+# V1 — ADVISORY MODE:
+#   - Single model (Anthropic Claude Haiku 4.5)
+#   - Posts a structured comment on the PR with per-rule verdicts
+#   - Does NOT block merge; Pushover P2 on any `fail` so operator notices
+#   - Comment is deduped — synchronize events edit the existing comment in place
+#
+# V2 (future) — ENFORCEMENT:
+#   - Add Grok as second model (2-party consensus)
+#   - Promote to required check; `fail` blocks merge
+#
+# DEFENSES INHERITED (see docs/decisions/2026-05-23-governance-of-governance.md)
+#   #1 Kill switch       — first action: if .github/automation-paused exists, exit 0
+#   #2 External alerting — Pushover P2 on `fail` outcome only (avoids fatigue)
+#   #3 Bounded blast     — `permissions:` below is minimum-viable;
+#                          script source is scanned for forbidden subcommands
+#                          (see fridge-semantic-check.test.mjs blast-radius tests)
+#   #4 Monthly audit     — FRIDGE_AUDIT: log lines rolled up monthly
+# =============================================================================
+name: FRIDGE Semantic Check
+
+on:
+  pull_request_target:
+    # Only trigger on PRs that touch Red-tier paths (per .github/CODEOWNERS).
+    # Other PRs skip cleanly — saves LLM cost + reviewer noise.
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - '.github/workflows/**'
+      - '.github/CODEOWNERS'
+      - '.github/settings.yml'
+      - 'packages/**'
+      - 'migrations/**'
+      - 'workers/src/db/migrations/**'
+      - '**/handlers/billing*'
+      - '**/handlers/admin*'
+      - '**/handlers/stripe*'
+      - 'wrangler.jsonc'
+      - 'wrangler.toml'
+      - 'apps/*/wrangler.jsonc'
+      - 'capabilities.yml'
+      - 'apps/*/capabilities.yml'
+      - 'docs/service-registry.yml'
+      - 'apps/supervisor/**'
+      - 'docs/supervisor/plans/**'
+      - 'docs/supervisor/FRIDGE.md'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to check'
+        required: true
+      dry_run:
+        description: 'Dry-run: produce comment body but do not post / page'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: fridge-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+# BOUNDED BLAST RADIUS — minimum-viable permissions.
+# - contents: read         → read PR diff + repo
+# - pull-requests: write   → post / edit one comment on the PR
+# Notably absent: actions:write, contents:write, issues:write (issues:write
+# would let us open issues; we don't need that — we comment on the PR itself).
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    # Skip drafts (don't waste LLM cost on work-in-progress PRs).
+    # Skip if the PR is from a non-CODEOWNER author until they're trusted
+    # (we don't want to leak FRIDGE rule details to external authors via
+    # the structured prompt — the rules themselves are public, but the
+    # explicit "look for FRIDGE-rule-N-ack" guidance gives a recipe for
+    # bypass to anyone clever enough to read CI logs).
+    if: |
+      !github.event.pull_request.draft &&
+      (
+        github.event.pull_request.user.login == 'adrper79-dot' ||
+        endsWith(github.event.pull_request.user.login, '[bot]')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Base-branch checkout — never run script from PR head (defends against
+      # an attacker modifying the script in their own PR).
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+
+      - name: Run FRIDGE semantic check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # PR-scoped token from pull_request_target
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          FRIDGE_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node .github/scripts/fridge-semantic-check.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### FRIDGE Semantic Check"
+            echo ""
+            echo "- PR: #${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Dry run: ${{ env.FRIDGE_DRY_RUN || 'false' }}"
+            echo ""
+            echo "Mode: V1 advisory (does not block merge). See log for FRIDGE_AUDIT: lines."
+          } >> "$GITHUB_STEP_SUMMARY"

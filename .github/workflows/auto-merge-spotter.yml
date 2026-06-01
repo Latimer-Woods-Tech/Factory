@@ -1,0 +1,84 @@
+name: Auto-Merge Spotter
+
+# Strict required-status-checks + branch protection means an APPROVED PR
+# with auto-merge enabled goes BEHIND main the moment a predecessor lands,
+# and GitHub's auto-merge does NOT auto-rebase. Without this spotter, the
+# queue stalls and a human has to run `gh pr update-branch` repeatedly.
+#
+# Scope: ONLY PRs that have auto-merge already enabled (someone made an
+# affirmative choice) AND are in BEHIND state. DIRTY / CONFLICTING PRs are
+# left alone — those need real human attention.
+on:
+  schedule:
+    - cron: '5 * * * *' # hourly (was */10) — cost trim; native auto-merge handles fast path
+  workflow_dispatch:
+
+concurrency:
+  group: auto-merge-spotter
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  nudge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Mint Factory App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - name: Update-branch BEHIND auto-merge PRs
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          # Pull every open non-draft PR with auto-merge enabled.
+          # mergeStateStatus = BEHIND means "up to date on review/checks but
+          # branch is behind base"; gh pr update-branch is the exact fix.
+          mapfile -t prs < <(
+            gh pr list \
+              --repo Latimer-Woods-Tech/Factory \
+              --state open \
+              --limit 50 \
+              --json number,isDraft,autoMergeRequest,mergeStateStatus \
+              --jq '.[]
+                    | select(.isDraft == false
+                        and .autoMergeRequest != null
+                        and .mergeStateStatus == "BEHIND")
+                    | .number'
+          )
+
+          if [ ${#prs[@]} -eq 0 ]; then
+            echo "No BEHIND auto-merge PRs."
+            exit 0
+          fi
+
+          echo "Nudging ${#prs[@]} PR(s): ${prs[*]}"
+          fail=0
+          for pr in "${prs[@]}"; do
+            if gh pr update-branch "$pr" --repo Latimer-Woods-Tech/Factory; then
+              echo "  ok  #$pr"
+            else
+              # update-branch races against in-flight CI runs (the PR can flip
+              # away from BEHIND between our list call and the update). Treat
+              # any single failure as a skip — the next 10-min tick retries.
+              echo "  skip #$pr (likely race / conflict / merged)"
+              fail=$((fail + 1))
+            fi
+          done
+
+          # Hard-cap pattern: if everything failed, surface it so a noisy
+          # broken loop is visible in the Actions UI.
+          if [ "$fail" -eq "${#prs[@]}" ] && [ "${#prs[@]}" -gt 1 ]; then
+            echo "::warning::All ${#prs[@]} nudges failed; spotter may be misconfigured."
+            exit 1
+          fi

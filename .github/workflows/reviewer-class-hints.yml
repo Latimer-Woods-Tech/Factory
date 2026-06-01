@@ -8,15 +8,22 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   pull-requests: write
   contents: read
 
 jobs:
   hint:
+    # Run for humans and for Dependabot — dependency PRs deserve the same
+    # sensitive-path hint comment as human PRs. Other bots are still excluded.
+    if: ${{ github.event.sender.type != 'Bot' || github.actor == 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -99,7 +106,7 @@ jobs:
           - ❌ Never auto-merge; human must confirm after bot approval
 
           **Red-tier checks (hardcoded):**
-          - Actions injection safety (no \`\${{ github.event.*.body }}\` in \`run:\` steps)
+          - Actions injection safety (don't reference issue/PR/comment body fields from \`github.event\` directly in \`run:\` steps — pass them through an env var first)
           - Migration reversibility
           - Billing idempotency
           - CODEOWNERS self-modification guard"

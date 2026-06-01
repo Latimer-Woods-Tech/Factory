@@ -1,0 +1,21 @@
+{
+  "name": "lead-gen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@latimer-woods-tech/errors": "workspace:*",
+    "@latimer-woods-tech/llm": "workspace:*",
+    "@latimer-woods-tech/logger": "workspace:*",
+    "hono": "^4.12.18"
+  },
+  "devDependencies": {
+    "@latimer-woods-tech/tsconfig-base": "workspace:*",
+    "wrangler": "^3.0.0"
+  }
+}

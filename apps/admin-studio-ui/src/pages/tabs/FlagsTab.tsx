@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api.js';
 import { useSession } from '../../stores/session.js';
+import { LastUpdated } from '../../components/LastUpdated.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -125,6 +126,8 @@ export function FlagsTab() {
   const [flags, setFlags] = useState<FlagRow[]>([]);
   const [flagsErr, setFlagsErr] = useState<string | null>(null);
   const [flagsLoading, setFlagsLoading] = useState(true);
+  const [flagsUpdatedAt, setFlagsUpdatedAt] = useState<number | null>(null);
+  const [flagsRefreshing, setFlagsRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<FlagType | ''>('');
   const [statusFilter, setStatusFilter] = useState<FlagStatus | ''>('');
@@ -144,14 +147,17 @@ export function FlagsTab() {
 
   const loadFlags = useCallback(async () => {
     setFlagsLoading(true);
+    setFlagsRefreshing(true);
     setFlagsErr(null);
     try {
       const data = await apiFetch<FlagsListResponse>('/api/flags');
       setFlags(data.flags);
+      setFlagsUpdatedAt(Date.now());
     } catch (e) {
       setFlagsErr((e as Error).message);
     } finally {
       setFlagsLoading(false);
+      setFlagsRefreshing(false);
     }
   }, []);
 
@@ -175,6 +181,8 @@ export function FlagsTab() {
   useEffect(() => {
     void loadFlags();
     void loadActivity();
+    const t = setInterval(() => void loadFlags(), 60_000);
+    return () => clearInterval(t);
   }, [loadFlags, loadActivity]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -262,9 +270,12 @@ export function FlagsTab() {
 
       {/* ── Flag list ─────────────────────────────────────────────────────── */}
       <section>
-        <h3 className="mb-3 text-sm font-medium text-slate-300">
-          Flag Registry {flags.length > 0 && <span className="ml-1 text-slate-500">({flags.length})</span>}
-        </h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-medium text-slate-300">
+            Flag Registry {flags.length > 0 && <span className="ml-1 text-slate-500">({flags.length})</span>}
+          </h3>
+          <LastUpdated at={flagsUpdatedAt} isRefreshing={flagsRefreshing} onRefresh={() => void loadFlags()} />
+        </div>
 
         {/* Filters */}
         <div className="mb-3 flex flex-wrap gap-2">
@@ -273,7 +284,7 @@ export function FlagsTab() {
             placeholder="Search key or description…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
+            className="rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-base md:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-600"
           />
           <select
             value={typeFilter}
@@ -379,7 +390,7 @@ export function FlagsTab() {
                                 onChange={(e) =>
                                   setRolloutInputs((prev) => ({ ...prev, [flag.key]: e.target.value }))
                                 }
-                                className="w-16 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-xs text-slate-200 focus:outline-none"
+                                className="w-16 rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-base md:text-xs text-slate-200 focus:outline-none"
                               />
                               <button
                                 onClick={() => void handleRollout(flag.key)}

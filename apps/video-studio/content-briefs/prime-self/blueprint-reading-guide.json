@@ -5,10 +5,10 @@
   "learningGoal": "User can identify the 9 centers on their body graph and understand which are defined vs undefined.",
   "targetPersona": "new_user",
   "keyPoints": [
-    "Your body graph is the geometric figure in the center of your Free Energy Blueprint — it shows your 9 energy centers",
+    "Your body graph is the geometric figure in the center of your Free Energy Blueprint \u2014 it shows your 9 energy centers",
     "A colored center means it is Defined: you have a consistent, reliable source of that energy",
     "A white center means it is Undefined: you are open to receiving and amplifying that energy from your environment",
-    "Find your Throat Center — the center at the top of the diamond shape — this governs how you communicate and manifest",
+    "Find your Throat Center \u2014 the center at the top of the diamond shape \u2014 this governs how you communicate and manifest",
     "Defined centers are your strengths and consistent gifts; undefined centers are where you are most adaptive and wise"
   ],
   "forbiddenClaims": [
@@ -17,6 +17,33 @@
     "this determines your personality completely"
   ],
   "toneNotes": "Visual and pedagogical. The viewer is looking at their chart while watching. Each keyPoint references a specific visual element. Be spatial and precise.",
+  "script": "The bodygraph is not a chart you learn to read.\n\nIt is a map of what you already are.\n\nNine geometric shapes arranged in a precise architecture \u2014 the nine energy centers of the Human Design system. Each governs a different domain of life. The Head holds mental pressure. The Ajna processes it into thought. The Throat brings it into expression. The G Center holds identity and direction. The Heart carries willpower. The Solar Plexus navigates emotion. The Sacral generates life force. The Spleen holds intuition. The Root manages pressure and timing.\n\nWhen a center is defined \u2014 filled in, colored \u2014 it means you carry consistent energy there. A reliable presence others can feel. When a center is undefined \u2014 white, open \u2014 it means you take in that energy from others, amplify it, and release it. You are designed to be wise about the domain that center governs, not to own it.\n\nThe channels that connect the centers \u2014 the lines running between them \u2014 are the paths your energy actually travels. A complete channel, defined at both ends, becomes a consistent quality in you. Something reliable. A gift you carry whether or not you are conscious of it.\n\nYour chart is not a limitation. It is an accurate description of the instrument you arrived as.\n\nWhat does yours say?",
+  "renderPlan": {
+    "durationSeconds": 90,
+    "steps": [
+      "Locate the bodygraph",
+      "Identify the nine centers",
+      "Compare colored and white centers",
+      "Follow the connecting channels",
+      "Return to your own chart"
+    ],
+    "visualBeats": [
+      "Show a full bodygraph with the nine centers visible",
+      "Spotlight defined centers with concise labels",
+      "Spotlight undefined centers without implying weakness",
+      "Trace one complete channel between two centers",
+      "End on the viewer's own Blueprint as the reference point"
+    ]
+  },
   "brandColor": "#8B5CF6",
-  "brandAccent": "#10B981"
+  "brandAccent": "#10B981",
+  "status": "published",
+  "stream_uid": "23fe764aab88f269b972f77f83f941ed",
+  "stream_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/23fe764aab88f269b972f77f83f941ed/manifest/video.m3u8",
+  "thumbnail_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/23fe764aab88f269b972f77f83f941ed/thumbnails/thumbnail.jpg",
+  "duration_seconds": 90,
+  "rendered_at": "2026-05-28",
+  "youtube_url": "https://youtu.be/r4oUjZAETS0",
+  "script_version": "2.0-expanded",
+  "script_word_count": 222
 }

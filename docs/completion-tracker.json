@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-05-25T13:46:06.477816+00:00",
+  "overall_weighted": 0.0,
+  "overall_known": 0.0,
+  "overall_raw": 0.0,
+  "repo_weighted": {
+    "HD": 0.0,
+    "CC": 0.0,
+    "FA": 0.0,
+    "CH": 0.0,
+    "XC": 0.0
+  },
+  "ci_red": [],
+  "smoke_red": [
+    "FA"
+  ],
+  "rows": [],
+  "malformed": []
+}

@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/stripe",
   "version": "0.2.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/stripe"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -30,7 +35,7 @@
     "@latimer-woods-tech/errors": "file:../errors",
     "@latimer-woods-tech/logger": "file:../logger",
     "@latimer-woods-tech/neon": "file:../neon",
-    "hono": "^4.12.14",
+    "hono": "^4.12.18",
     "stripe": "^17.4.0"
   },
   "devDependencies": {

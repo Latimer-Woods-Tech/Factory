@@ -1,0 +1,49 @@
+{
+  "briefKey": "user-guide-working-with-transits",
+  "key": "user-guide-working-with-transits",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "user-guide",
+  "title": "Working With Transits",
+  "description": "Transits are weather, not destiny. How to use the daily view as a light-touch invitation, not a forecast.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 75,
+  "duration_seconds": 75,
+  "topic": "Working With Transits",
+  "learningGoal": "User can open the daily transit view, locate the gates being activated today, and apply one practical gesture without falling into prediction or anxiety loops.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Transits describe the energetic weather of the collective field, not the events of your day",
+    "Transits are invitations to lean in or to witness — never commands",
+    "When a transit touches one of your defined gates, you may feel amplification; when it touches an open center, you may feel pressure",
+    "One grounded gesture is better than ten interpretations"
+  ],
+  "forbiddenClaims": [
+    "predicts what will happen today",
+    "controls outcomes",
+    "guaranteed clarity",
+    "tells you what to do"
+  ],
+  "toneNotes": "Practical and de-mystifying. The viewer has discovered transits and is at risk of treating them like horoscopes. Reframe firmly without dismissing the value.",
+  "narration_script": "Every day, the planets move.\n\nThey travel through the same wheel of sixty-four gates your blueprint was drawn from. As they cross each gate, they activate its theme in the field around you. This is what the daily transit view shows you.\n\nIt is not a forecast. It is weather.\n\nWeather describes the conditions. It does not write the day. A windy afternoon is an invitation — open the window or close it, sail or stay home, lean in or witness. The choice is yours. The wind is just the wind.\n\nWhen a transiting planet activates one of your own defined gates, you may feel that theme amplified. The signal you already carry, broadcast a little louder. When it activates a gate in an open center, you may feel pressure. The field pressing on the place where you receive.\n\nNeither is good or bad. Both are information.\n\nThe practice is light.\n\nOpen the transits once. Notice what gates are active. Notice which ones touch your own chart. Choose one gesture for the day that honors what you see. A conversation. A boundary. A piece of work. A walk.\n\nThen close the screen and live the day.\n\nTransits sharpen perception. They do not replace it. The day is still yours to walk.",
+  "script": "Every day, the planets move.\n\nThey travel through the same wheel of sixty-four gates your blueprint was drawn from. As they cross each gate, they activate its theme in the field around you. This is what the daily transit view shows you.\n\nIt is not a forecast. It is weather.\n\nWeather describes the conditions. It does not write the day. A windy afternoon is an invitation — open the window or close it, sail or stay home, lean in or witness. The choice is yours. The wind is just the wind.\n\nWhen a transiting planet activates one of your own defined gates, you may feel that theme amplified. The signal you already carry, broadcast a little louder. When it activates a gate in an open center, you may feel pressure. The field pressing on the place where you receive.\n\nNeither is good or bad. Both are information.\n\nThe practice is light.\n\nOpen the transits once. Notice what gates are active. Notice which ones touch your own chart. Choose one gesture for the day that honors what you see. A conversation. A boundary. A piece of work. A walk.\n\nThen close the screen and live the day.\n\nTransits sharpen perception. They do not replace it. The day is still yours to walk.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 150, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 300, "text": "Every day, the planets move. This is not a forecast. It is weather.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 480, "text": "Transits travel the same wheel of sixty-four gates your blueprint was drawn from. When they touch your chart, you feel them.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 90, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 480, "text": "Amplification on defined gates. Pressure on open centers. Information, never command.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Weather", "Invitation", "Gesture"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 390, "text": "Open the transits. Choose one gesture. Then close the screen and live the day.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Working With Daily Transits Without Overcomplicating Your Day",
+    "description": "Transits describe the energetic weather, not your destiny. A practical guide to using the daily view as a light-touch reflection."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

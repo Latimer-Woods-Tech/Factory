@@ -20,6 +20,7 @@ on:
 #   SELFPRIME_CONNECTION_STRING
 #   KAIROSCOUNCIL_CONNECTION_STRING
 #   THECALLING_CONNECTION_STRING
+#   XICOCITY_CONNECTION_STRING
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -48,10 +49,12 @@ jobs:
             conn_secret: KAIROSCOUNCIL_CONNECTION_STRING
           - app: the-calling
             conn_secret: THECALLING_CONNECTION_STRING
+          - app: xico-city
+            conn_secret: XICOCITY_CONNECTION_STRING
     steps:
       - name: Generate GitHub App token
         id: app-token
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
@@ -70,7 +73,7 @@ jobs:
           git config user.email "ci@factory.dev"
           git config user.name "Factory CI"
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         if: ${{ github.event.inputs.app == '' || github.event.inputs.app == matrix.app }}
         with:
           node-version: '22'

@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.2.2 — 2026-05-27
+
+### Added (no breaking changes)
+
+- **xAI pricing entries** in `PRICING_UCENTS_PER_MTOK`:
+  - `grok-4.3` — $1.25/$2.50 per MTok (in/out)
+  - `grok-4-fast` — $1.25/$2.50 per MTok (deprecated alias, retained for ledger rows)
+  - `grok-3-mini-latest` — $1.25/$2.50 per MTok (deprecated alias)
+  
+  Prevents `estimateCost()` from returning `$0` when the `fast` tier routes to Grok 4.3.
+- Peer dependency updated: `@latimer-woods-tech/llm ^0.3.3` (was `^0.3.1`).
+- Source attribution comment updated to include `docs.x.ai`.
+
+---
+
+## 0.2.1 — 2026-05-27
+
+### Added (no breaking changes)
+
+- **Missing Anthropic model entries** in `PRICING_UCENTS_PER_MTOK`:
+  - `claude-haiku-4-5-20251001` — same rate as `claude-haiku-4-20250514` ($0.80/$4.00 per MTok)
+  - `claude-sonnet-4-6` — same rate as `claude-sonnet-4-20250514` ($3.00/$15.00 per MTok)
+  - `claude-opus-4-7` — same rate as `claude-opus-4-20250514` ($15.00/$75.00 per MTok)
+  
+  Prevents `estimateCost()` from returning `$0` when callers use these model ID aliases.
+
+---
+
 ## 0.2.0 — 2026-05-05
 
 Per-tenant monthly budget guardrails (closes factory#issue — "Add per-tenant LLM budget guardrails before Practitioner-tier scale").

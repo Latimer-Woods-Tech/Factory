@@ -1,0 +1,97 @@
+{
+  "appId": "prime_self",
+  "library": "feature-guidance",
+  "version": 1,
+  "updatedAt": "2026-05-28",
+  "description": "Seed catalog for Prime Self's landing, feature guidance, and practitioner training videos.",
+  "modules": [
+    {
+      "briefKey": "homepage-welcome",
+      "composition": "MarketingVideo",
+      "audience": "visitor",
+      "area": "landing",
+      "status": "ready",
+      "topic": "See Your Pattern Clearly"
+    },
+    {
+      "briefKey": "platform-overview",
+      "composition": "MarketingVideo",
+      "audience": "new_user",
+      "area": "onboarding",
+      "status": "ready",
+      "topic": "Discover Your Free Energy Blueprint"
+    },
+    {
+      "briefKey": "getting-started-first-week",
+      "composition": "TrainingVideo",
+      "audience": "new_user",
+      "area": "onboarding",
+      "status": "ready",
+      "topic": "Getting Started: Your First Week"
+    },
+    {
+      "briefKey": "energy-type-overview",
+      "composition": "TrainingVideo",
+      "audience": "new_user",
+      "area": "chart",
+      "status": "ready",
+      "topic": "Understanding Your Energy Type"
+    },
+    {
+      "briefKey": "blueprint-reading-guide",
+      "composition": "TrainingVideo",
+      "audience": "new_user",
+      "area": "chart",
+      "status": "ready",
+      "topic": "How to Read Your Body Graph"
+    },
+    {
+      "briefKey": "synthesis-walkthrough",
+      "composition": "WalkthroughVideo",
+      "audience": "new_user",
+      "area": "synthesis",
+      "status": "ready",
+      "topic": "Reading Your Synthesis"
+    },
+    {
+      "briefKey": "daily-transits-guide",
+      "composition": "TrainingVideo",
+      "audience": "returning_user",
+      "area": "transits",
+      "status": "ready",
+      "topic": "Using Daily Transits Without Overcomplicating Your Day"
+    },
+    {
+      "briefKey": "dashboard-saved-blueprints",
+      "composition": "TrainingVideo",
+      "audience": "returning_user",
+      "area": "dashboard",
+      "status": "planned",
+      "topic": "Managing Saved Blueprints From Your Dashboard"
+    },
+    {
+      "briefKey": "sharing-and-exporting-readings",
+      "composition": "TrainingVideo",
+      "audience": "practitioner",
+      "area": "exports",
+      "status": "planned",
+      "topic": "Sharing and Exporting Readings for Clients or Personal Review"
+    },
+    {
+      "briefKey": "session-prep-workflow",
+      "composition": "TrainingVideo",
+      "audience": "practitioner",
+      "area": "sessions",
+      "status": "planned",
+      "topic": "Preparing for a Client Session With Prime Self"
+    },
+    {
+      "briefKey": "practitioner-billing-and-upgrade",
+      "composition": "TrainingVideo",
+      "audience": "practitioner",
+      "area": "billing",
+      "status": "planned",
+      "topic": "Billing, Upgrade, and Practitioner Access Basics"
+    }
+  ]
+}

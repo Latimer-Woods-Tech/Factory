@@ -20,7 +20,13 @@ const MAX_DIFF_CHARS = 28_000;
 const {
   GH_TOKEN,
   ANTHROPIC_API_KEY,
-  ANTHROPIC_MODEL = 'claude-sonnet-4-20250514',
+  // Model A: this canonical review is now ADVISORY (posts COMMENT, never blocks),
+  // so it no longer needs a premium model. Haiku is plenty for a courtesy
+  // violation/architecture signal and is ~4x cheaper than Sonnet ($0.80/$4 vs
+  // $3/$15 per 1M) on the highest-volume LLM call in the system (every PR).
+  // Prompt-caching (anthropic-beta below) further amortizes the system prompt.
+  // Override via the ANTHROPIC_MODEL repo/org var if a deeper review is wanted.
+  ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001',
   GROK_API_KEY,
   GROK_MODEL = 'grok-3',
   PR_NUMBER,
@@ -35,6 +41,14 @@ const {
   TELNYX_API_KEY,
   TELNYX_FROM_NUMBER,
   NOTIFICATION_PHONE,
+  // Optional JSON override for the sensitive-path reviewer-class map.
+  // Shape: Array<{ class: string; label: string; patterns: string[]; reviewers: string[] }>
+  // When set, these entries are merged with (and override) the built-in defaults.
+  REVIEWER_HINTS_MAP,
+  // Factory Core API — ingest gate rows for the Command Center (P2.3).
+  // Both vars are optional; gate writes are best-effort and never block reviews.
+  FACTORY_CORE_API_URL,
+  FACTORY_CORE_API_INGEST_KEY,
 } = process.env;
 
 const MAX_ATTEMPTS = parseInt(MAX_REVIEW_ATTEMPTS, 10);
@@ -145,6 +159,153 @@ function hasAdminMutation(filenames) {
   return filenames.some(f => ADMIN_MUTATION_PATTERNS.some(p => p.test(f)));
 }
 
+// ─── Reviewer-class hints (sensitive path → reviewer class mapping) ───────────
+//
+// Each entry maps a reviewer *class* (a logical group of changes that a specific
+// person/team should always see) to:
+//   - `label`:     Human-readable class name surfaced in the review body
+//   - `patterns`:  RegExp patterns — if any changed file matches, the class fires
+//   - `reviewers`: GitHub handles to request review from when the class fires
+//
+// The built-in map covers the Factory CODEOWNERS trust model. Override or extend
+// by setting REVIEWER_HINTS_MAP in repo/org vars as a JSON array of entries with
+// the same shape (entries are merged; same `class` key wins with the override).
+
+/** @type {Array<{class: string; label: string; patterns: RegExp[]; reviewers: string[]}>} */
+const DEFAULT_REVIEWER_CLASS_MAP = [
+  {
+    class: 'platform',
+    label: '🔧 Platform (CI/CD & shared packages)',
+    patterns: [
+      /^\.github\/workflows\//,
+      /^\.github\/scripts\//,
+      /^packages\//,
+      /^scripts\//,
+      /^skills\//,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'security',
+    label: '🔒 Security (auth, admin & billing paths)',
+    patterns: [
+      /handlers\/(billing|admin|stripe)/,
+      /\/admin\//,
+      /stripe/i,
+      /capabilities\.yml$/,
+      /docs\/supervisor\/(plans|FRIDGE)\//,
+      /apps\/supervisor\//,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'database',
+    label: '🗄️ Database (migrations & schema)',
+    patterns: [
+      /migrations\//,
+      /\/src\/db\//,
+      /drizzle\.config/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'config',
+    label: '⚙️ Config (wrangler & service registry)',
+    patterns: [
+      /wrangler\.(jsonc?|toml)$/,
+      /docs\/service-registry\.yml$/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+  {
+    class: 'governance',
+    label: '📋 Governance (CODEOWNERS & settings)',
+    patterns: [
+      /^\.github\/CODEOWNERS$/,
+      /^\.github\/settings\.yml$/,
+    ],
+    reviewers: [HUMAN_REVIEWER],
+  },
+];
+
+/**
+ * Merge any REVIEWER_HINTS_MAP override into the built-in defaults.
+ * Override entries with a matching `class` key replace the built-in entry;
+ * new class keys are appended.
+ */
+function buildReviewerClassMap() {
+  if (!REVIEWER_HINTS_MAP) return DEFAULT_REVIEWER_CLASS_MAP;
+
+  let overrides;
+  try {
+    overrides = JSON.parse(REVIEWER_HINTS_MAP);
+    if (!Array.isArray(overrides)) throw new Error('Not an array');
+  } catch (err) {
+    console.warn(`[WARN] REVIEWER_HINTS_MAP is not valid JSON — using built-in map. Error: ${err.message}`);
+    return DEFAULT_REVIEWER_CLASS_MAP;
+  }
+
+  const map = DEFAULT_REVIEWER_CLASS_MAP.map(entry => {
+    const override = overrides.find(o => o.class === entry.class);
+    if (!override) return entry;
+    // Convert string patterns to RegExp if the caller passed strings
+    const patterns = [];
+    for (const p of (override.patterns ?? entry.patterns)) {
+      if (p instanceof RegExp) {
+        patterns.push(p);
+        continue;
+      }
+      try {
+        patterns.push(new RegExp(p));
+      } catch {
+        console.warn(`[WARN] REVIEWER_HINTS_MAP: invalid regex pattern "${p}" in class "${entry.class}" — skipping`);
+      }
+    }
+    return { ...entry, ...override, patterns };
+  });
+
+  // Append any new classes from the override
+  for (const o of overrides) {
+    if (!map.find(e => e.class === o.class)) {
+      const patterns = [];
+      for (const p of (o.patterns ?? [])) {
+        if (p instanceof RegExp) {
+          patterns.push(p);
+          continue;
+        }
+        try {
+          patterns.push(new RegExp(p));
+        } catch {
+          console.warn(`[WARN] REVIEWER_HINTS_MAP: invalid regex pattern "${p}" in new class "${o.class}" — skipping`);
+        }
+      }
+      map.push({ ...o, patterns });
+    }
+  }
+
+  return map;
+}
+
+const REVIEWER_CLASS_MAP = buildReviewerClassMap();
+
+/**
+ * Given the list of changed file paths, return the reviewer classes that apply.
+ * Each returned entry includes the matched files for traceability in the review body.
+ *
+ * @param {string[]} filenames
+ * @returns {Array<{class: string; label: string; reviewers: string[]; matchedFiles: string[]}>}
+ */
+function detectSensitivePathReviewers(filenames) {
+  const hits = [];
+  for (const entry of REVIEWER_CLASS_MAP) {
+    const matchedFiles = filenames.filter(f => entry.patterns.some(p => p.test(f)));
+    if (matchedFiles.length > 0) {
+      hits.push({ class: entry.class, label: entry.label, reviewers: entry.reviewers, matchedFiles });
+    }
+  }
+  return hits;
+}
+
 // ─── Deterministic constraint checks (no LLM) ────────────────────────────────
 // Run on added lines only — deletions removing violations are fine.
 
@@ -157,7 +318,23 @@ function extractAddedLines(files) {
 // Files that are NOT Cloudflare Workers runtime code.
 // Workers runtime constraints (process.env, require, Buffer, Node built-ins)
 // do NOT apply to these files — applying them causes false positives.
-const NON_WORKER_PATH_PREFIXES = ['.github/', 'scripts/', 'docs/', 'tests/', 'migrations/', 'e2e/'];
+const NON_WORKER_PATH_PREFIXES = [
+  '.github/',
+  'scripts/',
+  'docs/',
+  'tests/',
+  'migrations/',
+  'e2e/',
+  // Test infrastructure package — runs only in Vitest on Node test runners,
+  // never inside a Cloudflare Worker. Module docstring of regression-gates.ts
+  // explicitly declares "Node.js Only".
+  'packages/testing/',
+  // Video render pipeline scripts — Remotion + ffmpeg + R2 toolchain runs on
+  // ubuntu-latest GHA runners (per CLAUDE.md), not in Workers. The
+  // video-cron Worker (apps/video-cron/) is correctly NOT exempt here; only
+  // the studio's CLI scripts that dispatch to GHA are exempt.
+  'apps/video-studio/',
+];
 const NON_WORKER_EXTENSIONS = ['.md', '.yml', '.yaml', '.json', '.jsonc', '.toml', '.txt', '.gitignore'];
 
 function isNonWorkerFile(filename) {
@@ -188,11 +365,13 @@ function hasFetchCallInPatch(file) {
   return /\bfetch\s*\(/.test(patch);
 }
 
-function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
+function runDeterministicChecks(workerAddedLines, allAddedLines, filenames, wranglerAddedLines) {
   // workerAddedLines — added content from non-Actions-runner files only
   //   (Workers runtime constraints apply here)
   // allAddedLines — all added content regardless of file path
   //   (universal checks: secrets, fetch, any type)
+  // wranglerAddedLines — added content from wrangler config files only
+  //   (scoped to avoid cross-file false positives on the vars check)
   const violations = [];
   const warnings = [];
 
@@ -224,9 +403,11 @@ function runDeterministicChecks(workerAddedLines, allAddedLines, filenames) {
   if (/import\s+.*jsonwebtoken/m.test(workerAddedLines))
     violations.push({ constraint: 'No jsonwebtoken', detail: 'Use Web Crypto API for JWT — never the jsonwebtoken package' });
 
-  // Secret in vars block (wrangler config) — check all lines
+  // Secret in vars block (wrangler config) — scope to wrangler files only to
+  // avoid cross-file false positives (TypeScript vars: type fields + workflow
+  // env TOKEN: keys would otherwise trigger a spurious match).
   if (filenames.some(f => /wrangler/.test(f)) &&
-      /vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im.test(allAddedLines))
+      /vars:\s*[\s\S]*?(?:KEY|SECRET|TOKEN|PASSWORD)\s*:/im.test(wranglerAddedLines))
     violations.push({ constraint: 'No secrets in wrangler vars', detail: 'Use wrangler secret put — never put secrets in the vars block' });
 
   // Fetch without error handling — check all lines
@@ -261,8 +442,28 @@ function loadDoc(filePath, maxChars = 8000) {
 // Tracks which docs were missing at load time so the review body can surface the gap.
 const MISSING_DOCS = [];
 
+function extractHardConstraints(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf8');
+    // Extract "## Hard Constraints" section and everything until the next ## header
+    const match = content.match(/## Hard Constraints\n([\s\S]*?)(?:\n## |\Z)/);
+    if (!match) return null;
+    return `## Hard Constraints\n${match[1].trim()}`;
+  } catch {
+    return null;
+  }
+}
+
 function buildConstraintBlock(repoName) {
   const sections = [];
+
+  // Prepend the focused Hard Constraints block (parsed live from CLAUDE.md) so
+  // the LLM always sees it at the top of the context, before any truncation
+  // risk from the 8 000-char loading limit on the full CLAUDE.md below.
+  // For cross-repo reviews we still load from factory CLAUDE.md because that
+  // is the authoritative source; per-repo extensions are handled further down.
+  const hardConstraintsBlock = extractHardConstraints('CLAUDE.md');
+  if (hardConstraintsBlock) sections.push(hardConstraintsBlock);
 
   const claudeMd = loadDoc('CLAUDE.md');
   if (claudeMd) {
@@ -278,6 +479,30 @@ function buildConstraintBlock(repoName) {
   } else {
     MISSING_DOCS.push('docs/supervisor/FRIDGE.md');
     console.warn('[WARN] docs/supervisor/FRIDGE.md not found on disk');
+  }
+
+  // Tier 3 context injection — current operating state + operational patterns.
+  // CLAUDE.md's reading order tells the reviewer to consult these files; this
+  // concat lets the reviewer actually see them in the same prompt rather than
+  // just being told they exist. Soft-warn (not MISSING_DOCS) because both are
+  // genuinely optional: STATE.md is auto-generated, PATTERNS.md is operator-
+  // maintained, neither blocks a review.
+  //
+  // Budgets matched to actual file sizes at 2026-05-15: STATE.md ≈ 4.3k,
+  // PATTERNS.md ≈ 7.6k. The 8000-char ceiling gives both room to grow ~5%
+  // before truncation; raise here when adding new top-level sections.
+  const state = loadDoc('docs/STATE.md', 8000);
+  if (state) {
+    sections.push(`## docs/STATE.md — Current Operating State (auto-generated)\n\n${state}`);
+  } else {
+    console.warn('[WARN] docs/STATE.md not found — review proceeds without current-state context');
+  }
+
+  const patterns = loadDoc('docs/architecture/PATTERNS.md', 10000);
+  if (patterns) {
+    sections.push(`## docs/architecture/PATTERNS.md — Operational Patterns (symptom → cause → fix)\n\n${patterns}`);
+  } else {
+    console.warn('[WARN] docs/architecture/PATTERNS.md not found — review proceeds without operational-patterns context');
   }
 
   // Per-repo standing orders for cross-repo reviews (.github/repo-contexts/{repo}/CLAUDE.md)
@@ -330,6 +555,7 @@ expected and correct in those files. Do NOT flag them as Workers violations.
 - Type safety holes (unsafe casts, untyped generics)
 - Package dependency order violations in packages/**
 - FRIDGE rules 1, 2, 5, 7, 8, 9, 10 violated by the actual code changes
+- **Violation of any pattern in \`docs/architecture/PATTERNS.md\`** (loaded into your context above). Match the diff against patterns by file type — workflows that commit to main, scripts that fetch secrets, scripts that diff dirs against HEAD without staging, gcloud calls without \`--project\`, etc. **Cite the pattern number in the flag** (e.g., "violates PATTERNS.md #3: direct push to main is blocked by branch protection"). This is how the institutional memory becomes enforceable, not just documented.
 
 ### Security — flag as architectural_concern (blocks merge)
 - SQL injection: raw string interpolation into Drizzle queries or \`sql\` tagged templates with unescaped user input
@@ -606,7 +832,7 @@ function tierEmoji(tier) {
   return { red: '🔴', yellow: '🟡', green: '🟢' }[tier] ?? '⚪';
 }
 
-function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTitle, isAdminMutation, truncated }) {
+function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTitle, isAdminMutation, truncated, reviewerHints }) {
   const lines = [];
   const emoji = tierEmoji(tier);
   const decisionLine = decision === 'APPROVE'
@@ -619,6 +845,34 @@ function buildReviewBody({ tier, decision, deterministicResult, llmResult, prTit
   lines.push(`**Decision:** ${decisionLine}`);
   lines.push(`**Reviewers:** 🤖 Grok (party 1) → 🤖 Claude (party 2) — both must approve`);
   lines.push('');
+
+  // Reviewer-class hints ─────────────────────────────────────────────────────
+  // Surface which sensitive path classes were matched and which reviewers were
+  // notified, so human reviewers immediately know why they were pinged.
+  if (reviewerHints && reviewerHints.length > 0) {
+    lines.push('### 👥 Reviewer Hints — Sensitive Path Classes Detected');
+    lines.push('');
+    lines.push('The following reviewer classes were auto-notified because this PR touches sensitive paths:');
+    lines.push('');
+    lines.push('| Class | Notified reviewer(s) | Matched files |');
+    lines.push('|-------|----------------------|---------------|');
+    for (const hint of reviewerHints) {
+      const handles = hint.reviewers.map(r => `@${r}`).join(', ');
+      // Truncate matched file list to keep the table readable
+      const maxFiles = 5;
+      const fileCells = hint.matchedFiles
+        .slice(0, maxFiles)
+        .map(f => `\`${f}\``)
+        .join(', ');
+      const overflow = hint.matchedFiles.length > maxFiles
+        ? ` _(+${hint.matchedFiles.length - maxFiles} more)_`
+        : '';
+      lines.push(`| ${hint.label} | ${handles} | ${fileCells}${overflow} |`);
+    }
+    lines.push('');
+    lines.push('> ℹ️ Review requests have been sent to the handles listed above. They do not need to approve before merge (unless they are also a required CODEOWNER for this path), but their expertise is relevant.');
+    lines.push('');
+  }
 
   if (MISSING_DOCS.length > 0) {
     lines.push(`> ⚠️ **Partial context** — the following canonical docs were not found at review time. The LLM reviewed with reduced context. Add these files and re-run to get a fully-informed review:`);
@@ -834,6 +1088,25 @@ async function main() {
     return;
   }
 
+  // ── Dependabot detection ──────────────────────────────────────────────────
+  // Dependabot PRs are mechanical version bumps. We still review them (so the
+  // factory architecture-review check turns green for the merge gate), but if
+  // the diff is purely package.json + lockfile we short-circuit to a narrow
+  // "version-bump sanity" approval rather than burning Grok+Claude tokens on
+  // an architectural review of a one-line semver bump. CI (validate,
+  // dependency-review, package-integration) covers the substantive risk.
+  //
+  // If a Dependabot PR ever ships non-lockfile code (e.g. a config-file
+  // migration that ships with a major version bump), the diff is no longer
+  // "lockfile-only" and the script falls through to the standard pipeline.
+  const isDependabotAuthor =
+    pr.user?.login === 'dependabot[bot]' ||
+    pr.user?.login === 'app/dependabot' ||
+    (pr.user?.type === 'Bot' && /dependabot/i.test(pr.user?.login ?? ''));
+  if (isDependabotAuthor) {
+    console.log('[INFO] Dependabot PR detected — will check for lockfile-only diff after fetching files');
+  }
+
   // Don't re-review if we already have an active (non-dismissed) review on this exact commit.
   // Dismissed reviews don't count — dismiss_stale_reviews_on_push invalidates old approvals
   // when new commits land, so the bot must re-approve on the new SHA.
@@ -873,6 +1146,92 @@ async function main() {
   const files = await gh('GET', `/repos/${ORG}/${repo}/pulls/${prNum}/files`);
   const filenames = files.map(f => f.filename);
 
+  // ── Dependabot fast-path: lockfile-only diffs get a narrow approval ──────
+  // A "lockfile-only" diff touches only package.json, package-lock.json,
+  // pnpm-lock.yaml, yarn.lock, or .npmrc. Anything else (a vendored config,
+  // a generated typescript file, etc.) falls through to the full pipeline.
+  if (isDependabotAuthor) {
+    const LOCKFILE_PATTERNS = [
+      /(^|\/)package\.json$/,
+      /(^|\/)package-lock\.json$/,
+      /(^|\/)pnpm-lock\.yaml$/,
+      /(^|\/)yarn\.lock$/,
+      /(^|\/)\.npmrc$/,
+    ];
+    const lockfileOnly = filenames.length > 0 && filenames.every(
+      f => LOCKFILE_PATTERNS.some(p => p.test(f)),
+    );
+    if (lockfileOnly) {
+      console.log(`[INFO] Dependabot lockfile-only diff (${filenames.length} files) — short-circuiting to APPROVE`);
+      const body = [
+        '## Factory Canonical Review — Dependabot fast-path',
+        '',
+        `**Decision:** APPROVED — lockfile-only dependency bump`,
+        `**Reviewer:** Dependabot fast-path (skips Grok+Claude consensus)`,
+        '',
+        `This PR touches only \`package.json\` / lockfile / \`.npmrc\` files (${filenames.length} file${filenames.length === 1 ? '' : 's'}). The architectural review pipeline is short-circuited because:`,
+        '',
+        '- The diff is mechanical (semver bump + lockfile churn)',
+        '- CI (`validate`, `dependency-review`, `package-integration`) already gates the substantive risk',
+        '- Burning Grok+Claude tokens on a one-line version bump adds no safety',
+        '',
+        'If CI is green and CODEOWNERS approve, this PR is safe to auto-merge.',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Dependabot fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+        console.log('[OK] Added automerge:allow-bot-branch label');
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge:allow-bot-branch: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (dependabot fast-path)`);
+      return;
+    }
+    console.log('[INFO] Dependabot PR includes non-lockfile changes — falling through to full review');
+  }
+
+  // ── Housekeeping fast-path: trusted generator bots, docs/data-only diffs ────
+  // STATE / digest / cost / conformance / stack / scorecard PRs from
+  // github-actions[bot] are deterministic doc/data regenerations. CI gates them;
+  // a 2-party Grok+Claude review on the highest-volume PR class adds zero safety
+  // and is the bulk of the per-PR LLM spend. Skip the LLM and APPROVE so they
+  // auto-merge instead of piling up. Any file outside docs/ falls through to the
+  // full review. (factory-cross-repo's own PRs are already skipped as self-authored.)
+  const HOUSEKEEPING_AUTHORS = new Set(['github-actions[bot]', 'app/github-actions']);
+  if (HOUSEKEEPING_AUTHORS.has(pr.user?.login ?? '')) {
+    const docDataOnly = filenames.length > 0 && filenames.every(f => /^docs\//.test(f));
+    if (docDataOnly) {
+      console.log(`[INFO] Housekeeping doc/data-only diff (${filenames.length} files) — short-circuiting to APPROVE (no LLM)`);
+      const body = [
+        '## Factory Canonical Review — Housekeeping fast-path',
+        '',
+        '**Decision:** APPROVED — trusted generator, docs/data-only diff',
+        '**Reviewer:** Housekeeping fast-path (skips Grok+Claude consensus)',
+        '',
+        `This PR is from \`${pr.user?.login}\` and touches only \`docs/\` (${filenames.length} file${filenames.length === 1 ? '' : 's'}) — a deterministic regeneration (STATE/digest/cost/conformance/stack/scorecard). The LLM review is skipped because:`,
+        '',
+        '- The content is mechanically generated, not hand-authored logic',
+        '- CI already gates the substantive risk',
+        '- A 2-party LLM review on the highest-volume PR class adds no safety and is the bulk of per-PR LLM spend',
+        '',
+        '---',
+        `_Factory Canonical Reviewer · Housekeeping fast-path · \`${PR_SHA?.slice(0, 7) ?? 'unknown'}\`_`,
+      ].join('\n');
+      await postReview('APPROVE', body);
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${prNum}/labels`, { labels: ['automerge:allow-bot-branch'] });
+      } catch (err) {
+        console.warn(`[WARN] Could not add automerge label: ${err.message.slice(0, 80)}`);
+      }
+      console.log(`[DONE] ${repo}#${prNum} → APPROVE (housekeeping fast-path)`);
+      return;
+    }
+    console.log('[INFO] Housekeeping author but non-docs files present — falling through to full review');
+  }
+
   const tier = detectTier(filenames);
   const adminMutation = hasAdminMutation(filenames);
   const totalDiffChars = files.reduce((n, f) => n + (f.patch?.length ?? 0), 0);
@@ -880,27 +1239,58 @@ async function main() {
 
   console.log(`[INFO] Tier: ${tier} | Files: ${filenames.length} | Diff: ${totalDiffChars} chars | Admin: ${adminMutation}`);
 
+  // ── Reviewer-class hints: detect sensitive paths & build reviewer list ────
+  // This runs for ALL tiers (not just red), so that yellow-tier PRs that touch
+  // security-adjacent files (e.g., auth handlers in apps/**) still trigger hints.
+  const reviewerHints = detectSensitivePathReviewers(filenames);
+  if (reviewerHints.length > 0) {
+    const classNames = reviewerHints.map(h => h.label).join(', ');
+    console.log(`[INFO] Sensitive path classes detected: ${classNames}`);
+  }
+
   // ── Red-tier: immediately request human review ────────────────────────────
   // This triggers a GitHub notification so @HUMAN_REVIEWER can act fast.
   // The review body will contain both LLM verdicts, so they need only one tap.
-  if (tier === 'red' && HUMAN_REVIEWER) {
-    try {
-      // Requesting review sends a free GitHub notification (email + mobile push).
-      // No SMS here — GitHub notification is sufficient for red-tier PRs since the
-      // LLM verdicts will already be in the review body when you open it.
-      await gh('POST', `/repos/${ORG}/${repo}/pulls/${prNum}/requested_reviewers`, { reviewers: [HUMAN_REVIEWER] });
-      console.log(`[INFO] Red-tier PR — requested review from ${HUMAN_REVIEWER} (GitHub notification sent)`);
-    } catch (err) {
-      console.warn(`[WARN] Could not request red-tier review: ${err.message.slice(0, 80)}`);
+  //
+  // For all tiers with reviewer hints: deduplicate across the hint entries and
+  // request each unique reviewer so they get a GitHub notification. The same
+  // reviewer handle may appear in multiple hint entries (e.g., HUMAN_REVIEWER
+  // is the fallback for every class), so we deduplicate before calling the API.
+  {
+    const handleSet = new Set();
+
+    // Always request HUMAN_REVIEWER for red-tier (pre-existing behaviour)
+    if (tier === 'red' && HUMAN_REVIEWER) {
+      handleSet.add(HUMAN_REVIEWER);
+    }
+
+    // Add class-specific reviewers for any matched sensitive paths
+    for (const hint of reviewerHints) {
+      for (const reviewer of hint.reviewers) {
+        handleSet.add(reviewer);
+      }
+    }
+
+    if (handleSet.size > 0) {
+      const reviewersToRequest = [...handleSet];
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/pulls/${prNum}/requested_reviewers`, { reviewers: reviewersToRequest });
+        const reason = tier === 'red' ? 'red-tier' : 'sensitive paths';
+        console.log(`[INFO] Requested review from [${reviewersToRequest.join(', ')}] (${reason})`);
+      } catch (err) {
+        console.warn(`[WARN] Could not request reviewer(s): ${err.message.slice(0, 80)}`);
+      }
     }
   }
 
   // Deterministic checks
   // workerAddedLines — only files that run in CF Workers (excludes Actions runner files)
-  // allAddedLines — all files (for universal checks: secrets in wrangler, fetch handling, any type)
+  // allAddedLines — all files (for universal checks: fetch handling, any type)
+  // wranglerAddedLines — only wrangler config files (scoped to avoid cross-file false positives)
   const allAddedLines = extractAddedLines(files);
   const workerAddedLines = extractAddedLines(files.filter(f => !isNonWorkerFile(f.filename ?? '') && !isFrontendUiFile(f.filename ?? '')));
-  const deterministicResult = runDeterministicChecks(workerAddedLines, allAddedLines, filenames);
+  const wranglerAddedLines = extractAddedLines(files.filter(f => /wrangler/.test(f.filename ?? '')));
+  const deterministicResult = runDeterministicChecks(workerAddedLines, allAddedLines, filenames, wranglerAddedLines);
 
   console.log(`[INFO] Deterministic: ${deterministicResult.violations.length} violations, ${deterministicResult.warnings.length} warnings`);
 
@@ -956,14 +1346,19 @@ async function main() {
     (llmResult.architectural_concerns?.length ?? 0) > 0;
 
   let decision;
-  if (adminMutation) {
-    // FRIDGE rule 4 — admin mutations always need explicit CODEOWNER ✅ via branch protection.
-    // The bot still posts its verdict (APPROVE when clean, REQUEST_CHANGES when not) so the
-    // human sees the 2-party result before clicking. CODEOWNERS on billing/admin/stripe paths
-    // is @adrper79-dot only — the bot APPROVE is advisory, not the merge gate.
-    decision = hasViolations ? 'REQUEST_CHANGES' : 'APPROVE';
-  } else if (hasViolations) {
-    decision = 'REQUEST_CHANGES';
+  if (hasViolations) {
+    // Model A (solo-operator governance): the canonical reviewer is ADVISORY.
+    // It surfaces concerns as a COMMENT — the full 2-party verdict (deterministic
+    // + LLM) is still in the body for the human to see — but it NEVER posts
+    // REQUEST_CHANGES. A required-CODEOWNER bot that also hard-blocks on
+    // hallucinated "violations" (e.g. flagging marketing copy or a Node build
+    // script as Worker constraint breaches) traps a solo operator who cannot
+    // self-approve. The real merge gates remain: required status checks
+    // (validate / Analyze / dependency-review), CODEOWNERS, and — for the
+    // high-risk paths — the operator's own deliberate admin-merge.
+    // FRIDGE rule 4 (admin-mutation visibility) is preserved: the verdict is
+    // still posted; it is informational, not a block.
+    decision = 'COMMENT';
   } else {
     decision = 'APPROVE';
   }
@@ -976,6 +1371,7 @@ async function main() {
     prTitle: pr.title,
     isAdminMutation: adminMutation,
     truncated,
+    reviewerHints,
   });
 
   await postReview(decision, body);
@@ -992,6 +1388,58 @@ async function main() {
   }
 
   console.log(`[DONE] ${repo}#${prNum} → ${decision}`);
+
+  // ─── Gate ingest (best-effort, non-blocking) ──────────────────────────────
+  // POST to factory-core-api so the Command Center reflects claude-review gate
+  // outcomes in near-real-time. Silently skipped when credentials are absent.
+  await postGateRow({
+    repo,
+    prNum,
+    prSha: PR_SHA ?? '',
+    tier,
+    decision,
+    violationCount: deterministicResult.violations.length +
+      (llmResult?.architectural_concerns?.length ?? 0),
+  }).catch(err => console.warn(`[WARN] Gate ingest skipped: ${err.message.slice(0, 120)}`));
+}
+
+/**
+ * Posts a claude-review gate row to factory-core-api (P2.3).
+ * Fire-and-forget: caller wraps in .catch() so failures never block the review.
+ */
+async function postGateRow({ repo, prNum, prSha, tier, decision, violationCount }) {
+  if (!FACTORY_CORE_API_URL || !FACTORY_CORE_API_INGEST_KEY) return;
+
+  const prUrl = `https://github.com/${ORG}/${repo}/pull/${prNum}`;
+  const state = decision === 'APPROVE' ? 'passed' : 'failed';
+
+  const body = {
+    gate_type: 'claude-review',
+    source_system: 'factory-cross-repo',
+    source_ref: prUrl,
+    source_event_id: `${repo}#PR-${prNum}@${prSha}`,
+    subject_type: 'pr',
+    subject_repo: `${ORG}/${repo}`,
+    subject_ref: String(prNum),
+    state,
+    evidence_url: prUrl,
+    evidence_summary: { tier, decision, violation_count: violationCount },
+    observed_at: new Date().toISOString(),
+  };
+
+  const res = await fetch(`${FACTORY_CORE_API_URL}/v1/gates`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${FACTORY_CORE_API_INGEST_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`factory-core-api ${res.status}: ${text.slice(0, 200)}`);
+  }
+  console.log(`[OK] Gate row posted: ${state} (violation_count=${violationCount})`);
 }
 
 main().catch(err => {

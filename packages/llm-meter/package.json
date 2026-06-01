@@ -1,7 +1,12 @@
 {
   "name": "@latimer-woods-tech/llm-meter",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/llm-meter"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -29,7 +34,7 @@
   },
   "dependencies": {
     "@latimer-woods-tech/errors": "^0.2.0",
-    "@latimer-woods-tech/llm": "^0.3.1",
+    "@latimer-woods-tech/llm": "file:../llm",
     "@latimer-woods-tech/logger": "^0.2.0"
   },
   "devDependencies": {

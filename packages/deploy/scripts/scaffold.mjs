@@ -49,8 +49,13 @@ const CLI_RATE_LIMITER_ID = (() => {
   return idx !== -1 ? process.argv[idx + 1] : null;
 })();
 
+const CLI_HANDOFF_PATH = (() => {
+  const idx = process.argv.indexOf('--handoff');
+  return idx !== -1 ? process.argv[idx + 1] : null;
+})();
+
 if (!APP_NAME) {
-  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy]');
+  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy] [--handoff <path>]');
   process.exit(1);
 }
 
@@ -89,6 +94,184 @@ function write(relPath, content) {
   if (dir) mkdirSync(dir, { recursive: true });
   writeFileSync(full, content, 'utf8');
   console.log(`  📄 ${relPath}`);
+}
+
+// ── Capability handoff loader (optional, --handoff <path>) ───────────────────
+//
+// When --handoff is supplied, the script consumes a handoff package emitted
+// by /capabilities/handoff (admin-studio). The handoff's compiled plan is
+// the single seam between the design studio and the scaffold layer; we
+// augment the generated files with:
+//
+//   1. plan.packages → package.json dependencies (versionRange preserved)
+//   2. plan.env.secrets → .dev.vars.example entries (all secrets, idempotent)
+//   3. the full handoff → factory/handoff.json (audit trail in the new repo)
+//   4. plan.smokeChecks + plan.expectedSurfaces → factory/SMOKE.md
+//   5. plan.env.secrets (recipe-specific) → src/env.ts Env interface
+//   6. plan.env.vars (recipe-specific) → src/env.ts Env interface + wrangler.jsonc vars blocks
+
+function loadHandoff(path) {
+  if (!path) return null;
+  let body;
+  try {
+    body = JSON.parse(readFileSync(path, 'utf8'));
+  } catch (err) {
+    console.error(`\n❌ Cannot read handoff at ${path}: ${err.message}`);
+    process.exit(1);
+  }
+  // Accept either the raw handoff body or the route envelope { handoff: ... }
+  const handoff = body?.handoff ?? body;
+  const errors = [];
+  if (handoff?.schemaVersion !== '1.0.0') errors.push(`schemaVersion must be "1.0.0" (got ${handoff?.schemaVersion})`);
+  if (handoff?.kind !== 'scaffold-handoff') errors.push(`kind must be "scaffold-handoff" (got ${handoff?.kind})`);
+  if (!handoff?.recipeId) errors.push('recipeId is required');
+  if (!handoff?.plan?.scaffold?.stagingFirst) errors.push('plan.scaffold.stagingFirst must be true');
+  if (errors.length > 0) {
+    console.error(`\n❌ Invalid handoff package:`);
+    for (const e of errors) console.error(`   - ${e}`);
+    process.exit(1);
+  }
+  console.log(`\n📦 Capability handoff loaded:`);
+  console.log(`   recipe: ${handoff.recipeId}`);
+  console.log(`   concept: ${handoff.conceptId}`);
+  if (handoff.hash) console.log(`   hash: ${handoff.hash}`);
+  return handoff;
+}
+
+const HANDOFF = loadHandoff(CLI_HANDOFF_PATH);
+
+function applyHandoffToScaffold(handoff) {
+  if (!handoff) return;
+  console.log('\n🧬 Applying capability handoff to scaffold...');
+  const plan = handoff.plan;
+
+  // 1. Merge plan.packages into package.json dependencies.
+  const pkgPath = join(TARGET, 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  pkg.dependencies ??= {};
+  for (const entry of plan.packages ?? []) {
+    if (!pkg.dependencies[entry.package]) {
+      pkg.dependencies[entry.package] = entry.versionRange;
+      console.log(`  📦 +dep ${entry.package}@${entry.versionRange}`);
+    }
+  }
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+
+  // 2. Append plan.env.secrets to .dev.vars.example (idempotent).
+  const devVarsPath = join(TARGET, '.dev.vars.example');
+  if (existsSync(devVarsPath)) {
+    const existing = readFileSync(devVarsPath, 'utf8');
+    const additions = (plan.env?.secrets ?? [])
+      .filter((secret) => !existing.includes(`${secret}=`))
+      .map((secret) => `${secret}=`);
+    if (additions.length > 0) {
+      const block = `\n# Added from capability handoff (${handoff.recipeId})\n${additions.join('\n')}\n`;
+      writeFileSync(devVarsPath, existing.trimEnd() + '\n' + block, 'utf8');
+      console.log(`  🔐 +${additions.length} secret stub(s) → .dev.vars.example`);
+    }
+  }
+
+  // 3. Persist the handoff itself as factory/handoff.json (audit trail).
+  write('factory/handoff.json', JSON.stringify(handoff, null, 2) + '\n');
+
+  // 4. Emit factory/SMOKE.md so the new app ships with documented expectations.
+  const smokeLines = [
+    `# ${APP_NAME} — Smoke Expectations`,
+    '',
+    `Generated from capability handoff for recipe \`${handoff.recipeId}\` (concept \`${handoff.conceptId}\`).`,
+    handoff.hash ? `Handoff hash: \`${handoff.hash}\`` : '',
+    '',
+    '## Expected surfaces',
+    '',
+    ...(plan.expectedSurfaces ?? []).map((surface) => `- \`${surface}\``),
+    '',
+    '## Smoke checks',
+    '',
+    ...(plan.smokeChecks ?? []).map((check) =>
+      `- \`${check.path}\` → expect ${check.expectedStatus}${check.expectContains ? `, contains \`${check.expectContains}\`` : ''}`,
+    ),
+    '',
+    '## Required env',
+    '',
+    `- Secrets: ${(plan.env?.secrets ?? []).join(', ') || '_none_'}`,
+    `- Vars: ${(plan.env?.vars ?? []).join(', ') || '_none_'}`,
+    `- Bindings (required): ${(plan.bindings?.required ?? []).join(', ') || '_none_'}`,
+    `- Bindings (optional): ${(plan.bindings?.optional ?? []).join(', ') || '_none_'}`,
+    '',
+    '## Constraints',
+    '',
+    ...(plan.constraints ?? []).map((c) => `- ${c}`),
+    '',
+  ].filter((line) => line !== '');
+  write('factory/SMOKE.md', smokeLines.join('\n') + '\n');
+
+  // 5. Thread recipe-specific secrets into src/env.ts (Env interface).
+  //    The scaffold template ships a fixed set of base secrets. Any additional
+  //    secrets declared in the recipe's envContract are injected here so the
+  //    Worker's TypeScript types stay in sync with what the recipe requires.
+  const BASE_ENV_SECRETS = new Set([
+    'JWT_SECRET', 'SENTRY_DSN', 'POSTHOG_KEY',
+    'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'DEEPSEEK_API_KEY', 'RESEND_API_KEY',
+  ]);
+  const secretAdditions = (plan.env?.secrets ?? []).filter((s) => !BASE_ENV_SECRETS.has(s));
+
+  // 6. Thread recipe-specific vars into src/env.ts and wrangler.jsonc.
+  const BASE_ENV_VARS = new Set(['ENVIRONMENT', 'WORKER_NAME']);
+  const varAdditions = (plan.env?.vars ?? []).filter((v) => !BASE_ENV_VARS.has(v));
+
+  const envTsPath = join(TARGET, 'src/env.ts');
+  if (secretAdditions.length > 0 || varAdditions.length > 0) {
+    // Use try/catch instead of existsSync+readFileSync to avoid TOCTOU (CWE-367).
+    let envTs;
+    try { envTs = readFileSync(envTsPath, 'utf8'); } catch { envTs = null; }
+    if (envTs !== null) {
+      if (secretAdditions.length > 0) {
+        // Insert recipe secrets before the "Non-secret vars" comment so the
+        // logical grouping (secrets vs vars) in the generated file is preserved.
+        const secretLines = secretAdditions.map((s) => `  ${s}: string;`).join('\n');
+        const secretBlock = `\n  // ── Recipe secrets (${handoff.recipeId}) ─────────────────────────────────────\n${secretLines}\n`;
+        envTs = envTs.replace(
+          /(\n  \/\/ ── Non-secret vars)/,
+          `${secretBlock}$1`,
+        );
+        console.log(`  🔐 +${secretAdditions.length} secret type(s) → src/env.ts`);
+      }
+      if (varAdditions.length > 0) {
+        // Append recipe vars at the end of the Env interface, before the closing `}`.
+        const varLines = varAdditions.map((v) => `  ${v}: string;`).join('\n');
+        const varBlock = `\n  // ── Recipe vars (${handoff.recipeId}) ───────────────────────────────────────\n${varLines}\n`;
+        envTs = envTs.replace(/(\n}\s*\n?)$/, `${varBlock}$1`);
+        console.log(`  ⚙️  +${varAdditions.length} var type(s) → src/env.ts`);
+      }
+      writeFileSync(envTsPath, envTs, 'utf8');
+    }
+  }
+
+  // Thread recipe vars into wrangler.jsonc (both root and staging vars blocks).
+  if (varAdditions.length > 0) {
+    const wranglerPath = join(TARGET, 'wrangler.jsonc');
+    // Use try/catch instead of existsSync+readFileSync to avoid TOCTOU (CWE-367).
+    let wrangler;
+    try { wrangler = readFileSync(wranglerPath, 'utf8'); } catch { wrangler = null; }
+    if (wrangler !== null) {
+      // Root vars block: 4-space indent, WORKER_NAME is the last key.
+      const rootVarLines = varAdditions.map((v) => `    "${v}": ""`).join(',\n');
+      wrangler = wrangler.replace(
+        `    "WORKER_NAME": "${APP_NAME}"\n  },`,
+        `    "WORKER_NAME": "${APP_NAME}",\n${rootVarLines}\n  },`,
+      );
+      // Staging vars block: 8-space indent, WORKER_NAME is the last key.
+      const stagingVarLines = varAdditions.map((v) => `        "${v}": ""`).join(',\n');
+      wrangler = wrangler.replace(
+        `        "WORKER_NAME": "${APP_NAME}-staging"\n      }`,
+        `        "WORKER_NAME": "${APP_NAME}-staging",\n${stagingVarLines}\n      }`,
+      );
+      writeFileSync(wranglerPath, wrangler, 'utf8');
+      console.log(`  ⚙️  +${varAdditions.length} var(s) → wrangler.jsonc (root + staging)`);
+    }
+  }
+
+  console.log('  ✅ Handoff applied. See factory/handoff.json and factory/SMOKE.md.');
 }
 
 // ── Prerequisites ─────────────────────────────────────────────────────────────
@@ -154,6 +337,8 @@ coverage/
       deploy: 'wrangler deploy',
       'deploy:staging': 'wrangler deploy --env staging',
       typecheck: 'tsc --noEmit',
+      lint: 'biome check src',
+      format: 'biome format --write src',
       test: 'vitest run',
       'test:watch': 'vitest',
     },
@@ -170,7 +355,9 @@ coverage/
       hono: '^4.12.15',
     },
     devDependencies: {
+      '@latimer-woods-tech/biome-config': '^0.1.0',
       '@latimer-woods-tech/testing': '^0.2.0',
+      '@biomejs/biome': '^1.9.4',
       '@cloudflare/workers-types': '^4.20260426.1',
       '@cloudflare/vitest-pool-workers': '^0.8.0',
       'drizzle-kit': '^0.31.0',
@@ -179,6 +366,12 @@ coverage/
       vitest: '^1.6.0',
       '@vitest/coverage-v8': '^1.6.0',
     },
+  }, null, 2) + '\n');
+
+  // biome.json — extends shared config; existing apps are unaffected.
+  write('biome.json', JSON.stringify({
+    $schema: 'https://biomejs.dev/schemas/1.9.4/schema.json',
+    extends: ['@latimer-woods-tech/biome-config/biome.json'],
   }, null, 2) + '\n');
 
   // tsconfig.json
@@ -200,7 +393,7 @@ coverage/
   // wrangler.jsonc
   write('wrangler.jsonc', `{
   "name": "${APP_NAME}",
-  "compatibility_date": "2024-11-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/index.ts",
 
@@ -268,6 +461,7 @@ export interface Env {
   POSTHOG_KEY: string;
   ANTHROPIC_API_KEY: string;
   GROQ_API_KEY: string;
+  DEEPSEEK_API_KEY?: string;
   RESEND_API_KEY: string;
 
   // ── Non-secret vars (wrangler.jsonc [vars]) ──────────────────────────────
@@ -455,6 +649,7 @@ JWT_SECRET=dev-secret-at-least-32-characters-long
 SENTRY_DSN=
 POSTHOG_KEY=
 ANTHROPIC_API_KEY=
+DEEPSEEK_API_KEY=
 GROK_API_KEY=
 GROQ_API_KEY=
 RESEND_API_KEY=
@@ -576,6 +771,7 @@ async function configureSecrets() {
     'SENTRY_DSN',
     'POSTHOG_KEY',
     'ANTHROPIC_API_KEY',
+    'DEEPSEEK_API_KEY',
     'GROK_API_KEY',
     'GROQ_API_KEY',
     'RESEND_API_KEY',
@@ -706,6 +902,11 @@ async function main() {
   // Create directory + all files
   mkdirSync(TARGET, { recursive: true });
   generateFiles(hyperdriveId, rateLimiterId);
+
+  // Apply capability handoff if --handoff was supplied. Must run AFTER
+  // generateFiles so package.json/.dev.vars.example exist, and BEFORE
+  // npm install so the augmented dependency set is what gets installed.
+  applyHandoffToScaffold(HANDOFF);
 
   // Append app-specific flags to Factory Core flag registry
   console.log('\n🏳️  Wiring Flagship flags...');

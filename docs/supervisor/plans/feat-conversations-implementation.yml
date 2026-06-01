@@ -1,0 +1,220 @@
+id: feat-conversations-implementation
+version: 1
+tier: green
+description: "Sprint 2 conversations/messaging feature work in capricast (compose/edit/delete/reactions/typing/read-receipts, R2 attachments). Scaffolds a Hono route file under apps/worker/src/routes/, a Drizzle migration adding required columns, and a Vitest test file. Green tier — the scaffold lands as a non-draft PR; a CODEOWNER reviews handler logic + migration numbering before merge. Yellow would only post a plan comment and would not actually scaffold anything; Green is required for executeGreen() to run and produce a non-empty PR."
+# T3 gap 2 — Pattern #3 (PR-per-snapshot) and Pattern #4 (`git add` before
+# `diff --cached`) both apply: this template opens a PR against main and may
+# include generated TypeScript/SQL/test scaffolds that must be staged before
+# the diff is inspected.
+pattern_check: [3, 4]
+trigger_keywords:
+  - conversations
+  - messages
+  - chat
+  - dm
+  - inbox
+  - reactions
+  - typing
+  - read-receipts
+  - attachments
+  - r2
+  - vapid
+  - vectorize
+  - moderation
+triggers:
+  labels_any_of: [enhancement, sprint:2]
+  # Title evidence — capricast conversation/messaging issue titles
+  # Matches: #74 Generalize VideoRoom → ConversationRoom; #75 Schema migration:
+  # conversations, conversation_members, messages; #76 /inbox UI; #77 Compose,
+  # edit, delete, reactions, typing, read receipts; #78 Attachments via R2;
+  # #79 Web Push (VAPID) with per-conversation mute; #80 Vectorize message
+  # search; #81 Llama-Guard moderation on message create; #116 ConversationRoom
+  # DO migration strategy.
+  # Deliberately does NOT match VK-CALLS-* / live-broadcast / 1:1 call issues.
+  title_pattern: "(conversation|conversations|ConversationRoom|/inbox|message_attachments|read receipts|message create|message search|messaging|chat thread|DM thread|compose.*edit|edit.*delete.*reactions|Web Push.*VAPID|Llama-Guard.*message|Vectorize.*message|Attachments via R2)"
+  # Body evidence required (no label-only matching — that's the bug PR #815
+  # just fixed). At least ONE of these phrases must appear in the issue body
+  # to confirm this is genuine conversation/messaging implementation work and
+  # not a tangentially-related issue.
+  body_patterns:
+    - "(conversation_members|message_attachments|conversations\\(id|messages\\(id|/api/conversations|/inbox|last_read_at|edited_at|deleted_at|reactions|typing indicator|read receipts|presigned R2|VAPID|ServiceWorker.*push|llama-guard|Vectorize|broadcast to other members|message bodies)"
+preconditions:
+  - capability_exists: github.readFile
+  - capability_exists: github.openPR
+  - capability_exists: github.comment
+  - capability_exists: github.addLabel
+slots:
+  - name: feature_slug
+    type: string
+    description: "Short kebab-case identifier derived from the issue title — used in branch names and filenames. Examples: conversations, message-attachments, inbox-ui, web-push-vapid."
+    validator: "^[a-z][a-z0-9-]{2,40}$"
+    source: issue_title
+    default: "conversations"
+  - name: route_file_path
+    type: string
+    description: "Path to a new Hono route file under the capricast worker app. Pick a kebab-case filename that reflects the feature (e.g. apps/worker/src/routes/conversations.ts, apps/worker/src/routes/inbox.ts, apps/worker/src/routes/messages.ts)."
+    validator: "^apps/worker/src/routes/[a-z][a-z0-9_-]{2,60}\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/routes/conversations.ts"
+  - name: route_content
+    type: string
+    description: "Full TypeScript source for the Hono route module. SYNTHESIZE this from the issue body — extract the HTTP verbs, paths, and behaviors described in the acceptance criteria and produce a real Hono router file. Imports: hono, Env type from ../env. Export a default Hono router with at least one handler matching the verbs in the issue (e.g. POST /:id/messages for compose, PATCH /:id/messages/:msgId for edit, DELETE for delete, POST /:id/reactions, etc.). Use Drizzle queries via the c.env.DB Hyperdrive binding. Wire @lwt/logger and @lwt/errors per Platform Standards. Return JSON responses with proper status codes (201 create, 204 delete, 400 validation, 401 auth, 404 not found). Tests will verify the contract — do not produce a stub."
+    validator: "^[\\s\\S]{80,40000}$"
+    source: issue_body
+    default: |
+      // Supervisor scaffold — review the issue body and replace this
+      // with real handler logic. Tests in the colocated __tests__/ dir
+      // will fail until the handlers are wired.
+      import { Hono } from "hono";
+      import type { Env } from "../env";
+
+      const router = new Hono<{ Bindings: Env }>();
+
+      // TODO(supervisor-scaffold): replace with handlers derived from the
+      // acceptance criteria in the source issue. The route file path was
+      // chosen by the supervisor; rename if a different module fits better.
+      router.get("/", (c) => c.json({ status: "scaffold", todo: "implement" }));
+
+      export default router;
+  - name: migration_file_path
+    type: string
+    description: "Drizzle SQL migration filename. Format NNNN_<snake_case_description>.sql where NNNN is a 3-4 digit sequence number. Pick a number ≥ 0017 to stay clear of existing migrations on main; the CODEOWNER will reconcile if it collides with a parallel PR. Snake-case description should reflect the feature (e.g. 0017_conversations_tables.sql, 0018_message_attachments.sql)."
+    validator: "^workers/src/db/migrations/[0-9]{3,4}_[a-z][a-z0-9_]{2,60}\\.sql$"
+    source: issue_body
+    default: "workers/src/db/migrations/0017_conversations.sql"
+  - name: migration_content
+    type: string
+    description: "SQL DDL — SYNTHESIZE from the issue body. Identify the tables/columns the issue requires and produce CREATE TABLE / ALTER TABLE statements. Follow Platform Standards §6 (Expand → Contract): additive-only changes; include a `-- ROLLBACK:` comment with the inverse statement. For new tables include sensible defaults (created_at, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP), proper FK constraints REFERENCES …, and indexes on commonly-queried columns. For ALTER TABLE additions, use DEFAULT values and NOT NULL only when safe. Do not produce a SELECT 1 placeholder — the issue body has enough information."
+    validator: "^[\\s\\S]{60,40000}$"
+    source: issue_body
+    default: |
+      -- Supervisor scaffold — replace with the tables/columns described
+      -- in the source issue's acceptance criteria. CODEOWNER must also
+      -- re-verify the migration number against existing migrations on main
+      -- (the supervisor cannot atomically reserve a number).
+
+      -- TODO(supervisor-scaffold): replace this no-op with the real DDL.
+      SELECT 1;
+      -- ROLLBACK: SELECT 1;
+  - name: test_file_path
+    type: string
+    description: "Vitest test file path under apps/worker/src/routes/__tests__/. Filename should mirror the route module being tested (e.g. conversations.test.ts for conversations.ts). Tests run via @cloudflare/vitest-pool-workers."
+    validator: "^apps/worker/src/routes/__tests__/[a-z][a-z0-9_-]{2,60}\\.test\\.ts$"
+    source: issue_body
+    default: "apps/worker/src/routes/__tests__/conversations.test.ts"
+  - name: test_content
+    type: string
+    description: "Vitest test module — SYNTHESIZE assertions for the route handlers described in the issue. Use describe + multiple it() blocks covering: happy path (verb+path returns 2xx with expected body shape), validation failures (400 on bad input), auth failures (401 unauthenticated), and at least one edge case from the acceptance criteria. Use @cloudflare/vitest-pool-workers to construct request/response. Import the router under test from ../<route_file>. Use unstable_dev or env-fetcher patterns as needed. Aim for ≥3 it() blocks."
+    validator: "^[\\s\\S]{40,40000}$"
+    source: issue_body
+    default: |
+      import { describe, it, expect } from "vitest";
+      // TODO(supervisor-scaffold): import the route under test and
+      // exercise the verbs described in the source issue.
+      describe("conversations scaffold", () => {
+        it.todo("happy path — replace with real assertions");
+      });
+  - name: branch_name
+    type: string
+    description: "Git branch name. Use the supervisor-prefixed form supervisor/feat-conversations/<feature_slug> for new supervisor work. The conventional feat/<feature_slug> form is also accepted but supervisor-prefixed is preferred so the bot's PRs are visually grouped."
+    validator: "^(supervisor/feat-conversations/|feat/)[a-z0-9][a-z0-9/_-]{2,80}$"
+    source: issue_title
+    default: "supervisor/feat-conversations/scaffold"
+  - name: commit_message
+    type: string
+    description: "Conventional Commits message for the squash-merge AND the PR title. Format MUST be: `feat(<scope>): <verb-phrase derived from issue title> (cap#<source-issue-number>)`. Scope should reflect the feature (e.g. feat(conversations): ..., feat(inbox): ..., feat(moderation): ...). The verb-phrase is a single-sentence imperative summary derived from the issue title. The `(cap#NNN)` suffix MUST be present — the supervisor's dedup loop and human reviewers use it to trace the PR back to its source issue at a glance. If you don't know the source-issue number, leave the literal placeholder `(cap#0)` — the runtime substitutes the real number. Example: `feat(conversations): add edit/delete/reactions to message composer (cap#77)`."
+    validator: "^feat(\\([a-z0-9-]+\\))?:\\s.{5,140}$"
+    source: issue_title
+    default: "feat(conversations): scaffold route, migration, and test (cap#0)"
+steps:
+  - id: s1
+    tool: github.readFile
+    depends_on: null
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "apps/worker/src/routes"
+      ref: "main"
+      allow_missing: true
+    intent: "Confirm the routes directory exists in the capricast worker before scaffolding a new route file into it."
+    requires_human_review: false
+  - id: s2
+    tool: github.readFile
+    depends_on: s1
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      path: "workers/src/db/migrations"
+      ref: "main"
+      allow_missing: true
+    intent: "List existing migrations so the new migration number does not collide with one already on main."
+    requires_human_review: false
+  - id: s3
+    tool: github.comment
+    depends_on: s2
+    params:
+      body: |
+        **Supervisor plan — `feat-conversations-implementation` for `capricast`**
+
+        Feature slug: `$slots.feature_slug`
+        Route file: `$slots.route_file_path`
+        Migration: `$slots.migration_file_path`
+        Test: `$slots.test_file_path`
+
+        This template scaffolds three files derived from the issue body:
+        1. A Hono route module wired into `apps/worker/src/routes/` covering the verbs described in the acceptance criteria.
+        2. A Drizzle migration adding the columns/tables described in the issue (e.g. `conversations`, `conversation_members`, `messages`, `message_attachments`).
+        3. A Vitest test file at `apps/worker/src/routes/__tests__/` exercising the happy path.
+
+        🟢 Green tier — the scaffold lands as a non-draft PR. The supervisor cannot implement business logic; the scaffold is a starting point and tests/handlers may need filling in. A CODEOWNER review is still required before merge.
+
+        _Run ID: $RUN_ID_
+    intent: "Post a plan comment so the human reviewer sees the three file paths and scope before the PR lands."
+    requires_human_review: false
+  - id: s4
+    tool: github.openPR
+    depends_on: s3
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      branch: "$slots.branch_name"
+      base: "main"
+      title: "$slots.commit_message"
+      commit_message: "$slots.commit_message"
+      files:
+        - path: "$slots.route_file_path"
+          content: "$slots.route_content"
+        - path: "$slots.migration_file_path"
+          content: "$slots.migration_content"
+        - path: "$slots.test_file_path"
+          content: "$slots.test_content"
+      body: |
+        Closes #$triggers.issue_number
+
+        Auto-drafted by Factory Supervisor (`feat-conversations-implementation`).
+
+        **Scaffolds:**
+        - Hono route: `$slots.route_file_path`
+        - Drizzle migration: `$slots.migration_file_path`
+        - Vitest test: `$slots.test_file_path`
+
+        🟢 Green tier — scaffold only. A CODEOWNER must:
+        1. Review handler logic and add business rules.
+        2. Verify migration numbering does not collide with PRs already in flight.
+        3. Fill in additional test cases for failure paths.
+
+        Plan comment: see source issue for details.
+      labels: [enhancement, sprint:2, supervisor, tier-green]
+      draft: false
+    intent: "Open a real (non-draft, non-empty) PR with the three scaffolded files so CI runs and a CODEOWNER can review."
+    requires_human_review: true
+acceptance_gate:
+  description: "PR is open on capricast with exactly three changed files matching the three slot paths."
+  verifier_query:
+    tool: github.openPR
+    query: "pr:$s4.number files.count >= 1 AND base == 'main'"
+    assert: "files.any(f => f.path == '$slots.route_file_path')"
+rollback:
+  - on_step: s4
+    action: github.closePR
+    params:
+      repo: "Latimer-Woods-Tech/capricast"
+      pr_number: "$s4.pr_number"
+      comment: "Supervisor rollback: closing conversations scaffold PR. CODEOWNER must implement manually or re-trigger with a clearer issue body."

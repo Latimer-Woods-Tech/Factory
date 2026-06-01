@@ -1,0 +1,101 @@
+name: Deploy Factory Core API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/factory-core-api/**'
+      - 'packages/errors/**'
+      - 'packages/monitoring/**'
+      - 'packages/logger/**'
+      - 'packages/neon/**'
+      - '.github/workflows/deploy-factory-core-api.yml'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-factory-core-api-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    name: Deploy factory-core-api to Cloudflare
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Fetch secrets from GCP Secret Manager
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env CLOUDFLARE_API_TOKEN   CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          fetch_to_env CLOUDFLARE_ACCOUNT_ID  CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env JWT_SIGNING_KEY        JWT_SIGNING_KEY
+          fetch_to_env SUPERVISOR_PUSH_KEY    SUPERVISOR_PUSH_KEY
+          fetch_to_env SENTRY_DSN             FACTORY_CORE_API_SENTRY_DSN SENTRY_DSN
+
+      - name: Build local package dependencies
+        run: |
+          set -euo pipefail
+          for package in errors monitoring logger neon; do
+            echo "=== ${package} ==="
+            cd "packages/${package}"
+            npm ci --ignore-scripts
+            npm run build
+            cd ../..
+          done
+
+      - name: Install dependencies
+        run: |
+          cd apps/factory-core-api
+          npm install
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: apps/factory-core-api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          # Provision secrets — skip any that are absent so we never clobber a
+          # live worker secret with an empty value.
+          put_secret() {
+            local name="$1" val="$2"
+            if [ -z "$val" ]; then
+              echo "::warning::Skipping $name — not present in GCP Secret Manager"
+              return 0
+            fi
+            printf '%s' "$val" | npx wrangler secret put "$name" --env production
+          }
+          put_secret JWT_SIGNING_KEY     "${JWT_SIGNING_KEY:-}"
+          put_secret SUPERVISOR_PUSH_KEY "${SUPERVISOR_PUSH_KEY:-}"
+          [ -n "${SENTRY_DSN:-}" ] && put_secret SENTRY_DSN "${SENTRY_DSN}" || true
+          npx wrangler deploy --env production --var BUILD_SHA:"${GITHUB_SHA}"
+
+      - name: Verify deployment
+        run: |
+          node scripts/verify-http-endpoint.mjs \
+            --url https://core.latwoodtech.work/health \
+            --status 200 \
+            --retries 8 \
+            --delay-ms 5000

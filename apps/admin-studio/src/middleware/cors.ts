@@ -8,14 +8,14 @@ export function corsMiddleware(): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const origin = c.req.header('Origin');
     const allowed = c.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim());
-
-    if (origin && allowed.includes(origin)) {
-      c.header('Access-Control-Allow-Origin', origin);
-      c.header('Access-Control-Allow-Credentials', 'true');
-      c.header('Vary', 'Origin');
-    }
+    const isAllowed = Boolean(origin && allowed.includes(origin));
 
     if (c.req.method === 'OPTIONS') {
+      if (isAllowed && origin) {
+        c.header('Access-Control-Allow-Origin', origin);
+        c.header('Access-Control-Allow-Credentials', 'true');
+        c.header('Vary', 'Origin');
+      }
       c.header('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
       c.header(
         'Access-Control-Allow-Headers',
@@ -26,5 +26,18 @@ export function corsMiddleware(): MiddlewareHandler<AppEnv> {
     }
 
     await next();
+
+    // Apply CORS headers AFTER the route runs so raw `new Response(...)`
+    // returns also get them. Setting via c.header() before next() only
+    // decorates responses built via c.json/c.body/c.text — SSE handlers
+    // like /ai/chat and /tests/runs/:id construct their Response directly
+    // and bypass that header table, which manifests as a browser CORS
+    // error even when the request returns 200.
+    if (isAllowed && origin && c.res) {
+      c.res.headers.set('Access-Control-Allow-Origin', origin);
+      c.res.headers.set('Access-Control-Allow-Credentials', 'true');
+      const existingVary = c.res.headers.get('Vary');
+      c.res.headers.set('Vary', existingVary ? `${existingVary}, Origin` : 'Origin');
+    }
   };
 }

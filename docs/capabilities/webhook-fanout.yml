@@ -1,0 +1,46 @@
+# capabilities.yml — webhook-fanout (P2.17)
+# Schema: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §3.1.1
+# Validated by: .github/workflows/_app-capability-lint.yml (P2.16)
+#
+# Cloudflare Worker that ingests Stripe webhook events, verifies HMAC-SHA256
+# signatures, deduplicates via KV (7-day TTL), filters synthetic customers,
+# and fans out to PostHog + factory_events + Resend.
+#
+# supervisor_access tiers:
+#   green   — supervisor may call without human review
+#   denied  — never callable by supervisor
+
+version: 1
+app:
+  id: webhook-fanout
+  name: "webhook-fanout"
+  repo: Latimer-Woods-Tech/factory
+  custom_domain: webhooks.latwoodtech.work
+  product_tier: internal
+
+routes:
+  # ── Health ────────────────────────────────────────────────────────────────────
+  - path: /health
+    method: GET
+    handler_class: read-internal
+    side_effects: none
+    supervisor_access: green
+
+  # ── Stripe webhooks (exclusively called by Stripe) ────────────────────────────
+  - path: /stripe
+    method: POST
+    handler_class: webhook-external
+    side_effects: write-external
+    supervisor_access: denied
+
+capabilities_exposed:
+  - stripe-webhook-fanout
+
+capabilities_required:
+  - "@latimer-woods-tech/analytics@^0.2.0"
+  - "@latimer-woods-tech/email@^0.2.0"
+
+side_effects_summary:
+  read_external: ["stripe-hmac-verify"]
+  write_external: ["posthog", "resend"]
+  write_app: ["neon:factory-main", "kv:webhook-dedup"]

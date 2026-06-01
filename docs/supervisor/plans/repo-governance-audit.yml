@@ -25,7 +25,7 @@ slots:
     type: string
     validator: "^supervisor/governance/repo-audit-[a-z0-9][a-z0-9-]{0,50}$"
     source: issue_body
-    default: supervisor/governance/repo-audit
+    default: supervisor/governance/repo-audit-scaffold
   - name: commit_message
     type: string
     validator: "^(chore|docs)[(](governance|ops)[)]:"

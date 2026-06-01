@@ -22,6 +22,10 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -30,14 +34,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '24'
-
+          node-version-file: .nvmrc
       - name: Install + build studio-core
-        run: npm ci --ignore-scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
         working-directory: packages/studio-core
 
       - name: Build studio-core
@@ -45,27 +48,27 @@ jobs:
         working-directory: packages/studio-core
 
       - name: Install admin-studio-ui
-        run: npm ci
+        run: npm install --no-audit --no-fund
+        working-directory: apps/admin-studio-ui
+
+      - name: Test admin-studio-ui
+        run: npm test
         working-directory: apps/admin-studio-ui
 
       - name: Build UI
         run: npm run build
         working-directory: apps/admin-studio-ui
         env:
-          # On push to main (no workflow_dispatch input) treat as production.
-          # On workflow_dispatch: use the selected env input.
-          VITE_API_BASE: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'https://admin.latwoodtech.work' || 'https://admin-studio-staging.adrper79.workers.dev' }}
-          # Multi-environment API bases — resolved by the app at runtime based on the current environment.
-          # VITE_API_BASE_LOCAL is static (local dev convenience); never varies between CI runs.
-          VITE_API_BASE_LOCAL: "http://localhost:8787/api"
-          # Staging and production API bases — injected from GitHub Secrets.
-          # Required: ADMIN_STUDIO_STAGING_URL, ADMIN_STUDIO_PROD_URL (no workers.dev fallbacks).
-          # If a secret is unset the variable is empty and the app falls back to /api (relative).
-          VITE_API_BASE_STAGING: "${{ secrets.ADMIN_STUDIO_STAGING_URL }}/api"
-          VITE_API_BASE_PROD: "${{ secrets.ADMIN_STUDIO_PROD_URL }}/api"
+          # Multi-environment API bases — resolved by the app at runtime based on the active session env.
+          # These are public worker URLs (no secrets); hardcoded so deploys don't depend on workflow secret config.
+          # Worker mounts routes at /auth, /synthetic, /ai, etc. — no /api prefix, so do NOT append one here.
+          # Staging custom domain attached via apps/admin-studio/wrangler.jsonc env.staging.routes.
+          VITE_API_BASE_LOCAL: "http://localhost:8787"
+          VITE_API_BASE_STAGING: "https://api.admin.latimerwoods.dev"
+          VITE_API_BASE_PROD: "https://api.apunlimited.com"
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
@@ -78,7 +81,7 @@ jobs:
           if [ "$is_prod" = "true" ] || [ "$target_env" = "production" ]; then
             url="https://apunlimited.com"
           else
-            url="https://staging.admin-studio-ui.pages.dev"
+            url="https://staging.admin.latimerwoods.dev"
           fi
           node scripts/verify-http-endpoint.mjs \
             --url "$url" \

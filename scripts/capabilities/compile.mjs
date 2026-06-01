@@ -1,0 +1,175 @@
+#!/usr/bin/env node
+// @node-runtime — Capability registry compiler
+//
+// Reads capabilities/{primitives,recipes,concepts,rules}/*.json and emits:
+//   1. capabilities/dist/catalog.json — machine-readable bundle
+//   2. apps/admin-studio/src/lib/capability-data.generated.ts — typed bundle
+//
+// Output is deterministic: keys are sorted, arrays are stable-sorted, and
+// generatedAt is a content-derived signature ("sha256:<16hex>") of the
+// catalog payload itself. This makes the bundle byte-stable for any given
+// set of source files, regardless of git history. Squash-merges no longer
+// cause drift between pre-merge and post-merge regens.
+//
+// CI also runs `validate.mjs && compile.mjs && git diff --exit-code` to
+// guarantee the committed dist artifacts match HEAD.
+
+import { createHash } from 'crypto';
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(__dirname, '../..');
+const REGISTRY = join(REPO_ROOT, 'capabilities');
+const DIST = join(REGISTRY, 'dist');
+const TS_OUT = join(REPO_ROOT, 'apps/admin-studio/src/lib/capability-data.generated.ts');
+
+function loadDir(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')));
+}
+
+function deepSort(value) {
+  if (Array.isArray(value)) return value.map(deepSort);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const key of Object.keys(value).sort()) {
+      out[key] = deepSort(value[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+/**
+ * Build a content-derived identifier for the catalog. We hash everything that
+ * goes INTO the catalog (deep-sorted, JSON-serialised) except the signature
+ * itself and the derivable `summary`, then return a `sha256:<16hex>` opaque
+ * version string. Consumers treat this as a stable bundle id; the semver
+ * `schemaVersion` field continues to carry compatibility information.
+ *
+ * Why not a git timestamp? Squash-merges rewrite commit times on the merged
+ * paths, so a regen run pre-squash differs from a regen run post-squash by
+ * exactly the squash timestamp — breaking the CI `git diff --exit-code`
+ * gate on every PR after a capabilities change merges (see PR #1009).
+ */
+function buildContentSignature(catalogParts) {
+  const canonical = JSON.stringify(deepSort(catalogParts));
+  const hash = createHash('sha256').update(canonical).digest('hex');
+  return `sha256:${hash.slice(0, 16)}`;
+}
+
+function buildCatalog() {
+  const primitives = loadDir(join(REGISTRY, 'primitives'));
+  const recipes = loadDir(join(REGISTRY, 'recipes'));
+  const concepts = loadDir(join(REGISTRY, 'concepts'));
+  const rules = loadDir(join(REGISTRY, 'rules'));
+
+  // Merge all rule bundles into one canonical bundle ordered by rule id.
+  const allRules = rules
+    .flatMap((bundle) => bundle.rules ?? [])
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  // Cross-reference: enrich concept recipe summaries with version from recipe files.
+  const recipeVersionMap = new Map(recipes.map((r) => [r.id, r.version ?? null]));
+  const enrichedConcepts = concepts.map((c) => ({
+    ...c,
+    recipes: (c.recipes ?? []).map((rs) => ({
+      ...rs,
+      version: recipeVersionMap.get(rs.id) ?? null,
+    })),
+  }));
+
+  const sortedConcepts = enrichedConcepts
+    .map((c) => deepSort(c))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const sortedRecipes = recipes
+    .map((r) => deepSort(r))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const sortedPrimitives = primitives
+    .map((p) => deepSort(p))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const ruleBundle = { rules: allRules };
+
+  // Content signature is derived from the load-bearing payload only:
+  // concepts, recipes, primitives, and rules. We intentionally exclude the
+  // `summary` (derivable) and `generatedAt` itself (would be self-referential).
+  const generatedAt = buildContentSignature({
+    concepts: sortedConcepts,
+    recipes: sortedRecipes,
+    primitives: sortedPrimitives,
+    ruleBundle,
+  });
+
+  return {
+    schemaVersion: '1.0.0',
+    kind: 'capability-catalog',
+    generatedAt,
+    summary: {
+      conceptCount: concepts.length,
+      primitiveCount: primitives.length,
+      recipeCount: recipes.length,
+      ruleFileCount: rules.length,
+    },
+    concepts: sortedConcepts,
+    recipes: sortedRecipes,
+    primitives: sortedPrimitives,
+    ruleBundle,
+  };
+}
+
+function emitTypeScript(catalog) {
+  // We emit the catalog as a single typed module re-exporting the JSON shape
+  // so admin-studio's existing imports keep their type information without
+  // requiring tsup JSON-import support.
+  const banner =
+    `// DO NOT EDIT — generated by scripts/capabilities/compile.mjs from capabilities/*.json.\n` +
+    `// Run \`node scripts/capabilities/compile.mjs\` to regenerate after changing the registry.\n`;
+
+  const body = `import type {
+  CapabilityCatalogBundle,
+  CapabilityConcept,
+  CapabilityPrimitiveDescriptor,
+  CapabilityRecipeDetail,
+  CapabilityRuleBundle,
+} from './capability-types.js';
+
+const catalog = ${JSON.stringify(catalog, null, 2)} as const;
+
+export const compiledCapabilityCatalog: CapabilityCatalogBundle = catalog as unknown as CapabilityCatalogBundle;
+export const compiledCapabilityConcepts: readonly CapabilityConcept[] = catalog.concepts as unknown as readonly CapabilityConcept[];
+export const compiledCapabilityRecipes: readonly CapabilityRecipeDetail[] = catalog.recipes as unknown as readonly CapabilityRecipeDetail[];
+export const compiledCapabilityPrimitives: readonly CapabilityPrimitiveDescriptor[] = catalog.primitives as unknown as readonly CapabilityPrimitiveDescriptor[];
+export const compiledCapabilityRuleBundle: CapabilityRuleBundle = catalog.ruleBundle as unknown as CapabilityRuleBundle;
+`;
+
+  return banner + body;
+}
+
+function main() {
+  console.log('🛠  Compiling capability registry...');
+  const catalog = buildCatalog();
+
+  mkdirSync(DIST, { recursive: true });
+  writeFileSync(join(DIST, 'catalog.json'), JSON.stringify(catalog, null, 2) + '\n', 'utf8');
+  console.log(`   📄 capabilities/dist/catalog.json`);
+
+  const ts = emitTypeScript(catalog);
+  writeFileSync(TS_OUT, ts, 'utf8');
+  console.log(`   📄 apps/admin-studio/src/lib/capability-data.generated.ts`);
+
+  console.log('\n✅ Compiled.');
+}
+
+// Exports for tests — keep below `main()` so the CLI shape is unchanged.
+export { buildCatalog, buildContentSignature, emitTypeScript };
+
+// Only run main() when invoked directly (allow imports for testing).
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (invokedDirectly) {
+  main();
+}

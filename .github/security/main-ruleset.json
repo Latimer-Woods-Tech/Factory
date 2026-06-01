@@ -1,0 +1,69 @@
+{
+  "_comment": "Canonical CLASSIC RULESET config for Latimer-Woods-Tech/Factory ruleset id 15843812 (target: main via ~DEFAULT_BRANCH). Source of truth for the apply-sec-hardening.yml workflow's ruleset dimension. This file is PUT to https://api.github.com/repos/{owner}/{repo}/rulesets/15843812. NOTE: This is SEPARATE from main-branch-protection.json — that file targets the legacy /branches/main/protection API; this targets the newer /rulesets API. The audit (#602) §3 calls out that we currently have BOTH mechanisms and §7 recommendation #4 is to pick one. STEP 1 OF CONSOLIDATION (2026-05-25): this ruleset now matches-or-exceeds the legacy protection on every dimension (dependency-review added to required_status_checks; required_review_thread_resolution enabled). STEP 2 (separate PR after soak period): disable enforcement on the legacy /branches/main/protection mechanism and remove its half from apply-sec-hardening.yml. The required_status_checks contexts MUST be the bare check job names (e.g. `validate`, `Analyze (javascript)`) — same contract as main-branch-protection.json. To change the ruleset: edit this file in a PR; the scheduled workflow will PUT it on next run (or run apply-sec-hardening.yml manually). Bypass actors: actor_id 5 = repo Admin role (RepositoryRole); actor_id 3560471 = factory-cross-repo App (Integration). Do not change bypass actors without coordination — apply-sec-hardening uses the App token to PUT this file.",
+  "name": "main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "~DEFAULT_BRANCH"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
+    },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": true,
+        "required_reviewers": [],
+        "require_code_owner_review": true,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": true,
+        "allowed_merge_methods": [
+          "squash"
+        ]
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "validate"
+          },
+          {
+            "context": "Analyze (javascript)"
+          },
+          {
+            "context": "dependency-review"
+          }
+        ]
+      }
+    }
+  ],
+  "bypass_actors": [
+    {
+      "actor_id": 5,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "pull_request"
+    },
+    {
+      "actor_id": 3560471,
+      "actor_type": "Integration",
+      "bypass_mode": "pull_request"
+    }
+  ]
+}

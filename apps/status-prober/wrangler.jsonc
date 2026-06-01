@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // status-prober — Cron-driven uptime prober for the four brand surfaces.
+  // Writes the latest probe result to KV under key `current` so the static
+  // https://latwoodtech.com/status/ page can fetch near-live data with a
+  // graceful fall-back to the build-time pulse.json snapshot.
+  //
+  // Deployed at: https://status.latwoodtech.work/
+  // Cron: every 5 minutes
+  "name": "status-prober",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": {
+    "enabled": true
+  },
+
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+
+  // KV namespace must be provisioned before deploy. The id below was created
+  // via `POST /accounts/{id}/storage/kv/namespaces` with title
+  // `status-prober-current`. To recreate from scratch see README.md.
+  "kv_namespaces": [
+    {
+      "binding": "STATUS_KV",
+      "id": "7e84db7a35c74021af5311ed1fdd7b48"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+
+  // Cloudflare rate-limiter (next available id 1012; see
+  // docs/runbooks/add-new-app.md). Guards the public /current and /health
+  // endpoints from being scraped into oblivion.
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "STATUS_RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1012",
+        "simple": {
+          "limit": 120,
+          "period": 60
+        }
+      }
+    ]
+  },
+
+  "env": {
+    "production": {
+      "name": "status-prober",
+      "workers_dev": true,
+      "triggers": {
+        "crons": ["*/5 * * * *"]
+      },
+      "routes": [
+        {
+          "pattern": "status.latwoodtech.work",
+          "custom_domain": true
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "STATUS_KV",
+          "id": "7e84db7a35c74021af5311ed1fdd7b48"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production"
+      },
+      "unsafe": {
+        "bindings": [
+          {
+            "name": "STATUS_RATE_LIMITER",
+            "type": "ratelimit",
+            "namespace_id": "1012",
+            "simple": {
+              "limit": 120,
+              "period": 60
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+

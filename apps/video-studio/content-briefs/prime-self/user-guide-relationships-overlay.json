@@ -1,0 +1,49 @@
+{
+  "briefKey": "user-guide-relationships-overlay",
+  "key": "user-guide-relationships-overlay",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "user-guide",
+  "title": "The Relationships Overlay",
+  "description": "What happens when two blueprints meet. Electromagnetic channels, companionship, and the gift of difference.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "eros",
+  "forgeTheme": "eros",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Composite Relationships and the Overlay View",
+  "learningGoal": "User can interpret a composite chart, distinguish electromagnetic from companionship channels, and understand the dynamics of defined-meets-undefined.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Electromagnetic channels appear when each person carries one half of a channel — magnetic and complementary",
+    "Companionship channels appear when both people carry the same complete channel — shared and familiar",
+    "Defined-undefined dynamics show where one person consistently amplifies an open center in the other",
+    "Difference is not friction; it is the structural source of attraction and complementarity"
+  ],
+  "forbiddenClaims": [
+    "guaranteed compatibility",
+    "soulmate prediction",
+    "this person is right for you",
+    "this person is wrong for you"
+  ],
+  "toneNotes": "Warm but precise. Avoid romantic mysticism. Treat relationships as the meeting of two distinct architectures.",
+  "narration_script": "When two blueprints meet, a third structure appears.\n\nThe composite chart shows you both people overlaid on the same body graph. Each person's defined centers and channels are visible. Where they connect, you can read the dynamics of the relationship itself.\n\nElectromagnetic channels are where one person carries one half of a channel and the other person carries the other half. Apart, neither of you has the channel. Together, the channel completes. This is magnetic. It is the structural source of attraction. You feel pulled because something genuinely completes between you.\n\nCompanionship channels are where both of you already carry the full channel on your own. When you are together, that shared trait is reinforced. There is familiarity. There is recognition. There is the quiet pleasure of being seen by someone who already knows the terrain.\n\nDefined-undefined dynamics show where one person consistently amplifies an open center in the other. The defined partner broadcasts that energy. The undefined partner feels it constantly. Over time, this is where conditioning happens. It is also where wisdom accumulates.\n\nDifference is not a problem to solve. It is the architecture of relationship.\n\nWhen you understand what is electromagnetic, what is companionship, and what is amplification, you stop arguing about the wrong things. You can see the structure underneath the story.\n\nYou meet each other where you actually are.",
+  "script": "When two blueprints meet, a third structure appears.\n\nThe composite chart shows you both people overlaid on the same body graph. Each person's defined centers and channels are visible. Where they connect, you can read the dynamics of the relationship itself.\n\nElectromagnetic channels are where one person carries one half of a channel and the other person carries the other half. Apart, neither of you has the channel. Together, the channel completes. This is magnetic. It is the structural source of attraction. You feel pulled because something genuinely completes between you.\n\nCompanionship channels are where both of you already carry the full channel on your own. When you are together, that shared trait is reinforced. There is familiarity. There is recognition. There is the quiet pleasure of being seen by someone who already knows the terrain.\n\nDefined-undefined dynamics show where one person consistently amplifies an open center in the other. The defined partner broadcasts that energy. The undefined partner feels it constantly. Over time, this is where conditioning happens. It is also where wisdom accumulates.\n\nDifference is not a problem to solve. It is the architecture of relationship.\n\nWhen you understand what is electromagnetic, what is companionship, and what is amplification, you stop arguing about the wrong things. You can see the structure underneath the story.\n\nYou meet each other where you actually are.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "When two blueprints meet, a third structure appears.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Electromagnetic channels: one half each. Apart, incomplete. Together, the channel closes. This is the magnetic source of attraction.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "Companionship channels are shared. Amplification happens where one of you is defined and the other is open. Difference is the architecture.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Magnetism", "Recognition", "Meeting"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "Read the structure underneath the story. Meet each other where you actually are.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Reading the Relationships Overlay: Two Blueprints Meeting",
+    "description": "Electromagnetic, companionship, and amplification — the three dynamics that emerge when blueprints overlay."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

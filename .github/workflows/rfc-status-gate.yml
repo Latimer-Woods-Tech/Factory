@@ -1,0 +1,73 @@
+name: RFC Status Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
+    paths:
+      - 'docs/rfc/*.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  enforce-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Identify changed RFC files
+        id: changed
+        run: |
+          set -euo pipefail
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          mapfile -t files < <(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- 'docs/rfc/*.md' || true)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "files=" >> "$GITHUB_OUTPUT"
+            echo "::notice::No RFC files changed in this PR; gate is a no-op."
+            exit 0
+          fi
+          printf 'Changed RFC files:\n'
+          printf ' - %s\n' "${files[@]}"
+          # join with commas for output
+          ( IFS=, ; echo "files=${files[*]}" ) >> "$GITHUB_OUTPUT"
+
+      - name: Check Status header of changed RFCs
+        if: ${{ steps.changed.outputs.files != '' }}
+        env:
+          AUTOMERGE_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'automerge:allow-bot-branch') }}
+          FILES: ${{ steps.changed.outputs.files }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra arr <<< "$FILES"
+          fail=0
+          for f in "${arr[@]}"; do
+            if [[ ! -f "$f" ]]; then
+              echo "::notice file=$f::File deleted in this PR; skipping status check."
+              continue
+            fi
+            # Status:    accepted   (case-insensitive value)
+            status="$(grep -E '^Status:[[:space:]]*' "$f" | head -n1 | sed -E 's/^Status:[[:space:]]*//I' | tr -d '\r' | awk '{print tolower($1)}')"
+            if [[ -z "$status" ]]; then
+              echo "::error file=$f::Missing 'Status:' line. Every RFC must declare Status (draft|review|revising|accepted|implemented|rejected)."
+              fail=1
+              continue
+            fi
+            echo "::notice file=$f::Status=${status}, automerge_label=${AUTOMERGE_LABEL}"
+            # The gate: if automerge label is on, Status MUST be accepted or implemented.
+            # All other statuses (draft, review, revising) require an explicit human merge.
+            if [[ "$AUTOMERGE_LABEL" == "true" && "$status" != "accepted" && "$status" != "implemented" ]]; then
+              echo "::error file=$f::RFC carries Status='$status' but PR has 'automerge:allow-bot-branch' label. Remove the auto-merge label OR flip the RFC's Status line to 'accepted' first. Auto-merging an unaccepted RFC was the #683 anomaly this gate exists to prevent."
+              fail=1
+            fi
+          done
+          if [[ $fail -ne 0 ]]; then
+            exit 1
+          fi
+          echo "All RFC files in this PR have an acceptable Status for the current label set."

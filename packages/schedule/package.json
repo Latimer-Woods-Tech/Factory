@@ -1,7 +1,12 @@
 {
   "name": "@latimer-woods-tech/schedule",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/schedule"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },

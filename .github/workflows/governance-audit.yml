@@ -1,0 +1,117 @@
+# =============================================================================
+# Governance Audit — Phase 4 Defense #4 of the workflow lifecycle.
+#
+# Monthly receipt of what the Factory automation surface did. Scans the
+# last calendar month's workflow run logs for *_AUDIT: lines, aggregates
+# by category, and posts a single human-readable rolling issue.
+#
+# Frame: consent, not health. Not "is the system healthy?" but "what
+# changed, and was that wanted?"
+#
+# DEFENSES INHERITED (see docs/decisions/2026-05-23-governance-of-governance.md)
+#   #1 Kill switch       — first action: if .github/automation-paused exists, exit 0
+#   #2 External alerting — Pushover priority -1 (low) on completion
+#   #3 Bounded blast     — contents:read + issues:write only; source-scan tests
+#   #4 Monthly audit     — this workflow IS Defense #4
+# =============================================================================
+name: Governance Audit (Monthly)
+
+on:
+  schedule:
+    # 1st of each month, 13:00 UTC. Lands after the morning workflows have
+    # settled. Reports on the previous calendar month.
+    - cron: '0 13 1 * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run: build report but do not post / page'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: governance-audit
+  cancel-in-progress: false  # never cancel a partial audit run; partial > stale
+
+# BOUNDED BLAST RADIUS — minimum-viable permissions.
+# - contents: read   → read repo + workflow run logs
+# - issues: write    → open / patch one rolling monthly issue
+# Notably absent: actions:write, pull-requests:*, contents:write, packages.
+permissions:
+  contents: read
+  issues: write
+  actions: read   # read-only — needed for `gh run list/view --log`
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # log scraping can be slow
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - name: Run governance audit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          PUSHOVER_APP_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          GOVERNANCE_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          MAX_RUNS_PER_WORKFLOW: '50'
+        run: node .github/scripts/governance-audit.mjs
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Governance Audit"
+            echo ""
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Dry run: ${{ env.GOVERNANCE_DRY_RUN || 'false' }}"
+            echo ""
+            echo "See workflow log for GOVERNANCE_AUDIT: lines."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ingest audit-report artifact
+        if: always()
+        env:
+          FACTORY_CORE_API_URL: ${{ vars.FACTORY_CORE_API_URL || '' }}
+          FACTORY_CORE_API_INGEST_KEY: ${{ secrets.FACTORY_CORE_API_INGEST_KEY || '' }}
+        run: |
+          if [ -z "${FACTORY_CORE_API_URL:-}" ] || [ -z "${FACTORY_CORE_API_INGEST_KEY:-}" ]; then
+            echo "Skipping audit artifact ingest (FACTORY_CORE_API_URL or FACTORY_CORE_API_INGEST_KEY not set)"
+            exit 0
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(jq -n \
+            --arg at "audit-report" \
+            --arg pt "github-workflow" \
+            --arg pr "${{ github.run_id }}" \
+            --arg ss "github-actions" \
+            --arg sei "audit-governance-${{ github.repository }}-${{ github.run_id }}" \
+            --arg srepo "${{ github.repository }}" \
+            --arg uri "$RUN_URL" \
+            --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg report_type "governance" \
+            '{artifact_type:$at,producer_type:$pt,producer_ref:$pr,source_system:$ss,
+              source_event_id:$sei,subject_repo:$srepo,uri:$uri,
+              metadata:{report_type:$report_type},observed_at:$ts}')
+          curl -s -o /dev/null -w "Audit-report artifact HTTP %{http_code}\n" \
+            -X POST "${FACTORY_CORE_API_URL}/v1/artifacts" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${FACTORY_CORE_API_INGEST_KEY}" \
+            -d "$PAYLOAD" || echo "::warning::Audit-report artifact ingest failed (non-blocking)"

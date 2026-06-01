@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/logger",
   "version": "0.3.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/logger"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -29,7 +34,7 @@
   "dependencies": {
     "@latimer-woods-tech/errors": "file:../errors",
     "@latimer-woods-tech/monitoring": "file:../monitoring",
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

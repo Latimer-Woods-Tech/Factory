@@ -30,6 +30,27 @@ function getDb(hyperdrive: HyperdriveBinding): FactoryDb {
   return db;
 }
 
+/**
+ * Run a DB op against the cached FactoryDb; if it throws, drop the cache,
+ * rebuild a fresh client, and retry once. Postgres-js connections in the
+ * cache can get poisoned (e.g. by a partially-aborted query) and every
+ * subsequent borrow from that pool then fails until the isolate restarts.
+ * Cache eviction + reconnect converts a sticky 50% flake into a transient
+ * slow path on first failure.
+ */
+async function withDbRetry<T>(
+  hyperdrive: HyperdriveBinding,
+  op: (db: FactoryDb) => Promise<T>,
+): Promise<T> {
+  try {
+    return await op(getDb(hyperdrive));
+  } catch (err) {
+    console.error('[catalog-store] DB query failed; evicting cache and retrying:', (err as Error).message);
+    dbCache.delete(hyperdrive);
+    return await op(getDb(hyperdrive));
+  }
+}
+
 export interface UpsertResult {
   upserted: number;
   failed: number;
@@ -160,8 +181,11 @@ export async function listCatalog(
   app?: string,
   env?: string,
 ): Promise<FunctionCatalogRow[]> {
-  const db = getDb(hyperdrive);
-  const rows = await db.execute<DbRow>(sql`
+  // FactoryDb.execute returns { rows, rowCount }. Wrapped in withDbRetry
+  // because the postgres-js client cached in the WeakMap can be poisoned
+  // by a partially-aborted query on a prior request; the retry rebuilds
+  // a fresh client. Observed as ~40% 500-rate on /catalog before this.
+  const result = await withDbRetry(hyperdrive, (db) => db.execute<DbRow>(sql`
     SELECT id, app, env, method, path, auth, summary, owner, reversibility,
            slo_p95_ms, slo_error_rate, tags, smoke, build_sha,
            first_seen_at, last_seen_at
@@ -169,8 +193,8 @@ export async function listCatalog(
      WHERE (${app ?? null}::text IS NULL OR app = ${app ?? null})
        AND (${env ?? null}::text IS NULL OR env = ${env ?? null})
      ORDER BY app, env, path, method
-  `);
-  return (rows as unknown as DbRow[]).map(toRow);
+  `));
+  return result.rows.map(toRow);
 }
 
 export interface CatalogSummary {
@@ -183,8 +207,7 @@ export interface CatalogSummary {
 export async function summariseCatalog(
   hyperdrive: HyperdriveBinding,
 ): Promise<CatalogSummary[]> {
-  const db = getDb(hyperdrive);
-  const rows = await db.execute<{
+  const result = await withDbRetry(hyperdrive, (db) => db.execute<{
     app: string;
     env: string;
     endpoints: number;
@@ -194,13 +217,8 @@ export async function summariseCatalog(
       FROM function_catalog
      GROUP BY app, env
      ORDER BY app, env
-  `);
-  return (rows as unknown as Array<{
-    app: string;
-    env: string;
-    endpoints: number;
-    last_seen_at: string | Date;
-  }>).map((r) => ({
+  `));
+  return result.rows.map((r) => ({
     app: r.app,
     env: r.env,
     endpoints: Number(r.endpoints),

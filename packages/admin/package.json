@@ -2,6 +2,11 @@
   "name": "@latimer-woods-tech/admin",
   "version": "0.3.0",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
+    "directory": "packages/admin"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -31,7 +36,7 @@
     "@latimer-woods-tech/auth": "file:../auth",
     "@latimer-woods-tech/analytics": "file:../analytics",
     "@latimer-woods-tech/neon": "file:../neon",
-    "hono": "^4.12.14"
+    "hono": "^4.12.18"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

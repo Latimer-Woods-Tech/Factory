@@ -4,7 +4,7 @@
 > External tooling versions are hand-maintained here.
 > Downstream repos: pointer to this file in `CLAUDE.md` — do NOT copy-paste; copies drift.
 
-*Last updated: 2026-05-05 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
+*Last updated: 2026-05-30 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
 
 ---
 
@@ -16,27 +16,39 @@
 | `@latimer-woods-tech/admin` | `0.3.0` | stable |
 | `@latimer-woods-tech/analytics` | `0.2.0` | stable |
 | `@latimer-woods-tech/auth` | `0.2.0` | stable |
-| `@latimer-woods-tech/compliance` | `0.2.0` | stable |
+| `@latimer-woods-tech/biome-config` | `0.1.0` | stable |
+| `@latimer-woods-tech/browser` | `0.1.0` | stable |
+| `@latimer-woods-tech/compliance` | `0.3.0` | stable |
 | `@latimer-woods-tech/content` | `0.2.0` | stable |
 | `@latimer-woods-tech/copy` | `0.2.0` | stable |
-| `@latimer-woods-tech/crm` | `0.2.0` | stable |
+| `@latimer-woods-tech/creator` | `0.1.0` | stable |
+| `@latimer-woods-tech/crm` | `0.3.0` | stable |
 | `@latimer-woods-tech/deploy` | `0.2.0` | stable |
+| `@latimer-woods-tech/design-system` | `0.1.0` | stable |
 | `@latimer-woods-tech/design-tokens` | `0.2.0` | stable |
 | `@latimer-woods-tech/email` | `0.2.0` | stable |
-| `@latimer-woods-tech/errors` | `0.2.0` | stable |
-| `@latimer-woods-tech/llm` | `0.3.1` | stable |
-| `@latimer-woods-tech/llm-meter` | `0.1.1` | stable |
-| `@latimer-woods-tech/logger` | `0.2.0` | stable |
+| `@latimer-woods-tech/entitlements` | `0.1.0` | stable |
+| `@latimer-woods-tech/errors` | `0.1.0` | stable |
+| `@latimer-woods-tech/eslint-config` | `0.1.0` | stable |
+| `@latimer-woods-tech/flags` | `0.1.0` | stable |
+| `@latimer-woods-tech/llm` | `0.3.4` | stable |
+| `@latimer-woods-tech/llm-meter` | `0.2.2` | stable |
+| `@latimer-woods-tech/logger` | `0.3.0` | stable |
 | `@latimer-woods-tech/monitoring` | `0.2.1` | stable |
 | `@latimer-woods-tech/neon` | `0.2.3` | stable |
+| `@latimer-woods-tech/protocol` | `0.1.0` | stable |
 | `@latimer-woods-tech/realtime` | `0.1.0` | stable |
-| `@latimer-woods-tech/schedule` | `0.2.2` | stable |
+| `@latimer-woods-tech/schedule` | `0.2.3` | stable |
 | `@latimer-woods-tech/seo` | `0.2.0` | stable |
 | `@latimer-woods-tech/social` | `0.2.0` | stable |
 | `@latimer-woods-tech/stripe` | `0.2.0` | stable |
 | `@latimer-woods-tech/studio-core` | `0.1.0` | stable |
-| `@latimer-woods-tech/telephony` | `0.2.0` | stable |
+| `@latimer-woods-tech/telephony` | `0.3.0` | stable |
 | `@latimer-woods-tech/testing` | `0.2.0` | stable |
+| `@latimer-woods-tech/tsconfig-base` | `0.1.0` | stable |
+| `@latimer-woods-tech/ui` | `0.2.0` | stable |
+| `@latimer-woods-tech/validation` | `0.1.0` | stable |
+| `@latimer-woods-tech/video` | `0.2.0` | stable |
 <!-- AUTO-UPDATED-END -->
 
 ---
@@ -69,7 +81,7 @@ Tier routing lives in `@latimer-woods-tech/llm` (`fast | balanced | smart | veri
 | **smart** | Anthropic — Claude Opus 4.7 | Managed Agents GA; primary for complex reasoning |
 | **balanced** | Anthropic — Claude Sonnet | Default for most tasks |
 | **fast** | Groq — `llama-3.3-70b-versatile` | Low-latency; streaming |
-| **verifier** | Groq | Output validation and scoring |
+| **verifier** | Groq — `llama-4-maverick` | Output validation and grounding check; replaces `llama-3.3-70b-versatile` (verifier role) |
 | **long-context (>150k tokens)** | Gemini 2.5 Pro | Auto-fallback in `@latimer-woods-tech/llm` |
 | **xAI / Grok** | Grok 3 | Active — check `@latimer-woods-tech/llm` for current tier assignment |
 | **gateway** | Cloudflare AI Gateway | All tiers route through this; no exceptions |

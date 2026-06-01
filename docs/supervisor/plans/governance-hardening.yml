@@ -16,7 +16,7 @@ preconditions:
 slots:
   - name: target_repo
     type: enum
-    values: [humandesign, videoking, xico-city, factory-admin, factory]
+    values: [humandesign, capricast, xico-city, factory-admin, factory]
     source: issue_body
     referential_check: factory_admin.repo.health
   - name: hardening_kind

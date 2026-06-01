@@ -3,6 +3,92 @@ import type { FactoryDb } from '@latimer-woods-tech/neon';
 import { InternalError, NotFoundError, ValidationError, ErrorCodes } from '@latimer-woods-tech/errors';
 
 // ---------------------------------------------------------------------------
+// Audit log (P2.13g)
+// ---------------------------------------------------------------------------
+
+/** Configuration for the auditLog helper. */
+export interface AuditLogConfig {
+  /** Base URL of factory-core-api (e.g. "https://api.factory.example.com"). */
+  apiUrl: string;
+  /** Bearer token accepted by POST /v1/audit (AUDIT_INGEST_KEY). */
+  apiKey: string;
+}
+
+/** Data for a single audit log entry. */
+export interface AuditEntry {
+  /** Identity of the actor (JWT sub, service name, or email). */
+  actor: string;
+  /** 'human' | 'automation'. Defaults to 'human'. */
+  actorType?: 'human' | 'automation';
+  /** Verb describing the action: 'deploy', 'rollback', 'gate-override', etc. */
+  action: string;
+  /** Dotted resource path: 'worker.factory-core-api', 'secret.JWT_SECRET', etc. */
+  resource: string;
+  /** Optional stable resource identifier (e.g. run UUID, PR number). */
+  resourceId?: string;
+  /** Correlates to the HTTP request_id header. */
+  requestId?: string;
+  /** 'production' | 'staging' | 'local'. Defaults to 'production'. */
+  environment?: string;
+  /** 'success' | 'failure' | 'denied' | 'dry-run'. Defaults to 'success'. */
+  result?: 'success' | 'failure' | 'denied' | 'dry-run';
+  /** Sanitised request data — caller must redact secrets before passing. */
+  detail?: Record<string, unknown>;
+  /** Link to CI run, PR, deploy, or change review for evidence. */
+  evidenceUrl?: string;
+  /** ISO-8601 timestamp. Defaults to now(). */
+  actedAt?: string;
+}
+
+/**
+ * Sends an audit entry to factory-core-api POST /v1/audit.
+ *
+ * Designed for fire-and-forget: caller should call without await and catch
+ * errors independently (never let audit failures block user requests).
+ *
+ * @example
+ * // In a Hono route (fire-and-forget):
+ * ctx.executionCtx.waitUntil(
+ *   sendAuditEntry(config, { actor, action: 'deploy', resource: 'worker.myapp' })
+ *     .catch((e) => console.warn('audit failed', e))
+ * );
+ */
+export async function sendAuditEntry(
+  config: AuditLogConfig,
+  entry: AuditEntry,
+): Promise<void> {
+  const body = JSON.stringify({
+    actor: entry.actor,
+    actor_type: entry.actorType ?? 'human',
+    action: entry.action,
+    resource: entry.resource,
+    resource_id: entry.resourceId,
+    request_id: entry.requestId,
+    environment: entry.environment ?? 'production',
+    result: entry.result ?? 'success',
+    detail: entry.detail ?? {},
+    evidence_url: entry.evidenceUrl,
+    acted_at: entry.actedAt ?? new Date().toISOString(),
+  });
+
+  const resp = await fetch(`${config.apiUrl}/v1/audit`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+    body,
+  });
+
+  if (!resp.ok) {
+    throw new InternalError(
+      `audit ingest rejected: HTTP ${resp.status}`,
+      { status: resp.status },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Calling-hours enforcement
 // ---------------------------------------------------------------------------
 

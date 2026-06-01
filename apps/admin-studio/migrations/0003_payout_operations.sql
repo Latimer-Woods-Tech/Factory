@@ -116,36 +116,16 @@ COMMENT ON TABLE payouts IS 'Individual payouts within a batch. Many-to-one rela
 COMMENT ON TABLE payout_dlq IS 'Failed payouts awaiting operator intervention. Linked to both payout and batch for traceability.';
 COMMENT ON TABLE payout_audit_log IS 'Complete audit trail of all payout operations for compliance and finance review.';
 
-COMMENT ON COLUMN payout_batches.execution_status IS 'Current status of the batch: pending (ready to execute), processing (executing), completed (all succeeded), partially_completed (some failed), failed (batch operation itself failed)';
+COMMENT ON COLUMN payout_batches.status IS 'Current status of the batch: pending (ready to execute), processing (executing), completed (all succeeded), partially_completed (some failed), failed (batch operation itself failed)';
 COMMENT ON COLUMN payout_batches.creator_count IS 'Total creators in this batch (snapshot at creation time)';
 COMMENT ON COLUMN payouts.retry_count IS 'Number of retry attempts made so far';
 COMMENT ON COLUMN payouts.max_retries IS 'Maximum number of retries before escalation to DLQ';
 COMMENT ON COLUMN payout_dlq.suggested_action IS 'Operator hint: "retry_now", "check_stripe_account", "manual_payment", "contact_creator"';
 
--- RLS policies for creator-owned data
-ALTER TABLE payout_batches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payout_dlq ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payout_audit_log ENABLE ROW LEVEL SECURITY;
-
--- Operators (admin role) can see all payouts
-CREATE POLICY payout_batches_admin_all ON payout_batches
-  FOR ALL
-  USING (auth.jwt_get_claim('role') = 'admin');
-
-CREATE POLICY payouts_admin_all ON payouts
-  FOR ALL
-  USING (auth.jwt_get_claim('role') = 'admin');
-
-CREATE POLICY payout_dlq_admin_all ON payout_dlq
-  FOR ALL
-  USING (auth.jwt_get_claim('role') = 'admin');
-
-CREATE POLICY payout_audit_log_admin_all ON payout_audit_log
-  FOR ALL
-  USING (auth.jwt_get_claim('role') = 'admin');
-
--- Creators can see their own payouts (read-only)
-CREATE POLICY payouts_creator_own ON payouts
-  FOR SELECT
-  USING (creator_id = auth.jwt_get_claim('sub'));
+-- RLS policies removed: these used auth.jwt_get_claim() which is a
+-- Supabase-only function. Factory runs Neon Postgres, which does not provide
+-- the auth schema, so applying them stops the migration with
+-- "schema 'auth' does not exist". Authorization is enforced at the Worker
+-- application layer via JWT middleware. Re-introducing RLS as defense in
+-- depth requires a Neon-native approach (current_setting('jwt.claims.*'))
+-- and is tracked separately.

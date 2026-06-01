@@ -1,0 +1,80 @@
+name: Generate State
+
+# Writes docs/STATE.md — the single canonical "what's true right now"
+# snapshot for any agent or human reading the repo. Read order is documented
+# in the file itself.
+#
+# Runs after the aggregator has had time to commit completion-tracker.json
+# (10:30 UTC + drift-PR auto-merge time ≈ 30 min) and after cost +
+# conformance daily runs. 12:11 UTC is comfortably after all of them.
+#
+# Also runs on push to main when relevant inputs change, so the file
+# doesn't go stale on big-change days.
+
+on:
+  schedule:
+    - cron: '11 12 * * *' # daily 12:11 UTC, after aggregator + cost + conformance
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'docs/ROADMAP.md'
+      - 'docs/GAP_REGISTER.md'
+      - 'docs/completion-tracker.json'
+      - 'docs/conformance/summary.md'
+      - 'docs/cost/summary.md'
+      - 'docs/decisions/**'
+      - 'scripts/generate_state.py'
+      - '.github/workflows/generate-state.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: generate-state
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: '3.12'
+
+      - name: Generate STATE.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/generate_state.py
+
+      - name: Open auto-merge PR if STATE.md changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git add docs/STATE.md
+          # Strip the timestamp line so trivial regenerations don't open PRs
+          if git diff --cached --quiet docs/STATE.md; then
+            echo "STATE.md unchanged."
+            exit 0
+          fi
+          DATE=$(date -u +%F)
+          BRANCH="chore/state-snapshot-$DATE-$(date -u +%H%M)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -m "chore(state): auto-update STATE.md ($DATE)"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --title "chore(state): auto-update STATE.md ($DATE)" \
+            --body "Automated daily \`STATE.md\` refresh from \`scripts/generate_state.py\`. Single canonical \"what's true right now\" snapshot for agents + humans." \
+            --label automation \
+            --label documentation \
+            --label auto-merge

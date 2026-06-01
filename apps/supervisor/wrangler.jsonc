@@ -1,15 +1,9 @@
 {
   "name": "factory-supervisor",
   "main": "src/index.ts",
-  "compatibility_date": "2026-04-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-
-  // Cron: daily weekday heartbeat at 12:00 UTC (≈07:00 ET).
-  // Phase-1: noop heartbeat only. Enable after D1 databases are provisioned.
-  "triggers": {
-    "crons": ["0 12 * * 1-5"]
-  },
 
   // Cron: 11:00 UTC = 07:00 AM ET on weekdays (Mon–Fri).
   // Required secrets (injected by deploy-supervisor.yml from GitHub repo secrets):
@@ -20,6 +14,8 @@
   //   PUSHOVER_USER_KEY           — Pushover user/group key
   //   JWT_SECRET                  — Supervisor JWT signing secret
   //   GROQ_API_KEY                — Groq API key for LLM fallback
+  //   FACTORY_CORE_API_URL        — factory-core-api base URL for run push-on-write (P1.9; optional)
+  //   SUPERVISOR_PUSH_KEY         — service key for POST /v1/runs/mirror (P1.9; optional)
   "triggers": {
     "crons": ["0 11 * * 1-5"]
   },
@@ -54,15 +50,52 @@
     "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/supervisor",
     "VERTEX_PROJECT": "factory-495015",
     "VERTEX_LOCATION": "us-central1",
-    "PER_RUN_CAP_CENTS": "500"
+    "PER_RUN_CAP_CENTS": "500",
+    "FACTORY_CORE_API_URL": "https://core.latwoodtech.work"
   },
 
   "env": {
     "production": {
       "workers_dev": false,
       "routes": [
-        { "pattern": "supervisor.apunlimited.com/*", "zone_name": "apunlimited.com" }
+        { "pattern": "supervisor.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
+      ],
+      // vars, durable_objects, d1_databases, and migrations are NOT inherited by
+      // named environments — they must be repeated here or the production worker
+      // deploys without them (this is why FACTORY_CORE_API_URL never reached the
+      // prod worker, leaving P1.9 push-on-write dormant).
+      "vars": {
+        "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/supervisor",
+        "VERTEX_PROJECT": "factory-495015",
+        "VERTEX_LOCATION": "us-central1",
+        "PER_RUN_CAP_CENTS": "500",
+        "FACTORY_CORE_API_URL": "https://core.latwoodtech.work"
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "SUPERVISOR", "class_name": "SupervisorDO" },
+          { "name": "LOCK", "class_name": "LockDO" }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": ["SupervisorDO", "LockDO"]
+        }
+      ],
+      "d1_databases": [
+        {
+          "binding": "MEMORY",
+          "database_name": "factory-supervisor-memory",
+          "database_id": "9463b4a2-06c4-4f6a-b6ac-d6e1cb552bc2"
+        },
+        {
+          "binding": "LLM_LEDGER",
+          "database_name": "factory-supervisor-ledger",
+          "database_id": "1033b6bf-d38f-4948-8f3b-0de787c87f6b"
+        }
       ]
     }
   }
 }
+

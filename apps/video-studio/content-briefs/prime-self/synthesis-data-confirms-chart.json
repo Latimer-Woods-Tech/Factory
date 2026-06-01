@@ -1,0 +1,49 @@
+{
+  "briefKey": "synthesis-data-confirms-chart",
+  "key": "synthesis-data-confirms-chart",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "synthesis-moments",
+  "title": "When the Data Confirms the Chart",
+  "description": "Psychometric self-report meeting the structural signature of the blueprint. The lived-evidence layer of synthesis.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Big Five psychometric scores and Human Design structural signatures",
+  "learningGoal": "User understands the lived-evidence layer of synthesis: when their own self-reported psychometric scores align with the structural patterns the blueprint describes, the confirmation is at its strongest.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "The Big Five — Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism — is the most validated personality framework in research psychology",
+    "Big Five scores correlate measurably with specific Human Design structural patterns when the data is examined honestly",
+    "High Neuroticism tracks with Open Solar Plexus; high Openness tracks with active Head and Ajna gates",
+    "When your own self-report confirms the blueprint's structural signature, the reading stops being theory — it becomes lived evidence"
+  ],
+  "forbiddenClaims": [
+    "Big Five proves Human Design",
+    "psychometrics validate astrology",
+    "your scores determine your design",
+    "guaranteed scientific backing"
+  ],
+  "toneNotes": "Rigorous and grounded. This is the bridge between subjective design language and observable behavioral measurement. Do not overstate the science. Do not undersell the convergence.",
+  "narration_script": "There is one form of confirmation stronger than any cross-system convergence.\n\nYour own data.\n\nThe Big Five is the most validated personality framework in research psychology. Five dimensions, measured by self-report. Openness. Conscientiousness. Extraversion. Agreeableness. Neuroticism. Decades of studies, across cultures, showing these five capture meaningful variance in how people actually behave.\n\nThe Big Five was not built to validate Human Design. It was built to measure personality. And yet, when you examine the data honestly, patterns appear.\n\nHigh Neuroticism scores cluster with Open Solar Plexus charts. The undefined emotional center that amplifies the field, that feels everything more vividly, shows up in the data as elevated emotional reactivity.\n\nHigh Openness scores cluster with active Head and Ajna gates. The conceptual centers that pressure the mind toward new ideas show up as measured curiosity, divergent thinking, aesthetic sensitivity.\n\nWhen your own Big Five profile matches what the blueprint describes, something changes.\n\nThe reading stops being a story someone is telling you about yourself. It becomes lived evidence. Theory you can argue with. Your own self-report is harder.\n\nThis is the highest form of synthesis. Not two metaphysical systems agreeing with each other. Your own observed pattern agreeing with the structural map.\n\nThe data confirms the chart. The chart confirms what you already knew.",
+  "script": "There is one form of confirmation stronger than any cross-system convergence.\n\nYour own data.\n\nThe Big Five is the most validated personality framework in research psychology. Five dimensions, measured by self-report. Openness. Conscientiousness. Extraversion. Agreeableness. Neuroticism. Decades of studies, across cultures, showing these five capture meaningful variance in how people actually behave.\n\nThe Big Five was not built to validate Human Design. It was built to measure personality. And yet, when you examine the data honestly, patterns appear.\n\nHigh Neuroticism scores cluster with Open Solar Plexus charts. The undefined emotional center that amplifies the field, that feels everything more vividly, shows up in the data as elevated emotional reactivity.\n\nHigh Openness scores cluster with active Head and Ajna gates. The conceptual centers that pressure the mind toward new ideas show up as measured curiosity, divergent thinking, aesthetic sensitivity.\n\nWhen your own Big Five profile matches what the blueprint describes, something changes.\n\nThe reading stops being a story someone is telling you about yourself. It becomes lived evidence. Theory you can argue with. Your own self-report is harder.\n\nThis is the highest form of synthesis. Not two metaphysical systems agreeing with each other. Your own observed pattern agreeing with the structural map.\n\nThe data confirms the chart. The chart confirms what you already knew.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 180, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "There is one form of confirmation stronger than any cross-system convergence. Your own data.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 600, "text": "Openness. Conscientiousness. Extraversion. Agreeableness. Neuroticism. The most validated personality framework in research psychology.", "showBodyGraph": false },
+    { "type": "breath", "durationFrames": 120, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 600, "text": "High Neuroticism with Open Solar Plexus. High Openness with active Head and Ajna gates. The same pattern, in two languages.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 420, "triad": ["Measure", "Match", "Evidence"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 420, "text": "The data confirms the chart. The chart confirms what you already knew.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "When the Data Confirms the Chart",
+    "description": "The lived-evidence layer of synthesis — when your own psychometric self-report aligns with the structural signature of your blueprint."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -1,0 +1,23 @@
+/* TEAM */
+
+  Founder · Engineer · Operator: Adrian Perry
+  Contact: aperry [at] latwoodtech.com
+  Twitter / X: @adrper79
+  Location: United States
+
+/* SITE */
+
+  Last updated: 2026-05-23
+  Standards: HTML5, ES2024, CSS3
+  Built with: Cloudflare Pages, hand-written HTML/CSS/JS, build-time
+              liveness probe + curated public JSON. No frameworks.
+              Total page weight under 200 KB on first load.
+  Stack details: https://latwoodtech.com/stack/
+  Infrastructure: Cloudflare Workers (Hono), Neon Postgres via Hyperdrive,
+                  R2, Stream, Durable Objects. Anthropic → Grok → Groq
+                  cascade via AI Gateway.
+
+/* PHILOSOPHY */
+
+  We build technology that gives people more life, not more friction.
+  Real products. Real rigor. More life.

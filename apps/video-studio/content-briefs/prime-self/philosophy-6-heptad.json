@@ -1,0 +1,49 @@
+{
+  "briefKey": "philosophy-6-heptad",
+  "key": "philosophy-6-heptad",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "philosophy",
+  "title": "Heptad: The Sixth Overtone",
+  "description": "The whole chart as one unified system. Synthesis as self-awareness overflow. The seventh that holds the six.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 90,
+  "duration_seconds": 90,
+  "topic": "Heptad — Major Seventh 15:8 — The Whole as Self-Awareness",
+  "learningGoal": "Deep user can hold the blueprint as a single unified system rather than a list of features and understands synthesis as the emergence of self-awareness that contains all six prior overtones.",
+  "targetPersona": "deep_user",
+  "keyPoints": [
+    "Heptad is the sixth overtone — the major seventh, fifteen to eight",
+    "Seven holds the previous six — six structural patterns, one whole that contains them",
+    "Your blueprint is not a list. It is a single unified system whose parts only exist in relation",
+    "Synthesis is what happens when self-awareness becomes the seventh — the witness that holds the six"
+  ],
+  "forbiddenClaims": [
+    "you achieve enlightenment through synthesis",
+    "the seventh is a higher self",
+    "guaranteed self-knowledge",
+    "the heptad makes the chart complete and finished"
+  ],
+  "toneNotes": "The capstone of the philosophy series. Spacious. Resolves the series without summarizing it. The viewer should feel the whole, not the parts.",
+  "narration_script": "The sixth overtone is the major seventh. Fifteen to eight.\n\nIt is the most tense of the overtones. The one that does not resolve to the octave on its own. The one that holds, in itself, the longing for the seven that completes the system.\n\nThere are six overtones below it. Polarity. Trinity. Quaternity. Pentad. Hexad. And the seventh — the major seventh itself — is the one that holds them all.\n\nSeven days in a week. Seven notes in a scale. Seven points in the heptagon — the first shape that cannot tile a plane on its own, because seven cannot close the way six does. Seven is the number that always reaches beyond itself.\n\nIn your blueprint, the seventh is synthesis.\n\nNot a feature. Not a center. Not a channel. Synthesis is what emerges when the polarity, the trinity, the quaternity, the pentad, and the hexad are all held at once. Not analyzed in sequence. Not summed up in a sentence. Held.\n\nThis is self-awareness as overflow. When the structure becomes so familiar that you no longer need to track its parts. When the chart, the centers, the gates, the Forges, the Knowledges all become one breath you take without naming.\n\nThe seventh is the witness.\n\nThis is the sixth overtone of your design. And it is where the design returns to silence.",
+  "script": "The sixth overtone is the major seventh. Fifteen to eight.\n\nIt is the most tense of the overtones. The one that does not resolve to the octave on its own. The one that holds, in itself, the longing for the seven that completes the system.\n\nThere are six overtones below it. Polarity. Trinity. Quaternity. Pentad. Hexad. And the seventh — the major seventh itself — is the one that holds them all.\n\nSeven days in a week. Seven notes in a scale. Seven points in the heptagon — the first shape that cannot tile a plane on its own, because seven cannot close the way six does. Seven is the number that always reaches beyond itself.\n\nIn your blueprint, the seventh is synthesis.\n\nNot a feature. Not a center. Not a channel. Synthesis is what emerges when the polarity, the trinity, the quaternity, the pentad, and the hexad are all held at once. Not analyzed in sequence. Not summed up in a sentence. Held.\n\nThis is self-awareness as overflow. When the structure becomes so familiar that you no longer need to track its parts. When the chart, the centers, the gates, the Forges, the Knowledges all become one breath you take without naming.\n\nThe seventh is the witness.\n\nThis is the sixth overtone of your design. And it is where the design returns to silence.",
+  "scene_directives": [
+    { "type": "arrival", "durationFrames": 240, "showBodyGraph": false },
+    { "type": "revelation", "durationFrames": 360, "text": "The sixth overtone is the major seventh. Fifteen to eight. Seven is the number that always reaches beyond itself.", "showBodyGraph": false },
+    { "type": "concept", "durationFrames": 540, "text": "Polarity. Trinity. Quaternity. Pentad. Hexad. The seventh holds them all.", "showBodyGraph": true },
+    { "type": "breath", "durationFrames": 150, "showBodyGraph": true },
+    { "type": "concept", "durationFrames": 540, "text": "Synthesis is what emerges when all six are held at once. Not analyzed in sequence. Held.", "showBodyGraph": true },
+    { "type": "triad", "durationFrames": 360, "triad": ["Hold", "Witness", "Silence"], "showBodyGraph": false },
+    { "type": "invitation", "durationFrames": 510, "text": "The seventh is the witness. And it is where the design returns to silence.", "showBodyGraph": false }
+  ],
+  "output_metadata": {
+    "title": "Heptad: The Seventh That Holds the Six",
+    "description": "The capstone overtone — synthesis as the self-awareness that contains the entire structural arc of your design."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "2.0-expanded",
+  "status": "planned"
+}

@@ -1,0 +1,166 @@
+# =============================================================================
+# Dependabot Security Auto-Merge — Phase 4 governance defense.
+#
+# Auto-merges Dependabot security PRs and patch-level version-update PRs once
+# all required checks pass. Excluded: major bumps, minor bumps, PRs labeled
+# `do-not-merge` or `breaking-change`.
+#
+# Motivation: prior to this workflow, all Dependabot PRs were explicitly
+# excluded from auto-merge (`auto-merge-approved-prs.yml`: github.actor !=
+# dependabot[bot]). That left security PRs sitting for days. PR #546 was a
+# concrete example — closed unmerged for `apps/supervisor`, leaving 28 open
+# Hono CVE alerts.
+#
+# DEFENSES INHERITED (see docs/decisions/2026-05-23-governance-of-governance.md)
+#   #1 Kill switch       — first action: if .github/automation-paused exists, exit 0
+#   #2 External alerting — DEPENDABOT_AUDIT: line on every merge action
+#   #3 Bounded blast     — `permissions:` below is minimum viable. Only acts on
+#                          dependabot[bot] PRs. Cannot push to main. Cannot
+#                          modify branch protection. Cannot disable workflows.
+#   #4 Monthly audit     — DEPENDABOT_AUDIT: log lines rolled up by
+#                          governance-audit.yml
+#
+# ROLLBACK
+#   `gh workflow disable dependabot-security-auto-merge.yml` — falls back to
+#   the previous state (Dependabot PRs require human merge).
+# =============================================================================
+name: Dependabot Security Auto-Merge
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, labeled, ready_for_review]
+
+# BOUNDED BLAST RADIUS — minimum-viable permissions.
+# - contents: write       → required for the auto-merge API call itself
+# - pull-requests: write  → required to enable auto-merge + post comments
+# Notably absent: actions, packages, deployments, statuses, issues:write
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false  # never cancel mid-merge; race-free dedup depends on it
+
+jobs:
+  auto-merge:
+    # Gate 1: only act on Dependabot PRs
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Kill-switch check
+        run: |
+          if [ -f .github/automation-paused ]; then
+            echo "::warning::Automation paused (.github/automation-paused exists). Skipping."
+            echo "DEPENDABOT_AUDIT: $(jq -nc --arg pr "${{ github.event.pull_request.number }}" '{event:"paused_skip", pr:$pr, ts:now|todate}')"
+            exit 0
+          fi
+        # Checkout not needed for kill-switch since we can use the API to read
+        # the file, but a tiny checkout simplifies the conditional. The
+        # following checkout is sparse + shallow to keep blast radius small.
+
+      - name: Sparse checkout (just the kill-switch file)
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/automation-paused
+          sparse-checkout-cone-mode: false
+
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b # v2.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide whether to auto-merge
+        id: decide
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DEPENDENCY_TYPE: ${{ steps.meta.outputs.dependency-type }}
+          ALERT_STATE: ${{ steps.meta.outputs.alert-state }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          # Auto-merge criteria (logical OR on the inclusion side):
+          #   - update-type is version-update:semver-patch
+          #   - OR Dependabot tagged this as a security advisory (alert-state set)
+          #
+          # Veto labels (logical OR — any one stops the merge):
+          #   - do-not-merge
+          #   - breaking-change
+          #   - needs-human
+          MERGE=false
+          REASON=""
+
+          # Inclusion check
+          if [ "$UPDATE_TYPE" = "version-update:semver-patch" ]; then
+            MERGE=true
+            REASON="patch-level version update"
+          elif [ -n "$ALERT_STATE" ] && [ "$ALERT_STATE" != "null" ]; then
+            MERGE=true
+            REASON="security advisory ($ALERT_STATE)"
+          fi
+
+          # Veto check
+          for veto in do-not-merge breaking-change needs-human; do
+            if echo "$PR_LABELS" | jq -e "any(. == \"$veto\")" >/dev/null 2>&1; then
+              MERGE=false
+              REASON="vetoed by label: $veto"
+            fi
+          done
+
+          echo "merge=$MERGE" >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON" >> "$GITHUB_OUTPUT"
+          echo "Decision: merge=$MERGE, reason=$REASON"
+
+      - name: Emit audit line
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          MERGE: ${{ steps.decide.outputs.merge }}
+          REASON: ${{ steps.decide.outputs.reason }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+          DEPENDENCY_NAMES: ${{ steps.meta.outputs.dependency-names }}
+        run: |
+          jq -nc \
+            --arg pr "$PR" \
+            --arg merge "$MERGE" \
+            --arg reason "$REASON" \
+            --arg update_type "$UPDATE_TYPE" \
+            --arg deps "$DEPENDENCY_NAMES" \
+            '{event:"decision", pr:$pr, merge:$merge, reason:$reason, update_type:$update_type, deps:$deps, ts:now|todate}' \
+            | sed 's/^/DEPENDABOT_AUDIT: /'
+
+      - name: Enable auto-merge
+        if: steps.decide.outputs.merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          # `gh pr merge --auto` queues the merge; GitHub holds it until all
+          # required status checks pass and required reviews are satisfied.
+          # The merge does NOT happen here — it happens when the gate clears.
+          gh pr merge --auto --squash "$PR_URL"
+          jq -nc \
+            --arg pr "${{ github.event.pull_request.number }}" \
+            --arg reason "${{ steps.decide.outputs.reason }}" \
+            '{event:"auto_merge_queued", pr:$pr, reason:$reason, ts:now|todate}' \
+            | sed 's/^/DEPENDABOT_AUDIT: /'
+
+      - name: Approve the PR (only when auto-merging)
+        if: steps.decide.outputs.merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          # CODEOWNERS protection: an approval is required to merge.
+          # The default GITHUB_TOKEN can approve Dependabot PRs.
+          gh pr review --approve "$PR_URL" --body "Auto-approved: ${{ steps.decide.outputs.reason }} (CI must still pass before merge)."
+
+      - name: Comment on vetoed PR (visibility)
+        if: steps.decide.outputs.merge == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr comment "$PR_URL" --body "Auto-merge skipped: **${{ steps.decide.outputs.reason }}**. To allow auto-merge, the PR must be patch-level or a security advisory, and not labeled \`do-not-merge\`, \`breaking-change\`, or \`needs-human\`. Human review needed."

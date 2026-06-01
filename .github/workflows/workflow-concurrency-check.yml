@@ -1,0 +1,89 @@
+# =============================================================================
+# Workflow Concurrency Check
+#
+# Enforces Pillar 5 of the workflow lifecycle decision
+# (docs/decisions/2026-05-23-workflow-lifecycle.md):
+#
+#   Every workflow with a `push:` or `pull_request:` trigger MUST declare a
+#   top-level `concurrency:` block. Without it, rapid pushes to the same ref
+#   pile up parallel runs that race or get cancelled mid-flight, producing
+#   noise in the run log and wasted compute.
+#
+# Triggered on PRs that touch any workflow file. Runs in <10s.
+#
+# Required-check candidate (add to ruleset 15843812 after a settling period).
+# =============================================================================
+name: Workflow Concurrency Check
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**.yml'
+      - '.github/workflows/**.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate concurrency blocks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Check every workflow with push/PR triggers has concurrency
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          violations=()
+          shopt -s nullglob
+          for f in .github/workflows/*.yml .github/workflows/*.yaml; do
+            [ -f "$f" ] || continue
+
+            # Skip reusable workflows — concurrency lives on the caller side
+            if grep -q '^  workflow_call:' "$f"; then
+              # Reusable workflows can still have other triggers, so only skip
+              # if workflow_call is the ONLY top-level trigger.
+              triggers=$(awk '/^on:/{f=1; next} f && /^[^[:space:]]/{f=0} f && /^  [a-z_]+:/' "$f" | wc -l)
+              if [ "$triggers" -le 1 ]; then continue; fi
+            fi
+
+            # Does it have a push or pull_request trigger?
+            if ! grep -qE '^  (push|pull_request):' "$f"; then
+              continue
+            fi
+
+            # Does it have a workflow-level (column 0) concurrency block?
+            if ! grep -q '^concurrency:' "$f"; then
+              violations+=("$f")
+            fi
+          done
+
+          if [ ${#violations[@]} -gt 0 ]; then
+            echo "::error::The following workflows have push: or pull_request: triggers but no top-level concurrency: block."
+            echo ""
+            echo "Add this block at the top level (after \`on:\`, before \`permissions:\` / \`jobs:\`):"
+            echo ""
+            echo "  concurrency:"
+            echo "    group: \${{ github.workflow }}-\${{ github.ref }}"
+            echo "    cancel-in-progress: true"
+            echo ""
+            echo "For deploy workflows, use \`cancel-in-progress: false\` to protect in-flight production deploys."
+            echo "For PR-scoped workflows, group by PR number: \`\${{ github.workflow }}-\${{ github.event.pull_request.number }}\`"
+            echo ""
+            echo "Violating files:"
+            for v in "${violations[@]}"; do
+              echo "  - $v"
+            done
+            echo ""
+            echo "Reference: docs/decisions/2026-05-23-workflow-lifecycle.md (Pillar 5)"
+            exit 1
+          fi
+
+          echo "All workflows with push/PR triggers have concurrency blocks ✓"

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  // factory-core-api — read-layer ingestion + auth API (Admin Build Plan P1.1).
+  // Phase A walking skeleton: /health, /version, and the OIDC->JWT token
+  // exchange (/v1/auth/token). Ingestion endpoints (/v1/gates, /v1/artifacts,
+  // /v1/audit, /v1/runs/mirror) land in P1.2+.
+  // Tech guide: docs/architecture/ADMIN_TECHNICAL_GUIDE.md §1.5, §2.0
+  "name": "factory-core-api",
+  "main": "src/index.ts",
+  "workers_dev": true,
+  "compatibility_date": "2026-05-01",
+  // nodejs_compat is required by @sentry/cloudflare (AsyncLocalStorage).
+  "compatibility_flags": ["nodejs_compat"],
+
+  "logpush": true,
+  "observability": {
+    "enabled": true
+  },
+
+  // Hyperdrive binding — proxies Neon Postgres connections via Cloudflare's
+  // connection pool. Replace the placeholder id with the real Hyperdrive config
+  // UUID before deploying. See docs/runbooks/add-new-app.md §Hyperdrive.
+  "hyperdrive": [
+    {
+      "binding": "DB",
+      "id": "efe957f404bb457593e6bd08b733b7c4"
+    }
+  ],
+
+  "vars": {
+    "ENVIRONMENT": "development",
+    // Expected GitHub OIDC issuer for the token-exchange endpoint.
+    "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
+    // Expected `aud` claim GitHub Actions mints into the OIDC token. Workflows
+    // request this via `core.getIDToken('factory-core-api')`.
+    "OIDC_AUDIENCE": "factory-core-api",
+    // Only OIDC tokens from this repository_owner may exchange for scoped JWTs.
+    "GITHUB_OWNER": "Latimer-Woods-Tech"
+  },
+
+  // Required secrets (set via `wrangler secret put <NAME>`):
+  //   JWT_SIGNING_KEY — root HS256 signing key for minted scoped JWTs.
+  //                     Rotated quarterly per tech guide §1.5.2.
+  // Optional secrets:
+  //   SENTRY_DSN              — error reporting via @latimer-woods-tech/monitoring.
+  //   WEBHOOK_FANOUT_INGEST_KEY — service key honoured only on POST /v1/gates.
+  //   SUPERVISOR_PUSH_KEY     — service key honoured only on POST /v1/runs/mirror (P1.9).
+  //
+  // BUILD_SHA is injected as a var by the deploy workflow (surfaced by /version).
+
+  "env": {
+    "production": {
+      "name": "factory-core-api",
+      // Branded custom domain (zone latwoodtech.work). Reached server-to-server by
+      // the supervisor push-on-write (P1.9) and by GitHub Actions OIDC token exchange.
+      "routes": [
+        { "pattern": "core.latwoodtech.work", "custom_domain": true }
+      ],
+      // Hyperdrive is a non-inheritable binding — must be repeated per environment.
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
+        "OIDC_AUDIENCE": "factory-core-api",
+        "GITHUB_OWNER": "Latimer-Woods-Tech"
+      }
+    },
+    "staging": {
+      "name": "factory-core-api-staging",
+      "hyperdrive": [
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "OIDC_ISSUER": "https://token.actions.githubusercontent.com",
+        "OIDC_AUDIENCE": "factory-core-api",
+        "GITHUB_OWNER": "Latimer-Woods-Tech"
+      }
+    }
+  }
+}
+

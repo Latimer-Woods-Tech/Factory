@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../../lib/api.js';
+import { usePolling } from '../../lib/usePolling.js';
 import { AppHealthGrid } from '../../components/AppHealthGrid.js';
 import { DeployVersionsTable } from '../../components/DeployVersionsTable.js';
 import { SyntheticJourneyPanel } from '../../components/SyntheticJourneyPanel.js';
+import { LastUpdated } from '../../components/LastUpdated.js';
 
 interface Me {
   env: string;
@@ -56,30 +58,50 @@ interface TelemetryCoverageResp {
 
 export function OverviewTab() {
   const [me, setMe] = useState<Me | null>(null);
-  const [sentry, setSentry] = useState<SentryResp | null>(null);
-  const [posthog, setPostHog] = useState<PostHogResp | null>(null);
-  const [coverage, setCoverage] = useState<TelemetryCoverageResp | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [sentryErr, setSentryErr] = useState<string | null>(null);
-  const [posthogErr, setPosthogErr] = useState<string | null>(null);
+  const [coverage, setCoverage] = useState<TelemetryCoverageResp | null>(null);
   const [coverageErr, setCoverageErr] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<Me>('/me').then(setMe).catch((e) => setErr((e as Error).message));
   }, []);
 
-  useEffect(() => {
+  const sentryPath = me
+    ? `/observability/sentry/issues?limit=10&env=${encodeURIComponent(me.env)}`
+    : '/observability/sentry/issues?limit=10&env=';
+
+  const {
+    data: sentry,
+    error: sentryErr,
+    lastUpdatedAt: sentryUpdatedAt,
+    isRefreshing: sentryRefreshing,
+    refresh: refreshSentry,
+  } = usePolling<SentryResp>({ path: sentryPath, intervalMs: 60_000, enabled: !!me });
+
+  const {
+    data: posthog,
+    error: posthogErr,
+    lastUpdatedAt: posthogUpdatedAt,
+    isRefreshing: posthogRefreshing,
+    refresh: refreshPostHog,
+  } = usePolling<PostHogResp>({ path: '/observability/posthog/tiles', intervalMs: 60_000, enabled: !!me });
+
+  const loadCoverage = useCallback(async () => {
     if (!me) return;
-    apiFetch<SentryResp>(`/observability/sentry/issues?limit=10&env=${encodeURIComponent(me.env)}`)
-      .then(setSentry)
-      .catch((e) => setSentryErr((e as Error).message));
-    apiFetch<PostHogResp>('/observability/posthog/tiles')
-      .then(setPostHog)
-      .catch((e) => setPosthogErr((e as Error).message));
-    apiFetch<TelemetryCoverageResp>(`/observability/telemetry-coverage?env=${encodeURIComponent(me.env)}`)
-      .then(setCoverage)
-      .catch((e) => setCoverageErr((e as Error).message));
+    setCoverageErr(null);
+    try {
+      const data = await apiFetch<TelemetryCoverageResp>(
+        `/observability/telemetry-coverage?env=${encodeURIComponent(me.env)}`,
+      );
+      setCoverage(data);
+    } catch (e) {
+      setCoverageErr((e as Error).message);
+    }
   }, [me]);
+
+  useEffect(() => {
+    void loadCoverage();
+  }, [loadCoverage]);
 
   return (
     <div className="space-y-4">
@@ -120,8 +142,11 @@ export function OverviewTab() {
           <SyntheticJourneyPanel />
 
           {/* PostHog */}
-          <div className="rounded border border-slate-800 bg-slate-900 p-4">
-            <h2 className="text-sm font-semibold text-slate-200">PostHog</h2>
+          <div className="@container rounded border border-slate-800 bg-slate-900 p-4 [container-type:inline-size] [container-name:posthog-widget]">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-200">PostHog</h2>
+              <LastUpdated at={posthogUpdatedAt} isRefreshing={posthogRefreshing} onRefresh={refreshPostHog} />
+            </div>
             {posthogErr ? (
               <p className="mt-1 text-xs text-red-400">Error: {posthogErr}</p>
             ) : !posthog ? (
@@ -129,14 +154,14 @@ export function OverviewTab() {
             ) : !posthog.configured ? (
               <p className="mt-1 text-xs text-amber-300">{posthog.note}</p>
             ) : (
-              <ul className="mt-2 grid grid-cols-3 gap-3">
+              <ul className="mt-2 grid grid-cols-1 gap-3 @[20rem]:grid-cols-2 @[32.5rem]:grid-cols-3">
                 {posthog.tiles.map((t) => (
                   <li
                     key={t.id}
                     className="rounded border border-slate-800 bg-slate-950 p-3 text-center"
                   >
                     <div className="text-xs uppercase text-slate-500">{t.label}</div>
-                    <div className="mt-1 text-2xl font-semibold text-white">
+                    <div className="mt-1 text-xl font-semibold text-white @[20rem]:text-2xl">
                       {t.value.toLocaleString()}
                       {t.unit ? <span className="text-sm text-slate-400 ml-1">{t.unit}</span> : null}
                     </div>
@@ -152,11 +177,14 @@ export function OverviewTab() {
           <div className="rounded border border-slate-800 bg-slate-900">
             <header className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
               <h2 className="text-sm font-semibold text-slate-200">Sentry — recent issues</h2>
-              {sentry?.env && (
-                <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
-                  env: {sentry.env}
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {sentry?.env && (
+                  <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+                    env: {sentry.env}
+                  </span>
+                )}
+                <LastUpdated at={sentryUpdatedAt} isRefreshing={sentryRefreshing} onRefresh={refreshSentry} />
+              </div>
             </header>
             {sentryErr ? (
               <p className="px-4 py-3 text-xs text-red-400">Error: {sentryErr}</p>
@@ -243,11 +271,20 @@ export function OverviewTab() {
           <div className="rounded border border-slate-800 bg-slate-900">
             <header className="flex items-center justify-between border-b border-slate-800 px-4 py-2">
               <h2 className="text-sm font-semibold text-slate-200">Telemetry Contract Coverage</h2>
-              {coverage?.env && (
-                <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
-                  env: {coverage.env}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {coverage?.env && (
+                  <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
+                    env: {coverage.env}
+                  </span>
+                )}
+                <button
+                  onClick={() => void loadCoverage()}
+                  aria-label="Refresh telemetry coverage"
+                  className="text-[10px] text-slate-600 hover:text-slate-400 transition-colors"
+                >
+                  ↻
+                </button>
+              </div>
             </header>
             {coverageErr ? (
               <p className="px-4 py-3 text-xs text-red-400">Error: {coverageErr}</p>

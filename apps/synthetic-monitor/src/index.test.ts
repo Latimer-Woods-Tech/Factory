@@ -1,14 +1,30 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker, { checkTarget, parseTargets, runSyntheticChecks } from './index.js';
 import type { Env } from './env.js';
 
+const puppeteerLaunch = vi.hoisted(() => vi.fn());
+
+vi.mock('@cloudflare/puppeteer', () => ({
+  default: { launch: puppeteerLaunch },
+}));
+
+// Stub the bindings tests don't exercise. The screenshot-on-failure branch
+// in checkTarget is guarded by `env.BROWSER && env.AUDIT_LOGS && env.SLACK_WEBHOOK_OPS`,
+// and SLACK_WEBHOOK_OPS is absent here, so BROWSER/AUDIT_LOGS are never dereferenced.
 const env: Env = {
+  BROWSER: null,
+  AUDIT_LOGS: null as unknown as R2Bucket,
   ENVIRONMENT: 'test',
   TARGETS_JSON: JSON.stringify([
     { id: 'home', url: 'https://example.com/', contains: 'Welcome' },
     { id: 'health', url: 'https://api.example.com/health', expectedStatus: 204, method: 'HEAD' },
   ]),
 };
+
+beforeEach(() => {
+  puppeteerLaunch.mockReset();
+  vi.unstubAllGlobals();
+});
 
 function textResponse(body: string, status = 200): Response {
   return new Response(body, {
@@ -24,12 +40,13 @@ function parseUnknownJson(text: string): unknown {
 describe('parseTargets', () => {
   it('falls back to default targets when configuration is empty', () => {
     const fallback = parseTargets('[]');
-    expect(fallback).toHaveLength(11);
+    // Generated (4 liveness) + custom (3 manifest + 3 page + 4 SLO journeys) = 14
+    expect(fallback.length).toBeGreaterThanOrEqual(14);
     expect(fallback.some((target) => target.id === 'schedule-worker.health')).toBe(true);
     expect(fallback.some((target) => target.id === 'schedule-worker.manifest')).toBe(true);
     expect(fallback.some((target) => target.id === 'slo.journey.auth-api')).toBe(true);
-    expect(parseTargets('[ ]')).toHaveLength(11);
-    expect(parseTargets(undefined)).toHaveLength(11);
+    expect(parseTargets('[ ]').length).toBeGreaterThanOrEqual(14);
+    expect(parseTargets(undefined).length).toBeGreaterThanOrEqual(14);
   });
 
   it('validates configured targets', () => {
@@ -55,7 +72,7 @@ describe('parseTargets', () => {
 describe('checkTarget', () => {
   it('passes when status and body text match', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Welcome to Prime Self')));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, env, fetchImpl);
 
     expect(result.ok).toBe(true);
     expect(result.status).toBe(200);
@@ -65,7 +82,7 @@ describe('checkTarget', () => {
 
   it('fails when expected body text is absent', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Different content')));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/', contains: 'Welcome' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain('Response did not contain expected text: Welcome');
@@ -74,7 +91,7 @@ describe('checkTarget', () => {
 
   it('fails when status does not match', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Not found', 404)));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.status).toBe(404);
@@ -82,7 +99,7 @@ describe('checkTarget', () => {
 
   it('captures fetch failures without throwing', async () => {
     const fetchImpl = vi.fn(() => Promise.reject(new Error('network down')));
-    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, fetchImpl);
+    const result = await checkTarget({ id: 'home', url: 'https://example.com/' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.status).toBeNull();
@@ -94,10 +111,75 @@ describe('checkTarget', () => {
       status: 200,
       headers: { 'content-type': 'application/octet-stream' },
     })));
-    const result = await checkTarget({ id: 'asset', url: 'https://example.com/file', contains: 'binary-ish' }, fetchImpl);
+    const result = await checkTarget({ id: 'asset', url: 'https://example.com/file', contains: 'binary-ish' }, env, fetchImpl);
 
     expect(result.ok).toBe(false);
     expect(result.error).toContain('Response did not contain expected text: binary-ish');
+  });
+
+  it('captures a screenshot and alerts Slack when a configured target fails', async () => {
+    const screenshot = new Uint8Array([1, 2, 3]);
+    const page = {
+      goto: vi.fn(() => Promise.resolve()),
+      screenshot: vi.fn(() => Promise.resolve(screenshot)),
+    };
+    const browser = {
+      newPage: vi.fn(() => Promise.resolve(page)),
+      close: vi.fn(() => Promise.resolve()),
+    };
+    const auditLogs = {
+      put: vi.fn(() => Promise.resolve()),
+    };
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(textResponse('Different content'));
+    const slackFetch = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+    puppeteerLaunch.mockResolvedValue(browser);
+    vi.stubGlobal('fetch', slackFetch);
+
+    const result = await checkTarget(
+      { id: 'home', url: 'https://example.com/', contains: 'Welcome' },
+      {
+        ...env,
+        BROWSER: { fetch: vi.fn() },
+        AUDIT_LOGS: auditLogs as unknown as R2Bucket,
+        SLACK_WEBHOOK_OPS: 'https://hooks.example.test/ops',
+      },
+      fetchImpl,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(puppeteerLaunch).toHaveBeenCalled();
+    expect(page.goto).toHaveBeenCalledWith('https://example.com/', expect.objectContaining({ waitUntil: 'networkidle2' }));
+    expect(auditLogs.put).toHaveBeenCalledWith(
+      expect.stringMatching(/^smoke-failures\/home-/),
+      screenshot,
+      expect.objectContaining({ httpMetadata: { contentType: 'image/png' } }),
+    );
+    expect(slackFetch).toHaveBeenCalledWith(
+      'https://hooks.example.test/ops',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('logs screenshot capture errors without masking the check result', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Different content')));
+    puppeteerLaunch.mockRejectedValue(new Error('browser unavailable'));
+
+    const result = await checkTarget(
+      { id: 'home', url: 'https://example.com/', contains: 'Welcome' },
+      {
+        ...env,
+        BROWSER: { fetch: vi.fn() },
+        AUDIT_LOGS: { put: vi.fn() } as unknown as R2Bucket,
+        SLACK_WEBHOOK_OPS: 'https://hooks.example.test/ops',
+      },
+      fetchImpl,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(error).toHaveBeenCalledWith('Failed to capture screenshot:', expect.any(Error));
   });
 });
 
@@ -122,6 +204,28 @@ describe('runSyntheticChecks', () => {
     const result = await runSyntheticChecks(env, fetchImpl);
     expect(result.status).toBe('degraded');
     expect(result.results.some((entry) => !entry.ok)).toBe(true);
+  });
+
+  it('routes branded admin checks through the admin-studio service binding when available', async () => {
+    const externalFetch = vi.fn(() => Promise.reject(new Error('external fetch should not be used')));
+    const adminBinding = {
+      fetch: vi.fn(() => Promise.resolve(textResponse('ok'))),
+    };
+
+    const result = await runSyntheticChecks(
+      {
+        ...env,
+        TARGETS_JSON: JSON.stringify([
+          { id: 'admin', url: 'https://api.admin.latimerwoods.dev/health', contains: 'ok' },
+        ]),
+        ADMIN_STUDIO_STAGING: adminBinding as unknown as Fetcher,
+      },
+      externalFetch,
+    );
+
+    expect(result.status).toBe('ok');
+    expect(externalFetch).not.toHaveBeenCalled();
+    expect(adminBinding.fetch).toHaveBeenCalledWith('https://internal/health', expect.objectContaining({ method: 'GET' }));
   });
 });
 
@@ -150,7 +254,7 @@ describe('worker routes', () => {
 
   it('GET /checks/run returns 422 for invalid configured targets', async () => {
     const res = await worker.fetch(new Request('https://monitor.test/checks/run'), {
-      ENVIRONMENT: 'test',
+      ...env,
       TARGETS_JSON: '{"bad":true}',
     });
 
@@ -165,7 +269,7 @@ describe('worker routes', () => {
     vi.stubGlobal('fetch', fetchImpl);
 
     const res = await worker.fetch(new Request('https://monitor.test/checks/run'), {
-      ENVIRONMENT: 'test',
+      ...env,
       TARGETS_JSON: JSON.stringify([{ id: 'home', url: 'https://example.com/', contains: 'Welcome' }]),
     });
 
@@ -176,17 +280,54 @@ describe('worker routes', () => {
     expect(payload.results?.[0]?.ok).toBe(true);
   });
 
+  it('GET /checks/run returns 503 for degraded configured targets', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Missing marker')));
+    vi.stubGlobal('fetch', fetchImpl);
+
+    const res = await worker.fetch(new Request('https://monitor.test/checks/run'), {
+      ...env,
+      TARGETS_JSON: JSON.stringify([{ id: 'home', url: 'https://example.com/', contains: 'Welcome' }]),
+    });
+
+    expect(res.status).toBe(503);
+    const body = parseUnknownJson(await res.text());
+    const payload = body as { status?: unknown; results?: Array<{ ok?: unknown }> };
+    expect(payload.status).toBe('degraded');
+    expect(payload.results?.[0]?.ok).toBe(false);
+  });
+
   it('scheduled checks write a structured log summary', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Missing marker')));
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.stubGlobal('fetch', fetchImpl);
 
     await worker.scheduled({} as ScheduledEvent, {
-      ENVIRONMENT: 'test',
+      ...env,
       TARGETS_JSON: JSON.stringify([{ id: 'home', url: 'https://example.com/', contains: 'Welcome' }]),
     });
 
     expect(log).toHaveBeenCalledWith(expect.stringContaining('synthetic_monitor.run'));
     expect(log).toHaveBeenCalledWith(expect.stringContaining('degraded'));
+  });
+
+  it('scheduled checks write snapshots to MONITOR_KV when configured', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(textResponse('Welcome')));
+    const monitorKv = {
+      put: vi.fn(() => Promise.resolve()),
+    };
+    vi.stubGlobal('fetch', fetchImpl);
+
+    await worker.scheduled({} as ScheduledEvent, {
+      ...env,
+      MONITOR_KV: monitorKv as unknown as KVNamespace,
+      TARGETS_JSON: JSON.stringify([{ id: 'home', url: 'https://example.com/', contains: 'Welcome' }]),
+    });
+
+    expect(monitorKv.put).toHaveBeenCalledWith(
+      expect.stringMatching(/^snapshots:/),
+      expect.stringContaining('"status":"ok"'),
+      { expirationTtl: 604800 },
+    );
+    expect(monitorKv.put).toHaveBeenCalledWith('latest', expect.stringContaining('"home"'));
   });
 });

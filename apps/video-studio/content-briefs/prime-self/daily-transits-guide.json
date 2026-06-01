@@ -1,0 +1,48 @@
+{
+  "briefKey": "daily-transits-guide",
+  "composition": "TrainingVideo",
+  "topic": "Using Daily Transits Without Overcomplicating Your Day",
+  "learningGoal": "User understands what Daily Transits are, where to find them, and how to apply them as a light-touch reflection tool.",
+  "targetPersona": "returning_user",
+  "keyPoints": [
+    "Open Daily Transits from your Prime Self dashboard to see the current energy themes affecting the collective field",
+    "Use transits as context, not as fate: they describe pressure and possibility, not guaranteed outcomes",
+    "Compare today's transit themes with your own Blueprint so you can notice what feels amplified or sensitive",
+    "Choose one grounded action for the day: a conversation, a boundary, a work block, or rest"
+  ],
+  "forbiddenClaims": [
+    "predict exactly what will happen today",
+    "guaranteed outcome",
+    "scientifically proven",
+    "controls your destiny"
+  ],
+  "toneNotes": "Clear and calming. Keep the user out of superstition and over-analysis. Emphasize experimentation, not dependency.",
+  "script": "Every day, the planets move.\n\nThey travel the same wheel of 64 gates your natal chart was drawn from \u2014 the same I Ching hexagram map that encoded your design at birth. When a transiting planet activates a gate, it brings that gate theme into the collective field.\n\nThis is what Daily Transits show you.\n\nNot a prediction. A description of the energetic weather \u2014 the themes that are active today for everyone, and the places where today field touches your own chart specifically.\n\nThe Sun moves through a gate approximately every six days. Saturn takes two and a half years to travel the full wheel. Each planet brings its own quality to the gates it activates \u2014 the Sun brings conscious awareness, Saturn brings form and discipline, Jupiter brings expansion, the Moon cycles through the wheel every month.\n\nYou do not have to track all of this.\n\nThe practice is simpler: open your transits each morning. Notice what themes are active. Notice where they touch your own defined centers and channels. Choose one gesture for the day that honors what you are seeing \u2014 a conversation, a boundary, a creative act, rest.\n\nTransits are a lens, not a law. They sharpen perception. They do not determine outcome.\n\nWhat is the field showing you today?",
+  "renderPlan": {
+    "durationSeconds": 90,
+    "steps": [
+      "Open Daily Transits",
+      "Read the active themes",
+      "Separate weather from identity",
+      "Notice natal chart contacts",
+      "Choose one grounded response"
+    ],
+    "visualBeats": [
+      "Show the Today page Transits tab with active gate cards",
+      "Highlight collective weather versus natal contact language",
+      "Show one card becoming a daily reflection prompt",
+      "End on a simple action: conversation, boundary, work block, or rest"
+    ]
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "status": "published",
+  "stream_uid": "78406f1f1c075526114990c0586d3762",
+  "stream_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/78406f1f1c075526114990c0586d3762/manifest/video.m3u8",
+  "thumbnail_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/78406f1f1c075526114990c0586d3762/thumbnails/thumbnail.jpg",
+  "duration_seconds": 90,
+  "rendered_at": "2026-05-28",
+  "youtube_url": "https://youtu.be/hhdYOqvBpuM",
+  "script_version": "2.0-expanded",
+  "script_word_count": 215
+}
