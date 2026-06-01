@@ -204,6 +204,58 @@ describe('renderBodyGraph — escaping', () => {
   });
 });
 
+describe('renderBodyGraph — spotlight centers', () => {
+  it('renders a spotlight filter when spotlightCenters is set and glow is true', () => {
+    const svg = renderBodyGraph(
+      { definedCenters: ['Throat'] },
+      undefined,
+      { spotlightCenters: ['Throat'] },
+    );
+    // The spotlight blur filter should be present.
+    expect(svg).toContain('id="bg-halo-spot"');
+    // The spotlight halo uses the spotlight filter reference.
+    expect(svg).toContain('filter="url(#bg-halo-spot)"');
+  });
+
+  it('spotlight halo uses higher opacity than the regular halo', () => {
+    const spotlight = renderBodyGraph(
+      { definedCenters: ['Throat'] },
+      undefined,
+      { spotlightCenters: ['Throat'] },
+    );
+    const regular = renderBodyGraph(
+      { definedCenters: ['Throat'] },
+      undefined,
+      { spotlightCenters: [] },
+    );
+    // Spotlight uses opacity 0.72, regular uses 0.45.
+    expect(spotlight).toContain('opacity="0.72"');
+    expect(regular).toContain('opacity="0.45"');
+  });
+
+  it('non-spotlit defined centers still use the regular halo even when spotlightCenters is set', () => {
+    const svg = renderBodyGraph(
+      { definedCenters: ['G', 'Throat'] },
+      undefined,
+      { spotlightCenters: ['Throat'] },
+    );
+    // G is defined but not spotlit → regular halo filter
+    expect(svg).toContain('filter="url(#bg-halo)"');
+    // Throat is spotlit → spotlight filter
+    expect(svg).toContain('filter="url(#bg-halo-spot)"');
+  });
+
+  it('idSuffix is applied to spotlight filter ids too', () => {
+    const svg = renderBodyGraph(
+      { definedCenters: ['G'] },
+      undefined,
+      { idSuffix: '-x', spotlightCenters: ['G'] },
+    );
+    expect(svg).toContain('id="bg-halo-spot-x"');
+    expect(svg).toContain('filter="url(#bg-halo-spot-x)"');
+  });
+});
+
 describe('geometry helpers', () => {
   it('returns a rect for square centers and points for the rest', () => {
     const sacral = centerShapePoints(CENTER_POS.Sacral);
