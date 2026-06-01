@@ -1,0 +1,56 @@
+{
+  "extends": ["../../.eslintrc.base.json"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "JSXOpeningElement[name.name='button']:has(> JSXAttribute[name.name='className'] > Literal[value='text-xs px-1'])",
+        "message": "Avoid tiny button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='button']:has(> JSXAttribute[name.name='className'] > Literal[value='px-1 text-xs'])",
+        "message": "Avoid tiny button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='button']:has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > Literal[value='text-xs px-1'])",
+        "message": "Avoid tiny button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='button']:has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > Literal[value='px-1 text-xs'])",
+        "message": "Avoid tiny button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='button']:has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > TemplateLiteral:has(TemplateElement[value.raw='text-xs px-1']))",
+        "message": "Avoid tiny button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='button']:has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > TemplateLiteral:has(TemplateElement[value.raw='px-1 text-xs']))",
+        "message": "Avoid tiny button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement:has(> JSXAttribute[name.name='role'] > Literal[value='button']):has(> JSXAttribute[name.name='className'] > Literal[value='text-xs px-1'])",
+        "message": "Avoid tiny role=button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement:has(> JSXAttribute[name.name='role'] > Literal[value='button']):has(> JSXAttribute[name.name='className'] > Literal[value='px-1 text-xs'])",
+        "message": "Avoid tiny role=button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement:has(> JSXAttribute[name.name='role'] > Literal[value='button']):has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > Literal[value='text-xs px-1'])",
+        "message": "Avoid tiny role=button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement:has(> JSXAttribute[name.name='role'] > Literal[value='button']):has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > Literal[value='px-1 text-xs'])",
+        "message": "Avoid tiny role=button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement:has(> JSXAttribute[name.name='role'] > Literal[value='button']):has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > TemplateLiteral:has(TemplateElement[value.raw='text-xs px-1']))",
+        "message": "Avoid tiny role=button hit targets. Use target-min or target-primary classes."
+      },
+      {
+        "selector": "JSXOpeningElement:has(> JSXAttribute[name.name='role'] > Literal[value='button']):has(> JSXAttribute[name.name='className'] > JSXExpressionContainer > TemplateLiteral:has(TemplateElement[value.raw='px-1 text-xs']))",
+        "message": "Avoid tiny role=button hit targets. Use target-min or target-primary classes."
+      }
+    ]
+  }
+}

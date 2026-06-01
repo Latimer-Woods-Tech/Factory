@@ -33,6 +33,7 @@
         // Secrets (wrangler secret put --env staging):
         //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
         //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
+        //   GCP_SA_KEY (base64 SA JSON — enables AI chat gcp_get_secret tool)
       },
       "hyperdrive": [
         {

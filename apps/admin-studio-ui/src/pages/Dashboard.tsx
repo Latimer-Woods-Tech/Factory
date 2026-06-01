@@ -4,7 +4,7 @@
  * - Desktop: Left sidebar with icons.
  * - Mobile: Bottom navigation bar + "More" drawer.
  */
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
@@ -68,6 +68,18 @@ export function Dashboard() {
   const location = useLocation();
   const activeTab = '/' + (location.pathname.split('/')[1] || 'overview');
   const currentTabObj = TABS.find(t => t.to === activeTab) || TABS[0]!;
+
+  // ADM-9.3: opt the entire app into VirtualKeyboard API overlay mode so the
+  // AI composer footer can pin itself to the keyboard inset instead of being
+  // pushed up by the browser's default resize-content behaviour.
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      virtualKeyboard?: { overlaysContent: boolean };
+    };
+    if (nav.virtualKeyboard) {
+      nav.virtualKeyboard.overlaysContent = true;
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background text-foreground pt-safe-top md:pt-0">
@@ -145,7 +157,7 @@ export function Dashboard() {
               <NavLink
                 key={tab.to}
                 to={tab.to}
-                className={`flex flex-col items-center justify-center w-16 py-1 gap-1 rounded-lg transition-colors ${
+                className={`target-min flex flex-col items-center justify-center rounded-lg transition-colors ${
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -158,7 +170,7 @@ export function Dashboard() {
           {/* More Drawer Trigger */}
           <Drawer>
             <DrawerTrigger asChild>
-              <button className={`flex flex-col items-center justify-center w-16 py-1 gap-1 rounded-lg transition-colors ${
+              <button className={`target-min flex flex-col items-center justify-center rounded-lg transition-colors ${
                 MOBILE_MORE_TABS.some(t => t.to === activeTab) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}>
                 <Menu className="w-5 h-5" />
