@@ -43,6 +43,13 @@ export interface BodyGraphProps {
   y?: number;
   /** Whether defined centers breathe (pulse). Default true. */
   breathe?: boolean;
+  /**
+   * The center key to spotlight on this scene. When set, the bodygraph engine
+   * renders that center with an intensified halo (doubled blur radius, higher
+   * opacity) so the viewer's eye is drawn to the gate's home center.
+   * Corresponds to `BlueprintScene.spotlightCenter`.
+   */
+  spotlightCenter?: string;
 }
 
 // Engine viewBox is 300×420; the film historically reserved a 340×480 box.
@@ -66,13 +73,20 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
   x,
   y,
   breathe = true,
+  spotlightCenter,
 }) => {
   // Default position: right-center area of a 1920×1080 frame.
   const resolvedX = x ?? 1920 * 0.575;
   const resolvedY = y ?? (1080 - ENGINE_H * scale) / 2;
 
+  // Derive the spotlight array — a single-element array when a center is being
+  // spotlit, empty otherwise. Array form matches the engine's forward-compat API.
+  const spotlightCenters = spotlightCenter ? [spotlightCenter] : [];
+
   // Crisp top layer — never animated, never blurred. Gate badges + numbers live
   // here. idSuffix keeps gradient/filter ids unique if multiple graphs mount.
+  // The crisp layer does NOT receive spotlightCenters — spotlight is a halo
+  // effect only, not a shape change, and the halo lives on the glow layer.
   const crispSvg = useMemo(
     () =>
       renderBodyGraph(
@@ -84,15 +98,17 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
   );
 
   // Back glow layer — halos only (no badges, so nothing crisp to soften). This
-  // is the layer we breathe.
+  // is the layer we breathe. Spotlight centers get the intensified halo here.
   const glowSvg = useMemo(
     () =>
       renderBodyGraph(
         { definedCenters, signatureGates },
         { accent: typeColor, accentStrong: typeColor, definedStroke: typeColor, channelActive: typeColor, glow: typeColor },
-        { glow: true, showGateBadges: false, idSuffix: '-film-glow' },
+        { glow: true, showGateBadges: false, idSuffix: '-film-glow', spotlightCenters },
       ),
-    [definedCenters, signatureGates, typeColor],
+    // spotlightCenter (string | undefined) drives spotlightCenters array; include it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [definedCenters, signatureGates, typeColor, spotlightCenter],
   );
 
   // Breathing pulse drives ONLY the back glow layer: opacity 0.55 → 0.95 and a

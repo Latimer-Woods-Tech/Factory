@@ -71,6 +71,15 @@ export interface BodyGraphOptions {
    * can coexist on one page without id collisions. Default `''`.
    */
   readonly idSuffix?: string;
+  /**
+   * Centers to render with an intensified spotlight halo. A center in
+   * `spotlightCenters` that is also in `definedCenters` receives a larger,
+   * brighter bloom — the blur radius and opacity on the halo layer are both
+   * boosted so the viewer's eye is drawn to the gate's home center. Kept
+   * subtle (accent, not replacement) by design. Array for forward-compat;
+   * gate-concept scenes supply exactly one entry.
+   */
+  readonly spotlightCenters?: string[];
 }
 
 /** @internal Escape a string for safe use inside an SVG attribute value. */
@@ -92,6 +101,7 @@ function n(value: number): string {
 function buildDefs(theme: BodyGraphTheme, idSuffix: string, glow: boolean): string {
   const sheenId = `bg-sheen${idSuffix}`;
   const blurId = `bg-halo${idSuffix}`;
+  const spotBlurId = `bg-halo-spot${idSuffix}`;
   const sheen =
     `<linearGradient id="${sheenId}" x1="0" y1="0" x2="0" y2="1">` +
     `<stop offset="0%" stop-color="${esc(theme.accentStrong)}" stop-opacity="0.95"/>` +
@@ -99,20 +109,37 @@ function buildDefs(theme: BodyGraphTheme, idSuffix: string, glow: boolean): stri
     `</linearGradient>`;
   const halo = glow
     ? `<filter id="${blurId}" x="-80%" y="-80%" width="260%" height="260%">` +
-      `<feGaussianBlur stdDeviation="5"/></filter>`
+      `<feGaussianBlur stdDeviation="5"/></filter>` +
+      // Spotlight filter: doubled blur radius + extra spread for the accent center.
+      `<filter id="${spotBlurId}" x="-120%" y="-120%" width="340%" height="340%">` +
+      `<feGaussianBlur stdDeviation="10"/></filter>`
     : '';
   return `<defs>${sheen}${halo}</defs>`;
 }
 
-/** @internal Draw the soft blurred halo layer for a defined center (under the crisp shape). */
-function drawHalo(pos: CenterPosition, theme: BodyGraphTheme, blurId: string): string {
-  const shape = centerShapePoints(pos, CENTER_SIZE + 3);
+/**
+ * @internal Draw the soft blurred halo layer for a defined center (under the
+ * crisp shape). When `isSpotlight` is true the halo uses the spotlight filter
+ * (doubled blur radius) and higher opacity so the center visually pops as the
+ * gate's home. Kept subtle — accent, not replacement.
+ */
+function drawHalo(
+  pos: CenterPosition,
+  theme: BodyGraphTheme,
+  blurId: string,
+  spotBlurId: string,
+  isSpotlight: boolean,
+): string {
+  const filterId = isSpotlight ? spotBlurId : blurId;
+  const opacity = isSpotlight ? '0.72' : '0.45';
+  const extraSize = isSpotlight ? 6 : 3;
+  const shape = centerShapePoints(pos, CENTER_SIZE + extraSize);
   const fill = esc(theme.glow);
   if ('rect' in shape) {
     const { x, y, w, h } = shape.rect;
-    return `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="5" fill="${fill}" opacity="0.45" filter="url(#${blurId})"/>`;
+    return `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="5" fill="${fill}" opacity="${opacity}" filter="url(#${filterId})"/>`;
   }
-  return `<polygon points="${shape.points}" fill="${fill}" opacity="0.45" filter="url(#${blurId})"/>`;
+  return `<polygon points="${shape.points}" fill="${fill}" opacity="${opacity}" filter="url(#${filterId})"/>`;
 }
 
 /** @internal Draw the crisp center shape (defined uses sheen gradient + accent stroke). */
@@ -229,8 +256,10 @@ export function renderBodyGraph(
   const glow = options?.glow ?? true;
   const interactiveAttrs = options?.interactiveAttrs ?? false;
   const idSuffix = options?.idSuffix ?? '';
+  const spotlightSet = new Set(options?.spotlightCenters ?? []);
   const sheenId = `bg-sheen${idSuffix}`;
   const blurId = `bg-halo${idSuffix}`;
+  const spotBlurId = `bg-halo-spot${idSuffix}`;
 
   const defined = new Set(input.definedCenters);
 
@@ -269,10 +298,14 @@ export function renderBodyGraph(
   }
 
   // Soft halos — a separate blurred layer UNDER the crisp shapes, so the glow
-  // never softens the number or the edge.
+  // never softens the number or the edge. Spotlight centers receive a doubled
+  // blur + higher opacity halo so the gate's home center visually pops.
   if (glow) {
     for (const center of CENTER_ORDER) {
-      if (defined.has(center)) svg += drawHalo(CENTER_POS[center], t, blurId);
+      if (defined.has(center)) {
+        const isSpotlight = spotlightSet.has(center);
+        svg += drawHalo(CENTER_POS[center], t, blurId, spotBlurId, isSpotlight);
+      }
     }
   }
 

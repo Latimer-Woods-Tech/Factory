@@ -50,11 +50,16 @@ describe('chartToScenes — structural invariants', () => {
     expect(conceptCount(withoutGates)).toBe(1 + 0);
   });
 
-  it('lights the defined centres on every body-graph scene', () => {
+  it('lights at least the user defined centres on every body-graph scene', () => {
     const scenes = chartToScenes(PROJECTOR);
     for (const scene of scenes) {
       if (scene.showBodyGraph) {
-        expect(scene.definedCenters).toEqual(PROJECTOR.definedCenters);
+        // Every user-defined center must be present. Gate concept scenes may
+        // additionally include the gate's center (spotlight) if it is open —
+        // that is intentional and tested separately.
+        for (const center of PROJECTOR.definedCenters) {
+          expect(scene.definedCenters).toContain(center);
+        }
       }
     }
   });
@@ -107,6 +112,43 @@ describe('chartToScenes — structural invariants', () => {
     });
     const concept = weird.find((s) => s.type === 'concept');
     expect(concept?.text).toContain('Mystery');
+  });
+
+  it('gate concept scenes set spotlightCenter to the gate\'s center', () => {
+    const scenes = chartToScenes(PROJECTOR);
+    // Gate 20 → Throat, Gate 57 → Spleen (from bodygraph GATE_TO_CENTER)
+    const gate20Scene = scenes.find((s) => s.type === 'concept' && s.spotlightCenter === 'Throat');
+    const gate57Scene = scenes.find((s) => s.type === 'concept' && s.spotlightCenter === 'Spleen');
+    expect(gate20Scene).toBeDefined();
+    expect(gate57Scene).toBeDefined();
+  });
+
+  it('gate concept scenes include the gate\'s center in definedCenters even when open', () => {
+    // Spleen is NOT in PROJECTOR.definedCenters (['G','Throat','Ajna']).
+    // Gate 57 lives in Spleen — so the gate-57 scene should add Spleen.
+    const scenes = chartToScenes(PROJECTOR);
+    const gate57Scene = scenes.find((s) => s.spotlightCenter === 'Spleen');
+    expect(gate57Scene?.definedCenters).toContain('Spleen');
+    // Gate 20 lives in Throat (already defined) — no extra entry.
+    const gate20Scene = scenes.find((s) => s.spotlightCenter === 'Throat');
+    expect(gate20Scene?.definedCenters).toEqual(PROJECTOR.definedCenters);
+  });
+
+  it('uses gateInsights text verbatim when provided', () => {
+    const withInsights = chartToScenes({
+      ...PROJECTOR,
+      gateInsights: { 20: 'Your Gate 20 insight here.' },
+    });
+    const gate20Scene = withInsights.find((s) => s.spotlightCenter === 'Throat');
+    expect(gate20Scene?.text).toBe('Your Gate 20 insight here.');
+  });
+
+  it('falls back to center-name text when gateInsights is absent', () => {
+    const scenes = chartToScenes(PROJECTOR);
+    const gate20Scene = scenes.find((s) => s.spotlightCenter === 'Throat');
+    // Should contain the center name, not the old generic text
+    expect(gate20Scene?.text).toContain('Gate 20');
+    expect(gate20Scene?.text).not.toBe('Gate 20 — a defining frequency in your design.');
   });
 
   it('is deterministic — same input yields an equal scene array', () => {
