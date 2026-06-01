@@ -4,7 +4,7 @@
  * - Desktop: Left sidebar with icons.
  * - Mobile: Bottom navigation bar + "More" drawer.
  */
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
@@ -62,6 +62,18 @@ export function Dashboard() {
   const location = useLocation();
   const activeTab = '/' + (location.pathname.split('/')[1] || 'overview');
   const currentTabObj = TABS.find(t => t.to === activeTab) || TABS[0]!;
+
+  // ADM-9.3: opt the entire app into VirtualKeyboard API overlay mode so the
+  // AI composer footer can pin itself to the keyboard inset instead of being
+  // pushed up by the browser's default resize-content behaviour.
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      virtualKeyboard?: { overlaysContent: boolean };
+    };
+    if (nav.virtualKeyboard) {
+      nav.virtualKeyboard.overlaysContent = true;
+    }
+  }, []);
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background text-foreground pt-safe-top md:pt-0">
