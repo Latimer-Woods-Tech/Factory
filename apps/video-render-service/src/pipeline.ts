@@ -68,11 +68,118 @@ export interface PipelineConfig {
     apiKey: string;
     voiceId: string;
   };
+  /**
+   * Sybil music library base URL — public R2 domain serving
+   * `sybil-music/{type|forge|close}/xxx.mp3`. When present, the pipeline mixes
+   * a type-appropriate ambient bed under the narration during the ffmpeg step.
+   * When absent, audio is narration-only (graceful degrade).
+   */
+  musicBaseUrl?: string;
+}
+
+/**
+ * Maps an HD energy type to its Sybil music track key under `sybil-music/`.
+ * Falls back to `type/generator` for unknown values.
+ */
+const TYPE_MUSIC: Record<string, string> = {
+  generator:             'type/generator',
+  manifesting_generator: 'type/manifesting_generator',
+  projector:             'type/projector',
+  manifestor:            'type/manifestor',
+  reflector:             'type/reflector',
+};
+
+/**
+ * Maps a forge theme to its Sybil music track key.
+ * The type track is used when no forge override is present.
+ */
+const FORGE_MUSIC: Record<string, string> = {
+  chronos: 'forge/chronos',
+  eros:    'forge/eros',
+  aether:  'forge/aether',
+  lux:     'forge/lux',
+  phoenix: 'forge/phoenix',
+  self:    'forge/self',
+};
+
+/**
+ * Resolve the best music track URL for a render. Forge theme wins over type
+ * (more specific mood). Falls back gracefully if base URL is absent.
+ */
+function resolveMusicUrl(
+  baseUrl: string | undefined,
+  hdType: string | undefined,
+  forgeTheme: string | undefined,
+): string | null {
+  if (!baseUrl) return null;
+  const key =
+    (forgeTheme && FORGE_MUSIC[forgeTheme]) ??
+    (hdType && TYPE_MUSIC[hdType]) ??
+    TYPE_MUSIC['generator'];
+  return `${baseUrl.replace(/\/$/, '')}/${key}.mp3`;
 }
 
 /** @internal Sleep for `seconds`. */
 function sleep(seconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+}
+
+/**
+ * @internal Re-encode the rendered MP4 with an ambient music bed mixed under
+ * the narration. The music is fetched from a public R2 URL, trimmed/looped to
+ * the film length, ducked to -18 dBFS so narration sits clearly on top, then
+ * amixed with the primary audio track. Falls back silently to narration-only
+ * if the music URL can't be fetched — music is a WOW enhancer, not required.
+ */
+async function ffmpegReencodeWithMusic(
+  input: string,
+  output: string,
+  musicUrl: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> {
+  // Download the music to a temp file so ffmpeg can seek/loop it.
+  const musicPath = `${input}.music.mp3`;
+  try {
+    const res = await fetchImpl(musicUrl);
+    if (!res.ok) throw new Error(`music fetch HTTP ${String(res.status)}`);
+    const buf = await res.arrayBuffer();
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(musicPath, Buffer.from(buf));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[pipeline] music fetch failed (${msg}) — encoding without music`);
+    return ffmpegReencode(input, output);
+  }
+
+  // amix: narration (0.9 weight) + ambient bed (-18 dBFS = 0.13 weight), looped
+  // to film duration. `shortest=1` ensures output matches video length.
+  return new Promise((resolve, reject) => {
+    const proc = spawn(
+      'ffmpeg',
+      [
+        '-y',
+        '-i', input,
+        '-stream_loop', '-1', '-i', musicPath,
+        '-filter_complex',
+        '[0:a]volume=0.9[narr];[1:a]volume=0.13[bed];[narr][bed]amix=inputs=2:duration=shortest[aout]',
+        '-map', '0:v',
+        '-map', '[aout]',
+        '-c:v', 'libx264',
+        '-profile:v', 'baseline',
+        '-level', '3.0',
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        output,
+      ],
+      { stdio: ['ignore', 'inherit', 'inherit'] },
+    );
+    proc.on('error', (err) => { reject(new Error(`ffmpeg spawn failed: ${err.message}`)); });
+    proc.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg music-mix exited with code ${String(code)}`));
+    });
+  });
 }
 
 /** @internal Run ffmpeg to re-encode to H.264 baseline + AAC; rejects on non-zero exit. */
@@ -216,8 +323,17 @@ export function createRenderPipeline(config: PipelineConfig): RenderPipeline {
     try {
       // 2. Remotion render.
       await renderBlueprintMp4(props, rawMp4);
-      // 3. ffmpeg re-encode.
-      await ffmpegReencode(rawMp4, finalMp4);
+      // 3. ffmpeg re-encode — with ambient music bed if configured.
+      const musicUrl = resolveMusicUrl(
+        config.musicBaseUrl,
+        sourceData.blueprint?.hdType,
+        sourceData.blueprint?.forge,
+      );
+      if (musicUrl) {
+        await ffmpegReencodeWithMusic(rawMp4, finalMp4, musicUrl);
+      } else {
+        await ffmpegReencode(rawMp4, finalMp4);
+      }
 
       // 4. Upload to R2 → public-fetchable URL (Stream copies from a URL).
       const key = `personal-renders/${request.videoObjectId}.mp4`;
