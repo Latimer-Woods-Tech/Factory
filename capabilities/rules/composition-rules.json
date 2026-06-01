@@ -1,12 +1,12 @@
 {
   "rules": [
     {
-      "id": "telephony-requires-crm",
+      "id": "outbound-telephony-requires-compliance",
       "ifAllPrimitives": [
         "telephony"
       ],
       "thenRequirePrimitives": [
-        "crm"
+        "compliance"
       ]
     }
   ]

@@ -4,12 +4,30 @@
   "maturity": "stable",
   "summary": "Video publishing API with Cloudflare Stream ingest, R2 storage, and LLM-enriched metadata.",
   "goal": "Ingest rendered video artifacts, enrich with LLM-generated metadata, publish to Cloudflare Stream, and serve a watch page with structured JSON-LD.",
-  "primitives": ["video", "llm", "analytics"],
-  "optionalPrimitives": ["compliance"],
-  "expectedSurfaces": ["/health", "/api/videos", "/api/admin/videos/import", "/watch/:id"],
+  "primitives": [
+    "video",
+    "llm",
+    "analytics"
+  ],
+  "optionalPrimitives": [
+    "compliance"
+  ],
+  "expectedSurfaces": [
+    "/health",
+    "/api/videos",
+    "/api/admin/videos/import",
+    "/watch/:id"
+  ],
   "smokeChecks": [
-    { "path": "/health", "expectedStatus": 200, "expectContains": "ok" },
-    { "path": "/api/videos", "expectedStatus": 200 }
+    {
+      "path": "/health",
+      "expectedStatus": 200,
+      "expectContains": "ok"
+    },
+    {
+      "path": "/api/videos",
+      "expectedStatus": 200
+    }
   ],
   "constraints": [
     "Use a branded custom domain.",
@@ -17,11 +35,22 @@
     "Verify staging smoke checks before production."
   ],
   "envContract": {
-    "secrets": ["CLOUDFLARE_STREAM_TOKEN", "ANTHROPIC_API_KEY"],
-    "vars": ["WORKER_DOMAIN", "CF_ACCOUNT_ID"]
+    "secrets": [
+      "CLOUDFLARE_STREAM_TOKEN",
+      "ANTHROPIC_API_KEY"
+    ],
+    "vars": [
+      "WORKER_DOMAIN",
+      "CF_ACCOUNT_ID"
+    ]
   },
   "bindingContract": {
-    "required": ["DB", "VIDEO_BUCKET"],
-    "optional": ["ANALYTICS"]
+    "required": [
+      "DB",
+      "VIDEO_BUCKET"
+    ],
+    "optional": [
+      "ANALYTICS"
+    ]
   }
 }

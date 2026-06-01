@@ -10,7 +10,7 @@
  * - Loading indicators during async operations
  * - WCAG 2.2 AA accessibility compliance
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
@@ -57,7 +57,7 @@ export function LoginPage() {
   const addNotification = useNotifications((s) => s.add);
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Google Sign-In when env is selected
+  // Fetch auth providers when env is selected
   useEffect(() => {
     if (!env || !googleButtonRef.current) return;
 
@@ -133,7 +133,7 @@ export function LoginPage() {
     };
   }, [env, addNotification]);
 
-  async function handleGoogleCallback(response: any) {
+  const handleGoogleCallback = useCallback(async (response: any) => {
     if (!env) return;
 
     setSubmitting(true);
@@ -182,7 +182,7 @@ export function LoginPage() {
       });
       setSubmitting(false);
     }
-  }
+  }, [env, login, navigate, searchParams]);
 
   function validateEmail(value: string): boolean {
     if (!value.trim()) {

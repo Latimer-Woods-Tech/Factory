@@ -20,6 +20,8 @@ import {
   Clock,
   Flag,
   ShieldCheck,
+  Users,
+  LayoutGrid,
   AlertTriangle,
   GitBranch,
   Menu,
@@ -36,6 +38,8 @@ const TimelineTab = lazy(() => import('./tabs/TimelineTab.js').then(m => ({ defa
 const FlagsTab = lazy(() => import('./tabs/FlagsTab.js').then(m => ({ default: m.FlagsTab })));
 const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').then(m => ({ default: m.TrainingLibraryTab })));
 const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
+const CouncilTab = lazy(() => import('./tabs/CouncilTab.js').then(m => ({ default: m.CouncilTab })));
+const AppsTab = lazy(() => import('./tabs/AppsTab.js').then(m => ({ default: m.AppsTab })));
 const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
 const GraphComposerTab = lazy(() => import('./tabs/GraphComposerTab.js').then(m => ({ default: m.GraphComposerTab })));
 
@@ -50,6 +54,8 @@ const TABS = [
   { to: '/timeline',  label: 'Timeline', icon: Clock },
   { to: '/flags',     label: 'Flags', icon: Flag },
   { to: '/audit',     label: 'Audit Log', icon: ShieldCheck },
+  { to: '/council',   label: 'Council', icon: Users },
+  { to: '/apps',      label: 'Apps', icon: LayoutGrid },
   { to: '/command-center', label: 'Command Center', icon: AlertTriangle },
   { to: '/graph-composer', label: 'Graph Composer', icon: GitBranch },
 ];
@@ -132,6 +138,8 @@ export function Dashboard() {
               <Route path="/timeline" element={<TimelineTab />} />
               <Route path="/flags" element={<FlagsTab />} />
               <Route path="/audit" element={<AuditTab />} />
+              <Route path="/council" element={<CouncilTab />} />
+              <Route path="/apps" element={<AppsTab />} />
               <Route path="/command-center" element={<CommandCenterTab />} />
               <Route path="/graph-composer" element={<GraphComposerTab />} />
             </Routes>
