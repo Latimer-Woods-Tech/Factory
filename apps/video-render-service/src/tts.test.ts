@@ -3,7 +3,14 @@
 // credentials required. The word "AI" never appears here (governance rule).
 
 import { describe, it, expect } from 'vitest';
-import { generateNarrationMp3 } from './tts.js';
+import { generateNarrationMp3, TtsResponseTooShortError, TTS_MIN_BYTES } from './tts.js';
+
+/**
+ * A valid-length MP3 stub for tests that only care about request mechanics
+ * (URL, headers, body shape), not the byte content. Must be at least
+ * TTS_MIN_BYTES so the audio quality guard does not throw.
+ */
+const VALID_MP3 = new Uint8Array(TTS_MIN_BYTES);
 
 /** Build a fake fetchImpl that returns the given status and body. */
 function mockFetch(
@@ -42,7 +49,13 @@ function capturingFetch(
 
 describe('generateNarrationMp3 — success', () => {
   it('returns the response bytes as Uint8Array', async () => {
-    const expected = new Uint8Array([0xff, 0xfb, 0x90, 0x00]);
+    // Use a TTS_MIN_BYTES-sized buffer so the audio quality guard passes.
+    // The first 4 bytes are a valid MP3 sync header; the rest is zero-padding.
+    const expected = new Uint8Array(TTS_MIN_BYTES);
+    expected[0] = 0xff;
+    expected[1] = 0xfb;
+    expected[2] = 0x90;
+    expected[3] = 0x00;
     const result = await generateNarrationMp3({
       text: 'You were built to guide.',
       voiceId: 'voice_abc',
@@ -54,7 +67,7 @@ describe('generateNarrationMp3 — success', () => {
   });
 
   it('sends POST to the correct ElevenLabs endpoint with voiceId in the URL', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     await generateNarrationMp3({
       text: 'Hello',
       voiceId: 'v_xyz',
@@ -68,7 +81,7 @@ describe('generateNarrationMp3 — success', () => {
   });
 
   it('sends the proven model_id and voice_settings in the request body', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     await generateNarrationMp3({
       text: 'Test narration',
       voiceId: 'v_xyz',
@@ -85,7 +98,7 @@ describe('generateNarrationMp3 — success', () => {
   });
 
   it('sends the xi-api-key header', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     await generateNarrationMp3({
       text: 'Hello',
       voiceId: 'v_xyz',
@@ -106,7 +119,7 @@ describe('generateNarrationMp3 — success', () => {
 
 describe('generateNarrationMp3 — BOM and whitespace stripping', () => {
   it('strips a leading UTF-8 BOM from apiKey before sending', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     const bomKey = '﻿my_api_key';
     await generateNarrationMp3({
       text: 'Hello',
@@ -120,7 +133,7 @@ describe('generateNarrationMp3 — BOM and whitespace stripping', () => {
   });
 
   it('strips trailing whitespace/newline from apiKey', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     await generateNarrationMp3({
       text: 'Hello',
       voiceId: 'v1',
@@ -133,7 +146,7 @@ describe('generateNarrationMp3 — BOM and whitespace stripping', () => {
   });
 
   it('strips a leading BOM from voiceId (appears in the URL path)', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     const bomVoice = '﻿voice_abc';
     await generateNarrationMp3({
       text: 'Hello',
@@ -148,7 +161,7 @@ describe('generateNarrationMp3 — BOM and whitespace stripping', () => {
   });
 
   it('strips trailing whitespace from voiceId', async () => {
-    const { fetchImpl, captured } = capturingFetch(200, new Uint8Array([0x01]));
+    const { fetchImpl, captured } = capturingFetch(200, VALID_MP3);
     await generateNarrationMp3({
       text: 'Hello',
       voiceId: 'voice_def   ',
@@ -264,5 +277,46 @@ describe('generateNarrationMp3 — error handling', () => {
     expect(err.message).toContain('503');
     // No body snippet — the read failed, so no colon follows the status.
     expect(err.message).not.toContain(':');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Audio quality guard — minimum byte length
+// ---------------------------------------------------------------------------
+
+describe('generateNarrationMp3 — audio quality guard', () => {
+  it('throws TtsResponseTooShortError when response is under TTS_MIN_BYTES', async () => {
+    // Simulate the real incident: ElevenLabs returned ~9 KB for a 75-s narration.
+    const tinyMp3 = new Uint8Array(9_000); // 9 KB — well under 50 KB floor
+    let caughtErr: unknown;
+    try {
+      await generateNarrationMp3({
+        text: 'You were built to guide.',
+        voiceId: 'v1',
+        apiKey: 'k',
+        fetchImpl: mockFetch(200, tinyMp3),
+      });
+    } catch (e) {
+      caughtErr = e;
+    }
+    expect(caughtErr).toBeInstanceOf(TtsResponseTooShortError);
+    const err = caughtErr as TtsResponseTooShortError;
+    expect(err.actual).toBe(9_000);
+    expect(err.minimumExpected).toBe(TTS_MIN_BYTES);
+    expect(err.message).toContain('9000');
+    expect(err.message).toContain(String(TTS_MIN_BYTES));
+  });
+
+  it('succeeds when response is exactly at TTS_MIN_BYTES (boundary)', async () => {
+    // A response at exactly the minimum is accepted without error.
+    const boundaryMp3 = new Uint8Array(TTS_MIN_BYTES);
+    const result = await generateNarrationMp3({
+      text: 'You were built to guide.',
+      voiceId: 'v1',
+      apiKey: 'k',
+      fetchImpl: mockFetch(200, boundaryMp3),
+    });
+    expect(result).toBeInstanceOf(Uint8Array);
+    expect(result.length).toBe(TTS_MIN_BYTES);
   });
 });
