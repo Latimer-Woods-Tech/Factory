@@ -332,7 +332,7 @@ export function LoginPage() {
                       aria-invalid={!!emailError}
                       aria-describedby={emailError ? 'email-error' : undefined}
                       disabled={submitting}
-                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                     {emailError && (
                       <p id="email-error" className="mt-1 text-xs text-red-400">
@@ -354,7 +354,7 @@ export function LoginPage() {
                       placeholder="password"
                       autoComplete="current-password"
                       disabled={submitting}
-                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                   </div>
 

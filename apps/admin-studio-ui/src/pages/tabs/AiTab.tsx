@@ -426,7 +426,7 @@ export function AiTab() {
             disabled={streaming}
             placeholder="Ask… (Cmd/Ctrl+Enter to send chat; click Propose for a diff)"
             rows={3}
-            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm font-mono text-slate-100 resize-none disabled:opacity-50"
+            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-base md:text-sm font-mono text-slate-100 resize-none disabled:opacity-50"
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
