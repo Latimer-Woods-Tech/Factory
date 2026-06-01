@@ -1,16 +1,39 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { interpolate } from 'remotion';
+import { renderBodyGraph } from '@latimer-woods-tech/bodygraph';
 
 // ---------------------------------------------------------------------------
-// Types
+// BodyGraph (film) — now a thin Remotion wrapper over the canonical engine
+// @latimer-woods-tech/bodygraph. The engine owns ALL geometry, shapes,
+// channels, and gate badges (one renderer shared by film / web / PDF). This
+// component's only job is to layer Remotion *motion* on top of the engine's
+// SVG without ever blurring the crisp shapes or gate numbers.
+//
+// Layering strategy (keeps numbers razor-sharp):
+//   • BACK layer  — engine SVG with `glow: true`. Its soft halos breathe/pulse
+//                   (we animate the whole back layer's opacity + scale). Even
+//                   though this layer also draws crisp shapes, it sits behind…
+//   • FRONT layer — engine SVG with `glow: false` (no halo): pure crisp shapes,
+//                   lit channels, and gate badges/numbers. Static + sharp,
+//                   painted on top so the breathing halo never softens an edge
+//                   or a number.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Types — surface preserved so EnergyBlueprintVideo.tsx keeps working.
 // ---------------------------------------------------------------------------
 
 export interface BodyGraphProps {
   frame: number;
   fps: number;
-  /** Centers that are defined (solid glow). Keys match CENTER_DEFS. */
+  /** Centers that are defined (solid glow). PascalCase keys (e.g. 'G', 'Throat'). */
   definedCenters?: string[];
-  /** Type-based glow colour for defined centers. Default '#c9a84c'. */
+  /**
+   * Signature gates to light as badges. Passed straight to the engine, which
+   * falls back to these when no full `gateActivations` map is available.
+   */
+  signatureGates?: number[];
+  /** Type-based accent colour for defined centers + lit channels. Default '#c9a84c'. */
   typeColor?: string;
   /** Scale applied to the full SVG. Default 1.0. */
   scale?: number;
@@ -22,204 +45,67 @@ export interface BodyGraphProps {
   breathe?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Canonical center geometry (viewport 340×480)
-// ---------------------------------------------------------------------------
-
-type CenterShape = 'diamond' | 'triangle-down' | 'rect' | 'triangle-right' | 'triangle-left';
-
-interface CenterDef {
-  key: string;
-  label: string;
-  shape: CenterShape;
-  cx: number;
-  cy: number;
-  /** Half-size for diamonds, radius for triangles, half-width for rects. */
-  size: number;
-  /** Only for rect shapes. */
-  width?: number;
-  height?: number;
-}
-
-const CENTER_DEFS: CenterDef[] = [
-  { key: 'head',         label: 'Head',         shape: 'diamond',        cx: 170, cy: 28,  size: 40 },
-  { key: 'ajna',         label: 'Ajna',          shape: 'triangle-down',  cx: 170, cy: 90,  size: 36 },
-  { key: 'throat',       label: 'Throat',        shape: 'rect',           cx: 135, cy: 152, size: 0, width: 70, height: 34 },
-  { key: 'g',            label: 'G Center',      shape: 'diamond',        cx: 170, cy: 236, size: 52 },
-  { key: 'heart',        label: 'Heart',         shape: 'rect',           cx: 232, cy: 200, size: 0, width: 30, height: 30 },
-  { key: 'solar_plexus', label: 'Solar Plexus',  shape: 'triangle-right', cx: 246, cy: 308, size: 36 },
-  { key: 'sacral',       label: 'Sacral',        shape: 'rect',           cx: 120, cy: 316, size: 0, width: 100, height: 44 },
-  { key: 'spleen',       label: 'Spleen',        shape: 'triangle-left',  cx: 94,  cy: 244, size: 36 },
-  { key: 'root',         label: 'Root',          shape: 'rect',           cx: 148, cy: 424, size: 0, width: 84, height: 30 },
-];
-
-// ---------------------------------------------------------------------------
-// Channel paths (anatomical connections between centers)
-// These are approximate cubic bezier paths between center midpoints.
-// ---------------------------------------------------------------------------
-
-interface ChannelDef {
-  from: string;
-  to: string;
-}
-
-const CHANNEL_DEFS: ChannelDef[] = [
-  { from: 'head',         to: 'ajna' },
-  { from: 'ajna',         to: 'throat' },
-  { from: 'throat',       to: 'g' },
-  { from: 'throat',       to: 'heart' },
-  { from: 'g',            to: 'sacral' },
-  { from: 'g',            to: 'spleen' },
-  { from: 'heart',        to: 'g' },
-  { from: 'spleen',       to: 'sacral' },
-  { from: 'spleen',       to: 'solar_plexus' },
-  { from: 'solar_plexus', to: 'sacral' },
-  { from: 'sacral',       to: 'root' },
-  { from: 'solar_plexus', to: 'root' },
-];
-
-// ---------------------------------------------------------------------------
-// SVG path generators for each center shape
-// ---------------------------------------------------------------------------
-
-/** Returns SVG path `d` attribute for a diamond centred at (cx, cy). */
-const diamondPath = (cx: number, cy: number, size: number): string => {
-  const s = size / 2;
-  return `M ${cx} ${cy - s} L ${cx + s} ${cy} L ${cx} ${cy + s} L ${cx - s} ${cy} Z`;
-};
-
-/** Returns SVG path `d` for a downward-pointing triangle. */
-const triangleDownPath = (cx: number, cy: number, size: number): string => {
-  const s = size / 2;
-  return `M ${cx - s} ${cy - s * 0.6} L ${cx + s} ${cy - s * 0.6} L ${cx} ${cy + s * 0.6} Z`;
-};
-
-/** Returns SVG path `d` for a right-leaning triangle (Solar Plexus). */
-const triangleRightPath = (cx: number, cy: number, size: number): string => {
-  const s = size / 2;
-  return `M ${cx - s * 0.6} ${cy - s} L ${cx + s * 0.6} ${cy} L ${cx - s * 0.6} ${cy + s} Z`;
-};
-
-/** Returns SVG path `d` for a left-leaning triangle (Spleen). */
-const triangleLeftPath = (cx: number, cy: number, size: number): string => {
-  const s = size / 2;
-  return `M ${cx + s * 0.6} ${cy - s} L ${cx - s * 0.6} ${cy} L ${cx + s * 0.6} ${cy + s} Z`;
-};
-
-const getCenterPath = (c: CenterDef): string => {
-  switch (c.shape) {
-    case 'diamond':        return diamondPath(c.cx, c.cy, c.size);
-    case 'triangle-down':  return triangleDownPath(c.cx, c.cy, c.size);
-    case 'triangle-right': return triangleRightPath(c.cx, c.cy, c.size);
-    case 'triangle-left':  return triangleLeftPath(c.cx, c.cy, c.size);
-    case 'rect': {
-      const w = c.width ?? 40;
-      const h = c.height ?? 30;
-      return `M ${c.cx - w / 2} ${c.cy - h / 2} h ${w} v ${h} h ${-w} Z`;
-    }
-  }
-};
-
-// ---------------------------------------------------------------------------
-// Channel path builder — draws a straight line between center midpoints
-// ---------------------------------------------------------------------------
-
-const getChannelPath = (from: CenterDef, to: CenterDef): string =>
-  `M ${from.cx} ${from.cy} L ${to.cx} ${to.cy}`;
-
-const findCenter = (key: string): CenterDef | undefined =>
-  CENTER_DEFS.find(c => c.key === key);
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-interface CenterShapeProps {
-  def: CenterDef;
-  defined: boolean;
-  typeColor: string;
-  frame: number;
-  breathe: boolean;
-}
-
-/** Renders a single center as either defined (glowing fill) or undefined (outline). */
-const CenterShape: React.FC<CenterShapeProps> = ({ def, defined, typeColor, frame, breathe }) => {
-  const path = getCenterPath(def);
-
-  if (defined) {
-    // Breathing pulse: opacity 0.7 → 1.0 → 0.7 over 120 frames
-    const pulseOpacity = breathe
-      ? interpolate(Math.sin(frame / 60), [-1, 1], [0.7, 1.0], {
-          extrapolateLeft: 'clamp',
-          extrapolateRight: 'clamp',
-        })
-      : 0.85;
-
-    return (
-      <g>
-        {/* Glow layer — blurred duplicate underneath */}
-        <path
-          d={path}
-          fill={typeColor}
-          opacity={pulseOpacity * 0.5}
-          style={{ filter: 'blur(6px)' }}
-        />
-        {/* Solid fill */}
-        <path
-          d={path}
-          fill={typeColor}
-          opacity={pulseOpacity * 0.8}
-          stroke={typeColor}
-          strokeWidth={1.5}
-          strokeOpacity={0.9}
-        />
-      </g>
-    );
-  }
-
-  // Undefined center: very faint with slow white shimmer
-  const shimmerOpacity = interpolate(Math.sin(frame / 150 + def.cx * 0.01), [-1, 1], [0.18, 0.28], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  return (
-    <path
-      d={path}
-      fill="#ffffff"
-      fillOpacity={0.1}
-      stroke="#ffffff"
-      strokeWidth={1}
-      strokeOpacity={shimmerOpacity}
-    />
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
+// Engine viewBox is 300×420; the film historically reserved a 340×480 box.
+// Render at the engine's native size and let `scale` handle sizing.
+const ENGINE_W = 300;
+const ENGINE_H = 420;
 
 /**
- * BodyGraph — SVG rendering of the Human Design body graph.
+ * BodyGraph — SVG rendering of the Human Design body graph for the film.
  *
- * 9 centers drawn at canonical positions in a 340×480 viewport,
- * connected by anatomical channel lines. Defined centers glow and breathe;
- * undefined centers hold a quiet, semi-transparent outline.
+ * Delegates all drawing to {@link renderBodyGraph} (the canonical engine) and
+ * layers a breathing halo animation behind a static, crisp top layer so the
+ * gate numbers and center edges always stay sharp.
  */
 export const BodyGraph: React.FC<BodyGraphProps> = ({
   frame,
   definedCenters = [],
+  signatureGates = [],
   typeColor = '#c9a84c',
   scale = 1.0,
   x,
   y,
   breathe = true,
 }) => {
-  // Default position: right-center area of a 1920×1080 frame
+  // Default position: right-center area of a 1920×1080 frame.
   const resolvedX = x ?? 1920 * 0.575;
-  const resolvedY = y ?? (1080 - 480 * scale) / 2;
+  const resolvedY = y ?? (1080 - ENGINE_H * scale) / 2;
 
-  const definedSet = new Set(definedCenters);
+  // Crisp top layer — never animated, never blurred. Gate badges + numbers live
+  // here. idSuffix keeps gradient/filter ids unique if multiple graphs mount.
+  const crispSvg = useMemo(
+    () =>
+      renderBodyGraph(
+        { definedCenters, signatureGates },
+        { accent: typeColor, accentStrong: typeColor, definedStroke: typeColor, channelActive: typeColor, glow: typeColor },
+        { glow: false, showGateBadges: true, idSuffix: '-film-crisp' },
+      ),
+    [definedCenters, signatureGates, typeColor],
+  );
+
+  // Back glow layer — halos only (no badges, so nothing crisp to soften). This
+  // is the layer we breathe.
+  const glowSvg = useMemo(
+    () =>
+      renderBodyGraph(
+        { definedCenters, signatureGates },
+        { accent: typeColor, accentStrong: typeColor, definedStroke: typeColor, channelActive: typeColor, glow: typeColor },
+        { glow: true, showGateBadges: false, idSuffix: '-film-glow' },
+      ),
+    [definedCenters, signatureGates, typeColor],
+  );
+
+  // Breathing pulse drives ONLY the back glow layer: opacity 0.55 → 0.95 and a
+  // subtle scale, over a ~120-frame sine cycle. Shapes/numbers in the front
+  // layer are unaffected and stay razor-sharp.
+  const pulse = breathe
+    ? interpolate(Math.sin(frame / 60), [-1, 1], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      })
+    : 0.5;
+  const glowOpacity = breathe ? interpolate(pulse, [0, 1], [0.55, 0.95]) : 0.7;
+  const glowScale = breathe ? interpolate(pulse, [0, 1], [0.99, 1.03]) : 1;
 
   return (
     <div
@@ -227,78 +113,36 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
         position: 'absolute',
         left: resolvedX,
         top: resolvedY,
+        width: ENGINE_W,
+        height: ENGINE_H,
         transformOrigin: 'top left',
         transform: `scale(${String(scale)})`,
         pointerEvents: 'none',
       }}
     >
-      <svg
-        width={340}
-        height={480}
-        viewBox="0 0 340 480"
-        overflow="visible"
-      >
-        {/* ----------------------------------------------------------------
-            Channel paths — drawn first so centers render on top
-        ---------------------------------------------------------------- */}
-        {CHANNEL_DEFS.map((ch, i) => {
-          const fromC = findCenter(ch.from);
-          const toC = findCenter(ch.to);
-          if (!fromC || !toC) return null;
+      {/* BACK — breathing halo layer (under the crisp layer). */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          opacity: glowOpacity,
+          transform: `scale(${String(glowScale)})`,
+          transformOrigin: 'center',
+        }}
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        dangerouslySetInnerHTML={{ __html: glowSvg }}
+      />
 
-          const bothDefined = definedSet.has(ch.from) && definedSet.has(ch.to);
-          const channelPath = getChannelPath(fromC, toC);
-
-          return (
-            <path
-              key={i}
-              d={channelPath}
-              fill="none"
-              stroke={bothDefined ? typeColor : '#ffffff'}
-              strokeWidth={bothDefined ? 2.5 : 1}
-              strokeOpacity={bothDefined ? 0.4 : 0.12}
-              strokeLinecap="round"
-            />
-          );
-        })}
-
-        {/* ----------------------------------------------------------------
-            Center shapes
-        ---------------------------------------------------------------- */}
-        {CENTER_DEFS.map((def) => (
-          <CenterShape
-            key={def.key}
-            def={def}
-            defined={definedSet.has(def.key)}
-            typeColor={typeColor}
-            frame={frame}
-            breathe={breathe}
-          />
-        ))}
-
-        {/* ----------------------------------------------------------------
-            Center labels (very faint, small)
-        ---------------------------------------------------------------- */}
-        {CENTER_DEFS.map((def) => (
-          <text
-            key={`label-${def.key}`}
-            x={def.cx}
-            y={def.cy + (def.shape === 'rect' ? (def.height ?? 30) / 2 + 14 : (def.size / 2) + 14)}
-            textAnchor="middle"
-            fill="#ffffff"
-            fillOpacity={0.25}
-            fontSize={9}
-            fontFamily="Inter, system-ui, sans-serif"
-            fontWeight={300}
-          >
-            {def.label}
-          </text>
-        ))}
-      </svg>
+      {/* FRONT — crisp, static shapes + lit channels + gate badges/numbers. */}
+      <div
+        style={{ position: 'absolute', inset: 0 }}
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        dangerouslySetInnerHTML={{ __html: crispSvg }}
+      />
     </div>
   );
 };
 
-// Export fps so callers have access to the interface type without importing
+// Export the props type for callers that need the interface without importing
 // from remotion directly.
 export type { BodyGraphProps as BodyGraphPropsType };

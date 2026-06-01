@@ -47,6 +47,12 @@ export const blueprintSchema = z.object({
   forgeTheme: z.enum(['chronos', 'eros', 'aether', 'lux', 'phoenix', 'self']).default('self'),
   /** HD Type for body graph colour. */
   hdType: z.enum(['generator', 'manifesting_generator', 'projector', 'manifestor', 'reflector']).optional(),
+  /**
+   * Signature gates to light as badges on the body graph. Passed through to the
+   * canonical engine, which marks them active when no full activation map is
+   * available.
+   */
+  signatureGates: z.array(z.number()).optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -140,10 +146,11 @@ const RevelationScene: React.FC<RevelationSceneProps> = ({
 interface ConceptSceneProps extends SceneProps {
   text: string;
   definedCenters?: string[];
+  signatureGates?: number[];
 }
 
 const ConceptScene: React.FC<ConceptSceneProps> = ({
-  sceneFrame, durationFrames, fps, text, typeColor, definedCenters = [],
+  sceneFrame, durationFrames, fps, text, typeColor, definedCenters = [], signatureGates = [],
 }) => {
   const appear = interpolate(sceneFrame, [0, 20], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
@@ -208,6 +215,7 @@ const ConceptScene: React.FC<ConceptSceneProps> = ({
           frame={sceneFrame}
           fps={fps}
           definedCenters={definedCenters}
+          signatureGates={signatureGates}
           typeColor={typeColor}
           scale={1.5}
           x={0}
@@ -219,8 +227,10 @@ const ConceptScene: React.FC<ConceptSceneProps> = ({
   );
 };
 
-const BreathScene: React.FC<SceneProps & { showBodyGraph: boolean; definedCenters?: string[] }> = ({
-  sceneFrame, fps, typeColor, definedCenters = [], showBodyGraph,
+const BreathScene: React.FC<
+  SceneProps & { showBodyGraph: boolean; definedCenters?: string[]; signatureGates?: number[] }
+> = ({
+  sceneFrame, fps, typeColor, definedCenters = [], signatureGates = [], showBodyGraph,
 }) => (
   <AbsoluteFill style={{ opacity: 1 }}>
     {showBodyGraph && (
@@ -228,6 +238,7 @@ const BreathScene: React.FC<SceneProps & { showBodyGraph: boolean; definedCenter
         frame={sceneFrame}
         fps={fps}
         definedCenters={definedCenters}
+        signatureGates={signatureGates}
         typeColor={typeColor}
         scale={1.5}
         breathe
@@ -378,6 +389,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   hdType,
   brandColor = DEFAULT_BRAND_COLOR,
   logoUrl,
+  signatureGates = [],
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -433,11 +445,11 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
       )}
 
       {scene.type === 'concept' && scene.text && (
-        <ConceptScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} definedCenters={definedCenters} />
+        <ConceptScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} definedCenters={definedCenters} signatureGates={signatureGates} />
       )}
 
       {scene.type === 'breath' && (
-        <BreathScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} showBodyGraph={scene.showBodyGraph} definedCenters={definedCenters} />
+        <BreathScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} showBodyGraph={scene.showBodyGraph} definedCenters={definedCenters} signatureGates={signatureGates} />
       )}
 
       {scene.type === 'triad' && scene.triad && (

@@ -32,6 +32,7 @@
     "prepublish": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@latimer-woods-tech/bodygraph": "file:../bodygraph",
     "@latimer-woods-tech/video": "file:../video"
   },
   "peerDependencies": {
