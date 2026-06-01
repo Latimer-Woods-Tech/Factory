@@ -316,5 +316,5 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
 
   // Success surface.
   await expect(page.getByText('Staging provision request recorded.').first()).toBeVisible();
-  await expect(page.getByText(provisionRequestId)).toBeVisible();
+  await expect(page.getByText(provisionRequestId).first()).toBeVisible();
 });
