@@ -38,6 +38,7 @@ import type { RenderRequest } from '@latimer-woods-tech/video';
 import type { RenderOutcome, RenderPipeline } from './index.js';
 import { findBlueprintSegment } from './index.js';
 import { renderBlueprintMp4 } from './render.js';
+import { generateNarrationMp3 } from './tts.js';
 
 /** Runtime configuration the production pipeline needs (from Secret Manager). */
 export interface PipelineConfig {
@@ -56,6 +57,17 @@ export interface PipelineConfig {
   streamReadyTimeoutSeconds?: number;
   /** Poll interval in seconds. Default 10. */
   streamPollIntervalSeconds?: number;
+  /**
+   * ElevenLabs credentials for narration synthesis. When present and the
+   * segment carries `narrationText`, the pipeline generates an MP3, uploads it
+   * to R2, and sets `props.narrationUrl` so `<Audio>` fires in the render.
+   * When absent, the pipeline silently skips TTS (a silent render is still
+   * valid — the narration is a WOW-enhancer, not a gating requirement).
+   */
+  elevenLabs?: {
+    apiKey: string;
+    voiceId: string;
+  };
 }
 
 /** @internal Sleep for `seconds`. */
@@ -159,6 +171,40 @@ export function createRenderPipeline(config: PipelineConfig): RenderPipeline {
       sourceData.logoUrl = request.spec.logoUrl;
     }
     const props = buildBlueprintProps(sourceData);
+
+    // 1b. TTS narration — generate MP3 and upload to R2 so <Audio> fires in
+    //     the render. Graceful-degrade: if TTS fails (missing credentials,
+    //     ElevenLabs error, R2 upload failure) we log the error and continue
+    //     with an empty narrationUrl. A silent render is always better than no
+    //     render, and the narration is a WOW-enhancer not a gating requirement.
+    if (config.elevenLabs && sourceData.narrationText) {
+      try {
+        const mp3Bytes = await generateNarrationMp3({
+          text: sourceData.narrationText,
+          voiceId: config.elevenLabs.voiceId,
+          apiKey: config.elevenLabs.apiKey,
+        });
+        const narrationKey = `narrations/${request.videoObjectId}.mp3`;
+        await s3.send(
+          new PutObjectCommand({
+            Bucket: config.r2.bucket,
+            Key: narrationKey,
+            Body: mp3Bytes,
+            ContentType: 'audio/mpeg',
+          }),
+        );
+        props.narrationUrl = `https://${config.r2.publicDomain}/${narrationKey}`;
+        console.log(
+          `[render] ${request.videoObjectId} narration uploaded: ${props.narrationUrl}`,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(
+          `[render] ${request.videoObjectId} TTS step failed (continuing without audio): ${message}`,
+        );
+        // narrationUrl stays '' — render proceeds silently.
+      }
+    }
 
     const workDir = await mkdtemp(join(tmpdir(), 'render-'));
     const rawMp4 = join(workDir, 'render.mp4');
