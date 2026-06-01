@@ -4,7 +4,7 @@
 > External tooling versions are hand-maintained here.
 > Downstream repos: pointer to this file in `CLAUDE.md` — do NOT copy-paste; copies drift.
 
-*Last updated: 2026-05-30 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
+*Last updated: 2026-06-01 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
 
 ---
 
@@ -48,7 +48,8 @@
 | `@latimer-woods-tech/tsconfig-base` | `0.1.0` | stable |
 | `@latimer-woods-tech/ui` | `0.2.0` | stable |
 | `@latimer-woods-tech/validation` | `0.1.0` | stable |
-| `@latimer-woods-tech/video` | `0.2.0` | stable |
+| `@latimer-woods-tech/video` | `0.3.0` | stable |
+| `@latimer-woods-tech/video-studio` | `0.1.0` | stable |
 <!-- AUTO-UPDATED-END -->
 
 ---
