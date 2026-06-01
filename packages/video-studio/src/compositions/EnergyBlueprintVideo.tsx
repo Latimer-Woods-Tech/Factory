@@ -195,31 +195,28 @@ const ConceptScene: React.FC<ConceptSceneProps> = ({
         />
       </div>
 
-      {/* Right side — body graph */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 1920 * 0.55,
-          width: 1920 * 0.38,
-          height: 1080,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transform: `scale(${String(bodyGraphScale)})`,
-          transformOrigin: 'center',
-          opacity: bodyGraphScale,
-        }}
-      >
+      {/* Right side — body graph over a soft scrim so it reads off the bg */}
+      <div style={{ position: 'absolute', inset: 0, opacity: bodyGraphScale }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 1920 * 0.5,
+            width: 1920 * 0.5,
+            height: 1080,
+            background:
+              'radial-gradient(ellipse 45% 58% at 58% 50%, rgba(6,7,14,0.82) 0%, rgba(6,7,14,0.45) 42%, rgba(6,7,14,0) 72%)',
+          }}
+        />
         <BodyGraph
           frame={sceneFrame}
           fps={fps}
           definedCenters={definedCenters}
           signatureGates={signatureGates}
           typeColor={typeColor}
-          scale={1.5}
-          x={0}
-          y={0}
+          scale={1.55}
+          x={1150}
+          y={210}
           breathe
         />
       </div>
@@ -234,15 +231,27 @@ const BreathScene: React.FC<
 }) => (
   <AbsoluteFill style={{ opacity: 1 }}>
     {showBodyGraph && (
-      <BodyGraph
-        frame={sceneFrame}
-        fps={fps}
-        definedCenters={definedCenters}
-        signatureGates={signatureGates}
-        typeColor={typeColor}
-        scale={1.5}
-        breathe
-      />
+      <>
+        {/* Hero scrim — pulls the graph out of the murk and centres attention. */}
+        <AbsoluteFill
+          style={{
+            background:
+              'radial-gradient(ellipse 42% 64% at 50% 50%, rgba(6,7,14,0.85) 0%, rgba(6,7,14,0.5) 42%, rgba(6,7,14,0) 70%)',
+          }}
+        />
+        {/* Big, centred hero. 300×420 engine at 2.3 → centred in 1920×1080. */}
+        <BodyGraph
+          frame={sceneFrame}
+          fps={fps}
+          definedCenters={definedCenters}
+          signatureGates={signatureGates}
+          typeColor={typeColor}
+          scale={2.3}
+          x={615}
+          y={57}
+          breathe
+        />
+      </>
     )}
   </AbsoluteFill>
 );

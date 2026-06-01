@@ -104,8 +104,10 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
         extrapolateRight: 'clamp',
       })
     : 0.5;
-  const glowOpacity = breathe ? interpolate(pulse, [0, 1], [0.55, 0.95]) : 0.7;
-  const glowScale = breathe ? interpolate(pulse, [0, 1], [0.99, 1.03]) : 1;
+  // Pulse the halo by OPACITY only — never scale — so the back layer stays
+  // pixel-aligned under the crisp front layer (a scale pulse ghosts the labels).
+  const glowOpacity = breathe ? interpolate(pulse, [0, 1], [0.72, 1.05]) : 0.85;
+  const glowScale = 1;
 
   return (
     <div
