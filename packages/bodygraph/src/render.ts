@@ -19,13 +19,13 @@ import {
   CENTER_POS,
   CENTER_SIZE,
   CHANNEL_LINES,
-  GATE_OFFSETS,
   VIEWBOX_HEIGHT,
   VIEWBOX_WIDTH,
   centerShapePoints,
   type CenterKey,
   type CenterPosition,
 } from './geometry.js';
+import { gatePosition } from './layout.js';
 import { resolveTheme, type BadgeColors, type BodyGraphThemeInput, type BodyGraphTheme } from './theme.js';
 
 /** Per-gate activation flags. */
@@ -172,7 +172,6 @@ function badgeColorsFor(
 /** @internal Draw the crisp gate badges around a single center. */
 function drawGateBadges(
   center: CenterKey,
-  pos: CenterPosition,
   activations: Record<number, GateActivation>,
   transitSet: ReadonlySet<number>,
   theme: BodyGraphTheme,
@@ -180,17 +179,17 @@ function drawGateBadges(
 ): string {
   const gates = CENTER_GATES[center];
   let out = '';
-  let idx = 0;
   for (const g of gates) {
     const act = activations[g];
     const inTransit = transitSet.has(g);
     if (!act && !inTransit) continue;
 
-    const off = GATE_OFFSETS[idx % GATE_OFFSETS.length];
-    idx += 1;
-    if (!off) continue;
-    const bx = pos.x + off.dx;
-    const by = pos.y + off.dy;
+    // Canonical, deterministic, collision-free slot for this gate (computed from
+    // the center's complete gate set, so it never moves as gates toggle).
+    const slot = gatePosition(g);
+    if (!slot) continue;
+    const bx = slot.x;
+    const by = slot.y;
 
     const colors = badgeColorsFor(act, inTransit, theme);
     const attrs = interactiveAttrs ? ` class="bg-gate" data-gate="${g}"` : '';
@@ -287,7 +286,7 @@ export function renderBodyGraph(
   // Crisp gate badges + numbers, on top.
   if (showGateBadges) {
     for (const center of CENTER_ORDER) {
-      svg += drawGateBadges(center, CENTER_POS[center], activations, transitSet, t, interactiveAttrs);
+      svg += drawGateBadges(center, activations, transitSet, t, interactiveAttrs);
     }
   }
 

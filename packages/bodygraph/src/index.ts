@@ -34,7 +34,6 @@ export {
   CENTER_LABELS,
   CENTER_ORDER,
   CHANNEL_LINES,
-  GATE_OFFSETS,
   GATE_TO_CENTER,
   VIEWBOX_WIDTH,
   VIEWBOX_HEIGHT,
@@ -45,3 +44,21 @@ export type {
   CenterShape,
   CenterPosition,
 } from './geometry.js';
+
+// The authentic per-gate badge layout (deterministic, collision-free) + the
+// bbox helpers the collision test (and motion/overlay consumers) build on.
+export {
+  gateBadgeLayout,
+  gatePosition,
+  badgeBBox,
+  centerShapeBBox,
+  centerLabelBBox,
+  boxesOverlap,
+  BADGE_HALF_W,
+  BADGE_HALF_H,
+  BADGE_PADDING,
+} from './layout.js';
+export type {
+  GatePosition,
+  BBox,
+} from './layout.js';

@@ -110,25 +110,6 @@ export const CHANNEL_LINES: Readonly<Record<string, readonly [CenterKey, CenterK
 };
 
 /**
- * Gate-badge offsets (relative to a center's x/y) — up to 12 positions per
- * center. Ported verbatim from the canonical `GATE_OFFSETS`.
- */
-export const GATE_OFFSETS: ReadonlyArray<{ readonly dx: number; readonly dy: number }> = [
-  { dx: -34, dy: 0 },
-  { dx: 34, dy: 0 },
-  { dx: 0, dy: -28 },
-  { dx: 0, dy: 28 },
-  { dx: -28, dy: -18 },
-  { dx: 28, dy: -18 },
-  { dx: -28, dy: 18 },
-  { dx: 28, dy: 18 },
-  { dx: -38, dy: -28 },
-  { dx: 38, dy: -28 },
-  { dx: -20, dy: 36 },
-  { dx: 20, dy: 36 },
-];
-
-/**
  * Center → gates map. Ported verbatim from `HD_CENTERS[center].gates`. Used to
  * place gate badges; the engine is self-contained and does not import from
  * selfprime.
