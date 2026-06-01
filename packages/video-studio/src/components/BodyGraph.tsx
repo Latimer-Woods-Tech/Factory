@@ -107,7 +107,6 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
         { glow: true, showGateBadges: false, idSuffix: '-film-glow', spotlightCenters },
       ),
     // spotlightCenter (string | undefined) drives spotlightCenters array; include it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [definedCenters, signatureGates, typeColor, spotlightCenter],
   );
 
