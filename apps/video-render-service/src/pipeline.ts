@@ -199,8 +199,12 @@ export function createRenderPipeline(config: PipelineConfig): RenderPipeline {
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
+        const errorClass =
+          err instanceof Error
+            ? (err.constructor?.name ?? 'Error')
+            : 'Error';
         console.error(
-          `[render] ${request.videoObjectId} TTS step failed (continuing without audio): ${message}`,
+          `[render] TTS failed (${errorClass}): ${message}`,
         );
         // narrationUrl stays '' — render proceeds silently.
       }
