@@ -286,6 +286,10 @@ export function createRenderPipeline(config: PipelineConfig): RenderPipeline {
     //     render, and the narration is a WOW-enhancer not a gating requirement.
     if (config.elevenLabs && sourceData.narrationText) {
       try {
+        const narr = sourceData.narrationText;
+        console.log(
+          `[render] ${request.videoObjectId} narrationText: ${String(narr.length)} chars, ${String(narr.split(/\s+/).filter(Boolean).length)} words | preview: ${JSON.stringify(narr.slice(0, 160))}`,
+        );
         const mp3Bytes = await generateNarrationMp3({
           text: sourceData.narrationText,
           voiceId: config.elevenLabs.voiceId,
