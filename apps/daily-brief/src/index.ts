@@ -6,12 +6,14 @@ import { runDailyBrief } from './brief';
  * Secrets (wrangler secret put):
  *   ANTHROPIC_API_KEY, GROQ_API_KEY, GROK_API_KEY, VERTEX_ACCESS_TOKEN,
  *   ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, RESEND_API_KEY,
- *   GITHUB_TOKEN, NEWS_API_KEY, TRIGGER_TOKEN
+ *   GITHUB_TOKEN, TRIGGER_TOKEN
  *
  * Vars (wrangler.jsonc):
- *   GITHUB_ORG, ZIP_CODE, RECIPIENTS, AUDIO_PUBLIC_BASE_URL,
+ *   GITHUB_ORG, ZIP_CODE, RECIPIENTS, PUBLIC_BASE_URL,
  *   RESEND_FROM_ADDRESS, RESEND_FROM_NAME,
  *   AI_GATEWAY_BASE_URL, VERTEX_PROJECT, VERTEX_LOCATION
+ *
+ * News no longer needs an API key — it uses Google News RSS (see sections/news.ts).
  */
 export interface Env {
   // R2 bucket for audio narration storage
@@ -38,7 +40,6 @@ export interface Env {
 
   // External data APIs
   GITHUB_TOKEN: string;
-  NEWS_API_KEY: string;
 
   // Revenue
   STRIPE_SECRET_KEY?: string;
@@ -55,7 +56,12 @@ export interface Env {
   GITHUB_ORG: string;
   ZIP_CODE: string;
   RECIPIENTS: string;
-  AUDIO_PUBLIC_BASE_URL: string;
+  /**
+   * Public origin of this worker, used to build self-hosted audio + web-view
+   * links inside the email (e.g. https://brief.latwoodtech.work). Falls back to
+   * the workers.dev origin of the incoming request when unset.
+   */
+  PUBLIC_BASE_URL?: string;
 
   // Flagship feature flags
   /** Flagship feature-flag binding. */
@@ -70,6 +76,35 @@ export default {
 
     if (url.pathname === '/health') {
       return Response.json({ status: 'ok', service: 'daily-brief', ts: Date.now() });
+    }
+
+    // Self-hosted narration audio — GET /audio/{YYYY-MM-DD}.mp3
+    // Streams the MP3 straight from R2 so the email link never depends on a
+    // public r2.dev bucket toggle (and stays on a branded origin).
+    const audioMatch = url.pathname.match(/^\/audio\/(\d{4}-\d{2}-\d{2})\.mp3$/);
+    if (audioMatch && request.method === 'GET') {
+      const obj = await env.AUDIO_BUCKET.get(`briefs/${audioMatch[1]}-narration.mp3`);
+      if (!obj) return new Response('Not found', { status: 404 });
+      return new Response(obj.body, {
+        headers: {
+          'Content-Type': 'audio/mpeg',
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    }
+
+    // Web view of a brief — GET /brief/latest or GET /brief/{YYYY-MM-DD}
+    const briefMatch = url.pathname.match(/^\/brief\/(latest|\d{4}-\d{2}-\d{2})$/);
+    if (briefMatch && request.method === 'GET') {
+      const key = briefMatch[1] === 'latest' ? 'briefs/latest.html' : `briefs/${briefMatch[1]}.html`;
+      const obj = await env.AUDIO_BUCKET.get(key);
+      if (!obj) return new Response('Brief not found', { status: 404 });
+      return new Response(obj.body, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
     }
 
     // Manual trigger for testing — POST /trigger

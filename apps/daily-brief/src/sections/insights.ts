@@ -8,6 +8,7 @@
  */
 
 import { complete } from '@latimer-woods-tech/llm';
+import { parseLlmJson } from '../lib/llm-json';
 import type { Env } from '../index';
 import type { WeatherData } from './weather';
 import type { NewsSection } from './news';
@@ -240,17 +241,24 @@ export async function generateInsights(input: InsightsInput): Promise<BriefInsig
 
   const content = result.data?.content ?? '';
 
-  try {
-    const parsed = JSON.parse(content) as BriefInsights;
-    return parsed;
-  } catch {
-    // LLM returned something non-JSON — wrap it
+  // Tolerant parse — strips code fences / preamble the model often adds.
+  const parsed = parseLlmJson<BriefInsights>(content);
+  if (parsed?.narration) {
     return {
-      narration: content,
-      textSummary: content.slice(0, 300),
-      todaysFocus: ['Review open PRs', 'Check worker health dashboard', 'Triage any new issues'],
-      timePerspectives: { day: '', week: '', month: '', year: '' },
-      winOfTheDay: '',
+      narration: parsed.narration,
+      textSummary: parsed.textSummary || parsed.narration.slice(0, 300),
+      todaysFocus: Array.isArray(parsed.todaysFocus) ? parsed.todaysFocus : [],
+      timePerspectives: parsed.timePerspectives ?? { day: '', week: '', month: '', year: '' },
+      winOfTheDay: parsed.winOfTheDay ?? '',
     };
   }
+
+  // Genuinely unparseable — wrap the raw text so the email still has a narration.
+  return {
+    narration: content,
+    textSummary: content.slice(0, 300),
+    todaysFocus: ['Review open PRs', 'Check worker health dashboard', 'Triage any new issues'],
+    timePerspectives: { day: '', week: '', month: '', year: '' },
+    winOfTheDay: '',
+  };
 }
