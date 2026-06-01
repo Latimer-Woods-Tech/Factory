@@ -137,7 +137,7 @@ export function Dashboard() {
               <NavLink
                 key={tab.to}
                 to={tab.to}
-                className={`flex flex-col items-center justify-center w-16 py-1 gap-1 rounded-lg transition-colors ${
+                className={`target-min flex flex-col items-center justify-center rounded-lg transition-colors ${
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -150,7 +150,7 @@ export function Dashboard() {
           {/* More Drawer Trigger */}
           <Drawer>
             <DrawerTrigger asChild>
-              <button className={`flex flex-col items-center justify-center w-16 py-1 gap-1 rounded-lg transition-colors ${
+              <button className={`target-min flex flex-col items-center justify-center rounded-lg transition-colors ${
                 MOBILE_MORE_TABS.some(t => t.to === activeTab) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}>
                 <Menu className="w-5 h-5" />
