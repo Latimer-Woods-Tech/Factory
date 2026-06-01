@@ -125,16 +125,21 @@ function sleep(seconds: number): Promise<void> {
 }
 
 /**
- * @internal Re-encode the rendered MP4 with an ambient music bed mixed under
- * the narration. The music is fetched from a public R2 URL, trimmed/looped to
- * the film length, ducked to -18 dBFS so narration sits clearly on top, then
- * amixed with the primary audio track. Falls back silently to narration-only
- * if the music URL can't be fetched — music is a WOW enhancer, not required.
+ * @internal Re-encode the rendered MP4 with an ambient music bed. The music is
+ * fetched from a public R2 URL and looped to the film length. Two cases:
+ *  • `hasNarration` true  — narration (0.9) + ambient bed (-18 dBFS ≈ 0.13)
+ *    are amixed so the bed sits under the voice.
+ *  • `hasNarration` false — the rendered MP4 has NO audio stream (TTS was
+ *    skipped/rejected), so referencing `[0:a]` would make ffmpeg fail. We map
+ *    the music as the sole audio track at a gentle level instead.
+ * Falls back to a plain re-encode (no music) if the music URL can't be fetched —
+ * music is a WOW enhancer, never a gating requirement.
  */
 async function ffmpegReencodeWithMusic(
   input: string,
   output: string,
   musicUrl: string,
+  hasNarration: boolean,
   fetchImpl: typeof fetch = fetch,
 ): Promise<void> {
   // Download the music to a temp file so ffmpeg can seek/loop it.
@@ -151,8 +156,12 @@ async function ffmpegReencodeWithMusic(
     return ffmpegReencode(input, output);
   }
 
-  // amix: narration (0.9 weight) + ambient bed (-18 dBFS = 0.13 weight), looped
-  // to film duration. `shortest=1` ensures output matches video length.
+  // When narration is present we duck the bed under it; when absent the bed
+  // plays alone at a fuller level so a silent film still has atmosphere.
+  const filter = hasNarration
+    ? '[0:a]volume=0.9[narr];[1:a]volume=0.13[bed];[narr][bed]amix=inputs=2:duration=shortest[aout]'
+    : '[1:a]volume=0.45[aout]';
+
   return new Promise((resolve, reject) => {
     const proc = spawn(
       'ffmpeg',
@@ -160,10 +169,10 @@ async function ffmpegReencodeWithMusic(
         '-y',
         '-i', input,
         '-stream_loop', '-1', '-i', musicPath,
-        '-filter_complex',
-        '[0:a]volume=0.9[narr];[1:a]volume=0.13[bed];[narr][bed]amix=inputs=2:duration=shortest[aout]',
+        '-filter_complex', filter,
         '-map', '0:v',
         '-map', '[aout]',
+        '-shortest',
         '-c:v', 'libx264',
         '-profile:v', 'baseline',
         '-level', '3.0',
@@ -334,7 +343,11 @@ export function createRenderPipeline(config: PipelineConfig): RenderPipeline {
         sourceData.blueprint?.forge,
       );
       if (musicUrl) {
-        await ffmpegReencodeWithMusic(rawMp4, finalMp4, musicUrl);
+        // The rendered MP4 only has an audio stream when narration was uploaded
+        // (props.narrationUrl set). Pass that so the mix doesn't reference a
+        // non-existent [0:a] on silent renders.
+        const hasNarration = Boolean(props.narrationUrl);
+        await ffmpegReencodeWithMusic(rawMp4, finalMp4, musicUrl, hasNarration);
       } else {
         await ffmpegReencode(rawMp4, finalMp4);
       }
