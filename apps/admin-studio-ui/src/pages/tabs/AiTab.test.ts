@@ -1,43 +1,15 @@
-import { describe, expect, it, vi } from 'vitest';
-import {
-  getKeyboardViewportDelta,
-  isChatLogAtBottom,
-  resolveViewportResizeState,
-  scrollChatLogToBottom,
-} from './AiTab.js';
+import { describe, expect, it } from 'vitest';
+import { getLiveRegionFlushDelayMs, isNearBottom } from './AiTab.js';
 
-describe('AiTab keyboard helpers', () => {
-  it('computes visual viewport keyboard delta', () => {
-    expect(getKeyboardViewportDelta(900, 640, 0)).toBe(260);
-    expect(getKeyboardViewportDelta(900, 920, 0)).toBe(0);
+describe('AiTab accessibility helpers', () => {
+  it('treats chat as sticky when user is within 64px of bottom', () => {
+    expect(isNearBottom({ scrollHeight: 1000, scrollTop: 900, clientHeight: 64 })).toBe(true);
+    expect(isNearBottom({ scrollHeight: 1000, scrollTop: 800, clientHeight: 100 })).toBe(false);
   });
 
-  it('checks if chat log is near bottom', () => {
-    const el = {
-      scrollHeight: 1000,
-      scrollTop: 760,
-      clientHeight: 220,
-    } as HTMLElement;
-
-    expect(isChatLogAtBottom(el)).toBe(true);
-    expect(isChatLogAtBottom({ ...el, scrollTop: 600 } as HTMLElement)).toBe(false);
-  });
-
-  it('scrolls chat log to bottom with smooth option', () => {
-    const scrollTo = vi.fn();
-    const el = { scrollHeight: 777, scrollTo } as unknown as HTMLElement;
-
-    scrollChatLogToBottom(el, true);
-
-    expect(scrollTo).toHaveBeenCalledWith({
-      top: 777,
-      behavior: 'smooth',
-    });
-  });
-
-  it('resolves viewport resize scroll behavior', () => {
-    expect(resolveViewportResizeState(20, 120, true)).toEqual({ nextDelta: 120, shouldScroll: true });
-    expect(resolveViewportResizeState(120, 90, true)).toEqual({ nextDelta: 90, shouldScroll: false });
-    expect(resolveViewportResizeState(20, 120, false)).toEqual({ nextDelta: 120, shouldScroll: false });
+  it('throttles live-region flushes to 1Hz max', () => {
+    expect(getLiveRegionFlushDelayMs(0, 0)).toBe(1000);
+    expect(getLiveRegionFlushDelayMs(1000, 1500)).toBe(500);
+    expect(getLiveRegionFlushDelayMs(1000, 2200)).toBe(0);
   });
 });
