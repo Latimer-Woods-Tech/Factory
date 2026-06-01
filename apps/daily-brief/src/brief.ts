@@ -65,7 +65,7 @@ export async function runDailyBrief(env: Env): Promise<void> {
   // guarded by AbortSignal.timeout, so no outer setTimeout wrapper is required.
   const [weather, news, activity, health, wisdom, stripeMrr, postHog, sentry] = await Promise.allSettled([
     fetchWeather(),
-    fetchNewsSection(),
+    fetchNewsSection(env.NEWS_API_KEY),
     fetchGitHubActivity(env.GITHUB_TOKEN, env.GITHUB_ORG),
     fetchWorkerHealth(),
     fetchWisdomSection(env),
@@ -89,21 +89,6 @@ export async function runDailyBrief(env: Env): Promise<void> {
   const safePostHog = postHog.status === 'fulfilled' ? postHog.value : null;
   const safeSentry = sentry.status === 'fulfilled' ? sentry.value : null;
 
-  // Track which always-on core sections errored, so the email renders an
-  // explicit "couldn't load" card instead of silently dropping the section.
-  // (Stripe/PostHog/Sentry are opt-in integrations and stay silent when absent.)
-  const failures = {
-    weather: weather.status === 'rejected',
-    news: news.status === 'rejected',
-    github: activity.status === 'rejected',
-    health: health.status === 'rejected',
-  };
-  for (const [section, settled] of Object.entries({ weather, news, activity, health, wisdom })) {
-    if (settled.status === 'rejected') {
-      console.error(`[daily-brief] section "${section}" failed:`, settled.reason);
-    }
-  }
-
   // LLM insights depend on all gathered data
   const insights = await generateInsights({
     weather: safeWeather,
@@ -117,10 +102,6 @@ export async function runDailyBrief(env: Env): Promise<void> {
     dateLabel,
   });
 
-  // Public origin used for self-hosted audio + web-view links. Cron has no
-  // inbound request, so fall back to the worker's own origin.
-  const baseUrl = (env.PUBLIC_BASE_URL ?? 'https://daily-brief.adrper79.workers.dev').replace(/\/$/, '');
-
   // Synthesize the PM narration to audio and store in R2.
   // synthesizeAndStore passes AbortSignal.timeout(25_000) to the ElevenLabs
   // fetch (see render/tts.ts:29 — `signal: AbortSignal.timeout(25_000)`), so
@@ -129,7 +110,6 @@ export async function runDailyBrief(env: Env): Promise<void> {
   const audioUrl = await synthesizeAndStore({
     text: insights.narration,
     dateLabel: briefDateKey,
-    baseUrl,
     env,
   }).catch(() => null);
 
@@ -146,20 +126,7 @@ export async function runDailyBrief(env: Env): Promise<void> {
     stripeMrr: safeStripeMrr,
     postHog: safePostHog,
     sentry: safeSentry,
-    webViewUrl: `${baseUrl}/brief/${briefDateKey}`,
-    failures,
   });
-
-  // Persist the rendered brief so the "View in browser" link resolves and a
-  // permanent archive exists. Non-fatal — a storage hiccup must not block send.
-  await Promise.all([
-    env.AUDIO_BUCKET.put(`briefs/${briefDateKey}.html`, html, {
-      httpMetadata: { contentType: 'text/html; charset=utf-8' },
-    }),
-    env.AUDIO_BUCKET.put('briefs/latest.html', html, {
-      httpMetadata: { contentType: 'text/html; charset=utf-8' },
-    }),
-  ]).catch((err) => console.error('[daily-brief] failed to persist web view:', err));
 
   const recipients = env.RECIPIENTS.split(',')
     .map((r) => r.trim())
@@ -175,17 +142,10 @@ export async function runDailyBrief(env: Env): Promise<void> {
    * Send with a single retry on transient failure.
    * Permanent failures (4xx status in the error message) are not retried.
    */
-  // Lead the subject with the day's win when we have one — far more compelling
-  // in an inbox than a bare date. Trimmed so it never blows past inbox preview.
-  const subjectHook = insights.winOfTheDay?.trim();
-  const subject = subjectHook
-    ? `Daily Brief — ${subjectHook.slice(0, 72)}${subjectHook.length > 72 ? '…' : ''}`
-    : `Daily Brief — ${dateLabel}`;
-
   async function sendWithRetry(to: string): Promise<{ id: string }> {
     const sendOpts = {
       to,
-      subject,
+      subject: `Daily Brief — ${dateLabel}`,
       html,
       text: insights.textSummary,
     };

@@ -10,13 +10,11 @@ interface TtsInput {
   text: string;
   /** ISO date string used as the R2 object key prefix, e.g. "2026-05-07" */
   dateLabel: string;
-  /** Public origin of the worker, used to build the self-hosted audio link. */
-  baseUrl: string;
   env: Env;
 }
 
 export async function synthesizeAndStore(input: TtsInput): Promise<string | null> {
-  const { text, dateLabel, baseUrl, env } = input;
+  const { text, dateLabel, env } = input;
 
   // Trim to ElevenLabs' safe limit (~4 500 chars) — the narration should be well under this
   const safeText = text.slice(0, 4_400);
@@ -48,7 +46,5 @@ export async function synthesizeAndStore(input: TtsInput): Promise<string | null
     customMetadata: { generated: new Date().toISOString() },
   });
 
-  // Served by the worker's own GET /audio/{date}.mp3 route — no public-bucket
-  // toggle required, and the link stays on a branded origin.
-  return `${baseUrl}/audio/${dateLabel}.mp3`;
+  return `${env.AUDIO_PUBLIC_BASE_URL}/${key}`;
 }

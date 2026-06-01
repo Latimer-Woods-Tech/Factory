@@ -5,7 +5,6 @@
  */
 
 import { complete } from '@latimer-woods-tech/llm';
-import { parseLlmJson } from '../lib/llm-json';
 import type { Env } from '../index';
 
 export interface WisdomSection {
@@ -94,25 +93,20 @@ export async function fetchWisdomSection(env: Env): Promise<WisdomSection> {
     };
   }
 
-  const parsed = parseLlmJson<WisdomSection>(result.data.content);
-  if (parsed?.mantra && parsed.wordOfTheDay?.word) {
+  try {
+    return JSON.parse(result.data.content) as WisdomSection;
+  } catch {
     return {
-      mantra: parsed.mantra,
-      wisdomLines: Array.isArray(parsed.wisdomLines) ? parsed.wisdomLines : [],
-      wordOfTheDay: parsed.wordOfTheDay,
+      mantra: result.data.content.slice(0, 100),
+      wisdomLines: [],
+      wordOfTheDay: {
+        word: 'Persevere',
+        pronunciation: '/ˌpɜː.sɪˈvɪər/',
+        partOfSpeech: 'verb',
+        definition: 'Continue in a course of action even in the face of difficulty.',
+        usageExample: 'The founders chose to persevere through three pivots before finding product-market fit.',
+        whyItMatters: 'The most underrated competitive advantage.',
+      },
     };
   }
-
-  return {
-    mantra: result.data.content.slice(0, 100),
-    wisdomLines: [],
-    wordOfTheDay: {
-      word: 'Persevere',
-      pronunciation: '/ˌpɜː.sɪˈvɪər/',
-      partOfSpeech: 'verb',
-      definition: 'Continue in a course of action even in the face of difficulty.',
-      usageExample: 'The founders chose to persevere through three pivots before finding product-market fit.',
-      whyItMatters: 'The most underrated competitive advantage.',
-    },
-  };
 }

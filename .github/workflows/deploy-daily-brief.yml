@@ -54,6 +54,7 @@ jobs:
           fetch_to_env ELEVENLABS_VOICE_ID    ELEVENLABS_VOICE_ID
           fetch_to_env RESEND_API_KEY         RESEND_API_KEY FACTORY_RESEND_API_KEY
           fetch_to_env GITHUB_TOKEN           GITHUB_TOKEN FACTORY_GITHUB_TOKEN
+          fetch_to_env NEWS_API_KEY           NEWS_API_KEY
           fetch_to_env STRIPE_SECRET_KEY      STRIPE_SECRET_KEY
           fetch_to_env POSTHOG_API_KEY        POSTHOG_API_KEY POSTHOG_KEY POSTHOG_API
           fetch_to_env POSTHOG_PROJECT_ID     POSTHOG_PROJECT_ID
@@ -126,6 +127,7 @@ jobs:
           put_required_secret ELEVENLABS_VOICE_ID "$ELEVENLABS_VOICE_ID"
           put_required_secret RESEND_API_KEY "$RESEND_API_KEY"
           put_required_secret GITHUB_TOKEN "$GITHUB_TOKEN"
+          put_required_secret NEWS_API_KEY "$NEWS_API_KEY"
           put_optional_secret GROK_API_KEY "$GROK_API_KEY"
           put_optional_secret STRIPE_SECRET_KEY "$STRIPE_SECRET_KEY"
           put_optional_secret POSTHOG_API_KEY "$POSTHOG_API_KEY"
