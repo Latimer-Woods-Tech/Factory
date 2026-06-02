@@ -17,7 +17,9 @@
  * Exit codes:
  *   0  no failures (or only allowlisted RUM/telemetry beacons)
  *   1  one or more endpoints returned 4xx/5xx or a navigation error
- *   2  login failed
+ *   2  login failed (UI/redirect/selector failure — investigate the product)
+ *   3  login credentials rejected (auth POST returned 401/403 — rotate the
+ *      FACTORY_USER / FACTORY_PW secrets; not a product regression)
  */
 import { chromium } from 'playwright';
 import { writeFile, readFile, mkdir } from 'node:fs/promises';
@@ -51,6 +53,10 @@ const ignoreUrlPatterns = [
   /\/cdn-cgi\/rum/,             // Cloudflare RUM
   /\.posthog\.com/,             // PostHog telemetry
   /sentry\.io\/api/,            // Sentry envelope
+  /accounts\.google\.com\/gsi/, // Google Identity Services button iframe —
+                                // net::ERR_ABORTED when the page navigates away
+                                // on a successful email/password login. Third-
+                                // party widget; not an admin-studio health signal.
 ];
 function shouldIgnore(url) {
   return ignoreUrlPatterns.some((re) => re.test(url));
@@ -76,8 +82,18 @@ page.on('requestfailed', (req) => {
   if (typeof req.redirectedTo === 'function' && req.redirectedTo()) return;
   networkFailures.push({ phase: currentPhase, status: 'failed', method: req.method(), url: req.url(), reason: req.failure()?.errorText });
 });
+// Capture the result of the auth POST so a credential rejection can be
+// reported explicitly instead of surfacing only as an opaque waitForURL
+// timeout. /auth/login returns 401 ("Invalid credentials") when the
+// STUDIO_EMAIL/STUDIO_PASSWORD (FACTORY_USER/FACTORY_PW secrets) do not match
+// the worker's bootstrap credentials — that is a secret-rotation problem, not
+// a product regression, and the probe should say so.
+let authResponse = null;
 page.on('response', (resp) => {
   const url = resp.url();
+  if (/\/auth\/(login|google)$/.test(new URL(url).pathname)) {
+    authResponse = { status: resp.status(), method: resp.request().method(), url };
+  }
   if (shouldIgnore(url)) return;
   const s = resp.status();
   if (s >= 400) networkFailures.push({ phase: currentPhase, status: s, method: resp.request().method(), url });
@@ -151,10 +167,34 @@ try {
   await page.screenshot({ path: join(OUT_DIR, '02-post-login.png'), fullPage: true });
   steps.push({ label: '02-post-login', finalUrl: page.url(), title: await page.title(), ms: Date.now() - loginStart });
 } catch (err) {
-  steps.push({ label: '02-post-login', error: err.message, ms: Date.now() - loginStart });
+  // Distinguish a credential rejection (the auth POST returned 401/403) from a
+  // genuine UI/redirect failure. The former means the FACTORY_USER/FACTORY_PW
+  // secrets are stale relative to the worker's bootstrap credentials — the
+  // worker, UI, and probe selectors are all healthy. Surfacing this explicitly
+  // turns an opaque "waitForURL Timeout 15000ms exceeded" into an actionable
+  // signal so triage doesn't have to download artifacts to find the 401.
+  const credsRejected = authResponse && (authResponse.status === 401 || authResponse.status === 403);
+  steps.push({
+    label: '02-post-login',
+    error: err.message,
+    authResponse,
+    credsRejected: Boolean(credsRejected),
+    ms: Date.now() - loginStart,
+  });
   await page.screenshot({ path: join(OUT_DIR, '02-post-login-error.png'), fullPage: true });
-  const report = { base: BASE, steps, consoleErrors, networkFailures, loginFailed: true };
+  const report = { base: BASE, steps, consoleErrors, networkFailures, loginFailed: true, authResponse, credsRejected: Boolean(credsRejected) };
   await writeFile(join(OUT_DIR, 'report.json'), JSON.stringify(report, null, 2));
+  if (credsRejected) {
+    console.error(
+      `Login failed: ${BASE} ${authResponse.method} /auth/login returned ${authResponse.status}. ` +
+      'The probe credentials were rejected by the worker — this is a SECRET problem, not a product regression. ' +
+      'Rotate FACTORY_USER / FACTORY_PW (GitHub Actions secrets) so they match the production worker ' +
+      'STUDIO_ADMIN_EMAIL / STUDIO_ADMIN_PASSWORD_SHA256. ' +
+      `(underlying error: ${err.message})`,
+    );
+    await browser.close();
+    process.exit(3);
+  }
   console.error('Login failed:', err.message);
   await browser.close();
   process.exit(2);

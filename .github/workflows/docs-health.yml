@@ -1,0 +1,41 @@
+name: Docs Health
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * 1'
+
+concurrency:
+  group: docs-health-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
+jobs:
+  docs-health:
+    uses: ./.github/workflows/_docs-health.yml
+    with:
+      repo_profile: factory
+      tools_ref: ${{ github.sha }}
+      enforce_generated: true

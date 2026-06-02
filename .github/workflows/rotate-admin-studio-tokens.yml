@@ -81,7 +81,7 @@ jobs:
           service_account: factory-sa@factory-495015.iam.gserviceaccount.com
 
       - name: Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2.2.1
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Mint Vertex token from VERTEX_SA_KEY and push to worker
         env:
@@ -116,8 +116,6 @@ jobs:
           # Push as the three secrets the worker's LLM package expects.
           # See GITHUB_TOKEN push above re: printf vs echo.
           printf '%s' "$ACCESS_TOKEN" | npx wrangler@3 secret put VERTEX_ACCESS_TOKEN --env production
-          printf '%s' "factory-495015" | npx wrangler@3 secret put VERTEX_PROJECT --env production
-          printf '%s' "us-central1" | npx wrangler@3 secret put VERTEX_LOCATION --env production
 
           # Cleanup.
           rm -f /tmp/vertex-sa.json

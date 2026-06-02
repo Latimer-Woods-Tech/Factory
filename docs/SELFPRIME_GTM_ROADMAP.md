@@ -1,0 +1,113 @@
+# selfprime — GTM, Packaging & Dormant-Asset Roadmap
+
+> Companion to [`PORTFOLIO_CAPABILITY_RECONCILIATION.md`](./PORTFOLIO_CAPABILITY_RECONCILIATION.md)
+> and [`architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md`](./architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md).
+> Turns the strategy work into a sequenced, validated plan. **Every asset below was empirically
+> validated** (real logic, routed, tested) — not assumed from a filename.
+
+## Strategy in one paragraph
+selfprime is a **two-sided marketplace**, not two competing products. The free consumer funnel
+(chart + cheap viral hooks) is the **demand engine you operate**; practitioners/agencies are the
+**monetized supply** who serve that demand. You market *to* practitioners, *operate* the consumer
+demand-gen centrally, and monetize the connection. The expensive video engine is the crown jewel and
+the **anti-disintermediation moat**; the cheap demand-gen features (celebrity match, compatibility,
+share cards, push, audio) are the flywheel that *feeds* it. Guiding rule: **gate on pillars, meter on
+cost.**
+
+## Validated dormant-asset inventory
+| Asset | Status (validated) | Classification |
+|---|---|---|
+| Celebrity match (`famous.js` + `celebrities.json` + `celebrityMatch.js`, 4 endpoints, test) | ✅ built | Light up |
+| Share / OG cards (`share.js`, `share-og.js` image-gen, test) | ✅ built | Light up |
+| Dream interpretation (`dream-weaver.js`, LLM) | ✅ built | Light up |
+| Notion export (`notion.js`, 17 real calls) | ✅ built | Light up |
+| Team/group (`cluster.js`, 792 ln: Forge roles + LLM group synthesis + gap analysis) | ✅ built | Light up + **new B2B SKU** |
+| Practitioner session layer (`live-session` DO + `messages` + `session-notes/actions/templates`, 6 tests) | ✅ built + tested | Light up |
+| Embed widget (`embed.html` + `embed-page.js` + validate endpoint) | ✅ built | Light up + polish |
+| Composite / compatibility (`composite.js`) | ✅ built | Light up; social wrapper = small build |
+| Daily energy-weather push (push + transits/forecast + checkin) | 🔧 parts exist | Assemble |
+| Audio readings (ElevenLabs already in use) | 🔧 new, cheap | Small build, no render cost |
+| Native mobile app (native-bridge + config + cap scripts; **no platforms, no cap deps**) | ⚠️ scaffold only | **Real build** (platforms + deps + RevenueCat + store) |
+| Agentic commerce (Stripe ACS feed) | ✅ shipped | Already live; promote |
+
+## Packaging (locked)
+**Consumer ladder — gate on pillars, not quotas:**
+
+| | Free $0 | Individual $19 | Pro Seeker ~$39–49 |
+|---|---|---|---|
+| Chart | ✓ | ✓ | ✓ |
+| Synthesis readings | 1/mo | 10/mo | 30/mo |
+| **Cinematic film** | **1 intro (once)** | **1/mo** | **1/mo** (richer cut) |
+| Seeker's Questions | 5/mo | Unlimited | Unlimited |
+| Transits/timing | Today | Full | + calendar sync + forecast |
+| Dream journal / PDF / SMS / history | — | ✓ | ✓ |
+| **Composite / relationship** | — | — | ✓ *(relationships pillar)* |
+| **Personality / psychometric** | — | — | ✓ *(depth pillar)* |
+
+**B2B (the metered engine lives here):** Practitioner $97 (workspace + client mgmt + branded + directory
++ **recurring video engine, credit-metered** + session layer), Agency $349 (seats + white-label + larger
+credit grant). **Credits = practitioner/agency only.** Consumers never get credits — they get the fixed
+1-intro / 1-per-month film, so consumer video cost is bounded with no ledger needed.
+
+**New B2B SKU — Team/Corporate** (powered by `cluster.js`): group readings, team composition, role/gap
+analysis. High-ACV; differentiated; nobody in HD does it well.
+
+**API surface (different surface, same engine):** a **synthesis API** + a **usage-metered video-gen
+API**, priced *above* humandesignhub's commodity data floor (their tiers ≈ $10/$30/$100/mo for raw
+chart/transit data). Do **not** compete on raw chart-data price; sell the interpretation + render.
+
+## The sequenced plan
+Sized S/M/L. "Light up" = the code exists, validated; the work is exposure + polish + marketing.
+
+### Wave 0 — Frame it (decisions + config) · S · do first
+Pricing & packaging above: add the **Pro** tier + `blueprintVideo`/film entitlement to `getTierConfig`;
+fence composite + personality + calendar-sync into Pro. **Why first:** the video engine's entitlement,
+the API pricing, and every upsell reference the tier structure. Cheap, unblocks everything.
+
+### Wave 1 — Demand-gen flywheel (cheap, highest CAC leverage) · M · parallelizable
+All near-zero marginal cost — your cheapest growth, currently dark:
+- **Celebrity match + share/OG cards** — expose + a share loop; **celebrity HD SEO pages** (long-tail
+  organic). Feature the match in the intro film.
+- **Friend/partner compatibility** — wrap `composite.js` in an "add a friend, see your bond" social
+  loop (the proven niche virality mechanic).
+- **Daily energy-weather push** — assemble push + transits + checkin into a daily habit hook.
+- **Audio readings** — ElevenLabs, no render; bridges text and the monthly film.
+
+### Wave 2 — Distribution & power-user · M/L
+- **Embed widget** (light up + polish) — distributed top-of-funnel + white-label upsell.
+- **Notion export** (light up) — power-user/practitioner stickiness.
+- **Native mobile app** — the one real *build*: `cap add ios/android`, install Capacitor + RevenueCat
+  deps, map IAP↔tiers, submit (budget for store-review latency). Mobile + native push is the retention
+  multiplier — but plan it as a project, not a flip.
+
+### Wave 3 — New revenue + practitioner depth (light up validated infra + productize) · M/L
+- **Team/Corporate** — productize `cluster.js` (the readout UX + the B2B SKU + outbound). Potentially a
+  bigger lever than the consumer ladder.
+- **Practitioner session layer** — light up `live-session`/`messages`/`session-notes` (your 1-on-1
+  infra already exists + tested). This is the anti-disintermediation stickiness; likely no Capricast
+  build needed for consultations.
+- **API tier** — synthesis API can ship now; the video-gen API rides the engine (after engine Slice 1–2).
+
+### Parallel track — Video Engine (already in motion)
+Slices 0–7 from the engine doc, running in a separate agent. Wave 0 pricing feeds its consumer
+entitlement; Wave 3's video-gen API depends on its Slice 1–2. The consumer film (engine Slice 2) is the
+hero artifact behind the Free-intro / paid-monthly model.
+
+## Guardrails (carry into every wave)
+- **Unit economics:** consumer video bounded (≤1/mo); practitioner video metered by credits priced
+  ≥ marginal cost + margin; global spend ceiling + auto-throttle; credit/render numbers calibrated from
+  real engine telemetry **before** recurring launch. (Add a **video retention/expiry policy** to bound
+  Stream storage.)
+- **No "AI" in any user-facing copy/UI/narration** — "your reading", "synthesis", "the Oracle".
+- **Verify-before-build** stays the rule: this inventory was validated; re-validate anything before
+  betting build effort (the codebase has a history of real-looking handlers returning mock data).
+- **Don't over-parallelize** for a small operation — Waves 0→1 first (frame + funnel), then 2/3 as
+  bandwidth allows, with the engine maturing alongside.
+
+## Sequencing logic (the "why this order")
+1. **Frame** (W0) before anything references pricing.
+2. **Fill the funnel cheaply** (W1) before spending on the expensive engine surface — demand-gen is your
+   lowest-cost, highest-leverage, and it's already built.
+3. **Distribute & retain** (W2) once the funnel converts.
+4. **Open new revenue** (W3) on validated infra, after the cheap wins prove the motion.
+5. The **engine** runs in parallel as the crown jewel + moat; the cheap flywheel feeds it.

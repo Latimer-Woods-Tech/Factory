@@ -6,6 +6,11 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Safe-area aliases for notched/gesture devices.
+      spacing: {
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-top': 'env(safe-area-inset-top)',
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -54,5 +59,24 @@ export default {
       },
     },
   },
-  plugins: [containerQueries],
+  plugins: [
+    containerQueries,
+    // ADM-9.4: WCAG 2.2 minimum tap-target utilities
+    ({ addUtilities }: { addUtilities: (utils: Record<string, Record<string, string>>) => void }) => {
+      addUtilities({
+        '.target-min': {
+          minHeight: '2.25rem',
+          minWidth: '2.25rem',
+          paddingLeft: '0.75rem',
+          paddingRight: '0.75rem',
+        },
+        '.target-primary': {
+          minHeight: '2.75rem',
+          minWidth: '2.75rem',
+          paddingLeft: '1rem',
+          paddingRight: '1rem',
+        },
+      });
+    },
+  ],
 };

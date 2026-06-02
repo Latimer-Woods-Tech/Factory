@@ -1,30 +1,30 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const E2E_PORT = 4174;
+const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: true,
-  retries: process.env.CI ? 1 : 0,
-  reporter: [['list']],
+  testMatch: '**/*.{spec,e2e}.ts',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    baseURL: E2E_BASE_URL,
+    trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
+    command: `npm run dev -- --host 127.0.0.1 --port ${E2E_PORT}`,
+    url: E2E_BASE_URL,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
   projects: [
+    // Mobile devices used by factory-admin-ui-ci.yml matrix
     {
       name: 'iphone-12',
       use: { ...devices['iPhone 12'] },
     },
     {
       name: 'iphone-se3',
-      use: { ...devices['iPhone SE (3rd gen)'] },
+      use: { ...devices['iPhone SE'] },
     },
     {
       name: 'pixel-5',
@@ -34,12 +34,15 @@ export default defineConfig({
       name: 'ipad-mini',
       use: { ...devices['iPad Mini'] },
     },
+    // Desktop used by capabilities flow
     {
-      // Desktop project for the capability-design-studio e2e (the staged
-      // workspace needs more width than mobile devices give us). Used by the
-      // 'capabilities-e2e' job in factory-admin-ui-ci.yml.
       name: 'desktop-chrome',
-      use: { ...devices['Desktop Chrome'] },
+      use: { browserName: 'chromium', viewport: { width: 1280, height: 720 } },
+    },
+    // ADM-9.1 narrow mobile viewport
+    {
+      name: 'mobile-375x812',
+      use: { browserName: 'chromium', viewport: { width: 375, height: 812 } },
     },
   ],
 });

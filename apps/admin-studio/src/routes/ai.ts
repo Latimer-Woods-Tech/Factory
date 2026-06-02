@@ -22,9 +22,13 @@ import { fetchFile } from '../lib/github-api.js';
 import type { LLMEnv } from '@latimer-woods-tech/llm';
 import { AGENT_TOOLS, executeTool, extractToolUse } from '../lib/ai-tools.js';
 import type { ToolUseBlock } from '../lib/ai-tools.js';
+import { getGithubToken, hasGithubAuth } from '../lib/github-app.js';
 
 // ---------------------------------------------------------------------------
-// Module-level CONTEXT.md cache — fetched once per worker cold start
+// Module-level context cache — fetched once per worker cold start
+// CONTEXT.md supplies the immutable architectural rules prefix.
+// STATE.md supplies the auto-generated daily state (live numbers, decisions,
+// open debt, oldest APPROVED PRs). Both are concatenated as the system prefix.
 // ---------------------------------------------------------------------------
 
 let _factoryContextCache: string | null = null;
@@ -32,8 +36,14 @@ let _factoryContextCache: string | null = null;
 async function loadFactoryContext(githubToken: string): Promise<string> {
   if (_factoryContextCache !== null) return _factoryContextCache;
   try {
-    const file = await fetchFile(githubToken, 'docs/supervisor/CONTEXT.md', 'main');
-    _factoryContextCache = file.text ?? '';
+    const [contextFile, stateFile] = await Promise.allSettled([
+      fetchFile(githubToken, 'docs/supervisor/CONTEXT.md', 'main'),
+      fetchFile(githubToken, 'docs/STATE.md', 'main'),
+    ]);
+    const contextText = contextFile.status === 'fulfilled' ? (contextFile.value.text ?? '') : '';
+    const stateText = stateFile.status === 'fulfilled' ? (stateFile.value.text ?? '') : '';
+    _factoryContextCache = contextText
+      + (stateText ? '\n\n---\n[FACTORY STATE — auto-generated daily; current numbers, decisions, open debt]\n' + stateText : '');
   } catch {
     _factoryContextCache = ''; // fail open — don't block LLM calls if GitHub is unreachable
   }
@@ -47,6 +57,7 @@ function toLlmEnv(
     | 'ANTHROPIC_API_KEY'
     | 'XAI_API_KEY'
     | 'GROQ_API_KEY'
+    | 'DEEPSEEK_API_KEY'
     | 'VERTEX_ACCESS_TOKEN'
     | 'VERTEX_PROJECT'
     | 'VERTEX_LOCATION'
@@ -59,6 +70,7 @@ function toLlmEnv(
     // Pass undefined (not '') so the library treats it as absent, not empty.
     GROK_API_KEY: env.XAI_API_KEY,
     GROQ_API_KEY: env.GROQ_API_KEY ?? '',
+    DEEPSEEK_API_KEY: env.DEEPSEEK_API_KEY,
     VERTEX_ACCESS_TOKEN: env.VERTEX_ACCESS_TOKEN ?? '',
     VERTEX_PROJECT: env.VERTEX_PROJECT ?? '',
     VERTEX_LOCATION: env.VERTEX_LOCATION ?? '',
@@ -79,23 +91,49 @@ function getMissingCompleteLlmConfig(
   return missing;
 }
 
-function getMissingStrategyConfig(
+export function getMissingStrategyConfig(
   strategy: AIModelStrategy,
   env: Pick<
     Env,
-    'AI_GATEWAY_BASE_URL' | 'ANTHROPIC_API_KEY' | 'VERTEX_ACCESS_TOKEN' | 'VERTEX_PROJECT' | 'VERTEX_LOCATION' | 'XAI_API_KEY'
+    | 'AI_GATEWAY_BASE_URL'
+    | 'ANTHROPIC_API_KEY'
+    | 'VERTEX_ACCESS_TOKEN'
+    | 'VERTEX_PROJECT'
+    | 'VERTEX_LOCATION'
+    | 'XAI_API_KEY'
+    | 'DEEPSEEK_API_KEY'
+    | 'GROQ_API_KEY'
   >,
 ): string[] {
-  const missing = getMissingCompleteLlmConfig(env);
-  if (strategy === 'drafting' && !env.XAI_API_KEY) missing.push('XAI_API_KEY');
+  const missing: string[] = [];
+  if (!env.AI_GATEWAY_BASE_URL) missing.push('AI_GATEWAY_BASE_URL');
+
+  if (strategy === 'workbench') {
+    if (!env.DEEPSEEK_API_KEY) missing.push('DEEPSEEK_API_KEY');
+    return missing;
+  }
+
+  if (strategy === 'drafting') {
+    if (!env.XAI_API_KEY) missing.push('XAI_API_KEY');
+    return missing;
+  }
+
+  if (strategy === 'planning') {
+    if (!env.VERTEX_ACCESS_TOKEN) missing.push('VERTEX_ACCESS_TOKEN');
+    if (!env.VERTEX_PROJECT) missing.push('VERTEX_PROJECT');
+    if (!env.VERTEX_LOCATION) missing.push('VERTEX_LOCATION');
+    return missing;
+  }
+
+  if (!env.ANTHROPIC_API_KEY) missing.push('ANTHROPIC_API_KEY');
   return missing;
 }
 
-function isModelStrategy(value: unknown): value is AIModelStrategy {
-  return value === 'execution' || value === 'planning' || value === 'drafting';
+export function isModelStrategy(value: unknown): value is AIModelStrategy {
+  return value === 'execution' || value === 'planning' || value === 'drafting' || value === 'workbench';
 }
 
-function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'], system: string): LLMOptions {
+export function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'], system: string): LLMOptions {
   if (strategy === 'planning') {
     return {
       system,
@@ -120,6 +158,18 @@ function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest['mode'
       actor: 'human',
       workload: 'drafting',
       temperature: mode === 'refactor' ? 0.3 : 0.65,
+    };
+  }
+  if (strategy === 'workbench') {
+    return {
+      system,
+      tier: 'workbench',
+      maxTokens: 2048,
+      maxCostUsd: 0.10,
+      project: 'admin-studio',
+      actor: 'human',
+      workload: 'ticket-drafting',
+      temperature: mode === 'refactor' ? 0.2 : 0.45,
     };
   }
   return {
@@ -324,21 +374,17 @@ ai.post('/chat', async (c) => {
   if (!body.mode || !Object.prototype.hasOwnProperty.call(SYSTEM_PROMPTS, body.mode)) {
     return c.json({ error: 'invalid mode', allowed: Object.keys(SYSTEM_PROMPTS) }, 400);
   }
-  if (!c.env.ANTHROPIC_API_KEY) {
-    return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
-  }
-
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
     : 'execution';
 
   // Load factory CONTEXT.md once per cold start and inject as immutable prefix.
-  const factoryCtx = c.env.GITHUB_TOKEN ? await loadFactoryContext(c.env.GITHUB_TOKEN) : '';
+  const factoryCtx = hasGithubAuth(c.env) ? await loadFactoryContext(await getGithubToken(c.env)) : '';
   const ctxPrefix = factoryCtx ? `[FACTORY CONTEXT — immutable architectural rules]\n${factoryCtx}\n\n` : '';
   const system = ctxPrefix + buildSystem(body);
   const messages = body.history.map((t) => ({ role: t.role, content: t.content }));
 
-  if (strategy !== 'execution') {
+  if (strategy === 'planning' || strategy === 'drafting' || strategy === 'workbench') {
     const missingStrategyConfig = getMissingStrategyConfig(strategy, c.env);
     if (missingStrategyConfig.length > 0) {
       return c.json({ error: 'LLM configuration incomplete', missing: missingStrategyConfig }, 503);
@@ -375,8 +421,13 @@ ai.post('/chat', async (c) => {
     });
   }
 
-  // Tool-use agentic loop (non-streaming for now)
+  // Execution is the only strategy that reaches this Anthropic tool-use loop.
   const apiKey = c.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
+  }
+
+  // Tool-use agentic loop (non-streaming for now)
   const baseUrl = c.env.AI_GATEWAY_BASE_URL
     ? `${c.env.AI_GATEWAY_BASE_URL}/anthropic`
     : 'https://api.anthropic.com'; // Direct Anthropic API if gateway not configured
@@ -387,15 +438,15 @@ ai.post('/chat', async (c) => {
   const agentMessages: AgentMessage[] = [...messages];
   let finalText = '';
   let loopCount = 0;
-  const maxLoops = 3; // Prevent expensive runaway tool loops
+  const maxLoops = 8; // Allow deeper agentic tool chains
 
   while (loopCount < maxLoops) {
     loopCount++;
 
     // Call Anthropic with tools (non-streaming for tool-use loop)
     const payload = {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096
         ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
@@ -431,13 +482,13 @@ ai.post('/chat', async (c) => {
       // Execute the tool
       let toolResult: unknown = { error: 'tool execution failed' };
       try {
-        if (!c.env.GITHUB_TOKEN) {
-          toolResult = { error: 'GITHUB_TOKEN not configured' };
+        if (!hasGithubAuth(c.env)) {
+          toolResult = { error: 'GitHub auth not configured' };
         } else {
           toolResult = await executeTool(
             toolUse.name,
             toolUse.input as Record<string, unknown>,
-            c.env.GITHUB_TOKEN,
+            await getGithubToken(c.env),
             { GCP_SA_KEY: c.env.GCP_SA_KEY },
           );
         }
@@ -516,9 +567,6 @@ ai.post('/proposals', async (c) => {
   if (body.before.length > 256_000) {
     return c.json({ error: 'file too large for proposal', maxBytes: 256_000 }, 413);
   }
-  if (!c.env.ANTHROPIC_API_KEY) {
-    return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 503);
-  }
   const strategy: AIModelStrategy = isModelStrategy(body.modelStrategy)
     ? body.modelStrategy
     : 'execution';
@@ -527,6 +575,9 @@ ai.post('/proposals', async (c) => {
     return c.json({ error: 'LLM configuration incomplete', missing: missingLlmConfig }, 503);
   }
 
+  // Proposal generation uses the provider selected by resolveLlmOptions() via
+  // @latimer-woods-tech/llm; Workbench proposals do not enter the Anthropic
+  // tool-use loop used by execution chat.
   const language = body.language ?? guessLanguage(body.path);
   const system = [
     'You are an automated code-edit assistant for the Factory monorepo.',
@@ -643,7 +694,7 @@ export async function runAnalysisCycle(env: Env): Promise<void> {
   const latest = env.MONITOR_KV ? await env.MONITOR_KV.get('latest', 'json') : null;
 
   // 2b. Load CONTEXT.md as immutable architectural rules prefix (cached per cold start)
-  const githubToken = env.GITHUB_TOKEN;
+  const githubToken = hasGithubAuth(env) ? await getGithubToken(env) : null;
   const factoryCtx = githubToken ? await loadFactoryContext(githubToken) : '';
   const ctxPrefix = factoryCtx
     ? `[FACTORY CONTEXT — immutable architectural rules]\n${factoryCtx}\n\n`
@@ -696,7 +747,7 @@ ai.post('/propose-fix', async (c) => {
   if (!body?.filePath || !body?.finding) {
     return c.json({ error: 'filePath and finding required' }, 400);
   }
-  if (!c.env.GITHUB_TOKEN) return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
+  if (!hasGithubAuth(c.env)) return c.json({ error: 'GitHub auth not configured' }, 503);
   const missingLlmConfig = getMissingCompleteLlmConfig(c.env);
   if (missingLlmConfig.length > 0) {
     return c.json({ error: 'LLM configuration incomplete', missing: missingLlmConfig }, 503);
@@ -706,14 +757,16 @@ ai.post('/propose-fix', async (c) => {
   // fetchFile is imported at module level; get remaining helpers
   const { createBranch, commitFile, openPullRequest } = await import('../lib/github-api.js');
 
+  // Resolve a GitHub token once (App installation token, or PAT fallback).
+  const token = await getGithubToken(c.env);
   // Load CONTEXT.md as immutable architectural rules prefix (cached per cold start)
-  const factoryCtx = await loadFactoryContext(c.env.GITHUB_TOKEN);
+  const factoryCtx = await loadFactoryContext(token);
   const ctxPrefix = factoryCtx
     ? `[FACTORY CONTEXT — immutable architectural rules]\n${factoryCtx}\n\n`
     : '';
 
 
-  const sourceFile = await fetchFile(c.env.GITHUB_TOKEN, body.filePath, 'main');
+  const sourceFile = await fetchFile(token, body.filePath, 'main');
 
   // 2. Ask LLM for a minimal patch
   const fixSystemContent = `${ctxPrefix}You are a senior TypeScript engineer for a Cloudflare Workers monorepo.
@@ -756,10 +809,10 @@ Return ONLY valid JSON — no prose, no markdown:
 
   // 4. Create branch + commit
   const branchName = `auto/fix-${Date.now()}`;
-  await createBranch(c.env.GITHUB_TOKEN, branchName, 'main');
+  await createBranch(token, branchName, 'main');
 
   const newContent = (sourceFile.text ?? '').replace(patch.oldCode, patch.newCode);
-  await commitFile(c.env.GITHUB_TOKEN, {
+  await commitFile(token, {
     path: body.filePath,
     content: newContent,
     message: `[auto] ${body.summary}`,
@@ -768,7 +821,7 @@ Return ONLY valid JSON — no prose, no markdown:
   });
 
   // 5. Open draft PR
-  const pr = await openPullRequest(c.env.GITHUB_TOKEN, {
+  const pr = await openPullRequest(token, {
     title: `[auto] ${body.summary}`,
     body: `## Auto-generated fix
 

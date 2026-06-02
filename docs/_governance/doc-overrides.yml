@@ -1,0 +1,142 @@
+version: 1
+last_updated: 2026-05-28
+purpose: Pattern-based classification for legacy docs during catalog rollout.
+overrides:
+  - pattern: "apps/*/README.md"
+    status: active
+    owner_from_path_segment: 1
+    doc_type: guide
+  - pattern: "docs/_generated/**"
+    status: generated
+    owner: platform
+    doc_type: diagram
+    fidelity: generated
+  - pattern: "docs/_governance/**"
+    status: active
+    owner: platform
+    doc_type: policy
+  - pattern: "docs/*COMPLETE.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/*COMPLETION_SUMMARY.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/*DELIVERY_COMPLETE.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/*DELIVERY_SUMMARY.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/**/*COMPLETE.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/**/*COMPLETION_SUMMARY.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/**/*DELIVERY_COMPLETE.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/**/*DELIVERY_SUMMARY.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/archive/**"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/adr/**"
+    status: active
+    owner: architecture
+    doc_type: decision
+  - pattern: "docs/decisions/**"
+    status: active
+    owner: platform
+    doc_type: decision
+  - pattern: "docs/admin-studio/**"
+    status: active
+    owner: admin-studio
+  - pattern: "docs/architecture/**"
+    status: active
+    owner: architecture
+    doc_type: architecture
+  - pattern: "docs/audits/**"
+    status: active
+    owner: platform
+    doc_type: audit
+  - pattern: "docs/capricast/**"
+    status: active
+    owner: capricast
+  - pattern: "docs/marketing/**"
+    status: active
+    owner: marketing
+  - pattern: "docs/migrations/**"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "docs/operations/**"
+    status: active
+    owner: platform
+  - pattern: "docs/packages/**"
+    status: active
+    owner: platform
+  - pattern: "docs/runbooks/**"
+    status: active
+    owner: platform
+    doc_type: runbook
+  - pattern: "docs/supervisor/**"
+    status: active
+    owner: platform
+  - pattern: "docs/templates/**"
+    status: active
+    owner: platform
+  - pattern: "docs/**"
+    status: active
+    owner: platform
+  - pattern: "prompts/**"
+    status: active
+    owner: platform
+    doc_type: prompt
+  - pattern: ".github/workflows/*.md"
+    status: active
+    owner: platform
+  - pattern: "PHASE_6_CHECKLIST.md"
+    status: active
+    owner: platform
+  - pattern: "PHASE_*.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "STAGE_*.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "SUP-*.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "*_COMPLETE.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "*_COMPLETION_SUMMARY.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "*DELIVERY_COMPLETE.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "*DELIVERY_SUMMARY.md"
+    status: archive
+    owner: platform
+    fidelity: historical
+  - pattern: "*.md"
+    status: active
+    owner: platform

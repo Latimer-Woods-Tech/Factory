@@ -60,6 +60,7 @@ export const FACTORY_APPS: readonly FactoryApp[] = [
     productionWorkerName: 'video-cron',
     // No distinct staging worker is currently registry-backed for video-cron.
     stagingWorkerName: 'video-cron',
+    productionCustomDomain: 'video-cron.latwoodtech.work',
   },
   {
     id: 'capricast-api',

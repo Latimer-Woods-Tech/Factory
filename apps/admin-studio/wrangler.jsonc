@@ -2,14 +2,16 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "admin-studio",
   "main": "src/index.ts",
-  "compatibility_date": "2025-01-01",
+  "compatibility_date": "2026-05-01",
   "compatibility_flags": [
     "nodejs_compat"
   ],
   "vars": {
     "STUDIO_ENV": "staging",
+        "VERTEX_PROJECT": "factory-495015",
+        "VERTEX_LOCATION": "us-central1",
     "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
-    "ALLOWED_ORIGINS": "https://apunlimited.com,https://staging.admin-studio-ui.pages.dev"
+    "ALLOWED_ORIGINS": "https://apunlimited.com,https://staging.admin.latimerwoods.dev"
   },
   "env": {
     "staging": {
@@ -19,8 +21,10 @@
       ],
       "vars": {
         "STUDIO_ENV": "staging",
+        "VERTEX_PROJECT": "factory-495015",
+        "VERTEX_LOCATION": "us-central1",
         "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
-        "ALLOWED_ORIGINS": "https://staging.admin-studio-ui.pages.dev,https://api.admin.latimerwoods.dev,http://localhost:5173",
+        "ALLOWED_ORIGINS": "https://staging.admin.latimerwoods.dev,https://api.admin.latimerwoods.dev,http://localhost:5173",
         // Digest non-secret vars
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
         "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
@@ -29,6 +33,7 @@
         // Secrets (wrangler secret put --env staging):
         //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
         //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
+        //   GCP_SA_KEY (base64 SA JSON — enables AI chat gcp_get_secret tool)
       },
       "hyperdrive": [
         {
@@ -74,6 +79,8 @@
       "name": "admin-studio-production",
       "vars": {
         "STUDIO_ENV": "production",
+        "VERTEX_PROJECT": "factory-495015",
+        "VERTEX_LOCATION": "us-central1",
         "STUDIO_GOOGLE_WORKSPACE_DOMAIN": "latwoodtech.com",
         "ALLOWED_ORIGINS": "https://apunlimited.com",
         // Digest non-secret vars
@@ -130,3 +137,4 @@
     "enabled": true
   }
 }
+

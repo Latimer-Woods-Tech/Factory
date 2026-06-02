@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.4 — 2026-05-28
+
+### Added (no breaking changes)
+
+- **`workbench` tier** routes to `deepseek-chat` with Groq fallback for boring,
+  reviewable, non-sensitive internal batch work.
+- **`DEEPSEEK_API_KEY`** added as an optional `LLMEnv` binding. It is required only
+  for `tier: 'workbench'` or explicit `deepseek-*` model overrides.
+- **DeepSeek pricing entries** for `deepseek-chat` and `deepseek-reasoner` so cost
+  caps and ledger rows use known rates instead of the conservative Opus fallback.
+
+### Guardrail
+
+- `workbench` is for docs summaries, changelog drafts, issue triage, and classification.
+  Do not route secrets, customer PII, billing data, production ops, or final
+  customer-facing answers through DeepSeek.
+
+---
+
 ## 0.3.3 — 2026-05-27
 
 ### Changed (no breaking changes)

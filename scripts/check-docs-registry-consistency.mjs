@@ -20,7 +20,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, resolve, relative } from 'path';
 import { fileURLToPath } from 'url';
 
-const ROOT = resolve(fileURLToPath(import.meta.url), '..', '..');
+const ROOT = process.env.DOCS_TARGET_ROOT ? resolve(process.env.DOCS_TARGET_ROOT) : resolve(fileURLToPath(import.meta.url), '..', '..');
 const REGISTRY_PATH = join(ROOT, 'docs', 'service-registry.yml');
 
 // Names used in template/runbook examples — never a deployed canonical endpoint.
@@ -36,7 +36,7 @@ const PLACEHOLDER_NAMES = new Set([
 ]);
 
 // Paths to skip during the doc scan (relative to docs/).
-const SKIP_PATH_PREFIXES = ['archive'];
+const SKIP_PATH_PREFIXES = ['archive', '_generated', '_catalog'];
 
 // Doc extensions to scan.
 const DOC_EXTENSIONS = new Set(['.md', '.mdx', '.txt']);

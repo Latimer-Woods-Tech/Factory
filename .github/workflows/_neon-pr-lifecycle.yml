@@ -90,6 +90,10 @@ on:
         required: true
       GH_PAT:
         required: true
+      FACTORY_APP_ID:
+        required: true
+      FACTORY_APP_PRIVATE_KEY:
+        required: true
 
 concurrency:
   group: neon-pr-${{ inputs.app_name }}-${{ inputs.pr_number }}
@@ -115,7 +119,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version-file: .nvmrc
+          node-version: '22'
 
       - name: Compute names
         id: names
@@ -182,42 +186,77 @@ jobs:
           set -euo pipefail
           NAME="$HD_NAME"
 
-          # If a Hyperdrive with this name already exists (from a prior PR
-          # synchronize), delete it so we can recreate with a fresh connection
-          # string. Hyperdrive does not support in-place connection-string
-          # updates via wrangler CLI in all versions, so create-then-delete
-          # is the safer path here.
-          EXISTING=$(npx --yes wrangler hyperdrive list --json 2>/dev/null \
-            | HD_NAME="$NAME" node -e "const list=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=list.find(h=>h.name===process.env.HD_NAME); console.log(m?m.id:'')")
+          # wrangler hyperdrive list --json is unsupported (outputs non-JSON).
+          # Use CF API for all list/delete operations; wrangler only for create.
+          hd_list() {
+            curl -fsS \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs"
+          }
+          hd_find_id() {
+            HD_NAME="$1" node -e "
+              const r=JSON.parse(require('fs').readFileSync(0,'utf8'));
+              const m=(r.result??[]).find(h=>h.name===process.env.HD_NAME);
+              console.log(m?m.id:'');
+            "
+          }
 
+          EXISTING=$(hd_list | hd_find_id "$NAME")
           if [ -n "$EXISTING" ]; then
-            echo "Removing stale Hyperdrive $EXISTING ($NAME) so we can recreate"
-            npx --yes wrangler hyperdrive delete "$EXISTING" || true
+            echo "Removing stale Hyperdrive $EXISTING ($NAME) before recreating"
+            curl -fsS -X DELETE \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs/${EXISTING}" \
+              > /dev/null
           fi
 
-          OUTPUT=$(npx --yes wrangler hyperdrive create "$NAME" --connection-string "$CONN")
-          # wrangler hyperdrive create prints `id = "<uuid>"` — grep for it.
-          UUID=$(echo "$OUTPUT" | grep -oE '[0-9a-f]{32}' | head -1)
+          npx --yes wrangler hyperdrive create "$NAME" --connection-string "$CONN"
+
+          # Read back UUID via CF API — wrangler output format varies across versions.
+          UUID=$(hd_list | hd_find_id "$NAME")
           if [ -z "$UUID" ]; then
-            echo "::error::Could not extract Hyperdrive UUID from wrangler output:"
-            echo "$OUTPUT"
+            echo "::error::Hyperdrive '$NAME' not found after create"
             exit 1
           fi
           echo "hyperdrive_id=$UUID" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare ephemeral wrangler.jsonc
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          # Install from repo root so workspace packages (e.g. @capricast/types,
+          # @capricast/db) are resolvable when wrangler builds the worker bundle.
+          if [ -f "pnpm-lock.yaml" ]; then
+            npm install -g pnpm@latest --silent
+            pnpm install --frozen-lockfile
+          elif [ -f "yarn.lock" ]; then
+            yarn install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Prepare ephemeral wrangler config
         working-directory: ${{ inputs.worker_path }}
         env:
           PROD_UUID: ${{ inputs.production_hyperdrive_id }}
           EPHEMERAL_UUID: ${{ steps.hyperdrive.outputs.hyperdrive_id }}
+          WRANGLER_CONFIG: ${{ inputs.wrangler_config }}
         run: |
           set -euo pipefail
-          if ! grep -q "$PROD_UUID" wrangler.jsonc; then
-            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in wrangler.jsonc — sed replace would be a no-op"
+          # Determine which wrangler config file to patch.
+          # Callers that use per-env files (e.g. wrangler.staging.toml) pass
+          # wrangler_config; callers using a single wrangler.jsonc leave it empty.
+          CONFIG_FILE="${WRANGLER_CONFIG:-wrangler.jsonc}"
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "::error::Wrangler config '$CONFIG_FILE' not found in $(pwd)"
+            ls -la
             exit 1
           fi
-          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" wrangler.jsonc
-          echo "Swapped Hyperdrive UUID in wrangler.jsonc"
+          if ! grep -q "$PROD_UUID" "$CONFIG_FILE"; then
+            echo "::error::production_hyperdrive_id '$PROD_UUID' not found in $CONFIG_FILE — sed replace would be a no-op"
+            exit 1
+          fi
+          sed -i "s/$PROD_UUID/$EPHEMERAL_UUID/g" "$CONFIG_FILE"
+          echo "Swapped Hyperdrive UUID in $CONFIG_FILE"
 
       - name: Deploy preview Worker
         working-directory: ${{ inputs.worker_path }}
@@ -294,9 +333,16 @@ jobs:
           done
           echo "::warning::Preview /health did not return 200 within 60s (DNS/cert may still be propagating)."
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
       - name: Post or update PR comment
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR: ${{ inputs.pr_number }}
           APP_NAME: ${{ inputs.app_name }}
           PARENT_BRANCH: ${{ inputs.neon_parent_branch }}
@@ -409,10 +455,19 @@ jobs:
           HD_NAME: ${{ steps.names.outputs.hyperdrive_name }}
         run: |
           set -euo pipefail
-          ID=$(npx --yes wrangler hyperdrive list --json 2>/dev/null \
-            | HD_NAME="$HD_NAME" node -e "const list=JSON.parse(require('fs').readFileSync(0,'utf8')); const m=list.find(h=>h.name===process.env.HD_NAME); console.log(m?m.id:'')")
+          ID=$(curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs" \
+            | HD_NAME="$HD_NAME" node -e "
+              const r=JSON.parse(require('fs').readFileSync(0,'utf8'));
+              const m=(r.result??[]).find(h=>h.name===process.env.HD_NAME);
+              console.log(m?m.id:'');
+            ")
           if [ -n "$ID" ]; then
-            npx --yes wrangler hyperdrive delete "$ID" || true
+            curl -fsS -X DELETE \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/hyperdrive/configs/${ID}" \
+              > /dev/null
             echo "Deleted Hyperdrive $HD_NAME ($ID)"
           else
             echo "No Hyperdrive named $HD_NAME (already gone)"
@@ -430,10 +485,17 @@ jobs:
             --project-id "$PROJECT" \
             || echo "Neon branch $BRANCH already gone"
 
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
       - name: Post cleanup confirmation
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR: ${{ inputs.pr_number }}
           APP_NAME: ${{ inputs.app_name }}
           WORKER_NAME: ${{ steps.names.outputs.worker_name }}
