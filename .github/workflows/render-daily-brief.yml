@@ -51,6 +51,12 @@ jobs:
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
 
       - name: Fetch secrets from GCP Secret Manager
+        env:
+          # VERTEX_ACCESS_TOKEN / ELEVENLABS_VOICE_ID / GH_PAT are GitHub Actions
+          # secrets (not in GCP SM) — injected directly below, not via fetch_to_env.
+          VERTEX_ACCESS_TOKEN_GH: ${{ secrets.VERTEX_ACCESS_TOKEN }}
+          ELEVENLABS_VOICE_ID_GH: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
@@ -59,15 +65,16 @@ jobs:
           fetch_to_env ANTHROPIC_API_KEY      ANTHROPIC_API_KEY
           fetch_to_env GROQ_API_KEY           GROQ_API_KEY
           fetch_to_env GROK_API_KEY           GROK_API_KEY
-          fetch_to_env VERTEX_ACCESS_TOKEN    VERTEX_ACCESS_TOKEN
           fetch_to_env ELEVENLABS_API_KEY     ELEVENLABS_API_KEY
-          fetch_to_env ELEVENLABS_VOICE_ID    ELEVENLABS_VOICE_ID
-          fetch_to_env GITHUB_TOKEN           GITHUB_TOKEN FACTORY_GITHUB_TOKEN
           fetch_to_env STRIPE_SECRET_KEY      STRIPE_SECRET_KEY
           fetch_to_env POSTHOG_API_KEY        POSTHOG_API_KEY POSTHOG_KEY POSTHOG_API
           fetch_to_env POSTHOG_PROJECT_ID     POSTHOG_PROJECT_ID
           fetch_to_env SENTRY_AUTH_TOKEN      SENTRY_AUTH_TOKEN FACTORY_SENTRY_API sentry-auth-token
           fetch_to_env SENTRY_ORG            SENTRY_ORG sentry-org
+          # Bridge GitHub Actions secrets into GITHUB_ENV for downstream steps.
+          echo "VERTEX_ACCESS_TOKEN=${VERTEX_ACCESS_TOKEN_GH}" >> "$GITHUB_ENV"
+          echo "ELEVENLABS_VOICE_ID=${ELEVENLABS_VOICE_ID_GH}" >> "$GITHUB_ENV"
+          echo "GITHUB_TOKEN=${GH_PAT}" >> "$GITHUB_ENV"
 
       - name: Build local package dependencies
         run: |
@@ -81,7 +88,7 @@ jobs:
           done
 
       - name: Install daily-brief dependencies
-        run: npm ci --ignore-scripts
+        run: npm install --ignore-scripts
         working-directory: apps/daily-brief
 
       - name: Overlay locally-built packages
