@@ -90,6 +90,10 @@ on:
         required: true
       GH_PAT:
         required: true
+      FACTORY_APP_ID:
+        required: true
+      FACTORY_APP_PRIVATE_KEY:
+        required: true
 
 concurrency:
   group: neon-pr-${{ inputs.app_name }}-${{ inputs.pr_number }}
