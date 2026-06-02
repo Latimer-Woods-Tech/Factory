@@ -27,40 +27,19 @@ import type { BriefSlot } from './sections/insights';
 export interface Env {
   AUDIO_BUCKET: R2Bucket;
 
-  // LLM chain
-  AI_GATEWAY_BASE_URL: string;
-  ANTHROPIC_API_KEY: string;
-  GROQ_API_KEY: string;
-  GROK_API_KEY?: string;
-  VERTEX_ACCESS_TOKEN: string;
-  VERTEX_PROJECT: string;
-  VERTEX_LOCATION: string;
-
-  // TTS
-  ELEVENLABS_API_KEY: string;
-  ELEVENLABS_VOICE_ID: string;
-
   // Email
   RESEND_API_KEY: string;
   RESEND_FROM_ADDRESS: string;
   RESEND_FROM_NAME: string;
 
-  // GitHub — dispatch + activity section
+  // GitHub — workflow_dispatch to render-daily-brief.yml
   GITHUB_TOKEN: string;
   GITHUB_ORG: string;
   GITHUB_REPO: string;
 
-  // Revenue / analytics / errors (optional integrations)
-  STRIPE_SECRET_KEY?: string;
-  POSTHOG_API_KEY?: string;
-  POSTHOG_PROJECT_ID?: string;
-  SENTRY_AUTH_TOKEN?: string;
-  SENTRY_ORG?: string;
-
   // Config
   ZIP_CODE: string;
   RECIPIENTS: string;
-  /** Public origin for self-hosted audio + web-view links. */
   PUBLIC_BASE_URL?: string;
 
   // Manual trigger auth

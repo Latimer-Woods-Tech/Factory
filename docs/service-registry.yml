@@ -672,11 +672,6 @@ workers:
     required_secrets:
       - CF_API_TOKEN
       - CLOUDFLARE_ACCOUNT_ID
-      - ANTHROPIC_API_KEY
-      - GROQ_API_KEY
-      - VERTEX_ACCESS_TOKEN
-      - ELEVENLABS_API_KEY
-      - ELEVENLABS_VOICE_ID
       - RESEND_API_KEY
       - GITHUB_TOKEN
     required_vars:
