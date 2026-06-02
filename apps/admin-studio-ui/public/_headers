@@ -1,0 +1,9 @@
+# Cloudflare Pages headers for admin-studio-ui.
+#
+# Google Sign-In opens an OAuth popup and posts the credential back via
+# window.postMessage. A strict Cross-Origin-Opener-Policy severs that
+# popup<->opener channel ("COOP policy would block the window.postMessage
+# call"). `same-origin-allow-popups` keeps cross-origin isolation for the
+# document while still allowing our own popups to talk back.
+/*
+  Cross-Origin-Opener-Policy: same-origin-allow-popups

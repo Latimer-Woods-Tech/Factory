@@ -45,6 +45,12 @@ function waitForGoogleIdentity(timeoutMs = 10_000): Promise<any> {
   });
 }
 
+// `google.accounts.id` is a global singleton; calling initialize() more than
+// once (e.g. on remount or env change) triggers a GSI_LOGGER warning and only
+// the last config wins. Track which client_id we've already initialized so we
+// init once but still re-render the button on each mount.
+let gsiInitializedClientId: string | null = null;
+
 export function LoginPage() {
   const [env, setEnv] = useState<Environment | null>(null);
   const [email, setEmail] = useState('');
@@ -103,11 +109,14 @@ export function LoginPage() {
         // and allowlisted email; client-side domain hints and One Tap can bind
         // to the wrong already-signed-in Google session.
         google.accounts.id.disableAutoSelect?.();
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleCallback,
-          auto_select: false,
-        });
+        if (gsiInitializedClientId !== googleClientId) {
+          google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCallback,
+            auto_select: false,
+          });
+          gsiInitializedClientId = googleClientId;
+        }
 
         google.accounts.id.renderButton(googleButtonRef.current, {
           theme: 'outline',
