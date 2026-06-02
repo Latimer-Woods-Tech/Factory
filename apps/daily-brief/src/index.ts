@@ -54,7 +54,7 @@ const CRON_BUILD_EVENING = '0 22 * * *';
 const CRON_SEND_EVENING  = '30 22 * * *';
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === '/health') {
@@ -93,8 +93,10 @@ export default {
       if (slot !== 'morning' && slot !== 'evening') {
         return Response.json({ status: 'bad_request', message: 'slot must be morning or evening' }, { status: 400 });
       }
-      dispatchBriefBuild(slot, env).catch((e) =>
-        console.error('[daily-brief] trigger dispatch error:', e),
+      ctx.waitUntil(
+        dispatchBriefBuild(slot, env).catch((e) =>
+          console.error('[daily-brief] trigger dispatch error:', e),
+        ),
       );
       return Response.json({ status: 'dispatched', slot, message: 'Build triggered in GitHub Actions' });
     }
@@ -110,8 +112,10 @@ export default {
       if (slot !== 'morning' && slot !== 'evening') {
         return Response.json({ status: 'bad_request', message: 'slot must be morning or evening' }, { status: 400 });
       }
-      sendBriefForSlot(slot, env).catch((e) =>
-        console.error('[daily-brief] send error:', e),
+      ctx.waitUntil(
+        sendBriefForSlot(slot, env).catch((e) =>
+          console.error('[daily-brief] send error:', e),
+        ),
       );
       return Response.json({ status: 'sending', slot });
     }
