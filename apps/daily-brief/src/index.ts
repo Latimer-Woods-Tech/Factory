@@ -99,6 +99,23 @@ export default {
       return Response.json({ status: 'dispatched', slot, message: 'Build triggered in GitHub Actions' });
     }
 
+    // Manual send — POST /send?slot=morning|evening (bypasses cron for testing)
+    if (url.pathname === '/send' && request.method === 'POST') {
+      if (env.TRIGGER_TOKEN) {
+        if (request.headers.get('authorization') !== `Bearer ${env.TRIGGER_TOKEN}`) {
+          return Response.json({ status: 'unauthorized' }, { status: 401 });
+        }
+      }
+      const slot = (url.searchParams.get('slot') ?? 'morning') as BriefSlot;
+      if (slot !== 'morning' && slot !== 'evening') {
+        return Response.json({ status: 'bad_request', message: 'slot must be morning or evening' }, { status: 400 });
+      }
+      sendBriefForSlot(slot, env).catch((e) =>
+        console.error('[daily-brief] send error:', e),
+      );
+      return Response.json({ status: 'sending', slot });
+    }
+
     return new Response('daily-brief worker', { status: 200 });
   },
 
