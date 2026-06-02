@@ -652,8 +652,8 @@ workers:
   - id: daily-brief
     name: daily-brief
     repo: Latimer-Woods-Tech/factory
-    url: https://daily-brief.adrper79.workers.dev
-    custom_domain: null
+    url: https://dbrief.latwoodtech.work
+    custom_domain: dbrief.latwoodtech.work
     health_endpoint: /health
     telemetry_required: false
     deployment_status: deployed_via_actions_2026-06-02
