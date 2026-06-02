@@ -42,11 +42,18 @@ export const blueprintSchema = z.object({
     showBodyGraph: z.boolean().default(false),
     definedCenters: z.array(z.string()).optional(),
     typeColor: z.string().optional(),
+    spotlightCenter: z.string().optional(),
   })).optional(),
   /** Atmospheric background theme. Default 'self' (pure deep space). */
   forgeTheme: z.enum(['chronos', 'eros', 'aether', 'lux', 'phoenix', 'self']).default('self'),
   /** HD Type for body graph colour. */
   hdType: z.enum(['generator', 'manifesting_generator', 'projector', 'manifestor', 'reflector']).optional(),
+  /**
+   * Signature gates to light as badges on the body graph. Passed through to the
+   * canonical engine, which marks them active when no full activation map is
+   * available.
+   */
+  signatureGates: z.array(z.number()).optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -140,10 +147,12 @@ const RevelationScene: React.FC<RevelationSceneProps> = ({
 interface ConceptSceneProps extends SceneProps {
   text: string;
   definedCenters?: string[];
+  signatureGates?: number[];
+  spotlightCenter?: string;
 }
 
 const ConceptScene: React.FC<ConceptSceneProps> = ({
-  sceneFrame, durationFrames, fps, text, typeColor, definedCenters = [],
+  sceneFrame, durationFrames, fps, text, typeColor, definedCenters = [], signatureGates = [], spotlightCenter,
 }) => {
   const appear = interpolate(sceneFrame, [0, 20], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
@@ -188,50 +197,64 @@ const ConceptScene: React.FC<ConceptSceneProps> = ({
         />
       </div>
 
-      {/* Right side — body graph */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 1920 * 0.55,
-          width: 1920 * 0.38,
-          height: 1080,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transform: `scale(${String(bodyGraphScale)})`,
-          transformOrigin: 'center',
-          opacity: bodyGraphScale,
-        }}
-      >
+      {/* Right side — body graph over a soft scrim so it reads off the bg */}
+      <div style={{ position: 'absolute', inset: 0, opacity: bodyGraphScale }}>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 1920 * 0.5,
+            width: 1920 * 0.5,
+            height: 1080,
+            background:
+              'radial-gradient(ellipse 45% 58% at 58% 50%, rgba(6,7,14,0.82) 0%, rgba(6,7,14,0.45) 42%, rgba(6,7,14,0) 72%)',
+          }}
+        />
         <BodyGraph
           frame={sceneFrame}
           fps={fps}
           definedCenters={definedCenters}
+          signatureGates={signatureGates}
           typeColor={typeColor}
-          scale={1.5}
-          x={0}
-          y={0}
+          scale={1.55}
+          x={1150}
+          y={210}
           breathe
+          spotlightCenter={spotlightCenter}
         />
       </div>
     </AbsoluteFill>
   );
 };
 
-const BreathScene: React.FC<SceneProps & { showBodyGraph: boolean; definedCenters?: string[] }> = ({
-  sceneFrame, fps, typeColor, definedCenters = [], showBodyGraph,
+const BreathScene: React.FC<
+  SceneProps & { showBodyGraph: boolean; definedCenters?: string[]; signatureGates?: number[] }
+> = ({
+  sceneFrame, fps, typeColor, definedCenters = [], signatureGates = [], showBodyGraph,
 }) => (
   <AbsoluteFill style={{ opacity: 1 }}>
     {showBodyGraph && (
-      <BodyGraph
-        frame={sceneFrame}
-        fps={fps}
-        definedCenters={definedCenters}
-        typeColor={typeColor}
-        scale={1.5}
-        breathe
-      />
+      <>
+        {/* Hero scrim — pulls the graph out of the murk and centres attention. */}
+        <AbsoluteFill
+          style={{
+            background:
+              'radial-gradient(ellipse 42% 64% at 50% 50%, rgba(6,7,14,0.85) 0%, rgba(6,7,14,0.5) 42%, rgba(6,7,14,0) 70%)',
+          }}
+        />
+        {/* Big, centred hero. 300×420 engine at 2.3 → centred in 1920×1080. */}
+        <BodyGraph
+          frame={sceneFrame}
+          fps={fps}
+          definedCenters={definedCenters}
+          signatureGates={signatureGates}
+          typeColor={typeColor}
+          scale={2.3}
+          x={615}
+          y={57}
+          breathe
+        />
+      </>
     )}
   </AbsoluteFill>
 );
@@ -378,6 +401,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   hdType,
   brandColor = DEFAULT_BRAND_COLOR,
   logoUrl,
+  signatureGates = [],
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -433,11 +457,11 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
       )}
 
       {scene.type === 'concept' && scene.text && (
-        <ConceptScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} definedCenters={definedCenters} />
+        <ConceptScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} definedCenters={definedCenters} signatureGates={signatureGates} spotlightCenter={scene.spotlightCenter} />
       )}
 
       {scene.type === 'breath' && (
-        <BreathScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} showBodyGraph={scene.showBodyGraph} definedCenters={definedCenters} />
+        <BreathScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} showBodyGraph={scene.showBodyGraph} definedCenters={definedCenters} signatureGates={signatureGates} />
       )}
 
       {scene.type === 'triad' && scene.triad && (
