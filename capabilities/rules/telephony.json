@@ -2,8 +2,12 @@
   "rules": [
     {
       "id": "telephony-requires-crm",
-      "ifAllPrimitives": ["telephony"],
-      "thenRequirePrimitives": ["crm"]
+      "ifAllPrimitives": [
+        "telephony"
+      ],
+      "thenRequirePrimitives": [
+        "crm"
+      ]
     }
   ]
 }

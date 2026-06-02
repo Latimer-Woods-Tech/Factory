@@ -69,6 +69,12 @@ export interface BlueprintScene {
   definedCenters?: string[];
   /** Per-scene override of the type glow colour. */
   typeColor?: string;
+  /**
+   * The center to visually spotlight on this scene — rendered with an
+   * intensified halo so the viewer's eye is drawn to the gate's home center.
+   * Gate concept scenes set this to the gate's center key.
+   */
+  spotlightCenter?: string;
 }
 
 /**

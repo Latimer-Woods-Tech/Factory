@@ -80,6 +80,7 @@ jobs:
           fetch_to_env GOOGLE_CLIENT_ID                     ADMIN_STUDIO_GOOGLE_CLIENT_ID GOOGLE_CLIENT_ID google-client-id
           fetch_to_env STUDIO_ALLOWED_USERS_JSON            ADMIN_STUDIO_ALLOWED_USERS_JSON STUDIO_ALLOWED_USERS_JSON
           fetch_to_env STUDIO_GOOGLE_WORKSPACE_DOMAIN       STUDIO_GOOGLE_WORKSPACE_DOMAIN ADMIN_STUDIO_GOOGLE_WORKSPACE_DOMAIN
+          fetch_to_env GCP_SA_KEY                           ADMIN_STUDIO_GCP_SA_KEY
 
       - name: Resolve target environment
         id: target
@@ -223,6 +224,7 @@ jobs:
           put_optional_secret WORKER_API_TOKEN "${WORKER_API_TOKEN:-${FALLBACK_WORKER_API_TOKEN}}"
           put_optional_secret GOOGLE_CLIENT_ID "${GOOGLE_CLIENT_ID:-${FALLBACK_GOOGLE_CLIENT_ID}}"
           put_optional_secret STUDIO_ALLOWED_USERS_JSON "${STUDIO_ALLOWED_USERS_JSON:-${FALLBACK_STUDIO_ALLOWED_USERS_JSON}}"
+          put_optional_secret GCP_SA_KEY "${GCP_SA_KEY:-}"
         working-directory: apps/admin-studio
         env:
           FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
