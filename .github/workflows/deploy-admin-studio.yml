@@ -38,7 +38,7 @@ jobs:
       new_version_id:      ${{ steps.capture-new.outputs.new_version_id }}
       has_migrations:      ${{ steps.migrations.outputs.has_migrations }}
     steps:
-            - name: Generate GitHub App token
+      - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
