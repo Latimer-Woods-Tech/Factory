@@ -97,6 +97,7 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 22. `@latimer-woods-tech/schedule` (deps: errors, neon, video) — video production calendar + priority scoring
 23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
 24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
+25. `@latimer-woods-tech/bodygraph` (no deps) — canonical Energy Blueprint body-graph engine; runtime-agnostic SVG-string renderer (film/web/PDF share it)
 
 ## Video Production Pipeline
 

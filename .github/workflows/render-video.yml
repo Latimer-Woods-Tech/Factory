@@ -381,9 +381,15 @@ jobs:
         # `npm run build` runs there. Without this step the import fails with
         # ERR_MODULE_NOT_FOUND on dist/index.mjs. Per CLAUDE.md package order
         # (#8), llm's deps are errors + logger, both already in the loop.
+        #
+        # `bodygraph` added: packages/video-studio now depends on
+        # @latimer-woods-tech/bodygraph (the canonical body-graph engine) via
+        # file:../bodygraph. apps/video-studio resolves video-studio's deps
+        # transitively, so the engine's dist/ must exist before the install
+        # below. bodygraph has zero deps, so it builds first.
         run: |
           set -euo pipefail
-          for package in errors monitoring logger neon llm video schedule; do
+          for package in bodygraph errors monitoring logger neon llm video schedule; do
             echo "=== ${package} ==="
             cd "packages/${package}"
             npm ci --ignore-scripts

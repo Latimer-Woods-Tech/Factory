@@ -123,6 +123,17 @@ auth.post('/login', async (c) => {
 });
 
 /**
+ * GET /auth/providers
+ *
+ * Returns the configured authentication providers for this worker instance.
+ * The UI calls this on env selection to determine which sign-in methods to show.
+ */
+auth.get('/providers', (c) => {
+  const googleClientId = c.env.GOOGLE_CLIENT_ID ?? null;
+  return c.json({ googleClientId });
+});
+
+/**
  * POST /auth/google
  *
  * Body: { credential: "<Google ID token>", env: "production" | "staging" | "local" }
