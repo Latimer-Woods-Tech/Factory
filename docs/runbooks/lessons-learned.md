@@ -1060,3 +1060,50 @@ page.on('requestfailed', (req) => {
 ```
 
 **Lesson:** Playwright's request lifecycle does NOT model redirects as "one request, multiple legs." It models them as "two distinct requests, the first marked failed when the redirect fires." For network-failure-counting probes, this means a 100%-clean redirect chain still produces one `requestfailed` event per redirect leg. Use `redirectedTo()` / `redirectedFrom()` to distinguish probe-relevant failures from redirect-chain artifacts. The same shape applies to any tool inspecting raw request events (HAR analyzers, Chrome DevTools Protocol consumers, etc.).
+
+## I1 Personal Blueprint Film — narration debugging (June 2026)
+
+### A Workers LLM "fallback" was the ONLY path used, and its streaming parser truncated every completion
+The selfprime `llm-adapter.js` `callLLM` tries a metered gateway path first and a
+local `callAnthropicFallback` second. The metered path is loaded with an **indirect
+dynamic-import specifier** (`const s = '@latimer-woods-tech/llm-meter'; await import(s)`)
+specifically so "environments without the package still load." But wrangler/esbuild
+cannot statically analyse a variable specifier, so the package is **never bundled** —
+the import throws at runtime, `getMeteredComplete()` returns `null`, and **every** Worker
+LLM call silently uses the fallback. The intended gateway/tier/budget code was dead code
+in production.
+
+The fallback then streamed the SSE response and parsed it with `chunk.split('\n')` per
+network chunk, **without buffering partial lines across chunk boundaries**. Any `data: {…}`
+event that straddled a read boundary became invalid JSON and was silently dropped
+(`catch { /* skip */ }`). For a multi-hundred-word completion spanning many SSE events,
+enough deltas were lost to truncate a full ~225-word narration down to a stub (`#` /
+~24 words), which a downstream length guard then rejected (502).
+
+**Lessons:**
+1. **An indirect dynamic-import specifier means the module is NOT bundled.** If a Worker
+   "optionally" loads a package this way, assume it is *absent in production* and verify
+   which branch actually runs. A returned object missing fields the primary path sets
+   (here `result.model` / `result.provider` were `undefined`) is the tell that the
+   fallback is live.
+2. **Never hand-parse SSE by `split('\n')` without a cross-chunk line buffer.** A `data:`
+   event can land on either side of a read boundary. Either buffer the trailing partial
+   line and only parse complete lines, or — simpler and almost always correct for one-shot
+   completions — issue a **non-streaming** request and parse the buffered JSON. A ~250-word
+   Anthropic completion returns in a few seconds, well inside the Worker subrequest budget.
+3. **When Worker logs are locked down** (`wrangler tail` 403 — the CF token lacks the Tail
+   scope), surface the error in the response body temporarily and deploy *directly* with
+   `wrangler deploy --env production` (a working `CLOUDFLARE_API_TOKEN` from Secret Manager,
+   ~11 s) instead of the ~7-min CI path. Reproduce the LLM call through the AI Gateway with
+   `curl` (`${AI_GATEWAY_URL}/anthropic/v1/messages`, `x-api-key: $LATIMER`); Python `urllib`
+   gets a Cloudflare `1010` UA-block, so use curl.
+
+### A committed-only `package.json` with a gitignored `dist/` makes a `file:` dep unresolvable in CI
+A vendored `file:vendor/<pkg>` dependency whose `package.json` points at `./dist/index.mjs`
+will fail `npm ci` everywhere if `dist/` is gitignored and never committed (only the
+`package.json` was tracked). The failure surfaces as "Failed to resolve entry for package"
+on every test that imports the chain — and presents as *flaky* because Vite's resolver
+caches differently per file subset, so it passes in small runs and fails in the full suite.
+**Lesson:** for a `file:` dep you must commit the built artifact (force-add past `dist/`
+ignores with a `.gitignore` negation) or vendor the source + a build step. The real fix is
+publishing the package; vendoring a `dist/` is a stopgap that rots when the source changes.

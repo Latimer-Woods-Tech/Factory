@@ -24,20 +24,36 @@
  * Cloudflare Worker that consumes @latimer-woods-tech/* packages.
  */
 
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__dirname, '../../..');
 
-// ── Args ─────────────────────────────────────────────────────────────────────
+// ── Args ─────────────────────────────────────────────────────────────────────────────────
 
 const APP_NAME = process.argv[2];
 const CREATE_GITHUB = process.argv.includes('--github');
 const SKIP_DEPLOY = process.argv.includes('--no-deploy');
 const SKIP_INSTALL = process.argv.includes('--no-install');
+const NO_SECRETS = process.argv.includes('--no-secrets');
+const SKIP_PREREQ = process.argv.includes('--no-prereq');
+const CAPABILITY_RECIPE = (() => {
+  const idx = process.argv.indexOf('--recipe');
+  const value = idx !== -1 ? process.argv[idx + 1] ?? null : null;
+  if (value !== null && !/^[a-z][a-z0-9-]*$/u.test(value)) {
+    console.error(`Error: --recipe value "${value}" is invalid — must be a kebab-case identifier`);
+    process.exit(1);
+  }
+  return value;
+})();
+const CAPABILITY_PLAN = (() => {
+  const idx = process.argv.indexOf('--plan');
+  return idx !== -1 ? process.argv[idx + 1] ?? null : null;
+})();
 
 const CLI_HYPERDRIVE_ID = (() => {
   const idx = process.argv.indexOf('--hyperdrive-id');
@@ -55,7 +71,7 @@ const CLI_HANDOFF_PATH = (() => {
 })();
 
 if (!APP_NAME) {
-  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy] [--handoff <path>]');
+  console.error('Usage: node scaffold.mjs <app-name> [--github] [--no-deploy] [--no-install] [--no-secrets] [--no-prereq] [--handoff <path>] [--recipe <id>] [--plan <path>]');
   process.exit(1);
 }
 
@@ -274,6 +290,19 @@ function applyHandoffToScaffold(handoff) {
   console.log('  ✅ Handoff applied. See factory/handoff.json and factory/SMOKE.md.');
 }
 
+function generateWorkflowCallers() {
+  const generatorScript = resolve(REPO_ROOT, 'scripts', 'gen-deploy-workflow.mjs');
+  const parts = [
+    `node "${generatorScript}"`,
+    `--app-name ${APP_NAME}`,
+    `--output "${TARGET}"`,
+    CAPABILITY_RECIPE ? `--recipe ${CAPABILITY_RECIPE}` : '',
+    CAPABILITY_PLAN ? `--plan "${resolve(process.cwd(), CAPABILITY_PLAN)}"` : '',
+  ].filter(Boolean);
+
+  run(parts.join(' '), { cwd: REPO_ROOT });
+}
+
 // ── Prerequisites ─────────────────────────────────────────────────────────────
 
 function checkPrerequisites() {
@@ -308,9 +337,143 @@ function checkPrerequisites() {
   }
 }
 
+// ── Capability Plan Loading ─────────────────────────────────────────────────
+
+function loadCapabilityPlan() {
+  if (CAPABILITY_PLAN) {
+    const planPath = resolve(process.cwd(), CAPABILITY_PLAN);
+    if (!existsSync(planPath)) {
+      console.error(`Error: plan file not found: ${planPath}`);
+      process.exit(1);
+    }
+    return JSON.parse(readFileSync(planPath, 'utf8'));
+  }
+
+  if (CAPABILITY_RECIPE) {
+    const compiledPlanPath = join(REPO_ROOT, 'capabilities', 'compiled', `${CAPABILITY_RECIPE}.plan.json`);
+    if (!existsSync(compiledPlanPath)) {
+      console.log(`
+🔧 Compiled plan for recipe ${CAPABILITY_RECIPE} not found — compiling now...`);
+      try {
+        // Invoke shell-free via execFileSync with an explicit argv array so the
+        // repo path and recipe id are passed as literal arguments rather than
+        // interpolated into a shell string (fixes CodeQL command-injection).
+        execFileSync(
+          'node',
+          [
+            join(REPO_ROOT, 'scripts', 'compile-capability-recipe.mjs'),
+            '--recipe', CAPABILITY_RECIPE,
+            '--output', compiledPlanPath,
+          ],
+          { stdio: 'inherit', cwd: REPO_ROOT },
+        );
+      } catch (err) {
+        console.error('Failed to compile capability recipe:', err.message);
+        process.exit(1);
+      }
+    }
+    return JSON.parse(readFileSync(compiledPlanPath, 'utf8'));
+  }
+
+  return null;
+}
+
+// ── File Generation Helpers ────────────────────────────────────────────────────
+
+function buildPackageDependencies(plan) {
+  const base = {
+    '@latimer-woods-tech/errors': '^0.2.0',
+    '@latimer-woods-tech/logger': '^0.2.0',
+    '@latimer-woods-tech/monitoring': '^0.2.0',
+    '@latimer-woods-tech/auth': '^0.2.0',
+    '@latimer-woods-tech/neon': '^0.2.0',
+    '@latimer-woods-tech/flags': '^0.1.0',
+    '@latimer-woods-tech/deploy': '^0.2.0',
+    hono: '^4.12.15',
+  };
+  const packages = plan?.packages ?? [];
+  for (const pkg of packages) {
+    base[pkg.package] = pkg.versionRange;
+  }
+  return base;
+}
+
+function renderWranglerJson(plan, hyperdriveId, rateLimiterId) {
+  const bindings = plan?.bindings ?? {};
+  const config = {
+    name: APP_NAME,
+    main: 'src/index.ts',
+    compatibility_date: '2026-05-01',
+    compatibility_flags: ['nodejs_compat'],
+    hyperdrive: [{ binding: 'DB', id: hyperdriveId }],
+    // Flagship feature flags (every Factory app binds FLAGS).
+    flagship: { binding: 'FLAGS' },
+    // Flag telemetry sink (shared flag-meter D1 database).
+    d1_databases: [
+      { binding: 'FLAG_TELEMETRY', database_id: 'f03af37d-11d9-4428-b0db-b3cdca8fe7c4', database_name: 'flag-meter' },
+    ],
+    vars: { ENVIRONMENT: 'production', WORKER_NAME: APP_NAME },
+    ...(rateLimiterId ? {
+      rate_limiters: [{ binding: 'AUTH_RATE_LIMITER', namespace_id: rateLimiterId, simple: { limit: 60, period: 60 } }],
+    } : {}),
+    ...(bindings.kv?.length ? {
+      kv_namespaces: bindings.kv.map((b) => ({ binding: b, id: 'REPLACE_WITH_KV_ID' })),
+    } : {}),
+    env: {
+      staging: {
+        name: `${APP_NAME}-staging`,
+        vars: { ENVIRONMENT: 'staging', WORKER_NAME: `${APP_NAME}-staging` },
+      },
+    },
+  };
+  return JSON.stringify(config, null, 2) + '\n';
+}
+
+function renderDevVarsExample(plan) {
+  const secrets = plan?.env?.secrets ?? [];
+  const vars = plan?.env?.vars ?? [];
+  const lines = [
+    '# Local dev secrets — copy to .dev.vars and fill in values.',
+    '# Never commit .dev.vars to git.',
+    '',
+    ...secrets.map((s) => `${s}=`),
+    ...vars.map((v) => `${v}=`),
+  ];
+  return lines.join('\n') + '\n';
+}
+
+function renderIndexSource(appName, plan) {
+  const primitives = plan?.packages ?? [];
+  const imports = primitives.map((p) => `// import { ... } from '${p.package}';`).join('\n');
+
+  // Infer HTTP method: action-verb last segment → POST, otherwise GET.
+  const ACTION_VERBS = new Set(['start', 'stop', 'end', 'submit', 'publish', 'pause', 'resume', 'cancel', 'trigger', 'fire', 'send', 'create', 'delete', 'update', 'approve', 'reject']);
+  const surfaces = (plan?.expectedSurfaces ?? []).filter((s) => s !== '/health');
+  const extraRoutes = surfaces.map((surface) => {
+    const lastSegment = surface.split('/').pop() ?? '';
+    const method = ACTION_VERBS.has(lastSegment) ? 'post' : 'get';
+    return `app.${method}('${surface}', (c) => c.json({ todo: true }));`;
+  });
+
+  const routeLines = [
+    `app.get('/health', (c) => c.json({ status: 'ok', app: '${appName}' }));`,
+    ...extraRoutes,
+  ].join('\n');
+
+  return `import { Hono } from 'hono';
+import type { Env } from './env.js';
+
+${imports ? imports + '\n\n' : ''}const app = new Hono<{ Bindings: Env }>();
+
+${routeLines}
+
+export default app;
+`;
+}
+
 // ── File Generation ───────────────────────────────────────────────────────────
 
-function generateFiles(hyperdriveId, rateLimiterId) {
+function generateFiles(hyperdriveId, rateLimiterId, capabilityPlan = null) {
   console.log('\n📁 Generating files...');
 
   // .gitignore
@@ -327,6 +490,7 @@ coverage/
 `);
 
   // package.json
+  const dependencies = buildPackageDependencies(capabilityPlan);
   write('package.json', JSON.stringify({
     name: APP_NAME,
     version: '0.1.0',
@@ -342,18 +506,7 @@ coverage/
       test: 'vitest run',
       'test:watch': 'vitest',
     },
-    dependencies: {
-      '@latimer-woods-tech/errors': '^0.2.0',
-      '@latimer-woods-tech/logger': '^0.2.0',
-      '@latimer-woods-tech/monitoring': '^0.2.0',
-      '@latimer-woods-tech/auth': '^0.2.0',
-      '@latimer-woods-tech/neon': '^0.2.0',
-      '@latimer-woods-tech/analytics': '^0.2.0',
-      '@latimer-woods-tech/deploy': '^0.2.0',
-      '@latimer-woods-tech/flags': '^0.1.0',
-      'drizzle-orm': '^0.43.0',
-      hono: '^4.12.15',
-    },
+    dependencies,
     devDependencies: {
       '@latimer-woods-tech/biome-config': '^0.1.0',
       '@latimer-woods-tech/testing': '^0.2.0',
@@ -391,55 +544,7 @@ coverage/
   }, null, 2) + '\n');
 
   // wrangler.jsonc
-  write('wrangler.jsonc', `{
-  "name": "${APP_NAME}",
-  "compatibility_date": "2026-05-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": "src/index.ts",
-
-  // ── Hyperdrive (Neon Postgres via @latimer-woods-tech/neon) ──────────────────────
-  "hyperdrive": [
-    {
-      "binding": "DB",
-      "id": "${hyperdriveId}"
-    }
-  ],
-
-  // ── Flagship feature flags ────────────────────────────────────────────────
-  "flagship": { "binding": "FLAGS" },
-
-  // ── Flag telemetry (flag-meter D1) ────────────────────────────────────────
-  "d1_databases": [
-    { "binding": "FLAG_TELEMETRY", "database_id": "f03af37d-11d9-4428-b0db-b3cdca8fe7c4", "database_name": "flag-meter" }
-  ],
-
-  // ── Non-secret vars (secrets go in wrangler secret put, never here) ────────
-  "vars": {
-    "ENVIRONMENT": "production",
-    "WORKER_NAME": "${APP_NAME}"
-  },
-
-  // ── Rate Limiter (auth routes) ────────────────────────────────────────────
-  "rate_limiters": [
-    {
-      "binding": "AUTH_RATE_LIMITER",
-      "namespace_id": "${rateLimiterId}",
-      "simple": { "limit": 60, "period": 60 }
-    }
-  ],
-
-  // ── Staging environment ────────────────────────────────────────────────────
-  "env": {
-    "staging": {
-      "name": "${APP_NAME}-staging",
-      "vars": {
-        "ENVIRONMENT": "staging",
-        "WORKER_NAME": "${APP_NAME}-staging"
-      }
-    }
-  }
-}
-`);
+  write('wrangler.jsonc', renderWranglerJson(capabilityPlan, hyperdriveId, rateLimiterId));
 
   // src/env.ts — Cloudflare Worker bindings type
   write('src/env.ts', `/**
@@ -471,74 +576,13 @@ export interface Env {
 `);
 
   // src/index.ts — minimal working Hono app
-  write('src/index.ts', `import { Hono } from 'hono';
-import {
-  FactoryBaseError,
-  withErrorBoundary,
-  toErrorResponse,
-} from '@latimer-woods-tech/errors';
-import { createDb } from '@latimer-woods-tech/neon';
-import { jwtMiddleware } from '@latimer-woods-tech/auth';
-import { createFlagClient } from '@latimer-woods-tech/flags';
-import type { Env } from './env.js';
+  write('src/index.ts', renderIndexSource(APP_NAME, capabilityPlan));
 
-const APP_NAME = '${APP_NAME}';
 
-const app = new Hono<{ Bindings: Env; Variables: { flags: ReturnType<typeof createFlagClient> } }>();
 
-// ── Middleware ───────────────────────────────────────────────────────────────
-app.use('*', withErrorBoundary());
 
-// ── Flagship feature flags ────────────────────────────────────────────────
-app.use('*', async (c, next) => {
-  const flags = createFlagClient(c.env, { app: APP_NAME, env: c.env.ENVIRONMENT });
-  c.set('flags', flags);
-  await next();
-});
 
-// ── Health check (public) ────────────────────────────────────────────────────
-app.get('/health', (c) =>
-  c.json({ status: 'ok', worker: c.env.WORKER_NAME, env: c.env.ENVIRONMENT }),
-);
 
-// ── Protected routes (require JWT) ──────────────────────────────────────────
-app.use('/api/*', (c, next) => jwtMiddleware(c.env.JWT_SECRET)(c, next));
-
-app.get('/api/me', (c) => {
-  // c.get('jwtPayload') is set by jwtMiddleware
-  return c.json({ data: c.get('jwtPayload'), error: null });
-});
-
-// ── Add your routes here ─────────────────────────────────────────────────────
-//
-// Example: mount the admin panel
-// import { createAdminRouter } from '@latimer-woods-tech/admin';
-// app.route('/admin', createAdminRouter({
-//   db: createDb(c.env.DB),
-//   appId: APP_NAME,
-// }));
-//
-// Example: read a flag in a route handler
-// const flags = c.get('flags');
-// const inMaintenance = await flags.getBool(\`\${APP_NAME}:ks:maintenance_mode\`);
-
-// ── Global unhandled error handler ───────────────────────────────────────────
-app.onError((err, c) => {
-  if (err instanceof FactoryBaseError) {
-    return c.json(
-      { error: { code: err.code, message: err.message }, data: null },
-      err.status as 400 | 401 | 403 | 404 | 500,
-    );
-  }
-  console.error('[unhandled]', err);
-  return c.json(
-    toErrorResponse(err),
-    500,
-  );
-});
-
-export default app;
-`);
 
   // drizzle.config.ts
   write('drizzle.config.ts', `import { defineConfig } from 'drizzle-kit';
@@ -641,84 +685,10 @@ export default defineConfig({
 `);
 
   // .dev.vars.example — local dev secrets template
-  write('.dev.vars.example', `# Copy this file to .dev.vars and fill in values for local development.
-# .dev.vars is gitignored — never commit it.
-# Wrangler reads .dev.vars automatically during wrangler dev.
+  write('.dev.vars.example', renderDevVarsExample(capabilityPlan));
 
-JWT_SECRET=dev-secret-at-least-32-characters-long
-SENTRY_DSN=
-POSTHOG_KEY=
-ANTHROPIC_API_KEY=
-DEEPSEEK_API_KEY=
-GROK_API_KEY=
-GROQ_API_KEY=
-RESEND_API_KEY=
-`);
-
-  // .github/workflows/ci.yml
-  write('.github/workflows/ci.yml', `name: CI
-
-on:
-  push:
-    branches: [main, 'feature/**']
-  pull_request:
-    branches: [main]
-
-jobs:
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
-      - run: npm ci
-        env:
-          NODE_AUTH_TOKEN: \${{ secrets.PACKAGES_READ_TOKEN }}
-      - run: npm run typecheck
-      - run: npm test
-        env:
-          NEON_TEST_URL: \${{ secrets.NEON_PREVIEW_URL }}
-`);  
-
-  // .github/workflows/deploy.yml
-  write('.github/workflows/deploy.yml', `name: Deploy
-
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Target environment
-        required: true
-        default: production
-        type: choice
-        options: [production, staging]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: \${{ github.event.inputs.environment || 'production' }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@adrper79-dot'
-      - run: npm ci
-        env:
-          NODE_AUTH_TOKEN: \${{ secrets.PACKAGES_READ_TOKEN }}
-      - run: npm run typecheck
-      - uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: \${{ secrets.CF_API_TOKEN }}
-          accountId: \${{ secrets.CF_ACCOUNT_ID }}
-          command: deploy --env \${{ github.event.inputs.environment || 'production' }}
-`);
+  // .github/workflows/ci.yml + deploy.yml
+  generateWorkflowCallers();
 
   console.log('\n  ✅ All files generated.');
 }
@@ -887,8 +857,12 @@ async function main() {
   console.log(`   App:    ${APP_NAME}`);
   console.log(`   Target: ${TARGET}`);
   if (CREATE_GITHUB) console.log('   GitHub: yes (--github)');
+  if (NO_SECRETS) console.log('   No secrets mode: skipping interactive secret configuration');
+  if (SKIP_PREREQ) console.log('   Skipping prerequisites checks (--no-prereq)');
 
-  checkPrerequisites();
+  if (!SKIP_PREREQ) {
+    checkPrerequisites();
+  }
 
   // Hyperdrive (runs before file gen so ID is injected)
   const hyperdriveId = await createHyperdrive();
@@ -901,7 +875,8 @@ async function main() {
 
   // Create directory + all files
   mkdirSync(TARGET, { recursive: true });
-  generateFiles(hyperdriveId, rateLimiterId);
+  const capabilityPlan = await loadCapabilityPlan();
+  generateFiles(hyperdriveId, rateLimiterId, capabilityPlan);
 
   // Apply capability handoff if --handoff was supplied. Must run AFTER
   // generateFiles so package.json/.dev.vars.example exist, and BEFORE
@@ -934,12 +909,18 @@ async function main() {
   }
 
   // Secrets
-  const doSecrets = await ask('\n🔐 Configure Wrangler secrets interactively now? (y/N): ');
-  if (doSecrets.trim().toLowerCase() === 'y') {
-    await configureSecrets();
-  } else {
-    console.log('  ⏭  Skipped. Run later:');
+  if (NO_SECRETS) {
+    console.log('\n🔐 Skipping Wrangler secrets configuration (--no-secrets).');
+    console.log('  ⏭  Run later:');
     console.log(`     node node_modules/@latimer-woods-tech/deploy/scripts/setup-secrets.sh ${APP_NAME}`);
+  } else {
+    const doSecrets = await ask('\n🔐 Configure Wrangler secrets interactively now? (y/N): ');
+    if (doSecrets.trim().toLowerCase() === 'y') {
+      await configureSecrets();
+    } else {
+      console.log('  ⏭  Skipped. Run later:');
+      console.log(`     node node_modules/@latimer-woods-tech/deploy/scripts/setup-secrets.sh ${APP_NAME}`);
+    }
   }
 
   // First deploy

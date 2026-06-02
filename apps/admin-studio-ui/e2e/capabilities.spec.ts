@@ -288,14 +288,14 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   // ── Preview ────────────────────────────────────────────────────────────
   await page.getByRole('button', { name: /^Preview Plan$/ }).click();
   await expect(page.getByRole('heading', { name: 'Plan Preview' })).toBeVisible();
-  await expect(page.getByText('/api/imports')).toBeVisible();
+  await expect(page.getByText('/api/imports').first()).toBeVisible();
 
   // ── Confirm handoff → Generate ─────────────────────────────────────────
   const handoffConfirm = page.getByLabel(/I reviewed the preview/);
   await handoffConfirm.check();
   await page.getByRole('button', { name: /Generate Scaffold Handoff/ }).click();
   await expect(page.getByRole('heading', { name: 'Scaffold Handoff Package' })).toBeVisible();
-  await expect(page.getByText(handoffHash)).toBeVisible();
+  await expect(page.getByText(handoffHash).first()).toBeVisible();
 
   // Copy + download buttons should be present.
   await expect(page.getByRole('button', { name: /Copy JSON/ })).toBeVisible();
@@ -315,6 +315,6 @@ test('capabilities flow: configure → resolve → preview → handoff → proof
   await page.getByRole('button', { name: /Confirm — submit request/ }).click();
 
   // Success surface.
-  await expect(page.getByText('Staging provision request recorded.')).toBeVisible();
-  await expect(page.getByText(provisionRequestId)).toBeVisible();
+  await expect(page.getByText('Staging provision request recorded.').first()).toBeVisible();
+  await expect(page.getByText(provisionRequestId).first()).toBeVisible();
 });

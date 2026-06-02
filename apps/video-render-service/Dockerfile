@@ -24,19 +24,21 @@ COPY tsconfig.internal-packages.json .eslintrc.base.json ./
 
 # Build the local package dependency chain in CLAUDE.md order. The render
 # service consumes `video` (signed contract + private Stream upload) and
-# `video-studio` (composition + blueprint segment); video-studio needs its
-# Remotion devDeps to emit the .d.mts the service typechecks against.
+# `video-studio` (composition + blueprint segment); video-studio depends on
+# `bodygraph` (the canonical SVG engine) via file:../bodygraph — it must be
+# built first so video-studio's install resolves the local path correctly.
 COPY packages/errors        ./packages/errors
 COPY packages/monitoring    ./packages/monitoring
 COPY packages/logger        ./packages/logger
 COPY packages/video         ./packages/video
+COPY packages/bodygraph     ./packages/bodygraph
 COPY packages/video-studio  ./packages/video-studio
 
 # `--ignore-scripts` on every install: skip lifecycle hooks (video-studio's
 # `prepublish` runs lint+test+build, which needs the full repo eslint setup and
 # is redundant here — CI already gates those). We build each package explicitly.
 RUN set -eux; \
-    for pkg in errors monitoring logger video; do \
+    for pkg in errors monitoring logger video bodygraph; do \
       cd "/repo/packages/$pkg"; npm ci --ignore-scripts; npm run build; \
     done; \
     cd /repo/packages/video-studio; npm install --ignore-scripts --no-audit --no-fund; npm run build

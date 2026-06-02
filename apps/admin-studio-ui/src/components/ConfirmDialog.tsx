@@ -7,16 +7,6 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import type { ConfirmationTier, ReversibilityTier } from '@latimer-woods-tech/studio-core';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from './ui/alert-dialog.js';
 
 const REVERSIBILITY_LABEL: Record<ReversibilityTier, { icon: string; text: string; tone: string }> = {
   trivial:           { icon: '🟢', text: 'Trivial / undo-able',         tone: 'text-emerald-400' },
@@ -60,13 +50,21 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
     return typed.trim() === action;
   }, [tier, typed, action, cooldown]);
 
+  if (!open) return null;
+
   return (
-    <AlertDialog open={open} onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirm: {action}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+    >
+      <div className="w-full max-w-lg rounded-lg bg-slate-900 border border-slate-700 p-6 shadow-2xl">
+        <h2 id="confirm-title" className="text-lg font-semibold text-white">
+          Confirm: {action}
+        </h2>
+
+        <p className="mt-2 text-sm text-slate-300">{description}</p>
 
         <div className={`mt-4 flex items-center gap-2 text-sm ${meta.tone}`}>
           <span aria-hidden>{meta.icon}</span>
@@ -75,15 +73,15 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
 
         {tier >= 2 && (
           <div className="mt-4">
-            <label htmlFor="confirm-input" className="block text-xs uppercase tracking-wide text-muted-foreground">
-              Type <code className="rounded bg-muted px-1">{action}</code> to confirm
+            <label htmlFor="confirm-input" className="block text-xs uppercase tracking-wide text-slate-400">
+              Type <code className="bg-slate-800 px-1 rounded">{action}</code> to confirm
             </label>
             <input
               id="confirm-input"
               autoFocus
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="mt-1 w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-base md:text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
               placeholder={action}
               autoComplete="off"
               spellCheck={false}
@@ -98,18 +96,27 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         )}
 
         {cooldown > 0 && (
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-3 text-xs text-slate-400">
             Cooldown: {cooldown}s remaining…
           </p>
         )}
 
-        <AlertDialogFooter className="mt-6">
-          <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-          <AlertDialogAction disabled={!canConfirm} onClick={() => onConfirm({ confirmToken })}>
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!canConfirm}
+            onClick={() => onConfirm({ confirmToken })}
+            className="rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40 hover:bg-amber-500"
+          >
             Confirm
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
