@@ -4,7 +4,9 @@ import {
   EnergyBlueprintVideo,
   blueprintSchema,
 } from './compositions/EnergyBlueprintVideo.js';
+import type { EnergyBlueprintProps } from './compositions/EnergyBlueprintVideo.js';
 import { DEFAULT_BRAND_COLOR } from './blueprint-types.js';
+import { totalDurationFrames } from './sourceScenes.js';
 
 /** Frame rate of every composition in this library. */
 export const VIDEO_FPS = 30;
@@ -12,17 +14,21 @@ export const VIDEO_FPS = 30;
 export const VIDEO_WIDTH = 1920;
 /** Render height (1080p landscape). */
 export const VIDEO_HEIGHT = 1080;
-/** Total frames in the Energy Blueprint composition (75s at 30fps). */
+/**
+ * Default frame count for blueprint-only films (75s at 30fps). Used as a
+ * studio-preview fallback; real renders compute duration dynamically from the
+ * scene arc via the `calculateMetadata` callback below.
+ */
 export const ENERGY_BLUEPRINT_FRAMES = 2250;
 
 /**
  * Remotion root for `@latimer-woods-tech/video-studio`.
  *
  * Registers the `EnergyBlueprintVideo` composition so the Cloud Run render
- * service (Wave 2) and `apps/video-studio` can bundle and render it. The
- * `defaultProps` are placeholder studio-preview values only — real renders pass
- * resolved props (built via {@link chartToScenes}) and selfprime-authored
- * narration. No on-screen string here uses the word "AI".
+ * service and `apps/video-studio` can bundle and render it. Duration is
+ * computed dynamically from `props.scenes` (Slice 3+) so a multi-source film
+ * renders at its exact length. The 2250-frame default applies only to
+ * blueprint-only Slice-2 renders and studio-preview where no scenes are passed.
  */
 export const EnergyBlueprintRoot: React.FC = () => {
   return (
@@ -34,6 +40,13 @@ export const EnergyBlueprintRoot: React.FC = () => {
       width={VIDEO_WIDTH}
       height={VIDEO_HEIGHT}
       schema={blueprintSchema}
+      calculateMetadata={({ props }: { props: EnergyBlueprintProps }) => {
+        const frames =
+          props.scenes && props.scenes.length > 0
+            ? totalDurationFrames(props.scenes)
+            : ENERGY_BLUEPRINT_FRAMES;
+        return { durationInFrames: frames };
+      }}
       defaultProps={{
         appId: 'prime_self',
         topic: 'Your Pattern Has Always Been Here',

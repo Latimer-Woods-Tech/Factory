@@ -139,6 +139,79 @@ export function deriveForgeTheme(data: BlueprintSegmentData): ForgeTheme {
 }
 
 /**
+ * Maps resolved blueprint data into just the *body* scenes — the middle of the
+ * film, without the arrival or invitation bookends.
+ *
+ * Used by {@link "./sourceScenes".assembleFilmScenes} when assembling a
+ * multi-source film: the assembler adds one shared arrival and one shared
+ * invitation across all sources so the bookends appear exactly once regardless
+ * of how many sources the user selected.
+ *
+ * Pure and deterministic — same input always yields the same scene array.
+ */
+export function chartToBodyScenes(data: BlueprintSegmentData): BlueprintScene[] {
+  const typeColor = TYPE_COLORS[data.hdType];
+  const centers = data.definedCenters;
+  const gates = data.signatureGates ?? [];
+
+  const scenes: BlueprintScene[] = [
+    {
+      type: 'revelation',
+      durationFrames: FRAMES.revelation,
+      text: TYPE_FRAMING[data.hdType],
+      showBodyGraph: false,
+      typeColor,
+    },
+    {
+      type: 'concept',
+      durationFrames: FRAMES.conceptCenters,
+      text: `This is ${describeCenters(centers)}. Where energy is consistent in you.`,
+      showBodyGraph: true,
+      definedCenters: centers,
+      typeColor,
+    },
+    {
+      type: 'breath',
+      durationFrames: FRAMES.breath,
+      showBodyGraph: true,
+      definedCenters: centers,
+      typeColor,
+    },
+  ];
+
+  for (const gate of gates) {
+    const gateCenterKey =
+      (data.gateToCenter?.[gate] ?? GATE_TO_CENTER[gate]) as string | undefined;
+    const sceneDefinedCenters =
+      gateCenterKey && !centers.includes(gateCenterKey)
+        ? [...centers, gateCenterKey]
+        : centers;
+    const gateText =
+      data.gateInsights?.[gate] ??
+      `Gate ${String(gate)} — a frequency held in your ${centerName(gate, data.gateToCenter)} centre.`;
+    scenes.push({
+      type: 'concept',
+      durationFrames: FRAMES.conceptGate,
+      text: gateText,
+      showBodyGraph: true,
+      definedCenters: sceneDefinedCenters,
+      spotlightCenter: gateCenterKey,
+      typeColor,
+    });
+  }
+
+  scenes.push({
+    type: 'triad',
+    durationFrames: FRAMES.triad,
+    triad: ['Shadow', 'Gift', 'Siddhi'],
+    showBodyGraph: false,
+    typeColor,
+  });
+
+  return scenes;
+}
+
+/**
  * Maps resolved blueprint data into the composition's `scenes[]`.
  *
  * The arc is: arrival (atmosphere) → revelation (type framing) → concept
