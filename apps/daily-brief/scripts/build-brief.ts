@@ -81,7 +81,7 @@ const llmEnv: LlmEnv = {
   VERTEX_LOCATION:     required('VERTEX_LOCATION'),
 };
 
-const publicBaseUrl = (optional('PUBLIC_BASE_URL') ?? 'https://daily-brief.adrper79.workers.dev').replace(/\/$/, '');
+const publicBaseUrl = required('PUBLIC_BASE_URL').replace(/\/$/, '');
 const r2Bucket      = required('R2_BUCKET_NAME');
 const dateLabel     = new Date(dateKey + 'T12:00:00-04:00').toLocaleDateString('en-US', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/New_York',
