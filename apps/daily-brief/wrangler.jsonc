@@ -42,7 +42,21 @@
 
   "env": {
     "production": {
+      // Explicit name prevents Wrangler from deploying as "daily-brief-production".
+      "name": "daily-brief",
       "workers_dev": false,
+      // r2_buckets, triggers are NOT inherited by environments in Wrangler 4.
+      "triggers": {
+        "crons": [
+          "0 10 * * *",
+          "30 10 * * *",
+          "0 22 * * *",
+          "30 22 * * *"
+        ]
+      },
+      "r2_buckets": [
+        { "binding": "AUDIO_BUCKET", "bucket_name": "daily-brief-audio" }
+      ],
       "vars": {
         "GITHUB_ORG": "Latimer-Woods-Tech",
         "GITHUB_REPO": "Factory",
