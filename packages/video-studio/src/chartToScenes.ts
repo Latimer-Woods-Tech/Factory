@@ -14,6 +14,7 @@
 // chart (centre names, type framing), never generated prose.
 // ---------------------------------------------------------------------------
 
+import { GATE_TO_CENTER } from '@latimer-woods-tech/bodygraph';
 import {
   TYPE_COLORS,
   type BlueprintScene,
@@ -42,6 +43,18 @@ export interface BlueprintSegmentData {
   forge?: ForgeTheme;
   /** Optional display name used in the arrival framing line. */
   displayName?: string;
+  /**
+   * LLM-authored insight text per gate, keyed by gate number. When present,
+   * the gate concept scene uses this text verbatim instead of the generic
+   * fallback. Sourced from selfprime's D6 blueprint generation.
+   */
+  gateInsights?: Record<number, string>;
+  /**
+   * Gate-to-center mapping from the selfprime side. Used to name the center
+   * in the fallback gate text. Falls back to the bodygraph engine's own
+   * `GATE_TO_CENTER` when absent.
+   */
+  gateToCenter?: Record<number, string>;
 }
 
 /** Frame budget per scene at 30fps (75s total = 2250 frames). */
@@ -92,6 +105,21 @@ const CENTER_LABELS: Record<string, string> = {
   Root: 'Root',
 };
 
+/**
+ * Returns a human-readable center name for a gate. Looks up the center key
+ * from `gateToCenter` (selfprime-supplied) falling back to the bodygraph
+ * engine's built-in `GATE_TO_CENTER`, then maps the key through `CENTER_LABELS`
+ * for a display-friendly label (e.g. `'G (Identity)'`). Returns `'unknown'`
+ * only if the gate genuinely has no center mapping.
+ *
+ * @internal
+ */
+function centerName(gate: number, gateToCenter?: Record<number, string>): string {
+  const key = (gateToCenter?.[gate] ?? GATE_TO_CENTER[gate]) as string | undefined;
+  if (!key) return 'unknown';
+  return CENTER_LABELS[key] ?? key;
+}
+
 /** @internal Join centre labels into a readable, comma-separated phrase. */
 function describeCenters(centers: string[]): string {
   const labels = centers.map((c) => CENTER_LABELS[c] ?? c);
@@ -108,6 +136,79 @@ function describeCenters(centers: string[]): string {
  */
 export function deriveForgeTheme(data: BlueprintSegmentData): ForgeTheme {
   return data.forge ?? TYPE_FORGE[data.hdType];
+}
+
+/**
+ * Maps resolved blueprint data into just the *body* scenes — the middle of the
+ * film, without the arrival or invitation bookends.
+ *
+ * Used by {@link "./sourceScenes".assembleFilmScenes} when assembling a
+ * multi-source film: the assembler adds one shared arrival and one shared
+ * invitation across all sources so the bookends appear exactly once regardless
+ * of how many sources the user selected.
+ *
+ * Pure and deterministic — same input always yields the same scene array.
+ */
+export function chartToBodyScenes(data: BlueprintSegmentData): BlueprintScene[] {
+  const typeColor = TYPE_COLORS[data.hdType];
+  const centers = data.definedCenters;
+  const gates = data.signatureGates ?? [];
+
+  const scenes: BlueprintScene[] = [
+    {
+      type: 'revelation',
+      durationFrames: FRAMES.revelation,
+      text: TYPE_FRAMING[data.hdType],
+      showBodyGraph: false,
+      typeColor,
+    },
+    {
+      type: 'concept',
+      durationFrames: FRAMES.conceptCenters,
+      text: `This is ${describeCenters(centers)}. Where energy is consistent in you.`,
+      showBodyGraph: true,
+      definedCenters: centers,
+      typeColor,
+    },
+    {
+      type: 'breath',
+      durationFrames: FRAMES.breath,
+      showBodyGraph: true,
+      definedCenters: centers,
+      typeColor,
+    },
+  ];
+
+  for (const gate of gates) {
+    const gateCenterKey =
+      (data.gateToCenter?.[gate] ?? GATE_TO_CENTER[gate]) as string | undefined;
+    const sceneDefinedCenters =
+      gateCenterKey && !centers.includes(gateCenterKey)
+        ? [...centers, gateCenterKey]
+        : centers;
+    const gateText =
+      data.gateInsights?.[gate] ??
+      `Gate ${String(gate)} — a frequency held in your ${centerName(gate, data.gateToCenter)} centre.`;
+    scenes.push({
+      type: 'concept',
+      durationFrames: FRAMES.conceptGate,
+      text: gateText,
+      showBodyGraph: true,
+      definedCenters: sceneDefinedCenters,
+      spotlightCenter: gateCenterKey,
+      typeColor,
+    });
+  }
+
+  scenes.push({
+    type: 'triad',
+    durationFrames: FRAMES.triad,
+    triad: ['Shadow', 'Gift', 'Siddhi'],
+    showBodyGraph: false,
+    typeColor,
+  });
+
+  return scenes;
 }
 
 /**
@@ -177,14 +278,37 @@ export function chartToScenes(data: BlueprintSegmentData): BlueprintScene[] {
     },
   ];
 
-  // One concept scene per signature gate, body graph still lit.
+  // One concept scene per signature gate, body graph spotlighting the gate's
+  // center. The center is always shown as defined/lit on its own scene so the
+  // viewer can see where the gate lives — even if that center is open overall.
   for (const gate of gates) {
+    // Resolve which center this gate belongs to (bodygraph engine is the
+    // canonical source; gateToCenter from selfprime is the optional override).
+    const gateCenterKey =
+      (data.gateToCenter?.[gate] ?? GATE_TO_CENTER[gate]) as string | undefined;
+
+    // Ensure the gate's center is present in definedCenters for this scene so
+    // the body graph renders it as lit. Open centers temporarily show as
+    // defined only on this gate's scene — it is a visual spotlight, not a
+    // chart mutation. The user's full chart is still shown on all other scenes.
+    const sceneDefinedCenters =
+      gateCenterKey && !centers.includes(gateCenterKey)
+        ? [...centers, gateCenterKey]
+        : centers;
+
+    // Build the on-screen text. Use the selfprime-authored insight when
+    // available; fall back to a factual label derived from the gate/center.
+    const gateText =
+      data.gateInsights?.[gate] ??
+      `Gate ${String(gate)} — a frequency held in your ${centerName(gate, data.gateToCenter)} centre.`;
+
     scenes.push({
       type: 'concept',
       durationFrames: FRAMES.conceptGate,
-      text: `Gate ${String(gate)} — a defining frequency in your design.`,
+      text: gateText,
       showBodyGraph: true,
-      definedCenters: centers,
+      definedCenters: sceneDefinedCenters,
+      spotlightCenter: gateCenterKey,
       typeColor,
     });
   }

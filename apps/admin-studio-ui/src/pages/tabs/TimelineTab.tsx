@@ -166,7 +166,7 @@ export function TimelineTab() {
           <select
             value={filters.env}
             onChange={(e) => setFilters({ ...filters, env: e.target.value as Filters['env'] })}
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           >
             <option value="">(session)</option>
             <option value="local">local</option>
@@ -180,7 +180,7 @@ export function TimelineTab() {
             value={filters.app}
             onChange={(e) => setFilters({ ...filters, app: e.target.value })}
             placeholder="e.g. admin-studio"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -190,7 +190,7 @@ export function TimelineTab() {
             onChange={(e) =>
               setFilters({ ...filters, severity: e.target.value as Filters['severity'] })
             }
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           >
             <option value="">(all)</option>
             <option value="info">info</option>
@@ -205,7 +205,7 @@ export function TimelineTab() {
             value={filters.actor}
             onChange={(e) => setFilters({ ...filters, actor: e.target.value })}
             placeholder="e.g. alice@example.com"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
 
@@ -216,7 +216,7 @@ export function TimelineTab() {
             value={filters.requestId}
             onChange={(e) => setFilters({ ...filters, requestId: e.target.value })}
             placeholder="exact X-Request-Id"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white font-mono"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white font-mono"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -225,7 +225,7 @@ export function TimelineTab() {
             value={filters.sessionId}
             onChange={(e) => setFilters({ ...filters, sessionId: e.target.value })}
             placeholder="exact session ID"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white font-mono"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white font-mono"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -234,7 +234,7 @@ export function TimelineTab() {
             type="datetime-local"
             value={filters.from}
             onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -243,7 +243,7 @@ export function TimelineTab() {
             type="datetime-local"
             value={filters.to}
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
 

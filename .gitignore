@@ -30,6 +30,7 @@ package-lock.json
 !apps/qa-tools-worker/package-lock.json
 !apps/qa-tools-ui/package-lock.json
 !packages/browser/package-lock.json
+!packages/bodygraph/package-lock.json
 
 # Documentation control-plane run artifacts. Durable generated views under
 # docs/_catalog and docs/_generated are tracked separately.
