@@ -44,7 +44,7 @@
     "production": {
       // Explicit name prevents Wrangler from deploying as "daily-brief-production".
       "name": "daily-brief",
-      "workers_dev": false,
+      "workers_dev": true,
       // r2_buckets, triggers are NOT inherited by environments in Wrangler 4.
       "triggers": {
         "crons": [
