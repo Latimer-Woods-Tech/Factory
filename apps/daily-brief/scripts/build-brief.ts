@@ -190,7 +190,7 @@ try {
 
   const audioTmp = join(tmpdir(), `brief-audio-${Date.now()}.mp3`);
   const arrayBuf = await ttsRes.arrayBuffer();
-  writeFileSync(audioTmp, Buffer.from(arrayBuf));
+  writeFileSync(audioTmp, new Uint8Array(arrayBuf));
   r2Put(audioKey, audioTmp, 'audio/mpeg');
   unlinkSync(audioTmp);
   ttsSucceeded = true;

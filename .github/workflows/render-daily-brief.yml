@@ -94,9 +94,11 @@ jobs:
 
       - name: Resolve date key
         id: date
+        env:
+          INPUT_DATE_KEY: ${{ inputs.date_key }}
         run: |
-          if [ -n "${{ inputs.date_key }}" ]; then
-            echo "key=${{ inputs.date_key }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$INPUT_DATE_KEY" ]; then
+            echo "key=$INPUT_DATE_KEY" >> "$GITHUB_OUTPUT"
           else
             # Default to today in ET (UTC-4 / UTC-5 depending on DST).
             echo "key=$(TZ=America/New_York date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
@@ -105,6 +107,10 @@ jobs:
       - name: Run build script
         working-directory: apps/daily-brief
         env:
+          # Bind workflow inputs to env vars — never interpolate ${{ inputs.* }} directly
+          # into shell commands (script injection risk).
+          SLOT: ${{ inputs.slot }}
+          DATE_KEY: ${{ steps.date.outputs.key }}
           # LLM chain
           AI_GATEWAY_BASE_URL: "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/daily-brief"
           VERTEX_PROJECT: "factory-495015"
@@ -132,5 +138,5 @@ jobs:
           PUBLIC_BASE_URL: "https://daily-brief.adrper79.workers.dev"
         run: |
           npx tsx scripts/build-brief.ts \
-            --slot ${{ inputs.slot }} \
-            --date ${{ steps.date.outputs.key }}
+            --slot "$SLOT" \
+            --date "$DATE_KEY"
