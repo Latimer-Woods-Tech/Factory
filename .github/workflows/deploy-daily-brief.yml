@@ -138,10 +138,12 @@ jobs:
 
       - name: Inject Sentry debug IDs into bundle
         working-directory: apps/daily-brief
+        continue-on-error: true
         run: sentry-cli sourcemaps inject .sentry-dist/
 
       - name: Upload sourcemaps to Sentry
         working-directory: apps/daily-brief
+        continue-on-error: true
         run: |
           sentry-cli sourcemaps upload \
             --project daily-brief \
