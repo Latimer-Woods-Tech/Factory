@@ -5,6 +5,7 @@
       "@latimer-woods-tech/admin": ["packages/admin/src/index.ts"],
       "@latimer-woods-tech/analytics": ["packages/analytics/src/index.ts"],
       "@latimer-woods-tech/auth": ["packages/auth/src/index.ts"],
+      "@latimer-woods-tech/bodygraph": ["packages/bodygraph/src/index.ts"],
       "@latimer-woods-tech/browser": ["packages/browser/src/index.ts"],
       "@latimer-woods-tech/compliance": ["packages/compliance/src/index.ts"],
       "@latimer-woods-tech/content": ["packages/content/src/index.ts"],

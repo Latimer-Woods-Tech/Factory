@@ -66,12 +66,12 @@ jobs:
 
       - name: Install Factory docs tool dependencies
         working-directory: _factory-tools
-        run: npm install --no-audit --no-fund --ignore-scripts
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
       - name: Install target dependencies for Factory checks
         if: ${{ inputs.repo_profile == 'factory' }}
         working-directory: target
-        run: npm install --no-audit --no-fund --ignore-scripts
+        run: npm ci --no-audit --no-fund --ignore-scripts
 
       - name: Run docs health
         env:

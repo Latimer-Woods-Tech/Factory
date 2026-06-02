@@ -92,6 +92,9 @@ export function buildBlueprintProps(
     scenes: chartToScenes(blueprint),
     forgeTheme: deriveForgeTheme(blueprint),
     hdType: blueprint.hdType,
+    // Top-level so the composition can pass the user's activated gates to the
+    // body graph for crisp gate-number badges.
+    signatureGates: blueprint.signatureGates ?? [],
   };
 }
 
