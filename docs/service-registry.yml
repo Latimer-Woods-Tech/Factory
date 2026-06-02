@@ -656,13 +656,17 @@ workers:
     custom_domain: null
     health_endpoint: /health
     telemetry_required: false
-    deployment_status: deploy_workflow_added_2026-05-21
+    deployment_status: deployed_via_actions_2026-06-02
     notes: >
-      Worker config exists in `apps/daily-brief/wrangler.jsonc` and deploy
-      automation now lives in `.github/workflows/deploy-daily-brief.yml`.
+      GHA-based brief pipeline: Worker crons dispatch to render-daily-brief.yml
+      (Opus analysis + Sonnet narration + ElevenLabs TTS), output written to R2,
+      send cron reads R2 and delivers via Resend. No NEWS_API_KEY — switched to
+      Google News RSS (no key required).
     critical_endpoints:
       - /health
       - /trigger
+      - /audio/:date-:slot.mp3
+      - /brief/:date/:slot
     required_bindings:
       - AUDIO_BUCKET
     required_secrets:
@@ -675,12 +679,14 @@ workers:
       - ELEVENLABS_VOICE_ID
       - RESEND_API_KEY
       - GITHUB_TOKEN
-      - NEWS_API_KEY
     required_vars:
       - GITHUB_ORG
+      - GITHUB_REPO
       - ZIP_CODE
       - RECIPIENTS
-      - AUDIO_PUBLIC_BASE_URL
+      - RESEND_FROM_ADDRESS
+      - RESEND_FROM_NAME
+      - PUBLIC_BASE_URL
       - AI_GATEWAY_BASE_URL
       - VERTEX_PROJECT
       - VERTEX_LOCATION

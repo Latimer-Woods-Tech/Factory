@@ -265,7 +265,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "docs/ADMIN_UI_AGENT_PLAN.md",
-      "line": 42,
+      "line": 50,
       "owner": "platform",
       "status": "active",
       "truth_source": "package.json",

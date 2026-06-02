@@ -48,7 +48,7 @@
 | warning | platform | docs/ADMIN_STUDIO_SETUP.md | 143 | References missing npm script "deploy:production". |
 | warning | platform | docs/ADMIN_STUDIO_SETUP.md | 237 | References missing npm script "deploy:staging". |
 | warning | platform | docs/ADMIN_STUDIO_SETUP.md | 303 | References missing npm script "deploy:staging". |
-| warning | platform | docs/ADMIN_UI_AGENT_PLAN.md | 42 | References missing npm script "typecheck". |
+| warning | platform | docs/ADMIN_UI_AGENT_PLAN.md | 50 | References missing npm script "typecheck". |
 | warning | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 567 | References missing workflow .github/workflows/test-on-demand.yml. |
 | warning | architecture | docs/adr/0003-claude-as-primary-reviewer.md | 75 | References missing workflow .github/workflows/claude-review.yml. |
 | warning | architecture | docs/adr/0006-cascading-multi-agent-review.md | 92 | References missing workflow .github/workflows/peer-review-cascade.yml. |
