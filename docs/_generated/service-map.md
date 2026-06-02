@@ -14,7 +14,7 @@ source:
 
 # Factory Service Map
 
-**Source hash:** `sha256:8f2023ab27243b6412bad4bc2ebcfad13bf5d79196ecad9203f76d6ce44370b2`
+**Source hash:** `sha256:cca619f5509a4f451f87dc7e8b8ab9d469718a0b9a3a7919b7260c4172a2abe3`
 
 ```mermaid
 flowchart LR
@@ -40,7 +40,7 @@ flowchart LR
   workers --> worker_factory_core_api["factory-core-api\nhttps://core.latwoodtech.work"]
   workers --> worker_factory_events_replay["factory-events-replay\nurl unknown"]
   workers --> worker_webhook_fanout["webhook-fanout\nhttps://webhooks.latwoodtech.work/stripe"]
-  workers --> worker_daily_brief["daily-brief\nhttps://daily-brief.adrper79.workers.dev"]
+  workers --> worker_daily_brief["daily-brief\nhttps://dbrief.latwoodtech.work"]
   workers --> worker_linkedin_publisher["linkedin-publisher\nhttps://linkedin-publisher.adrper79.workers.dev"]
   workers --> worker_xico_city["xico-city\nhttps://xicocity.com"]
   workers --> worker_xico_city_staging["xico-city-staging\nhttps://staging.xicocity.com"]
