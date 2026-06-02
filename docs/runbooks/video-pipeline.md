@@ -311,6 +311,22 @@ UPDATE users SET role='creator' WHERE id='0194b4cc-ce46-4441-99af-937a20dca00a';
 
 Any new factory-managed creator account needs the same promotion.
 
+### 7. (I1 personal-film pipeline) silent/stub narration → selfprime LLM fallback streaming bug
+
+This runbook covers the **scheduled-content** pipeline (`render-video.yml` → Capricast).
+The **I1 personal Energy Blueprint film** is a *different* pipeline (selfprime Worker →
+Cloud Run `video-render-service`) — but it shares the failure-mode lesson worth cross-noting.
+
+If a personal film renders silent or "only says Gate XX", the narration text arriving at the
+render service is a stub. Root cause was in selfprime `workers/src/lib/llm-adapter.js`:
+the metered LLM path is loaded via an indirect dynamic import that wrangler never bundles, so
+**every** Worker LLM call used `callAnthropicFallback`, whose streaming SSE parser dropped
+`data:` events split across network-chunk boundaries → truncated completion. Fixed by making
+the fallback non-streaming (selfprime PR #351). The `video-render-service` already logs
+`[render] <id> narrationText: N chars, M words` on every render — if that shows ~1 word, the
+problem is upstream in selfprime narration, not the render service. Full write-up:
+`docs/runbooks/lessons-learned.md` → "I1 Personal Blueprint Film — narration debugging".
+
 ## Training/Marketing Videos (Non-Capricast)
 
 The `render-video.yml` workflow is not limited to Capricast news content. It can

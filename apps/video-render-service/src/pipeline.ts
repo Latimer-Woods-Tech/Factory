@@ -32,7 +32,11 @@ import {
   buildBlueprintProps,
   ENERGY_BLUEPRINT_FRAMES,
   VIDEO_FPS,
+  assembleFilmScenes,
+  totalDurationFrames,
+  chartToBodyScenes,
   type BlueprintSourceData,
+  type BlueprintScene,
 } from '@latimer-woods-tech/video-studio';
 import type { RenderRequest } from '@latimer-woods-tech/video';
 import type { RenderOutcome, RenderPipeline } from './index.js';
@@ -271,36 +275,103 @@ export function createRenderPipeline(config: PipelineConfig): RenderPipeline {
   return async function pipeline(
     request: RenderRequest,
   ): Promise<RenderOutcome> {
-    const segment = findBlueprintSegment(request);
-    if (!segment) {
+    // The blueprint segment is required — it provides the brand/forge/type context
+    // that governs the bookends (arrival atmosphere, invitation close) and the
+    // visual theme of the whole film, regardless of how many sources are selected.
+    const blueprintSegment = findBlueprintSegment(request);
+    if (!blueprintSegment) {
       throw new Error('request has no blueprint segment to render');
     }
     const sourceData = toBlueprintSourceData(
-      segment.props,
-      segment.narrationText,
+      blueprintSegment.props,
+      blueprintSegment.narrationText,
     );
-    // Apply the request-level brand overrides if the segment did not carry them.
     if (request.spec.brandColor && !sourceData.brandColor) {
       sourceData.brandColor = request.spec.brandColor;
     }
     if (request.spec.logoUrl && !sourceData.logoUrl) {
       sourceData.logoUrl = request.spec.logoUrl;
     }
+
+    // Build the base EnergyBlueprintProps from the blueprint segment (this
+    // handles the Slice-2 single-source blueprint-only case and provides the
+    // theme + forgeTheme + hdType for multi-source renders).
     const props = buildBlueprintProps(sourceData);
 
-    // 1b. TTS narration — generate MP3 and upload to R2 so <Audio> fires in
-    //     the render. Graceful-degrade: if TTS fails (missing credentials,
-    //     ElevenLabs error, R2 upload failure) we log the error and continue
-    //     with an empty narrationUrl. A silent render is always better than no
-    //     render, and the narration is a WOW-enhancer not a gating requirement.
-    if (config.elevenLabs && sourceData.narrationText) {
+    // ── Multi-source scene assembly (Slice 3) ───────────────────────────────
+    // When the request carries more than just the blueprint segment, assemble a
+    // multi-source film: collect body scenes from each segment in order, then
+    // wrap them with a single arrival + invitation bookend. Each non-blueprint
+    // segment stores its body scenes on `props.bodyScenes` (placed there by
+    // selfprime when it resolved the segment; the render service never re-runs
+    // the source mappers itself — that would violate D6).
+    const segments = request.spec.segments;
+    const isMultiSource = segments.length > 1;
+
+    if (isMultiSource) {
+      const allBodyScenes: BlueprintScene[] = [];
+
+      for (const seg of segments) {
+        if (seg.source === 'blueprint') {
+          // Extract the blueprint body scenes from the assembled props.scenes
+          // (which chartToScenes produced including bookends); strip the arrival
+          // and invitation so we only use the body.
+          const fullScenes = props.scenes ?? [];
+          const bodyScenes = fullScenes.filter(
+            (s) => s.type !== 'arrival' && s.type !== 'invitation',
+          );
+          allBodyScenes.push(...bodyScenes);
+        } else {
+          // Other sources: selfprime places body scenes on segment.props.bodyScenes.
+          const rawBodyScenes = seg.props['bodyScenes'];
+          if (Array.isArray(rawBodyScenes)) {
+            allBodyScenes.push(...(rawBodyScenes as BlueprintScene[]));
+          } else {
+            console.warn(`[pipeline] segment '${seg.source}' has no bodyScenes — skipping`);
+          }
+        }
+      }
+
+      // Derive the authority/invitation line from the blueprint data.
+      const blueprintData = sourceData.blueprint;
+      const invitationText = blueprintData?.authority
+        ? `Your authority is ${blueprintData.authority}. Trust the signal it gives.`
+        : 'Return to the signal your body gives, not the mind.';
+
+      const assembledScenes = assembleFilmScenes(allBodyScenes, {
+        typeColor: props.brandColor ?? '#c9a84c',
+        arrivalText: blueprintData?.displayName
+          ? `${blueprintData.displayName} — your pattern was already complete.`
+          : undefined,
+        invitationText,
+      });
+
+      props.scenes = assembledScenes;
+      console.log(
+        `[pipeline] ${request.videoObjectId} multi-source film: ${String(segments.length)} sources, ${String(assembledScenes.length)} scenes, ${String(totalDurationFrames(assembledScenes))} frames`,
+      );
+    }
+    // ── End multi-source assembly ────────────────────────────────────────────
+
+    // 1b. TTS narration — concatenate narration texts from all segments, then
+    //     generate a single MP3. Graceful-degrade: TTS failure is logged and
+    //     skipped; a silent render is always better than no render (WOW-enhancer
+    //     not a gating requirement).
+    const combinedNarration = isMultiSource
+      ? request.spec.segments
+          .map((s) => s.narrationText ?? '')
+          .filter(Boolean)
+          .join('\n\n')
+      : (sourceData.narrationText ?? '');
+
+    if (config.elevenLabs && combinedNarration) {
       try {
-        const narr = sourceData.narrationText;
+        const narr = combinedNarration;
         console.log(
           `[render] ${request.videoObjectId} narrationText: ${String(narr.length)} chars, ${String(narr.split(/\s+/).filter(Boolean).length)} words | preview: ${JSON.stringify(narr.slice(0, 160))}`,
         );
         const mp3Bytes = await generateNarrationMp3({
-          text: sourceData.narrationText,
+          text: combinedNarration,
           voiceId: config.elevenLabs.voiceId,
           apiKey: config.elevenLabs.apiKey,
         });
