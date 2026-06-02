@@ -91,7 +91,7 @@ const dateLabel     = new Date(dateKey + 'T12:00:00-04:00').toLocaleDateString('
 
 function r2Put(key: string, filePath: string, contentType: string): void {
   execSync(
-    `npx wrangler r2 object put "${r2Bucket}/${key}" --file "${filePath}" --content-type "${contentType}"`,
+    `npx wrangler r2 object put "${r2Bucket}/${key}" --file "${filePath}" --content-type "${contentType}" --remote`,
     { stdio: 'inherit' },
   );
 }
