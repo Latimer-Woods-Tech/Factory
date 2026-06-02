@@ -31,7 +31,31 @@ function requireEnv(key: string): string {
   return value;
 }
 
+/**
+ * @internal Read an optional env var, stripping BOM/whitespace. Returns
+ * `undefined` when the variable is absent or empty — used for the ElevenLabs
+ * credentials so the service starts and renders silently when they're not yet
+ * provisioned.
+ */
+function optionalEnv(key: string): string | undefined {
+  const raw = process.env[key];
+  if (!raw) return undefined;
+  const value = (raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw).trim();
+  return value || undefined;
+}
+
 const port = Number(process.env['PORT']) || 8080;
+
+// ElevenLabs credentials are optional — the service starts and renders
+// silently (no narration audio) when they're absent, rather than refusing to
+// boot. This allows safe rollout and partial environments.
+const elevenLabsApiKey = optionalEnv('ELEVENLABS_API_KEY');
+const elevenLabsVoiceId = optionalEnv('ELEVENLABS_VOICE_PRIME_SELF');
+if (!elevenLabsApiKey || !elevenLabsVoiceId) {
+  console.warn(
+    '[render] ELEVENLABS_API_KEY or ELEVENLABS_VOICE_PRIME_SELF not set — renders will proceed without narration audio',
+  );
+}
 
 const pipeline = createRenderPipeline({
   video: {
@@ -45,6 +69,12 @@ const pipeline = createRenderPipeline({
     bucket: requireEnv('R2_BUCKET_NAME'),
     publicDomain: requireEnv('R2_PUBLIC_DOMAIN'),
   },
+  ...(elevenLabsApiKey && elevenLabsVoiceId
+    ? { elevenLabs: { apiKey: elevenLabsApiKey, voiceId: elevenLabsVoiceId } }
+    : {}),
+  // Sybil music library base URL — public R2 domain + path prefix.
+  // Non-secret: just the public CDN base. Graceful-degrade when absent.
+  musicBaseUrl: optionalEnv('SYBIL_MUSIC_BASE_URL'),
 });
 
 const app = createApp({

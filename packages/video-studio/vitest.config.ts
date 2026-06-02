@@ -1,6 +1,18 @@
 import { defineConfig } from 'vitest/config';
+import { resolve } from 'node:path';
+
+// Resolve @latimer-woods-tech/* package aliases to their source so vitest can
+// find them without a pre-built dist (mirrors the tsconfig.internal-packages
+// paths that tsc uses, but Vite/Vitest needs the alias explicitly).
+const MONOREPO_ROOT = resolve(__dirname, '../..');
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@latimer-woods-tech/bodygraph': resolve(MONOREPO_ROOT, 'packages/bodygraph/src/index.ts'),
+      '@latimer-woods-tech/video': resolve(MONOREPO_ROOT, 'packages/video/src/index.ts'),
+    },
+  },
   test: {
     globals: true,
     restoreMocks: true,

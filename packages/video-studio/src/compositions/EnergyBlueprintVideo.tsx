@@ -42,6 +42,7 @@ export const blueprintSchema = z.object({
     showBodyGraph: z.boolean().default(false),
     definedCenters: z.array(z.string()).optional(),
     typeColor: z.string().optional(),
+    spotlightCenter: z.string().optional(),
   })).optional(),
   /** Atmospheric background theme. Default 'self' (pure deep space). */
   forgeTheme: z.enum(['chronos', 'eros', 'aether', 'lux', 'phoenix', 'self']).default('self'),
@@ -147,10 +148,11 @@ interface ConceptSceneProps extends SceneProps {
   text: string;
   definedCenters?: string[];
   signatureGates?: number[];
+  spotlightCenter?: string;
 }
 
 const ConceptScene: React.FC<ConceptSceneProps> = ({
-  sceneFrame, durationFrames, fps, text, typeColor, definedCenters = [], signatureGates = [],
+  sceneFrame, durationFrames, fps, text, typeColor, definedCenters = [], signatureGates = [], spotlightCenter,
 }) => {
   const appear = interpolate(sceneFrame, [0, 20], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
@@ -218,6 +220,7 @@ const ConceptScene: React.FC<ConceptSceneProps> = ({
           x={1150}
           y={210}
           breathe
+          spotlightCenter={spotlightCenter}
         />
       </div>
     </AbsoluteFill>
@@ -454,7 +457,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
       )}
 
       {scene.type === 'concept' && scene.text && (
-        <ConceptScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} definedCenters={definedCenters} signatureGates={signatureGates} />
+        <ConceptScene sceneFrame={sceneLocalFrame} durationFrames={scene.durationFrames} fps={fps} typeColor={sceneTypeColor} text={scene.text} definedCenters={definedCenters} signatureGates={signatureGates} spotlightCenter={scene.spotlightCenter} />
       )}
 
       {scene.type === 'breath' && (
