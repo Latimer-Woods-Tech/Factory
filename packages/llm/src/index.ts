@@ -1332,7 +1332,8 @@ export async function complete(
 interface AnthropicStreamEvent {
   type: string;
   index?: number;
-  delta?: { type?: string; text?: string };
+  delta?: { type?: string; text?: string; partial_json?: string; stop_reason?: string };
+  content_block?: { type?: string; id?: string; name?: string };
   message?: {
     usage?: {
       input_tokens?: number;
@@ -1479,6 +1480,10 @@ export async function* completionStream(
   let cacheRead = 0;
   let cacheWrite = 0;
   let modelName: string | undefined;
+  // Tool-use blocks arrive as content_block_start (id/name) then a sequence of
+  // input_json_delta fragments that concatenate into the arguments JSON string.
+  const toolBlocks = new Map<number, { id: string; name: string; json: string }>();
+  let streamStopReason: LLMResult['stopReason'];
   const gatewayRequestId: string | undefined = response.headers.get('cf-aig-request-id') ?? undefined;
 
   const reader = response.body.getReader();
@@ -1513,14 +1518,32 @@ export async function* completionStream(
             cacheWrite = event.message?.usage?.cache_creation_input_tokens ?? 0;
             modelName = event.message?.model;
             break;
+          case 'content_block_start':
+            if (
+              event.content_block?.type === 'tool_use' &&
+              typeof event.index === 'number' &&
+              typeof event.content_block.id === 'string' &&
+              typeof event.content_block.name === 'string'
+            ) {
+              toolBlocks.set(event.index, { id: event.content_block.id, name: event.content_block.name, json: '' });
+            }
+            break;
           case 'content_block_delta':
             if (event.delta?.type === 'text_delta' && typeof event.delta.text === 'string') {
               accumulatedText += event.delta.text;
               yield event.delta.text;
+            } else if (
+              event.delta?.type === 'input_json_delta' &&
+              typeof event.delta.partial_json === 'string' &&
+              typeof event.index === 'number'
+            ) {
+              const block = toolBlocks.get(event.index);
+              if (block) block.json += event.delta.partial_json;
             }
             break;
           case 'message_delta':
             outputTokens = event.usage?.output_tokens ?? outputTokens;
+            if (event.delta?.stop_reason) streamStopReason = normalizeAnthropicStop(event.delta.stop_reason);
             break;
           default:
             break;
@@ -1543,6 +1566,12 @@ export async function* completionStream(
     workload: opts.workload,
   });
 
+  const toolCalls: LLMToolCall[] = [...toolBlocks.values()].map((b) => ({
+    id: b.id,
+    name: b.name,
+    arguments: parseToolArgs(b.json),
+  }));
+
   return {
     content: accumulatedText,
     provider: streamLeg.provider,
@@ -1552,6 +1581,8 @@ export async function* completionStream(
     latency: now() - startedAt,
     attempts: 1,
     gatewayRequestId,
+    stopReason: streamStopReason,
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
   };
 }
 

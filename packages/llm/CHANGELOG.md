@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.4 — 2026-06-03
+
+### Added — streaming tool-calls (Phase 1c; Anthropic)
+
+- `completionStream` now accumulates Anthropic tool-use stream events
+  (`content_block_start` + `input_json_delta` fragments) into the same
+  normalized `LLMResult.toolCalls`, and captures `stopReason` from the
+  `message_delta`. The returned result of a streamed tool-use turn matches the
+  non-streaming shape. Text deltas still stream incrementally as before.
+
+---
+
 ## 0.4.3 — 2026-06-03
 
 ### Added — tool-calling for OpenAI-style providers (Phase 1b: Grok, DeepSeek)
