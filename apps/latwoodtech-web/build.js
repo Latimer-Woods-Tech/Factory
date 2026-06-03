@@ -7,6 +7,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(__dirname, 'src');
 const distDir = join(__dirname, 'dist');
 
+function minifyCSS(css) {
+	return css
+		.replace(/\/\*[\s\S]*?\*\//g, '')
+		.replace(/\s+/g, ' ')
+		.replace(/\s*([{}:;,>+~])\s*/g, '$1')
+		.trim();
+}
+
 const BRAND_SURFACES = [
 	{ name: 'Prime Self', url: 'https://selfprime.net', category: 'Practitioner intelligence' },
 	{ name: 'Capricast', url: 'https://capricast.com', category: 'Interactive creator video' },
@@ -254,7 +262,9 @@ const { topology } = await generateTopology({ outDir: join(distDir, 'data') });
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
 await copyFile(join(srcDir, 'privacy.html'), join(distDir, 'privacy.html'));
-await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
+const cssRaw = await readFile(join(srcDir, 'styles.css'), 'utf8');
+const cssMin = minifyCSS(cssRaw);
+await writeFile(join(distDir, 'styles.css'), cssMin, 'utf8');
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
@@ -265,6 +275,10 @@ await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'inde
 await mkdir(join(distDir, 'resume'), { recursive: true });
 await copyFile(join(srcDir, 'resume', 'index.html'), join(distDir, 'resume', 'index.html'));
 await copyFile(join(srcDir, 'resume.js'), join(distDir, 'resume.js'));
+// Copy OG image (SVG) for social shares (1200×630).
+await mkdir(join(distDir, 'assets'), { recursive: true });
+await copyFile(join(srcDir, 'assets', 'og-image.svg'), join(distDir, 'assets', 'og-image.svg'));
+
 // Credibility signals: humans.txt (humanstxt.org) at root, security.txt
 // (RFC 9116) under /.well-known/. Absence reads "not yet a real platform".
 await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
