@@ -9,6 +9,7 @@ import {
   PROVIDER_COOLDOWN_MS,
   type LLMEnv,
   type LLMRecordRow,
+  type LLMResult,
 } from './index.js';
 
 const ENV: LLMEnv = {
@@ -1731,5 +1732,47 @@ describe('tool-calling (OpenAI-style providers)', () => {
     );
     expect(res.error).toBeNull();
     expect(res.data!.toolCalls).toEqual([{ id: 'c1', name: 'lookup', arguments: {} }]);
+  });
+});
+
+// ─── Streaming tool-calling (Anthropic) — PR 1c ──────────────────────────────
+describe('completionStream tool-calling', () => {
+  function anthropicToolStream(): ReadableStream<Uint8Array> {
+    const enc = new TextEncoder();
+    const events = [
+      { type: 'message_start', message: { usage: { input_tokens: 10 }, model: 'claude-sonnet-4-20250514' } },
+      { type: 'content_block_start', index: 0, content_block: { type: 'tool_use', id: 'toolu_s', name: 'lookup' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"id":' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '"cust_9"}' } },
+      { type: 'message_delta', delta: { stop_reason: 'tool_use' }, usage: { output_tokens: 7 } },
+    ];
+    return new ReadableStream<Uint8Array>({
+      start(c) {
+        for (const e of events) c.enqueue(enc.encode(`data: ${JSON.stringify(e)}\n\n`));
+        c.enqueue(enc.encode('data: [DONE]\n\n'));
+        c.close();
+      },
+    });
+  }
+
+  it('accumulates input_json_delta fragments into a normalized toolCall + stopReason', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(anthropicToolStream(), { status: 200, headers: { 'cf-aig-request-id': 'aig-s' } }),
+    );
+    const gen = completionStream(
+      [{ role: 'user', content: 'go' }],
+      ENV,
+      {
+        tier: 'balanced',
+        tools: [{ name: 'lookup', parameters: { type: 'object' } }],
+        deps: { fetch: fetchImpl as unknown as typeof fetch },
+      },
+    );
+    const { chunks, result } = await drainStream(gen);
+    const r = result as LLMResult;
+    // No text deltas in a pure tool-use turn.
+    expect(chunks.join('')).toBe('');
+    expect(r.stopReason).toBe('tool_use');
+    expect(r.toolCalls).toEqual([{ id: 'toolu_s', name: 'lookup', arguments: { id: 'cust_9' } }]);
   });
 });
