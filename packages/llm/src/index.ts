@@ -569,6 +569,60 @@ function buildGeminiRequest(
   };
 }
 
+// ─── OpenAI-style (Grok / DeepSeek / Groq) tool-calling helpers ──────────────
+
+/**
+ * Converts provider-agnostic messages to OpenAI chat-completions format,
+ * translating the Anthropic-shaped tool blocks: `tool_use` → an assistant
+ * message with `tool_calls`; `tool_result` → a standalone `tool` message keyed
+ * by `tool_call_id`. Plain-string content passes through unchanged.
+ */
+function toOpenAiMessages(messages: LLMMessage[], sys: string | undefined): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  if (sys) out.push({ role: 'system', content: sys });
+  for (const m of messages) {
+    if (m.role === 'system') continue;
+    if (typeof m.content === 'string') {
+      out.push({ role: m.role, content: m.content });
+      continue;
+    }
+    let text = '';
+    const toolCalls: Array<Record<string, unknown>> = [];
+    const results: Array<{ tool_use_id: string; content: string }> = [];
+    for (const b of m.content) {
+      if (b.type === 'text') text += b.text;
+      else if (b.type === 'tool_use')
+        toolCalls.push({ id: b.id, type: 'function', function: { name: b.name, arguments: JSON.stringify(b.input) } });
+      else if (b.type === 'tool_result') results.push({ tool_use_id: b.tool_use_id, content: b.content });
+    }
+    if (results.length > 0) {
+      for (const r of results) out.push({ role: 'tool', tool_call_id: r.tool_use_id, content: r.content });
+      if (text) out.push({ role: 'user', content: text });
+    } else if (toolCalls.length > 0) {
+      out.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
+    } else {
+      out.push({ role: m.role, content: text });
+    }
+  }
+  return out;
+}
+
+/** Builds the OpenAI `tools` array from {@link LLMOptions.tools}, or undefined. */
+function openAiTools(opts: LLMOptions): Array<Record<string, unknown>> | undefined {
+  if (!opts.tools || opts.tools.length === 0) return undefined;
+  return opts.tools.map((t) => ({
+    type: 'function',
+    function: { name: t.name, description: t.description ?? '', parameters: t.parameters },
+  }));
+}
+
+/** Maps {@link LLMOptions.toolChoice} to the OpenAI `tool_choice` value. */
+function openAiToolChoice(tc: LLMOptions['toolChoice']): unknown {
+  if (tc === undefined) return undefined;
+  if (tc === 'auto' || tc === 'none') return tc;
+  return { type: 'function', function: { name: tc.name } };
+}
+
 function buildGroqRequest(
   model: string,
   messages: LLMMessage[],
@@ -604,15 +658,18 @@ function buildGrokRequest(
     throw new ValidationError('GROK_API_KEY required for grok-* model override');
   }
   const sys = systemText(opts, messages);
-  const merged: LLMMessage[] = [];
-  if (sys) merged.push({ role: 'system', content: sys });
-  for (const m of messages) if (m.role !== 'system') merged.push({ role: m.role, content: contentToText(m.content) });
   const body: Record<string, unknown> = {
     model,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
     temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
-    messages: merged,
+    messages: toOpenAiMessages(messages, sys),
   };
+  const tools = openAiTools(opts);
+  if (tools) {
+    body.tools = tools;
+    const tc = openAiToolChoice(opts.toolChoice ?? 'auto');
+    if (tc !== undefined) body.tool_choice = tc;
+  }
   if (model === MODELS.grok.fast) {
     body.reasoning_effort = opts.reasoningEffort ?? 'none';
   }
@@ -636,21 +693,25 @@ function buildDeepSeekRequest(
     throw new ValidationError('DEEPSEEK_API_KEY required for workbench tier or deepseek-* model override');
   }
   const sys = systemText(opts, messages);
-  const merged: LLMMessage[] = [];
-  if (sys) merged.push({ role: 'system', content: sys });
-  for (const m of messages) if (m.role !== 'system') merged.push({ role: m.role, content: contentToText(m.content) });
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
+    temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
+    messages: toOpenAiMessages(messages, sys),
+  };
+  const tools = openAiTools(opts);
+  if (tools) {
+    body.tools = tools;
+    const tc = openAiToolChoice(opts.toolChoice ?? 'auto');
+    if (tc !== undefined) body.tool_choice = tc;
+  }
   return {
     url: `${env.AI_GATEWAY_BASE_URL}/deepseek/chat/completions`,
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-      temperature: opts.temperature ?? DEFAULT_TEMPERATURE,
-      messages: merged,
-    }),
+    body: JSON.stringify(body),
   };
 }
 
@@ -749,6 +810,75 @@ function parseGroq(json: unknown): { content: string; input: number; output: num
     input: r.usage?.prompt_tokens ?? 0,
     output: r.usage?.completion_tokens ?? 0,
     model: r.model,
+  };
+}
+
+interface OpenAiResponse {
+  choices?: Array<{
+    message?: {
+      content?: string | null;
+      tool_calls?: Array<{ id?: string; function?: { name?: string; arguments?: string } }>;
+    };
+    finish_reason?: string;
+  }>;
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
+  model?: string;
+}
+
+/** Maps an OpenAI `finish_reason` to the normalized {@link LLMResult.stopReason}. */
+function normalizeOpenAiStop(reason: string | undefined): LLMResult['stopReason'] {
+  switch (reason) {
+    case 'stop':
+      return 'end';
+    case 'tool_calls':
+    case 'function_call':
+      return 'tool_use';
+    case 'length':
+      return 'max_tokens';
+    default:
+      return reason ? 'other' : undefined;
+  }
+}
+
+/** Best-effort parse of an OpenAI tool-call arguments string; `{}` on failure. */
+function parseToolArgs(raw: string | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const v = JSON.parse(raw) as unknown;
+    return typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Parses an OpenAI chat-completions response (Grok, DeepSeek), extracting
+ * normalized tool calls and a stop reason in addition to text + tokens.
+ */
+function parseOpenAi(json: unknown): {
+  content: string;
+  input: number;
+  output: number;
+  model?: string;
+  toolCalls?: LLMToolCall[];
+  stopReason?: LLMResult['stopReason'];
+} {
+  const r = json as OpenAiResponse;
+  const choice = r.choices?.[0];
+  const toolCalls: LLMToolCall[] = (choice?.message?.tool_calls ?? [])
+    .filter((c) => typeof c.function?.name === 'string')
+    .map((c, i) => ({
+      id: c.id ?? `call_${i}`,
+      name: c.function!.name!,
+      arguments: parseToolArgs(c.function?.arguments),
+    }));
+  return {
+    content: choice?.message?.content ?? '',
+    input: r.usage?.prompt_tokens ?? 0,
+    output: r.usage?.completion_tokens ?? 0,
+    model: r.model,
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    stopReason: normalizeOpenAiStop(choice?.finish_reason),
   };
 }
 
@@ -868,7 +998,7 @@ interface RoutePlan {
  * closed** rather than silently calling a provider that would ignore the
  * tools. Expanded in 1b as the other providers' tool formats are normalized.
  */
-const TOOL_CAPABLE_PROVIDERS = new Set<LLMProvider>(['anthropic']);
+const TOOL_CAPABLE_PROVIDERS = new Set<LLMProvider>(['anthropic', 'grok', 'deepseek']);
 
 function plan(tier: LLMTier, opts: LLMOptions, tokenEstimate: number): RoutePlan {
   if (opts.model) {
@@ -985,9 +1115,9 @@ async function callOne(
     case 'groq':
       return { parsed: parseGroq(json), gatewayRequestId, attempts };
     case 'grok':
-      return { parsed: parseGroq(json), gatewayRequestId, attempts };
+      return { parsed: parseOpenAi(json), gatewayRequestId, attempts };
     case 'deepseek':
-      return { parsed: parseGroq(json), gatewayRequestId, attempts };
+      return { parsed: parseOpenAi(json), gatewayRequestId, attempts };
   }
 }
 

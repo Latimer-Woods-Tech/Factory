@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.3 — 2026-06-03
+
+### Added — tool-calling for OpenAI-style providers (Phase 1b: Grok, DeepSeek)
+
+- **Grok and DeepSeek now support tool-calling.** Requests carry OpenAI-format
+  `tools` + `tool_choice`; responses parse `tool_calls` + `finish_reason` into
+  the same normalized `LLMResult.toolCalls` / `stopReason` as Anthropic.
+- Anthropic-shaped tool blocks are converted to OpenAI wire format:
+  `tool_use` → an assistant message with `tool_calls`; `tool_result` → a
+  standalone `tool` message keyed by `tool_call_id`.
+- **`TOOL_CAPABLE_PROVIDERS`** widened to `anthropic, grok, deepseek`, so the
+  `fast` (Grok→Haiku) and `workbench` (DeepSeek) tiers support tool loops while
+  still failing closed for `verifier` (Groq Llama).
+- Malformed tool-call argument JSON is tolerated (billed as `{}`, never throws).
+
+### Not yet
+
+- **Gemini** tool-calling is deferred to a focused follow-up — its
+  `tool_use_id`↔function-name correlation and schema constraints need dedicated
+  handling. Gemini stays out of `TOOL_CAPABLE_PROVIDERS` until then.
+
+---
+
 ## 0.4.2 — 2026-06-03
 
 ### Added — tool-calling (Agent Runtime Phase 1a; Anthropic)
