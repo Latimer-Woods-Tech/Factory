@@ -371,6 +371,21 @@
         </section>
       </main>
     </div>
-    <script type="module" src="hero-circuitry.js"></script>
+    <script>
+      // Lazy-load hero circuitry after page is interactive to avoid blocking render
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          const s = document.createElement('script');
+          s.type = 'module';
+          s.src = 'hero-circuitry.js';
+          document.body.appendChild(s);
+        });
+      } else {
+        const s = document.createElement('script');
+        s.type = 'module';
+        s.src = 'hero-circuitry.js';
+        document.body.appendChild(s);
+      }
+    </script>
   </body>
 </html>

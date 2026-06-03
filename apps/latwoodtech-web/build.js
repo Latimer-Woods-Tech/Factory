@@ -19,12 +19,24 @@ async function probeSurface(surface) {
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), 6000);
 	try {
-		const res = await fetch(surface.url, {
+		// Try /health endpoint first (service liveness check), fall back to root (homepage)
+		const healthUrl = new URL('/health', surface.url).toString();
+		let res = await fetch(healthUrl, {
 			method: 'GET',
-			redirect: 'follow',
 			signal: controller.signal,
 			headers: { 'user-agent': 'latwoodtech-web-build-probe/1.0' },
-		});
+		}).catch(() => null);
+
+		// If /health not available, check root homepage
+		if (!res) {
+			res = await fetch(surface.url, {
+				method: 'GET',
+				redirect: 'follow',
+				signal: controller.signal,
+				headers: { 'user-agent': 'latwoodtech-web-build-probe/1.0' },
+			});
+		}
+
 		const durationMs = Date.now() - start;
 		return {
 			name: surface.name,
