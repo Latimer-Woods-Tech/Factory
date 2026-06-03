@@ -155,5 +155,12 @@ async function hydrateCiBadge() {
   }
 }
 
+/* ── 4. Print button ───────────────────────────────────────────── */
+function wirePrintButton() {
+  const btn = document.querySelector('[data-print-btn]');
+  if (btn) btn.addEventListener('click', () => window.print());
+}
+
 /* Run all three in parallel — each degrades independently */
+wirePrintButton();
 Promise.all([hydrateStats(), hydrateActivity(), hydrateCiBadge()]);
