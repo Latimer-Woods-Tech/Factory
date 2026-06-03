@@ -257,6 +257,10 @@ await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 // /stack/ — annotated architecture + "what we refuse to ship with" page.
 await mkdir(join(distDir, 'stack'), { recursive: true });
 await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
+// /resume/ — founder profile with live stats hydrated from founder-stats.json.
+await mkdir(join(distDir, 'resume'), { recursive: true });
+await copyFile(join(srcDir, 'resume', 'index.html'), join(distDir, 'resume', 'index.html'));
+await copyFile(join(srcDir, 'resume.js'), join(distDir, 'resume.js'));
 // Credibility signals: humans.txt (humanstxt.org) at root, security.txt
 // (RFC 9116) under /.well-known/. Absence reads "not yet a real platform".
 await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
@@ -266,6 +270,9 @@ await copyFile(join(srcDir, '.well-known', 'security.txt'), join(distDir, '.well
 // status-prober Worker with graceful fall-back to data/pulse.json.
 await cp(join(srcDir, 'status'), join(distDir, 'status'), { recursive: true });
 await mkdir(join(distDir, 'data'), { recursive: true });
+
+// Copy founder-stats.json (committed seed; updated hourly by generate-founder-stats.yml).
+await copyFile(join(srcDir, 'data', 'founder-stats.json'), join(distDir, 'data', 'founder-stats.json'));
 
 // Liveness probes run in parallel; on CI without outbound network they all
 // degrade and the runtime still renders a static topology. Bound the overall

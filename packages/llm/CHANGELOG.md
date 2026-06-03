@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.2 — 2026-06-03
+
+### Added — tool-calling (Agent Runtime Phase 1a; Anthropic)
+
+- **`LLMOptions.tools`** (`LLMTool[]`) and **`LLMOptions.toolChoice`**
+  (`'auto' | 'none' | { name }`). When `tools` is set, routing **fails closed**
+  to tool-capable providers — failover never silently falls back to one that
+  can't honour the tool schema (1a: Anthropic only; others land in 1b).
+- **`LLMResult.toolCalls`** (`LLMToolCall[]`) and **`LLMResult.stopReason`**
+  (`'end' | 'tool_use' | 'max_tokens' | 'other'`), normalized across providers.
+- **`LLMMessage.content`** now accepts `string | LLMContentBlock[]` — structured
+  `text` / `tool_use` / `tool_result` blocks for multi-turn tool conversations.
+  Backwards-compatible: existing `string` content is unchanged; providers without
+  tool support receive the text projection.
+- New exported types: `LLMTool`, `LLMToolCall`, `LLMContentBlock`.
+
+### Notes
+
+- A `tool_use` response with no text content is no longer treated as an empty
+  (failed) completion.
+- Anthropic `tool_use` blocks pass through unchanged (the block shapes mirror the
+  Messages wire format). Other providers' tool formats are normalized in 1a's
+  follow-ups (1b: Grok/DeepSeek/Gemini; 1c: streaming tool-call accumulation).
+
+---
+
 ## 0.4.1 — 2026-06-03
 
 ### Added (no breaking changes)

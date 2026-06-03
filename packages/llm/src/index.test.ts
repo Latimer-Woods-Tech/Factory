@@ -1449,3 +1449,145 @@ describe('onRecord metering callback', () => {
     expect(warnSpy).toHaveBeenCalledWith('llm.onRecord.error', expect.objectContaining({ message: 'timeout' }));
   });
 });
+
+// ─── Tool-calling (Anthropic) — PR 1a ────────────────────────────────────────
+describe('tool-calling', () => {
+  const lookupTool = {
+    name: 'lookup',
+    description: 'look up a record',
+    parameters: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+  };
+
+  function anthropicToolUse() {
+    return new Response(
+      JSON.stringify({
+        content: [
+          { type: 'text', text: 'checking' },
+          { type: 'tool_use', id: 'toolu_1', name: 'lookup', input: { id: 'cust_1' } },
+        ],
+        stop_reason: 'tool_use',
+        usage: { input_tokens: 20, output_tokens: 9 },
+        model: 'claude-sonnet-4-20250514',
+      }),
+      { status: 200, headers: { 'cf-aig-request-id': 'aig-tool' } },
+    );
+  }
+
+  function bodyOf(fetchImpl: ReturnType<typeof vi.fn>): Record<string, unknown> {
+    return JSON.parse((fetchImpl.mock.calls[0]![1] as RequestInit).body as string) as Record<string, unknown>;
+  }
+
+  it('parses tool_use into normalized toolCalls + stopReason', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicToolUse());
+    const res = await complete(
+      [{ role: 'user', content: 'look up cust_1' }],
+      ENV,
+      { tier: 'balanced', tools: [lookupTool] },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.stopReason).toBe('tool_use');
+    expect(res.data!.toolCalls).toEqual([{ id: 'toolu_1', name: 'lookup', arguments: { id: 'cust_1' } }]);
+  });
+
+  it('sends tools + tool_choice in the Anthropic request body', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicToolUse());
+    await complete(
+      [{ role: 'user', content: 'go' }],
+      ENV,
+      { tier: 'balanced', tools: [lookupTool], toolChoice: 'auto' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    const body = bodyOf(fetchImpl);
+    expect(body.tools).toEqual([
+      { name: 'lookup', description: 'look up a record', input_schema: lookupTool.parameters },
+    ]);
+    expect(body.tool_choice).toEqual({ type: 'auto' });
+  });
+
+  it('maps toolChoice {name} to a forced tool', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicToolUse());
+    await complete(
+      [{ role: 'user', content: 'go' }],
+      ENV,
+      { tier: 'balanced', tools: [lookupTool], toolChoice: { name: 'lookup' } },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(bodyOf(fetchImpl).tool_choice).toEqual({ type: 'tool', name: 'lookup' });
+  });
+
+  it('allows a tool_use turn with no text content (not an empty-content failure)', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'tool_use', id: 'toolu_2', name: 'lookup', input: {} }],
+          stop_reason: 'tool_use',
+          usage: { input_tokens: 5, output_tokens: 3 },
+          model: 'claude-sonnet-4-20250514',
+        }),
+        { status: 200 },
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'go' }],
+      ENV,
+      { tools: [lookupTool] },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.error).toBeNull();
+    expect(res.data!.content).toBe('');
+    expect(res.data!.toolCalls).toHaveLength(1);
+  });
+
+  it('passes structured tool_use / tool_result content through to the provider', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse('done'));
+    await complete(
+      [
+        { role: 'user', content: 'look up cust_1' },
+        { role: 'assistant', content: [{ type: 'tool_use', id: 'toolu_1', name: 'lookup', input: { id: 'cust_1' } }] },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: '{"plan":"pro"}' }] },
+      ],
+      ENV,
+      { tools: [lookupTool] },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    const msgs = bodyOf(fetchImpl).messages as Array<{ content: unknown }>;
+    expect((msgs[1].content as Array<Record<string, unknown>>)[0]).toMatchObject({ type: 'tool_use', id: 'toolu_1' });
+    expect((msgs[2].content as Array<Record<string, unknown>>)[0]).toMatchObject({ type: 'tool_result', tool_use_id: 'toolu_1' });
+  });
+
+  it('fails closed when the tier has no tool-capable provider', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(anthropicResponse());
+    await expect(
+      complete(
+        [{ role: 'user', content: 'go' }],
+        ENV,
+        { tier: 'verifier', tools: [lookupTool] },
+        { fetch: fetchImpl as unknown as typeof fetch },
+      ),
+    ).rejects.toThrow(/tool-capable/);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('normal (no-tools) completion reports stopReason end and no toolCalls', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: 'hi' }],
+          stop_reason: 'end_turn',
+          usage: { input_tokens: 3, output_tokens: 2 },
+          model: 'claude-sonnet-4-20250514',
+        }),
+        { status: 200 },
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'hi' }],
+      ENV,
+      { tier: 'balanced' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.data!.stopReason).toBe('end');
+    expect(res.data!.toolCalls).toBeUndefined();
+  });
+});
