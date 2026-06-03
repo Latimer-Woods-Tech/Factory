@@ -4,7 +4,7 @@
 > External tooling versions are hand-maintained here.
 > Downstream repos: pointer to this file in `CLAUDE.md` — do NOT copy-paste; copies drift.
 
-*Last updated: 2026-05-30 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
+*Last updated: 2026-06-03 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
 
 ---
 
@@ -17,6 +17,7 @@
 | `@latimer-woods-tech/analytics` | `0.2.0` | stable |
 | `@latimer-woods-tech/auth` | `0.2.0` | stable |
 | `@latimer-woods-tech/biome-config` | `0.1.0` | stable |
+| `@latimer-woods-tech/bodygraph` | `0.1.0` | stable |
 | `@latimer-woods-tech/browser` | `0.1.0` | stable |
 | `@latimer-woods-tech/compliance` | `0.3.0` | stable |
 | `@latimer-woods-tech/content` | `0.2.0` | stable |
@@ -31,8 +32,8 @@
 | `@latimer-woods-tech/errors` | `0.1.0` | stable |
 | `@latimer-woods-tech/eslint-config` | `0.1.0` | stable |
 | `@latimer-woods-tech/flags` | `0.1.0` | stable |
-| `@latimer-woods-tech/llm` | `0.3.4` | stable |
-| `@latimer-woods-tech/llm-meter` | `0.2.2` | stable |
+| `@latimer-woods-tech/llm` | `0.4.2` | stable |
+| `@latimer-woods-tech/llm-meter` | `0.2.4` | stable |
 | `@latimer-woods-tech/logger` | `0.3.0` | stable |
 | `@latimer-woods-tech/monitoring` | `0.2.1` | stable |
 | `@latimer-woods-tech/neon` | `0.2.3` | stable |
@@ -48,7 +49,8 @@
 | `@latimer-woods-tech/tsconfig-base` | `0.1.0` | stable |
 | `@latimer-woods-tech/ui` | `0.2.0` | stable |
 | `@latimer-woods-tech/validation` | `0.1.0` | stable |
-| `@latimer-woods-tech/video` | `0.2.0` | stable |
+| `@latimer-woods-tech/video` | `0.3.0` | stable |
+| `@latimer-woods-tech/video-studio` | `0.1.0` | stable |
 <!-- AUTO-UPDATED-END -->
 
 ---
