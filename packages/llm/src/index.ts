@@ -8,11 +8,70 @@ import {
 import type { Logger } from '@latimer-woods-tech/logger';
 
 /**
+ * A tool the model may call. `parameters` is a JSON Schema object describing
+ * the tool's input. Provider-agnostic; normalized per provider at request time.
+ */
+export interface LLMTool {
+  name: string;
+  description?: string;
+  /** JSON Schema for the tool's input arguments. */
+  parameters: Record<string, unknown>;
+}
+
+/**
+ * A tool invocation requested by the model, normalized across providers.
+ */
+export interface LLMToolCall {
+  /** Provider-assigned call id; echo it back in the matching tool_result. */
+  id: string;
+  name: string;
+  /** Parsed argument object the model passed to the tool. */
+  arguments: Record<string, unknown>;
+}
+
+/**
+ * Structured content block for tool-calling conversations. The field shapes
+ * mirror the Anthropic Messages wire format so they pass through unchanged.
+ */
+export type LLMContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+  | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean };
+
+/**
  * Single chat message exchanged with an LLM provider.
+ *
+ * `content` is a plain string in the common case. For tool-calling
+ * conversations it may be an array of {@link LLMContentBlock}s (e.g. an
+ * assistant turn carrying `tool_use` blocks, or a user turn carrying
+ * `tool_result` blocks). Providers that don't support tool-calling receive
+ * the text projection of the content (see `contentToText`).
  */
 export interface LLMMessage {
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | LLMContentBlock[];
+}
+
+/**
+ * Flattens message content to plain text for providers/paths that only handle
+ * strings. `tool_use` blocks contribute nothing; `tool_result` blocks
+ * contribute their textual content.
+ */
+function contentToText(content: string | LLMContentBlock[]): string {
+  if (typeof content === 'string') return content;
+  return content
+    .map((b) => (b.type === 'text' ? b.text : b.type === 'tool_result' ? b.content : ''))
+    .join('');
+}
+
+/**
+ * Resolves the system prompt: explicit `opts.system` wins, else the first
+ * `system` message, flattened to text. Returns `undefined` when neither is set.
+ */
+function systemText(opts: LLMOptions, messages: LLMMessage[]): string | undefined {
+  if (opts.system !== undefined) return opts.system;
+  const c = messages.find((m) => m.role === 'system')?.content;
+  return c === undefined ? undefined : contentToText(c);
 }
 
 /**
@@ -82,6 +141,17 @@ export interface LLMOptions {
    * is emitted after every successful completion. Errors are swallowed.
    */
   ledger?: LLMRecordContext;
+  /**
+   * Tools the model may call. When present, routing **fails closed** to
+   * tool-capable providers — failover never falls back to a provider that
+   * can't honour the tool schema. See {@link LLMResult.toolCalls}.
+   */
+  tools?: LLMTool[];
+  /**
+   * Tool-selection policy. `'auto'` (default when `tools` is set) lets the
+   * model decide; `'none'` forbids tool use; `{ name }` forces a specific tool.
+   */
+  toolChoice?: 'auto' | 'none' | { name: string };
 }
 
 /**
@@ -103,6 +173,16 @@ export interface LLMResult {
   attempts: number;
   /** Monotonic request id from AI Gateway, if present in headers. */
   gatewayRequestId?: string;
+  /**
+   * Why generation stopped, normalized across providers. `'tool_use'` means
+   * the model is requesting one or more tool calls (see {@link toolCalls}).
+   */
+  stopReason?: 'end' | 'tool_use' | 'max_tokens' | 'other';
+  /**
+   * Tool calls the model requested, normalized across providers. Present
+   * (non-empty) when `stopReason === 'tool_use'`.
+   */
+  toolCalls?: LLMToolCall[];
 }
 
 /**
@@ -372,7 +452,7 @@ function isRetryableForBackoff(status: number): boolean {
 function estimateTokens(messages: LLMMessage[], system?: string): number {
   // Cheap estimator: ~4 chars/token. Good enough for threshold routing.
   let chars = system?.length ?? 0;
-  for (const m of messages) chars += m.content.length;
+  for (const m of messages) chars += contentToText(m.content).length;
   return Math.ceil(chars / 4);
 }
 
@@ -412,7 +492,7 @@ function buildAnthropicRequest(
   env: LLMEnv,
   streaming = false,
 ): { url: string; headers: Record<string, string>; body: string } {
-  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const sys = systemText(opts, messages);
   const filtered = messages.filter((m) => m.role !== 'system');
   const body: Record<string, unknown> = {
     model,
@@ -428,6 +508,20 @@ function buildAnthropicRequest(
     body.system = cache
       ? [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }]
       : sys;
+  }
+  if (opts.tools && opts.tools.length > 0) {
+    body.tools = opts.tools.map((t) => ({
+      name: t.name,
+      description: t.description ?? '',
+      input_schema: t.parameters,
+    }));
+    const tc = opts.toolChoice ?? 'auto';
+    body.tool_choice =
+      tc === 'auto'
+        ? { type: 'auto' }
+        : tc === 'none'
+          ? { type: 'none' }
+          : { type: 'tool', name: tc.name };
   }
   return {
     url: `${env.AI_GATEWAY_BASE_URL}/anthropic/v1/messages`,
@@ -447,12 +541,12 @@ function buildGeminiRequest(
   opts: LLMOptions,
   env: LLMEnv,
 ): { url: string; headers: Record<string, string>; body: string } {
-  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const sys = systemText(opts, messages);
   const contents = messages
     .filter((m) => m.role !== 'system')
     .map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
+      parts: [{ text: contentToText(m.content) }],
     }));
   const body: Record<string, unknown> = {
     contents,
@@ -481,10 +575,10 @@ function buildGroqRequest(
   opts: LLMOptions,
   env: LLMEnv,
 ): { url: string; headers: Record<string, string>; body: string } {
-  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const sys = systemText(opts, messages);
   const merged: LLMMessage[] = [];
   if (sys) merged.push({ role: 'system', content: sys });
-  for (const m of messages) if (m.role !== 'system') merged.push(m);
+  for (const m of messages) if (m.role !== 'system') merged.push({ role: m.role, content: contentToText(m.content) });
   return {
     url: `${env.AI_GATEWAY_BASE_URL}/groq/openai/v1/chat/completions`,
     headers: {
@@ -509,10 +603,10 @@ function buildGrokRequest(
   if (!env.GROK_API_KEY) {
     throw new ValidationError('GROK_API_KEY required for grok-* model override');
   }
-  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const sys = systemText(opts, messages);
   const merged: LLMMessage[] = [];
   if (sys) merged.push({ role: 'system', content: sys });
-  for (const m of messages) if (m.role !== 'system') merged.push(m);
+  for (const m of messages) if (m.role !== 'system') merged.push({ role: m.role, content: contentToText(m.content) });
   const body: Record<string, unknown> = {
     model,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
@@ -541,10 +635,10 @@ function buildDeepSeekRequest(
   if (!env.DEEPSEEK_API_KEY) {
     throw new ValidationError('DEEPSEEK_API_KEY required for workbench tier or deepseek-* model override');
   }
-  const sys = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const sys = systemText(opts, messages);
   const merged: LLMMessage[] = [];
   if (sys) merged.push({ role: 'system', content: sys });
-  for (const m of messages) if (m.role !== 'system') merged.push(m);
+  for (const m of messages) if (m.role !== 'system') merged.push({ role: m.role, content: contentToText(m.content) });
   return {
     url: `${env.AI_GATEWAY_BASE_URL}/deepseek/chat/completions`,
     headers: {
@@ -563,7 +657,14 @@ function buildDeepSeekRequest(
 // ─── Response parsers ──────────────────────────────────────────────────────
 
 interface AnthropicResponse {
-  content?: Array<{ type: string; text?: string }>;
+  content?: Array<{
+    type: string;
+    text?: string;
+    id?: string;
+    name?: string;
+    input?: Record<string, unknown>;
+  }>;
+  stop_reason?: string;
   usage?: {
     input_tokens?: number;
     output_tokens?: number;
@@ -571,6 +672,21 @@ interface AnthropicResponse {
     cache_creation_input_tokens?: number;
   };
   model?: string;
+}
+
+/** Maps a provider stop reason to the normalized {@link LLMResult.stopReason}. */
+function normalizeAnthropicStop(reason: string | undefined): LLMResult['stopReason'] {
+  switch (reason) {
+    case 'end_turn':
+    case 'stop_sequence':
+      return 'end';
+    case 'tool_use':
+      return 'tool_use';
+    case 'max_tokens':
+      return 'max_tokens';
+    default:
+      return reason ? 'other' : undefined;
+  }
 }
 
 interface GeminiResponse {
@@ -589,8 +705,20 @@ interface GroqResponse {
 
 function parseAnthropic(
   json: unknown,
-): { content: string; input: number; output: number; cacheRead: number; cacheWrite: number; model?: string } {
+): {
+  content: string;
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  model?: string;
+  toolCalls?: LLMToolCall[];
+  stopReason?: LLMResult['stopReason'];
+} {
   const r = json as AnthropicResponse;
+  const toolCalls: LLMToolCall[] = (r.content ?? [])
+    .filter((c) => c.type === 'tool_use' && typeof c.id === 'string' && typeof c.name === 'string')
+    .map((c) => ({ id: c.id!, name: c.name!, arguments: c.input ?? {} }));
   return {
     content: r.content?.find((c) => c.type === 'text')?.text ?? '',
     input: r.usage?.input_tokens ?? 0,
@@ -598,6 +726,8 @@ function parseAnthropic(
     cacheRead: r.usage?.cache_read_input_tokens ?? 0,
     cacheWrite: r.usage?.cache_creation_input_tokens ?? 0,
     model: r.model,
+    toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    stopReason: normalizeAnthropicStop(r.stop_reason),
   };
 }
 
@@ -732,6 +862,14 @@ interface RoutePlan {
   fallback?: { provider: LLMProvider; model: string };
 }
 
+/**
+ * Providers whose request builder + response parser support tool-calling.
+ * When `opts.tools` is set, routing is restricted to this set and **fails
+ * closed** rather than silently calling a provider that would ignore the
+ * tools. Expanded in 1b as the other providers' tool formats are normalized.
+ */
+const TOOL_CAPABLE_PROVIDERS = new Set<LLMProvider>(['anthropic']);
+
 function plan(tier: LLMTier, opts: LLMOptions, tokenEstimate: number): RoutePlan {
   if (opts.model) {
     // Explicit override — best-effort provider detection.
@@ -809,7 +947,7 @@ async function callOne(
   fetchImpl: typeof fetch,
   logger: Logger | undefined,
   nowFn?: () => number,
-): Promise<{ parsed: { content: string; input: number; output: number; cacheRead?: number; cacheWrite?: number; model?: string }; gatewayRequestId?: string; attempts: number }> {
+): Promise<{ parsed: { content: string; input: number; output: number; cacheRead?: number; cacheWrite?: number; model?: string; toolCalls?: LLMToolCall[]; stopReason?: LLMResult['stopReason'] }; gatewayRequestId?: string; attempts: number }> {
   let req: { url: string; headers: Record<string, string>; body: string };
   switch (leg.provider) {
     case 'anthropic':
@@ -895,7 +1033,7 @@ export async function complete(
   const startedAt = now();
 
   const tier: LLMTier = opts.tier ?? 'balanced';
-  const system = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const system = systemText(opts, messages);
   const tokenEstimate = estimateTokens(messages, system);
   const route = plan(tier, opts, tokenEstimate);
 
@@ -932,7 +1070,17 @@ export async function complete(
 
   const attemptLog: Array<{ provider: LLMProvider; status?: number; message: string }> = [];
 
-  const routeLegs = [route.primary, route.fallback].filter(Boolean) as Array<{ provider: LLMProvider; model: string }>;
+  let routeLegs = [route.primary, route.fallback].filter(Boolean) as Array<{ provider: LLMProvider; model: string }>;
+  // Tool-calling fails closed: never fall back to a provider that can't honour
+  // the tool schema. Narrow the route to tool-capable providers when tools are set.
+  if (opts.tools && opts.tools.length > 0) {
+    routeLegs = routeLegs.filter((l) => TOOL_CAPABLE_PROVIDERS.has(l.provider));
+    if (routeLegs.length === 0) {
+      throw new ValidationError(
+        `tool-calling requires a tool-capable provider (${[...TOOL_CAPABLE_PROVIDERS].join(', ')}); tier '${tier}' has none — use tier fast/balanced/smart or a claude-* model override`,
+      );
+    }
+  }
   for (const [legIndex, leg] of routeLegs.entries()) {
     // Skip providers that are currently in their cooldown window.
     if (isProviderCoolingDown(leg.provider, now)) {
@@ -947,7 +1095,9 @@ export async function complete(
     }
     try {
       const result = await callOne(leg, messages, opts, env, fetchImpl, logger, now);
-      if (!result.parsed.content) {
+      // A tool_use turn legitimately has no text content — only treat a
+      // genuinely empty response (no text AND no tool calls) as a failure.
+      if (!result.parsed.content && !(result.parsed.toolCalls && result.parsed.toolCalls.length > 0)) {
         throw { provider: leg.provider, status: 200, retryable: false, message: 'empty content' } satisfies ProviderError;
       }
       logger?.info?.('llm.complete', {
@@ -975,6 +1125,8 @@ export async function complete(
         latency: now() - startedAt,
         attempts: result.attempts,
         gatewayRequestId: result.gatewayRequestId,
+        stopReason: result.parsed.stopReason,
+        toolCalls: result.parsed.toolCalls,
       };
       const costUsd = estimateCostUsd(llmResult.tokens, llmResult.model);
       if (opts.maxCostUsd !== undefined && costUsd > opts.maxCostUsd) {
@@ -1107,7 +1259,7 @@ export async function* completionStream(
   const startedAt = now();
 
   const tier: LLMTier = opts.tier ?? 'balanced';
-  const system = opts.system ?? messages.find((m) => m.role === 'system')?.content;
+  const system = systemText(opts, messages);
   const tokenEstimate = estimateTokens(messages, system);
   const route = plan(tier, opts, tokenEstimate);
   const streamLeg =
