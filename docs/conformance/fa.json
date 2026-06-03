@@ -2,8 +2,8 @@
   "repo_key": "FA",
   "repo_name": "factory-admin-studio",
   "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-05-30T08:00:37.606034+00:00",
-  "cohesion": 62,
+  "timestamp": "2026-06-03T10:14:40.197800+00:00",
+  "cohesion": 74,
   "dimensions": [
     {
       "key": "stack",
@@ -75,16 +75,16 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 20,
+      "score": 100,
       "checks": [
         {
           "name": "vitest.config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "playwright.config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -94,12 +94,12 @@
         },
         {
           "name": "Smoke tier present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Coverage thresholds set",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
