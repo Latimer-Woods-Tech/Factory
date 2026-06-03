@@ -1,6 +1,6 @@
 # Launch Readiness Scorecard
 
-*Generated: 2026-06-02T11:50:27.880924+00:00 · Reporting day: 2026-06-02*
+*Generated: 2026-06-03T12:22:49.723900+00:00 · Reporting day: 2026-06-03*
 
 ## Org composite
 
