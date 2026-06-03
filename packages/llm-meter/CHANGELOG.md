@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.4 — 2026-06-03
+
+### Changed (single source of truth)
+
+- `@latimer-woods-tech/llm`'s `MODEL_PRICE_PER_1M` is now the **canonical** rate
+  source. `PRICING_CENTS_PER_MTOK` here is defined as that table × 100, and a new
+  drift-guard test (`pricing-sync.test.ts`) fails CI if any rate diverges. This
+  prevents the silent divergence that produced the earlier gemini ($5 vs $10) and
+  missing-deepseek/llama errors.
+- Removed `gemini-1.5-flash` and `llama-3.3-70b-versatile` (not in the canonical
+  table and not in active routing). They now bill `$0` like any unknown model;
+  add them to `llm`'s table if they ever need pricing.
+
+---
+
 ## 0.2.3 — 2026-06-03
 
 ### Fixed (correctness)
