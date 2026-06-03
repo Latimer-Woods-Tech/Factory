@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1 — 2026-06-03
+
+### Added (no breaking changes)
+
+- Export `MODEL_PRICE_PER_1M` — the canonical USD-per-1M-tokens rate table. This
+  makes it the single source of truth for pricing across the platform;
+  `@latimer-woods-tech/llm-meter` now derives its cents table from it and enforces
+  parity with a drift-guard test. Make all rate changes here.
+
+---
+
 ## 0.3.4 — 2026-05-28
 
 ### Added (no breaking changes)

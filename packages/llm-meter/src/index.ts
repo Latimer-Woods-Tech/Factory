@@ -175,8 +175,12 @@ export interface RunTotals {
 const DEFAULT_RUN_CAP_CENTS = 500;
 
 // Pricing in US cents per 1M tokens (USD × 100). e.g. Sonnet input 300 = $3.00 / 1M tokens.
-// Keep in sync with provider pricing pages; update on price changes.
-// Sources (2026-05): anthropic.com/pricing, cloud.google.com/vertex-ai/pricing, groq.com/pricing, docs.x.ai
+//
+// CANONICAL SOURCE: @latimer-woods-tech/llm MODEL_PRICE_PER_1M (USD/1M). These
+// values are that table × 100. Do NOT edit rates here — change them in `llm` and
+// update these to match; `pricing-sync.test.ts` fails CI if they diverge. Every
+// model below MUST exist in the canonical table (so unknown/stale models bill $0
+// rather than a guessed rate).
 const PRICING_CENTS_PER_MTOK: Record<string, { input: number; output: number; cachedInput?: number }> = {
   // Anthropic
   'claude-haiku-4-20250514':   { input: 80,    output: 400,   cachedInput: 8 },
@@ -185,13 +189,10 @@ const PRICING_CENTS_PER_MTOK: Record<string, { input: number; output: number; ca
   'claude-sonnet-4-6':         { input: 300,   output: 1500,  cachedInput: 30 },
   'claude-opus-4-20250514':    { input: 1500,  output: 7500,  cachedInput: 150 },
   'claude-opus-4-7':           { input: 1500,  output: 7500,  cachedInput: 150 },
-  // Google — values mirror @latimer-woods-tech/llm MODEL_PRICE_PER_1M (USD x 100).
+  // Google
   'gemini-2.5-pro':            { input: 125,   output: 1000,  cachedInput: 31 },
-  'gemini-1.5-flash':          { input: 8,     output: 30 },
-  // Groq — llama-4-maverick is the live `verifier` tier model; the 3.3 entry is
-  // retained only for historical ledger rows.
+  // Groq — llama-4-maverick is the live `verifier` tier model.
   'llama-4-maverick':          { input: 50,    output: 77,    cachedInput: 5 },
-  'llama-3.3-70b-versatile':   { input: 59,    output: 79 },
   // xAI
   'grok-4.3':                  { input: 125,   output: 250 },
   'grok-4-fast':               { input: 125,   output: 250 },

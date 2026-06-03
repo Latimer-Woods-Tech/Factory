@@ -281,8 +281,12 @@ async function recordOrgCostUsage(
  * Source: Anthropic / Google / xAI pricing pages as of 2026-05.
  * Keep these model names in sync with the default routing constants in
  * {@link MODELS}; unknown models fall back to Opus rates (conservative upper bound).
+ *
+ * CANONICAL pricing source for the platform. `@latimer-woods-tech/llm-meter`
+ * derives its cents-denominated rates from this table and a drift-guard test
+ * there fails CI if they diverge — make all rate changes here.
  */
-const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+export const MODEL_PRICE_PER_1M: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   // Anthropic Haiku 4
   'claude-haiku-4-20250514': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
   'claude-haiku-4-5-20251001': { input: 0.80, output: 4.00, cacheRead: 0.08, cacheWrite: 1.00 },
