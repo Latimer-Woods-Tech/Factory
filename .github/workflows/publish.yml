@@ -74,3 +74,9 @@ jobs:
         run: cd "packages/${PACKAGE}" && (npm run prepublish --if-present || echo 'no prepublish')
       - name: Publish to npmjs.org
         run: cd "packages/${PACKAGE}" && npm publish --access public --ignore-scripts --provenance
+        env:
+          # Authenticate with the automation token (setup-node wired registry-url
+          # to read NODE_AUTH_TOKEN). This replaces tokenless OIDC, which required
+          # a per-package trusted publisher configured in the npm web UI. Keeping
+          # --provenance still attaches a Sigstore attestation via id-token: write.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
