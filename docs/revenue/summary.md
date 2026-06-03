@@ -1,6 +1,6 @@
 # Revenue + Reliability Digest — Stage 2
 
-*Generated: 2026-05-30T09:24:58.962971+00:00*
+*Generated: 2026-06-03T12:05:45.942111+00:00*
 
 ## The 5 Stage 2 questions
 
