@@ -56,7 +56,7 @@ npx --yes neonctl connection-string production \
 - Query from Node with `@neondatabase/serverless` (`neon(cs)`, tagged-template ``sql`...` `` or `sql.query()` for dynamic). `gcloud` auth in agent sessions is usually the user account (`adrper79@gmail.com`) with broad SM read — that's why the key fetch works.
 - The `gh` token (`adrper79-dot`) has `admin:org` → you can also set org + repo secrets when a credential needs rotating.
 
-> See also [database.md](./database.md) for branch strategy and [neon-access in CLAUDE.md] for the one-line pin.
+> See also [database.md](./database.md) for branch strategy; the one-line pin lives at the top of [CLAUDE.md](../../CLAUDE.md).
 
 ## Common Errors & Resolutions
 
