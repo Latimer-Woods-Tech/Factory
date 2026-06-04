@@ -1,6 +1,6 @@
 {
   "name": "@latimer-woods-tech/agent",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": false,
   "repository": {
     "type": "git",
@@ -31,6 +31,7 @@
     "prepublish": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@latimer-woods-tech/errors": "^0.2.0",
     "@latimer-woods-tech/llm": "^0.4.4"
   },
   "devDependencies": {
