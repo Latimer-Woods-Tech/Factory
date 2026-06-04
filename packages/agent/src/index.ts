@@ -23,3 +23,11 @@ export {
   type ToolCallReceipt,
   type StopReason,
 } from './loop.js';
+
+export {
+  AgentSessionDO,
+  runSession,
+  type DOStorage,
+  type SessionState,
+  type SessionRunOptions,
+} from './session.js';
