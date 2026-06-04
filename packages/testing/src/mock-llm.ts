@@ -93,8 +93,8 @@ export class MockLLM {
 
   /** The mock fetch function to pass as `deps.fetch` to `complete()` / `runLoop()`. */
   get fetch(): (url: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
-    return async (url: RequestInfo | URL, init?: RequestInit) => {
-      const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : (url as Request).url;
+    return (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : url.url;
       let body: unknown = undefined;
       try { body = JSON.parse((init?.body as string) ?? '{}'); } catch { /* ignore */ }
       this.calls.push({ url: urlStr, body });
@@ -107,13 +107,13 @@ export class MockLLM {
       // Error sentinel
       if (typeof turn.text === 'string' && turn.text.startsWith('__error__:')) {
         const [, statusStr, ...bodyParts] = turn.text.split(':');
-        return new Response(bodyParts.join(':'), { status: Number(statusStr) });
+        return Promise.resolve(new Response(bodyParts.join(':'), { status: Number(statusStr) }));
       }
 
-      return new Response(buildAnthropicBody(turn), {
+      return Promise.resolve(new Response(buildAnthropicBody(turn), {
         status: 200,
         headers: { 'content-type': 'application/json', 'cf-aig-request-id': `mock-${this.calls.length}` },
-      });
+      }));
     };
   }
 
