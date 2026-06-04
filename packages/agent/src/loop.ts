@@ -58,6 +58,7 @@ export interface AgentResult {
   totalTurns: number;
 }
 
+/** Options controlling a {@link runLoop} invocation. */
 export interface AgentLoopOptions {
   /** LLM environment bindings (AI Gateway + provider keys). */
   env: LLMEnv;
