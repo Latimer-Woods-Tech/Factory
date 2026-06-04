@@ -10,12 +10,10 @@
  *
  * ## AgentSessionDO
  *
- * `AgentSessionDO` is re-exported so Cloudflare can bind it as a Durable Object.
- * wrangler looks for the DO class in the Worker's own entry module. The class lives
- * in ./session.do.ts because @latimer-woods-tech/agent@0.2.0 (the published version)
- * does not yet export it — that export is planned for a future package version.
- * When the package ships AgentSessionDO, swap the import:
- *   export { AgentSessionDO } from '@latimer-woods-tech/agent';
+ * `AgentSessionDO` is re-exported from `@latimer-woods-tech/agent` so Cloudflare
+ * can bind it as a Durable Object (wrangler looks for the DO class in the Worker's
+ * own entry module). The canonical implementation lives in the package — the
+ * gateway does not fork it.
  *
  * ## AI_GATEWAY_BASE_URL — CRITICAL trap
  *
@@ -31,7 +29,8 @@
 
 // Re-export AgentSessionDO so the wrangler migrations block can find the class.
 // This is required for Cloudflare to bind AGENT_SESSIONS → AgentSessionDO.
-export { AgentSessionDO } from './session.do.js';
+// Canonical implementation lives in @latimer-woods-tech/agent — never forked here.
+export { AgentSessionDO } from '@latimer-woods-tech/agent';
 
 import { Hono } from 'hono';
 import { verifyToken, type TokenPayload } from '@latimer-woods-tech/auth';
