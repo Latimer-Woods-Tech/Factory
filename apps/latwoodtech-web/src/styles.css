@@ -229,7 +229,7 @@ body::after {
   border-radius: 50%;
   background:
     radial-gradient(circle at 48% 40%, rgba(255, 238, 194, 0.3), rgba(255, 238, 194, 0.06) 38%, transparent 62%),
-    url("assets/latimerWoodslogovideo.png") center / 86% auto no-repeat;
+    url("assets/latimerWoodslogovideo.png") center / 100% auto no-repeat;
   border: 1px solid rgba(240, 207, 122, 0.22);
   box-shadow: 0 0 0 1px rgba(240, 207, 122, 0.06) inset, 0 22px 52px rgba(0, 0, 0, 0.36);
 }
@@ -1464,7 +1464,7 @@ canvas[data-circuitry] {
   border-radius: 50%;
   background:
     radial-gradient(circle at 48% 40%, rgba(255, 238, 194, 0.3), rgba(255, 238, 194, 0.06) 38%, transparent 62%),
-    url("assets/latimerWoodslogovideo.png") center / 80% auto no-repeat;
+    url("assets/latimerWoodslogovideo.png") center / 95% auto no-repeat;
   border: 1px solid rgba(240, 207, 122, 0.22);
   flex-shrink: 0;
 }
