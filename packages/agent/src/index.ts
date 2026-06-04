@@ -51,3 +51,8 @@ export {
   type RecordEpisodeParams,
   type D1Like,
 } from './memory/episodic.js';
+
+export {
+  pruneMessages,
+  type PruneOptions,
+} from './pruning.js';
