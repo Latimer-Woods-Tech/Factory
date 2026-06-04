@@ -1514,6 +1514,9 @@ canvas[data-circuitry] {
 }
 
 @media (max-width: 480px) {
+  .page-shell {
+    padding: 32px 16px 80px;
+  }
   .site-nav {
     flex-direction: column;
     align-items: flex-start;
@@ -1733,6 +1736,40 @@ canvas[data-circuitry] {
   }
   .footer-content {
     gap: 30px;
+    grid-template-columns: 1fr;
+  }
+  .footer-title {
+    font-size: 1.2rem;
+  }
+  .card {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer {
+    padding: 30px 16px 24px;
+  }
+  .footer-content {
+    gap: 24px;
+  }
+  .footer-title {
+    font-size: 1rem;
+  }
+  .footer-text {
+    font-size: 0.9rem;
+  }
+  .footer-label {
+    font-size: 0.7rem;
+  }
+  .footer-links a {
+    font-size: 0.9rem;
+  }
+  .card {
+    padding: 20px;
+  }
+  .card p {
+    font-size: 1rem;
   }
 }
 
