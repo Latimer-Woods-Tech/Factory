@@ -74,11 +74,12 @@
       <header class="hero">
         <div class="hero-copy">
           <div class="hero-mark" aria-hidden="true"></div>
-          <p class="eyebrow">Latimer Woods</p>
-          <h1>Let's be clear: Technology should make us more human.</h1>
+          <p class="eyebrow">Latimer Woods Technology</p>
+          <h1>Technology should make us more human.</h1>
+          <p class="hero-diff">Edge-first platforms. Zero technical debt. Human outcomes.</p>
           <p class="subtitle">
-            We build systems where healing, media, governance, and edge infrastructure move as one deliberate experience.
-            Real products. Real rigor. More life.
+            We build systems where healing, media, governance, and infrastructure move as one deliberate experience.
+            Real products. Real rigor. 27 apps live. $9.11/month cost.
           </p>
           <div class="hero-actions">
             <a class="button button-primary" href="#mission">Mission</a>
@@ -249,7 +250,8 @@
           </div>
 
           <div class="grid results-grid">
-            <article class="card">
+            <article class="card card-featured">
+              <span class="card-badge">Flagship</span>
               <p class="card-label">Live now</p>
               <h3>Prime Self</h3>
               <p>Practitioner-first software for structured chart data, AI-assisted interpretation, client deliverables, and follow-up workflows.</p>
@@ -261,7 +263,8 @@
               <a href="https://selfprime.net" target="_blank" rel="noreferrer">selfprime.net</a>
             </article>
 
-            <article class="card">
+            <article class="card card-featured">
+              <span class="card-badge">Live</span>
               <p class="card-label">Live now</p>
               <h3>Capricast</h3>
               <p>Premium creator video platform for uploading, watching, interacting, and monetizing in real time on the edge.</p>
@@ -421,7 +424,59 @@
           </p>
         </section>
       </main>
+
+      <footer class="footer">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3 class="footer-title">Latimer Woods</h3>
+            <p class="footer-text">Edge-first platforms for healing, media, governance, and infrastructure.</p>
+          </div>
+          <div class="footer-section">
+            <p class="footer-label">Platforms</p>
+            <ul class="footer-links">
+              <li><a href="https://selfprime.net" target="_blank" rel="noreferrer">Prime Self</a></li>
+              <li><a href="https://capricast.com" target="_blank" rel="noreferrer">Capricast</a></li>
+              <li><a href="https://cypherofhealing.com" target="_blank" rel="noreferrer">Cypher of Healing</a></li>
+              <li><a href="https://apunlimited.com" target="_blank" rel="noreferrer">AP Unlimited</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <p class="footer-label">Learn</p>
+            <ul class="footer-links">
+              <li><a href="/stack/">Stack & Architecture</a></li>
+              <li><a href="/founder/">Founder Profile</a></li>
+              <li><a href="/status/">System Status</a></li>
+              <li><a href="https://github.com/Latimer-Woods-Tech" target="_blank" rel="noreferrer">GitHub</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <p class="footer-label">Contact</p>
+            <ul class="footer-links">
+              <li><a href="mailto:aperry@latwoodtech.com">aperry@latwoodtech.com</a></li>
+              <li><a href="tel:+17062677235">(706) 267-7235</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2026 Latimer Woods Technology. <a href="/privacy.html">Privacy Policy</a>.</p>
+        </div>
+      </footer>
     </div>
-    <script type="module" src="hero-circuitry.js"></script>
+    <script>
+      // Lazy-load hero circuitry after page is interactive to avoid blocking render
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          const s = document.createElement('script');
+          s.type = 'module';
+          s.src = 'hero-circuitry.js';
+          document.body.appendChild(s);
+        });
+      } else {
+        const s = document.createElement('script');
+        s.type = 'module';
+        s.src = 'hero-circuitry.js';
+        document.body.appendChild(s);
+      }
+    </script>
   </body>
 </html>

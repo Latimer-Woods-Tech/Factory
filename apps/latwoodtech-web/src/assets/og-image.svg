@@ -28,7 +28,7 @@
   <text x="100" y="95" font-family="'Cormorant Garamond', serif" font-size="64" font-weight="700" fill="#d7a94b" text-anchor="middle">L</text>
 
   <!-- Main headline -->
-  <text x="200" y="90" font-family="'Cormorant Garamond', serif" font-size="72" font-weight="600" fill="#fff7e3" font-smooth="auto">Latimer Woods</text>
+  <text x="200" y="90" font-family="'Cormorant Garamond', serif" font-size="72" font-weight="600" fill="#fff7e3">Latimer Woods</text>
 
   <!-- Subheadline -->
   <text x="200" y="150" font-family="'Space Grotesk', sans-serif" font-size="32" font-weight="400" fill="#d8c9a3">Technology for people who want more life.</text>
