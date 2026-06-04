@@ -283,10 +283,10 @@ await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 // /stack/ — annotated architecture + "what we refuse to ship with" page.
 await mkdir(join(distDir, 'stack'), { recursive: true });
 await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
-// /resume/ — founder profile with live stats hydrated from founder-stats.json.
-await mkdir(join(distDir, 'resume'), { recursive: true });
-await copyFile(join(srcDir, 'resume', 'index.html'), join(distDir, 'resume', 'index.html'));
-await copyFile(join(srcDir, 'resume.js'), join(distDir, 'resume.js'));
+// /founder/ — founder profile with live stats hydrated from founder-stats.json.
+await mkdir(join(distDir, 'founder'), { recursive: true });
+await copyFile(join(srcDir, 'founder', 'index.html'), join(distDir, 'founder', 'index.html'));
+await copyFile(join(srcDir, 'founder.js'), join(distDir, 'founder.js'));
 // Copy OG image (SVG) for social shares (1200×630).
 await mkdir(join(distDir, 'assets'), { recursive: true });
 await copyFile(join(srcDir, 'assets', 'og-image.svg'), join(distDir, 'assets', 'og-image.svg'));
