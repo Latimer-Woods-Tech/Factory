@@ -37,7 +37,7 @@
       // and replace database_id with the UUID from the output.
       "binding": "DB",
       "database_name": "agent-gateway-memory",
-      "database_id": "TODO_REPLACE_WITH_D1_UUID"
+      "database_id": "5378c8c4-4a18-4a67-b4a0-17a7a9a6f313"
     }
   ],
 
@@ -46,7 +46,7 @@
       // TODO(operator): create KV namespace via `wrangler kv:namespace create "agent-gateway-config"`
       // and replace id with the UUID from the output.
       "binding": "KV",
-      "id": "TODO_REPLACE_WITH_KV_NAMESPACE_UUID"
+      "id": "dbf85e2023834127af8637498f1fa5f1"
     }
   ],
 
@@ -82,7 +82,7 @@
         // TODO(operator): replace with the branded custom domain for this worker.
         // NEVER expose *.workers.dev URLs in user-facing code — see CLAUDE.md hard constraints.
         // Example: { "pattern": "agent-gateway.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
-        { "pattern": "TODO_REPLACE_BRANDED_DOMAIN/*", "zone_name": "TODO_REPLACE_ZONE_NAME" }
+        { "pattern": "agent-gateway.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
       ],
       // NOTE: wrangler v4 does NOT inherit top-level vars/durable_objects/d1_databases/migrations
       // into named environments. They MUST be repeated here or the production worker deploys
@@ -107,13 +107,13 @@
         {
           "binding": "DB",
           "database_name": "agent-gateway-memory",
-          "database_id": "TODO_REPLACE_WITH_D1_UUID"
+          "database_id": "5378c8c4-4a18-4a67-b4a0-17a7a9a6f313"
         }
       ],
       "kv_namespaces": [
         {
           "binding": "KV",
-          "id": "TODO_REPLACE_WITH_KV_NAMESPACE_UUID"
+          "id": "dbf85e2023834127af8637498f1fa5f1"
         }
       ],
       "unsafe": {
