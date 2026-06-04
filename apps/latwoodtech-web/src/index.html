@@ -7,22 +7,70 @@
     <meta property="og:title" content="Latimer Woods" />
     <meta property="og:description" content="Technology for people who want more life, not more efficiency." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://latwoodtech.com" />
+    <meta property="og:url" content="https://latwoodtech.com/" />
+    <meta property="og:image" content="https://latwoodtech.com/assets/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Latimer Woods" />
     <meta name="twitter:description" content="Technology for people who want more life, not more efficiency." />
+    <meta name="twitter:image" content="https://latwoodtech.com/assets/og-image.svg" />
     <meta name="theme-color" content="#05070a" />
+    <link rel="canonical" href="https://latwoodtech.com/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="image" href="assets/latimerWoodslogovideo.png" fetchpriority="high" />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234f7bff' width='100' height='100'/><text x='50' y='60' font-size='70' font-weight='700' fill='white' text-anchor='middle'>L</text></svg>" />
     <title>Latimer Woods — Human-Centered Technology & Product Portfolio</title>
     <link rel="stylesheet" href="styles.css" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Latimer Woods Technology",
+      "alternateName": "Latimer Woods",
+      "url": "https://latwoodtech.com/",
+      "image": "https://latwoodtech.com/assets/og-image.svg",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://latwoodtech.com/assets/latimerWoodslogovideo.png",
+        "width": 112,
+        "height": 112
+      },
+      "description": "Technology for people who want more life, not more efficiency. A portfolio of edge-first platforms across healing, media, governance, and operations.",
+      "founder": {
+        "@type": "Person",
+        "name": "Adrian L. Perry",
+        "jobTitle": "Founder & Principal Engineer"
+      },
+      "sameAs": [
+        "https://github.com/Latimer-Woods-Tech"
+      ],
+      "knowsAbout": [
+        "Cloudflare Workers",
+        "Edge computing",
+        "AI orchestration",
+        "Platform engineering"
+      ]
+    }
+    </script>
     <script type="module" src="app.js"></script>
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to main content</a>
     <div class="page-shell">
+      <nav class="site-nav" aria-label="Primary">
+        <a class="site-nav-brand" href="/">
+          <span class="site-nav-mark" aria-hidden="true"></span>
+          Latimer Woods
+        </a>
+        <div class="site-nav-links">
+          <a href="/stack/">Stack</a>
+          <a href="/status/">Status</a>
+          <a href="/resume/">Resume</a>
+        </div>
+      </nav>
       <header class="hero">
         <div class="hero-copy">
           <div class="hero-mark" aria-hidden="true"></div>
@@ -108,24 +156,24 @@
 
             <div class="pulse-kpis" data-pulse-stats>
               <article class="pulse-kpi pulse-kpi-placeholder">
-                <span class="pulse-kpi-label">Weighted completion</span>
+                <span class="pulse-kpi-label">Merged PRs</span>
                 <strong class="pulse-kpi-value">--</strong>
-                <span class="pulse-kpi-context">Build-generated public signal</span>
+                <span class="pulse-kpi-context">Shipped and reviewed across the platform</span>
               </article>
               <article class="pulse-kpi pulse-kpi-placeholder">
-                <span class="pulse-kpi-label">Known coverage</span>
+                <span class="pulse-kpi-label">Commits</span>
                 <strong class="pulse-kpi-value">--</strong>
-                <span class="pulse-kpi-context">Curated, not exhaustive</span>
+                <span class="pulse-kpi-context">Public, auditable change history</span>
               </article>
               <article class="pulse-kpi pulse-kpi-placeholder">
-                <span class="pulse-kpi-label">Verified functions</span>
+                <span class="pulse-kpi-label">Deployed apps</span>
                 <strong class="pulse-kpi-value">--</strong>
-                <span class="pulse-kpi-context">Proof over posture</span>
+                <span class="pulse-kpi-context">Serverless surfaces in production</span>
               </article>
               <article class="pulse-kpi pulse-kpi-placeholder">
-                <span class="pulse-kpi-label">Public surfaces</span>
+                <span class="pulse-kpi-label">Shared packages</span>
                 <strong class="pulse-kpi-value">--</strong>
-                <span class="pulse-kpi-context">Only branded domains exposed</span>
+                <span class="pulse-kpi-context">Reusable infrastructure modules</span>
               </article>
             </div>
 
@@ -181,14 +229,14 @@
 
             <section class="pulse-panel pulse-panel-wide">
               <div class="pulse-panel-header">
-                <p class="card-label">Tracked Domains</p>
-                <h3>Where the work is hardening right now</h3>
+                <p class="card-label">Live Surfaces</p>
+                <h3>Brand surfaces, probed on every deploy</h3>
               </div>
               <div class="pulse-vectors" data-pulse-vectors>
                 <article class="vector-card">
-                  <span class="vector-name">HumanDesign</span>
+                  <span class="vector-name">Prime Self</span>
                   <strong class="vector-value">--</strong>
-                  <p class="vector-context">Awaiting signal</p>
+                  <p class="vector-context">Awaiting liveness probe</p>
                 </article>
               </div>
             </section>
@@ -370,6 +418,9 @@
         <section class="section section-footnote">
           <p>
             The journey is just beginning. We’re building something that matters, right here on the edge of the future. Let’s make something beautiful.
+          </p>
+          <p style="margin-top: 20px;">
+            <a href="/resume" style="color: var(--accent); text-decoration: none; font-size: 0.88rem; letter-spacing: 0.06em;">Founder profile &amp; resume →</a>
           </p>
         </section>
       </main>
