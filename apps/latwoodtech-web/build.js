@@ -7,6 +7,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(__dirname, 'src');
 const distDir = join(__dirname, 'dist');
 
+function minifyCSS(css) {
+	return css
+		.replace(/\/\*[\s\S]*?\*\//g, '')
+		.replace(/\s+/g, ' ')
+		.replace(/\s*([{}:;,>+~])\s*/g, '$1')
+		.trim();
+}
+
 const BRAND_SURFACES = [
 	{ name: 'Prime Self', url: 'https://selfprime.net', category: 'Practitioner intelligence' },
 	{ name: 'Capricast', url: 'https://capricast.com', category: 'Interactive creator video' },
@@ -19,12 +27,24 @@ async function probeSurface(surface) {
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), 6000);
 	try {
-		const res = await fetch(surface.url, {
+		// Try /health endpoint first (service liveness check), fall back to root (homepage)
+		const healthUrl = new URL('/health', surface.url).toString();
+		let res = await fetch(healthUrl, {
 			method: 'GET',
-			redirect: 'follow',
 			signal: controller.signal,
 			headers: { 'user-agent': 'latwoodtech-web-build-probe/1.0' },
-		});
+		}).catch(() => null);
+
+		// If /health not available, check root homepage
+		if (!res) {
+			res = await fetch(surface.url, {
+				method: 'GET',
+				redirect: 'follow',
+				signal: controller.signal,
+				headers: { 'user-agent': 'latwoodtech-web-build-probe/1.0' },
+			});
+		}
+
 		const durationMs = Date.now() - start;
 		return {
 			name: surface.name,
@@ -254,17 +274,23 @@ const { topology } = await generateTopology({ outDir: join(distDir, 'data') });
 await mkdir(distDir, { recursive: true });
 await copyFile(join(srcDir, 'index.html'), join(distDir, 'index.html'));
 await copyFile(join(srcDir, 'privacy.html'), join(distDir, 'privacy.html'));
-await copyFile(join(srcDir, 'styles.css'), join(distDir, 'styles.css'));
+const cssRaw = await readFile(join(srcDir, 'styles.css'), 'utf8');
+const cssMin = minifyCSS(cssRaw);
+await writeFile(join(distDir, 'styles.css'), cssMin, 'utf8');
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 // /stack/ — annotated architecture + "what we refuse to ship with" page.
 await mkdir(join(distDir, 'stack'), { recursive: true });
 await copyFile(join(srcDir, 'stack', 'index.html'), join(distDir, 'stack', 'index.html'));
-// /resume/ — founder profile with live stats hydrated from founder-stats.json.
-await mkdir(join(distDir, 'resume'), { recursive: true });
-await copyFile(join(srcDir, 'resume', 'index.html'), join(distDir, 'resume', 'index.html'));
-await copyFile(join(srcDir, 'resume.js'), join(distDir, 'resume.js'));
+// /founder/ — founder profile with live stats hydrated from founder-stats.json.
+await mkdir(join(distDir, 'founder'), { recursive: true });
+await copyFile(join(srcDir, 'founder', 'index.html'), join(distDir, 'founder', 'index.html'));
+await copyFile(join(srcDir, 'founder.js'), join(distDir, 'founder.js'));
+// Copy OG image (SVG) for social shares (1200×630).
+await mkdir(join(distDir, 'assets'), { recursive: true });
+await copyFile(join(srcDir, 'assets', 'og-image.svg'), join(distDir, 'assets', 'og-image.svg'));
+
 // Credibility signals: humans.txt (humanstxt.org) at root, security.txt
 // (RFC 9116) under /.well-known/. Absence reads "not yet a real platform".
 await copyFile(join(srcDir, 'humans.txt'), join(distDir, 'humans.txt'));
