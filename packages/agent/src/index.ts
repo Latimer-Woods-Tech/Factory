@@ -23,4 +23,21 @@ export {
   type ToolCallReceipt,
   type StopReason,
 } from './loop.js';
-export { GuardrailError, detectInjection, assertCleanUserMessage, assertCleanToolResult, truncateToolResult, MAX_USER_MESSAGE_CHARS, MAX_TOOL_RESULT_CHARS } from './guardrails.js';
+
+export {
+  AgentSessionDO,
+  runSession,
+  type DOStorage,
+  type SessionState,
+  type SessionRunOptions,
+} from './session.js';
+
+export {
+  GuardrailError,
+  detectInjection,
+  assertCleanUserMessage,
+  assertCleanToolResult,
+  truncateToolResult,
+  MAX_USER_MESSAGE_CHARS,
+  MAX_TOOL_RESULT_CHARS,
+} from './guardrails.js';
