@@ -41,3 +41,13 @@ export {
   MAX_USER_MESSAGE_CHARS,
   MAX_TOOL_RESULT_CHARS,
 } from './guardrails.js';
+
+export {
+  recordEpisode,
+  getRecentEpisodes,
+  getProjectEpisodes,
+  getEpisodeSummary,
+  type Episode,
+  type RecordEpisodeParams,
+  type D1Like,
+} from './memory/episodic.js';
