@@ -12,7 +12,7 @@
     "check:targets": "node ../../scripts/generate-monitor-targets.mjs --check"
   },
   "dependencies": {
-    "hono": "^4.12.18",
+    "hono": "^4.12.21",
     "@cloudflare/puppeteer": "^0.0.13"
   },
   "devDependencies": {
