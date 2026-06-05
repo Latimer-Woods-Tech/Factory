@@ -85,6 +85,7 @@ if (greenPlanDescription) {
     if (expected && step.side_effects !== expected) fail('green plan step has wrong side effect classification', { step, expected });
     if (!expected && step.side_effects !== 'none') fail('green plan contains unexpected side-effectful step', { step });
   }
+  if (JSON.stringify(plan.body.plan).includes('$slots.')) fail('green plan dry-run left unresolved slot placeholders', { plan: plan.body.plan });
   greenPlan = {
     matched: true,
     template: plan.body.template,
