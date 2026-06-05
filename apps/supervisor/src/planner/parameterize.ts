@@ -73,7 +73,11 @@ function literalFill(
 
 function extractSlots(template: SlotAwareTemplate, description: string): Record<string, unknown> {
   const out: Record<string, unknown> = { ...(template.slot_defaults ?? {}) };
-  const names = new Set([...(template.slot_names ?? []), ...Object.keys(template.slot_validators ?? {})]);
+  const names = new Set([
+    ...(template.slot_names ?? []),
+    ...Object.keys(template.slot_validators ?? {}),
+    ...slotNamesFromSteps(template),
+  ]);
 
   setIfPresent(out, names, 'target_path', field(description, ['target_path', 'path']));
   setIfPresent(out, names, 'branch_name', field(description, ['branch_name', 'branch']));
@@ -97,6 +101,24 @@ function extractSlots(template: SlotAwareTemplate, description: string): Record<
   }
 
   return out;
+}
+
+
+function slotNamesFromSteps(template: Template): string[] {
+  const names = new Set<string>();
+  const visit = (value: unknown) => {
+    if (typeof value === 'string') {
+      for (const match of value.matchAll(/\$slots\.(\w+)/g)) names.add(match[1]!);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (value && typeof value === 'object') Object.values(value as Record<string, unknown>).forEach(visit);
+  };
+  for (const step of template.steps ?? []) visit(step.slots ?? {});
+  return [...names];
 }
 
 function setIfPresent(out: Record<string, unknown>, names: Set<string>, name: string, value: string | null): void {
