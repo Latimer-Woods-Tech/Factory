@@ -91,6 +91,10 @@ function extractSlots(template: SlotAwareTemplate, description: string): Record<
     out.parent_dir = parts.join('/') || 'docs';
   }
 
+  if (names.has('scope') && typeof out.scope !== 'string') {
+    out.scope = 'general';
+  }
+
   for (const [name, pattern] of Object.entries(template.slot_validators ?? {})) {
     if (typeof out[name] !== 'string') continue;
     try {
