@@ -198,6 +198,12 @@ export interface RenderJob {
   thumbnailUrl?: string;
   /** Cloudflare Stream UID after registration. */
   streamUid?: string;
+  /** Atmospheric forge theme for EnergyBlueprintVideo renders (chronos|eros|aether|lux|phoenix|self). */
+  forgeTheme?: string;
+  /** HD energy type for body graph colouring (generator|manifesting_generator|projector|manifestor|reflector). */
+  hdType?: string;
+  /** Gate numbers to highlight on the body graph in EnergyBlueprintVideo. */
+  signatureGates?: number[];
   /** Current pipeline stage. */
   status: RenderJobStatus;
   /** Human-readable failure reason when `status === 'failed'`. */
