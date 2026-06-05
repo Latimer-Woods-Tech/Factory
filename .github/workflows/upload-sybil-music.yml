@@ -130,29 +130,12 @@ jobs:
           done
           [ "$fail" = "0" ] || { echo "::error::One or more tracks not reachable — check R2 bucket public access"; exit 1; }
 
-      - name: Set SYBIL_MUSIC_BASE_URL on Cloud Run render service
+      - name: Smoke-verify render service is live
         run: |
           set -euo pipefail
-          MUSIC_BASE_URL="https://${R2_PUBLIC_DOMAIN}/sybil-music"
-          echo "Setting SYBIL_MUSIC_BASE_URL=$MUSIC_BASE_URL on $CLOUD_RUN_SERVICE ($CLOUD_RUN_REGION)"
-          gcloud run services update "$CLOUD_RUN_SERVICE" \
-            --region "$CLOUD_RUN_REGION" \
-            --update-env-vars "SYBIL_MUSIC_BASE_URL=$MUSIC_BASE_URL" \
-            --quiet
-          echo "✓ Cloud Run env var set"
-
-      - name: Smoke-verify render service health post-update
-        run: |
-          set -euo pipefail
-          # Give Cloud Run a moment to roll the new revision
-          sleep 15
-          URL=$(gcloud run services describe "$CLOUD_RUN_SERVICE" \
-            --region "$CLOUD_RUN_REGION" \
-            --format 'value(status.url)')
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$URL/health")
-          if [ "$CODE" = "200" ]; then
-            echo "✓ $URL/health → 200"
-          else
-            echo "::error::Render service health returned $CODE after env-var update"
-            exit 1
-          fi
+          # SYBIL_MUSIC_BASE_URL is set in cloudbuild.yaml (PR #1265) and already present
+          # on the running service. No Cloud Run update needed here — the env var
+          # points at the public R2 URL where tracks were just uploaded.
+          SERVICE_URL="https://video-render-service-891842778224.us-central1.run.app"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$SERVICE_URL/health")
+          [ "$CODE" = "200" ] && echo "✓ Render service /health → 200" || { echo "::error::Render service /health returned $CODE"; exit 1; }
