@@ -14,8 +14,8 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  # Commit that still has the music files in git history
-  MUSIC_GIT_COMMIT: 57e658fe45f7c85fba7f6424c1bea1e68a617a60
+  # Branch that still has the music files (squash merge does not carry intermediate commits to main)
+  MUSIC_BRANCH: docs/regen-after-lessons
   # Cloud Run service name + region
   CLOUD_RUN_SERVICE: video-render-service
   CLOUD_RUN_REGION: us-central1
@@ -51,24 +51,33 @@ jobs:
           fetch_to_env R2_BUCKET_NAME     R2_BUCKET_NAME     r2-bucket-name
           fetch_to_env R2_PUBLIC_DOMAIN   R2_PUBLIC_DOMAIN   r2-public-domain
 
+      - name: Fetch branch with music files
+        run: |
+          set -euo pipefail
+          # The music files were on a branch that was squash-merged; the intermediate
+          # commits are not in main's ancestry. Fetch the branch explicitly.
+          git fetch origin "$MUSIC_BRANCH"
+          echo "Music branch fetched. Latest commit on branch:"
+          git log --oneline -1 FETCH_HEAD
+
       - name: Restore music tracks from git history
         run: |
           set -euo pipefail
           mkdir -p /tmp/sybil-music/forge /tmp/sybil-music/type
-          C="$MUSIC_GIT_COMMIT"
+          REF="origin/$MUSIC_BRANCH"
           # Forge-theme tracks
-          git show "$C:selfprime_music/Chronos Under Stone.mp3"   > /tmp/sybil-music/forge/chronos.mp3
-          git show "$C:selfprime_music/Eros Drift.mp3"            > /tmp/sybil-music/forge/eros.mp3
-          git show "$C:selfprime_music/Aether Drift.mp3"          > /tmp/sybil-music/forge/aether.mp3
-          git show "$C:selfprime_music/Lux.mp3"                   > /tmp/sybil-music/forge/lux.mp3
-          git show "$C:selfprime_music/Ashrise.mp3"               > /tmp/sybil-music/forge/phoenix.mp3
-          git show "$C:selfprime_music/Centered Stillness.mp3"    > /tmp/sybil-music/forge/self.mp3
+          git show "$REF:selfprime_music/Chronos Under Stone.mp3"   > /tmp/sybil-music/forge/chronos.mp3
+          git show "$REF:selfprime_music/Eros Drift.mp3"            > /tmp/sybil-music/forge/eros.mp3
+          git show "$REF:selfprime_music/Aether Drift.mp3"          > /tmp/sybil-music/forge/aether.mp3
+          git show "$REF:selfprime_music/Lux.mp3"                   > /tmp/sybil-music/forge/lux.mp3
+          git show "$REF:selfprime_music/Ashrise.mp3"               > /tmp/sybil-music/forge/phoenix.mp3
+          git show "$REF:selfprime_music/Centered Stillness.mp3"    > /tmp/sybil-music/forge/self.mp3
           # HD-type tracks
-          git show "$C:selfprime_music/Interwoven Pulse.mp3"         > /tmp/sybil-music/type/generator.mp3
-          git show "$C:selfprime_music/Manifesting Generator.mp3"    > /tmp/sybil-music/type/manifesting_generator.mp3
-          git show "$C:selfprime_music/Projector.mp3"                > /tmp/sybil-music/type/projector.mp3
-          git show "$C:selfprime_music/Manifestor.mp3"               > /tmp/sybil-music/type/manifestor.mp3
-          git show "$C:selfprime_music/Moonwater Reflector.mp3"      > /tmp/sybil-music/type/reflector.mp3
+          git show "$REF:selfprime_music/Interwoven Pulse.mp3"         > /tmp/sybil-music/type/generator.mp3
+          git show "$REF:selfprime_music/Manifesting Generator.mp3"    > /tmp/sybil-music/type/manifesting_generator.mp3
+          git show "$REF:selfprime_music/Projector.mp3"                > /tmp/sybil-music/type/projector.mp3
+          git show "$REF:selfprime_music/Manifestor.mp3"               > /tmp/sybil-music/type/manifestor.mp3
+          git show "$REF:selfprime_music/Moonwater Reflector.mp3"      > /tmp/sybil-music/type/reflector.mp3
           echo "Track sizes:"
           du -sh /tmp/sybil-music/forge/* /tmp/sybil-music/type/*
 
