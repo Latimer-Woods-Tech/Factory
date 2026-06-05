@@ -237,7 +237,7 @@ app.post('/sessions/:id/run', async (c) => {
   const doResponse = await stub.fetch('https://do/run', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ...body, _llmEnv: buildLLMEnv(c.env) }),
+    body: JSON.stringify({ ...body, env: buildLLMEnv(c.env) }),
   });
 
   const responseBody: unknown = await doResponse.json();
