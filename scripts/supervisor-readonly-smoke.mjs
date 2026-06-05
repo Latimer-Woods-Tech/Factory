@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-const url = "placeholder" || 'https://supervisor.latwoodtech.work/tools/read-only-smoke';
-const token = "placeholder";
+const env = globalThis.process?.env ?? {};
+const url = env.SUPERVISOR_READONLY_SMOKE_URL || 'https://supervisor.latwoodtech.work/tools/read-only-smoke';
+const token = env.SUPERVISOR_API_KEY;
 const allowedHosts = new Set(['supervisor.latwoodtech.work', 'factory-supervisor.adrper79.workers.dev']);
-const greenPlanDescription = "placeholder" || '';
-const expectedGreenTemplate = "placeholder" || '';
+const greenPlanDescription = env.SUPERVISOR_GREEN_PLAN_DESCRIPTION || '';
+const expectedGreenTemplate = env.SUPERVISOR_EXPECTED_GREEN_TEMPLATE_ID || '';
 const required = [
   'supervisor.health.snapshot',
   'registry.capabilities.list',
