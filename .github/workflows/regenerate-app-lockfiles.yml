@@ -51,11 +51,33 @@ jobs:
             echo "No lockfile changes"
             exit 0
           fi
-          BR="chore/refresh-lockfile-npmjs-$(date -u +%Y%m%d-%H%M%S)"
+          BR="chore/refresh-lockfile-npmjs"
           git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
           git config user.name "factory-cross-repo[bot]"
-          git checkout -b "$BR"
+           
+          # Check if the branch already exists
+          if git ls-remote --exit-code --heads origin "$BR" >/dev/null 2>&1; then
+            git fetch origin "$BR"
+            git checkout -B "$BR" "origin/$BR"
+          else
+            git checkout -b "$BR"
+          fi
+           
           git add package-lock.json
-          git commit -m "chore: refresh package-lock.json (npmjs.org migration)"
-          git push origin "$BR"
-          gh pr create --repo "Latimer-Woods-Tech/${{ matrix.repo }}" --base main --head "$BR" --title "chore: refresh package-lock.json (npmjs.org migration)" --body "Automated lockfile refresh after migrating @latimer-woods-tech/* packages to public npmjs.org. Merging unblocks CI."
+          if git diff --cached --quiet; then
+            echo "Existing lockfile PR already contains this content."
+          else
+            git commit -m "chore: refresh package-lock.json (npmjs.org migration)"
+            git push --force-with-lease --set-upstream origin "$BR"
+          fi
+           
+          EXISTING_PR=$(gh pr list --head "$BR" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing PR #$EXISTING_PR."
+            gh pr edit "$EXISTING_PR" \
+              --title "chore: refresh package-lock.json (npmjs.org migration)" \
+              --body "Automated lockfile refresh after migrating @latimer-woods-tech/* packages to public npmjs.org. Merging unblocks CI. This branch is stable so reruns update one PR instead of opening timestamped duplicates."
+            gh pr merge --auto --squash "$EXISTING_PR" || true
+          else
+            gh pr create --repo "Latimer-Woods-Tech/${{ matrix.repo }}" --base main --head "$BR" --title "chore: refresh package-lock.json (npmjs.org migration)" --body "Automated lockfile refresh after migrating @latimer-woods-tech/* packages to public npmjs.org. Merging unblocks CI. This branch is stable so reruns update one PR instead of opening timestamped duplicates."
+          fi
