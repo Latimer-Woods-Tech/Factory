@@ -23,9 +23,7 @@ function makeEnv(): Env {
     PER_RUN_CAP_CENTS: '500',
     JWT_SECRET: 'test-jwt-secret',
     FACTORY_APP_ID: '123456',
-    FACTORY_APP_PRIVATE_KEY: '-----BEGIN PRIVATE KEY-----
-test
------END PRIVATE KEY-----',
+    FACTORY_APP_PRIVATE_KEY: ['-----BEGIN PRIVATE KEY-----', 'test', '-----END PRIVATE KEY-----'].join('\n'),
     FACTORY_APP_INSTALLATION_ID: '789012',
     PUSHOVER_TOKEN: 'test-pushover',
     PUSHOVER_USER_KEY: 'test-user',
