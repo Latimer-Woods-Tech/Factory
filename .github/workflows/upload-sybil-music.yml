@@ -14,8 +14,9 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-  # Commit that still has the music files in git history
-  MUSIC_GIT_COMMIT: 57e658fe45f7c85fba7f6424c1bea1e68a617a60
+  # GitHub release that holds the 11 Sybil tracks as assets
+  MUSIC_RELEASE_TAG: sybil-music-assets-v1
+  MUSIC_RELEASE_REPO: Latimer-Woods-Tech/Factory
   # Cloud Run service name + region
   CLOUD_RUN_SERVICE: video-render-service
   CLOUD_RUN_REGION: us-central1
@@ -25,10 +26,8 @@ jobs:
     name: Upload Sybil music tracks + wire SYBIL_MUSIC_BASE_URL
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full history so we can restore tracks)
+      - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 0
 
       - name: Install AWS CLI
         run: aws --version || (sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends awscli)
@@ -51,24 +50,35 @@ jobs:
           fetch_to_env R2_BUCKET_NAME     R2_BUCKET_NAME     r2-bucket-name
           fetch_to_env R2_PUBLIC_DOMAIN   R2_PUBLIC_DOMAIN   r2-public-domain
 
-      - name: Restore music tracks from git history
+      - name: Download music tracks from GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/sybil-music/forge /tmp/sybil-music/type
-          C="$MUSIC_GIT_COMMIT"
-          # Forge-theme tracks
-          git show "$C:selfprime_music/Chronos Under Stone.mp3"   > /tmp/sybil-music/forge/chronos.mp3
-          git show "$C:selfprime_music/Eros Drift.mp3"            > /tmp/sybil-music/forge/eros.mp3
-          git show "$C:selfprime_music/Aether Drift.mp3"          > /tmp/sybil-music/forge/aether.mp3
-          git show "$C:selfprime_music/Lux.mp3"                   > /tmp/sybil-music/forge/lux.mp3
-          git show "$C:selfprime_music/Ashrise.mp3"               > /tmp/sybil-music/forge/phoenix.mp3
-          git show "$C:selfprime_music/Centered Stillness.mp3"    > /tmp/sybil-music/forge/self.mp3
+          BASE="https://github.com/${MUSIC_RELEASE_REPO}/releases/download/${MUSIC_RELEASE_TAG}"
+          download() {
+            local dest="$1" asset="$2"
+            echo "downloading $asset..."
+            gh release download "$MUSIC_RELEASE_TAG" \
+              --repo "$MUSIC_RELEASE_REPO" \
+              --pattern "$asset" \
+              --output "$dest" \
+              --clobber
+          }
+          # forge-theme tracks
+          download /tmp/sybil-music/forge/chronos.mp3              chronos.mp3
+          download /tmp/sybil-music/forge/eros.mp3                 eros.mp3
+          download /tmp/sybil-music/forge/aether.mp3               aether.mp3
+          download /tmp/sybil-music/forge/lux.mp3                  lux.mp3
+          download /tmp/sybil-music/forge/phoenix.mp3              phoenix.mp3
+          download /tmp/sybil-music/forge/self.mp3                 self.mp3
           # HD-type tracks
-          git show "$C:selfprime_music/Interwoven Pulse.mp3"         > /tmp/sybil-music/type/generator.mp3
-          git show "$C:selfprime_music/Manifesting Generator.mp3"    > /tmp/sybil-music/type/manifesting_generator.mp3
-          git show "$C:selfprime_music/Projector.mp3"                > /tmp/sybil-music/type/projector.mp3
-          git show "$C:selfprime_music/Manifestor.mp3"               > /tmp/sybil-music/type/manifestor.mp3
-          git show "$C:selfprime_music/Moonwater Reflector.mp3"      > /tmp/sybil-music/type/reflector.mp3
+          download /tmp/sybil-music/type/generator.mp3             generator.mp3
+          download /tmp/sybil-music/type/manifesting_generator.mp3 manifesting_generator.mp3
+          download /tmp/sybil-music/type/projector.mp3             projector.mp3
+          download /tmp/sybil-music/type/manifestor.mp3            manifestor.mp3
+          download /tmp/sybil-music/type/reflector.mp3             reflector.mp3
           echo "Track sizes:"
           du -sh /tmp/sybil-music/forge/* /tmp/sybil-music/type/*
 
