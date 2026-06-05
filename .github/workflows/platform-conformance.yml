@@ -96,15 +96,38 @@ jobs:
             exit 0
           fi
           DATE=$(date -u +%F)
-          BRANCH="chore/conformance-snapshot-$DATE-$(date -u +%H%M)"
+          BRANCH="chore/conformance-snapshot-$DATE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(conformance): auto-update shadow scores ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(conformance): shadow scores ($DATE)" \
-            --body "Automated daily conformance scan output from \`platform-conformance.yml\`. Shadow mode — scores are advisory until Stage 4." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+           
+          # Check if the branch already exists
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+           
+          git add docs/conformance/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Existing conformance PR already contains this content."
+          else
+            git commit -m "chore(conformance): auto-update shadow scores ($DATE)"
+            git push --force-with-lease --set-upstream origin "$BRANCH"
+          fi
+           
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing conformance PR #$EXISTING_PR."
+            gh pr edit "$EXISTING_PR" \
+              --title "chore(conformance): shadow scores ($DATE)" \
+              --body "Automated daily conformance scan output from \`platform-conformance.yml\`. Shadow mode — scores are advisory until Stage 4. This branch is stable per day so reruns update one PR instead of opening timestamped duplicates."
+            gh pr merge --auto --squash "$EXISTING_PR" || true
+          else
+            gh pr create \
+              --title "chore(conformance): shadow scores ($DATE)" \
+              --body "Automated daily conformance scan output from \`platform-conformance.yml\`. Shadow mode — scores are advisory until Stage 4. This branch is stable per day so reruns update one PR instead of opening timestamped duplicates." \
+              --label automation \
+              --label documentation \
+              --label auto-merge
+          fi
