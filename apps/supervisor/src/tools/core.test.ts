@@ -39,7 +39,11 @@ describe('registerCoreSupervisorTools', () => {
 
     const names = registry.list().map((tool) => tool.name).sort();
     expect(names).toEqual([
+      'github.addLabel',
+      'github.comment',
       'github.issue.searchApproved',
+      'github.openPR',
+      'github.readFile',
       'registry.capabilities.list',
       'state.lastRun.read',
       'supervisor.health.snapshot',
@@ -54,12 +58,16 @@ describe('registerCoreSupervisorTools', () => {
     expect(registry.llmTools()).toEqual([]);
   });
 
-  it('classifies only GitHub issue search as read-external', () => {
+  it('classifies read and guarded write tools explicitly', () => {
     const registry = new ToolRegistry();
     registerCoreSupervisorTools(registry, makeEnv());
 
     const byName = new Map(registry.list().map((tool) => [tool.name, tool]));
     expect(byName.get('github.issue.searchApproved')?.side_effects).toBe('read-external');
+    expect(byName.get('github.readFile')?.side_effects).toBe('read-external');
+    expect(byName.get('github.openPR')?.side_effects).toBe('write-external');
+    expect(byName.get('github.comment')?.side_effects).toBe('write-external');
+    expect(byName.get('github.addLabel')?.side_effects).toBe('write-external');
     expect(byName.get('supervisor.health.snapshot')?.side_effects).toBe('none');
     expect(byName.get('registry.capabilities.list')?.side_effects).toBe('none');
     expect(byName.get('template.list')?.side_effects).toBe('none');
