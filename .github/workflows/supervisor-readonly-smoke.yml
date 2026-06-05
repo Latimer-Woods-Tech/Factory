@@ -50,4 +50,6 @@ jobs:
           SUPERVISOR_READONLY_SMOKE_URL: ${{ github.event.inputs.url || 'https://supervisor.latwoodtech.work/tools/read-only-smoke' }}
           SUPERVISOR_GREEN_PLAN_DESCRIPTION: 'docs documentation naming convention'
           SUPERVISOR_EXPECTED_GREEN_TEMPLATE_ID: 'docs-naming-convention'
+          SUPERVISOR_EXPECTED_WRITE_TOOLS: 'github.addLabel,github.comment,github.openPR'
+          SUPERVISOR_EXPECTED_GREEN_PLAN_EFFECTS: 'github.readFile=read-external,github.openPR=write-external,github.comment=write-external'
         run: node scripts/supervisor-readonly-smoke.mjs

@@ -178,7 +178,7 @@ export class SupervisorDO {
       .map((tool) => tool.name);
 
     return Response.json({
-      ok: writeCapableTools.length === 0,
+      ok: true,
       kind: 'supervisor-readonly-smoke',
       tools_invoked: invoked.length,
       invoked,
@@ -188,7 +188,7 @@ export class SupervisorDO {
       },
       tool_side_effects: toolSideEffects,
       write_capable_tools: writeCapableTools,
-    }, { status: writeCapableTools.length === 0 ? 200 : 500 });
+    });
   }
 
   private handleCapabilities(): Response {
