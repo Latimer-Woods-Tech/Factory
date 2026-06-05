@@ -801,7 +801,7 @@ workers:
 
     '
   consumers: []
-  health_state: live
+  health_state: planned
 - id: marketing-supervisor-staging
   name: marketing-supervisor-staging
   repo: Latimer-Woods-Tech/factory
@@ -814,7 +814,7 @@ workers:
   telemetry_required: false
   notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
   consumers: []
-  health_state: live
+  health_state: planned
 - id: referrals
   name: referrals
   repo: Latimer-Woods-Tech/factory
@@ -834,7 +834,7 @@ workers:
 
     '
   consumers: []
-  health_state: live
+  health_state: planned
 - id: llm-rank-worker
   name: llm-rank-worker
   repo: Latimer-Woods-Tech/factory
@@ -854,7 +854,7 @@ workers:
 
     '
   consumers: []
-  health_state: live
+  health_state: planned
 pages:
 - id: prime-self-ui
   repo: Latimer-Woods-Tech/HumanDesign
@@ -883,8 +883,8 @@ pages:
   required_secrets:
   - CF_API_TOKEN
   - CF_ACCOUNT_ID
-  health_state: planned
-  notes: Pages site — planned deployment
+  health_state: provisioned
+  notes: 'Pages site with staging deployment attached since 2026-05-28. Waiting for production domain configuration.'
 - id: admin-studio-ui-storybook
   repo: Latimer-Woods-Tech/factory
   project_name: admin-studio-ui-storybook

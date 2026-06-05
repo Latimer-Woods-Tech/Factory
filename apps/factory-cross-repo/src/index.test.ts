@@ -8,11 +8,14 @@ import { describe, it, expect, vi } from 'vitest';
 import app, { type Env } from './index.js';
 
 const TEST_TOKEN = 'test-bearer-token-12345';
+const INVALID_BEARER_TOKEN = '******';
 
 function makeEnv(overrides: Partial<Env> = {}): Env {
   return {
     FACTORY_CROSS_REPO_TOKEN: TEST_TOKEN,
     FACTORY_APP_ID: '12345',
+    // Note: This RSA private key is intentionally truncated for testing purposes.
+    // It is not a functional key and should only be used in test environments.
     FACTORY_APP_PRIVATE_KEY: `-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEA0Z3VS5JJcds9cXdCUlVGn/OPIUAE/GKYp8yKhKNzCz8VVHVD
 dBzPJoFM8J9bPnJRyPAZuJdXzLwBqCiZfEpP6D8GqSFOQ7Z3kpFzFbNjLzN5A7Wo
@@ -57,7 +60,7 @@ describe('factory-cross-repo', () => {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            'authorization': '******',
+            'authorization': INVALID_BEARER_TOKEN,
           },
           body: JSON.stringify({
             template_id: 'test',

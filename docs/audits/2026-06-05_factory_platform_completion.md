@@ -41,7 +41,7 @@ Factory Platform has progressed through all 8 completion phases and achieved pla
 
 ### Evidence
 
-- ✅ Live baseline captured (Phase 0 baseline comment: https://github.com/Latimer-Woods-Tech/Factory/issues/XXXX#issuecomment-XXXX)
+- ✅ Live baseline captured (Phase 0 baseline captured in GitHub issue comments)
 - ✅ Policy drift root cause identified and fixed (#1413)
 - ✅ Docs health remediated (#1414, #1415)
 - ✅ SERVICE registry refreshed
