@@ -55,6 +55,7 @@ describe('parameterize', () => {
       branch_name: 'supervisor/docs/aos-green-smoke',
       commit_message: 'docs(supervisor): add aos green smoke doc',
       doc_body: '# AOS Green Smoke',
+      scope: 'general',
     });
     expect(JSON.stringify(plan)).not.toContain('$slots.');
   });
