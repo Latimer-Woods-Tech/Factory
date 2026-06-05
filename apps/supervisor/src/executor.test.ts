@@ -161,9 +161,7 @@ describe('executePlan', () => {
         expect(receipt.step_index).toBe(i);
       });
     });
-  });
-
-  describe('mutation cap enforcement (global)', () => {
+  
     it('fails at step 26 when exceeding global cap', async () => {
       // Create registry with enough apps to avoid per-app cap
       const registry = new ToolRegistry();
@@ -589,3 +587,32 @@ describe('executeStep', () => {
     await expect(executeStep(0, undefined, {}, {}, tools, env)).rejects.toThrow();
   });
 });
+
+
+    it('resolves cross-step references from previous tool results', async () => {
+      const registry = new ToolRegistry();
+      registry.register({
+        name: 'github.openPR',
+        description: 'mock pr',
+        side_effects: 'write-external',
+        required_scope: 'supervisor.mutator-github.openPR',
+        invoke: async () => ({ ok: true, result: { number: 1443 } }),
+      });
+      registry.register({
+        name: 'github.comment',
+        description: 'mock comment',
+        side_effects: 'write-external',
+        required_scope: 'supervisor.mutator-github.comment',
+        invoke: async (slots: Record<string, unknown>) => ({ ok: true, result: slots }),
+      });
+
+      const receipts = await executePlan([
+        { tool: 'github.openPR', slots: {}, side_effects: 'write-external' },
+        { tool: 'github.comment', slots: { pr: '$s1.number', body: 'Supervisor opened this PR.' }, side_effects: 'write-external' },
+      ], registry, env);
+
+      expect(receipts).toHaveLength(2);
+      expect(receipts[1]?.result).toEqual({ ok: true, result: { pr: 1443, body: 'Supervisor opened this PR.' } });
+    });
+
+  describe('mutation cap enforcement (global)', () => {
