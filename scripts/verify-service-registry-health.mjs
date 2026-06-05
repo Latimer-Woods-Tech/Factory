@@ -26,7 +26,7 @@ function inferState(entry) {
 
 function healthUrl(entry) {
   if (!entry.url || !entry.health_endpoint) return null;
-  return String(entry.url).replace(//$/, '') + '/' + String(entry.health_endpoint).replace(/^//, '');
+  return String(entry.url).replace(/\/$/, '') + '/' + String(entry.health_endpoint).replace(/^\//, '');
 }
 
 async function probe(url) {
@@ -35,7 +35,7 @@ async function probe(url) {
   try {
     const res = await fetch(url, { method: 'GET', signal: controller.signal, headers: { accept: 'application/json,text/plain,*/*' } });
     const text = await res.text().catch(() => '');
-    return { ok: res.ok, status: res.status, sample: text.slice(0, 180).replace(/s+/g, ' ') };
+    return { ok: res.ok, status: res.status, sample: text.slice(0, 180).replace(/\s+/g, ' ') };
   } catch (error) {
     return { ok: false, status: 'error', sample: error instanceof Error ? error.message : String(error) };
   } finally {
@@ -57,18 +57,18 @@ const results = [];
 for (const entry of entries) {
   const state = inferState(entry);
   const url = healthUrl(entry);
-  if (!VALID_STATES.has(state)) failures.push(`[31m${entry.id}: invalid health_state ${state}[0m`);
-  if (REQUIRE_EXPLICIT_STATE && !entry.health_state) failures.push(`[31m${entry.id}: missing explicit health_state[0m`);
+  if (!VALID_STATES.has(state)) failures.push(`\u001b[31m${entry.id}: invalid health_state ${state}\u001b[0m`);
+  if (REQUIRE_EXPLICIT_STATE && !entry.health_state) failures.push(`\u001b[31m${entry.id}: missing explicit health_state\u001b[0m`);
   if (state === 'live') {
     if (!url) {
-      failures.push(`[31m${entry.id}: live but missing url or health_endpoint[0m`);
+      failures.push(`\u001b[31m${entry.id}: live but missing url or health_endpoint\u001b[0m`);
       continue;
     }
     const result = await probe(url);
     results.push({ id: entry.id, state, url, ...result });
-    if (!result.ok) failures.push(`[31m${entry.id}: ${url} returned ${result.status} — ${result.sample}[0m`);
+    if (!result.ok) failures.push(`\u001b[31m${entry.id}: ${url} returned ${result.status} \u2014 ${result.sample}\u001b[0m`);
   } else {
-    if (!entry.notes && !entry.deployment_status) warnings.push(`[33m${entry.id}: ${state} without notes/deployment_status[0m`);
+    if (!entry.notes && !entry.deployment_status) warnings.push(`\u001b[33m${entry.id}: ${state} without notes/deployment_status\u001b[0m`);
     if (CHECK_NON_LIVE && url) {
       const result = await probe(url);
       results.push({ id: entry.id, state, url, ...result });
@@ -77,13 +77,12 @@ for (const entry of entries) {
 }
 
 for (const result of results) {
-  const mark = result.ok ? '✓' : '✗';
-  console.log(`[${result.ok ? '32' : '31'}m${mark}[0m ${result.id} [${result.state}] ${result.status} ${result.url}`);
+  const mark = result.ok ? '\u2713' : '\u2717';
+  console.log(`\u001b[${result.ok ? '32' : '31'}m${mark}\u001b[0m ${result.id} [${result.state}] ${result.status} ${result.url}`);
 }
 for (const warning of warnings) console.warn(warning);
 if (failures.length) {
-  console.error('
-Service registry health verification failed:');
+  console.error('\nService registry health verification failed:');
   for (const failure of failures) console.error('- ' + failure);
   process.exit(1);
 }
