@@ -177,6 +177,32 @@ jobs:
         working-directory: apps/supervisor
         run: sentry-cli sourcemaps inject .sentry-dist/
 
+      - name: Ensure Sentry project exists
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.FACTORY_SENTRY_API }}
+          SENTRY_ORG: latwood-tech
+        run: |
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "::warning::FACTORY_SENTRY_API missing; skipping Sentry project check"
+            exit 0
+          fi
+          # Check if project exists; create if not (idempotent — 400 on duplicate is fine)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+            "https://sentry.io/api/0/projects/${SENTRY_ORG}/factory-supervisor/")
+          if [ "$STATUS" = "404" ]; then
+            echo "Creating factory-supervisor Sentry project..."
+            curl -s -X POST \
+              -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{"name":"factory-supervisor","platform":"javascript","teams":["latwood-tech"]}' \
+              "https://sentry.io/api/0/teams/${SENTRY_ORG}/latwood-tech/projects/" \
+              | grep -o '"slug":"[^"]*"' || true
+            echo "Project created."
+          else
+            echo "Sentry project factory-supervisor exists (HTTP ${STATUS})."
+          fi
+
       - name: Upload sourcemaps to Sentry
         working-directory: apps/supervisor
         env:
