@@ -9,7 +9,7 @@ import yaml from 'js-yaml';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REGISTRY = join(ROOT, 'docs', 'service-registry.yml');
 const VALID_STATES = new Set(['planned', 'provisioned', 'live', 'broken', 'retired']);
-const TIMEOUT_MS = Number("placeholder" || 8000);
+const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 8000);
 const REQUIRE_EXPLICIT_STATE = process.argv.includes('--require-state');
 const CHECK_NON_LIVE = process.argv.includes('--check-broken');
 
@@ -26,7 +26,7 @@ function inferState(entry) {
 
 function healthUrl(entry) {
   if (!entry.url || !entry.health_endpoint) return null;
-  return String(entry.url).replace(//$/, '') + '/' + String(entry.health_endpoint).replace(/^//, '');
+  return String(entry.url).replace(/\/$/, '') + '/' + String(entry.health_endpoint).replace(/^\//, '');
 }
 
 async function probe(url) {
@@ -35,7 +35,7 @@ async function probe(url) {
   try {
     const res = await fetch(url, { method: 'GET', signal: controller.signal, headers: { accept: 'application/json,text/plain,*/*' } });
     const text = await res.text().catch(() => '');
-    return { ok: res.ok, status: res.status, sample: text.slice(0, 180).replace(/s+/g, ' ') };
+    return { ok: res.ok, status: res.status, sample: text.slice(0, 180).replace(/\s+/g, ' ') };
   } catch (error) {
     return { ok: false, status: 'error', sample: error instanceof Error ? error.message : String(error) };
   } finally {
@@ -82,8 +82,7 @@ for (const result of results) {
 }
 for (const warning of warnings) console.warn(warning);
 if (failures.length) {
-  console.error('
-Service registry health verification failed:');
+  console.error('Service registry health verification failed:');
   for (const failure of failures) console.error('- ' + failure);
   process.exit(1);
 }
