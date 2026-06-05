@@ -127,6 +127,7 @@ jobs:
           SECRET_SLACK_OWNER_USER_ID: ${{ secrets.SLACK_OWNER_USER_ID }}
           SECRET_SUPERVISOR_PUSH_KEY: ${{ env.SUPERVISOR_PUSH_KEY }}
           SECRET_SUPERVISOR_API_KEY: ${{ env.SUPERVISOR_API_KEY }}
+          SECRET_FACTORY_CROSS_REPO_TOKEN: ${{ secrets.FACTORY_CROSS_REPO_TOKEN }}
           TARGET_ENV: ${{ (github.event.inputs.env == 'production' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) && 'production' || 'staging' }}
         run: |
           # Only provision secrets that are actually set — skip empties with a warning.
@@ -156,6 +157,7 @@ jobs:
           put_secret SLACK_OWNER_USER_ID        "${SECRET_SLACK_OWNER_USER_ID}"
           put_secret SUPERVISOR_PUSH_KEY        "${SECRET_SUPERVISOR_PUSH_KEY}"
           put_secret SUPERVISOR_API_KEY         "${SECRET_SUPERVISOR_API_KEY}"
+          put_secret FACTORY_CROSS_REPO_TOKEN   "${SECRET_FACTORY_CROSS_REPO_TOKEN}"
 
       - name: Install Sentry CLI
         run: npm install -g @sentry/cli
