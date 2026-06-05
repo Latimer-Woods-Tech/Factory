@@ -265,11 +265,11 @@ describe('POST /sessions/:id/run', () => {
     const doUrl = String(firstCall?.[0] ?? '');
     const doInit = (firstCall?.[1] ?? {}) as { body?: string };
     expect(doUrl).toBe('https://do/run');
-    const body = JSON.parse(doInit.body ?? '{}') as { messages: unknown[]; _llmEnv: Record<string, unknown> };
+    const body = JSON.parse(doInit.body ?? '{}') as { messages: unknown[]; env: Record<string, unknown> };
     expect(body.messages).toEqual([{ role: 'user', content: 'run something' }]);
-    // LLM env is forwarded
-    expect(body._llmEnv).toHaveProperty('AI_GATEWAY_BASE_URL');
-    expect(body._llmEnv).toHaveProperty('ANTHROPIC_API_KEY');
+    // LLM env is forwarded to the DO as `env` (the contract AgentSessionDO/runSession reads).
+    expect(body.env).toHaveProperty('AI_GATEWAY_BASE_URL');
+    expect(body.env).toHaveProperty('ANTHROPIC_API_KEY');
   });
 
   it('returns 400 for invalid JSON body', async () => {
