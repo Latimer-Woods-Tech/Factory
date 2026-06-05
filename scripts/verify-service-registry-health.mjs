@@ -9,7 +9,7 @@ import yaml from 'js-yaml';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REGISTRY = join(ROOT, 'docs', 'service-registry.yml');
 const VALID_STATES = new Set(['planned', 'provisioned', 'live', 'broken', 'retired']);
-const TIMEOUT_MS = Number("placeholder" || 8000);
+const TIMEOUT_MS = Number(process.env.HEALTH_PROBE_TIMEOUT_MS || 8000);
 const REQUIRE_EXPLICIT_STATE = process.argv.includes('--require-state');
 const CHECK_NON_LIVE = process.argv.includes('--check-broken');
 
