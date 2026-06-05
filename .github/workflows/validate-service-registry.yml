@@ -67,5 +67,8 @@ jobs:
       - name: Validate service registry coverage
         run: npm run validate:service-registry
 
+      - name: Verify service registry health states
+        run: npm run verify:service-registry-health:ci
+
       - name: Validate wrangler compatibility_date is normalized
         run: npm run validate:compatibility-date

@@ -12,6 +12,7 @@ const VALID_STATES = new Set(['planned', 'provisioned', 'live', 'broken', 'retir
 const TIMEOUT_MS = Number(process.env.TIMEOUT_MS || 8000);
 const REQUIRE_EXPLICIT_STATE = process.argv.includes('--require-state');
 const CHECK_NON_LIVE = process.argv.includes('--check-broken');
+const VALIDATE_ONLY = process.argv.includes('--validate-only');
 
 function inferState(entry) {
   if (entry.health_state) return entry.health_state;
@@ -64,12 +65,14 @@ for (const entry of entries) {
       failures.push(`[31m${entry.id}: live but missing url or health_endpoint[0m`);
       continue;
     }
-    const result = await probe(url);
-    results.push({ id: entry.id, state, url, ...result });
-    if (!result.ok) failures.push(`[31m${entry.id}: ${url} returned ${result.status} — ${result.sample}[0m`);
+    if (!VALIDATE_ONLY) {
+      const result = await probe(url);
+      results.push({ id: entry.id, state, url, ...result });
+      if (!result.ok) failures.push(`[31m${entry.id}: ${url} returned ${result.status} — ${result.sample}[0m`);
+    }
   } else {
     if (!entry.notes && !entry.deployment_status) warnings.push(`[33m${entry.id}: ${state} without notes/deployment_status[0m`);
-    if (CHECK_NON_LIVE && url) {
+    if (!VALIDATE_ONLY && CHECK_NON_LIVE && url) {
       const result = await probe(url);
       results.push({ id: entry.id, state, url, ...result });
     }
