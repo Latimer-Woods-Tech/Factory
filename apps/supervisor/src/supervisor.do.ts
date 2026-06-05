@@ -34,8 +34,10 @@ const PER_RUN_ISSUE_CAP = 5;
  * enforced here as a defensive bound: the loop checks elapsed time before
  * each issue and exits early if the deadline is approached, rather than
  * relying solely on PER_RUN_ISSUE_CAP or individual AbortSignal timeouts.
+ * Set to match the lock TTL (10 min) — prior value of 25 s left < 18 s of
+ * usable time after GitHub token fetch + lock acquire.
  */
-const ALARM_SOFT_DEADLINE_MS = 25_000;
+const ALARM_SOFT_DEADLINE_MS = 600_000;
 
 /** Lock key used to prevent concurrent supervisor runs. */
 const LOCK_KEY = 'supervisor-run';
@@ -97,7 +99,7 @@ export class SupervisorDO {
   private handleHealth(): Response {
     return Response.json({
       ok: true,
-      phase: 'SUP-3.5',
+      phase: 'SUP-4',
       tools_registered: this.tools.list().length,
       app_count: GENERATED_CAPABILITIES.length,
       capability_count: GENERATED_CAPABILITIES.reduce((n, a) => n + a.capabilities.length, 0),
