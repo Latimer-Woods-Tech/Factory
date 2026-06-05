@@ -63,7 +63,7 @@ function resolveSlot(
     if (!match) throw new Error(`Invalid cross-step reference. Key: ${key}, value: ${value}`);
     const stepIndex = Number(match[1]) - 1;
     const source = previousResults[stepIndex];
-    const resolved = readPath(source, match[2].split('.'));
+    const resolved = readPath(source, match[2]!.split('.'));
     if (resolved === undefined) throw new Error(`Cross-step reference not found. Key: ${key}, value: ${value}`);
     return resolved;
   }
