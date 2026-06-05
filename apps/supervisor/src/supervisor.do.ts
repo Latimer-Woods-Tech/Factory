@@ -22,6 +22,7 @@ import {
 } from './tools/github';
 import { sendDigest } from './tools/pushover';
 import { getInstallationToken } from './tools/github-auth';
+import { registerCoreSupervisorTools } from './tools/core';
 
 /** Maximum issues processed in a single scheduled run. */
 const PER_RUN_ISSUE_CAP = 5;
@@ -63,6 +64,7 @@ export class SupervisorDO {
     this.state = state;
     this.env = env;
     this.tools = new ToolRegistry();
+    registerCoreSupervisorTools(this.tools, env);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -101,6 +103,11 @@ export class SupervisorDO {
       ok: true,
       phase: 'SUP-4',
       tools_registered: this.tools.list().length,
+      tool_names: this.tools.list().map((tool) => tool.name),
+      tool_side_effects: this.tools.list().reduce((counts, tool) => {
+        counts[tool.side_effects] = (counts[tool.side_effects] ?? 0) + 1;
+        return counts;
+      }, {} as Record<string, number>),
       app_count: GENERATED_CAPABILITIES.length,
       capability_count: GENERATED_CAPABILITIES.reduce((n, a) => n + a.capabilities.length, 0),
     });
