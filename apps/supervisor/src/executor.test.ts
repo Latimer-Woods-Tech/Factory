@@ -587,6 +587,3 @@ describe('executeStep', () => {
     await expect(executeStep(0, undefined, {}, {}, tools, env)).rejects.toThrow();
   });
 });
-
-
-  describe('mutation cap enforcement (global)', () => {
