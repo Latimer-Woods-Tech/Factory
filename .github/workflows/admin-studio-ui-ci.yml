@@ -61,7 +61,7 @@ jobs:
         run: npm run build -- --mode analyze
 
       - name: Upload bundle visualizer artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: admin-studio-ui-bundle-visualizer
           path: apps/admin-studio-ui/dist/bundle-visualizer.html
