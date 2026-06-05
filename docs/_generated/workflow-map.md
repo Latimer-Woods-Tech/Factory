@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-03
+last_generated: 2026-06-04
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -69,6 +69,7 @@ flowchart TB
   Other --> dependency_review_yml["dependency-review.yml"]
   Deploy --> deploy_admin_studio_ui_yml["deploy-admin-studio-ui.yml"]
   Deploy --> deploy_admin_studio_yml["deploy-admin-studio.yml"]
+  Deploy --> deploy_agent_gateway_yml["deploy-agent-gateway.yml"]
   Deploy --> deploy_daily_brief_yml["deploy-daily-brief.yml"]
   Deploy --> deploy_factory_core_api_yml["deploy-factory-core-api.yml"]
   Deploy --> deploy_factory_cross_repo_yml["deploy-factory-cross-repo.yml"]
@@ -95,6 +96,7 @@ flowchart TB
   Reporting --> flaky_check_report_yml["flaky-check-report.yml"]
   Other --> fridge_semantic_check_yml["fridge-semantic-check.yml"]
   Other --> generate_app_lockfiles_yml["generate-app-lockfiles.yml"]
+  Other --> generate_founder_stats_yml["generate-founder-stats.yml"]
   Reporting --> generate_scorecard_yml["generate-scorecard.yml"]
   Reporting --> generate_state_yml["generate-state.yml"]
   Other --> governance_audit_yml["governance-audit.yml"]

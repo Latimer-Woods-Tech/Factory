@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 440,
+    "total_docs": 442,
     "canonical": 17,
-    "active": 375,
+    "active": 377,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -121,6 +121,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:8198f76eb123c423d83a162b50b9b277c3149250b88a9fe3e95d98827671ce73",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "apps/*/README.md"
+      },
+      "errors": []
+    },
+    {
+      "path": "apps/agent-gateway/README.md",
+      "title": "factory-agent-gateway",
+      "status": "active",
+      "owner": "agent-gateway",
+      "doc_type": "guide",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f7db9be30b8d1b91f9d7133d3cb040eaf0c473c508629bc10f8707fdfcf4feb2",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -353,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:c9d8221a3ad29e4fda117419bee1a6f4f7153c04c37a55aa963ba884f6a068da",
+      "content_hash": "sha256:c1fad796111d521c979ba17e1f05ca91b5209b9bc04fe7d2b8e71601065b050f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -374,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ebdcf2d774e2a0581cd0a8b924d098573b1bb8f4e7a1f47fd417052d2208f569",
+      "content_hash": "sha256:da0351d1b2ddedc33ec2fcef499bc17f06abe88a38273e2e35a2f0237162c96b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -395,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d2a4d5e22bdb7825ba9faebb4e0519d3ff4bf460b8074922e713d69816e13463",
+      "content_hash": "sha256:d12a4c0829fcea915664b22ad76c430e746039fa5f173b0698595ef0b5b11b11",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0e19d8b87426e2cac95f7f3c122ea463684e7615b4a0e04f1aa37d2c01ede135",
+      "content_hash": "sha256:f0c9e9aac638cf74463167d116e03a27976c79b2fc52fc5e0f1ba8d6d5c5f975",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1112,6 +1133,27 @@
       "content_hash": "sha256:9eca86c08e36a1cbc820469d5fc3243d5562da2e09c10d7bf5d49752498eb90a",
       "source": {
         "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/architecture/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/architecture/AGENT_RUNTIME_STATUS.md",
+      "title": "Agent Runtime — Status & Handoff (as of 2026-06-04)",
+      "status": "active",
+      "owner": "architecture",
+      "doc_type": "architecture",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:0f5345817537882a255813421f1ebc8b6031f6b6075a9d8b2d70e9019a2b6d70",
+      "source": {
+        "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/architecture/**"
       },
@@ -6636,7 +6678,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:75ba063a15d914e8641e671c17ac0b5501dd63dbbbc1de2555f9b477ced58d9f",
+      "content_hash": "sha256:61b174762ec5501f6fdb148d0ad32312f752f66fa306cb0900c9aed790caf74d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6783,7 +6825,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:7283623294d2f148698336273024b223f90aabe367be8a027ef8b582e1fc9f7c",
+      "content_hash": "sha256:b798c46b747f412ce47401f5b740bb55405c3725874451437ecb0c7f29ccc0d9",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7161,7 +7203,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:831257f0e1c5e262b0ce9e2039dbe5ef587e841112695cbce51881baae023168",
+      "content_hash": "sha256:b7b73abdab004b5e48e1aa4acbfa01803d653cf0312782d4580292991a2e914f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7773,7 +7815,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:cca619f5509a4f451f87dc7e8b8ab9d469718a0b9a3a7919b7260c4172a2abe3",
+      "content_hash": "sha256:86ae8681204e6dbd080b1ca4f0fd59025503c26e4c91946199253f6818ea181a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
