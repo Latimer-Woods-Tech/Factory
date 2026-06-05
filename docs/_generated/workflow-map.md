@@ -147,6 +147,7 @@ flowchart TB
   Other --> supervisor_template_author_yml["supervisor-template-author.yml"]
   Automation --> sync_agent_labels_yml["sync-agent-labels.yml"]
   Automation --> sync_security_md_yml["sync-security-md.yml"]
+  Quality --> telnyx_path_smoke_yml["telnyx-path-smoke.yml"]
   Other --> track_kpis_yml["track-kpis.yml"]
   Other --> update_app_lockfiles_yml["update-app-lockfiles.yml"]
   Other --> update_stack_manifest_yml["update-stack-manifest.yml"]
