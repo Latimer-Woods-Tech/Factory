@@ -22,7 +22,7 @@
 
 CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
-### T1 — Load-bearing (27)
+### T1 — Load-bearing (38)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -32,6 +32,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `ci.yml` | push, PR, merge_group | Mainline CI gate |
 | `dependency-review.yml` | PR, merge_group | Supply-chain check |
 | `factory-admin-ui-ci.yml` | push, PR | Storybook + Playwright e2e for admin-studio-ui |
+| `admin-studio-ui-ci.yml` | push, PR | Admin UI Pages CI |
 | `package-integration.yml` | push, PR, dispatch | Cross-package smoke |
 | `policy-drift-guard.yml` | schedule, dispatch | Detects branch-protection drift (paired with `apply-sec-hardening`) |
 | `pr-quality-check.yml` | PR | PR-level gate (shadow mode) |
@@ -55,9 +56,17 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `deploy-webhook-fanout.yml` | push, dispatch | Production deploy — webhook-fanout Worker |
 | `deploy-factory-core-api.yml` | push, dispatch | Production deploy — factory-core-api Worker (read-layer + auth) |
 | `deploy-factory-events-replay.yml` | push, dispatch | Production deploy — factory-events-replay cron Worker (P1.10) |
+| `deploy-agent-gateway.yml` | push, dispatch | Production deploy — factory-agent-gateway Worker |
+| `deploy-factory-cross-repo.yml` | push, dispatch | Production deploy — factory-cross-repo integration Worker |
+| `deploy-inbound-oracle.yml` | push, dispatch | Production deploy — inbound-oracle webhook Worker |
+| `deploy-status-prober.yml` | push, dispatch | Production deploy — status-prober cron Worker |
+| `deploy-qa-tools-worker.yml` | push, dispatch | Production deploy — qa-tools-worker |
+| `deploy-qa-tools-ui.yml` | push, dispatch | Production deploy — qa-tools-ui Pages |
+| `deploy-latimerwoods-dev.yml` | push, dispatch | Production deploy — latimerwoods-dev Pages |
+| `deploy-linkedin-publisher.yml` | push, dispatch | Production deploy — linkedin-publisher Worker |
 | `browser-agent-deploy.yml` | push, dispatch | Production deploy — Cloud Run browser-agent |
 
-### T2 — Operational (30)
+### T2 — Operational (40)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -65,34 +74,43 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `auto-merge-approved-prs.yml` | PR, pull_request_review | Event-driven auto-merge enable |
 | `auto-merge-spotter.yml` | schedule (10min), dispatch | Polling fallback — GH auto-merge does not auto-rebase BEHIND PRs |
 | `automation-reliability-loop.yml` | schedule, dispatch | Self-test of automation surface |
+| `ci-qa-tools.yml` | push, PR | QA tools CI pipeline |
+| `coherence-check.yml` | schedule (weekly), dispatch | Cross-org coherence validation |
 | `cohesion-courtesy-check.yml` | schedule (3h), dispatch | Cross-repo cohesion warden |
 | `completion-tracker.yml` | repository_dispatch, schedule, dispatch | Stage-completion telemetry |
 | `copilot-auto-approve.yml` | PR, workflow_run | Auto-approve Copilot agent PRs |
 | `copilot-pr-poller.yml` | schedule (10min), dispatch | Polling for Copilot agent PR state |
+| `council-deliberate.yml` | schedule, dispatch | Council meeting automation |
 | `dead-mans-switch.yml` | schedule, dispatch | Liveness signal |
 | `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
+| `governance-audit.yml` | schedule (daily), dispatch | Governance audit trails |
 | `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
 | `pr-size-warning.yml` | PR | PR size advisory (warn-only) |
 | `project-sync.yml` | issue_comment, issues, PR, schedule, dispatch | GitHub Projects v2 board sync |
+| `render-daily-brief.yml` | schedule (hourly), dispatch | Daily brief rendering |
 | `reviewer-class-hints.yml` | PR | Reviewer suggestions |
 | `rfc-status-gate.yml` | PR | RFC-decision gate |
 | `scripts-tests.yml` | push, PR, schedule | Tests for `scripts/` directory |
 | `sentry-to-github.yml` | schedule (4h), dispatch | Sentry issue → GH issue mirror |
 | `smoke-admin-studio.yml` | schedule (2h), dispatch | Smoke probe — needs `STUDIO_EMAIL/PASSWORD` |
 | `smoke-prime-self.yml` | schedule (daily), dispatch | Smoke probe — selfprime.net production |
+| `snapshot-pr-auto-merge.yml` | pull_request, workflow_run | Auto-merge snapshot PRs (generated artifacts) |
 | `supervisor-loop.yml` | issues, schedule (4h), dispatch | Supervisor execution loop |
 | `supervisor-template-author.yml` | issues | Supervisor template authoring |
 | `sync-agent-labels.yml` | push, dispatch | Agent label sync |
 | `sync-security-md.yml` | push, dispatch | SECURITY.md sync |
+| `telnyx-path-smoke.yml` | schedule (hourly), dispatch | SMS/MMS gateway smoke test |
+| `workflow-health-warden.yml` | schedule (hourly), dispatch | Workflow health monitoring and alerts |
+| `workflow-concurrency-check.yml` | schedule (hourly), dispatch | Workflow concurrency validation |
 | `_app-prod-canary.yml` | workflow_call | Production canary (called by app deploys) |
 | `_app-reliability-gate.yml` | workflow_call | Reliability gate (called by deploys) — see TR |
 | `_canary-watch.yml` | workflow_call | Canary watcher (called by deploys) — see TR |
 | `_migration-drift-guard.yml` | workflow_call | Migration drift detection — see TR |
 | `_post-deploy-verify.yml` | workflow_call | Post-deploy verification — see TR |
 
-### T3 — Informational (25)
+### T3 — Informational (28)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -101,9 +119,12 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `doc-freshness-audit.yml` | schedule (weekly), dispatch | Doc staleness check |
 | `docs-health.yml` | PR, push, schedule, dispatch | Documentation control-plane catalog, self-check, registry, link, and freshness health |
 | `flaky-check-report.yml` | schedule (weekly), dispatch | Flaky-test summary |
+| `fridge-semantic-check.yml` | schedule (weekly), dispatch | Semantic validation of decision records |
+| `generate-founder-stats.yml` | schedule (daily), dispatch | Founder statistics snapshot |
 | `generate-scorecard.yml` | schedule (weekly), dispatch | Scorecard summary |
 | `generate-state.yml` | push, schedule (daily), dispatch | STATE.md snapshot generator |
 | `launch-readiness.yml` | schedule (daily), dispatch | Launch readiness scorecard snapshot |
+| `lighthouse-ci-admin-studio.yml` | schedule (nightly), dispatch | Lighthouse CI for admin-studio-ui |
 | `morning-digest.yml` | schedule (daily), dispatch | Morning digest snapshot |
 | `offsite-mirror.yml` | schedule (daily), dispatch | Repo mirror to off-site |
 | `platform-conformance.yml` | schedule (daily), dispatch | Conformance shadow scores → snapshot PR |
@@ -111,13 +132,16 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `revenue-digest.yml` | schedule (daily), dispatch | Revenue + reliability digest |
 | `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker |
 | `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
+| `workflow-budget-check.yml` | schedule (daily), dispatch | Workflow execution cost + time analytics |
 
-### TR — Reusable (12)
+### TR — Reusable (15)
 
 | Workflow | Notes |
 |---|---|
+| `_app-capability-lint.yml` | App capability validation building block |
 | `_app-ci.yml` | App CI building block |
 | `_app-ci-pnpm.yml` | App CI building block (pnpm variant) |
+| `_app-constraints-gate.yml` | App constraints validation building block |
 | `_app-deploy.yml` | App deploy building block (Workers) |
 | `_app-deploy-pages.yml` | App deploy building block (Pages) |
 | `_app-deploy-pnpm.yml` | App deploy building block (pnpm variant) |
@@ -127,32 +151,39 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `_docs-health.yml` | Reusable documentation control-plane health workflow |
 | `_hello-reusable.yml` | Reusable example/template |
 | `_migration-drift-guard.yml` | (caller-context) |
+| `_neon-pr-lifecycle.yml` | Neon schema drift and PR lifecycle workflow |
 | `_post-deploy-verify.yml` | (caller-context) |
 
-### TM — Manual (15)
+### TM — Manual (25)
 
 `workflow_dispatch`-only — no schedule, no auto-trigger. SLO is "works when invoked."
 
 | Workflow | Notes |
 |---|---|
 | `align-legacy-repos.yml` | One-off cross-repo alignment |
+| `auto-dispatch-provision.yml` | Auto-dispatch capability provisioning |
 | `bootstrap-publish.yml` | Bootstrap publisher |
 | `capricast-rename.yml` | One-off rename helper |
+| `cf-domain-reconcile.yml` | Cloudflare domain reconciliation |
 | `deploy.yml` | Manual deploy fallback |
 | `dispatch-capability-provision.yml` | Capability provisioning dispatch |
 | `generate-app-lockfiles.yml` | Lockfile generator (one of four — consider consolidating in Phase 4+) |
 | `mirror-org-secrets-to-dependabot.yml` | Secret mirroring helper |
+| `provision-app-staging.yml` | App staging environment provisioning |
 | `push-google-oauth.yml` | OAuth credential push |
 | `push-neon-selfprime.yml` | Neon connection push |
 | `regen-lockfile-on-branch.yml` | Lockfile regen on branch |
-| `regenerate-app-lockfiles.yml` | Lockfile regen (another duplicate candidate) |
+| `regenerate-app-lockfiles.yml` | Lockfile regen (duplicate candidate) |
 | `run-app-migrations.yml` | App migration runner |
 | `run-migrations.yml` | Migration runner |
+| `seed-provisioner-secrets-to-gcp.yml` | GCP secret seeding |
 | `set-jwt-secrets.yml` | JWT secret bulk set |
 | `setup-app-secrets.yml` | App secret setup |
+| `setup-coh-observability.yml` | COH observability setup |
 | `setup-sentry-alerts.yml` | Sentry alert provisioning |
 | `studio-test-dispatch.yml` | Studio test dispatcher |
 | `update-app-lockfiles.yml` | Lockfile update (third duplicate candidate) |
+| `upload-sybil-music.yml` | Sybil music upload helper |
 | `validate-sentry-auth-token.yml` | Sentry token validation |
 
 ---
