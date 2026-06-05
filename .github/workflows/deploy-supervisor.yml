@@ -71,8 +71,10 @@ jobs:
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
-          fetch_to_env SUPERVISOR_PUSH_KEY  SUPERVISOR_PUSH_KEY
-          fetch_to_env SUPERVISOR_API_KEY   SUPERVISOR_API_KEY
+          fetch_to_env SUPERVISOR_PUSH_KEY    SUPERVISOR_PUSH_KEY
+          fetch_to_env SUPERVISOR_API_KEY     SUPERVISOR_API_KEY
+          fetch_to_env SLACK_SIGNING_SECRET   SLACK_SIGNING_SECRET   || true
+          fetch_to_env SLACK_OWNER_USER_ID    SLACK_OWNER_USER_ID    || true
 
       - name: Build dependency packages
         run: |
@@ -123,8 +125,8 @@ jobs:
           SECRET_FACTORY_APP_INSTALLATION_ID: ${{ secrets.FACTORY_APP_INSTALLATION_ID }}
           SECRET_PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
           SECRET_PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
-          SECRET_SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
-          SECRET_SLACK_OWNER_USER_ID: ${{ secrets.SLACK_OWNER_USER_ID }}
+          SECRET_SLACK_SIGNING_SECRET: ${{ env.SLACK_SIGNING_SECRET }}
+          SECRET_SLACK_OWNER_USER_ID: ${{ env.SLACK_OWNER_USER_ID }}
           SECRET_SUPERVISOR_PUSH_KEY: ${{ env.SUPERVISOR_PUSH_KEY }}
           SECRET_SUPERVISOR_API_KEY: ${{ env.SUPERVISOR_API_KEY }}
           SECRET_FACTORY_CROSS_REPO_TOKEN: ${{ secrets.FACTORY_CROSS_REPO_TOKEN }}
@@ -177,32 +179,6 @@ jobs:
         working-directory: apps/supervisor
         run: sentry-cli sourcemaps inject .sentry-dist/
 
-      - name: Ensure Sentry project exists
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.FACTORY_SENTRY_API }}
-          SENTRY_ORG: latwood-tech
-        run: |
-          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
-            echo "::warning::FACTORY_SENTRY_API missing; skipping Sentry project check"
-            exit 0
-          fi
-          # Check if project exists; create if not (idempotent — 400 on duplicate is fine)
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
-            "https://sentry.io/api/0/projects/${SENTRY_ORG}/factory-supervisor/")
-          if [ "$STATUS" = "404" ]; then
-            echo "Creating factory-supervisor Sentry project..."
-            curl -s -X POST \
-              -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d '{"name":"factory-supervisor","platform":"javascript","teams":["latwood-tech"]}' \
-              "https://sentry.io/api/0/teams/${SENTRY_ORG}/latwood-tech/projects/" \
-              | grep -o '"slug":"[^"]*"' || true
-            echo "Project created."
-          else
-            echo "Sentry project factory-supervisor exists (HTTP ${STATUS})."
-          fi
-
       - name: Upload sourcemaps to Sentry
         working-directory: apps/supervisor
         env:
@@ -214,7 +190,7 @@ jobs:
             exit 0
           fi
           if ! sentry-cli sourcemaps upload \
-            --project factory-supervisor \
+            --project node-cloudflare-workers \
             .sentry-dist/; then
             echo "::warning::Sentry sourcemap upload failed; continuing deployment"
           fi
