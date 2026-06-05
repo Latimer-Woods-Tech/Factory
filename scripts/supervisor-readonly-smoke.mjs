@@ -6,6 +6,8 @@ const token = env.SUPERVISOR_API_KEY;
 const allowedHosts = new Set(['supervisor.latwoodtech.work', 'factory-supervisor.adrper79.workers.dev']);
 const greenPlanDescription = env.SUPERVISOR_GREEN_PLAN_DESCRIPTION || '';
 const expectedGreenTemplate = env.SUPERVISOR_EXPECTED_GREEN_TEMPLATE_ID || '';
+const expectedWriteTools = (env.SUPERVISOR_EXPECTED_WRITE_TOOLS || '').split(',').map((name) => name.trim()).filter(Boolean).sort();
+const expectedPlanEffects = new Map((env.SUPERVISOR_EXPECTED_GREEN_PLAN_EFFECTS || '').split(',').filter(Boolean).map((entry) => entry.split('=').map((part) => part.trim())));
 const required = [
   'supervisor.health.snapshot',
   'registry.capabilities.list',
@@ -57,8 +59,11 @@ for (const name of required) {
 
 const registeredNames = body.registered?.tool_names || [];
 if (!registeredNames.includes('github.issue.searchApproved')) fail('read-external GitHub search tool is not registered', { registeredNames });
-if ((body.write_capable_tools || []).length !== 0) fail('write-capable tools leaked into initial runtime surface', { write_capable_tools: body.write_capable_tools });
-if ((body.registered?.tools_registered || 0) < 5) fail('too few tools registered', { registered: body.registered });
+const writeCapableTools = (body.write_capable_tools || []).slice().sort();
+if (expectedWriteTools.length > 0 && JSON.stringify(writeCapableTools) !== JSON.stringify(expectedWriteTools)) {
+  fail('unexpected write-capable tool surface', { expectedWriteTools, writeCapableTools });
+}
+if ((body.registered?.tools_registered || 0) < 5 + expectedWriteTools.length) fail('too few tools registered', { registered: body.registered });
 
 let greenPlan = null;
 if (greenPlanDescription) {
@@ -75,8 +80,11 @@ if (greenPlanDescription) {
   if (!plan.response.ok || plan.body.matched !== true) fail('green plan dry-run did not match a template', { status: plan.response.status, body: plan.body });
   if (expectedGreenTemplate && plan.body.template !== expectedGreenTemplate) fail('green plan matched the wrong template', { expectedGreenTemplate, actual: plan.body.template });
   if (plan.body.plan?.tier !== 'green') fail('green plan matched a non-green tier', { tier: plan.body.plan?.tier, template: plan.body.template });
-  const sideEffectfulSteps = (plan.body.plan?.steps || []).filter((step) => step.side_effects !== 'none');
-  if (sideEffectfulSteps.length > 0) fail('green plan dry-run produced side-effectful steps', { sideEffectfulSteps });
+  for (const step of plan.body.plan?.steps || []) {
+    const expected = expectedPlanEffects.get(step.tool);
+    if (expected && step.side_effects !== expected) fail('green plan step has wrong side effect classification', { step, expected });
+    if (!expected && step.side_effects !== 'none') fail('green plan contains unexpected side-effectful step', { step });
+  }
   greenPlan = {
     matched: true,
     template: plan.body.template,
