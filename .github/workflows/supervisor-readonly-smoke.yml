@@ -44,8 +44,6 @@ jobs:
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
           fetch_to_env SUPERVISOR_API_KEY SUPERVISOR_API_KEY
-          echo "::add-mask::${SUPERVISOR_API_KEY}"
-          echo "SUPERVISOR_API_KEY=${SUPERVISOR_API_KEY}" >> "${GITHUB_ENV}"
 
       - name: Run readonly supervisor smoke
         env:
