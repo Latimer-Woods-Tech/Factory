@@ -327,7 +327,7 @@ For DB-touching changes, see `docs/runbooks/incident-response.md`.
 
 ## Drift watch
 
-The `factory-status-dashboard.yml` cron job checks every consumer repo's CI is using the reusable. Any inline CI gets flagged in `docs/STATUS.md` and should be migrated.
+The `factory-status-dashboard.yml` cron job checks every consumer repo's CI is using the reusable. Any inline CI gets flagged in `docs/STATE.md` and should be migrated.
 
 ---
 
