@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { parameterize } from './parameterize';
 import type { Template } from './load';
 
+const description = 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke';
+
 const docsTemplate: Template = {
   id: 'docs-naming-convention',
   tier: 'green',
@@ -24,28 +26,7 @@ const docsTemplate: Template = {
 
 describe('parameterize', () => {
   it('extracts deterministic docs slots and fills nested PR file params', () => {
-    const plan = parameterize(docsTemplate, {
-      source: 'test',
-      description: 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke',
-    
-
-  it('derives slot names from step placeholders when generated metadata is absent', () => {
-    const { slot_names: _slotNames, slot_validators: _validators, ...templateWithoutMetadata } = docsTemplate;
-    const plan = parameterize(templateWithoutMetadata, {
-      source: 'test',
-      description: 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke',
-    });
-
-    expect(plan.audit.extracted_slots).toMatchObject({
-      target_path: 'docs/supervisor/aos-green-smoke.md',
-      parent_dir: 'docs/supervisor',
-      branch_name: 'supervisor/docs/aos-green-smoke',
-      commit_message: 'docs(supervisor): add aos green smoke doc',
-      doc_body: '# AOS Green Smoke',
-    });
-    expect(JSON.stringify(plan)).not.toContain('$slots.');
-  });
-});
+    const plan = parameterize(docsTemplate, { source: 'test', description });
 
     expect(plan.audit.extracted_slots).toMatchObject({
       target_path: 'docs/supervisor/aos-green-smoke.md',
@@ -54,77 +35,19 @@ describe('parameterize', () => {
       commit_message: 'docs(supervisor): add aos green smoke doc',
       doc_body: '# AOS Green Smoke',
       scope: 'general',
-    
-
-  it('derives slot names from step placeholders when generated metadata is absent', () => {
-    const { slot_names: _slotNames, slot_validators: _validators, ...templateWithoutMetadata } = docsTemplate;
-    const plan = parameterize(templateWithoutMetadata, {
-      source: 'test',
-      description: 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke',
     });
-
-    expect(plan.audit.extracted_slots).toMatchObject({
-      target_path: 'docs/supervisor/aos-green-smoke.md',
-      parent_dir: 'docs/supervisor',
-      branch_name: 'supervisor/docs/aos-green-smoke',
-      commit_message: 'docs(supervisor): add aos green smoke doc',
-      doc_body: '# AOS Green Smoke',
-    });
-    expect(JSON.stringify(plan)).not.toContain('$slots.');
-  });
-});
     expect(plan.steps[0]?.slots.path).toBe('docs/supervisor');
     expect(plan.steps[1]?.slots).toMatchObject({
       branch: 'supervisor/docs/aos-green-smoke',
       title: 'docs(supervisor): add aos green smoke doc',
       files: [{ path: 'docs/supervisor/aos-green-smoke.md', content: '# AOS Green Smoke' }],
-    
-
-  it('derives slot names from step placeholders when generated metadata is absent', () => {
-    const { slot_names: _slotNames, slot_validators: _validators, ...templateWithoutMetadata } = docsTemplate;
-    const plan = parameterize(templateWithoutMetadata, {
-      source: 'test',
-      description: 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke',
-    });
-
-    expect(plan.audit.extracted_slots).toMatchObject({
-      target_path: 'docs/supervisor/aos-green-smoke.md',
-      parent_dir: 'docs/supervisor',
-      branch_name: 'supervisor/docs/aos-green-smoke',
-      commit_message: 'docs(supervisor): add aos green smoke doc',
-      doc_body: '# AOS Green Smoke',
     });
     expect(JSON.stringify(plan)).not.toContain('$slots.');
   });
-});
-    expect(JSON.stringify(plan)).not.toContain('$slots.');
-  
 
   it('derives slot names from step placeholders when generated metadata is absent', () => {
     const { slot_names: _slotNames, slot_validators: _validators, ...templateWithoutMetadata } = docsTemplate;
-    const plan = parameterize(templateWithoutMetadata, {
-      source: 'test',
-      description: 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke',
-    });
-
-    expect(plan.audit.extracted_slots).toMatchObject({
-      target_path: 'docs/supervisor/aos-green-smoke.md',
-      parent_dir: 'docs/supervisor',
-      branch_name: 'supervisor/docs/aos-green-smoke',
-      commit_message: 'docs(supervisor): add aos green smoke doc',
-      doc_body: '# AOS Green Smoke',
-    });
-    expect(JSON.stringify(plan)).not.toContain('$slots.');
-  });
-});
-
-
-  it('derives slot names from step placeholders when generated metadata is absent', () => {
-    const { slot_names: _slotNames, slot_validators: _validators, ...templateWithoutMetadata } = docsTemplate;
-    const plan = parameterize(templateWithoutMetadata, {
-      source: 'test',
-      description: 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke',
-    });
+    const plan = parameterize(templateWithoutMetadata, { source: 'test', description });
 
     expect(plan.audit.extracted_slots).toMatchObject({
       target_path: 'docs/supervisor/aos-green-smoke.md',
