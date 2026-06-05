@@ -67,7 +67,7 @@
     },
     {
       "path": "ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md",
-      "title": "Admin Studio AI Agent — Deployment Checklist",
+      "title": "Admin Studio AI Agent \u2014 Deployment Checklist",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -88,7 +88,7 @@
     },
     {
       "path": "apps/admin-studio-ui/README.md",
-      "title": "Factory Admin Studio — UI",
+      "title": "Factory Admin Studio \u2014 UI",
       "status": "active",
       "owner": "admin-studio-ui",
       "doc_type": "guide",
@@ -193,7 +193,7 @@
     },
     {
       "path": "apps/latimerwoods-dev/README.md",
-      "title": "latimerwoods-dev — Developer Index",
+      "title": "latimerwoods-dev \u2014 Developer Index",
       "status": "active",
       "owner": "latimerwoods-dev",
       "doc_type": "guide",
@@ -361,7 +361,7 @@
     },
     {
       "path": "CLAUDE.md",
-      "title": "Factory Core — Standing Orders",
+      "title": "Factory Core \u2014 Standing Orders",
       "status": "canonical",
       "owner": "platform",
       "doc_type": "reference",
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b8d96acc26f755981897db286cbcb23a705053214f6ddca1eb783fb50fb61149",
+      "content_hash": "sha256:7227f40d71347bee7cf648f4c74c5823a5ba27f35d4775fae38af216e496016e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -552,7 +552,7 @@
     },
     {
       "path": "docs/ADMIN_STUDIO_SETUP.md",
-      "title": "Admin Studio AI Agent — Setup & Deployment Guide",
+      "title": "Admin Studio AI Agent \u2014 Setup & Deployment Guide",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -594,7 +594,7 @@
     },
     {
       "path": "docs/admin-studio/00-MASTER-PLAN.md",
-      "title": "Factory Admin Studio — Master Plan",
+      "title": "Factory Admin Studio \u2014 Master Plan",
       "status": "active",
       "owner": "admin-studio",
       "doc_type": "plan",
@@ -615,7 +615,7 @@
     },
     {
       "path": "docs/admin-studio/01-ENVIRONMENT-SAFETY.md",
-      "title": "Factory Admin Studio — Environment Safety Design",
+      "title": "Factory Admin Studio \u2014 Environment Safety Design",
       "status": "active",
       "owner": "admin-studio",
       "doc_type": "reference",
@@ -636,7 +636,7 @@
     },
     {
       "path": "docs/admin-studio/02-OPERATOR-QUICK-REF.md",
-      "title": "Admin Studio — Operator Quick Reference",
+      "title": "Admin Studio \u2014 Operator Quick Reference",
       "status": "active",
       "owner": "admin-studio",
       "doc_type": "reference",
@@ -657,7 +657,7 @@
     },
     {
       "path": "docs/admin-studio/03-API-SURFACE.md",
-      "title": "Admin Studio — API Surface",
+      "title": "Admin Studio \u2014 API Surface",
       "status": "active",
       "owner": "admin-studio",
       "doc_type": "reference",
@@ -699,7 +699,7 @@
     },
     {
       "path": "docs/adr/0001-cohesion-architecture.md",
-      "title": "ADR-0001: Cohesion Architecture — Three Lines of Defense",
+      "title": "ADR-0001: Cohesion Architecture \u2014 Three Lines of Defense",
       "status": "active",
       "owner": "architecture",
       "doc_type": "decision",
@@ -720,7 +720,7 @@
     },
     {
       "path": "docs/adr/0002-operating-framework.md",
-      "title": "ADR-0002: Operating Framework — Milestone-Based Execution",
+      "title": "ADR-0002: Operating Framework \u2014 Milestone-Based Execution",
       "status": "active",
       "owner": "architecture",
       "doc_type": "decision",
@@ -804,7 +804,7 @@
     },
     {
       "path": "docs/adr/0006-cascading-multi-agent-review.md",
-      "title": "ADR-0006: Cascading Multi-Agent Review — Gemini as Claude's Peer",
+      "title": "ADR-0006: Cascading Multi-Agent Review \u2014 Gemini as Claude's Peer",
       "status": "active",
       "owner": "architecture",
       "doc_type": "decision",
@@ -846,7 +846,7 @@
     },
     {
       "path": "docs/adr/0008-ui-ux-foundations.md",
-      "title": "ADR-0008: UI/UX Foundations — Stage 6 of the Cohesion Roadmap",
+      "title": "ADR-0008: UI/UX Foundations \u2014 Stage 6 of the Cohesion Roadmap",
       "status": "active",
       "owner": "architecture",
       "doc_type": "decision",
@@ -930,7 +930,7 @@
     },
     {
       "path": "docs/adr/0012-dependency-version-policy.md",
-      "title": "ADR-0012 — Dependency Version Policy",
+      "title": "ADR-0012 \u2014 Dependency Version Policy",
       "status": "active",
       "owner": "architecture",
       "doc_type": "decision",
@@ -972,7 +972,7 @@
     },
     {
       "path": "docs/aggregator-http-mocking-design.md",
-      "title": "Aggregator Phase 2: HTTP Mocking Design — G2 Phase 2",
+      "title": "Aggregator Phase 2: HTTP Mocking Design \u2014 G2 Phase 2",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -993,7 +993,7 @@
     },
     {
       "path": "docs/aggregator-README.md",
-      "title": "Completion Tracker — Operator Doc",
+      "title": "Completion Tracker \u2014 Operator Doc",
       "status": "active",
       "owner": "platform",
       "doc_type": "index",
@@ -1098,7 +1098,7 @@
     },
     {
       "path": "docs/architecture/ADMIN_BUILD_PLAN.md",
-      "title": "Admin Build Plan — Three Passes + Testing + Targeting",
+      "title": "Admin Build Plan \u2014 Three Passes + Testing + Targeting",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1140,7 +1140,7 @@
     },
     {
       "path": "docs/architecture/AGENT_RUNTIME_STATUS.md",
-      "title": "Agent Runtime — Status & Handoff (as of 2026-06-04)",
+      "title": "Agent Runtime \u2014 Status & Handoff (as of 2026-06-04)",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1161,7 +1161,7 @@
     },
     {
       "path": "docs/architecture/AGENT_RUNTIME.md",
-      "title": "Factory Agent Runtime — Architecture & Implementation Plan",
+      "title": "Factory Agent Runtime \u2014 Architecture & Implementation Plan",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1203,7 +1203,7 @@
     },
     {
       "path": "docs/architecture/FACTORY_V1.md",
-      "title": "The Factory — Architecture & Playbook, v1",
+      "title": "The Factory \u2014 Architecture & Playbook, v1",
       "status": "canonical",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1228,7 +1228,7 @@
     },
     {
       "path": "docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md",
-      "title": "I1 — Energy Blueprint Video Engine: Final-State Design",
+      "title": "I1 \u2014 Energy Blueprint Video Engine: Final-State Design",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1249,7 +1249,7 @@
     },
     {
       "path": "docs/architecture/I1_PERSUASION_POLICY.md",
-      "title": "I1 — Narration Persuasion Policy (DRAFT — for red-line)",
+      "title": "I1 \u2014 Narration Persuasion Policy (DRAFT \u2014 for red-line)",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1291,7 +1291,7 @@
     },
     {
       "path": "docs/architecture/QA_TOOLS_ARCHITECTURE.md",
-      "title": "QA Tools Platform — Mature Design (v2.0)",
+      "title": "QA Tools Platform \u2014 Mature Design (v2.0)",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1312,7 +1312,7 @@
     },
     {
       "path": "docs/architecture/SURFACES.md",
-      "title": "Factory Surfaces — Navigation Index",
+      "title": "Factory Surfaces \u2014 Navigation Index",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1357,7 +1357,7 @@
     },
     {
       "path": "docs/archive/BIRTHTIME_INPUT_IMPLEMENTATION_COMPLETE.md",
-      "title": "BirthTimeInput Component — Implementation Complete",
+      "title": "BirthTimeInput Component \u2014 Implementation Complete",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1378,7 +1378,7 @@
     },
     {
       "path": "docs/archive/BLOCKED.md",
-      "title": "~~BLOCKED~~: Stage 1 Publish to GitHub Packages — RESOLVED",
+      "title": "~~BLOCKED~~: Stage 1 Publish to GitHub Packages \u2014 RESOLVED",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1399,7 +1399,7 @@
     },
     {
       "path": "docs/archive/CAPABILITIES_ASSESSMENT.md",
-      "title": "Factory Core — Capabilities Gap Analysis & Enhancement Opportunities",
+      "title": "Factory Core \u2014 Capabilities Gap Analysis & Enhancement Opportunities",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1420,7 +1420,7 @@
     },
     {
       "path": "docs/archive/DELIVERY_COMPLETE.md",
-      "title": "Factory Core Phase 6-7 Automation Framework — DELIVERY COMPLETE",
+      "title": "Factory Core Phase 6-7 Automation Framework \u2014 DELIVERY COMPLETE",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1462,7 +1462,7 @@
     },
     {
       "path": "docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md",
-      "title": "T6.1 & T7.1 World-Class Implementation — Execution Summary",
+      "title": "T6.1 & T7.1 World-Class Implementation \u2014 Execution Summary",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1483,7 +1483,7 @@
     },
     {
       "path": "docs/archive/FACTORY_STRATEGIC_REVIEW.md",
-      "title": "Factory Core — Strategic Review & World-Class Roadmap",
+      "title": "Factory Core \u2014 Strategic Review & World-Class Roadmap",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1504,7 +1504,7 @@
     },
     {
       "path": "docs/archive/PHASE_C_ACTIVATION_CHECKLIST.md",
-      "title": "Phase C Activation — Immediate Actions",
+      "title": "Phase C Activation \u2014 Immediate Actions",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1588,7 +1588,7 @@
     },
     {
       "path": "docs/archive/R2_PROVISIONING_COMPLETE.md",
-      "title": "R2 Provisioning Complete ✅",
+      "title": "R2 Provisioning Complete \u2705",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1630,7 +1630,7 @@
     },
     {
       "path": "docs/archive/STAGE_0_BOOTSTRAP.md",
-      "title": "FACTORY CORE — STAGE 0: BOOTSTRAP",
+      "title": "FACTORY CORE \u2014 STAGE 0: BOOTSTRAP",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1672,7 +1672,7 @@
     },
     {
       "path": "docs/archive/STAGE_1_FOUNDATION.md",
-      "title": "FACTORY CORE — STAGE 1: FOUNDATION PACKAGES",
+      "title": "FACTORY CORE \u2014 STAGE 1: FOUNDATION PACKAGES",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1693,7 +1693,7 @@
     },
     {
       "path": "docs/archive/STAGE_5_COMPLETE.md",
-      "title": "Stage 5 Complete — Revenue Ops Packages",
+      "title": "Stage 5 Complete \u2014 Revenue Ops Packages",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1714,7 +1714,7 @@
     },
     {
       "path": "docs/archive/STAGES_2_5_AND_GUIDE.md",
-      "title": "FACTORY CORE — STAGES 2–5 + MASTER EXECUTION GUIDE",
+      "title": "FACTORY CORE \u2014 STAGES 2\u20135 + MASTER EXECUTION GUIDE",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1735,7 +1735,7 @@
     },
     {
       "path": "docs/archive/T4_3_OPERATOR_PATTERNS_SPEC.md",
-      "title": "T4.3 — Operator UI Patterns Implementation Guide",
+      "title": "T4.3 \u2014 Operator UI Patterns Implementation Guide",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1756,7 +1756,7 @@
     },
     {
       "path": "docs/archive/T4_4_TELEMETRY_CONTRACT_SPEC.md",
-      "title": "T4.4 — Factory Admin Telemetry Contract Implementation Guide",
+      "title": "T4.4 \u2014 Factory Admin Telemetry Contract Implementation Guide",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1777,7 +1777,7 @@
     },
     {
       "path": "docs/archive/T5_3_INCIDENT_DRILL_CHECKLIST.md",
-      "title": "T5.3 — Incident Response & Drill Execution Checklist",
+      "title": "T5.3 \u2014 Incident Response & Drill Execution Checklist",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1798,7 +1798,7 @@
     },
     {
       "path": "docs/archive/T5_4_SECURITY_AUDIT_ROADMAP.md",
-      "title": "T5.4 — Security & Privacy Audit Fix Roadmap",
+      "title": "T5.4 \u2014 Security & Privacy Audit Fix Roadmap",
       "status": "archive",
       "owner": "platform",
       "doc_type": "audit",
@@ -1861,7 +1861,7 @@
     },
     {
       "path": "docs/archive/T6_3_RELEASE_TRAIN_SPEC.md",
-      "title": "T6.3 — Release Train & Automated Deployment Verification",
+      "title": "T6.3 \u2014 Release Train & Automated Deployment Verification",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1882,7 +1882,7 @@
     },
     {
       "path": "docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md",
-      "title": "T6.4 & T7.3 — KPI & Scorecard Automation Scripts",
+      "title": "T6.4 & T7.3 \u2014 KPI & Scorecard Automation Scripts",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -1945,7 +1945,7 @@
     },
     {
       "path": "docs/audits/MARKETING_STAMP_AUDIT.md",
-      "title": "Marketing Stamp Audit — 2026-05-21",
+      "title": "Marketing Stamp Audit \u2014 2026-05-21",
       "status": "active",
       "owner": "platform",
       "doc_type": "audit",
@@ -1966,7 +1966,7 @@
     },
     {
       "path": "docs/BIRTHTIME_FORMATTING_TODO.md",
-      "title": "Birth Time Formatting — Frontend Implementation TODO",
+      "title": "Birth Time Formatting \u2014 Frontend Implementation TODO",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -1987,7 +1987,7 @@
     },
     {
       "path": "docs/BUS_FACTOR.md",
-      "title": "Bus-Factor & Recovery — Operator Continuity (G19)",
+      "title": "Bus-Factor & Recovery \u2014 Operator Continuity (G19)",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2008,7 +2008,7 @@
     },
     {
       "path": "docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md",
-      "title": "Capability Design Studio — Golden Design",
+      "title": "Capability Design Studio \u2014 Golden Design",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2029,7 +2029,7 @@
     },
     {
       "path": "docs/CAPABILITY_FACTORY_BACKCASTING_PLAN.md",
-      "title": "Capability Factory — Backcasting Plan",
+      "title": "Capability Factory \u2014 Backcasting Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -2071,7 +2071,7 @@
     },
     {
       "path": "docs/capricast/accessibility-audit-report.md",
-      "title": "Videoking Accessibility Audit Report — WCAG 2.2 AA Baseline",
+      "title": "Videoking Accessibility Audit Report \u2014 WCAG 2.2 AA Baseline",
       "status": "active",
       "owner": "capricast",
       "doc_type": "audit",
@@ -2113,7 +2113,7 @@
     },
     {
       "path": "docs/capricast/accessibility-remediation.md",
-      "title": "Videoking Accessibility Remediation Plan — WCAG 2.2 AA",
+      "title": "Videoking Accessibility Remediation Plan \u2014 WCAG 2.2 AA",
       "status": "active",
       "owner": "capricast",
       "doc_type": "reference",
@@ -2239,7 +2239,7 @@
     },
     {
       "path": "docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md",
-      "title": "VideoKing Phase B Implementation — April 28 Kickoff",
+      "title": "VideoKing Phase B Implementation \u2014 April 28 Kickoff",
       "status": "active",
       "owner": "capricast",
       "doc_type": "reference",
@@ -2407,7 +2407,7 @@
     },
     {
       "path": "docs/capricast/PHASE_B_T5_1_COMPLETE.md",
-      "title": "VideoKing Phase B Kickoff — T5.1 Operationalization Complete",
+      "title": "VideoKing Phase B Kickoff \u2014 T5.1 Operationalization Complete",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -2575,7 +2575,7 @@
     },
     {
       "path": "docs/capricast/T3-3-T3-4-INTEGRATION-INDEX.md",
-      "title": "T3.3 & T3.4: Monetization Funnel Instrumentation & Revenue Integrity — Integration Index",
+      "title": "T3.3 & T3.4: Monetization Funnel Instrumentation & Revenue Integrity \u2014 Integration Index",
       "status": "active",
       "owner": "capricast",
       "doc_type": "index",
@@ -2764,7 +2764,7 @@
     },
     {
       "path": "docs/conformance/summary.md",
-      "title": "Platform Conformance — Shadow Mode",
+      "title": "Platform Conformance \u2014 Shadow Mode",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2785,7 +2785,7 @@
     },
     {
       "path": "docs/cost/summary.md",
-      "title": "Cost Digest — Rolling 30 days",
+      "title": "Cost Digest \u2014 Rolling 30 days",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2848,7 +2848,7 @@
     },
     {
       "path": "docs/council/inquiries/001-capability-factory-backcasting.md",
-      "title": "C-001 — Capability Factory Backcasting and Thin-Slice Plan",
+      "title": "C-001 \u2014 Capability Factory Backcasting and Thin-Slice Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2869,7 +2869,7 @@
     },
     {
       "path": "docs/council/inquiries/002-capability-design-studio-golden-design.md",
-      "title": "C-002 — Capability Design Studio Golden Design",
+      "title": "C-002 \u2014 Capability Design Studio Golden Design",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2953,7 +2953,7 @@
     },
     {
       "path": "docs/customer-gate/M1_M2_CATALOG_2026-05-17.md",
-      "title": "Customer Gate Catalog — 2026-05-17",
+      "title": "Customer Gate Catalog \u2014 2026-05-17",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -2974,7 +2974,7 @@
     },
     {
       "path": "docs/decisions/2026-05-15-operations-checkpoint.md",
-      "title": "2026-05-15 — Operations checkpoint",
+      "title": "2026-05-15 \u2014 Operations checkpoint",
       "status": "active",
       "owner": "platform",
       "doc_type": "decision",
@@ -2995,7 +2995,7 @@
     },
     {
       "path": "docs/decisions/2026-05-18-attribution-model.md",
-      "title": "ADR — Attribution Model: Dual Last-Non-Direct + First-Touch",
+      "title": "ADR \u2014 Attribution Model: Dual Last-Non-Direct + First-Touch",
       "status": "active",
       "owner": "platform",
       "doc_type": "decision",
@@ -3016,7 +3016,7 @@
     },
     {
       "path": "docs/decisions/2026-05-23-governance-of-governance.md",
-      "title": "2026-05-23 — Governance of Governance",
+      "title": "2026-05-23 \u2014 Governance of Governance",
       "status": "active",
       "owner": "platform",
       "doc_type": "decision",
@@ -3037,7 +3037,7 @@
     },
     {
       "path": "docs/decisions/2026-05-23-workflow-lifecycle.md",
-      "title": "2026-05-23 — Workflow Lifecycle & Automation Hygiene",
+      "title": "2026-05-23 \u2014 Workflow Lifecycle & Automation Hygiene",
       "status": "active",
       "owner": "platform",
       "doc_type": "decision",
@@ -3058,7 +3058,7 @@
     },
     {
       "path": "docs/decisions/2026-05-25-factory-alignment.md",
-      "title": "2026-05-25 — Factory alignment: what it IS, what it is NOT, what to build next",
+      "title": "2026-05-25 \u2014 Factory alignment: what it IS, what it is NOT, what to build next",
       "status": "canonical",
       "owner": "platform",
       "doc_type": "decision",
@@ -3081,7 +3081,7 @@
     },
     {
       "path": "docs/decisions/2026-05-25-marketing-external-api.md",
-      "title": "ADR — Defer External Marketing API + Partner Self-Serve",
+      "title": "ADR \u2014 Defer External Marketing API + Partner Self-Serve",
       "status": "active",
       "owner": "platform",
       "doc_type": "decision",
@@ -3249,7 +3249,7 @@
     },
     {
       "path": "docs/digest/2026-05-16.md",
-      "title": "Morning digest — 2026-05-16",
+      "title": "Morning digest \u2014 2026-05-16",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -3270,7 +3270,7 @@
     },
     {
       "path": "docs/digest/2026-05-17.md",
-      "title": "Morning digest — 2026-05-17",
+      "title": "Morning digest \u2014 2026-05-17",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -3291,7 +3291,7 @@
     },
     {
       "path": "docs/digest/2026-05-25.md",
-      "title": "Morning digest — 2026-05-25",
+      "title": "Morning digest \u2014 2026-05-25",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -3312,7 +3312,7 @@
     },
     {
       "path": "docs/digest/2026-05-30.md",
-      "title": "Morning digest — 2026-05-30",
+      "title": "Morning digest \u2014 2026-05-30",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -3464,7 +3464,7 @@
     },
     {
       "path": "docs/FACTORY_ADMIN_TELEMETRY_CONTRACT.md",
-      "title": "Factory Admin Integration — Telemetry Contract & API Design",
+      "title": "Factory Admin Integration \u2014 Telemetry Contract & API Design",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -3485,7 +3485,7 @@
     },
     {
       "path": "docs/FACTORY_FINISH_PLAN.md",
-      "title": "Factory Finish — Scope A",
+      "title": "Factory Finish \u2014 Scope A",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -3527,7 +3527,7 @@
     },
     {
       "path": "docs/G2_PHASE_2_EXECUTION_PLAN.md",
-      "title": "G2 Phase 2 Execution Plan — Aggregator HTTP Mocking Tests",
+      "title": "G2 Phase 2 Execution Plan \u2014 Aggregator HTTP Mocking Tests",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -3947,7 +3947,7 @@
     },
     {
       "path": "docs/kpis/README.md",
-      "title": "Governance KPIs — Ground Truth Reference",
+      "title": "Governance KPIs \u2014 Ground Truth Reference",
       "status": "active",
       "owner": "platform",
       "doc_type": "index",
@@ -4157,7 +4157,7 @@
     },
     {
       "path": "docs/marketing/icp/cypher-practitioner.md",
-      "title": "`cypher:practitioner` — ICP",
+      "title": "`cypher:practitioner` \u2014 ICP",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4178,7 +4178,7 @@
     },
     {
       "path": "docs/marketing/icp/factory-internal.md",
-      "title": "`factory:internal` — ICP",
+      "title": "`factory:internal` \u2014 ICP",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4199,7 +4199,7 @@
     },
     {
       "path": "docs/marketing/icp/selfprime-consumer.md",
-      "title": "`selfprime:consumer` — ICP",
+      "title": "`selfprime:consumer` \u2014 ICP",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4220,7 +4220,7 @@
     },
     {
       "path": "docs/marketing/icp/selfprime-practitioner.md",
-      "title": "`selfprime:practitioner` — ICP",
+      "title": "`selfprime:practitioner` \u2014 ICP",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4241,7 +4241,7 @@
     },
     {
       "path": "docs/marketing/icp/selfprime.md",
-      "title": "Selfprime — Product Page",
+      "title": "Selfprime \u2014 Product Page",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4346,7 +4346,7 @@
     },
     {
       "path": "docs/marketing/OPS_CHECKLIST.md",
-      "title": "Marketing Ops Checklist — Per New App / Worker",
+      "title": "Marketing Ops Checklist \u2014 Per New App / Worker",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4367,7 +4367,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3a-email-drip.md",
-      "title": "PR 3a — Real Drip Sequencer in `@lwt/email`",
+      "title": "PR 3a \u2014 Real Drip Sequencer in `@lwt/email`",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4388,7 +4388,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3b-icp-dimension.md",
-      "title": "PR 3b — ICP Dimension Migration",
+      "title": "PR 3b \u2014 ICP Dimension Migration",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4409,7 +4409,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3c-voice-matrix.md",
-      "title": "PR 3c — Voice Profile Matrix in `@lwt/copy`",
+      "title": "PR 3c \u2014 Voice Profile Matrix in `@lwt/copy`",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4430,7 +4430,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3d-surface-registry.md",
-      "title": "PR 3d — Surface Registry (URL → cell routing in `@lwt/content`)",
+      "title": "PR 3d \u2014 Surface Registry (URL \u2192 cell routing in `@lwt/content`)",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4451,7 +4451,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3e-supervisor-worker.md",
-      "title": "PR 3e — Marketing Supervisor Worker (`apps/marketing-supervisor/`)",
+      "title": "PR 3e \u2014 Marketing Supervisor Worker (`apps/marketing-supervisor/`)",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4472,7 +4472,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3f-social-adapters.md",
-      "title": "PR 3f — LinkedIn + YouTube + TikTok + Instagram adapters in `@lwt/social`",
+      "title": "PR 3f \u2014 LinkedIn + YouTube + TikTok + Instagram adapters in `@lwt/social`",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4493,7 +4493,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3g-topic-queue.md",
-      "title": "PR 3g — Topic Queue Generator (transit + signal mining)",
+      "title": "PR 3g \u2014 Topic Queue Generator (transit + signal mining)",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4514,7 +4514,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3h-shareables.md",
-      "title": "PR 3h — Practitioner-Branded Shareables",
+      "title": "PR 3h \u2014 Practitioner-Branded Shareables",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4535,7 +4535,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3i-embed-worker.md",
-      "title": "PR 3i — Embed Worker (Chart-Calc Widgets)",
+      "title": "PR 3i \u2014 Embed Worker (Chart-Calc Widgets)",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4556,7 +4556,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3j-referrals.md",
-      "title": "PR 3j — Referral Compounding (`@lwt/referrals`)",
+      "title": "PR 3j \u2014 Referral Compounding (`@lwt/referrals`)",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4577,7 +4577,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3k-attribution.md",
-      "title": "PR 3k — `@lwt/attribution` Package",
+      "title": "PR 3k \u2014 `@lwt/attribution` Package",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4598,7 +4598,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3l-llm-rank.md",
-      "title": "PR 3l — LLM-Rank Tracker",
+      "title": "PR 3l \u2014 LLM-Rank Tracker",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4619,7 +4619,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/3m-brand-safety-tripwire.md",
-      "title": "PR 3m — Brand-Safety Tripwire",
+      "title": "PR 3m \u2014 Brand-Safety Tripwire",
       "status": "active",
       "owner": "marketing",
       "doc_type": "reference",
@@ -4640,7 +4640,7 @@
     },
     {
       "path": "docs/marketing/pr3-briefs/README.md",
-      "title": "PR 3 — Builder Briefs",
+      "title": "PR 3 \u2014 Builder Briefs",
       "status": "active",
       "owner": "marketing",
       "doc_type": "index",
@@ -4745,7 +4745,7 @@
     },
     {
       "path": "docs/migrations/sup-1.4-migration-drift-guard/README.md",
-      "title": "SUP-1.4 Migration Guide — Migration Drift Guard",
+      "title": "SUP-1.4 Migration Guide \u2014 Migration Drift Guard",
       "status": "archive",
       "owner": "platform",
       "doc_type": "index",
@@ -4766,7 +4766,7 @@
     },
     {
       "path": "docs/migrations/syn-6-humandesign-workflow-rollout/README.md",
-      "title": "SYN-6 Migration Guide — HumanDesign Workflow Rollout (18 → 3)",
+      "title": "SYN-6 Migration Guide \u2014 HumanDesign Workflow Rollout (18 \u2192 3)",
       "status": "archive",
       "owner": "platform",
       "doc_type": "index",
@@ -4787,7 +4787,7 @@
     },
     {
       "path": "docs/MONDAY_REVIEW_TEMPLATE.md",
-      "title": "Monday Review — Agenda Template (G15)",
+      "title": "Monday Review \u2014 Agenda Template (G15)",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -4850,7 +4850,7 @@
     },
     {
       "path": "docs/NAMING_CONVENTIONS.md",
-      "title": "Latimer-Woods-Tech Factory — Naming Conventions",
+      "title": "Latimer-Woods-Tech Factory \u2014 Naming Conventions",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -4976,7 +4976,7 @@
     },
     {
       "path": "docs/OPERATING_FRAMEWORK.md",
-      "title": "Operating Framework — How We Ship Without Headaches",
+      "title": "Operating Framework \u2014 How We Ship Without Headaches",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5060,7 +5060,7 @@
     },
     {
       "path": "docs/operations/POST_ORG_MIGRATION_IMPROVEMENT_PLAN.md",
-      "title": "Post Org Migration — Improvement Plan",
+      "title": "Post Org Migration \u2014 Improvement Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -5081,7 +5081,7 @@
     },
     {
       "path": "docs/operations/USER_JOURNEY_SLOS.md",
-      "title": "User Journey SLOs — W360-022",
+      "title": "User Journey SLOs \u2014 W360-022",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5102,7 +5102,7 @@
     },
     {
       "path": "docs/operations/W360_FACTORY_REPO_HARDENING_ISSUE_PACK.md",
-      "title": "W360 Factory Repo Hardening — Issue Pack (FRH-01..FRH-10)",
+      "title": "W360 Factory Repo Hardening \u2014 Issue Pack (FRH-01..FRH-10)",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5123,7 +5123,7 @@
     },
     {
       "path": "docs/operations/W360_FACTORY_REPO_HARDENING_PLAN.md",
-      "title": "World Class 360 — Factory Repo Hardening Plan",
+      "title": "World Class 360 \u2014 Factory Repo Hardening Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -5144,7 +5144,7 @@
     },
     {
       "path": "docs/operations/W360_FACTORY_REPO_HARDENING_SPRINT_PLAN.md",
-      "title": "World Class 360 — Factory Repo Hardening Sprint Plan",
+      "title": "World Class 360 \u2014 Factory Repo Hardening Sprint Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -5207,7 +5207,7 @@
     },
     {
       "path": "docs/operations/WORLD_CLASS_360_DISCIPLINE_BREAKDOWN.md",
-      "title": "World Class 360 — Discipline Breakdown",
+      "title": "World Class 360 \u2014 Discipline Breakdown",
       "status": "canonical",
       "owner": "platform",
       "doc_type": "reference",
@@ -5230,7 +5230,7 @@
     },
     {
       "path": "docs/operations/WORLD_CLASS_360_SCOPE_GAP_REVIEW.md",
-      "title": "World Class 360 — Scope Gap and Process Review",
+      "title": "World Class 360 \u2014 Scope Gap and Process Review",
       "status": "canonical",
       "owner": "platform",
       "doc_type": "reference",
@@ -5254,7 +5254,7 @@
     },
     {
       "path": "docs/operations/WORLD_CLASS_360_TASK_DASHBOARD.md",
-      "title": "World Class 360 — Active Task Dashboard",
+      "title": "World Class 360 \u2014 Active Task Dashboard",
       "status": "canonical",
       "owner": "platform",
       "doc_type": "reference",
@@ -5298,7 +5298,7 @@
     },
     {
       "path": "docs/PACKAGE_MATRIX.md",
-      "title": "Package Matrix — Factory Shared Libraries",
+      "title": "Package Matrix \u2014 Factory Shared Libraries",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5340,7 +5340,7 @@
     },
     {
       "path": "docs/packages/analytics-consumption-guide.mdx",
-      "title": "@latimer-woods-tech/analytics — Analytics Consumption Guide",
+      "title": "@latimer-woods-tech/analytics \u2014 Analytics Consumption Guide",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5382,7 +5382,7 @@
     },
     {
       "path": "docs/packages/auth-consumption-guide.mdx",
-      "title": "@latimer-woods-tech/auth — JWT & RBAC Consumption Guide",
+      "title": "@latimer-woods-tech/auth \u2014 JWT & RBAC Consumption Guide",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5760,7 +5760,7 @@
     },
     {
       "path": "docs/packages/monitoring-consumption-guide.mdx",
-      "title": "@latimer-woods-tech/monitoring — Monitoring Consumption Guide",
+      "title": "@latimer-woods-tech/monitoring \u2014 Monitoring Consumption Guide",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5802,7 +5802,7 @@
     },
     {
       "path": "docs/packages/neon-consumption-guide.mdx",
-      "title": "@latimer-woods-tech/neon — Database Consumption Guide",
+      "title": "@latimer-woods-tech/neon \u2014 Database Consumption Guide",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -5907,7 +5907,7 @@
     },
     {
       "path": "docs/packages/stripe-consumption-guide.mdx",
-      "title": "@latimer-woods-tech/stripe — Payments Consumption Guide",
+      "title": "@latimer-woods-tech/stripe \u2014 Payments Consumption Guide",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6054,7 +6054,7 @@
     },
     {
       "path": "docs/PHASE_6_EXECUTION_CHECKLIST.md",
-      "title": "Phase 6: Infrastructure Setup — Execution Checklist",
+      "title": "Phase 6: Infrastructure Setup \u2014 Execution Checklist",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6096,7 +6096,7 @@
     },
     {
       "path": "docs/PII_INVENTORY.md",
-      "title": "PII Inventory — Factory / Admin Studio",
+      "title": "PII Inventory \u2014 Factory / Admin Studio",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6117,7 +6117,7 @@
     },
     {
       "path": "docs/PLATFORM_STANDARDS.md",
-      "title": "Platform Standards — Latimer-Woods-Tech",
+      "title": "Platform Standards \u2014 Latimer-Woods-Tech",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6159,7 +6159,7 @@
     },
     {
       "path": "docs/PORTFOLIO_CAPABILITY_RECONCILIATION.md",
-      "title": "Portfolio Capability ↔ Marketing Reconciliation",
+      "title": "Portfolio Capability \u2194 Marketing Reconciliation",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6306,7 +6306,7 @@
     },
     {
       "path": "docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md",
-      "title": "Practitioner Video Studio — Phase 2 Specification",
+      "title": "Practitioner Video Studio \u2014 Phase 2 Specification",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6369,7 +6369,7 @@
     },
     {
       "path": "docs/RELEASE_TRAIN_VERIFICATION.md",
-      "title": "Release Train: Staging → Canary → Production",
+      "title": "Release Train: Staging \u2192 Canary \u2192 Production",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6390,7 +6390,7 @@
     },
     {
       "path": "docs/RETENTION.md",
-      "title": "Data Retention Policy — Factory Platform",
+      "title": "Data Retention Policy \u2014 Factory Platform",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6432,7 +6432,7 @@
     },
     {
       "path": "docs/revenue/PRACTITIONER_VIDEO_STUDIO_READY_STATE_PLAN.md",
-      "title": "Practitioner Video Studio — Revenue Ready-State Plan",
+      "title": "Practitioner Video Studio \u2014 Revenue Ready-State Plan",
       "status": "canonical",
       "owner": "revenue",
       "doc_type": "plan",
@@ -6455,7 +6455,7 @@
     },
     {
       "path": "docs/revenue/summary.md",
-      "title": "Revenue + Reliability Digest — Stage 2",
+      "title": "Revenue + Reliability Digest \u2014 Stage 2",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -6476,7 +6476,7 @@
     },
     {
       "path": "docs/revenue/XICO_CITY_TRANCHE_REVIEW.md",
-      "title": "DJMEXXICO (xico-city) — Tranche Opportunity Review",
+      "title": "DJMEXXICO (xico-city) \u2014 Tranche Opportunity Review",
       "status": "canonical",
       "owner": "revenue",
       "doc_type": "reference",
@@ -6709,7 +6709,7 @@
     },
     {
       "path": "docs/runbooks/automation-audit.md",
-      "title": "Factory Automation Audit — 2026-05-09",
+      "title": "Factory Automation Audit \u2014 2026-05-09",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -6751,7 +6751,7 @@
     },
     {
       "path": "docs/runbooks/coh-world-class-sprint.md",
-      "title": "coh — World-class Polish Sprint",
+      "title": "coh \u2014 World-class Polish Sprint",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -7003,7 +7003,7 @@
     },
     {
       "path": "docs/runbooks/external-alerting.md",
-      "title": "External Alerting — Pushover",
+      "title": "External Alerting \u2014 Pushover",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -7213,7 +7213,7 @@
     },
     {
       "path": "docs/runbooks/npm-oidc-publishing.md",
-      "title": "npm OIDC Trusted Publishers — Operator Runbook",
+      "title": "npm OIDC Trusted Publishers \u2014 Operator Runbook",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -7276,7 +7276,7 @@
     },
     {
       "path": "docs/runbooks/POSTMORTEM_TEMPLATE.md",
-      "title": "[Title] — Postmortem",
+      "title": "[Title] \u2014 Postmortem",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -7318,7 +7318,7 @@
     },
     {
       "path": "docs/runbooks/prime-self-csp-investigation.md",
-      "title": "Prime Self Smoke — RC-4 CSP/SRI Investigation (2026-05-23)",
+      "title": "Prime Self Smoke \u2014 RC-4 CSP/SRI Investigation (2026-05-23)",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -7423,7 +7423,7 @@
     },
     {
       "path": "docs/runbooks/rotate-gcp-sa.md",
-      "title": "GCP Service-Account Key Rotation — `supervisor-sa`",
+      "title": "GCP Service-Account Key Rotation \u2014 `supervisor-sa`",
       "status": "active",
       "owner": "platform",
       "doc_type": "runbook",
@@ -7717,7 +7717,7 @@
     },
     {
       "path": "docs/sauna-brain.md",
-      "title": "Sauna Brain — Factory Operating Snapshot",
+      "title": "Sauna Brain \u2014 Factory Operating Snapshot",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7759,7 +7759,7 @@
     },
     {
       "path": "docs/SELFPRIME_GTM_ROADMAP.md",
-      "title": "selfprime — GTM, Packaging & Dormant-Asset Roadmap",
+      "title": "selfprime \u2014 GTM, Packaging & Dormant-Asset Roadmap",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7780,7 +7780,7 @@
     },
     {
       "path": "docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md",
-      "title": "SelfPrime × VideoKing Synergy Development Plan",
+      "title": "SelfPrime \u00d7 VideoKing Synergy Development Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -7825,7 +7825,7 @@
     },
     {
       "path": "docs/sessions/2026-04-30-org-migration.md",
-      "title": "Latimer-Woods-Tech Org Migration — Complete",
+      "title": "Latimer-Woods-Tech Org Migration \u2014 Complete",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7867,7 +7867,7 @@
     },
     {
       "path": "docs/SLO.md",
-      "title": "Service Level Objectives — Factory Admin Studio",
+      "title": "Service Level Objectives \u2014 Factory Admin Studio",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7909,7 +7909,7 @@
     },
     {
       "path": "docs/STAGE_2_ACQUISITION_SELFPRIME.md",
-      "title": "Stage 2 Acquisition — Selfprime \"Practitioner First Domino\"",
+      "title": "Stage 2 Acquisition \u2014 Selfprime \"Practitioner First Domino\"",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7930,7 +7930,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-05-30",
+      "title": "Factory State \u2014 2026-05-30",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7951,7 +7951,7 @@
     },
     {
       "path": "docs/STATUS.md",
-      "title": "Factory Ecosystem — Status",
+      "title": "Factory Ecosystem \u2014 Status",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7993,7 +7993,7 @@
     },
     {
       "path": "docs/supervisor/ADR-EXEC-GAPS.md",
-      "title": "ADR: SUP-4 EXEC Gaps — Design Decisions",
+      "title": "ADR: SUP-4 EXEC Gaps \u2014 Design Decisions",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8035,7 +8035,7 @@
     },
     {
       "path": "docs/supervisor/ARCHITECTURE.md",
-      "title": "Factory as Supervisor — Architecture Plan, v2.1",
+      "title": "Factory as Supervisor \u2014 Architecture Plan, v2.1",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8056,7 +8056,7 @@
     },
     {
       "path": "docs/supervisor/CAPABILITY_DECLARATION.md",
-      "title": "Supervisor Capability Declaration — Phase 2 (SUP-4 EXEC Leg)",
+      "title": "Supervisor Capability Declaration \u2014 Phase 2 (SUP-4 EXEC Leg)",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8077,7 +8077,7 @@
     },
     {
       "path": "docs/supervisor/CONTEXT.md",
-      "title": "Factory — Agent Context (loaded before every AI operation)",
+      "title": "Factory \u2014 Agent Context (loaded before every AI operation)",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8098,7 +8098,7 @@
     },
     {
       "path": "docs/supervisor/DECISIONS.md",
-      "title": "Factory Supervisor — Open Decisions",
+      "title": "Factory Supervisor \u2014 Open Decisions",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8119,7 +8119,7 @@
     },
     {
       "path": "docs/supervisor/EXECUTION_TRACKER.md",
-      "title": "Factory Supervisor — Execution Tracker",
+      "title": "Factory Supervisor \u2014 Execution Tracker",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8140,7 +8140,7 @@
     },
     {
       "path": "docs/supervisor/FRIDGE.md",
-      "title": "Factory Supervisor — Rules on the Fridge",
+      "title": "Factory Supervisor \u2014 Rules on the Fridge",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8182,7 +8182,7 @@
     },
     {
       "path": "docs/supervisor/MERGE_READINESS.md",
-      "title": "SUP-4 EXEC Leg — Merge Readiness Report",
+      "title": "SUP-4 EXEC Leg \u2014 Merge Readiness Report",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8392,7 +8392,7 @@
     },
     {
       "path": "docs/supervisor/STANDING_ORDERS.md",
-      "title": "Factory Supervisor — Standing Orders",
+      "title": "Factory Supervisor \u2014 Standing Orders",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8413,7 +8413,7 @@
     },
     {
       "path": "docs/supervisor/SUP-4-EXEC-PLAN.md",
-      "title": "SUP-4 EXEC Leg — Full Implementation Plan",
+      "title": "SUP-4 EXEC Leg \u2014 Full Implementation Plan",
       "status": "active",
       "owner": "platform",
       "doc_type": "plan",
@@ -8539,7 +8539,7 @@
     },
     {
       "path": "docs/T1_T2_DELIVERY_SUMMARY.md",
-      "title": "T1.1 + T1.2 + T2.1 Delivery Complete — April 28, 2026",
+      "title": "T1.1 + T1.2 + T2.1 Delivery Complete \u2014 April 28, 2026",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -8581,7 +8581,7 @@
     },
     {
       "path": "docs/TEAM_HANDOFF.md",
-      "title": "Team Handoff — Factory @ Latimer-Woods-Tech",
+      "title": "Team Handoff \u2014 Factory @ Latimer-Woods-Tech",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8602,7 +8602,7 @@
     },
     {
       "path": "docs/templates/campaign-cron-worker.md",
-      "title": "Campaign Cron Worker — Reusable Template",
+      "title": "Campaign Cron Worker \u2014 Reusable Template",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8749,7 +8749,7 @@
     },
     {
       "path": "EXECUTION_SUMMARY_2026_05_27.md",
-      "title": "Execution Summary — 2026-05-27 (Day 22)",
+      "title": "Execution Summary \u2014 2026-05-27 (Day 22)",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8791,7 +8791,7 @@
     },
     {
       "path": "MASTER_INDEX.md",
-      "title": "Factory Core — Master Index",
+      "title": "Factory Core \u2014 Master Index",
       "status": "active",
       "owner": "platform",
       "doc_type": "index",
@@ -8854,7 +8854,7 @@
     },
     {
       "path": "PHASE_6_CHECKLIST.md",
-      "title": "Phase 6: Infrastructure Setup — Execution Checklist",
+      "title": "Phase 6: Infrastructure Setup \u2014 Execution Checklist",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -9072,7 +9072,7 @@
     },
     {
       "path": "prompts/STAGE_1_FOUNDATION.md",
-      "title": "HISTORICAL ONLY — DO NOT USE FOR CURRENT EXECUTION",
+      "title": "HISTORICAL ONLY \u2014 DO NOT USE FOR CURRENT EXECUTION",
       "status": "active",
       "owner": "platform",
       "doc_type": "prompt",
@@ -9093,7 +9093,7 @@
     },
     {
       "path": "prompts/STAGE_1.md",
-      "title": "HISTORICAL ONLY — DO NOT USE FOR CURRENT EXECUTION",
+      "title": "HISTORICAL ONLY \u2014 DO NOT USE FOR CURRENT EXECUTION",
       "status": "active",
       "owner": "platform",
       "doc_type": "prompt",
@@ -9156,7 +9156,7 @@
     },
     {
       "path": "STAGE_6_ONWARDS_PLAN.md",
-      "title": "Factory Core — Master Execution Plan: Stage 6+",
+      "title": "Factory Core \u2014 Master Execution Plan: Stage 6+",
       "status": "archive",
       "owner": "platform",
       "doc_type": "plan",
@@ -9198,7 +9198,7 @@
     },
     {
       "path": "SUP-2.3_CHECKLIST.md",
-      "title": "SUP-2.3 Action Checklist — Quick Start",
+      "title": "SUP-2.3 Action Checklist \u2014 Quick Start",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -9219,7 +9219,7 @@
     },
     {
       "path": "SUP-2.3_DELIVERY_REPORT.md",
-      "title": "SUP-2.3 LLM Consumption Task — Delivery & Status Report",
+      "title": "SUP-2.3 LLM Consumption Task \u2014 Delivery & Status Report",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -9240,7 +9240,7 @@
     },
     {
       "path": "SUP-2.3_FINAL_STATUS.md",
-      "title": "SUP-2.3 Chain — What Else Needs To Be Done? FINAL STATUS",
+      "title": "SUP-2.3 Chain \u2014 What Else Needs To Be Done? FINAL STATUS",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
@@ -9261,7 +9261,7 @@
     },
     {
       "path": "SUP-2.3_NEXT_STEPS.md",
-      "title": "SUP-2.3 Next Steps — LLM Consumption Phase",
+      "title": "SUP-2.3 Next Steps \u2014 LLM Consumption Phase",
       "status": "archive",
       "owner": "platform",
       "doc_type": "reference",
