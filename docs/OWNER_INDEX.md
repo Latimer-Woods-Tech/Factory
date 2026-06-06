@@ -425,7 +425,7 @@
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | unknown | Service Level Objectives — Factory Admin Studio |
-| [docs/STACK.md](STACK.md) | active | unverified | 2026-05-30 | Stack Manifest |
+| [docs/STACK.md](STACK.md) | active | unverified | 2026-06-05 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
 | [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-05-30 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | unknown | Factory Ecosystem — Status |
