@@ -8,6 +8,7 @@ const greenPlanDescription = env.SUPERVISOR_GREEN_PLAN_DESCRIPTION || '';
 const expectedGreenTemplate = env.SUPERVISOR_EXPECTED_GREEN_TEMPLATE_ID || '';
 const expectedWriteTools = (env.SUPERVISOR_EXPECTED_WRITE_TOOLS || '').split(',').map((name) => name.trim()).filter(Boolean).sort();
 const expectedPlanEffects = new Map((env.SUPERVISOR_EXPECTED_GREEN_PLAN_EFFECTS || '').split(',').filter(Boolean).map((entry) => entry.split('=').map((part) => part.trim())));
+const shouldRunGreenTemplate = env.SUPERVISOR_RUN_GREEN_TEMPLATE === 'true';
 const required = [
   'supervisor.health.snapshot',
   'registry.capabilities.list',
@@ -92,6 +93,25 @@ if (greenPlanDescription) {
     tier: plan.body.plan.tier,
     steps: plan.body.plan.steps.length,
   };
+
+  if (shouldRunGreenTemplate) {
+    const runUrl = new URL('/run', parsedUrl.origin);
+    const run = await fetchJson(runUrl, {
+      method: 'POST',
+      headers: { ...authHeaders, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        template_id: expectedGreenTemplate,
+        description: greenPlanDescription,
+        source: 'workflow_dispatch:first-controlled-green-pr',
+      }),
+    }, 'green template run');
+
+    if (!run.response.ok || run.body.ok !== true) fail('green template run failed', { status: run.response.status, body: run.body });
+    const prReceipt = (run.body.receipts || []).find((receipt) => receipt.tool_name === 'github.openPR');
+    const prUrl = prReceipt?.result?.result?.html_url;
+    if (!prUrl) fail('green template run did not return a PR URL from github.openPR', { body: run.body });
+    greenPlan.run = { run_id: run.body.run_id, pr_url: prUrl, steps_executed: run.body.steps_executed };
+  }
 }
 
 console.log(JSON.stringify({
