@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 426 |
+| total_docs | 443 |
 | canonical | 17 |
-| active | 361 |
+| active | 378 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (361)
+## Active Docs (378)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -47,6 +47,7 @@
 | [ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md](../ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md) | active | unverified | platform | unknown | Admin Studio AI Agent — Deployment Checklist |
 | [apps/admin-studio-ui/README.md](../apps/admin-studio-ui/README.md) | active | unverified | admin-studio-ui | unknown | Factory Admin Studio — UI |
 | [apps/admin-studio/README.md](../apps/admin-studio/README.md) | active | unverified | admin-studio | unknown | Factory Admin Studio |
+| [apps/agent-gateway/README.md](../apps/agent-gateway/README.md) | active | unverified | agent-gateway | unknown | factory-agent-gateway |
 | [apps/browser-agent/README.md](../apps/browser-agent/README.md) | active | unverified | browser-agent | unknown | Browser Agent |
 | [apps/factory-core-api/README.md](../apps/factory-core-api/README.md) | active | unverified | factory-core-api | unknown | factory-core-api |
 | [apps/latimerwoods-dev/README.md](../apps/latimerwoods-dev/README.md) | active | unverified | latimerwoods-dev | unknown | latimerwoods-dev — Developer Index |
@@ -54,6 +55,7 @@
 | [apps/prime-self-smoke/README.md](../apps/prime-self-smoke/README.md) | active | unverified | prime-self-smoke | unknown | prime-self-smoke |
 | [apps/status-prober/README.md](../apps/status-prober/README.md) | active | unverified | status-prober | unknown | status-prober |
 | [apps/supervisor/README.md](../apps/supervisor/README.md) | active | unverified | supervisor | unknown | factory-supervisor |
+| [apps/video-render-service/README.md](../apps/video-render-service/README.md) | active | unverified | video-render-service | unknown | video-render-service |
 | [apps/video-studio/README.md](../apps/video-studio/README.md) | active | unverified | video-studio | unknown | Video Studio |
 | [apps/webhook-fanout/README.md](../apps/webhook-fanout/README.md) | active | unverified | webhook-fanout | unknown | webhook-fanout |
 | [docs/_governance/doc-policy.md](_governance/doc-policy.md) | active | unverified | platform | 2026-05-28 | Documentation Governance Policy |
@@ -81,6 +83,7 @@
 | [docs/adr/0011-llm-package-not-direct-calls.md](adr/0011-llm-package-not-direct-calls.md) | active | unverified | architecture | unknown | 0011: LLM calls via @latimer-woods-tech/llm, not direct provider APIs |
 | [docs/adr/0012-dependency-version-policy.md](adr/0012-dependency-version-policy.md) | active | unverified | architecture | unknown | ADR-0012 — Dependency Version Policy |
 | [docs/AGENTS.md](AGENTS.md) | active | unverified | platform | unknown | Agent Configuration & Context Loading |
+| [docs/aggregator-http-mocking-design.md](aggregator-http-mocking-design.md) | active | unverified | platform | unknown | Aggregator Phase 2: HTTP Mocking Design — G2 Phase 2 |
 | [docs/aggregator-README.md](aggregator-README.md) | active | unverified | platform | unknown | Completion Tracker — Operator Doc |
 | [docs/APP_PLANNING_PATTERN.md](APP_PLANNING_PATTERN.md) | active | unverified | platform | unknown | Factory App World-Class Planning Pattern |
 | [docs/APP_README_TEMPLATE.md](APP_README_TEMPLATE.md) | active | unverified | platform | unknown | App Onboarding & README Template |
@@ -88,12 +91,17 @@
 | [docs/ARCHITECTURAL_DECISION_RECORDS.md](ARCHITECTURAL_DECISION_RECORDS.md) | active | unverified | platform | unknown | Architectural Decision Records: VideoKing Phase 4 |
 | [docs/architecture/ADMIN_BUILD_PLAN.md](architecture/ADMIN_BUILD_PLAN.md) | active | unverified | architecture | unknown | Admin Build Plan — Three Passes + Testing + Targeting |
 | [docs/architecture/ADMIN_TECHNICAL_GUIDE.md](architecture/ADMIN_TECHNICAL_GUIDE.md) | active | unverified | architecture | unknown | Factory Admin Technical Guide |
+| [docs/architecture/AGENT_RUNTIME_STATUS.md](architecture/AGENT_RUNTIME_STATUS.md) | active | unverified | architecture | unknown | Agent Runtime — Status & Handoff (as of 2026-06-04) |
+| [docs/architecture/AGENT_RUNTIME.md](architecture/AGENT_RUNTIME.md) | active | unverified | architecture | unknown | Factory Agent Runtime — Architecture & Implementation Plan |
 | [docs/architecture/CAPABILITY_FACTORY_REGISTRY.md](architecture/CAPABILITY_FACTORY_REGISTRY.md) | active | unverified | architecture | unknown | Capability Factory Registry |
+| [docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md](architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md) | active | unverified | architecture | unknown | I1 — Energy Blueprint Video Engine: Final-State Design |
+| [docs/architecture/I1_PERSUASION_POLICY.md](architecture/I1_PERSUASION_POLICY.md) | active | unverified | architecture | unknown | I1 — Narration Persuasion Policy (DRAFT — for red-line) |
 | [docs/architecture/PATTERNS.md](architecture/PATTERNS.md) | active | unverified | architecture | unknown | Factory Operational Patterns |
 | [docs/architecture/QA_TOOLS_ARCHITECTURE.md](architecture/QA_TOOLS_ARCHITECTURE.md) | active | unverified | architecture | unknown | QA Tools Platform — Mature Design (v2.0) |
 | [docs/architecture/SURFACES.md](architecture/SURFACES.md) | active | unverified | architecture | unknown | Factory Surfaces — Navigation Index |
 | [docs/audits/MARKETING_STAMP_AUDIT.md](audits/MARKETING_STAMP_AUDIT.md) | active | unverified | platform | unknown | Marketing Stamp Audit — 2026-05-21 |
 | [docs/BIRTHTIME_FORMATTING_TODO.md](BIRTHTIME_FORMATTING_TODO.md) | active | unverified | platform | unknown | Birth Time Formatting — Frontend Implementation TODO |
+| [docs/BUS_FACTOR.md](BUS_FACTOR.md) | active | unverified | platform | unknown | Bus-Factor & Recovery — Operator Continuity (G19) |
 | [docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md](CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md) | active | unverified | platform | unknown | Capability Design Studio — Golden Design |
 | [docs/CAPABILITY_FACTORY_BACKCASTING_PLAN.md](CAPABILITY_FACTORY_BACKCASTING_PLAN.md) | active | unverified | platform | unknown | Capability Factory — Backcasting Plan |
 | [docs/CAPABILITY_STUDIO_HANDOFF.md](CAPABILITY_STUDIO_HANDOFF.md) | active | unverified | platform | unknown | Capability Design Studio Handoff |
@@ -133,7 +141,10 @@
 | [docs/cost/summary.md](cost/summary.md) | active | unverified | platform | unknown | Cost Digest — Rolling 30 days |
 | [docs/council/DECISIONS.md](council/DECISIONS.md) | active | unverified | platform | unknown | Council Decisions |
 | [docs/council/INDEX.md](council/INDEX.md) | active | unverified | platform | unknown | Council Inquiry Index |
+| [docs/council/inquiries/001-capability-factory-backcasting.md](council/inquiries/001-capability-factory-backcasting.md) | active | unverified | platform | unknown | C-001 — Capability Factory Backcasting and Thin-Slice Plan |
 | [docs/council/inquiries/002-capability-design-studio-golden-design.md](council/inquiries/002-capability-design-studio-golden-design.md) | active | unverified | platform | unknown | C-002 — Capability Design Studio Golden Design |
+| [docs/council/README.md](council/README.md) | active | unverified | platform | unknown | Council Space |
+| [docs/council/TEMPLATE.md](council/TEMPLATE.md) | active | unverified | platform | unknown | Council Inquiry Template |
 | [docs/CREATOR_ONBOARDING_UX_JOURNEY.md](CREATOR_ONBOARDING_UX_JOURNEY.md) | active | unverified | platform | unknown | Creator Onboarding UX: Complete Journey |
 | [docs/customer-gate/M1_M2_CATALOG_2026-05-17.md](customer-gate/M1_M2_CATALOG_2026-05-17.md) | active | unverified | platform | unknown | Customer Gate Catalog — 2026-05-17 |
 | [docs/decisions/2026-05-15-operations-checkpoint.md](decisions/2026-05-15-operations-checkpoint.md) | active | unverified | platform | unknown | 2026-05-15 — Operations checkpoint |
@@ -160,6 +171,8 @@
 | [docs/FACTORY_ADMIN_TELEMETRY_CONTRACT.md](FACTORY_ADMIN_TELEMETRY_CONTRACT.md) | active | unverified | platform | unknown | Factory Admin Integration — Telemetry Contract & API Design |
 | [docs/FACTORY_FINISH_PLAN.md](FACTORY_FINISH_PLAN.md) | active | unverified | platform | unknown | Factory Finish — Scope A |
 | [docs/FACTORY_FRONTEND_STANDARDS.md](FACTORY_FRONTEND_STANDARDS.md) | active | unverified | platform | unknown | Factory Front-End Quality Standards |
+| [docs/G2_PHASE_2_EXECUTION_PLAN.md](G2_PHASE_2_EXECUTION_PLAN.md) | active | unverified | platform | unknown | G2 Phase 2 Execution Plan — Aggregator HTTP Mocking Tests |
+| [docs/G2_PHASE_2_SUMMARY.md](G2_PHASE_2_SUMMARY.md) | active | unverified | platform | unknown | G2 Phase 2 Planning: Executive Summary |
 | [docs/GAP_REGISTER.md](GAP_REGISTER.md) | active | unverified | platform | unknown | Platform Gap Register |
 | [docs/IMPLEMENTATION_COMPLETE_SUMMARY.md](IMPLEMENTATION_COMPLETE_SUMMARY.md) | active | unverified | platform | unknown | Implementation Complete Summary |
 | [docs/IMPLEMENTATION_LAUNCH_CHECKLIST.md](IMPLEMENTATION_LAUNCH_CHECKLIST.md) | active | unverified | platform | unknown | Implementation Launch Checklist |
@@ -180,6 +193,7 @@
 | [docs/kpis/metrics/warden_audit.md](kpis/metrics/warden_audit.md) | active | unverified | platform | unknown | Metric: WARDEN_AUDIT |
 | [docs/kpis/README.md](kpis/README.md) | active | unverified | platform | unknown | Governance KPIs — Ground Truth Reference |
 | [docs/kpis/xico-city.md](kpis/xico-city.md) | active | unverified | platform | unknown | xico-city (DJMEXXICO) KPI brief |
+| [docs/LEGAL_OPS.md](LEGAL_OPS.md) | active | unverified | platform | unknown | Legal & Domain Operations (G18) |
 | [docs/marketing/ATTRIBUTION.md](marketing/ATTRIBUTION.md) | active | unverified | marketing | unknown | Attribution |
 | [docs/marketing/BUDGET_CAPS.md](marketing/BUDGET_CAPS.md) | active | unverified | marketing | unknown | Budget Caps |
 | [docs/marketing/CAMPAIGN_TAGGING.md](marketing/CAMPAIGN_TAGGING.md) | active | unverified | marketing | unknown | Campaign Tagging |
@@ -277,6 +291,7 @@
 | [docs/PII_INVENTORY.md](PII_INVENTORY.md) | active | unverified | platform | unknown | PII Inventory — Factory / Admin Studio |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
+| [docs/PORTFOLIO_CAPABILITY_RECONCILIATION.md](PORTFOLIO_CAPABILITY_RECONCILIATION.md) | active | unverified | platform | unknown | Portfolio Capability ↔ Marketing Reconciliation |
 | [docs/postmortems/2026-05-02-csp-hash.md](postmortems/2026-05-02-csp-hash.md) | active | unverified | platform | unknown | 2026-05-02: CSP stale hash blocked FOUC script |
 | [docs/postmortems/2026-05-02-csp-stale-hash.md](postmortems/2026-05-02-csp-stale-hash.md) | active | unverified | platform | unknown | 2026-05-02: CSP stale hash blocked FOUC script |
 | [docs/postmortems/2026-05-02-dependabot-lockfile-desync.md](postmortems/2026-05-02-dependabot-lockfile-desync.md) | active | unverified | platform | unknown | 2026-05-02: Dependabot batch broke admin-studio deploy pipeline |
@@ -350,6 +365,7 @@
 | [docs/SAMPLE_WORKFLOW_PAYOUT_OPS.md](SAMPLE_WORKFLOW_PAYOUT_OPS.md) | active | unverified | platform | unknown | Sample Workflow Execution: Payout Operations |
 | [docs/sauna-brain.md](sauna-brain.md) | active | unverified | platform | unknown | Sauna Brain — Factory Operating Snapshot |
 | [docs/scorecard/summary.md](scorecard/summary.md) | active | unverified | platform | unknown | Launch Readiness Scorecard |
+| [docs/SELFPRIME_GTM_ROADMAP.md](SELFPRIME_GTM_ROADMAP.md) | active | unverified | platform | unknown | selfprime — GTM, Packaging & Dormant-Asset Roadmap |
 | [docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md](SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md) | active | unverified | platform | unknown | SelfPrime × VideoKing Synergy Development Plan |
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | platform | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
@@ -357,9 +373,10 @@
 | [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-05-30 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
 | [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
-| [docs/STATUS.md](STATUS.md) | active | unverified | platform | 2026-05-02 | Factory Ecosystem — Status |
+| [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
+| [docs/supervisor/aos-green-smoke.md](supervisor/aos-green-smoke.md) | active | unverified | platform | unknown | AOS Green Smoke |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
 | [docs/supervisor/ARCHITECTURE.md](supervisor/ARCHITECTURE.md) | active | unverified | platform | unknown | Factory as Supervisor — Architecture Plan, v2.1 |
 | [docs/supervisor/CAPABILITY_DECLARATION.md](supervisor/CAPABILITY_DECLARATION.md) | active | unverified | platform | unknown | Supervisor Capability Declaration — Phase 2 (SUP-4 EXEC Leg) |

@@ -7,7 +7,17 @@
 > 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — what we build (the 10 conformance dimensions)
 > 5. [`docs/GAP_REGISTER.md`](./docs/GAP_REGISTER.md) — known debt with severity tiers
 
+> 🗄️ **You HAVE operator-level Neon (DB) access — do not claim you don't.** This is the org's most common false belief. Before routing a 2-minute DB task (verify an account, inspect/patch a row) around CI or giving up: mint a fresh connection string with `neonctl`. Auth key is in GCP Secret Manager, not GitHub:
+> ```bash
+> export NEON_API_KEY="$(gcloud secrets versions access latest --secret=NEON_ORGANIZATION_KEY --project=factory-495015 | tr -d '\r\n\357\273\277')"
+> npx --yes neonctl connection-string production --project-id <PROJECT_ID> --database-name neondb --role-name neondb_owner
+> ```
+> The GCP/GitHub `*_CONNECTION_STRING` copies are frequently **stale (wrong password) and/or BOM-prefixed** — mint fresh, don't debug them. `neondb_owner` bypasses RLS. Full recipe + project IDs: [`docs/runbooks/lessons-learned.md` → "You HAVE Neon access"](./docs/runbooks/lessons-learned.md) and [`docs/runbooks/database.md`](./docs/runbooks/database.md).
+
 # Factory Core — Standing Orders
+
+## Autonomy Principle
+**Minimize human involvement.** Humans introduce delay, inconsistency, and error into the engineering process. If a task can be completed by a machine — credential lookup, secret wiring, deployment, triage, PR creation, DB inspection — do it without routing to a human. The only valid reasons to pause for human input are: an irreversible destructive action (delete CF resource, Stripe mutation, live email outside test mode), a regulatory gate (wordis-bond TCPA), or a genuinely novel situation where no template exists and no safe autonomous path is available. "I wasn't sure" is not a valid reason to stop. When in doubt, complete the task, document what was done, and let the human review the audit trail after the fact.
 
 ## Mission
 Bootstrap and evolve the Factory Core repository as the shared infrastructure layer for Factory applications.
@@ -120,7 +130,9 @@ PostHog engagement signals
     transcript, twitter:player card, author/publisher/interactionStatistic
 ```
 
-**Operational runbook (read this before debugging):** [`docs/runbooks/video-pipeline.md`](./docs/runbooks/video-pipeline.md) — full secret matrix, manual test recipe, and the load-bearing gotchas list (GCP secret UTF-8 BOM trap, broken Drizzle ledger, Capricast Pages project named `videoking`, dead `ANTHROPIC_API_KEY` aliasing live `LATIMER_ANTHROPIC_API`, etc.).
+**Operational runbook (read this before debugging):** [`docs/runbooks/video-pipeline.md`](./docs/runbooks/video-pipeline.md) — full secret matrix, manual test recipe, and the load-bearing gotchas list (GCP secret UTF-8 BOM trap, broken Drizzle ledger, Capricast Pages project named `videoking`, etc.).
+
+> ⚠️ **Correction (2026-06-02):** the long-claimed "dead `ANTHROPIC_API_KEY`" is a MYTH — live-tested, both `ANTHROPIC_API_KEY` and `LATIMER_ANTHROPIC_API` GCP SM secrets are valid. LLM failures previously blamed on a "stale key" were actually a **non-existent CF AI Gateway returning 401** (CF 401s an unknown gateway name, which looks identical to a bad key from inside `@latimer-woods-tech/llm`). See [`docs/runbooks/lessons-learned.md` → "AI Gateway ghosts"](./docs/runbooks/lessons-learned.md). The `verify-ai-gateway.mjs` deploy preflight now hard-fails on a ghost gateway.
 
 **Secrets are sourced from GCP Secret Manager via WIF**, NOT GitHub Actions repo secrets. The render-video.yml workflow runs `scripts/fetch_gcp_secrets.sh` after authenticating with `google-github-actions/auth@v3`. All workflow env vars are populated from GCP at runtime. New secrets must be created in factory-495015 with `printf '%s'` (NOT `echo`) to avoid the trailing-newline trap, and granted to the `factory-sa@factory-495015.iam.gserviceaccount.com` WIF identity. See the runbook for the full matrix.
 

@@ -23,6 +23,41 @@ npm run typecheck  # zero errors required
 npm run lint       # --max-warnings 0
 ```
 
+## You HAVE Neon access — stop assuming you don't
+
+> **The single most common false belief in this org.** Agents repeatedly declare
+> "I don't have access to the database / connection string" and route around a
+> 2-minute task (verify an account, patch a column, inspect a row) into a
+> multi-step CI/secret dance — or just give up. **You almost always have
+> operator-level Neon access.** Try it before claiming you don't.
+
+**The recipe (org-wide, works for every Factory Neon project):**
+```bash
+# 1. Auth: the Neon API key lives in GCP Secret Manager (NOT a GitHub secret).
+#    Strip CR/LF and any leading BOM. NEON_ORGANIZATION_KEY works for writes;
+#    NEON_API often has a leading BOM that 401s if used raw.
+export NEON_API_KEY="$(gcloud secrets versions access latest \
+  --secret=NEON_ORGANIZATION_KEY --project=factory-495015 | tr -d '\r\n\357\273\277')"
+
+# 2. Find the project id (org id is org-withered-wave-19602339):
+npx --yes neonctl projects list --org-id org-withered-wave-19602339
+
+# 3. Mint a FRESH working connection string (do NOT trust the GCP/GitHub
+#    *_CONNECTION_STRING copies — they are frequently stale: wrong password
+#    AND/OR a leading UTF-8 BOM). neonctl mints one with the live role password:
+npx --yes neonctl connection-string production \
+  --project-id <PROJECT_ID> --database-name neondb --role-name neondb_owner
+```
+
+**Key facts agents miss:**
+- `neondb_owner` is the table-owner role → **bypasses RLS** (correct for one-off ops writes/inspection).
+- The GCP-stored `*_CONNECTION_STRING` / `NEON_CONNECT_STRING` / `DATABASE_URL` secrets drift: the operator rotates the Neon password but the GCP copy isn't updated, and several have a **leading BOM** (`0xEF 0xBB 0xBF`). Symptom: `password authentication failed` or `not a valid URL`. **Fix: mint fresh with `neonctl connection-string`, don't debug the stale secret.** (Strip a BOM in code with `while (cs.charCodeAt(0) !== 0x70) cs = cs.slice(1)` — chop until the `p` of `postgresql://`.)
+- Selfprime/HumanDesign project = `divine-grass-42421088`, branch `production`. Other projects: `npx neonctl projects list`.
+- Query from Node with `@neondatabase/serverless` (`neon(cs)`, tagged-template ``sql`...` `` or `sql.query()` for dynamic). `gcloud` auth in agent sessions is usually the user account (`adrper79@gmail.com`) with broad SM read — that's why the key fetch works.
+- The `gh` token (`adrper79-dot`) has `admin:org` → you can also set org + repo secrets when a credential needs rotating.
+
+> See also [database.md](./database.md) for branch strategy; the one-line pin lives at the top of [CLAUDE.md](../../CLAUDE.md).
+
 ## Common Errors & Resolutions
 
 ### Error: "Cannot find module '@latimer-woods-tech/auth' is not in the npm registry"
@@ -1060,3 +1095,209 @@ page.on('requestfailed', (req) => {
 ```
 
 **Lesson:** Playwright's request lifecycle does NOT model redirects as "one request, multiple legs." It models them as "two distinct requests, the first marked failed when the redirect fires." For network-failure-counting probes, this means a 100%-clean redirect chain still produces one `requestfailed` event per redirect leg. Use `redirectedTo()` / `redirectedFrom()` to distinguish probe-relevant failures from redirect-chain artifacts. The same shape applies to any tool inspecting raw request events (HAR analyzers, Chrome DevTools Protocol consumers, etc.).
+
+## I1 Personal Blueprint Film — narration debugging (June 2026)
+
+### A Workers LLM "fallback" was the ONLY path used, and its streaming parser truncated every completion
+The selfprime `llm-adapter.js` `callLLM` tries a metered gateway path first and a
+local `callAnthropicFallback` second. The metered path is loaded with an **indirect
+dynamic-import specifier** (`const s = '@latimer-woods-tech/llm-meter'; await import(s)`)
+specifically so "environments without the package still load." But wrangler/esbuild
+cannot statically analyse a variable specifier, so the package is **never bundled** —
+the import throws at runtime, `getMeteredComplete()` returns `null`, and **every** Worker
+LLM call silently uses the fallback. The intended gateway/tier/budget code was dead code
+in production.
+
+The fallback then streamed the SSE response and parsed it with `chunk.split('\n')` per
+network chunk, **without buffering partial lines across chunk boundaries**. Any `data: {…}`
+event that straddled a read boundary became invalid JSON and was silently dropped
+(`catch { /* skip */ }`). For a multi-hundred-word completion spanning many SSE events,
+enough deltas were lost to truncate a full ~225-word narration down to a stub (`#` /
+~24 words), which a downstream length guard then rejected (502).
+
+**Lessons:**
+1. **An indirect dynamic-import specifier means the module is NOT bundled.** If a Worker
+   "optionally" loads a package this way, assume it is *absent in production* and verify
+   which branch actually runs. A returned object missing fields the primary path sets
+   (here `result.model` / `result.provider` were `undefined`) is the tell that the
+   fallback is live.
+2. **Never hand-parse SSE by `split('\n')` without a cross-chunk line buffer.** A `data:`
+   event can land on either side of a read boundary. Either buffer the trailing partial
+   line and only parse complete lines, or — simpler and almost always correct for one-shot
+   completions — issue a **non-streaming** request and parse the buffered JSON. A ~250-word
+   Anthropic completion returns in a few seconds, well inside the Worker subrequest budget.
+3. **When Worker logs are locked down** (`wrangler tail` 403 — the CF token lacks the Tail
+   scope), surface the error in the response body temporarily and deploy *directly* with
+   `wrangler deploy --env production` (a working `CLOUDFLARE_API_TOKEN` from Secret Manager,
+   ~11 s) instead of the ~7-min CI path. Reproduce the LLM call through the AI Gateway with
+   `curl` (`${AI_GATEWAY_URL}/anthropic/v1/messages`, `x-api-key: $LATIMER`); Python `urllib`
+   gets a Cloudflare `1010` UA-block, so use curl.
+
+### A committed-only `package.json` with a gitignored `dist/` makes a `file:` dep unresolvable in CI
+A vendored `file:vendor/<pkg>` dependency whose `package.json` points at `./dist/index.mjs`
+will fail `npm ci` everywhere if `dist/` is gitignored and never committed (only the
+`package.json` was tracked). The failure surfaces as "Failed to resolve entry for package"
+on every test that imports the chain — and presents as *flaky* because Vite's resolver
+caches differently per file subset, so it passes in small runs and fails in the full suite.
+**Lesson:** for a `file:` dep you must commit the built artifact (force-add past `dist/`
+ignores with a `.gitignore` negation) or vendor the source + a build step. The real fix is
+publishing the package; vendoring a `dist/` is a stopgap that rots when the source changes.
+
+## AI Gateway ghosts + the daily-brief E2E chain (June 2026)
+
+The daily-brief email arrived every morning with a canned `fallback` ("Morgan's Take —
+You showed up. That counts.", "Data unavailable" time horizons). Tracing it took a long
+chain; the lessons below are the load-bearing ones. Full architecture in
+[`project_llm_gateway_ghost`](../../) (auto-memory) and the PR trail #1293–#1315.
+
+### A non-existent Cloudflare AI Gateway 401s every call → SILENT LLM fallback (the root cause)
+`@latimer-woods-tech/llm` routes **100%** of provider calls through a CF AI Gateway and has
+**no direct-to-provider path** (`AI_GATEWAY_BASE_URL` is required since v0.3.0; empty string
+→ `ValidationError`). The gateway is named per-app by convention (`.../{app}`), but
+**provisioning was never automated.** Only one gateway (`prime-self`) was ever created.
+
+Cloudflare returns **HTTP 401 for an unknown gateway name** — indistinguishable at a glance
+from a bad provider key. Every app pointing at its own-named ghost gateway (`daily-brief`,
+`linkedin-publisher`, `supervisor`) had its LLM die in <1 s, the package threw, the app
+caught it and returned a canned fallback. **No error surfaced.** The brief looked "built."
+
+**Lessons:**
+1. **A missing gateway fails silent and looks like a bad key.** Diagnose by hitting the
+   gateway **management API**, not the inference path: `GET
+   /accounts/{acct}/ai-gateway/gateways/{slug}` → **404 = ghost** (unambiguous, no provider
+   key needed). `scripts/verify-ai-gateway.mjs` does exactly this and is now a deploy
+   preflight on every LLM app — it turns the silent class into a loud pre-deploy red.
+2. **Grep for actual `complete(` / `completionStream(` call sites, not package imports,
+   before assuming an app is degrading.** `supervisor` *imports* the package only in a
+   comment + a generated capability catalog — it never calls the LLM, so its ghost gateway
+   was inert. We almost "fixed" a non-bug.
+3. **The chosen architecture is ONE shared gateway + per-request `cf-aig-metadata`
+   attribution** (`llm` v0.4.0), not per-app gateways. The package now tags every call with
+   `{project, workload, actor, runId}`, so a single gateway slices per-app *and* per-workload
+   in the dashboard — finer than per-app gateways, with zero provisioning surface. The
+   `AI_GATEWAY_URL` GCP SM secret is the single source of truth for the URL.
+
+### MYTH BUSTED: GCP SM `ANTHROPIC_API_KEY` is NOT dead
+Prior docs (including CLAUDE.md and the video-pipeline runbook) claimed the bare
+`ANTHROPIC_API_KEY` secret was "dead, aliasing live `LATIMER_ANTHROPIC_API`." **Live-tested
+2026-06-02: both keys return 200.** The "dead key" diagnosis was a misattribution of the
+gateway-401. The gateway ghost was the *sole* cause of the fallbacks; the key was never the
+problem. **Lesson:** when an LLM call fails through the gateway, test the key *directly*
+against `api.anthropic.com` before blaming it — a gateway-layer 401 and a provider-key 401
+look identical from inside the package.
+
+### Wrangler 4 footguns that each cost a deploy cycle
+The daily-brief worker took ~6 deploys to go live; each surfaced a distinct Wrangler-4
+behavior worth knowing:
+1. **`--env production` without `"name"` in the env block deploys a *shadow* worker** named
+   `{name}-production`, leaving the real worker untouched. `/health` stays 200 on the old
+   code while you think you shipped. Always set `"name"` inside `env.production`.
+2. **`r2_buckets`, `triggers`, and `vars` are NOT inherited into `env.*` blocks** — they
+   must be repeated inside `env.production` or the prod worker deploys without them (no
+   crons, no R2 binding).
+3. **`wrangler r2 object put` writes to the LOCAL miniflare store by default (4.97+).**
+   Without `--remote` the upload "succeeds" and logs success, but the object never reaches
+   real R2 and evaporates when the job ends. Always pass `--remote` in CI.
+4. A stray top-level `flagship` / `d1_databases` binding an app doesn't use can hard-fail
+   `wrangler` validation. Remove unused bindings.
+
+### A `fetch` handler's fire-and-forget async is killed after the Response returns
+A Worker `fetch` handler that kicks off background work (`doThing().catch(...)`) **without**
+`ctx.waitUntil()` has that work terminated by the runtime once the Response is sent. A quick
+single fetch may sneak through; a multi-step job (R2 reads + Resend send) gets cut off
+mid-flight — no email, no error. **Lesson:** any background work in `fetch` must be wrapped
+in `ctx.waitUntil(...)` (add `ctx: ExecutionContext` to the signature). This is the same
+guarantee the `scheduled` handler already had.
+
+### Reading a BOM/encoded GCP secret on Windows crashes gcloud silently under `2>$null`
+`gcloud secrets versions access` can crash with a `charmap`/`UnicodeEncodeError` on a value
+with a UTF-8 BOM; `2>$null` swallows the crash and you get an **empty string**, which then
+"fails auth" for confusing reasons (e.g. a 401 that's really "token was blank"). **Lesson:**
+on Windows set `[Console]::OutputEncoding = [Text.Encoding]::UTF8` and read via
+`(& gcloud ... | Out-String).Trim()`. Also: the daily-brief trigger token lives in GCP SM as
+**`DAILY_BRIEF_TRIGGER_TOKEN`** (the bare `TRIGGER_TOKEN` secret does not exist).
+
+## RLS connection-layer retrofit on Neon (selfprime, June 2026)
+
+Discoveries from building Postgres row-level-security onto an existing raw-`@neondatabase/serverless` app (HumanDesign). Reusable across the whole Workers+Neon portfolio.
+
+### Connecting as the table owner SILENTLY bypasses RLS
+Postgres RLS policies are only enforced for roles that are **not** the table owner and **not** `BYPASSRLS`. The default Neon connection role (`neondb_owner`) owns the tables, so it bypasses every policy. **Setting `app.user_id` and writing perfect policies enforces NOTHING if your app still connects as the owner.** User-request queries MUST connect as a dedicated non-owner role (`app_rls`) with explicit `GRANT`s. The owner connection stays for migrations + cross-user service tasks (cron). This is the single most important — and most silent — RLS gotcha: it "works" in every test that uses the owner connection and protects nothing in prod. **Verify with a deliberate cross-tenant probe that the role does NOT bypass.**
+
+### Carry request-scoped identity with AsyncLocalStorage, not N function signatures
+To RLS-scope queries without editing ~85 `createQueryFn` call sites: set an `AsyncLocalStorage` store once at the request entry (`runWithRls({ userId, enabled, connectionString }, () => handler())`) and have the query factory read the ambient store at query time. Needs the `nodejs_compat` flag (`node:async_hooks`). Benefits: (1) service tasks/cron run *outside* the request scope → they self-exempt to the owner connection with zero enumeration; (2) gate the whole thing on an `RLS_ENABLED` env flag so it ships **dark** (deployed but inert) and the flag is an **instant kill switch** — no redeploy; (3) **fail-closed** — if the context is ever lost on an async edge, queries run with `app.user_id` unset against the non-bypass role → policies return *zero rows*, never another tenant's data. The DB is the boundary; ALS is just the wiring. Caveat: `ctx.waitUntil()` work runs after the response, outside the ALS scope — fine for system-table analytics, validate any deferred user-data writes.
+
+### Neon HTTP driver batches `set_config` + query in ONE round-trip; the WS pool can't carry it
+A stateless HTTP query can't keep a `SET LOCAL` across calls. Use the HTTP driver's non-interactive transaction: `neon(conn,{fullResults:true}).transaction([ sql.query("SELECT set_config('app.user_id',$1,true)",[uid]), sql.query(text,params) ])` — both statements ride one round-trip and `fullResults` returns the pg-shaped `{rows,…}` every call site expects. (A WS-`Pool` interactive transaction would be 4 round-trips: BEGIN/SET/query/COMMIT.) **In Node** (tests/harness) the WS `Pool` path needs `neonConfig.webSocketConstructor = ws` and `ws` resolvable; the HTTP path needs only global `fetch`.
+
+### `no-useless-escape` on a SQL string can be a REAL bug — never blind-`--fix`
+`replace(replace(replace($1,'\','\\'),'%','\%'),'_','\_')` inside a **backtick template literal** does NOT do what it looks like: the template processor collapses `\%`→`%`, `\_`→`_`, etc., so the LIKE-wildcard-escaping chain is a runtime **no-op** (user `%`/`_` are treated as wildcards). eslint flags these as `no-useless-escape` — and it's right, but `eslint --fix` "fixes" them by *stripping the backslash*, cementing the bug. The correct fix is to **double** the backslashes (`'\\%'`) so the SQL actually receives `\%`. **Lesson:** when a linter flags escapes inside SQL strings, hand-fix and verify the emitted SQL against a real DB; don't let `--fix` (or a `lint-staged` `eslint --fix` hook) touch them.
+
+### `cmd | tail` reports tail's exit code, not the command's
+Running `eslint … | tail -40` (or any pipe to `tail`/`head`) makes the shell report the **last** pipe stage's exit code (0), masking a non-zero failure upstream. This produced a false "lint passed clean" early in the work when the repo actually had ~929 lint errors. **Lesson:** when you need the real exit code, capture to a file (`cmd > out 2>&1; echo $?`) or check `${PIPESTATUS[0]}` — never trust the exit code of a tail/head pipeline.
+
+### A Node script that `process.exit()`s while Neon sockets close crashes on Windows
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` (libuv, `async.c`) fires when you call `process.exit()` while the Neon HTTP driver's keep-alive sockets are still closing — *after* your logic finished, but it corrupts the exit code (127), which breaks CI gating. **Lesson:** set `process.exitCode = …` and let Node drain naturally instead of calling `process.exit()`.
+
+### A mocked unit suite cannot validate a DB-driver or RLS change — build a real-DB harness, baseline FIRST
+The 3284-test suite mocks the DB, so it proves code *shape* but nothing about a driver swap or RLS enforcement. For changes at the driver/DB layer: (1) spin a **dedicated Neon branch** (copy-on-write off prod — isolated, instant, deletable; never test against prod — branches contain a full copy of prod PII, delete after); (2) build a harness with a **prod-guard** (refuse to run if the target host is in a prod deny-list, no `--force`); (3) capture a **golden baseline BEFORE the change** so the after-diff distinguishes a regression from pre-existing behavior — without it you can't tell "we broke it" from "it was always like that"; (4) note the baseline's validity window (a pre-RLS parity baseline becomes *expected*-to-differ once policies turn on). Drive the branch yourself via the Neon API (`NEON_ORGANIZATION_KEY` is the write-capable org key) rather than asking a human to paste a connection string — a paste invites pasting the *prod* string, the exact disaster the prod-guard exists to prevent.
+
+## Capricast runtime API audit (June 2026)
+
+Lessons from a full cross-reference of all frontend `fetch()` calls against registered worker routes. 7 gaps found; all fixed in one session (PRs #565–568).
+
+### How to find all broken API routes in a Workers app
+Cross-reference every outbound call in the frontend against every registered route in the worker. Reliable recipe:
+1. `grep -rn "fetch(\|api\.get\|api\.post" apps/web/src` — lists every outbound call with path strings
+2. `grep -rn "router\.\(get\|post\|put\|delete\|patch\)" apps/worker/src/routes/*.ts` — lists every registered route
+3. Cross-reference: any path the frontend calls that has no matching route is a guaranteed 404
+4. For each registered route, grep for `throw new Error\|TODO\|not implemented\|return c\.json({.*mock\|hardcoded` — stubs that look real
+5. For every `c.env.SOME_SECRET` usage, check whether it appears as a comment in `wrangler.toml` (`# SOME_SECRET — required`) vs actually set — comments = unset = runtime crash
+
+This audit reliably surfaces 5–10 hidden bugs per run. Do it before shipping any new feature area.
+
+### Cloudflare Calls API token is only returned at app creation
+The `POST /accounts/{id}/calls/apps` response includes `secret` (the app token). Subsequent `GET` and `PUT` on the same app never return the secret again — it is permanently hidden. If you lose the token, the only recovery is to **delete the app and recreate it** (`DELETE` then `POST`). There is no rotation endpoint. Store the token as a worker secret immediately after creation; do not rely on being able to retrieve it from the API later.
+
+### CF Calls API rejects extra fields in the request body — causes worker 502
+`POST /sessions/{sessionId}/tracks/new` only accepts `{ sessionDescription, tracks }`. Passing any extra field (e.g. `callsSessionId` forwarded from an internal struct) returns a CF Calls validation error. This error surfaces as a `throw` inside the DO's `callsFetch`, which the DO catch block converts to 500, which the Hono route handler converts to 502. The 502 gives no indication the root cause is a body field. **Lesson:** always destructure internal keys out of the payload before forwarding to an external API — never spread an internal struct directly.
+
+### R2 Workers binding has no presigned URL generation — use direct-upload pattern
+`env.R2_BUCKET.createMultipartUpload()` creates a multipart upload session but does NOT return a URL the browser can PUT to. There is no native presigned URL in the Workers R2 binding. For client-to-R2 uploads: (1) accept the file body in a worker route (`multipart/form-data`), (2) call `env.R2_BUCKET.put(key, await file.arrayBuffer(), { httpMetadata })`, (3) serve files back through a separate worker GET route. No external R2 credentials or S3-compatible configuration needed. The two-route pattern (upload + serve) is the correct Workers-native approach.
+
+### Non-null assertion `!` on optional Worker bindings crashes at runtime
+`c.env.OPTIONAL_QUEUE!.send(...)` compiles fine but throws `TypeError: Cannot read properties of undefined` in prod when the binding is absent. Optional bindings (marked `?` in the `Env` type) require an explicit guard:
+```typescript
+if (!c.env.OPTIONAL_QUEUE) {
+  console.warn('[handler] OPTIONAL_QUEUE not bound — skipping');
+} else {
+  await c.env.OPTIONAL_QUEUE.send(msg);
+}
+```
+This matches the pattern already used for `EXPORT_QUEUE` in the videos route. `EMBEDDING_QUEUE` was the offender; the fix guards it the same way.
+
+### `instanceof File` fails in the Workers TypeScript config
+The Workers TypeScript target doesn't expose `File` as a constructor for `instanceof` checks on `FormDataEntryValue`. This causes `TS2358: left-hand side of 'instanceof' must be of type 'any', an object type or a type parameter`. Use a string-type guard instead:
+```typescript
+const entry = formData.get('file');
+if (!entry || typeof entry === 'string') {
+  return c.json({ error: 'BadRequest', message: 'Missing file field' }, 400);
+}
+const file = entry as Blob & { name?: string };
+```
+
+### Push stub routes that echo input silently discard user data
+A route that validates its input and returns a plausible response but never writes to a store is indistinguishable from a working route at the network level. Users who subscribe to push notifications, mute conversations, or set DND see a 200 and assume the action persisted — but on reload the preference is gone. **Pattern to catch this:** grep for routes that return the request body fields verbatim with no DB/KV write in between. Fix: KV is the right store for per-user notification preferences (key scheme `push:{type}:{userId}[:{entityId}]`); D1/Neon for anything requiring queries across users.
+
+### Getting the Cloudflare account ID without a dashboard login
+When `wrangler whoami` fails ("Failed to automatically retrieve account IDs") and you need the account ID programmatically:
+```bash
+gcloud secrets versions access latest --secret=CF_ACCOUNT_ID --project=factory-495015 | tr -d '\r\n\357\273\277'
+# → a1c8a33cbe8a3c9e260480433a0dbb06
+```
+The `CF_ACCOUNT_ID` GCP secret is the canonical source. Use it with the CF API:
+```bash
+CF_TOKEN=$(gcloud secrets versions access latest --secret=CF_API_TOKEN --project=factory-495015 | tr -d '\r\n\357\273\277')
+curl "https://api.cloudflare.com/client/v4/accounts/a1c8a33cbe8a3c9e260480433a0dbb06/calls/apps" \
+  -H "Authorization: Bearer $CF_TOKEN"
+```

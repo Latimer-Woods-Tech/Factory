@@ -7,14 +7,14 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Service Map"
 generator: npm run docs:diagrams
-last_generated: 2026-05-30
+last_generated: 2026-06-06
 source:
   - docs/service-registry.yml
 ---
 
 # Factory Service Map
 
-**Source hash:** `sha256:5eb93ef8a0f805506403061e76526b92596288cca070bb82e63e34e815ba5a00`
+**Source hash:** `sha256:43a1e62c5bc98a207b66613e3f2ccfcdb415e9b5fc4d6474e322ee31c04598b2`
 
 ```mermaid
 flowchart LR
@@ -35,12 +35,13 @@ flowchart LR
   workers --> worker_cypher_healing["cypher-healing\nhttps://api.cipherofhealing.com"]
   workers --> worker_coh["coh\nhttps://api.cypherofhealing.com"]
   workers --> worker_factory_cross_repo["factory-cross-repo\nhttps://factory-cross-repo.latwoodtech.work"]
+  workers --> worker_factory_agent_gateway["factory-agent-gateway\nhttps://factory-agent-gateway.adrper79.workers.dev"]
   workers --> worker_factory_supervisor["factory-supervisor\nhttps://supervisor.latwoodtech.work"]
   workers --> worker_lead_gen["lead-gen\nhttps://lead-gen.adrper79.workers.dev"]
   workers --> worker_factory_core_api["factory-core-api\nhttps://core.latwoodtech.work"]
   workers --> worker_factory_events_replay["factory-events-replay\nurl unknown"]
   workers --> worker_webhook_fanout["webhook-fanout\nhttps://webhooks.latwoodtech.work/stripe"]
-  workers --> worker_daily_brief["daily-brief\nhttps://daily-brief.adrper79.workers.dev"]
+  workers --> worker_daily_brief["daily-brief\nhttps://dbrief.latwoodtech.work"]
   workers --> worker_linkedin_publisher["linkedin-publisher\nhttps://linkedin-publisher.adrper79.workers.dev"]
   workers --> worker_xico_city["xico-city\nhttps://xicocity.com"]
   workers --> worker_xico_city_staging["xico-city-staging\nhttps://staging.xicocity.com"]

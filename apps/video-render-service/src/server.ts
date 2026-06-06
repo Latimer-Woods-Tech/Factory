@@ -72,6 +72,9 @@ const pipeline = createRenderPipeline({
   ...(elevenLabsApiKey && elevenLabsVoiceId
     ? { elevenLabs: { apiKey: elevenLabsApiKey, voiceId: elevenLabsVoiceId } }
     : {}),
+  // Sybil music library base URL — public R2 domain + path prefix.
+  // Non-secret: just the public CDN base. Graceful-degrade when absent.
+  musicBaseUrl: optionalEnv('SYBIL_MUSIC_BASE_URL'),
 });
 
 const app = createApp({
