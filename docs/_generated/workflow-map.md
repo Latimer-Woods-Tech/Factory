@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-05-30
+last_generated: 2026-06-06
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -40,6 +40,7 @@ flowchart TB
   Reusable --> _migration_drift_guard_yml["_migration-drift-guard.yml"]
   Reusable --> _neon_pr_lifecycle_yml["_neon-pr-lifecycle.yml"]
   Reusable --> _post_deploy_verify_yml["_post-deploy-verify.yml"]
+  Other --> admin_studio_ui_ci_yml["admin-studio-ui-ci.yml"]
   Other --> adr_need_check_yml["adr-need-check.yml"]
   Other --> align_legacy_repos_yml["align-legacy-repos.yml"]
   Other --> apply_sec_hardening_yml["apply-sec-hardening.yml"]
@@ -61,12 +62,14 @@ flowchart TB
   Other --> copilot_auto_approve_yml["copilot-auto-approve.yml"]
   Other --> copilot_pr_poller_yml["copilot-pr-poller.yml"]
   Other --> cost_observability_yml["cost-observability.yml"]
+  Other --> council_deliberate_yml["council-deliberate.yml"]
   Other --> credential_scrub_yml["credential-scrub.yml"]
   Other --> dead_mans_switch_yml["dead-mans-switch.yml"]
   Other --> dependabot_security_auto_merge_yml["dependabot-security-auto-merge.yml"]
   Other --> dependency_review_yml["dependency-review.yml"]
   Deploy --> deploy_admin_studio_ui_yml["deploy-admin-studio-ui.yml"]
   Deploy --> deploy_admin_studio_yml["deploy-admin-studio.yml"]
+  Deploy --> deploy_agent_gateway_yml["deploy-agent-gateway.yml"]
   Deploy --> deploy_daily_brief_yml["deploy-daily-brief.yml"]
   Deploy --> deploy_factory_core_api_yml["deploy-factory-core-api.yml"]
   Deploy --> deploy_factory_cross_repo_yml["deploy-factory-cross-repo.yml"]
@@ -90,10 +93,10 @@ flowchart TB
   Quality --> docs_health_yml["docs-health.yml"]
   Other --> factory_admin_ui_ci_yml["factory-admin-ui-ci.yml"]
   Other --> factory_status_dashboard_yml["factory-status-dashboard.yml"]
-  Quality --> fix_docs_health_yml["fix-docs-health.yml"]
   Reporting --> flaky_check_report_yml["flaky-check-report.yml"]
   Other --> fridge_semantic_check_yml["fridge-semantic-check.yml"]
   Other --> generate_app_lockfiles_yml["generate-app-lockfiles.yml"]
+  Other --> generate_founder_stats_yml["generate-founder-stats.yml"]
   Reporting --> generate_scorecard_yml["generate-scorecard.yml"]
   Reporting --> generate_state_yml["generate-state.yml"]
   Other --> governance_audit_yml["governance-audit.yml"]
@@ -120,6 +123,7 @@ flowchart TB
   Other --> refresh_vertex_token_yml["refresh-vertex-token.yml"]
   Other --> regen_lockfile_on_branch_yml["regen-lockfile-on-branch.yml"]
   Other --> regenerate_app_lockfiles_yml["regenerate-app-lockfiles.yml"]
+  Other --> render_daily_brief_yml["render-daily-brief.yml"]
   Other --> render_video_yml["render-video.yml"]
   Reporting --> revenue_digest_yml["revenue-digest.yml"]
   Other --> reviewer_class_hints_yml["reviewer-class-hints.yml"]
@@ -140,12 +144,15 @@ flowchart TB
   Other --> snapshot_pr_auto_merge_yml["snapshot-pr-auto-merge.yml"]
   Other --> studio_test_dispatch_yml["studio-test-dispatch.yml"]
   Automation --> supervisor_loop_yml["supervisor-loop.yml"]
+  Quality --> supervisor_readonly_smoke_yml["supervisor-readonly-smoke.yml"]
   Other --> supervisor_template_author_yml["supervisor-template-author.yml"]
   Automation --> sync_agent_labels_yml["sync-agent-labels.yml"]
   Automation --> sync_security_md_yml["sync-security-md.yml"]
+  Quality --> telnyx_path_smoke_yml["telnyx-path-smoke.yml"]
   Other --> track_kpis_yml["track-kpis.yml"]
   Other --> update_app_lockfiles_yml["update-app-lockfiles.yml"]
   Other --> update_stack_manifest_yml["update-stack-manifest.yml"]
+  Other --> upload_sybil_music_yml["upload-sybil-music.yml"]
   Quality --> validate_sentry_auth_token_yml["validate-sentry-auth-token.yml"]
   Quality --> validate_service_registry_yml["validate-service-registry.yml"]
   Other --> workflow_budget_check_yml["workflow-budget-check.yml"]

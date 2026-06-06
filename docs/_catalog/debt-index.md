@@ -7,10 +7,10 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | Owner | Drift Warnings | Broken Links |
 |---|---:|---:|
 | admin-studio | 1 | 4 |
-| architecture | 10 | 3 |
+| architecture | 10 | 4 |
 | capricast | 24 | 31 |
 | marketing | 2 | 79 |
-| platform | 228 | 277 |
+| platform | 228 | 274 |
 | revenue | 2 | 0 |
 
 ## Highest Link Debt Docs
