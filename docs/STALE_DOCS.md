@@ -12,6 +12,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md](../ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md) | active | unverified | platform | unknown | Admin Studio AI Agent — Deployment Checklist |
 | [apps/admin-studio-ui/README.md](../apps/admin-studio-ui/README.md) | active | unverified | admin-studio-ui | unknown | Factory Admin Studio — UI |
 | [apps/admin-studio/README.md](../apps/admin-studio/README.md) | active | unverified | admin-studio | unknown | Factory Admin Studio |
+| [apps/agent-gateway/README.md](../apps/agent-gateway/README.md) | active | unverified | agent-gateway | unknown | factory-agent-gateway |
 | [apps/browser-agent/README.md](../apps/browser-agent/README.md) | active | unverified | browser-agent | unknown | Browser Agent |
 | [apps/factory-core-api/README.md](../apps/factory-core-api/README.md) | active | unverified | factory-core-api | unknown | factory-core-api |
 | [apps/latimerwoods-dev/README.md](../apps/latimerwoods-dev/README.md) | active | unverified | latimerwoods-dev | unknown | latimerwoods-dev — Developer Index |
@@ -51,6 +52,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/ARCHITECTURAL_DECISION_RECORDS.md](ARCHITECTURAL_DECISION_RECORDS.md) | active | unverified | platform | unknown | Architectural Decision Records: VideoKing Phase 4 |
 | [docs/architecture/ADMIN_BUILD_PLAN.md](architecture/ADMIN_BUILD_PLAN.md) | active | unverified | architecture | unknown | Admin Build Plan — Three Passes + Testing + Targeting |
 | [docs/architecture/ADMIN_TECHNICAL_GUIDE.md](architecture/ADMIN_TECHNICAL_GUIDE.md) | active | unverified | architecture | unknown | Factory Admin Technical Guide |
+| [docs/architecture/AGENT_RUNTIME_STATUS.md](architecture/AGENT_RUNTIME_STATUS.md) | active | unverified | architecture | unknown | Agent Runtime — Status & Handoff (as of 2026-06-04) |
 | [docs/architecture/AGENT_RUNTIME.md](architecture/AGENT_RUNTIME.md) | active | unverified | architecture | unknown | Factory Agent Runtime — Architecture & Implementation Plan |
 | [docs/architecture/CAPABILITY_FACTORY_REGISTRY.md](architecture/CAPABILITY_FACTORY_REGISTRY.md) | active | unverified | architecture | unknown | Capability Factory Registry |
 | [docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md](architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md) | active | unverified | architecture | unknown | I1 — Energy Blueprint Video Engine: Final-State Design |
@@ -325,6 +327,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
 | [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
+| [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
