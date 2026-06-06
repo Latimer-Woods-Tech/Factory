@@ -60,7 +60,7 @@ jobs:
       - name: Run readonly supervisor smoke
         env:
           SUPERVISOR_READONLY_SMOKE_URL: ${{ github.event.inputs.url || 'https://supervisor.latwoodtech.work/tools/read-only-smoke' }}
-          SUPERVISOR_GREEN_PLAN_DESCRIPTION: ${{ github.event.inputs.green_description || 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke' }}
+          SUPERVISOR_GREEN_PLAN_DESCRIPTION: "${{ github.event.inputs.green_description || 'docs: add smoke doc; path: docs/supervisor/aos-green-smoke.md; branch: supervisor/docs/aos-green-smoke; commit_message: docs(supervisor): add aos green smoke doc; content: # AOS Green Smoke' }}"
           SUPERVISOR_EXPECTED_GREEN_TEMPLATE_ID: 'docs-naming-convention'
           SUPERVISOR_EXPECTED_WRITE_TOOLS: 'github.addLabel,github.comment,github.openPR'
           SUPERVISOR_EXPECTED_GREEN_PLAN_EFFECTS: 'github.readFile=read-external,github.openPR=write-external,github.comment=write-external'
