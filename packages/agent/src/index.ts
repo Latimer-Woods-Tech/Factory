@@ -4,10 +4,7 @@
  * Cloudflare-native LLM agent runtime. Powers Factory's vertical SaaS products
  * (Voice, Video, Astrology) on one hardened orchestration engine.
  *
- * See `docs/architecture/AGENT_RUNTIME.md` for the full design. This first slice
- * establishes the tool registry — the shared seam between the deterministic
- * supervisor planner and the LLM reasoning loop. The reasoning loop, session
- * Durable Object, memory tiers, and guardrails land in subsequent slices.
+ * See `docs/architecture/AGENT_RUNTIME.md` for the full design.
  */
 
 export {
@@ -17,3 +14,45 @@ export {
   type ToolResult,
   type SideEffects,
 } from './registry.js';
+
+export {
+  runLoop,
+  type AgentLoopOptions,
+  type AgentResult,
+  type AgentTurn,
+  type ToolCallReceipt,
+  type StopReason,
+} from './loop.js';
+
+export {
+  AgentSessionDO,
+  runSession,
+  type DOStorage,
+  type SessionState,
+  type SessionRunOptions,
+} from './session.js';
+
+export {
+  GuardrailError,
+  detectInjection,
+  assertCleanUserMessage,
+  assertCleanToolResult,
+  truncateToolResult,
+  MAX_USER_MESSAGE_CHARS,
+  MAX_TOOL_RESULT_CHARS,
+} from './guardrails.js';
+
+export {
+  recordEpisode,
+  getRecentEpisodes,
+  getProjectEpisodes,
+  getEpisodeSummary,
+  type Episode,
+  type RecordEpisodeParams,
+  type D1Like,
+} from './memory/episodic.js';
+
+export {
+  pruneMessages,
+  type PruneOptions,
+} from './pruning.js';

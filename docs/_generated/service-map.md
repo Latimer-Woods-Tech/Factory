@@ -7,14 +7,14 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Service Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-03
+last_generated: 2026-06-06
 source:
   - docs/service-registry.yml
 ---
 
 # Factory Service Map
 
-**Source hash:** `sha256:cca619f5509a4f451f87dc7e8b8ab9d469718a0b9a3a7919b7260c4172a2abe3`
+**Source hash:** `sha256:43a1e62c5bc98a207b66613e3f2ccfcdb415e9b5fc4d6474e322ee31c04598b2`
 
 ```mermaid
 flowchart LR
@@ -35,6 +35,7 @@ flowchart LR
   workers --> worker_cypher_healing["cypher-healing\nhttps://api.cipherofhealing.com"]
   workers --> worker_coh["coh\nhttps://api.cypherofhealing.com"]
   workers --> worker_factory_cross_repo["factory-cross-repo\nhttps://factory-cross-repo.latwoodtech.work"]
+  workers --> worker_factory_agent_gateway["factory-agent-gateway\nhttps://factory-agent-gateway.adrper79.workers.dev"]
   workers --> worker_factory_supervisor["factory-supervisor\nhttps://supervisor.latwoodtech.work"]
   workers --> worker_lead_gen["lead-gen\nhttps://lead-gen.adrper79.workers.dev"]
   workers --> worker_factory_core_api["factory-core-api\nhttps://core.latwoodtech.work"]
