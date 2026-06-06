@@ -6,6 +6,14 @@
  * its function inventory in sync with deployed reality.
  *
  * Kept hand-maintained on purpose: Hono does not expose a stable runtime
+  {
+    method: 'POST',
+    path: '/capabilities/preview',
+    auth: 'admin',
+    summary: 'Compile and render a governed capability concept into a plan preview',
+    reversibility: 'reversible',
+    tags: ['capabilities'],
+  },
  * route iterator, and a curated list lets us attach owner/SLO/smoke
  * metadata that pure introspection would miss.
  */

@@ -86,6 +86,8 @@ jobs:
             design-system
             entitlements
             protocol
+            bodygraph
+            agent
           )
 
           for package in "${packages[@]}"; do

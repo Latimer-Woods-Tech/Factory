@@ -112,7 +112,7 @@ export function AuditTab() {
           <select
             value={filters.env}
             onChange={(e) => setFilters({ ...filters, env: e.target.value as Filters['env'] })}
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           >
             <option value="">(session)</option>
             <option value="local">local</option>
@@ -126,7 +126,7 @@ export function AuditTab() {
             value={filters.action}
             onChange={(e) => setFilters({ ...filters, action: e.target.value })}
             placeholder="e.g. /deploys"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -135,7 +135,7 @@ export function AuditTab() {
             value={filters.actor}
             onChange={(e) => setFilters({ ...filters, actor: e.target.value })}
             placeholder="e.g. alice@example.com"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
 
@@ -146,7 +146,7 @@ export function AuditTab() {
             value={filters.requestId}
             onChange={(e) => setFilters({ ...filters, requestId: e.target.value })}
             placeholder="exact X-Request-Id"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white font-mono"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white font-mono"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -155,7 +155,7 @@ export function AuditTab() {
             value={filters.sessionId}
             onChange={(e) => setFilters({ ...filters, sessionId: e.target.value })}
             placeholder="exact session ID"
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white font-mono"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white font-mono"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -164,7 +164,7 @@ export function AuditTab() {
             type="datetime-local"
             value={filters.from}
             onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
         <label className="text-xs text-slate-400">
@@ -173,7 +173,7 @@ export function AuditTab() {
             type="datetime-local"
             value={filters.to}
             onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-sm text-white"
+            className="mt-1 w-full rounded bg-slate-950 border border-slate-700 px-2 py-1 text-base md:text-sm text-white"
           />
         </label>
 

@@ -10,7 +10,7 @@
  * - Loading indicators during async operations
  * - WCAG 2.2 AA accessibility compliance
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Environment } from '@latimer-woods-tech/studio-core';
 import { useSession } from '../stores/session.js';
@@ -57,7 +57,7 @@ export function LoginPage() {
   const addNotification = useNotifications((s) => s.add);
   const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Google Sign-In when env is selected
+  // Fetch auth providers when env is selected
   useEffect(() => {
     if (!env || !googleButtonRef.current) return;
 
@@ -133,7 +133,7 @@ export function LoginPage() {
     };
   }, [env, addNotification]);
 
-  async function handleGoogleCallback(response: any) {
+  const handleGoogleCallback = useCallback(async (response: any) => {
     if (!env) return;
 
     setSubmitting(true);
@@ -182,7 +182,7 @@ export function LoginPage() {
       });
       setSubmitting(false);
     }
-  }
+  }, [env, login, navigate, searchParams]);
 
   function validateEmail(value: string): boolean {
     if (!value.trim()) {
@@ -332,7 +332,7 @@ export function LoginPage() {
                       aria-invalid={!!emailError}
                       aria-describedby={emailError ? 'email-error' : undefined}
                       disabled={submitting}
-                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                     {emailError && (
                       <p id="email-error" className="mt-1 text-xs text-red-400">
@@ -354,14 +354,14 @@ export function LoginPage() {
                       placeholder="password"
                       autoComplete="current-password"
                       disabled={submitting}
-                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-base md:text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={submitting || !env}
-                    className="w-full rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
+                    className="target-primary w-full rounded bg-emerald-600 text-sm font-medium text-white disabled:opacity-50 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
                   >
                     {submitting ? (
                       <span className="flex items-center justify-center gap-2">

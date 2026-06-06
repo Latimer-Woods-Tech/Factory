@@ -8,6 +8,14 @@
     "test": "echo 'No root-level tests — run tests in individual packages.' && exit 0",
     "validate:compatibility-date": "node scripts/check-compatibility-date.mjs",
     "validate:service-registry": "node scripts/validate-service-registry.mjs",
+    "validate:capabilities": "node scripts/validate-capability-registry.mjs",
+    "compile:capability": "node scripts/compile-capability-recipe.mjs",
+    "compile:capability-catalog": "node scripts/compile-capability-catalog.mjs",
+    "resolve:capability-concept": "node scripts/resolve-capability-concept.mjs",
+    "build:capability-golden-path": "node scripts/generate-capability-golden-path.mjs",
+    "preview:capability-plan": "node scripts/preview-capability-plan.mjs",
+    "generate:deploy-workflow": "node scripts/gen-deploy-workflow.mjs",
+    "provision:app": "node scripts/provision-app.mjs",
     "validate:docs": "node scripts/validate-docs-quality.mjs",
     "audit:docs-freshness": "node scripts/doc-freshness-audit.js",
     "docs:bootstrap": "node scripts/docs/bootstrap-repo.mjs",
@@ -17,7 +25,9 @@
     "docs:drift": "node scripts/docs/drift.mjs",
     "docs:health": "node scripts/docs/health.mjs",
     "docs:metadata": "node scripts/docs/validate-metadata.mjs",
-    "docs:self-check": "node scripts/docs/self-check.mjs"
+    "docs:self-check": "node scripts/docs/self-check.mjs",
+    "verify:service-registry-health": "node scripts/verify-service-registry-health.mjs",
+    "verify:service-registry-health:strict": "node scripts/verify-service-registry-health.mjs --require-state"
   },
   "devDependencies": {
     "@latimer-woods-tech/errors": "file:packages/errors",

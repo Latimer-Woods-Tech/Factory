@@ -1,7 +1,7 @@
 {
-  "generated": "2026-05-30T09:31:07.025679+00:00",
-  "date": "2026-05-30",
-  "org_composite": 65.8,
+  "generated": "2026-06-02T11:50:27.880924+00:00",
+  "date": "2026-06-02",
+  "org_composite": 67.0,
   "apps": [
     {
       "repo_key": "HD",
@@ -21,7 +21,7 @@
     {
       "repo_key": "CH",
       "repo_name": "cypher-healing",
-      "composite": 26.7
+      "composite": 32.7
     },
     {
       "repo_key": "XC",

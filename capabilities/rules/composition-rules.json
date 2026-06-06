@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "id": "outbound-telephony-requires-compliance",
+      "ifAllPrimitives": [
+        "telephony"
+      ],
+      "thenRequirePrimitives": [
+        "compliance"
+      ]
+    }
+  ]
+}

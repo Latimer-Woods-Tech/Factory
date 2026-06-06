@@ -9,6 +9,7 @@
  * editing. Approving a proposal calls `useActiveFile.edit(after)` which marks
  * the file dirty, after which the user commits via CodeTab's commit panel.
  */
+import * as Dialog from '@radix-ui/react-dialog';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
@@ -18,9 +19,12 @@ import type {
   AIChatTurn,
   AIProposal,
 } from '@latimer-woods-tech/studio-core';
-import { useSession } from '../../stores/session.js';
+import type { ActiveFileState } from '../../stores/activeFile.js';
 import { useActiveFile } from '../../stores/activeFile.js';
-import { apiFetch, getApiBase } from '../../lib/api.js';
+import { useSession } from '../../stores/session.js';
+import { apiFetch } from '../../lib/api.js';
+
+const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
 
 const MODES: ReadonlyArray<{ id: AIChatMode; label: string; hint: string }> = [
   { id: 'generate', label: 'Generate', hint: 'New Worker code' },
@@ -28,11 +32,10 @@ const MODES: ReadonlyArray<{ id: AIChatMode; label: string; hint: string }> = [
   { id: 'refactor', label: 'Refactor', hint: 'Improve existing code' },
 ];
 
-export const STRATEGIES: ReadonlyArray<{ id: AIModelStrategy; label: string; hint: string }> = [
+const STRATEGIES: ReadonlyArray<{ id: AIModelStrategy; label: string; hint: string }> = [
   { id: 'execution', label: 'Execution', hint: 'Claude-oriented deterministic implementation' },
   { id: 'planning', label: 'Planning', hint: 'Gemini-oriented planning/scoping synthesis' },
   { id: 'drafting', label: 'Drafting', hint: 'Grok-oriented fast first-pass drafting' },
-  { id: 'workbench', label: 'Workbench', hint: 'DeepSeek-oriented ticket and backlog drafting' },
 ];
 
 function turn(role: 'user' | 'assistant', content: string): AIChatTurn {
@@ -100,13 +103,6 @@ function useStickyBottom(appendSignal: number, thresholdPx = 64) {
 
 export function AiTab() {
   const active = useActiveFile();
-
-  // ADM-9.3: Pin composer when software keyboard is open (iOS Safari / Android Chrome)
-  useEffect(() => {
-    if ('virtualKeyboard' in navigator) {
-      (navigator as unknown as { virtualKeyboard: { overlaysContent: boolean } }).virtualKeyboard.overlaysContent = true;
-    }
-  }, []);
   const [history, setHistory] = useState<AIChatTurn[]>([]);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<AIChatMode>('generate');
@@ -155,7 +151,7 @@ export function AiTab() {
     };
 
     try {
-      const res = await fetch(`${getApiBase()}/ai/chat`, {
+      const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -290,8 +286,8 @@ export function AiTab() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-auto md:h-[calc(100dvh-92px)] gap-3">
-      <section className="flex-1 flex flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
+    <div className="flex min-h-[100dvh] flex-col gap-4 lg:flex-row">
+      <section className="flex min-h-0 flex-1 flex-col rounded border border-slate-800 bg-slate-900 min-w-0">
         <header className="border-b border-slate-800 px-3 py-2 flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-1">
             {MODES.map((m) => (
@@ -299,7 +295,7 @@ export function AiTab() {
                 key={m.id}
                 onClick={() => setMode(m.id)}
                 title={m.hint}
-                className={`text-xs px-2 py-2 min-h-[2.5rem] rounded border ${
+                className={`target-min text-xs rounded border ${
                   mode === m.id
                     ? 'bg-emerald-700 border-emerald-600 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -309,13 +305,13 @@ export function AiTab() {
               </button>
             ))}
           </div>
-          <div className="flex flex-wrap gap-1 md:ml-3">
+          <div className="flex flex-wrap gap-1">
             {STRATEGIES.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setModelStrategy(s.id)}
                 title={s.hint}
-                className={`text-xs px-2 py-2 min-h-[2.5rem] rounded border ${
+                className={`target-min text-xs rounded border ${
                   modelStrategy === s.id
                     ? 'bg-indigo-700 border-indigo-600 text-white'
                     : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
@@ -325,18 +321,52 @@ export function AiTab() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+            <Dialog.Root>
+              <Dialog.Trigger asChild>
+                <button
+                  className="lg:hidden text-xs px-2 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                >
+                  Active file
+                </button>
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 lg:hidden" />
+                <Dialog.Content className="fixed right-0 top-0 z-50 h-[100dvh] w-[min(85vw,24rem)] overflow-auto border-l border-slate-800 bg-slate-900 p-3 lg:hidden">
+                  <div className="mb-3 flex items-center justify-between">
+                    <Dialog.Title className="text-xs uppercase tracking-wide text-slate-500">Active file</Dialog.Title>
+                    <Dialog.Close asChild>
+                      <button className="text-xs px-2 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700">
+                        Close
+                      </button>
+                    </Dialog.Close>
+                  </div>
+                  <Dialog.Description className="sr-only">
+                    View active file details and proposal actions.
+                  </Dialog.Description>
+                  <ActiveFilePanel
+                    active={active}
+                    proposal={proposal}
+                    proposalBusy={proposalBusy}
+                    proposalError={proposalError}
+                    onApplyProposal={applyProposal}
+                    onRejectProposal={() => setProposal(null)}
+                    showHeading={false}
+                  />
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
             <button
               onClick={reset}
               disabled={streaming || history.length === 0}
-              className="text-xs px-2 py-1 rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+              className="target-min text-xs rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-40"
             >
               Clear
             </button>
             {streaming && (
               <button
                 onClick={stop}
-                className="text-xs px-2 py-1 rounded border border-rose-700 bg-rose-900/40 text-rose-200 hover:bg-rose-900/60"
+                className="target-primary text-xs rounded border border-rose-700 bg-rose-900/40 text-rose-200 hover:bg-rose-900/60"
               >
                 Stop
               </button>
@@ -351,7 +381,8 @@ export function AiTab() {
             role="log"
             aria-live="polite"
             aria-relevant="additions"
-            className="h-[45vh] md:h-full overflow-auto p-3 space-y-3 text-sm"
+            data-testid="ai-chat-log"
+            className="h-full overflow-auto p-3 space-y-3 text-sm"
           >
             {history.length === 0 && !partial && (
               <p className="text-slate-500">
@@ -368,6 +399,7 @@ export function AiTab() {
               </Bubble>
             )}
             {error && <p className="text-rose-400 text-xs">⚠ {error}</p>}
+            <div data-testid="ai-chat-log-end" />
           </div>
           {showJumpToLatest && (
             <button
@@ -380,8 +412,9 @@ export function AiTab() {
           )}
         </div>
 
-        <footer className="border-t border-slate-800 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <footer className="border-t border-slate-800 p-2">
           <textarea
+            data-testid="ai-composer"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={(e) => {
@@ -400,14 +433,15 @@ export function AiTab() {
               onClick={() => void requestProposal()}
               disabled={proposalBusy || streaming || !prompt.trim() || !active.path}
               title={!active.path ? 'Open a file in the Code tab first' : 'Generate a code diff'}
-              className="text-xs px-3 py-2 min-h-[2.5rem] rounded bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40"
+              className="target-primary text-xs rounded bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40"
             >
               {proposalBusy ? 'Proposing…' : 'Propose diff'}
             </button>
             <button
               onClick={() => void send()}
+              data-testid="ai-send"
               disabled={streaming || !prompt.trim()}
-              className="text-xs px-3 py-2 min-h-[2.5rem] rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-40"
+              className="target-primary text-xs rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-40"
             >
               {streaming ? 'Streaming…' : 'Send'}
             </button>
@@ -415,55 +449,87 @@ export function AiTab() {
         </footer>
       </section>
 
-      <aside className="w-full max-h-[35vh] md:max-h-none md:w-96 shrink-0 flex flex-col rounded border border-slate-800 bg-slate-900 p-3 gap-3 overflow-auto">
-        <h3 className="text-xs uppercase tracking-wide text-slate-500">Active file</h3>
-        {active.path ? (
-          <div className="text-xs space-y-1">
-            <p className="font-mono text-slate-200 break-all">{active.path}</p>
-            <p className="text-slate-500">
-              {active.branch} · {active.language} · {active.draftText.length} chars
-              {active.dirty && <span className="text-amber-400"> · dirty</span>}
-            </p>
-          </div>
-        ) : (
-          <p className="text-slate-500 text-xs">No file open. Pick one in the Code tab.</p>
-        )}
-
-        <div className="border-t border-slate-800 pt-3">
-          <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-2">Proposal</h3>
-          {proposalError && <p className="text-rose-400 text-xs mb-2">⚠ {proposalError}</p>}
-          {!proposal && !proposalBusy && (
-            <p className="text-slate-500 text-xs">
-              Type an instruction in the chat box and click <span className="text-indigo-300">Propose diff</span>
-              {' '}to get a structured rewrite of the active file.
-            </p>
-          )}
-          {proposalBusy && <p className="text-slate-500 text-xs">Generating proposal…</p>}
-          {proposal && (
-            <div className="space-y-2">
-              <p className="text-[11px] text-slate-300 italic whitespace-pre-wrap">
-                {proposal.rationale}
-              </p>
-              <DiffView before={proposal.before} after={proposal.after} />
-              <div className="flex gap-2">
-                <button
-                  onClick={applyProposal}
-                  className="text-xs px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white"
-                >
-                  Apply (marks dirty)
-                </button>
-                <button
-                  onClick={() => setProposal(null)}
-                  className="text-xs px-3 py-1.5 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200"
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+      <aside className="hidden w-96 shrink-0 lg:flex flex-col rounded border border-slate-800 bg-slate-900 p-3 gap-3 overflow-auto">
+        <ActiveFilePanel
+          active={active}
+          proposal={proposal}
+          proposalBusy={proposalBusy}
+          proposalError={proposalError}
+          onApplyProposal={applyProposal}
+          onRejectProposal={() => setProposal(null)}
+        />
       </aside>
     </div>
+  );
+}
+
+function ActiveFilePanel(props: {
+  active: ActiveFileState;
+  proposal: AIProposal | null;
+  proposalBusy: boolean;
+  proposalError: string | null;
+  onApplyProposal: () => void;
+  onRejectProposal: () => void;
+  showHeading?: boolean;
+}) {
+  const {
+    active,
+    proposal,
+    proposalBusy,
+    proposalError,
+    onApplyProposal,
+    onRejectProposal,
+    showHeading = true,
+  } = props;
+  return (
+    <>
+      {showHeading && <h3 className="text-xs uppercase tracking-wide text-slate-500">Active file</h3>}
+      {active.path ? (
+        <div className="text-xs space-y-1">
+          <p className="font-mono text-slate-200 break-all">{active.path}</p>
+          <p className="text-slate-500">
+            {active.branch} · {active.language} · {active.draftText.length} chars
+            {active.dirty && <span className="text-amber-400"> · dirty</span>}
+          </p>
+        </div>
+      ) : (
+        <p className="text-slate-500 text-xs">No file open. Pick one in the Code tab.</p>
+      )}
+
+      <div className="border-t border-slate-800 pt-3">
+        <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-2">Proposal</h3>
+        {proposalError && <p className="text-rose-400 text-xs mb-2">⚠ {proposalError}</p>}
+        {!proposal && !proposalBusy && (
+          <p className="text-slate-500 text-xs">
+            Type an instruction in the chat box and click <span className="text-indigo-300">Propose diff</span>
+            {' '}to get a structured rewrite of the active file.
+          </p>
+        )}
+        {proposalBusy && <p className="text-slate-500 text-xs">Generating proposal…</p>}
+        {proposal && (
+          <div className="space-y-2">
+            <p className="text-[11px] text-slate-300 italic whitespace-pre-wrap">
+              {proposal.rationale}
+            </p>
+            <DiffView before={proposal.before} after={proposal.after} />
+            <div className="flex gap-2">
+              <button
+                onClick={onApplyProposal}
+                className="text-xs px-3 py-1.5 rounded bg-emerald-700 hover:bg-emerald-600 text-white"
+              >
+                Apply (marks dirty)
+              </button>
+              <button
+                onClick={onRejectProposal}
+                className="text-xs px-3 py-1.5 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-200"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

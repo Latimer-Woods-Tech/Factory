@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="The Latimer Woods stack. Edge-first, Cloudflare Workers + Hono, Neon Postgres via Hyperdrive, a three-tier LLM cascade, and a published list of what we refuse to ship with." />
+    <meta property="og:title" content="Latimer Woods — Stack" />
+    <meta property="og:description" content="What we build with, and what we refuse to ship with." />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://latwoodtech.com/stack/" />
+    <meta property="og:image" content="https://latwoodtech.com/assets/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="theme-color" content="#05070a" />
+    <link rel="canonical" href="https://latwoodtech.com/stack/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234f7bff' width='100' height='100'/><text x='50' y='60' font-size='70' font-weight='700' fill='white' text-anchor='middle'>L</text></svg>" />
+    <title>Stack — Latimer Woods</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <div class="page-shell">
+      <nav class="site-nav" aria-label="Primary">
+        <a class="site-nav-brand" href="/">
+          <span class="site-nav-mark" aria-hidden="true"></span>
+          Latimer Woods
+        </a>
+        <div class="site-nav-links">
+          <a href="/stack/" aria-current="page">Stack</a>
+          <a href="/work/">Work</a>
+          <a href="/founder/">Founder</a>
+        </div>
+      </nav>
+      <header class="stack-hero">
+        <a class="stack-back" href="/">← Latimer Woods</a>
+        <p class="eyebrow">Stack</p>
+        <h1>What we build with, and what we refuse to ship with.</h1>
+        <p class="subtitle stack-lead">
+          If you're evaluating a platform engagement, this page tells you exactly what you'd be getting and why each decision was made. Every choice below is opinionated, load-bearing, and already running in production across five live products.
+        </p>
+        <p class="subtitle">
+          Edge-first by default. Every product runs on Cloudflare Workers, talks to Neon Postgres through Hyperdrive, and pulls language work from a three-tier LLM cascade. Not a roadmap. Not a wishlist. This is what's deployed right now.
+        </p>
+      </header>
+
+      <main id="main">
+        <section class="stack-diagram" aria-labelledby="diagram-title">
+          <h2 id="diagram-title" class="visually-hidden" style="position:absolute;left:-9999px">Architecture diagram</h2>
+          <svg viewBox="0 0 920 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Layered architecture: brand surfaces sit above Cloudflare Workers, which talk to data, AI, integrations, and observability layers.">
+            <defs>
+              <linearGradient id="boxFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1a0f06" stop-opacity="0.92"/>
+                <stop offset="100%" stop-color="#0a0603" stop-opacity="0.96"/>
+              </linearGradient>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#d7a94b" fill-opacity="0.5"/>
+              </marker>
+              <style>
+                .lbl { font-family: "Syncopate", sans-serif; font-size: 9px; letter-spacing: 0.18em; fill: #d7a94b; text-transform: uppercase; }
+                .box-label { font-family: "Space Grotesk", sans-serif; font-size: 12px; font-weight: 500; fill: #f6e7c0; }
+                .box-note { font-family: "Space Grotesk", sans-serif; font-size: 10px; fill: #a89b7d; }
+                .layer-band { fill: rgba(240, 207, 122, 0.03); }
+                .box { fill: url(#boxFill); stroke: rgba(240, 207, 122, 0.32); stroke-width: 1; }
+                .box-accent { stroke: rgba(217, 90, 67, 0.5); }
+                .box-vital { stroke: rgba(73, 165, 109, 0.45); }
+                .flow { stroke: rgba(240, 207, 122, 0.28); stroke-width: 1; fill: none; }
+              </style>
+            </defs>
+
+            <!-- Layer 1: Public surfaces -->
+            <rect x="0" y="0" width="920" height="80" class="layer-band"/>
+            <text x="16" y="22" class="lbl">Brand surfaces · public</text>
+            <g>
+              <rect x="40" y="38" width="180" height="34" rx="6" class="box"/>
+              <text x="130" y="59" text-anchor="middle" class="box-label">selfprime.net</text>
+              <rect x="240" y="38" width="180" height="34" rx="6" class="box"/>
+              <text x="330" y="59" text-anchor="middle" class="box-label">capricast.com</text>
+              <rect x="440" y="38" width="220" height="34" rx="6" class="box"/>
+              <text x="550" y="59" text-anchor="middle" class="box-label">cypherofhealing.com</text>
+              <rect x="680" y="38" width="200" height="34" rx="6" class="box"/>
+              <text x="780" y="59" text-anchor="middle" class="box-label">apunlimited.com</text>
+            </g>
+
+            <!-- Flow lines down to runtime -->
+            <path d="M 130 80 L 130 110" class="flow" marker-end="url(#arrow)"/>
+            <path d="M 330 80 L 330 110" class="flow" marker-end="url(#arrow)"/>
+            <path d="M 550 80 L 550 110" class="flow" marker-end="url(#arrow)"/>
+            <path d="M 780 80 L 780 110" class="flow" marker-end="url(#arrow)"/>
+
+            <!-- Layer 2: Edge runtime -->
+            <rect x="0" y="100" width="920" height="80" class="layer-band"/>
+            <text x="16" y="122" class="lbl">Edge runtime · cloudflare</text>
+            <g>
+              <rect x="40" y="138" width="540" height="36" rx="6" class="box box-accent"/>
+              <text x="60" y="161" class="box-label">Workers + Hono router</text>
+              <text x="280" y="161" class="box-note">JWT auth via Web Crypto · TypeScript strict · ESM only · tsup build</text>
+              <rect x="600" y="138" width="280" height="36" rx="6" class="box box-accent"/>
+              <text x="620" y="161" class="box-label">Cloudflare Pages</text>
+              <text x="760" y="161" class="box-note">Static + SPA surfaces</text>
+            </g>
+
+            <!-- Flow to data + AI + integrations -->
+            <path d="M 200 180 L 200 220" class="flow" marker-end="url(#arrow)"/>
+            <path d="M 460 180 L 460 220" class="flow" marker-end="url(#arrow)"/>
+            <path d="M 720 180 L 720 220" class="flow" marker-end="url(#arrow)"/>
+
+            <!-- Layer 3: Data -->
+            <rect x="0" y="210" width="920" height="80" class="layer-band"/>
+            <text x="16" y="232" class="lbl">Data · stateful</text>
+            <g>
+              <rect x="40" y="248" width="200" height="34" rx="6" class="box box-vital"/>
+              <text x="140" y="269" text-anchor="middle" class="box-label">Hyperdrive → Neon Postgres</text>
+              <rect x="260" y="248" width="140" height="34" rx="6" class="box box-vital"/>
+              <text x="330" y="269" text-anchor="middle" class="box-label">R2 (objects)</text>
+              <rect x="420" y="248" width="140" height="34" rx="6" class="box box-vital"/>
+              <text x="490" y="269" text-anchor="middle" class="box-label">KV (config)</text>
+              <rect x="580" y="248" width="160" height="34" rx="6" class="box box-vital"/>
+              <text x="660" y="269" text-anchor="middle" class="box-label">Durable Objects (WS)</text>
+              <rect x="760" y="248" width="120" height="34" rx="6" class="box box-vital"/>
+              <text x="820" y="269" text-anchor="middle" class="box-label">Stream (video)</text>
+            </g>
+
+            <!-- Layer 4: AI cascade -->
+            <rect x="0" y="310" width="920" height="80" class="layer-band"/>
+            <text x="16" y="332" class="lbl">Language · llm cascade</text>
+            <g>
+              <rect x="40" y="348" width="200" height="34" rx="6" class="box"/>
+              <text x="140" y="369" text-anchor="middle" class="box-label">Cloudflare AI Gateway</text>
+              <path d="M 240 365 L 280 365" class="flow" marker-end="url(#arrow)"/>
+              <rect x="280" y="348" width="180" height="34" rx="6" class="box"/>
+              <text x="370" y="369" text-anchor="middle" class="box-label">Anthropic (tier 1)</text>
+              <path d="M 460 365 L 500 365" class="flow" marker-end="url(#arrow)"/>
+              <rect x="500" y="348" width="180" height="34" rx="6" class="box"/>
+              <text x="590" y="369" text-anchor="middle" class="box-label">Grok (tier 2)</text>
+              <path d="M 680 365 L 720 365" class="flow" marker-end="url(#arrow)"/>
+              <rect x="720" y="348" width="160" height="34" rx="6" class="box"/>
+              <text x="800" y="369" text-anchor="middle" class="box-label">Groq (tier 3)</text>
+            </g>
+
+            <!-- Layer 5: Integrations -->
+            <rect x="0" y="410" width="920" height="70" class="layer-band"/>
+            <text x="16" y="432" class="lbl">Integrations · external</text>
+            <g>
+              <rect x="40" y="446" width="240" height="28" rx="6" class="box"/>
+              <text x="160" y="464" text-anchor="middle" class="box-label">Telnyx + Deepgram + ElevenLabs</text>
+              <rect x="300" y="446" width="140" height="28" rx="6" class="box"/>
+              <text x="370" y="464" text-anchor="middle" class="box-label">Resend (email)</text>
+              <rect x="460" y="446" width="140" height="28" rx="6" class="box"/>
+              <text x="530" y="464" text-anchor="middle" class="box-label">Stripe (payments)</text>
+              <rect x="620" y="446" width="260" height="28" rx="6" class="box"/>
+              <text x="750" y="464" text-anchor="middle" class="box-label">GitHub Actions · GCP Secret Manager (WIF)</text>
+            </g>
+
+            <!-- Layer 6: Observability -->
+            <rect x="0" y="500" width="920" height="60" class="layer-band"/>
+            <text x="16" y="522" class="lbl">Observability · always-on</text>
+            <g>
+              <rect x="40" y="528" width="180" height="26" rx="6" class="box"/>
+              <text x="130" y="545" text-anchor="middle" class="box-label">Sentry (errors)</text>
+              <rect x="240" y="528" width="180" height="26" rx="6" class="box"/>
+              <text x="330" y="545" text-anchor="middle" class="box-label">PostHog (product)</text>
+              <rect x="440" y="528" width="300" height="26" rx="6" class="box"/>
+              <text x="590" y="545" text-anchor="middle" class="box-label">factory_events (first-party)</text>
+              <rect x="760" y="528" width="120" height="26" rx="6" class="box"/>
+              <text x="820" y="545" text-anchor="middle" class="box-label">Synthetic mon.</text>
+            </g>
+          </svg>
+        </section>
+
+        <section aria-labelledby="why-title">
+          <div class="section-heading">
+            <p class="section-eyebrow">Why this stack</p>
+            <h2 id="why-title">Eight decisions, each opinionated, each load-bearing.</h2>
+          </div>
+
+          <div class="stack-decisions">
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Edge over region</span>
+              <h3>Cloudflare Workers everywhere</h3>
+              <p>Every API runs on Workers, not on a single-region container or serverless function. We get sub-100ms TTFB to every user on Earth without managing capacity, and cold starts vanish because there are no cold starts. The cost: no <code>fs</code>, no <code>process.env</code>, no Node built-ins. Worth it.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Router</span>
+              <h3>Hono, not Express or Next</h3>
+              <p>Hono is the only router we found that treats Workers as a first-class runtime and not a polyfill target. The whole framework is smaller than Express's middleware loader. Type-safety on routes and middleware is real, not vibes.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Database</span>
+              <h3>Neon Postgres via Hyperdrive</h3>
+              <p>Postgres because it's still the most reliable thing we can run a business on. Neon because branching gives every PR a real database. Hyperdrive because connection-pooling from the edge is otherwise a load-bearing footgun — we get a sane <code>env.DB</code> binding and no connection storms.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Auth</span>
+              <h3>JWT via Web Crypto, not a library</h3>
+              <p>We sign and verify JWTs ourselves with the Web Crypto API. No <code>jsonwebtoken</code>, no framework auth helpers. The verification path is ~40 lines, every line is auditable, and we never get bitten by a transitive CVE in a parsing library we never used.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">LLM</span>
+              <h3>Three-tier cascade: Anthropic → Grok → Groq</h3>
+              <p>Tier 1 is Anthropic for anything where output quality is product-defining. Tier 2 is Grok for high-volume work that tolerates more variance. Tier 3 is Groq when latency dominates correctness. All three go through Cloudflare AI Gateway so we get one rate-limit ceiling, one cache, one set of logs, and an instant failover path if any provider goes dark.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Frontend</span>
+              <h3>Static-first, hydrate only what moves</h3>
+              <p>Pages serve static HTML from the edge. JavaScript loads only where it earns its weight — pulse hydration, contact form, video playback. This page you're reading is under 5KB of JS. Most landing-page React bundles are 30× that for less.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Secrets</span>
+              <h3>GCP Secret Manager via Workload Identity Federation</h3>
+              <p>No secrets in GitHub Actions repo settings, no secrets in <code>wrangler.jsonc</code> vars, no secrets in source. CI authenticates to GCP via WIF (no service-account JSON), fetches what it needs at job start, exports to step env, and the secrets are gone when the job ends. Rotation is one place, not seventeen.</p>
+            </article>
+
+            <article class="stack-decision">
+              <span class="stack-decision-tag">Public surface</span>
+              <h3>Same-origin curated JSON, no public APIs</h3>
+              <p>The pulse data on the landing page is a build-time JSON file, same origin, no auth — because there's nothing to auth. Operator endpoints stay behind authenticated Admin Studio routes. The public surface advertises proof, never plumbing.</p>
+            </article>
+          </div>
+        </section>
+
+        <aside class="stack-bans" aria-labelledby="bans-title">
+          <p class="section-eyebrow">Hard constraints</p>
+          <h2 id="bans-title">What we refuse to ship with.</h2>
+          <p style="color:#d8c9a3;margin:8px 0 0">These are not stylistic preferences. Every one is enforced by CI and reviewed against on every PR.</p>
+          <ul>
+            <li><code>process.env</code> anywhere — Workers don't have it; use bindings.</li>
+            <li>Node built-ins: no <code>fs</code>, no <code>path</code>, no Node <code>crypto</code>.</li>
+            <li>CommonJS <code>require()</code> — ESM <code>import</code>/<code>export</code> only.</li>
+            <li><code>Buffer</code> — use <code>Uint8Array</code>, <code>TextEncoder</code>, <code>TextDecoder</code>.</li>
+            <li>Raw <code>fetch</code> without explicit error handling.</li>
+            <li>Secrets in source or in <code>wrangler.jsonc</code> <code>vars</code>.</li>
+            <li><code>*.workers.dev</code> URLs in any user-facing HTML, JS, or API client.</li>
+            <li><code>any</code> in any public TypeScript API.</li>
+            <li>Worker renames without first updating every consumer file listed in <code>service-registry.yml</code>.</li>
+          </ul>
+        </aside>
+
+        <section class="section section-footnote" style="margin-top:64px">
+          <p style="margin-bottom:24px;font-size:1.1rem;color:rgba(248,241,222,0.9);max-width:560px;">
+            If this stack is what your project needs, I take on a small number of engagements at a time.
+          </p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <a class="button button-primary" href="https://latwoodtech.com/#contact">Start a conversation</a>
+            <a class="button button-secondary" href="/founder/">Founder profile</a>
+          </div>
+          <p style="margin-top:32px;">
+            <a class="stack-back" href="/">← Back to Latimer Woods</a>
+          </p>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
