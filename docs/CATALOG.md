@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 442 |
+| total_docs | 443 |
 | canonical | 17 |
-| active | 377 |
+| active | 378 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (377)
+## Active Docs (378)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -373,9 +373,10 @@
 | [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-05-30 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
 | [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
-| [docs/STATUS.md](STATUS.md) | active | unverified | platform | 2026-05-02 | Factory Ecosystem — Status |
+| [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
+| [docs/supervisor/aos-green-smoke.md](supervisor/aos-green-smoke.md) | active | unverified | platform | unknown | AOS Green Smoke |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
 | [docs/supervisor/ARCHITECTURE.md](supervisor/ARCHITECTURE.md) | active | unverified | platform | unknown | Factory as Supervisor — Architecture Plan, v2.1 |
 | [docs/supervisor/CAPABILITY_DECLARATION.md](supervisor/CAPABILITY_DECLARATION.md) | active | unverified | platform | unknown | Supervisor Capability Declaration — Phase 2 (SUP-4 EXEC Leg) |

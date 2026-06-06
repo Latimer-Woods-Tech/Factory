@@ -327,8 +327,10 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
 | [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-05-30 |
+| [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
+| [docs/supervisor/aos-green-smoke.md](supervisor/aos-green-smoke.md) | active | unverified | platform | unknown | AOS Green Smoke |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
 | [docs/supervisor/ARCHITECTURE.md](supervisor/ARCHITECTURE.md) | active | unverified | platform | unknown | Factory as Supervisor — Architecture Plan, v2.1 |
 | [docs/supervisor/CAPABILITY_DECLARATION.md](supervisor/CAPABILITY_DECLARATION.md) | active | unverified | platform | unknown | Supervisor Capability Declaration — Phase 2 (SUP-4 EXEC Leg) |
