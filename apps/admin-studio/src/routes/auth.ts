@@ -81,6 +81,10 @@ auth.post('/login', async (c) => {
     );
   }
 
+  if (c.env.STUDIO_ENV === 'production') {
+    return c.json({ error: 'Studio bootstrap login is disabled in production' }, 503);
+  }
+
   if (!c.env.STUDIO_ADMIN_EMAIL || !c.env.STUDIO_ADMIN_PASSWORD_SHA256) {
     return c.json({ error: 'Studio bootstrap credentials are not configured' }, 503);
   }

@@ -219,6 +219,11 @@ jobs:
             printf '%s' "$value" | npx wrangler secret put "$name" --env "${{ steps.target.outputs.env }}"
           }
 
+          delete_secret_if_present() {
+            local name="$1"
+            npx wrangler secret delete "$name" --env "${{ steps.target.outputs.env }}" >/dev/null 2>&1 || true
+          }
+
           export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN:-${FALLBACK_CF_API_TOKEN}}"
           export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID:-${FALLBACK_CF_ACCOUNT_ID}}"
 
@@ -230,8 +235,13 @@ jobs:
           password_hash=$(printf '%s' "$studio_admin_password" | sha256sum | cut -d' ' -f1)
 
           put_required_secret JWT_SECRET "$jwt_secret"
-          put_required_secret STUDIO_ADMIN_EMAIL "$studio_admin_email"
-          put_required_secret STUDIO_ADMIN_PASSWORD_SHA256 "$password_hash"
+          if [ "${{ steps.target.outputs.env }}" = "production" ]; then
+            delete_secret_if_present STUDIO_ADMIN_EMAIL
+            delete_secret_if_present STUDIO_ADMIN_PASSWORD_SHA256
+          else
+            put_required_secret STUDIO_ADMIN_EMAIL "$studio_admin_email"
+            put_required_secret STUDIO_ADMIN_PASSWORD_SHA256 "$password_hash"
+          fi
           put_required_secret ANTHROPIC_API_KEY "$anthropic_api_key"
           put_required_secret FACTORY_APP_ID "${{ secrets.FACTORY_APP_ID }}"
           put_required_secret FACTORY_APP_PRIVATE_KEY "${{ secrets.FACTORY_APP_PRIVATE_KEY }}"
