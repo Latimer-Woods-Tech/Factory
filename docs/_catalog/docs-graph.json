@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "scripts/docs/catalog.mjs",
-  "generated_at": "source-derived",
+  "generated_at": "2026-06-07T01:58:25Z",
   "generated_at_commit": null,
   "git_status": "not-recorded",
   "source_hashes": {
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a137694475ae4989a3fbe2cd619117cbd1da40f5b0aae7878add0835fdf51865",
+      "content_hash": "sha256:a21573b4f5f511544cb80b85f17c19f601bd03ced7deb1a934fd47640b27f600",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:dd5951e5e661cec8131798ff8ddcc02ee693d475a90afaab5350c6b42c2e06f4",
+      "content_hash": "sha256:54a777ec60df60456642bfca77da5d9c530eb9ace347d396eaf30dc53d942e96",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:bafce951511c1b12af799e03e02165d5ddedc8baed0dcaaff173ede962d72218",
+      "content_hash": "sha256:289c846fec2adca92590f791f3a1280c80ea35a96f0c4f393647cc01cb1c1382",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
