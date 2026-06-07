@@ -29,13 +29,29 @@ export interface ScrapeFieldResult {
   text: string[];
 }
 
+/** A cookie to inject into a browser context. */
+export interface BrowserCookie {
+  name: string;
+  value: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+}
+
 /** A single step in an automated scenario. */
 export type ScenarioStep =
   | { action: 'goto'; url: string }
   | { action: 'fill'; selector: string; value: string }
   | { action: 'click'; selector: string }
   | { action: 'wait'; ms: number }
-  | { action: 'waitForSelector'; selector: string; timeout?: number };
+  | { action: 'waitForSelector'; selector: string; timeout?: number }
+  | { action: 'select'; selector: string; value: string }
+  | { action: 'hover'; selector: string }
+  | { action: 'press'; selector: string; key: string }
+  | { action: 'setCookies'; cookies: BrowserCookie[] };
 
 /** Scenario execution request body. */
 export interface ScenarioRequest {
@@ -335,6 +351,59 @@ function parseSteps(value: unknown): ScenarioStep[] {
         }
         return { action: 'waitForSelector', selector: s['selector'], timeout } as ScenarioStep;
       }
+      case 'select': {
+        if (typeof s['selector'] !== 'string' || !s['selector'].trim()) {
+          throw new HttpError(422, `step[${i}].selector is required for select`);
+        }
+        if (typeof s['value'] !== 'string') {
+          throw new HttpError(422, `step[${i}].value is required for select`);
+        }
+        return { action: 'select', selector: s['selector'], value: s['value'] } as ScenarioStep;
+      }
+      case 'hover': {
+        if (typeof s['selector'] !== 'string' || !s['selector'].trim()) {
+          throw new HttpError(422, `step[${i}].selector is required for hover`);
+        }
+        return { action: 'hover', selector: s['selector'] } as ScenarioStep;
+      }
+      case 'press': {
+        if (typeof s['selector'] !== 'string' || !s['selector'].trim()) {
+          throw new HttpError(422, `step[${i}].selector is required for press`);
+        }
+        if (typeof s['key'] !== 'string' || !s['key'].trim()) {
+          throw new HttpError(422, `step[${i}].key is required for press`);
+        }
+        return { action: 'press', selector: s['selector'], key: s['key'] } as ScenarioStep;
+      }
+      case 'setCookies': {
+        if (!Array.isArray(s['cookies']) || (s['cookies'] as unknown[]).length === 0) {
+          throw new HttpError(422, `step[${i}].cookies must be a non-empty array`);
+        }
+        const cookies = (s['cookies'] as unknown[]).map((c, j) => {
+          if (!c || typeof c !== 'object' || Array.isArray(c)) {
+            throw new HttpError(422, `step[${i}].cookies[${j}] must be an object`);
+          }
+          const ck = c as Record<string, unknown>;
+          if (typeof ck['name'] !== 'string' || !ck['name'].trim()) {
+            throw new HttpError(422, `step[${i}].cookies[${j}].name is required`);
+          }
+          if (typeof ck['value'] !== 'string') {
+            throw new HttpError(422, `step[${i}].cookies[${j}].value is required`);
+          }
+          const sameSite = ck['sameSite'];
+          return {
+            name: ck['name'],
+            value: ck['value'],
+            domain: typeof ck['domain'] === 'string' ? ck['domain'] : undefined,
+            path: typeof ck['path'] === 'string' ? ck['path'] : undefined,
+            expires: typeof ck['expires'] === 'number' ? ck['expires'] : undefined,
+            httpOnly: typeof ck['httpOnly'] === 'boolean' ? ck['httpOnly'] : undefined,
+            secure: typeof ck['secure'] === 'boolean' ? ck['secure'] : undefined,
+            sameSite: sameSite === 'Strict' || sameSite === 'Lax' || sameSite === 'None' ? sameSite : undefined,
+          } satisfies BrowserCookie;
+        });
+        return { action: 'setCookies', cookies } as ScenarioStep;
+      }
       default:
         throw new HttpError(422, `step[${i}].action "${String(s['action'])}" is not supported`);
     }
@@ -612,6 +681,18 @@ async function runScenarioSteps(page: Page, steps: ScenarioStep[]): Promise<void
       case 'waitForSelector':
         await page.waitForSelector(step.selector, step.timeout !== undefined ? { timeout: step.timeout } : undefined);
         break;
+      case 'select':
+        await page.selectOption(step.selector, step.value);
+        break;
+      case 'hover':
+        await page.hover(step.selector);
+        break;
+      case 'press':
+        await page.press(step.selector, step.key);
+        break;
+      case 'setCookies':
+        await page.context().addCookies(step.cookies);
+        break;
     }
   }
 }
@@ -847,26 +928,8 @@ export function createPlaywrightAutomation(grader?: VisionGrader): BrowserAutoma
       const page = await context.newPage();
       let completedSteps = 0;
       try {
-        for (const step of request.steps) {
-          switch (step.action) {
-            case 'goto':
-              await page.goto(step.url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-              break;
-            case 'fill':
-              await page.fill(step.selector, step.value);
-              break;
-            case 'click':
-              await page.click(step.selector);
-              break;
-            case 'wait':
-              await page.waitForTimeout(step.ms);
-              break;
-            case 'waitForSelector':
-              await page.waitForSelector(step.selector, step.timeout !== undefined ? { timeout: step.timeout } : undefined);
-              break;
-          }
-          completedSteps++;
-        }
+        await runScenarioSteps(page, request.steps);
+        completedSteps = request.steps.length;
       } finally {
         await page.close();
         // Video is only finalized after context.close()

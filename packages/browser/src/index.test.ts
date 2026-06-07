@@ -253,3 +253,181 @@ describe('createBrowserClient — config validation', () => {
     expect(fetch.mock.calls[0]![0]).toBe('https://browser-agent.example.run.app/scrape');
   });
 });
+
+describe('createBrowserClient — token caching', () => {
+  it('reuses the cached token for multiple calls within the TTL window', async () => {
+    const agentResponse = { url: '', scrapedAt: '', results: {} };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(agentResponse), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const getIdToken = vi.fn().mockResolvedValue('cached-token');
+    let now = 0;
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken, now: () => now });
+
+    await client.scrape('https://example.com', { h: 'h1' });
+    now += 60_000; // advance 1 minute (still within 55-min TTL)
+    await client.scrape('https://example.com', { h: 'h1' });
+
+    expect(getIdToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshes the token after the TTL expires', async () => {
+    const agentResponse = { url: '', scrapedAt: '', results: {} };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(agentResponse), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const getIdToken = vi.fn().mockResolvedValue('refreshed-token');
+    let now = 0;
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken, now: () => now });
+
+    await client.scrape('https://example.com', { h: 'h1' });
+    now += 56 * 60 * 1000; // advance past 55-min TTL
+    await client.scrape('https://example.com', { h: 'h1' });
+
+    expect(getIdToken).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('createBrowserClient — audit', () => {
+  it('posts to /audit and returns result', async () => {
+    const auditResult = {
+      url: 'https://example.com/',
+      auditedAt: '2026-06-07T00:00:00.000Z',
+      consoleErrors: [],
+      pageErrors: [],
+      failedRequests: [],
+      screenshotBase64: 'img==',
+    };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(auditResult), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('tok') });
+
+    const result = await client.audit({ url: 'https://example.com', captureConsole: false, statusThreshold: 500 });
+
+    expect(result.screenshotBase64).toBe('img==');
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://browser-agent.example.run.app/audit');
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body['captureConsole']).toBe(false);
+    expect(body['statusThreshold']).toBe(500);
+  });
+
+  it('omits optional fields when not provided', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ url: '', auditedAt: '', consoleErrors: [], pageErrors: [], failedRequests: [], screenshotBase64: '' }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('tok') });
+
+    await client.audit({ url: 'https://example.com' });
+
+    const [, init] = fetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect('steps' in body).toBe(false);
+    expect('captureConsole' in body).toBe(false);
+  });
+});
+
+describe('createBrowserClient — visualReview', () => {
+  it('posts to /visual-review and returns result', async () => {
+    const reviewResult = {
+      url: 'https://example.com/',
+      reviewedAt: '2026-06-07T00:00:00.000Z',
+      viewports: [],
+      consoleErrors: [],
+      pageErrors: [],
+      failedRequests: [],
+      review: null,
+      axeViolations: null,
+    };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(reviewResult), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('tok') });
+
+    const result = await client.visualReview({ url: 'https://example.com', runAxe: true });
+
+    expect(result.axeViolations).toBeNull();
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://browser-agent.example.run.app/visual-review');
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(body['runAxe']).toBe(true);
+  });
+
+  it('passes setCookies steps through to the agent', async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      url: '', reviewedAt: '', viewports: [], consoleErrors: [], pageErrors: [], failedRequests: [], review: null, axeViolations: null,
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('tok') });
+
+    await client.visualReview({
+      url: 'https://capricast.com/feed',
+      steps: [{ action: 'setCookies', cookies: [{ name: 'auth', value: 'jwt123', domain: '.capricast.com', secure: true }] }],
+      skipFinalNavigation: false,
+    });
+
+    const [, init] = fetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    const steps = body['steps'] as Array<Record<string, unknown>>;
+    expect(steps[0]?.['action']).toBe('setCookies');
+  });
+});
+
+describe('createBrowserClient — runScenario', () => {
+  it('posts to /run-scenario and returns result', async () => {
+    const scenarioResult = { completedSteps: 2, videoKey: null, videoUrl: null, finishedAt: '2026-06-07T00:00:00.000Z' };
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(scenarioResult), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    }));
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('tok') });
+
+    const result = await client.runScenario([
+      { action: 'goto', url: 'https://example.com' },
+      { action: 'click', selector: 'button' },
+    ]);
+
+    expect(result.completedSteps).toBe(2);
+    const [url] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://browser-agent.example.run.app/run-scenario');
+  });
+
+  it('rejects empty steps before calling the agent', async () => {
+    const fetch = vi.fn();
+    const client = createBrowserClient({
+      agentUrl: 'https://browser-agent.example.run.app',
+      audience: 'https://browser-agent.example.run.app',
+      serviceAccountKey: { client_email: 'x', private_key: 'y' },
+    }, { fetch, getIdToken: () => Promise.resolve('tok') });
+
+    await expect(client.runScenario([])).rejects.toBeInstanceOf(ValidationError);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});

@@ -25,6 +25,155 @@ export interface BrowserScreenshotResult {
   dataBase64: string;
 }
 
+/** A cookie to inject into a browser context via the setCookies step. */
+export interface BrowserCookie {
+  name: string;
+  value: string;
+  domain?: string;
+  path?: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+}
+
+/** A single step in an automated scenario. */
+export type ScenarioStep =
+  | { action: 'goto'; url: string }
+  | { action: 'fill'; selector: string; value: string }
+  | { action: 'click'; selector: string }
+  | { action: 'wait'; ms: number }
+  | { action: 'waitForSelector'; selector: string; timeout?: number }
+  | { action: 'select'; selector: string; value: string }
+  | { action: 'hover'; selector: string }
+  | { action: 'press'; selector: string; key: string }
+  | { action: 'setCookies'; cookies: BrowserCookie[] };
+
+/** Result returned by runScenario. */
+export interface ScenarioResult {
+  completedSteps: number;
+  videoKey: string | null;
+  videoUrl: string | null;
+  finishedAt: string;
+}
+
+/** A captured browser console message. */
+export interface ConsoleMessage {
+  type: string;
+  text: string;
+  location: string;
+}
+
+/** A captured JS runtime error. */
+export interface PageError {
+  message: string;
+  stack: string;
+}
+
+/** A captured HTTP response that met the status threshold. */
+export interface FailedRequest {
+  url: string;
+  method: string;
+  status: number;
+}
+
+/** Audit request sent to /audit. */
+export interface AuditRequest {
+  url: string;
+  steps?: ScenarioStep[];
+  captureConsole?: boolean;
+  statusThreshold?: number;
+}
+
+/** Audit result returned by /audit. */
+export interface AuditResult {
+  url: string;
+  auditedAt: string;
+  consoleErrors: ConsoleMessage[];
+  pageErrors: PageError[];
+  failedRequests: FailedRequest[];
+  screenshotBase64: string;
+}
+
+/** A device viewport for multi-resolution capture. */
+export interface Viewport {
+  name: string;
+  width: number;
+  height: number;
+}
+
+/** Severity tier for a visual-review finding. */
+export type VisualReviewSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+
+/** A single observation produced by the vision grader. */
+export interface VisualReviewFinding {
+  severity: VisualReviewSeverity;
+  category: string;
+  viewport: string;
+  description: string;
+  recommendation: string;
+}
+
+/** A captured screenshot for one viewport. */
+export interface VisualReviewShot {
+  viewport: string;
+  width: number;
+  height: number;
+  screenshotBase64: string;
+}
+
+/** Token usage reported by the grading LLM. */
+export interface VisionTokenUsage {
+  input: number;
+  output: number;
+}
+
+/** Grading result from the vision model. */
+export interface VisionGradeResult {
+  model: string;
+  summary: string;
+  findings: VisualReviewFinding[];
+  tokenUsage: VisionTokenUsage;
+}
+
+/** A single axe-core accessibility violation flattened for the response. */
+export interface AxeViolation {
+  id: string;
+  impact: 'minor' | 'moderate' | 'serious' | 'critical' | null;
+  description: string;
+  help: string;
+  helpUrl: string;
+  tags: string[];
+  nodeCount: number;
+  exampleSelectors: string[];
+  viewport: string;
+}
+
+/** Visual-review request sent to /visual-review. */
+export interface VisualReviewRequest {
+  url: string;
+  steps?: ScenarioStep[];
+  viewports?: Viewport[];
+  rubric?: string[];
+  model?: string;
+  captureConsole?: boolean;
+  statusThreshold?: number;
+  skipFinalNavigation?: boolean;
+  runAxe?: boolean;
+}
+
+/** Visual-review result returned by /visual-review. */
+export interface VisualReviewResult {
+  url: string;
+  reviewedAt: string;
+  viewports: VisualReviewShot[];
+  consoleErrors: ConsoleMessage[];
+  pageErrors: PageError[];
+  failedRequests: FailedRequest[];
+  review: VisionGradeResult | null;
+  axeViolations: AxeViolation[] | null;
+}
+
 /** Minimal GCP service-account JSON fields required for ID-token minting. */
 export interface BrowserAgentServiceAccountKey {
   client_email: string;
@@ -44,6 +193,9 @@ export interface BrowserClientConfig {
 export interface BrowserClient {
   scrape(url: string, selectors: BrowserSelectors): Promise<BrowserScrapeResult>;
   screenshot(url: string): Promise<BrowserScreenshotResult>;
+  audit(request: AuditRequest): Promise<AuditResult>;
+  visualReview(request: VisualReviewRequest): Promise<VisualReviewResult>;
+  runScenario(steps: ScenarioStep[]): Promise<ScenarioResult>;
 }
 
 type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -66,6 +218,8 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_TOKEN_URI = 'https://oauth2.googleapis.com/token';
 const TOKEN_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 const BASE64_CHUNK_SIZE = 0x8000;
+// Leave 5-minute buffer on Google's 1-hour ID token TTL
+const TOKEN_CACHE_TTL_MS = 55 * 60 * 1000;
 const encoder = new TextEncoder();
 
 function normalizeUrl(value: string, field: string): string {
@@ -225,20 +379,70 @@ export function createBrowserClient(config: BrowserClientConfig, deps: BrowserCl
     { fetch: fetchImpl, now: deps.now },
   ));
 
+  // In-process token cache: reuse the token for its 55-minute window to avoid
+  // paying a Google token-exchange round-trip on every browser operation.
+  let cachedToken: string | undefined;
+  let tokenExpiresAt = 0;
+
+  const getToken = async (): Promise<string> => {
+    const now = deps.now?.() ?? Date.now();
+    if (cachedToken && now < tokenExpiresAt) return cachedToken;
+    cachedToken = await tokenProvider(audience);
+    tokenExpiresAt = now + TOKEN_CACHE_TTL_MS;
+    return cachedToken;
+  };
+
   return {
     async scrape(url, selectors) {
       const targetUrl = normalizeUrl(url, 'url');
       const selectorCount = Object.keys(selectors).length;
       if (selectorCount === 0) throw new ValidationError('selectors must not be empty');
-      const token = await tokenProvider(audience);
+      const token = await getToken();
       deps.logger?.info('browser.scrape', { url: targetUrl, selectorCount });
       return postJson<BrowserScrapeResult>(fetchImpl, `${agentUrl}/scrape`, token, { url: targetUrl, selectors }, timeoutMs);
     },
+
     async screenshot(url) {
       const targetUrl = normalizeUrl(url, 'url');
-      const token = await tokenProvider(audience);
+      const token = await getToken();
       deps.logger?.info('browser.screenshot', { url: targetUrl });
       return postJson<BrowserScreenshotResult>(fetchImpl, `${agentUrl}/screenshot`, token, { url: targetUrl }, timeoutMs);
+    },
+
+    async audit(request) {
+      const targetUrl = normalizeUrl(request.url, 'url');
+      const token = await getToken();
+      deps.logger?.info('browser.audit', { url: targetUrl });
+      return postJson<AuditResult>(fetchImpl, `${agentUrl}/audit`, token, {
+        url: targetUrl,
+        ...(request.steps !== undefined && { steps: request.steps }),
+        ...(request.captureConsole !== undefined && { captureConsole: request.captureConsole }),
+        ...(request.statusThreshold !== undefined && { statusThreshold: request.statusThreshold }),
+      }, timeoutMs);
+    },
+
+    async visualReview(request) {
+      const targetUrl = normalizeUrl(request.url, 'url');
+      const token = await getToken();
+      deps.logger?.info('browser.visualReview', { url: targetUrl });
+      return postJson<VisualReviewResult>(fetchImpl, `${agentUrl}/visual-review`, token, {
+        url: targetUrl,
+        ...(request.steps !== undefined && { steps: request.steps }),
+        ...(request.viewports !== undefined && { viewports: request.viewports }),
+        ...(request.rubric !== undefined && { rubric: request.rubric }),
+        ...(request.model !== undefined && { model: request.model }),
+        ...(request.captureConsole !== undefined && { captureConsole: request.captureConsole }),
+        ...(request.statusThreshold !== undefined && { statusThreshold: request.statusThreshold }),
+        ...(request.skipFinalNavigation !== undefined && { skipFinalNavigation: request.skipFinalNavigation }),
+        ...(request.runAxe !== undefined && { runAxe: request.runAxe }),
+      }, timeoutMs);
+    },
+
+    async runScenario(steps) {
+      if (steps.length === 0) throw new ValidationError('steps must not be empty');
+      const token = await getToken();
+      deps.logger?.info('browser.runScenario', { stepCount: steps.length });
+      return postJson<ScenarioResult>(fetchImpl, `${agentUrl}/run-scenario`, token, { steps }, timeoutMs);
     },
   };
 }

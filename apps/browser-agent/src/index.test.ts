@@ -176,7 +176,41 @@ describe('browser-agent', () => {
       const res = await app.request('/run-scenario', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ steps: [{ action: 'hover', selector: 'button' }] }),
+        body: JSON.stringify({ steps: [{ action: 'drag', selector: 'button' }] }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('accepts hover, select, press, and setCookies steps', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          steps: [
+            { action: 'hover', selector: 'nav' },
+            { action: 'select', selector: 'select', value: 'opt1' },
+            { action: 'press', selector: 'input', key: 'Enter' },
+            { action: 'setCookies', cookies: [{ name: 'auth', value: 'tok', domain: '.example.com' }] },
+          ],
+        }),
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('returns 422 when setCookies has empty cookies array', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ steps: [{ action: 'setCookies', cookies: [] }] }),
+      });
+      expect(res.status).toBe(422);
+    });
+
+    it('returns 422 when a cookie is missing name', async () => {
+      const res = await app.request('/run-scenario', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ steps: [{ action: 'setCookies', cookies: [{ value: 'tok' }] }] }),
       });
       expect(res.status).toBe(422);
     });
