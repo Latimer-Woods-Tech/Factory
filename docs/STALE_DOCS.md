@@ -122,6 +122,8 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/digest/2026-05-17.md](digest/2026-05-17.md) | active | unverified | platform | unknown | Morning digest — 2026-05-17 |
 | [docs/digest/2026-05-25.md](digest/2026-05-25.md) | active | unverified | platform | unknown | Morning digest — 2026-05-25 |
 | [docs/digest/2026-05-30.md](digest/2026-05-30.md) | active | unverified | platform | unknown | Morning digest — 2026-05-30 |
+| [docs/digest/2026-06-05.md](digest/2026-06-05.md) | active | unverified | platform | unknown | Morning digest — 2026-06-05 |
+| [docs/digest/2026-06-06.md](digest/2026-06-06.md) | active | unverified | platform | unknown | Morning digest — 2026-06-06 |
 | [docs/DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) | active | unverified | platform | unknown | Documentation Ownership & Update Cadence |
 | [docs/DOCUMENTATION_HIERARCHY.md](DOCUMENTATION_HIERARCHY.md) | active | unverified | platform | unknown | Documentation Hierarchy & Source of Truth |
 | [docs/ENVIRONMENT_VERIFICATION_SETUP.md](ENVIRONMENT_VERIFICATION_SETUP.md) | active | unverified | platform | unknown | Environment Verification Script Setup |
@@ -330,6 +332,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
+| [docs/supervisor/AOS_COMPLETION_AUDIT.md](supervisor/AOS_COMPLETION_AUDIT.md) | active | unverified | platform | unknown | Factory Autonomous OS Completion Audit |
 | [docs/supervisor/aos-green-smoke.md](supervisor/aos-green-smoke.md) | active | unverified | platform | unknown | AOS Green Smoke |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
 | [docs/supervisor/ARCHITECTURE.md](supervisor/ARCHITECTURE.md) | active | unverified | platform | unknown | Factory as Supervisor — Architecture Plan, v2.1 |
