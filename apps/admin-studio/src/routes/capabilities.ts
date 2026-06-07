@@ -55,6 +55,7 @@ import {
   type ProvisionRequestRecord,
 } from '../lib/handoff-store.js';
 import {
+  approveGraphRevision,
   createGraph,
   findGraphById,
   findGraphRevisionById,
@@ -664,9 +665,57 @@ capabilities.get('/graphs/:id/revisions', async (c) => {
       publishedRevisionNumber: graph.publishedRevisionNumber,
       publishedRevisionHash: graph.publishedRevisionHash,
     },
-    revisions,
+  revisions,
   });
 });
+
+/**
+ * Approve a graph revision for future execution.
+ * POST /capabilities/graphs/:id/revisions/:revisionId/approve
+ *   body: { summary: string }
+ */
+capabilities.post(
+  '/graphs/:id/revisions/:revisionId/approve',
+  requireConfirmation({
+    action: 'capabilities.graph.approve',
+    reversibility: 'trivial',
+    minRole: 'admin',
+  }),
+  async (c) => {
+    const ctx = c.var.envContext;
+    if (!ctx) return c.json({ error: 'auth required' }, 401);
+    const id = c.req.param('id');
+    const revisionId = c.req.param('revisionId');
+    const rawBody = await c.req.json<{ summary?: unknown }>().catch(() => ({} as { summary?: unknown }));
+    const summary = rawBody.summary;
+    if (typeof summary !== 'string' || summary.trim().length === 0) {
+      return c.json({ error: 'summary is required' }, 400);
+    }
+    const result = await approveGraphRevision(c.env.DB, id, revisionId, {
+      approvedBy: ctx.userId,
+      approvalSummary: summary,
+    });
+    if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
+    if (result.status === 'revision_not_found') {
+      return c.json({ error: 'Revision not found for this graph' }, 404);
+    }
+    c.set('auditAction', 'capabilities.graph.approve');
+    c.set('auditResource', 'capability_graphs');
+    c.set('auditResourceId', result.graph.id);
+    c.set('auditReversibility', 'trivial');
+    c.set('auditResultDetail', {
+      graphId: result.graph.id,
+      revisionId: result.revision.id,
+      revisionNumber: result.revision.revisionNumber,
+      graphVersion: result.revision.graphVersion,
+      approvalSummary: result.revision.approvalSummary,
+    });
+    return c.json({
+      graph: result.graph,
+      revision: result.revision,
+    });
+  },
+);
 
 /**
  * Publish a graph revision for execution.
@@ -699,6 +748,9 @@ capabilities.post(
     }
     if (result.status === 'revision_not_found') {
       return c.json({ error: 'Revision not found for this graph' }, 404);
+    }
+    if (result.status === 'revision_not_approved') {
+      return c.json({ error: 'Revision must be approved before publishing' }, 409);
     }
     c.set('auditAction', 'capabilities.graph.publish');
     c.set('auditResource', 'capability_graphs');

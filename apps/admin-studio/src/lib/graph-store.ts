@@ -60,6 +60,9 @@ export interface GraphRevision {
   contentHash: string;
   createdBy: string;
   createdAt: string;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  approvalSummary: string | null;
   publishedAt: string | null;
   publishedBy: string | null;
 }
@@ -105,6 +108,9 @@ interface GraphRevisionRow {
   content_hash: string;
   created_by: string;
   created_at: string;
+  approved_at: string | null;
+  approved_by: string | null;
+  approval_summary: string | null;
   published_at: string | null;
   published_by: string | null;
 }
@@ -144,6 +150,9 @@ function rowToRevision(row: GraphRevisionRow): GraphRevision {
     contentHash: row.content_hash,
     createdBy: row.created_by,
     createdAt: row.created_at,
+    approvedAt: row.approved_at,
+    approvedBy: row.approved_by,
+    approvalSummary: row.approval_summary,
     publishedAt: row.published_at,
     publishedBy: row.published_by,
   };
@@ -235,11 +244,26 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
           content_hash TEXT NOT NULL,
           created_by TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          approved_at TIMESTAMPTZ,
+          approved_by TEXT,
+          approval_summary TEXT,
           published_at TIMESTAMPTZ,
           published_by TEXT,
           UNIQUE (graph_id, revision_number),
           UNIQUE (graph_id, graph_version)
         )
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graph_revisions
+        ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graph_revisions
+        ADD COLUMN IF NOT EXISTS approved_by TEXT
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graph_revisions
+        ADD COLUMN IF NOT EXISTS approval_summary TEXT
       `);
       await db.execute(sql`
         ALTER TABLE capability_graph_revisions
@@ -478,7 +502,8 @@ export async function listGraphRevisions(
     const limit = clamp(filter.limit ?? 20, 1, 100);
     const result = await db.execute(sql`
       SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-             content_hash, created_by, created_at, published_at, published_by
+             content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+             published_at, published_by
       FROM capability_graph_revisions
       WHERE graph_id = ${graphId}
       ORDER BY revision_number DESC
@@ -500,7 +525,8 @@ export async function findGraphRevisionById(
     const db = getDb(hyperdrive);
     const result = await db.execute(sql`
       SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-             content_hash, created_by, created_at, published_at, published_by
+             content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+             published_at, published_by
       FROM capability_graph_revisions
       WHERE id = ${revisionId}
       LIMIT 1
@@ -532,6 +558,9 @@ export async function publishGraphRevision(
       if (!revision || revision.graphId !== graphId) {
         return { status: 'revision_not_found' } as const;
       }
+      if (!revision.approvedAt || !revision.approvedBy) {
+        return { status: 'revision_not_approved' } as const;
+      }
 
       const publishedAt = new Date().toISOString();
       const revisionUpdate = await txDb.execute(sql`
@@ -540,7 +569,8 @@ export async function publishGraphRevision(
             published_by = ${input.publishedBy}
         WHERE id = ${revision.id}
         RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-                  content_hash, created_by, created_at, published_at, published_by
+                  content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+                  published_at, published_by
       `);
       const publishedRevisionRow = (revisionUpdate.rows as unknown as GraphRevisionRow[])[0];
       if (!publishedRevisionRow) return { status: 'revision_not_found' } as const;
@@ -571,16 +601,67 @@ export async function publishGraphRevision(
   }
 }
 
+export async function approveGraphRevision(
+  hyperdrive: HyperdriveBinding,
+  graphId: string,
+  revisionId: string,
+  input: { approvedBy: string; approvalSummary: string },
+): Promise<GraphApproveResult> {
+  try {
+    await ensureGraphSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    return await runGraphTransaction(db, async (txDb) => {
+      const graph = await findGraphByIdUsingDb(txDb, graphId);
+      if (!graph) return { status: 'not_found' } as const;
+
+      const revision = await findGraphRevisionByIdUsingDb(txDb, revisionId);
+      if (!revision || revision.graphId !== graphId) {
+        return { status: 'revision_not_found' } as const;
+      }
+
+      const approvedAt = new Date().toISOString();
+      const approvalSummary = input.approvalSummary.trim();
+      const revisionUpdate = await txDb.execute(sql`
+        UPDATE capability_graph_revisions
+        SET approved_at = ${approvedAt},
+            approved_by = ${input.approvedBy},
+            approval_summary = ${approvalSummary}
+        WHERE id = ${revision.id}
+        RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
+                  content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+                  published_at, published_by
+      `);
+      const approvedRevisionRow = (revisionUpdate.rows as unknown as GraphRevisionRow[])[0];
+      if (!approvedRevisionRow) return { status: 'revision_not_found' } as const;
+
+      return {
+        status: 'ok',
+        graph,
+        revision: rowToRevision(approvedRevisionRow),
+      } as const;
+    });
+  } catch (err) {
+    console.error('[graph-store] approveGraphRevision failed:', (err as Error).message);
+    return { status: 'not_found' };
+  }
+}
+
 export type GraphUpdateResult =
   | { status: 'ok'; graph: GraphDocument }
   | { status: 'conflict'; currentGraph: GraphDocument }
   | { status: 'not_found' };
 
+export type GraphApproveResult =
+  | { status: 'ok'; graph: GraphDocument; revision: GraphRevision }
+  | { status: 'not_found' }
+  | { status: 'revision_not_found' };
+
 export type GraphPublishResult =
   | { status: 'ok'; graph: GraphDocument; revision: GraphRevision }
   | { status: 'not_found' }
   | { status: 'no_revision' }
-  | { status: 'revision_not_found' };
+  | { status: 'revision_not_found' }
+  | { status: 'revision_not_approved' };
 
 async function findGraphByIdUsingDb(
   db: FactoryDb,
@@ -620,7 +701,8 @@ async function persistGraphRevision(
       ${contentHash}, ${createdBy}
     )
     RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-              content_hash, created_by, created_at, published_at, published_by
+              content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+              published_at, published_by
   `);
   const revisionRow = (revisionInsert.rows as unknown as GraphRevisionRow[])[0];
   if (!revisionRow) {
@@ -660,7 +742,8 @@ async function findGraphRevisionByIdUsingDb(
 ): Promise<GraphRevision | null> {
   const result = await db.execute(sql`
     SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-           content_hash, created_by, created_at, published_at, published_by
+           content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+           published_at, published_by
     FROM capability_graph_revisions
     WHERE id = ${revisionId}
     LIMIT 1

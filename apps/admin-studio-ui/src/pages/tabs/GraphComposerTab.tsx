@@ -120,6 +120,9 @@ interface GraphRevision {
   contentHash: string;
   createdBy: string;
   createdAt: string;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  approvalSummary: string | null;
   publishedAt: string | null;
   publishedBy: string | null;
 }
@@ -387,6 +390,7 @@ export function GraphComposerTab() {
   const [revisionsLoading, setRevisionsLoading] = useState(false);
   const [revisionsError, setRevisionsError] = useState<string | null>(null);
   const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
+  const [approvalSummaryDraft, setApprovalSummaryDraft] = useState('');
 
   // Current graph working state
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -403,6 +407,10 @@ export function GraphComposerTab() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
+  const [approveSuccess, setApproveSuccess] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -533,6 +541,13 @@ export function GraphComposerTab() {
     });
   }, [graphRevisions, graphs, selectedGraphId]);
 
+  useEffect(() => {
+    const selectedRevision = graphRevisions.find((revision) => revision.id === selectedRevisionId);
+    setApprovalSummaryDraft(selectedRevision?.approvalSummary ?? '');
+    setApproveError(null);
+    setApproveSuccess(false);
+  }, [graphRevisions, selectedRevisionId]);
+
   // ── Create graph ──────────────────────────────────────────────────────────
 
   async function createGraph() {
@@ -617,6 +632,41 @@ export function GraphComposerTab() {
     } finally {
       setCompiling(false);
     }
+  }
+
+  async function approveRevision(revisionId: string, summary: string) {
+    if (!selectedGraphId) return;
+    setApproving(true);
+    setApproveError(null);
+    setApproveSuccess(false);
+    try {
+      await apiFetch<{ revision: GraphRevision }>(
+        `/capabilities/graphs/${selectedGraphId}/revisions/${revisionId}/approve`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ summary }),
+          confirmed: true,
+        },
+      );
+      await loadRevisions(selectedGraphId);
+      setApproveSuccess(true);
+      window.setTimeout(() => setApproveSuccess(false), 2000);
+    } catch (err) {
+      setApproveError(extractErrorMessage(err));
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function approveSelectedRevision() {
+    if (!selectedRevision) return;
+    const summary = approvalSummaryDraft.trim();
+    if (!summary) {
+      setApproveError('Approval summary is required.');
+      return;
+    }
+    setApproveDialogOpen(false);
+    await approveRevision(selectedRevision.id, summary);
   }
 
   async function publishGraph(revisionId: string | undefined, confirmToken?: string) {
@@ -828,9 +878,12 @@ export function GraphComposerTab() {
       : null;
 
   const canHandoff = compileResult?.success === true;
+  const approvalTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'trivial');
   const publishTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'reversible');
+  const selectedRevisionIsApproved = !!selectedRevision?.approvedAt && !!selectedRevision?.approvedBy;
   const selectedRevisionIsPublished = !!selectedRevision && selectedRevision.id === selectedGraph?.publishedRevisionId;
   const selectedRevisionIsCurrent = !!selectedRevision && selectedRevision.id === selectedGraph?.currentRevisionId;
+  const approveTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
   const publishTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
   const publishDiff = selectedRevision && publishedRevision && selectedRevision.id !== publishedRevision.id
     ? summarizeRevisionDiff(publishedRevision, selectedRevision)
@@ -842,6 +895,15 @@ export function GraphComposerTab() {
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={approveDialogOpen}
+        action="capabilities.graph.approve"
+        description={`Approve ${approveTargetLabel} for future execution and record review context.`}
+        reversibility="trivial"
+        tier={approvalTier}
+        onCancel={() => setApproveDialogOpen(false)}
+        onConfirm={() => void approveSelectedRevision()}
+      />
       <ConfirmDialog
         open={publishDialogOpen}
         action="capabilities.graph.publish"
@@ -966,7 +1028,7 @@ export function GraphComposerTab() {
           size="sm"
           variant="outline"
           onClick={() => setPublishDialogOpen(true)}
-          disabled={!selectedGraphId || publishing || !selectedRevision || selectedRevisionIsPublished}
+          disabled={!selectedGraphId || publishing || !selectedRevision || selectedRevisionIsPublished || !selectedRevisionIsApproved}
         >
           {publishing ? 'Publishing…' : publishSuccess ? '✓ Published' : `Publish ${publishTargetLabel}`}
         </Button>
@@ -1418,6 +1480,16 @@ export function GraphComposerTab() {
                       <dd className="text-slate-200">{selectedRevision.edges.length}</dd>
                     </div>
                     <div>
+                      <dt className="text-slate-500">Approved at</dt>
+                      <dd className="text-slate-200">
+                        {selectedRevision.approvedAt ? new Date(selectedRevision.approvedAt).toLocaleString() : 'Not approved'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approved by</dt>
+                      <dd className="text-slate-200">{selectedRevision.approvedBy ?? '—'}</dd>
+                    </div>
+                    <div>
                       <dt className="text-slate-500">Published at</dt>
                       <dd className="text-slate-200">
                         {selectedRevision.publishedAt ? new Date(selectedRevision.publishedAt).toLocaleString() : 'Not published'}
@@ -1430,12 +1502,69 @@ export function GraphComposerTab() {
                   </dl>
 
                   <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Approval Context
+                      </p>
+                      {selectedRevisionIsApproved && (
+                        <span className="rounded border border-emerald-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                          approved
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Capture why this immutable revision is fit to become an execution head.
+                    </p>
+                    <textarea
+                      value={approvalSummaryDraft}
+                      onChange={(e) => setApprovalSummaryDraft(e.target.value)}
+                      rows={3}
+                      className="mt-3 w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-blue-400 md:text-sm"
+                      placeholder="Reviewed graph topology, parameters, and staging intent."
+                    />
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={!selectedRevision || approving || approvalSummaryDraft.trim().length === 0}
+                        onClick={() => {
+                          if (approvalTier === 0) {
+                            void approveSelectedRevision();
+                            return;
+                          }
+                          setApproveDialogOpen(true);
+                        }}
+                      >
+                        {approving
+                          ? 'Approving…'
+                          : approveSuccess
+                            ? '✓ Approved'
+                            : selectedRevisionIsApproved
+                              ? `Update Approval ${approveTargetLabel}`
+                              : `Approve ${approveTargetLabel}`}
+                      </Button>
+                      {approveError && (
+                        <span className="text-xs text-red-400">{approveError}</span>
+                      )}
+                    </div>
+                    {selectedRevision.approvalSummary && (
+                      <p className="mt-3 text-xs text-slate-400">
+                        Current approval note: {selectedRevision.approvalSummary}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Publish Review
                     </p>
                     {selectedRevisionIsPublished ? (
                       <p className="mt-2 text-sm text-emerald-300">
                         This revision is already the published execution head.
+                      </p>
+                    ) : !selectedRevisionIsApproved ? (
+                      <p className="mt-2 text-sm text-amber-300">
+                        Approve this revision before it can be published for compile and handoff.
                       </p>
                     ) : !publishedRevision ? (
                       <p className="mt-2 text-sm text-slate-300">

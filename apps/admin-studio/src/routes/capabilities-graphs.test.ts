@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const {
+  approveGraphRevisionMock,
   createGraphMock,
   deleteGraphMock,
   findGraphByIdMock,
@@ -24,6 +25,7 @@ const {
   upsertServiceMock,
   validateProofGatesMock,
 } = vi.hoisted(() => ({
+  approveGraphRevisionMock: vi.fn(),
   createGraphMock: vi.fn(),
   deleteGraphMock: vi.fn(),
   findGraphByIdMock: vi.fn(),
@@ -49,6 +51,7 @@ const {
 }));
 
 vi.mock('../lib/graph-store.js', () => ({
+  approveGraphRevision: approveGraphRevisionMock,
   createGraph: createGraphMock,
   deleteGraph: deleteGraphMock,
   findGraphById: findGraphByIdMock,
@@ -89,6 +92,7 @@ beforeAll(async () => {
 });
 
 afterEach(() => {
+  approveGraphRevisionMock.mockReset();
   createGraphMock.mockReset();
   deleteGraphMock.mockReset();
   findGraphByIdMock.mockReset();
@@ -284,6 +288,76 @@ describe('capability graph routes', () => {
     expect(listGraphRevisionsMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', { limit: 2 });
   });
 
+  it('approves an immutable revision with review context', async () => {
+    const authToken = await login();
+    approveGraphRevisionMock.mockResolvedValue({
+      status: 'ok',
+      graph: {
+        id: 'graph-1',
+        name: 'Sales graph',
+        description: null,
+        version: 4,
+        currentRevisionId: 'rev-4',
+        currentRevisionNumber: 4,
+        currentRevisionHash: 'hash-4',
+        publishedRevisionId: 'rev-3',
+        publishedRevisionNumber: 3,
+        publishedRevisionHash: 'hash-3',
+        nodes: [],
+        edges: [],
+        compiledPlan: null,
+        compiledAt: null,
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:00:00.000Z',
+        updatedAt: '2026-06-07T00:05:00.000Z',
+      },
+      revision: {
+        id: 'rev-4',
+        graphId: 'graph-1',
+        revisionNumber: 4,
+        graphVersion: 4,
+        name: 'Sales graph',
+        description: null,
+        nodes: [],
+        edges: [],
+        contentHash: 'hash-4',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:05:00.000Z',
+        approvedAt: '2026-06-07T00:05:30.000Z',
+        approvedBy: 'operator@example.com',
+        approvalSummary: 'Reviewed topology and ready for staging compile.',
+        publishedAt: null,
+        publishedBy: null,
+      },
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/revisions/rev-4/approve', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ summary: 'Reviewed topology and ready for staging compile.' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      revision: {
+        id: 'rev-4',
+        approvedBy: 'operator@example.com',
+        approvalSummary: 'Reviewed topology and ready for staging compile.',
+      },
+    });
+    expect(approveGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', 'rev-4', {
+      approvedBy: 'operator@example.com',
+      approvalSummary: 'Reviewed topology and ready for staging compile.',
+    });
+  });
+
   it('publishes the current draft revision for execution', async () => {
     const authToken = await login();
     publishGraphRevisionMock.mockResolvedValue({
@@ -319,6 +393,9 @@ describe('capability graph routes', () => {
         contentHash: 'hash-4',
         createdBy: 'operator@example.com',
         createdAt: '2026-06-07T00:05:00.000Z',
+        approvedAt: '2026-06-07T00:05:30.000Z',
+        approvedBy: 'operator@example.com',
+        approvalSummary: 'Reviewed topology and ready for staging compile.',
         publishedAt: '2026-06-07T00:06:00.000Z',
         publishedBy: 'operator@example.com',
       },
@@ -358,6 +435,32 @@ describe('capability graph routes', () => {
     });
   });
 
+  it('rejects publishing an unapproved revision', async () => {
+    const authToken = await login();
+    publishGraphRevisionMock.mockResolvedValue({
+      status: 'revision_not_approved',
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/publish', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'X-Confirmed': 'true',
+        },
+        body: JSON.stringify({ revisionId: 'rev-4' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'Revision must be approved before publishing',
+    });
+  });
+
   it('publishes an explicitly selected immutable revision', async () => {
     const authToken = await login();
     publishGraphRevisionMock.mockResolvedValue({
@@ -393,6 +496,9 @@ describe('capability graph routes', () => {
         contentHash: 'hash-3',
         createdBy: 'operator@example.com',
         createdAt: '2026-06-07T00:04:00.000Z',
+        approvedAt: '2026-06-07T00:04:30.000Z',
+        approvedBy: 'operator@example.com',
+        approvalSummary: 'Reverted to the last known stable topology.',
         publishedAt: '2026-06-07T00:06:00.000Z',
         publishedBy: 'operator@example.com',
       },
@@ -471,12 +577,15 @@ describe('capability graph routes', () => {
         },
       ],
       edges: [],
-      contentHash: 'hash-4',
-      createdBy: 'operator@example.com',
-      createdAt: '2026-06-07T00:05:00.000Z',
-      publishedAt: '2026-06-07T00:06:00.000Z',
-      publishedBy: 'operator@example.com',
-    });
+        contentHash: 'hash-4',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:05:00.000Z',
+        approvedAt: '2026-06-07T00:05:30.000Z',
+        approvedBy: 'operator@example.com',
+        approvalSummary: 'Reviewed topology and ready for staging compile.',
+        publishedAt: '2026-06-07T00:06:00.000Z',
+        publishedBy: 'operator@example.com',
+      });
     saveCompiledPlanMock.mockResolvedValue(null);
 
     const res = await worker.fetch(
@@ -547,12 +656,15 @@ describe('capability graph routes', () => {
         },
       ],
       edges: [],
-      contentHash: 'hash-4',
-      createdBy: 'operator@example.com',
-      createdAt: '2026-06-07T00:05:00.000Z',
-      publishedAt: '2026-06-07T00:06:00.000Z',
-      publishedBy: 'operator@example.com',
-    });
+        contentHash: 'hash-4',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:05:00.000Z',
+        approvedAt: '2026-06-07T00:05:30.000Z',
+        approvedBy: 'operator@example.com',
+        approvalSummary: 'Reviewed topology and ready for staging compile.',
+        publishedAt: '2026-06-07T00:06:00.000Z',
+        publishedBy: 'operator@example.com',
+      });
     persistHandoffMock.mockResolvedValue({
       id: 'handoff-1',
       kind: 'scaffold-handoff',
