@@ -258,6 +258,7 @@ jobs:
           FALLBACK_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
 
       - name: Apply database migrations
+        if: steps.migrations.outputs.has_migrations == 'true'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
