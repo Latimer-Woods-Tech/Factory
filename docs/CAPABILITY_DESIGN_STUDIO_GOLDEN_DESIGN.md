@@ -249,12 +249,14 @@ Remaining Stage D work (no council approval needed — expansion unlocked):
 
 1. concept upgrade lifecycle signal when a recipe version advances
 
+The constrained Graph Composer is an adjacent governed surface, not ordinary Stage D expansion. Its v1 implementation may remain available for exploration, but publishing graph revisions, assigning relationship semantics, binding actual state, or enabling autonomous proposals requires the Phase 5 boundary ADR and maturity gates in `CAPABILITY_FACTORY_BACKCASTING_PLAN.md`.
+
 ## Non-Goals
 
 This golden design explicitly excludes:
 
 1. arbitrary primitive mixing by operators
-2. visual node graph execution semantics
+2. visual node graph execution semantics; Graph Composer may describe registry-owned relationships and desired state, but may not define or execute arbitrary control flow
 3. autonomous app creation from natural language alone
 4. production-first provisioning
 5. hidden environment mutation behind a single click
