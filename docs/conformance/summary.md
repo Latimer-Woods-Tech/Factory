@@ -1,6 +1,6 @@
 # Platform Conformance — Shadow Mode
 
-*Generated: 2026-06-06 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
+*Generated: 2026-06-07 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
 
 ## Cohesion summary
 
