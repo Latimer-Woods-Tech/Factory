@@ -58,6 +58,7 @@ import {
   createGraph,
   findGraphById,
   listGraphs,
+  listGraphRevisions,
   updateGraphLayout,
   saveCompiledPlan,
   deleteGraph,
@@ -635,6 +636,32 @@ capabilities.get('/graphs/:id', async (c) => {
 });
 
 /**
+ * List immutable graph revisions for a graph.
+ * GET /capabilities/graphs/:id/revisions?limit=20
+ */
+capabilities.get('/graphs/:id/revisions', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const limitRaw = c.req.query('limit');
+  const limit = limitRaw ? Math.max(1, Math.min(100, Number.parseInt(limitRaw, 10) || 20)) : 20;
+  const revisions = await listGraphRevisions(c.env.DB, id, { limit });
+  return c.json({
+    generatedAt: new Date().toISOString(),
+    graph: {
+      id: graph.id,
+      name: graph.name,
+      currentRevisionId: graph.currentRevisionId,
+      currentRevisionNumber: graph.currentRevisionNumber,
+      currentRevisionHash: graph.currentRevisionHash,
+    },
+    revisions,
+  });
+});
+
+/**
  * Update graph nodes/edges/name/description.
  * PUT /capabilities/graphs/:id
  *   body: { name?, description?, nodes?, edges? }
@@ -652,7 +679,11 @@ capabilities.put('/graphs/:id', async (c) => {
       issues: parsed.issues,
     }, 400);
   }
-  const result = await updateGraphLayout(c.env.DB, id, parsed.value);
+  const updateInput = {
+    ...parsed.value,
+    updatedBy: ctx.userId,
+  };
+  const result = await updateGraphLayout(c.env.DB, id, updateInput);
   if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
   if (result.status === 'conflict') {
     return c.json({

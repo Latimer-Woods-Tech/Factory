@@ -5,6 +5,7 @@ const {
   deleteGraphMock,
   findGraphByIdMock,
   listGraphsMock,
+  listGraphRevisionsMock,
   saveCompiledPlanMock,
   updateGraphLayoutMock,
 } = vi.hoisted(() => ({
@@ -12,6 +13,7 @@ const {
   deleteGraphMock: vi.fn(),
   findGraphByIdMock: vi.fn(),
   listGraphsMock: vi.fn(),
+  listGraphRevisionsMock: vi.fn(),
   saveCompiledPlanMock: vi.fn(),
   updateGraphLayoutMock: vi.fn(),
 }));
@@ -21,6 +23,7 @@ vi.mock('../lib/graph-store.js', () => ({
   deleteGraph: deleteGraphMock,
   findGraphById: findGraphByIdMock,
   listGraphs: listGraphsMock,
+  listGraphRevisions: listGraphRevisionsMock,
   saveCompiledPlan: saveCompiledPlanMock,
   updateGraphLayout: updateGraphLayoutMock,
 }));
@@ -42,6 +45,7 @@ afterEach(() => {
   deleteGraphMock.mockReset();
   findGraphByIdMock.mockReset();
   listGraphsMock.mockReset();
+  listGraphRevisionsMock.mockReset();
   saveCompiledPlanMock.mockReset();
   updateGraphLayoutMock.mockReset();
   vi.restoreAllMocks();
@@ -86,6 +90,9 @@ describe('capability graph routes', () => {
         name: 'Sales graph',
         description: null,
         version: 4,
+        currentRevisionId: 'rev-4',
+        currentRevisionNumber: 4,
+        currentRevisionHash: 'sha256:rev-4',
         nodes: [],
         edges: [],
         compiledPlan: null,
@@ -129,8 +136,83 @@ describe('capability graph routes', () => {
         expectedVersion: 3,
         nodes: [],
         edges: [],
+        updatedBy: 'operator@example.com',
       }),
     );
+  });
+
+  it('lists immutable graph revisions for the selected graph', async () => {
+    const authToken = await login();
+    findGraphByIdMock.mockResolvedValue({
+      id: 'graph-1',
+      name: 'Sales graph',
+      description: null,
+      version: 4,
+      currentRevisionId: 'rev-4',
+      currentRevisionNumber: 4,
+      currentRevisionHash: 'hash-4',
+      nodes: [],
+      edges: [],
+      compiledPlan: null,
+      compiledAt: null,
+      createdBy: 'operator@example.com',
+      createdAt: '2026-06-07T00:00:00.000Z',
+      updatedAt: '2026-06-07T00:05:00.000Z',
+    });
+    listGraphRevisionsMock.mockResolvedValue([
+      {
+        id: 'rev-4',
+        graphId: 'graph-1',
+        revisionNumber: 4,
+        graphVersion: 4,
+        name: 'Sales graph',
+        description: null,
+        nodes: [],
+        edges: [],
+        contentHash: 'hash-4',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:05:00.000Z',
+      },
+      {
+        id: 'rev-3',
+        graphId: 'graph-1',
+        revisionNumber: 3,
+        graphVersion: 3,
+        name: 'Sales graph',
+        description: null,
+        nodes: [],
+        edges: [],
+        contentHash: 'hash-3',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:04:00.000Z',
+      },
+    ]);
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/revisions?limit=2', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      graph: {
+        id: 'graph-1',
+        currentRevisionId: 'rev-4',
+        currentRevisionNumber: 4,
+        currentRevisionHash: 'hash-4',
+      },
+      revisions: [
+        expect.objectContaining({ id: 'rev-4', revisionNumber: 4, graphVersion: 4 }),
+        expect.objectContaining({ id: 'rev-3', revisionNumber: 3, graphVersion: 3 }),
+      ],
+    });
+    expect(listGraphRevisionsMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', { limit: 2 });
   });
 });
 

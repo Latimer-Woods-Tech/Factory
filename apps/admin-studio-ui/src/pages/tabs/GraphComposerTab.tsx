@@ -74,6 +74,9 @@ interface GraphDocument {
   name: string;
   description: string | null;
   version: number;
+  currentRevisionId: string | null;
+  currentRevisionNumber: number | null;
+  currentRevisionHash: string | null;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiledPlan: Record<string, unknown> | null;
@@ -594,6 +597,7 @@ export function GraphComposerTab() {
   // ── Computed helpers ──────────────────────────────────────────────────────
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
+  const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId) ?? null;
   const selectedConcept =
     selectedNode?.nodeType === 'concept'
       ? catalogConcepts.find((c) => c.id === selectedNode.ref) ?? null
@@ -696,6 +700,12 @@ export function GraphComposerTab() {
             </option>
           ))}
         </select>
+
+        {selectedGraph && (
+          <span className="text-xs text-slate-500">
+            draft v{selectedGraph.version} · rev {selectedGraph.currentRevisionNumber ?? '—'}
+          </span>
+        )}
 
         <div className="h-5 w-px bg-slate-700" />
 

@@ -10,6 +10,7 @@
  */
 
 import { createDb, sql, type FactoryDb, type HyperdriveBinding } from '@latimer-woods-tech/neon';
+import { canonicalJson, sha256Hex } from './handoff-hash.js';
 
 export interface GraphNode {
   id: string;
@@ -32,6 +33,9 @@ export interface GraphDocument {
   name: string;
   description: string | null;
   version: number;
+  currentRevisionId: string | null;
+  currentRevisionNumber: number | null;
+  currentRevisionHash: string | null;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiledPlan: Record<string, unknown> | null;
@@ -41,12 +45,29 @@ export interface GraphDocument {
   updatedAt: string;
 }
 
+export interface GraphRevision {
+  id: string;
+  graphId: string;
+  revisionNumber: number;
+  graphVersion: number;
+  name: string;
+  description: string | null;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  contentHash: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 // DB row shape
 interface GraphRow {
   id: string;
   name: string;
   description: string | null;
   version: number;
+  current_revision_id: string | null;
+  current_revision_number: number | null;
+  current_revision_hash: string | null;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiled_plan: Record<string, unknown> | null;
@@ -56,12 +77,29 @@ interface GraphRow {
   updated_at: string;
 }
 
+interface GraphRevisionRow {
+  id: string;
+  graph_id: string;
+  revision_number: number;
+  graph_version: number;
+  name: string;
+  description: string | null;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  content_hash: string;
+  created_by: string;
+  created_at: string;
+}
+
 function rowToDocument(row: GraphRow): GraphDocument {
   return {
     id: row.id,
     name: row.name,
     description: row.description,
     version: row.version,
+    currentRevisionId: row.current_revision_id,
+    currentRevisionNumber: row.current_revision_number,
+    currentRevisionHash: row.current_revision_hash,
     nodes: row.nodes,
     edges: row.edges,
     compiledPlan: row.compiled_plan,
@@ -69,6 +107,22 @@ function rowToDocument(row: GraphRow): GraphDocument {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+function rowToRevision(row: GraphRevisionRow): GraphRevision {
+  return {
+    id: row.id,
+    graphId: row.graph_id,
+    revisionNumber: row.revision_number,
+    graphVersion: row.graph_version,
+    name: row.name,
+    description: row.description,
+    nodes: row.nodes,
+    edges: row.edges,
+    contentHash: row.content_hash,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
   };
 }
 
@@ -102,6 +156,9 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
           name        TEXT NOT NULL,
           description TEXT,
           version     INTEGER NOT NULL DEFAULT 1,
+          current_revision_id UUID,
+          current_revision_number INTEGER,
+          current_revision_hash TEXT,
           nodes       JSONB NOT NULL DEFAULT '[]'::jsonb,
           edges       JSONB NOT NULL DEFAULT '[]'::jsonb,
           compiled_plan JSONB,
@@ -115,8 +172,39 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
         ALTER TABLE capability_graphs
         ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1
       `);
+      await db.execute(sql`
+        ALTER TABLE capability_graphs
+        ADD COLUMN IF NOT EXISTS current_revision_id UUID
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graphs
+        ADD COLUMN IF NOT EXISTS current_revision_number INTEGER
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graphs
+        ADD COLUMN IF NOT EXISTS current_revision_hash TEXT
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS capability_graph_revisions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          graph_id UUID NOT NULL REFERENCES capability_graphs(id) ON DELETE CASCADE,
+          revision_number INTEGER NOT NULL,
+          graph_version INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          nodes JSONB NOT NULL DEFAULT '[]'::jsonb,
+          edges JSONB NOT NULL DEFAULT '[]'::jsonb,
+          content_hash TEXT NOT NULL,
+          created_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          UNIQUE (graph_id, revision_number),
+          UNIQUE (graph_id, graph_version)
+        )
+      `);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graphs_created ON capability_graphs (created_at DESC)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graphs_author  ON capability_graphs (created_by, created_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graph_revisions_graph_created ON capability_graph_revisions (graph_id, created_at DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graph_revisions_graph_revision ON capability_graph_revisions (graph_id, revision_number DESC)`);
     })();
     schemaInitCache.set(hyperdrive, init);
     init.catch(() => { schemaInitCache.delete(hyperdrive); });
@@ -137,15 +225,20 @@ export async function createGraph(
 ): Promise<GraphDocument> {
   await ensureGraphSchema(hyperdrive);
   const db = getDb(hyperdrive);
-  const now = new Date().toISOString();
-  const result = await db.execute(sql`
-    INSERT INTO capability_graphs (name, description, created_by, created_at, updated_at)
-    VALUES (${input.name}, ${input.description ?? null}, ${input.createdBy}, ${now}, ${now})
-    RETURNING id, name, description, version, nodes, edges, compiled_plan, compiled_at, created_by, created_at, updated_at
-  `);
-  const row = (result.rows as unknown as GraphRow[])[0];
-  if (!row) throw new Error('[graph-store] createGraph returned no row');
-  return rowToDocument(row);
+  return runGraphTransaction(db, async (txDb) => {
+    const now = new Date().toISOString();
+    const result = await txDb.execute(sql`
+      INSERT INTO capability_graphs (name, description, created_by, created_at, updated_at)
+      VALUES (${input.name}, ${input.description ?? null}, ${input.createdBy}, ${now}, ${now})
+      RETURNING id, name, description, version, current_revision_id, current_revision_number,
+                current_revision_hash, nodes, edges, compiled_plan, compiled_at, created_by,
+                created_at, updated_at
+    `);
+    const row = (result.rows as unknown as GraphRow[])[0];
+    if (!row) throw new Error('[graph-store] createGraph returned no row');
+    const graph = rowToDocument(row);
+    return persistGraphRevision(txDb, graph, input.createdBy, 1);
+  });
 }
 
 /**
@@ -161,7 +254,8 @@ export async function findGraphById(
     const db = getDb(hyperdrive);
     const result = await db.execute(sql`
       SELECT id, name, description, nodes, edges, compiled_plan, compiled_at,
-             created_by, created_at, updated_at, version
+             created_by, created_at, updated_at, version,
+             current_revision_id, current_revision_number, current_revision_hash
       FROM capability_graphs WHERE id = ${id} LIMIT 1
     `);
     const row = (result.rows as unknown as GraphRow[])[0];
@@ -193,7 +287,8 @@ export async function listGraphs(
     const whereClause = sql.join(whereChunks, sql` `);
     const result = await db.execute(sql`
       SELECT id, name, description, nodes, edges, compiled_plan, compiled_at,
-             created_by, created_at, updated_at, version
+             created_by, created_at, updated_at, version,
+             current_revision_id, current_revision_number, current_revision_hash
       FROM capability_graphs ${whereClause}
       ORDER BY updated_at DESC LIMIT ${limit}
     `);
@@ -220,47 +315,49 @@ export async function updateGraphLayout(
     nodes?: GraphNode[];
     edges?: GraphEdge[];
     expectedVersion?: number;
+    updatedBy: string;
   },
 ): Promise<GraphUpdateResult> {
   try {
     await ensureGraphSchema(hyperdrive);
     const db = getDb(hyperdrive);
-    const now = new Date().toISOString();
-    // Build the SET clause dynamically to avoid overwriting unchanged fields.
-    const updates: Array<ReturnType<typeof sql>> = [
-      sql`updated_at = ${now}`,
-      sql`compiled_plan = NULL`,
-      sql`compiled_at = NULL`,
-      sql`version = version + 1`,
-    ];
-    if (patch.name !== undefined)        updates.push(sql`name = ${patch.name}`);
-    if (patch.description !== undefined) updates.push(sql`description = ${patch.description}`);
-    if (patch.nodes !== undefined)       updates.push(sql`nodes = ${JSON.stringify(patch.nodes)}::jsonb`);
-    if (patch.edges !== undefined)       updates.push(sql`edges = ${JSON.stringify(patch.edges)}::jsonb`);
-    const setClause = sql.join(updates, sql`, `);
-    const whereParts: Array<ReturnType<typeof sql>> = [sql`id = ${id}`];
-    if (patch.expectedVersion !== undefined) {
-      whereParts.push(sql`version = ${patch.expectedVersion}`);
-    }
-    const whereClause = sql.join(whereParts, sql` AND `);
-    const result = await db.execute(sql`
-      UPDATE capability_graphs SET ${setClause} WHERE ${whereClause}
-      RETURNING id, name, description, version, nodes, edges, compiled_plan, compiled_at,
-                created_by, created_at, updated_at
-    `);
-    const row = (result.rows as unknown as GraphRow[])[0];
-    if (row) {
-      return { status: 'ok', graph: rowToDocument(row) };
-    }
+    return await runGraphTransaction(db, async (txDb) => {
+      const current = await findGraphByIdUsingDb(txDb, id);
+      if (!current) {
+        return { status: 'not_found' } as const;
+      }
+      if (patch.expectedVersion !== undefined && current.version !== patch.expectedVersion) {
+        return { status: 'conflict', currentGraph: current } as const;
+      }
 
-    const current = await findGraphById(hyperdrive, id);
-    if (!current) {
-      return { status: 'not_found' };
-    }
-    if (patch.expectedVersion !== undefined && current.version !== patch.expectedVersion) {
-      return { status: 'conflict', currentGraph: current };
-    }
-    return { status: 'not_found' };
+      const now = new Date().toISOString();
+      const updates: Array<ReturnType<typeof sql>> = [
+        sql`updated_at = ${now}`,
+        sql`compiled_plan = NULL`,
+        sql`compiled_at = NULL`,
+        sql`version = version + 1`,
+      ];
+      if (patch.name !== undefined)        updates.push(sql`name = ${patch.name}`);
+      if (patch.description !== undefined) updates.push(sql`description = ${patch.description}`);
+      if (patch.nodes !== undefined)       updates.push(sql`nodes = ${JSON.stringify(patch.nodes)}::jsonb`);
+      if (patch.edges !== undefined)       updates.push(sql`edges = ${JSON.stringify(patch.edges)}::jsonb`);
+      const setClause = sql.join(updates, sql`, `);
+      const result = await txDb.execute(sql`
+        UPDATE capability_graphs SET ${setClause} WHERE id = ${id}
+        RETURNING id, name, description, version, current_revision_id, current_revision_number,
+                  current_revision_hash, nodes, edges, compiled_plan, compiled_at, created_by,
+                  created_at, updated_at
+      `);
+      const row = (result.rows as unknown as GraphRow[])[0];
+      if (!row) {
+        return { status: 'not_found' } as const;
+      }
+
+      const updatedGraph = rowToDocument(row);
+      const nextRevisionNumber = (current.currentRevisionNumber ?? 0) + 1;
+      const graph = await persistGraphRevision(txDb, updatedGraph, patch.updatedBy, nextRevisionNumber);
+      return { status: 'ok', graph } as const;
+    });
   } catch (err) {
     console.error('[graph-store] updateGraphLayout failed:', (err as Error).message);
     return { status: 'not_found' };
@@ -286,7 +383,8 @@ export async function saveCompiledPlan(
           compiled_at   = ${now},
           updated_at    = ${now}
       WHERE id = ${id}
-      RETURNING id, name, description, version, nodes, edges, compiled_plan, compiled_at,
+      RETURNING id, name, description, version, current_revision_id, current_revision_number,
+                current_revision_hash, nodes, edges, compiled_plan, compiled_at,
                 created_by, created_at, updated_at
     `);
     const row = (result.rows as unknown as GraphRow[])[0];
@@ -316,7 +414,101 @@ export async function deleteGraph(
   }
 }
 
+export async function listGraphRevisions(
+  hyperdrive: HyperdriveBinding,
+  graphId: string,
+  filter: { limit?: number } = {},
+): Promise<GraphRevision[]> {
+  try {
+    await ensureGraphSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const limit = clamp(filter.limit ?? 20, 1, 100);
+    const result = await db.execute(sql`
+      SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
+             content_hash, created_by, created_at
+      FROM capability_graph_revisions
+      WHERE graph_id = ${graphId}
+      ORDER BY revision_number DESC
+      LIMIT ${limit}
+    `);
+    return (result.rows as unknown as GraphRevisionRow[]).map(rowToRevision);
+  } catch (err) {
+    console.error('[graph-store] listGraphRevisions failed:', (err as Error).message);
+    return [];
+  }
+}
+
 export type GraphUpdateResult =
   | { status: 'ok'; graph: GraphDocument }
   | { status: 'conflict'; currentGraph: GraphDocument }
   | { status: 'not_found' };
+
+async function findGraphByIdUsingDb(
+  db: FactoryDb,
+  id: string,
+): Promise<GraphDocument | null> {
+  const result = await db.execute(sql`
+    SELECT id, name, description, nodes, edges, compiled_plan, compiled_at,
+           created_by, created_at, updated_at, version,
+           current_revision_id, current_revision_number, current_revision_hash
+    FROM capability_graphs WHERE id = ${id} LIMIT 1
+  `);
+  const row = (result.rows as unknown as GraphRow[])[0];
+  return row ? rowToDocument(row) : null;
+}
+
+async function persistGraphRevision(
+  db: FactoryDb,
+  graph: GraphDocument,
+  createdBy: string,
+  revisionNumber: number,
+): Promise<GraphDocument> {
+  const contentHash = await sha256Hex(canonicalJson({
+    name: graph.name,
+    description: graph.description,
+    nodes: graph.nodes,
+    edges: graph.edges,
+  }));
+  const revisionInsert = await db.execute(sql`
+    INSERT INTO capability_graph_revisions (
+      graph_id, revision_number, graph_version, name, description, nodes, edges,
+      content_hash, created_by
+    )
+    VALUES (
+      ${graph.id}, ${revisionNumber}, ${graph.version}, ${graph.name}, ${graph.description},
+      ${JSON.stringify(graph.nodes)}::jsonb, ${JSON.stringify(graph.edges)}::jsonb,
+      ${contentHash}, ${createdBy}
+    )
+    RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
+              content_hash, created_by, created_at
+  `);
+  const revisionRow = (revisionInsert.rows as unknown as GraphRevisionRow[])[0];
+  if (!revisionRow) {
+    throw new Error('[graph-store] persistGraphRevision returned no row');
+  }
+
+  const graphUpdate = await db.execute(sql`
+    UPDATE capability_graphs
+    SET current_revision_id = ${revisionRow.id},
+        current_revision_number = ${revisionRow.revision_number},
+        current_revision_hash = ${revisionRow.content_hash}
+    WHERE id = ${graph.id}
+    RETURNING id, name, description, version, current_revision_id, current_revision_number,
+              current_revision_hash, nodes, edges, compiled_plan, compiled_at,
+              created_by, created_at, updated_at
+  `);
+  const graphRow = (graphUpdate.rows as unknown as GraphRow[])[0];
+  if (!graphRow) {
+    throw new Error('[graph-store] persistGraphRevision failed to update graph head');
+  }
+  return rowToDocument(graphRow);
+}
+
+async function runGraphTransaction<T>(
+  db: FactoryDb,
+  fn: (txDb: FactoryDb) => Promise<T>,
+): Promise<T> {
+  return (db as unknown as {
+    transaction<R>(callback: (tx: unknown) => Promise<R>): Promise<R>;
+  }).transaction(async (tx) => fn(tx as FactoryDb));
+}
