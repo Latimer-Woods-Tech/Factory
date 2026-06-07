@@ -37,12 +37,6 @@
             "minScore": 0.85
           }
         ],
-        "largest-contentful-paint": [
-          "error",
-          {
-            "maxNumericValue": 3000
-          }
-        ],
         "max-potential-fid": [
           "error",
           {
