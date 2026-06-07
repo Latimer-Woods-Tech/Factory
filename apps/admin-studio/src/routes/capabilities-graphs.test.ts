@@ -272,6 +272,9 @@ describe('capability graph routes', () => {
         currentRevisionId: 'rev-4',
         currentRevisionNumber: 4,
         currentRevisionHash: 'hash-4',
+        publishedRevisionId: 'rev-4',
+        publishedRevisionNumber: 4,
+        publishedRevisionHash: 'hash-4',
       },
       revisions: [
         expect.objectContaining({ id: 'rev-4', revisionNumber: 4, graphVersion: 4 }),
@@ -351,6 +354,78 @@ describe('capability graph routes', () => {
     });
     expect(publishGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', {
       revisionId: undefined,
+      publishedBy: 'operator@example.com',
+    });
+  });
+
+  it('publishes an explicitly selected immutable revision', async () => {
+    const authToken = await login();
+    publishGraphRevisionMock.mockResolvedValue({
+      status: 'ok',
+      graph: {
+        id: 'graph-1',
+        name: 'Sales graph',
+        description: null,
+        version: 4,
+        currentRevisionId: 'rev-4',
+        currentRevisionNumber: 4,
+        currentRevisionHash: 'hash-4',
+        publishedRevisionId: 'rev-3',
+        publishedRevisionNumber: 3,
+        publishedRevisionHash: 'hash-3',
+        nodes: [],
+        edges: [],
+        compiledPlan: null,
+        compiledAt: null,
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:00:00.000Z',
+        updatedAt: '2026-06-07T00:05:00.000Z',
+      },
+      revision: {
+        id: 'rev-3',
+        graphId: 'graph-1',
+        revisionNumber: 3,
+        graphVersion: 3,
+        name: 'Sales graph',
+        description: null,
+        nodes: [],
+        edges: [],
+        contentHash: 'hash-3',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:04:00.000Z',
+        publishedAt: '2026-06-07T00:06:00.000Z',
+        publishedBy: 'operator@example.com',
+      },
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/publish', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'X-Confirmed': 'true',
+        },
+        body: JSON.stringify({ revisionId: 'rev-3' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      graph: {
+        id: 'graph-1',
+        publishedRevisionId: 'rev-3',
+        publishedRevisionNumber: 3,
+      },
+      revision: {
+        id: 'rev-3',
+        revisionNumber: 3,
+      },
+    });
+    expect(publishGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', {
+      revisionId: 'rev-3',
       publishedBy: 'operator@example.com',
     });
   });

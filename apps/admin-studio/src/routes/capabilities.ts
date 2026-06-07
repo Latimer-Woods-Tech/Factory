@@ -660,6 +660,9 @@ capabilities.get('/graphs/:id/revisions', async (c) => {
       currentRevisionId: graph.currentRevisionId,
       currentRevisionNumber: graph.currentRevisionNumber,
       currentRevisionHash: graph.currentRevisionHash,
+      publishedRevisionId: graph.publishedRevisionId,
+      publishedRevisionNumber: graph.publishedRevisionNumber,
+      publishedRevisionHash: graph.publishedRevisionHash,
     },
     revisions,
   });

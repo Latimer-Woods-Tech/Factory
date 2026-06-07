@@ -108,6 +108,36 @@ interface GraphCompileResult {
   };
 }
 
+interface GraphRevision {
+  id: string;
+  graphId: string;
+  revisionNumber: number;
+  graphVersion: number;
+  name: string;
+  description: string | null;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  contentHash: string;
+  createdBy: string;
+  createdAt: string;
+  publishedAt: string | null;
+  publishedBy: string | null;
+}
+
+interface GraphRevisionsResponse {
+  graph: {
+    id: string;
+    name: string;
+    currentRevisionId: string | null;
+    currentRevisionNumber: number | null;
+    currentRevisionHash: string | null;
+    publishedRevisionId: string | null;
+    publishedRevisionNumber: number | null;
+    publishedRevisionHash: string | null;
+  };
+  revisions: GraphRevision[];
+}
+
 interface GraphHandoffResult {
   graph: GraphDocument;
   handoff: {
@@ -169,6 +199,65 @@ async function buildConfirmToken(action: string, userId: string, env: string): P
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+interface RevisionDiffSummary {
+  changed: boolean;
+  addedNodes: number;
+  removedNodes: number;
+  changedNodes: number;
+  addedEdges: number;
+  removedEdges: number;
+  changedEdges: number;
+}
+
+function summarizeRevisionDiff(
+  base: Pick<GraphRevision, 'nodes' | 'edges'>,
+  candidate: Pick<GraphRevision, 'nodes' | 'edges'>,
+): RevisionDiffSummary {
+  const summarizeCollection = <T extends { id: string }>(left: T[], right: T[]) => {
+    const leftMap = new Map(left.map((item) => [item.id, JSON.stringify(item)]));
+    const rightMap = new Map(right.map((item) => [item.id, JSON.stringify(item)]));
+    let added = 0;
+    let removed = 0;
+    let changed = 0;
+
+    for (const [id, value] of rightMap) {
+      const leftValue = leftMap.get(id);
+      if (leftValue === undefined) {
+        added += 1;
+      } else if (leftValue !== value) {
+        changed += 1;
+      }
+    }
+
+    for (const id of leftMap.keys()) {
+      if (!rightMap.has(id)) {
+        removed += 1;
+      }
+    }
+
+    return { added, removed, changed };
+  };
+
+  const nodes = summarizeCollection(base.nodes, candidate.nodes);
+  const edges = summarizeCollection(base.edges, candidate.edges);
+
+  return {
+    changed:
+      nodes.added > 0 ||
+      nodes.removed > 0 ||
+      nodes.changed > 0 ||
+      edges.added > 0 ||
+      edges.removed > 0 ||
+      edges.changed > 0,
+    addedNodes: nodes.added,
+    removedNodes: nodes.removed,
+    changedNodes: nodes.changed,
+    addedEdges: edges.added,
+    removedEdges: edges.removed,
+    changedEdges: edges.changed,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -294,6 +383,10 @@ export function GraphComposerTab() {
   const [graphs, setGraphs] = useState<GraphDocument[]>([]);
   const [graphsLoading, setGraphsLoading] = useState(false);
   const [selectedGraphId, setSelectedGraphId] = useState<string>('');
+  const [graphRevisions, setGraphRevisions] = useState<GraphRevision[]>([]);
+  const [revisionsLoading, setRevisionsLoading] = useState(false);
+  const [revisionsError, setRevisionsError] = useState<string | null>(null);
+  const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
 
   // Current graph working state
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -374,6 +467,20 @@ export function GraphComposerTab() {
     }
   }, []);
 
+  const loadRevisions = useCallback(async (graphId: string) => {
+    setRevisionsLoading(true);
+    setRevisionsError(null);
+    try {
+      const data = await apiFetch<GraphRevisionsResponse>(`/capabilities/graphs/${graphId}/revisions?limit=20`);
+      setGraphRevisions(data.revisions ?? []);
+    } catch (err) {
+      setGraphRevisions([]);
+      setRevisionsError(extractErrorMessage(err));
+    } finally {
+      setRevisionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadGraphs();
   }, [loadGraphs]);
@@ -396,6 +503,35 @@ export function GraphComposerTab() {
       setHandoffResult(null);
     }
   }, [selectedGraphId, graphs]);
+
+  useEffect(() => {
+    if (!selectedGraphId) {
+      setGraphRevisions([]);
+      setSelectedRevisionId(null);
+      setRevisionsError(null);
+      return;
+    }
+    void loadRevisions(selectedGraphId);
+  }, [selectedGraphId, loadRevisions]);
+
+  useEffect(() => {
+    if (!selectedGraphId) return;
+    if (graphRevisions.length === 0) {
+      setSelectedRevisionId(null);
+      return;
+    }
+
+    setSelectedRevisionId((prev) => {
+      if (prev && graphRevisions.some((revision) => revision.id === prev)) {
+        return prev;
+      }
+      const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId);
+      return selectedGraph?.publishedRevisionId
+        ?? selectedGraph?.currentRevisionId
+        ?? graphRevisions[0]?.id
+        ?? null;
+    });
+  }, [graphRevisions, graphs, selectedGraphId]);
 
   // ── Create graph ──────────────────────────────────────────────────────────
 
@@ -442,6 +578,7 @@ export function GraphComposerTab() {
         },
       );
       setGraphs((prev) => prev.map((g) => (g.id === data.graph.id ? data.graph : g)));
+      await loadRevisions(data.graph.id);
       setSaveSuccess(true);
       window.setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
@@ -482,7 +619,7 @@ export function GraphComposerTab() {
     }
   }
 
-  async function publishGraph(confirmToken?: string) {
+  async function publishGraph(revisionId: string | undefined, confirmToken?: string) {
     if (!selectedGraphId) return;
     setPublishing(true);
     setPublishError(null);
@@ -492,11 +629,17 @@ export function GraphComposerTab() {
         `/capabilities/graphs/${selectedGraphId}/publish`,
         {
           method: 'POST',
+          body: JSON.stringify(revisionId ? { revisionId } : {}),
           confirmed: true,
           confirmToken,
         },
       );
       setGraphs((prev) => prev.map((g) => (g.id === result.graph.id ? result.graph : g)));
+      await loadRevisions(result.graph.id);
+      setCompileResult(null);
+      setCompileError(null);
+      setHandoffResult(null);
+      setHandoffError(null);
       setPublishSuccess(true);
       window.setTimeout(() => setPublishSuccess(false), 2000);
     } catch (err) {
@@ -510,6 +653,7 @@ export function GraphComposerTab() {
     const env = sessionEnv ?? 'staging';
     const tier = requiredConfirmationTier(env, 'reversible');
     let confirmToken: string | undefined;
+    const revisionId = selectedRevisionId ?? selectedGraph?.currentRevisionId ?? undefined;
 
     if (tier >= 2) {
       if (!sessionUserId) {
@@ -520,7 +664,7 @@ export function GraphComposerTab() {
     }
 
     setPublishDialogOpen(false);
-    await publishGraph(confirmToken);
+    await publishGraph(revisionId, confirmToken);
   }
 
   // ── Generate handoff ──────────────────────────────────────────────────────
@@ -674,6 +818,10 @@ export function GraphComposerTab() {
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
   const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId) ?? null;
+  const selectedRevision = graphRevisions.find((revision) => revision.id === selectedRevisionId) ?? null;
+  const publishedRevision = selectedGraph?.publishedRevisionId
+    ? graphRevisions.find((revision) => revision.id === selectedGraph.publishedRevisionId) ?? null
+    : null;
   const selectedConcept =
     selectedNode?.nodeType === 'concept'
       ? catalogConcepts.find((c) => c.id === selectedNode.ref) ?? null
@@ -681,6 +829,12 @@ export function GraphComposerTab() {
 
   const canHandoff = compileResult?.success === true;
   const publishTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'reversible');
+  const selectedRevisionIsPublished = !!selectedRevision && selectedRevision.id === selectedGraph?.publishedRevisionId;
+  const selectedRevisionIsCurrent = !!selectedRevision && selectedRevision.id === selectedGraph?.currentRevisionId;
+  const publishTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
+  const publishDiff = selectedRevision && publishedRevision && selectedRevision.id !== publishedRevision.id
+    ? summarizeRevisionDiff(publishedRevision, selectedRevision)
+    : null;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -691,7 +845,7 @@ export function GraphComposerTab() {
       <ConfirmDialog
         open={publishDialogOpen}
         action="capabilities.graph.publish"
-        description="Publish this graph revision so compile and handoff operate against a reviewed snapshot."
+        description={`Publish ${publishTargetLabel} so compile and handoff operate against a reviewed snapshot.`}
         reversibility="reversible"
         tier={publishTier}
         onCancel={() => setPublishDialogOpen(false)}
@@ -712,6 +866,9 @@ export function GraphComposerTab() {
           onClick={() => {
             void loadCatalog();
             void loadGraphs();
+            if (selectedGraphId) {
+              void loadRevisions(selectedGraphId);
+            }
           }}
           disabled={catalogLoading || graphsLoading}
         >
@@ -809,9 +966,9 @@ export function GraphComposerTab() {
           size="sm"
           variant="outline"
           onClick={() => setPublishDialogOpen(true)}
-          disabled={!selectedGraphId || publishing}
+          disabled={!selectedGraphId || publishing || !selectedRevision || selectedRevisionIsPublished}
         >
-          {publishing ? 'Publishing…' : publishSuccess ? '✓ Published' : 'Publish'}
+          {publishing ? 'Publishing…' : publishSuccess ? '✓ Published' : `Publish ${publishTargetLabel}`}
         </Button>
 
         {/* Compile */}
@@ -1146,6 +1303,168 @@ export function GraphComposerTab() {
           )}
         </aside>
       </div>
+
+      {selectedGraph && (
+        <section className="rounded border border-slate-800 bg-slate-900/70">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Revision History</h2>
+              <p className="text-xs text-slate-400">
+                Review immutable revisions and choose which one becomes the execution head.
+              </p>
+            </div>
+            <div className="text-xs text-slate-500">
+              {revisionsLoading ? 'Loading…' : `${graphRevisions.length} revision${graphRevisions.length === 1 ? '' : 's'}`}
+            </div>
+          </div>
+
+          {revisionsError && (
+            <div className="border-b border-slate-800 px-4 py-2 text-xs text-red-400">
+              {revisionsError}
+            </div>
+          )}
+
+          <div className="grid gap-0 md:grid-cols-[260px_1fr]">
+            <div className="border-r border-slate-800">
+              {graphRevisions.length === 0 ? (
+                <p className="px-4 py-4 text-xs text-slate-500">
+                  {revisionsLoading ? 'Loading revision history…' : 'No immutable revisions yet. Save the draft to create one.'}
+                </p>
+              ) : (
+                <div className="max-h-72 overflow-y-auto">
+                  {graphRevisions.map((revision) => {
+                    const isSelected = revision.id === selectedRevisionId;
+                    const isPublished = revision.id === selectedGraph.publishedRevisionId;
+                    const isCurrent = revision.id === selectedGraph.currentRevisionId;
+                    return (
+                      <button
+                        key={revision.id}
+                        type="button"
+                        onClick={() => setSelectedRevisionId(revision.id)}
+                        className={`flex w-full flex-col gap-1 border-b border-slate-800 px-4 py-3 text-left transition-colors ${
+                          isSelected ? 'bg-blue-950/30' : 'hover:bg-slate-800/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-white">r{revision.revisionNumber}</span>
+                          {isPublished && (
+                            <span className="rounded border border-emerald-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                              published
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="rounded border border-amber-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+                              draft head
+                            </span>
+                          )}
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-500">
+                          {revision.contentHash.slice(0, 12)}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          {new Date(revision.createdAt).toLocaleString()}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 px-4 py-4">
+              {!selectedRevision ? (
+                <p className="text-xs text-slate-500">Select a revision to review publish details.</p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">
+                      Revision r{selectedRevision.revisionNumber}
+                    </h3>
+                    {selectedRevisionIsPublished && (
+                      <span className="rounded border border-emerald-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                        current execution head
+                      </span>
+                    )}
+                    {selectedRevisionIsCurrent && (
+                      <span className="rounded border border-amber-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+                        latest draft save
+                      </span>
+                    )}
+                  </div>
+
+                  <dl className="grid gap-x-6 gap-y-2 text-sm md:grid-cols-2">
+                    <div>
+                      <dt className="text-slate-500">Created</dt>
+                      <dd className="text-slate-200">{new Date(selectedRevision.createdAt).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Created by</dt>
+                      <dd className="text-slate-200">{selectedRevision.createdBy}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Graph version</dt>
+                      <dd className="font-mono text-slate-200">v{selectedRevision.graphVersion}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Content hash</dt>
+                      <dd className="font-mono text-slate-200">{selectedRevision.contentHash}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Nodes</dt>
+                      <dd className="text-slate-200">{selectedRevision.nodes.length}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Edges</dt>
+                      <dd className="text-slate-200">{selectedRevision.edges.length}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Published at</dt>
+                      <dd className="text-slate-200">
+                        {selectedRevision.publishedAt ? new Date(selectedRevision.publishedAt).toLocaleString() : 'Not published'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Published by</dt>
+                      <dd className="text-slate-200">{selectedRevision.publishedBy ?? '—'}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Publish Review
+                    </p>
+                    {selectedRevisionIsPublished ? (
+                      <p className="mt-2 text-sm text-emerald-300">
+                        This revision is already the published execution head.
+                      </p>
+                    ) : !publishedRevision ? (
+                      <p className="mt-2 text-sm text-slate-300">
+                        This will become the first published revision for this graph.
+                      </p>
+                    ) : publishDiff && !publishDiff.changed ? (
+                      <p className="mt-2 text-sm text-slate-300">
+                        This revision has the same graph payload as the current published head but a different immutable lineage record.
+                      </p>
+                    ) : publishDiff ? (
+                      <div className="mt-2 grid gap-2 text-sm md:grid-cols-2">
+                        <p className="text-slate-300">
+                          Nodes: <span className="font-mono text-white">+{publishDiff.addedNodes} / -{publishDiff.removedNodes} / ~{publishDiff.changedNodes}</span>
+                        </p>
+                        <p className="text-slate-300">
+                          Edges: <span className="font-mono text-white">+{publishDiff.addedEdges} / -{publishDiff.removedEdges} / ~{publishDiff.changedEdges}</span>
+                        </p>
+                        <p className="text-xs text-slate-500 md:col-span-2">
+                          Comparison baseline: published revision r{publishedRevision.revisionNumber}.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Results panel ── */}
       {(compileResult || compileError || handoffResult || handoffError) && (
