@@ -93,6 +93,13 @@ interface GraphCompileResult {
   plan: Record<string, unknown> | null;
   recipeId: string | null;
   compiledAt: string | null;
+  sourceGraph?: {
+    graphId: string;
+    revisionId: string;
+    revisionNumber: number;
+    graphVersion: number;
+    contentHash: string;
+  };
 }
 
 interface GraphHandoffResult {
@@ -103,6 +110,13 @@ interface GraphHandoffResult {
     recipeId: string | null;
     graphId: string;
     createdAt: string;
+    sourceGraph?: {
+      graphId: string;
+      revisionId: string;
+      revisionNumber: number;
+      graphVersion: number;
+      contentHash: string;
+    };
   };
 }
 
@@ -1088,6 +1102,13 @@ export function GraphComposerTab() {
                   Recipe: <span className="font-mono">{compileResult.recipeId}</span>
                 </p>
               )}
+              {compileResult.sourceGraph && (
+                <p className="mt-1 text-xs text-slate-400">
+                  Pinned revision: <span className="font-mono">r{compileResult.sourceGraph.revisionNumber}</span>
+                  {' · '}
+                  <span className="font-mono">{compileResult.sourceGraph.contentHash.slice(0, 12)}</span>
+                </p>
+              )}
 
               {/* Errors */}
               {compileResult.errors.length > 0 && (
@@ -1174,6 +1195,14 @@ export function GraphComposerTab() {
                 )}
                 <dt className="text-slate-500">Graph</dt>
                 <dd className="font-mono">{handoffResult.handoff.graphId}</dd>
+                {handoffResult.handoff.sourceGraph && (
+                  <>
+                    <dt className="text-slate-500">Revision</dt>
+                    <dd className="font-mono">r{handoffResult.handoff.sourceGraph.revisionNumber}</dd>
+                    <dt className="text-slate-500">Revision hash</dt>
+                    <dd className="font-mono break-all">{handoffResult.handoff.sourceGraph.contentHash}</dd>
+                  </>
+                )}
                 <dt className="text-slate-500">Created</dt>
                 <dd>{new Date(handoffResult.handoff.createdAt).toLocaleString()}</dd>
               </dl>

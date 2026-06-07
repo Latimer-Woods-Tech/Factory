@@ -59,6 +59,14 @@ export interface GraphRevision {
   createdAt: string;
 }
 
+export interface GraphSourceProvenance {
+  graphId: string;
+  revisionId: string;
+  revisionNumber: number;
+  graphVersion: number;
+  contentHash: string;
+}
+
 // DB row shape
 interface GraphRow {
   id: string;
@@ -435,6 +443,28 @@ export async function listGraphRevisions(
   } catch (err) {
     console.error('[graph-store] listGraphRevisions failed:', (err as Error).message);
     return [];
+  }
+}
+
+export async function findGraphRevisionById(
+  hyperdrive: HyperdriveBinding,
+  revisionId: string,
+): Promise<GraphRevision | null> {
+  try {
+    await ensureGraphSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const result = await db.execute(sql`
+      SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
+             content_hash, created_by, created_at
+      FROM capability_graph_revisions
+      WHERE id = ${revisionId}
+      LIMIT 1
+    `);
+    const row = (result.rows as unknown as GraphRevisionRow[])[0];
+    return row ? rowToRevision(row) : null;
+  } catch (err) {
+    console.error('[graph-store] findGraphRevisionById failed:', (err as Error).message);
+    return null;
   }
 }
 

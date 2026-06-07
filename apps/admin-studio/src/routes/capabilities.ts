@@ -57,11 +57,13 @@ import {
 import {
   createGraph,
   findGraphById,
+  findGraphRevisionById,
   listGraphs,
   listGraphRevisions,
   updateGraphLayout,
   saveCompiledPlan,
   deleteGraph,
+  type GraphSourceProvenance,
 } from '../lib/graph-store.js';
 import { compileGraph } from '../lib/graph-compiler.js';
 import {
@@ -735,7 +737,12 @@ capabilities.post('/graphs/:id/compile', async (c) => {
   const id = c.req.param('id');
   const graph = await findGraphById(c.env.DB, id);
   if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
-  const result = compileGraph(graph);
+  const revision = await getCurrentGraphRevision(c.env.DB, graph);
+  if (!revision) {
+    return c.json({ error: 'Graph has no immutable revision head. Save the graph again before compiling.' }, 409);
+  }
+  const compileInput = graphDocumentFromRevision(graph, revision);
+  const result = compileGraph(compileInput);
   if (result.success && result.plan) {
     await saveCompiledPlan(c.env.DB, id, result.plan as unknown as Record<string, unknown>);
   }
@@ -757,6 +764,7 @@ capabilities.post('/graphs/:id/compile', async (c) => {
     plan: result.plan,
     recipeId: result.recipeId,
     compiledAt: result.success ? new Date().toISOString() : null,
+    sourceGraph: toGraphSourceProvenance(revision),
   });
 });
 
@@ -771,7 +779,12 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
   const id = c.req.param('id');
   const graph = await findGraphById(c.env.DB, id);
   if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
-  const compileResult = compileGraph(graph);
+  const revision = await getCurrentGraphRevision(c.env.DB, graph);
+  if (!revision) {
+    return c.json({ error: 'Graph has no immutable revision head. Save the graph again before generating a handoff.' }, 409);
+  }
+  const compileInput = graphDocumentFromRevision(graph, revision);
+  const compileResult = compileGraph(compileInput);
   if (!compileResult.success || !compileResult.plan || !compileResult.resolution) {
     return c.json(
       {
@@ -782,6 +795,7 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
       422,
     );
   }
+  const sourceGraph = toGraphSourceProvenance(revision);
   const handoffBody = {
     schemaVersion: HANDOFF_SCHEMA_VERSION,
     kind: 'scaffold-handoff' as const,
@@ -795,6 +809,7 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
       conceptId: compileResult.resolution.concept.id,
       recipeId: compileResult.recipeId!,
     },
+    sourceGraph,
   };
   const hash = await hashHandoffBody(handoffBody);
   const persisted = await persistHandoff(c.env.DB, {
@@ -806,6 +821,7 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
     plan: handoffBody.plan,
     preview: handoffBody.preview,
     nextAction: handoffBody.nextAction,
+    sourceGraph: handoffBody.sourceGraph,
     createdBy: ctx.userId,
     env: ctx.env,
   });
@@ -870,6 +886,44 @@ function buildHandoffBody(previewResponse: {
       conceptId: previewResponse.nextStep.conceptId,
       recipeId: previewResponse.nextStep.recipeId,
     },
+  };
+}
+
+async function getCurrentGraphRevision(
+  db: AppEnv['Bindings']['DB'],
+  graph: Awaited<ReturnType<typeof findGraphById>>,
+) {
+  if (!graph?.currentRevisionId) return null;
+  return findGraphRevisionById(db, graph.currentRevisionId);
+}
+
+function toGraphSourceProvenance(revision: Awaited<ReturnType<typeof findGraphRevisionById>>): GraphSourceProvenance {
+  if (!revision) {
+    throw new Error('graph revision is required for source provenance');
+  }
+  return {
+    graphId: revision.graphId,
+    revisionId: revision.id,
+    revisionNumber: revision.revisionNumber,
+    graphVersion: revision.graphVersion,
+    contentHash: revision.contentHash,
+  };
+}
+
+function graphDocumentFromRevision(
+  graph: NonNullable<Awaited<ReturnType<typeof findGraphById>>>,
+  revision: NonNullable<Awaited<ReturnType<typeof findGraphRevisionById>>>,
+) {
+  return {
+    ...graph,
+    name: revision.name,
+    description: revision.description,
+    version: revision.graphVersion,
+    currentRevisionId: revision.id,
+    currentRevisionNumber: revision.revisionNumber,
+    currentRevisionHash: revision.contentHash,
+    nodes: revision.nodes,
+    edges: revision.edges,
   };
 }
 
