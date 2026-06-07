@@ -11,8 +11,11 @@
  * No third-party canvas/graph libraries — pure React + SVG + CSS positioning.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { requiredConfirmationTier } from '@latimer-woods-tech/studio-core';
 import { apiFetch } from '../../lib/api.js';
+import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { Button } from '../../components/ui/button.js';
+import { useSession } from '../../stores/session.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -77,6 +80,9 @@ interface GraphDocument {
   currentRevisionId: string | null;
   currentRevisionNumber: number | null;
   currentRevisionHash: string | null;
+  publishedRevisionId: string | null;
+  publishedRevisionNumber: number | null;
+  publishedRevisionHash: string | null;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiledPlan: Record<string, unknown> | null;
@@ -150,6 +156,15 @@ function extractErrorMessage(error: unknown): string {
     }
   }
   return error instanceof Error ? error.message : 'Unknown error';
+}
+
+async function buildConfirmToken(action: string, userId: string, env: string): Promise<string> {
+  const data = new TextEncoder().encode(`${action}:${userId}:${env}`);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hex = [...new Uint8Array(hash)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return hex.slice(0, 16);
 }
 
 function generateId(): string {
@@ -295,6 +310,10 @@ export function GraphComposerTab() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState(false);
 
   // Compile
   const [compiling, setCompiling] = useState(false);
@@ -318,6 +337,8 @@ export function GraphComposerTab() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const sessionEnv = useSession((state) => state.env);
+  const sessionUserId = useSession((state) => state.user?.id ?? null);
 
   // ── Load catalog ──────────────────────────────────────────────────────────
 
@@ -459,6 +480,47 @@ export function GraphComposerTab() {
     } finally {
       setCompiling(false);
     }
+  }
+
+  async function publishGraph(confirmToken?: string) {
+    if (!selectedGraphId) return;
+    setPublishing(true);
+    setPublishError(null);
+    setPublishSuccess(false);
+    try {
+      const result = await apiFetch<{ graph: GraphDocument }>(
+        `/capabilities/graphs/${selectedGraphId}/publish`,
+        {
+          method: 'POST',
+          confirmed: true,
+          confirmToken,
+        },
+      );
+      setGraphs((prev) => prev.map((g) => (g.id === result.graph.id ? result.graph : g)));
+      setPublishSuccess(true);
+      window.setTimeout(() => setPublishSuccess(false), 2000);
+    } catch (err) {
+      setPublishError(extractErrorMessage(err));
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function confirmPublish() {
+    const env = sessionEnv ?? 'staging';
+    const tier = requiredConfirmationTier(env, 'reversible');
+    let confirmToken: string | undefined;
+
+    if (tier >= 2) {
+      if (!sessionUserId) {
+        setPublishError('Your session is missing user identity. Please sign in again.');
+        return;
+      }
+      confirmToken = await buildConfirmToken('capabilities.graph.publish', sessionUserId, env);
+    }
+
+    setPublishDialogOpen(false);
+    await publishGraph(confirmToken);
   }
 
   // ── Generate handoff ──────────────────────────────────────────────────────
@@ -618,6 +680,7 @@ export function GraphComposerTab() {
       : null;
 
   const canHandoff = compileResult?.success === true;
+  const publishTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'reversible');
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -625,6 +688,15 @@ export function GraphComposerTab() {
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={publishDialogOpen}
+        action="capabilities.graph.publish"
+        description="Publish this graph revision so compile and handoff operate against a reviewed snapshot."
+        reversibility="reversible"
+        tier={publishTier}
+        onCancel={() => setPublishDialogOpen(false)}
+        onConfirm={() => void confirmPublish()}
+      />
       {/* ── Header ── */}
       <header className="flex items-start justify-between gap-4">
         <div>
@@ -717,7 +789,7 @@ export function GraphComposerTab() {
 
         {selectedGraph && (
           <span className="text-xs text-slate-500">
-            draft v{selectedGraph.version} · rev {selectedGraph.currentRevisionNumber ?? '—'}
+            draft v{selectedGraph.version} · rev {selectedGraph.currentRevisionNumber ?? '—'} · published r{selectedGraph.publishedRevisionNumber ?? '—'}
           </span>
         )}
 
@@ -731,6 +803,15 @@ export function GraphComposerTab() {
           disabled={!selectedGraphId || saving}
         >
           {saving ? 'Saving…' : saveSuccess ? '✓ Saved' : 'Save'}
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setPublishDialogOpen(true)}
+          disabled={!selectedGraphId || publishing}
+        >
+          {publishing ? 'Publishing…' : publishSuccess ? '✓ Published' : 'Publish'}
         </Button>
 
         {/* Compile */}
@@ -754,6 +835,9 @@ export function GraphComposerTab() {
 
         {saveError && (
           <span className="text-xs text-red-400">{saveError}</span>
+        )}
+        {publishError && (
+          <span className="text-xs text-red-400">{publishError}</span>
         )}
       </div>
 

@@ -7,6 +7,7 @@ const {
   findGraphRevisionByIdMock,
   listGraphsMock,
   listGraphRevisionsMock,
+  publishGraphRevisionMock,
   saveCompiledPlanMock,
   updateGraphLayoutMock,
   persistHandoffMock,
@@ -29,6 +30,7 @@ const {
   findGraphRevisionByIdMock: vi.fn(),
   listGraphsMock: vi.fn(),
   listGraphRevisionsMock: vi.fn(),
+  publishGraphRevisionMock: vi.fn(),
   saveCompiledPlanMock: vi.fn(),
   updateGraphLayoutMock: vi.fn(),
   persistHandoffMock: vi.fn(),
@@ -53,6 +55,7 @@ vi.mock('../lib/graph-store.js', () => ({
   findGraphRevisionById: findGraphRevisionByIdMock,
   listGraphs: listGraphsMock,
   listGraphRevisions: listGraphRevisionsMock,
+  publishGraphRevision: publishGraphRevisionMock,
   saveCompiledPlan: saveCompiledPlanMock,
   updateGraphLayout: updateGraphLayoutMock,
 }));
@@ -92,6 +95,7 @@ afterEach(() => {
   findGraphRevisionByIdMock.mockReset();
   listGraphsMock.mockReset();
   listGraphRevisionsMock.mockReset();
+  publishGraphRevisionMock.mockReset();
   saveCompiledPlanMock.mockReset();
   updateGraphLayoutMock.mockReset();
   persistHandoffMock.mockReset();
@@ -210,6 +214,9 @@ describe('capability graph routes', () => {
       currentRevisionId: 'rev-4',
       currentRevisionNumber: 4,
       currentRevisionHash: 'hash-4',
+      publishedRevisionId: 'rev-4',
+      publishedRevisionNumber: 4,
+      publishedRevisionHash: 'hash-4',
       nodes: [],
       edges: [],
       compiledPlan: null,
@@ -274,7 +281,81 @@ describe('capability graph routes', () => {
     expect(listGraphRevisionsMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', { limit: 2 });
   });
 
-  it('compiles against the current immutable graph revision head', async () => {
+  it('publishes the current draft revision for execution', async () => {
+    const authToken = await login();
+    publishGraphRevisionMock.mockResolvedValue({
+      status: 'ok',
+      graph: {
+        id: 'graph-1',
+        name: 'Sales graph',
+        description: null,
+        version: 4,
+        currentRevisionId: 'rev-4',
+        currentRevisionNumber: 4,
+        currentRevisionHash: 'hash-4',
+        publishedRevisionId: 'rev-4',
+        publishedRevisionNumber: 4,
+        publishedRevisionHash: 'hash-4',
+        nodes: [],
+        edges: [],
+        compiledPlan: null,
+        compiledAt: null,
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:00:00.000Z',
+        updatedAt: '2026-06-07T00:05:00.000Z',
+      },
+      revision: {
+        id: 'rev-4',
+        graphId: 'graph-1',
+        revisionNumber: 4,
+        graphVersion: 4,
+        name: 'Sales graph',
+        description: null,
+        nodes: [],
+        edges: [],
+        contentHash: 'hash-4',
+        createdBy: 'operator@example.com',
+        createdAt: '2026-06-07T00:05:00.000Z',
+        publishedAt: '2026-06-07T00:06:00.000Z',
+        publishedBy: 'operator@example.com',
+      },
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/publish', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'X-Confirmed': 'true',
+        },
+        body: JSON.stringify({}),
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      graph: {
+        id: 'graph-1',
+        publishedRevisionId: 'rev-4',
+        publishedRevisionNumber: 4,
+        publishedRevisionHash: 'hash-4',
+      },
+      revision: {
+        id: 'rev-4',
+        revisionNumber: 4,
+        publishedBy: 'operator@example.com',
+      },
+    });
+    expect(publishGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', {
+      revisionId: undefined,
+      publishedBy: 'operator@example.com',
+    });
+  });
+
+  it('compiles against the published immutable graph revision head', async () => {
     const authToken = await login();
     findGraphByIdMock.mockResolvedValue({
       id: 'graph-1',
@@ -284,6 +365,9 @@ describe('capability graph routes', () => {
       currentRevisionId: 'rev-4',
       currentRevisionNumber: 4,
       currentRevisionHash: 'hash-4',
+      publishedRevisionId: 'rev-4',
+      publishedRevisionNumber: 4,
+      publishedRevisionHash: 'hash-4',
       nodes: [],
       edges: [],
       compiledPlan: null,
@@ -315,6 +399,8 @@ describe('capability graph routes', () => {
       contentHash: 'hash-4',
       createdBy: 'operator@example.com',
       createdAt: '2026-06-07T00:05:00.000Z',
+      publishedAt: '2026-06-07T00:06:00.000Z',
+      publishedBy: 'operator@example.com',
     });
     saveCompiledPlanMock.mockResolvedValue(null);
 
@@ -345,7 +431,7 @@ describe('capability graph routes', () => {
     expect(saveCompiledPlanMock).toHaveBeenCalled();
   });
 
-  it('pins graph-authored handoffs to the current revision provenance', async () => {
+  it('pins graph-authored handoffs to the published revision provenance', async () => {
     const authToken = await login();
     findGraphByIdMock.mockResolvedValue({
       id: 'graph-1',
@@ -355,6 +441,9 @@ describe('capability graph routes', () => {
       currentRevisionId: 'rev-4',
       currentRevisionNumber: 4,
       currentRevisionHash: 'hash-4',
+      publishedRevisionId: 'rev-4',
+      publishedRevisionNumber: 4,
+      publishedRevisionHash: 'hash-4',
       nodes: [],
       edges: [],
       compiledPlan: null,
@@ -386,6 +475,8 @@ describe('capability graph routes', () => {
       contentHash: 'hash-4',
       createdBy: 'operator@example.com',
       createdAt: '2026-06-07T00:05:00.000Z',
+      publishedAt: '2026-06-07T00:06:00.000Z',
+      publishedBy: 'operator@example.com',
     });
     persistHandoffMock.mockResolvedValue({
       id: 'handoff-1',

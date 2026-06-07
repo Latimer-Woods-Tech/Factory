@@ -60,12 +60,14 @@ import {
   findGraphRevisionById,
   listGraphs,
   listGraphRevisions,
+  publishGraphRevision,
   updateGraphLayout,
   saveCompiledPlan,
   deleteGraph,
   type GraphSourceProvenance,
 } from '../lib/graph-store.js';
 import { compileGraph } from '../lib/graph-compiler.js';
+import { requireConfirmation } from '../middleware/require-confirmation.js';
 import {
   parseGraphCreateInput,
   parseGraphPatchInput,
@@ -664,6 +666,55 @@ capabilities.get('/graphs/:id/revisions', async (c) => {
 });
 
 /**
+ * Publish a graph revision for execution.
+ * POST /capabilities/graphs/:id/publish
+ *   body: { revisionId? } defaults to current draft revision
+ */
+capabilities.post(
+  '/graphs/:id/publish',
+  requireConfirmation({
+    action: 'capabilities.graph.publish',
+    reversibility: 'reversible',
+    minRole: 'admin',
+  }),
+  async (c) => {
+    const ctx = c.var.envContext;
+    if (!ctx) return c.json({ error: 'auth required' }, 401);
+    const id = c.req.param('id');
+    const rawBody = await c.req.json<{ revisionId?: unknown }>().catch(() => ({} as { revisionId?: unknown }));
+    const revisionId = rawBody.revisionId;
+    if (revisionId !== undefined && typeof revisionId !== 'string') {
+      return c.json({ error: 'revisionId must be a string when provided' }, 400);
+    }
+    const result = await publishGraphRevision(c.env.DB, id, {
+      revisionId: typeof revisionId === 'string' ? revisionId : undefined,
+      publishedBy: ctx.userId,
+    });
+    if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
+    if (result.status === 'no_revision') {
+      return c.json({ error: 'Graph has no draft revision to publish' }, 409);
+    }
+    if (result.status === 'revision_not_found') {
+      return c.json({ error: 'Revision not found for this graph' }, 404);
+    }
+    c.set('auditAction', 'capabilities.graph.publish');
+    c.set('auditResource', 'capability_graphs');
+    c.set('auditResourceId', result.graph.id);
+    c.set('auditReversibility', 'reversible');
+    c.set('auditResultDetail', {
+      graphId: result.graph.id,
+      revisionId: result.revision.id,
+      revisionNumber: result.revision.revisionNumber,
+      graphVersion: result.revision.graphVersion,
+    });
+    return c.json({
+      graph: result.graph,
+      revision: result.revision,
+    });
+  },
+);
+
+/**
  * Update graph nodes/edges/name/description.
  * PUT /capabilities/graphs/:id
  *   body: { name?, description?, nodes?, edges? }
@@ -737,9 +788,9 @@ capabilities.post('/graphs/:id/compile', async (c) => {
   const id = c.req.param('id');
   const graph = await findGraphById(c.env.DB, id);
   if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
-  const revision = await getCurrentGraphRevision(c.env.DB, graph);
+  const revision = await getPublishedGraphRevision(c.env.DB, graph);
   if (!revision) {
-    return c.json({ error: 'Graph has no immutable revision head. Save the graph again before compiling.' }, 409);
+    return c.json({ error: 'Graph has no published revision. Publish a revision before compiling.' }, 409);
   }
   const compileInput = graphDocumentFromRevision(graph, revision);
   const result = compileGraph(compileInput);
@@ -779,9 +830,9 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
   const id = c.req.param('id');
   const graph = await findGraphById(c.env.DB, id);
   if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
-  const revision = await getCurrentGraphRevision(c.env.DB, graph);
+  const revision = await getPublishedGraphRevision(c.env.DB, graph);
   if (!revision) {
-    return c.json({ error: 'Graph has no immutable revision head. Save the graph again before generating a handoff.' }, 409);
+    return c.json({ error: 'Graph has no published revision. Publish a revision before generating a handoff.' }, 409);
   }
   const compileInput = graphDocumentFromRevision(graph, revision);
   const compileResult = compileGraph(compileInput);
@@ -889,12 +940,12 @@ function buildHandoffBody(previewResponse: {
   };
 }
 
-async function getCurrentGraphRevision(
+async function getPublishedGraphRevision(
   db: AppEnv['Bindings']['DB'],
   graph: Awaited<ReturnType<typeof findGraphById>>,
 ) {
-  if (!graph?.currentRevisionId) return null;
-  return findGraphRevisionById(db, graph.currentRevisionId);
+  if (!graph?.publishedRevisionId) return null;
+  return findGraphRevisionById(db, graph.publishedRevisionId);
 }
 
 function toGraphSourceProvenance(revision: Awaited<ReturnType<typeof findGraphRevisionById>>): GraphSourceProvenance {
