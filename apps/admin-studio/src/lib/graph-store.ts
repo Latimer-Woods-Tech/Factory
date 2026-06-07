@@ -542,7 +542,7 @@ export async function findGraphRevisionById(
 export async function publishGraphRevision(
   hyperdrive: HyperdriveBinding,
   graphId: string,
-  input: { revisionId?: string; publishedBy: string },
+  input: { revisionId?: string; publishedBy: string; env: 'local' | 'staging' | 'production' },
 ): Promise<GraphPublishResult> {
   try {
     await ensureGraphSchema(hyperdrive);
@@ -560,6 +560,9 @@ export async function publishGraphRevision(
       }
       if (!revision.approvedAt || !revision.approvedBy) {
         return { status: 'revision_not_approved' } as const;
+      }
+      if (input.env === 'production' && revision.approvedBy === input.publishedBy) {
+        return { status: 'publisher_must_differ_from_approver' } as const;
       }
 
       const publishedAt = new Date().toISOString();
@@ -605,7 +608,7 @@ export async function approveGraphRevision(
   hyperdrive: HyperdriveBinding,
   graphId: string,
   revisionId: string,
-  input: { approvedBy: string; approvalSummary: string },
+  input: { approvedBy: string; approvalSummary: string; env: 'local' | 'staging' | 'production' },
 ): Promise<GraphApproveResult> {
   try {
     await ensureGraphSchema(hyperdrive);
@@ -617,6 +620,12 @@ export async function approveGraphRevision(
       const revision = await findGraphRevisionByIdUsingDb(txDb, revisionId);
       if (!revision || revision.graphId !== graphId) {
         return { status: 'revision_not_found' } as const;
+      }
+      if (revision.approvedAt || revision.approvedBy) {
+        return { status: 'revision_already_approved' } as const;
+      }
+      if (input.env === 'production' && revision.createdBy === input.approvedBy) {
+        return { status: 'self_approval_forbidden' } as const;
       }
 
       const approvedAt = new Date().toISOString();
@@ -654,14 +663,17 @@ export type GraphUpdateResult =
 export type GraphApproveResult =
   | { status: 'ok'; graph: GraphDocument; revision: GraphRevision }
   | { status: 'not_found' }
-  | { status: 'revision_not_found' };
+  | { status: 'revision_not_found' }
+  | { status: 'revision_already_approved' }
+  | { status: 'self_approval_forbidden' };
 
 export type GraphPublishResult =
   | { status: 'ok'; graph: GraphDocument; revision: GraphRevision }
   | { status: 'not_found' }
   | { status: 'no_revision' }
   | { status: 'revision_not_found' }
-  | { status: 'revision_not_approved' };
+  | { status: 'revision_not_approved' }
+  | { status: 'publisher_must_differ_from_approver' };
 
 async function findGraphByIdUsingDb(
   db: FactoryDb,

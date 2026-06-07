@@ -880,9 +880,14 @@ export function GraphComposerTab() {
   const canHandoff = compileResult?.success === true;
   const approvalTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'trivial');
   const publishTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'reversible');
+  const isProductionSession = sessionEnv === 'production';
   const selectedRevisionIsApproved = !!selectedRevision?.approvedAt && !!selectedRevision?.approvedBy;
   const selectedRevisionIsPublished = !!selectedRevision && selectedRevision.id === selectedGraph?.publishedRevisionId;
   const selectedRevisionIsCurrent = !!selectedRevision && selectedRevision.id === selectedGraph?.currentRevisionId;
+  const productionSelfApprovalBlocked =
+    isProductionSession && !!selectedRevision && selectedRevision.createdBy === sessionUserId;
+  const productionSelfPublishBlocked =
+    isProductionSession && !!selectedRevision?.approvedBy && selectedRevision.approvedBy === sessionUserId;
   const approveTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
   const publishTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
   const publishDiff = selectedRevision && publishedRevision && selectedRevision.id !== publishedRevision.id
@@ -1028,7 +1033,14 @@ export function GraphComposerTab() {
           size="sm"
           variant="outline"
           onClick={() => setPublishDialogOpen(true)}
-          disabled={!selectedGraphId || publishing || !selectedRevision || selectedRevisionIsPublished || !selectedRevisionIsApproved}
+          disabled={
+            !selectedGraphId ||
+            publishing ||
+            !selectedRevision ||
+            selectedRevisionIsPublished ||
+            !selectedRevisionIsApproved ||
+            productionSelfPublishBlocked
+          }
         >
           {publishing ? 'Publishing…' : publishSuccess ? '✓ Published' : `Publish ${publishTargetLabel}`}
         </Button>
@@ -1515,18 +1527,30 @@ export function GraphComposerTab() {
                     <p className="mt-2 text-xs text-slate-500">
                       Capture why this immutable revision is fit to become an execution head.
                     </p>
+                    {productionSelfApprovalBlocked && (
+                      <p className="mt-2 text-xs text-amber-300">
+                        Production approval requires a reviewer other than the revision author.
+                      </p>
+                    )}
                     <textarea
                       value={approvalSummaryDraft}
                       onChange={(e) => setApprovalSummaryDraft(e.target.value)}
+                      readOnly={selectedRevisionIsApproved}
                       rows={3}
-                      className="mt-3 w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-base text-white focus:outline-none focus:ring-2 focus:ring-blue-400 md:text-sm"
+                      className="mt-3 w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-base text-white read-only:cursor-not-allowed read-only:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 md:text-sm"
                       placeholder="Reviewed graph topology, parameters, and staging intent."
                     />
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!selectedRevision || approving || approvalSummaryDraft.trim().length === 0}
+                        disabled={
+                          !selectedRevision ||
+                          approving ||
+                          approvalSummaryDraft.trim().length === 0 ||
+                          selectedRevisionIsApproved ||
+                          productionSelfApprovalBlocked
+                        }
                         onClick={() => {
                           if (approvalTier === 0) {
                             void approveSelectedRevision();
@@ -1540,7 +1564,7 @@ export function GraphComposerTab() {
                           : approveSuccess
                             ? '✓ Approved'
                             : selectedRevisionIsApproved
-                              ? `Update Approval ${approveTargetLabel}`
+                              ? `${approveTargetLabel} Approved`
                               : `Approve ${approveTargetLabel}`}
                       </Button>
                       {approveError && (
@@ -1561,6 +1585,10 @@ export function GraphComposerTab() {
                     {selectedRevisionIsPublished ? (
                       <p className="mt-2 text-sm text-emerald-300">
                         This revision is already the published execution head.
+                      </p>
+                    ) : productionSelfPublishBlocked ? (
+                      <p className="mt-2 text-sm text-amber-300">
+                        Production publish requires a principal other than the revision approver.
                       </p>
                     ) : !selectedRevisionIsApproved ? (
                       <p className="mt-2 text-sm text-amber-300">

@@ -691,18 +691,26 @@ capabilities.post(
     if (typeof summary !== 'string' || summary.trim().length === 0) {
       return c.json({ error: 'summary is required' }, 400);
     }
+    c.set('auditAction', 'capabilities.graph.approve');
+    c.set('auditResource', 'capability_graphs');
+    c.set('auditResourceId', id);
+    c.set('auditReversibility', 'trivial');
     const result = await approveGraphRevision(c.env.DB, id, revisionId, {
       approvedBy: ctx.userId,
       approvalSummary: summary,
+      env: ctx.env,
     });
     if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
     if (result.status === 'revision_not_found') {
       return c.json({ error: 'Revision not found for this graph' }, 404);
     }
-    c.set('auditAction', 'capabilities.graph.approve');
-    c.set('auditResource', 'capability_graphs');
+    if (result.status === 'revision_already_approved') {
+      return c.json({ error: 'Revision has already been approved' }, 409);
+    }
+    if (result.status === 'self_approval_forbidden') {
+      return c.json({ error: 'Production revisions must be approved by a different principal than the author' }, 409);
+    }
     c.set('auditResourceId', result.graph.id);
-    c.set('auditReversibility', 'trivial');
     c.set('auditResultDetail', {
       graphId: result.graph.id,
       revisionId: result.revision.id,
@@ -738,9 +746,14 @@ capabilities.post(
     if (revisionId !== undefined && typeof revisionId !== 'string') {
       return c.json({ error: 'revisionId must be a string when provided' }, 400);
     }
+    c.set('auditAction', 'capabilities.graph.publish');
+    c.set('auditResource', 'capability_graphs');
+    c.set('auditResourceId', id);
+    c.set('auditReversibility', 'reversible');
     const result = await publishGraphRevision(c.env.DB, id, {
       revisionId: typeof revisionId === 'string' ? revisionId : undefined,
       publishedBy: ctx.userId,
+      env: ctx.env,
     });
     if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
     if (result.status === 'no_revision') {
@@ -752,10 +765,10 @@ capabilities.post(
     if (result.status === 'revision_not_approved') {
       return c.json({ error: 'Revision must be approved before publishing' }, 409);
     }
-    c.set('auditAction', 'capabilities.graph.publish');
-    c.set('auditResource', 'capability_graphs');
+    if (result.status === 'publisher_must_differ_from_approver') {
+      return c.json({ error: 'Production revisions must be published by a different principal than the approver' }, 409);
+    }
     c.set('auditResourceId', result.graph.id);
-    c.set('auditReversibility', 'reversible');
     c.set('auditResultDetail', {
       graphId: result.graph.id,
       revisionId: result.revision.id,

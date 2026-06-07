@@ -355,6 +355,67 @@ describe('capability graph routes', () => {
     expect(approveGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', 'rev-4', {
       approvedBy: 'operator@example.com',
       approvalSummary: 'Reviewed topology and ready for staging compile.',
+      env: 'staging',
+    });
+  });
+
+  it('rejects production self-approval of a revision', async () => {
+    const authToken = await signTestJwt({
+      env: 'production',
+      userId: 'operator@example.com',
+      userEmail: 'operator@example.com',
+    });
+    approveGraphRevisionMock.mockResolvedValue({
+      status: 'self_approval_forbidden',
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/revisions/rev-4/approve', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'X-Confirmed': 'true',
+        },
+        body: JSON.stringify({ summary: 'Reviewed topology and ready for production.' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'production' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'Production revisions must be approved by a different principal than the author',
+    });
+    expect(approveGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', 'rev-4', {
+      approvedBy: 'operator@example.com',
+      approvalSummary: 'Reviewed topology and ready for production.',
+      env: 'production',
+    });
+  });
+
+  it('rejects replacing an existing revision approval', async () => {
+    const authToken = await login();
+    approveGraphRevisionMock.mockResolvedValue({
+      status: 'revision_already_approved',
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/revisions/rev-4/approve', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ summary: 'Attempted replacement approval.' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'Revision has already been approved',
     });
   });
 
@@ -432,6 +493,7 @@ describe('capability graph routes', () => {
     expect(publishGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', {
       revisionId: undefined,
       publishedBy: 'operator@example.com',
+      env: 'staging',
     });
   });
 
@@ -533,6 +595,47 @@ describe('capability graph routes', () => {
     expect(publishGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', {
       revisionId: 'rev-3',
       publishedBy: 'operator@example.com',
+      env: 'staging',
+    });
+  });
+
+  it('rejects production publish by the same principal that approved the revision', async () => {
+    const authToken = await signTestJwt({
+      env: 'production',
+      userId: 'reviewer@example.com',
+      userEmail: 'reviewer@example.com',
+    });
+    publishGraphRevisionMock.mockResolvedValue({
+      status: 'publisher_must_differ_from_approver',
+    });
+    const confirmToken = await expectedConfirmToken(
+      'capabilities.graph.publish',
+      'reviewer@example.com',
+      'production',
+    );
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/publish', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'X-Confirm-Token': confirmToken,
+        },
+        body: JSON.stringify({ revisionId: 'rev-4' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'production' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'Production revisions must be published by a different principal than the approver',
+    });
+    expect(publishGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', {
+      revisionId: 'rev-4',
+      publishedBy: 'reviewer@example.com',
+      env: 'production',
     });
   });
 
@@ -758,6 +861,47 @@ async function login(): Promise<string> {
 
   const body = await response.json<{ token: string }>();
   return body.token;
+}
+
+async function signTestJwt(input: {
+  env: 'local' | 'staging' | 'production';
+  userId: string;
+  userEmail: string;
+}): Promise<string> {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const header = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ alg: 'HS256', typ: 'JWT' })));
+  const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({
+    env: input.env,
+    sessionId: crypto.randomUUID(),
+    userId: input.userId,
+    userEmail: input.userEmail,
+    role: 'owner',
+    envLockedAt: Date.now(),
+    iat: nowSeconds,
+    exp: nowSeconds + 3600,
+    iss: 'factory-admin-studio',
+    sub: input.userId,
+  })));
+  const data = new TextEncoder().encode(`${header}.${payload}`);
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode('test-jwt-secret-with-enough-entropy'),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, data);
+  return `${header}.${payload}.${base64UrlEncode(new Uint8Array(signature))}`;
+}
+
+async function expectedConfirmToken(action: string, userId: string, env: string): Promise<string> {
+  return (await sha256Hex(`${action}:${userId}:${env}`)).slice(0, 16);
+}
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function buildEnv(envOverride: Partial<Env> = {}): Env {
