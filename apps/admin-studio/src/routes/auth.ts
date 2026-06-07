@@ -172,27 +172,13 @@ auth.post('/google', async (c) => {
     return c.json({ error: 'Invalid Google credential', detail: (error as Error).message }, 401);
   }
 
-  const workspaceDomainError = getGoogleWorkspaceDomainError(
-    verifiedIdentity,
-    c.env.STUDIO_GOOGLE_WORKSPACE_DOMAIN,
-  );
-  if (workspaceDomainError) {
-    return c.json(
-      {
-        error: 'Access denied',
-        detail: workspaceDomainError,
-      },
-      403,
-    );
-  }
-
-  const verifiedEmail = verifiedIdentity.email;
+  const verifiedEmail = verifiedIdentity.email.trim().toLowerCase();
 
   // Extract allowed users from env, fall back to empty list if not configured
   const allowedUsersJson = c.env.STUDIO_ALLOWED_USERS_JSON || '{}';
-  let allowedUsers: Record<string, { role: string }>;
+  let allowedUsers: Record<string, { role: string; allowExternal?: boolean }>;
   try {
-    allowedUsers = JSON.parse(allowedUsersJson) as Record<string, { role: string }>;
+    allowedUsers = JSON.parse(allowedUsersJson) as Record<string, { role: string; allowExternal?: boolean }>;
   } catch {
     allowedUsers = {};
   }
@@ -203,6 +189,21 @@ auth.post('/google', async (c) => {
       {
         error: 'Access denied',
         detail: `Email '${verifiedEmail}' is not in the allowlisted users for this environment`,
+      },
+      403,
+    );
+  }
+
+  const workspaceDomainError = getGoogleWorkspaceDomainError(
+    verifiedIdentity,
+    c.env.STUDIO_GOOGLE_WORKSPACE_DOMAIN,
+    userConfig.allowExternal === true,
+  );
+  if (workspaceDomainError) {
+    return c.json(
+      {
+        error: 'Access denied',
+        detail: workspaceDomainError,
       },
       403,
     );
@@ -380,9 +381,10 @@ async function verifyGoogleIdToken(
 export function getGoogleWorkspaceDomainError(
   identity: VerifiedGoogleIdentity,
   requiredDomain?: string,
+  explicitlyAllowlisted = false,
 ): string | null {
   const normalizedRequiredDomain = requiredDomain?.trim().toLowerCase();
-  if (!normalizedRequiredDomain) {
+  if (!normalizedRequiredDomain || explicitlyAllowlisted) {
     return null;
   }
 

@@ -150,6 +150,55 @@ async function visitByClick(label, linkText) {
   steps.push({ label, finalUrl: page.url(), title: await page.title(), ms: Date.now() - start });
 }
 
+async function exerciseAiChat() {
+  currentPhase = '06-ai-chat';
+  const start = Date.now();
+  const prompt = 'Reply with exactly SMOKE_OK and nothing else.';
+  try {
+    const composer = page.getByTestId('ai-composer');
+    await composer.fill(prompt);
+    const responsePromise = page.waitForResponse((resp) => {
+      const url = new URL(resp.url());
+      return url.pathname === '/ai/chat' && resp.request().method() === 'POST';
+    }, { timeout: 30_000 });
+    await page.getByRole('button', { name: 'Send' }).click();
+    const response = await responsePromise;
+    const status = response.status();
+    if (status !== 200) {
+      steps.push({ label: '06-ai-chat', error: `chat returned HTTP ${status}`, finalUrl: page.url(), ms: Date.now() - start });
+      return;
+    }
+
+    const assistant = page.locator('[data-chat-role="assistant"]').last();
+    await assistant.waitFor({ state: 'visible', timeout: 30_000 });
+    await page.waitForFunction(() => {
+      const send = document.querySelector('[data-testid="ai-send"]');
+      return send instanceof HTMLButtonElement && !send.disabled;
+    }, null, { timeout: 30_000 });
+    const assistantText = await assistant.textContent();
+    const logText = await page.getByTestId('ai-chat-log').textContent();
+    if (
+      !assistantText?.includes('SMOKE_OK')
+      || !logText
+      || /stream failed|llm configuration incomplete|not configured/i.test(logText)
+    ) {
+      steps.push({
+        label: '06-ai-chat',
+        error: 'chat response did not complete cleanly',
+        finalUrl: page.url(),
+        assistantText,
+        logText,
+        ms: Date.now() - start,
+      });
+      return;
+    }
+
+    steps.push({ label: '06-ai-chat', finalUrl: page.url(), status, ms: Date.now() - start });
+  } catch (err) {
+    steps.push({ label: '06-ai-chat', error: err.message, finalUrl: page.url(), ms: Date.now() - start });
+  }
+}
+
 // 01: unauthenticated landing
 await visit('01-landing', '/');
 
@@ -212,6 +261,9 @@ for (const [label, linkText] of [
   ['10-audit',     'Audit Log'],
 ]) {
   await visitByClick(label, linkText);
+  if (label === '06-ai') {
+    await exerciseAiChat();
+  }
 }
 
 await browser.close();

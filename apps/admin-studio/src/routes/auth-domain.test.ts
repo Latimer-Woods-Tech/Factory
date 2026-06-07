@@ -20,6 +20,16 @@ describe('Google Workspace domain policy', () => {
     ).toBe("Google account 'adrian@gmail.com' is not a member of the required Workspace domain 'latwoodtech.com'");
   });
 
+  it('allows an explicitly allowlisted Google identity outside the Workspace domain', () => {
+    expect(
+      getGoogleWorkspaceDomainError(
+        { email: 'adrper79@gmail.com', hostedDomain: null },
+        'latwoodtech.com',
+        true,
+      ),
+    ).toBeNull();
+  });
+
   it('rejects Google identities from a different Workspace hosted domain', () => {
     expect(
       getGoogleWorkspaceDomainError(

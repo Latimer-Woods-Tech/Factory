@@ -106,6 +106,10 @@ jobs:
             echo "env=staging" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify production owner allowlist
+        if: steps.target.outputs.env == 'production'
+        run: node apps/admin-studio/scripts/verify-owner-allowlist.mjs
+
       - name: Build dependency packages
         run: |
           set -euo pipefail

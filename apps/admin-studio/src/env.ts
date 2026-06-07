@@ -43,7 +43,7 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string;
   /** Required Google Workspace hosted domain for /auth/google, e.g. "latwoodtech.com". */
   STUDIO_GOOGLE_WORKSPACE_DOMAIN?: string;
-  /** JSON map of allowlisted users for Google OAuth: {"email@example.com": {"role": "owner"}} */
+  /** JSON map of Google users. Non-Workspace accounts also require allowExternal: true. */
   STUDIO_ALLOWED_USERS_JSON?: string;
   /** Sentry DSN for error reporting */
   SENTRY_DSN?: string;
