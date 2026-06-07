@@ -185,6 +185,8 @@ export function resolveLlmOptions(strategy: AIModelStrategy, mode: AIChatRequest
 }
 
 const ai = new Hono<AppEnv>();
+const EXECUTION_MAX_TOOL_LOOPS = 4;
+const EXECUTION_MAX_TOKENS = 2048;
 
 const SYSTEM_PROMPTS: Record<AIChatRequest['mode'], string> = {
   generate: [
@@ -438,15 +440,15 @@ ai.post('/chat', async (c) => {
   const agentMessages: AgentMessage[] = [...messages];
   let finalText = '';
   let loopCount = 0;
-  const maxLoops = 8; // Allow deeper agentic tool chains
+  let completed = false;
 
-  while (loopCount < maxLoops) {
+  while (loopCount < EXECUTION_MAX_TOOL_LOOPS) {
     loopCount++;
 
     // Call Anthropic with tools (non-streaming for tool-use loop)
     const payload = {
       model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
+      max_tokens: EXECUTION_MAX_TOKENS,
       temperature: body.mode === 'refactor' ? 0.2 : 0.5,
       system: system.length >= 4096
         ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }]
@@ -521,7 +523,18 @@ ai.post('/chat', async (c) => {
         finalText = (block as Record<string, unknown>).text as string || '';
       }
     }
+    completed = true;
     break;
+  }
+
+  if (!completed) {
+    return c.json(
+      {
+        error: 'agent loop limit exceeded',
+        maxLoops: EXECUTION_MAX_TOOL_LOOPS,
+      },
+      502,
+    );
   }
 
   // Stream the final text response
@@ -682,7 +695,7 @@ export async function runAnalysisCycle(env: Env): Promise<void> {
   try {
     const res = await env.SCHEDULE_WORKER.fetch(
       new Request('https://schedule-worker.internal/diagnostics', {
-        headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}` },
+        headers: { Authorization: `Bearer ${await getGithubToken(env)}` },
       })
     );
     diag = await res.json();

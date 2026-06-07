@@ -145,14 +145,15 @@ async function verify(env = DEFAULT_ENV, argv = process.argv.slice(2)) {
   // ─────────────────────────────────────────────────────────────────────
 
   results.push(
-    await test('/auth/login rejects bad credentials with 401', async () => {
+    await test('/auth/login rejects bad credentials (or is disabled in production)', async () => {
       const res = await curl(`${base}/auth/login`, {
         method: 'POST',
         data: { email: 'bad@example.com', password: 'wrong', env },
         timeout: 5,
       });
       assertNotEdgeError(res, base);
-      if (res.status !== 401) throw new Error(`Expected 401, got ${res.status}`);
+      const expectedStatus = env === 'production' ? 503 : 401;
+      if (res.status !== expectedStatus) throw new Error(`Expected ${expectedStatus}, got ${res.status}`);
       const parsed = parseJsonSafe(res.body);
       if (!parsed.ok) throw new Error('Login response was not valid JSON');
       const json = parsed.value;

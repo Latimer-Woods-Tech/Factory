@@ -18,8 +18,7 @@ describe('WCAG 2.2 target-size class usage', () => {
     const html = renderToStaticMarkup(<AiTab />);
     // Primary action buttons use target-primary (≥44px tap target per WCAG 2.2 §2.5.8)
     expect(html).toContain('target-primary');
-    // Verify the Send button has the class
-    expect(html).toMatch(/target-primary[^"]*"[^>]*>Streaming…/);
+    expect(html).toMatch(/data-testid="ai-send"[^>]*class="[^"]*target-primary/);
   });
 
   it('Dashboard mobile nav links use target-min', () => {
@@ -31,12 +30,14 @@ describe('WCAG 2.2 target-size class usage', () => {
     expect(html).toContain('target-min');
   });
 
-  it('LoginPage submit button uses target-primary', () => {
+  it('LoginPage renders explicit environment buttons before auth', () => {
     const html = renderToStaticMarkup(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>,
     );
-    expect(html).toContain('target-primary');
+    expect(html).toContain('aria-label="Local');
+    expect(html).toContain('aria-label="Staging');
+    expect(html).toContain('aria-label="Production');
   });
 });

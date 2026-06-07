@@ -22,9 +22,7 @@ import type {
 import type { ActiveFileState } from '../../stores/activeFile.js';
 import { useActiveFile } from '../../stores/activeFile.js';
 import { useSession } from '../../stores/session.js';
-import { apiFetch } from '../../lib/api.js';
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? '/api';
+import { apiFetch, getApiUrl } from '../../lib/api.js';
 
 const MODES: ReadonlyArray<{ id: AIChatMode; label: string; hint: string }> = [
   { id: 'generate', label: 'Generate', hint: 'New Worker code' },
@@ -151,7 +149,7 @@ export function AiTab() {
     };
 
     try {
-      const res = await fetch(`${API_BASE}/ai/chat`, {
+      const res = await fetch(getApiUrl('/ai/chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -538,6 +536,7 @@ function Bubble(props: { role: 'user' | 'assistant'; streaming?: boolean; childr
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
+        data-chat-role={props.role}
         className={`max-w-[80%] rounded px-3 py-2 whitespace-pre-wrap font-mono text-[12px] leading-snug ${
           isUser
             ? 'bg-emerald-900/40 border border-emerald-800 text-emerald-100'

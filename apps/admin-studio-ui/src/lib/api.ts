@@ -18,6 +18,11 @@ export function getApiBase(env?: Environment | null): string {
   return sessionEnv ? ENV_BASES[sessionEnv] : '/api';
 }
 
+export function getApiUrl(path: string, env?: Environment | null): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${getApiBase(env)}${normalizedPath}`;
+}
+
 export interface ApiError extends Error {
   status: number;
   body: unknown;
@@ -37,7 +42,7 @@ export async function apiFetch<T = unknown>(
   if (init.dryRun) headers.set('X-Dry-Run', 'true');
   headers.set('X-Request-Id', crypto.randomUUID());
 
-  const res = await fetch(`${getApiBase()}${path}`, { ...init, headers });
+  const res = await fetch(getApiUrl(path), { ...init, headers });
 
   const text = await res.text();
   const body = text ? safeJson(text) : null;

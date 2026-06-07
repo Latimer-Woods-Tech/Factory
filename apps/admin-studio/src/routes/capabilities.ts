@@ -55,16 +55,25 @@ import {
   type ProvisionRequestRecord,
 } from '../lib/handoff-store.js';
 import {
+  approveGraphRevision,
   createGraph,
   findGraphById,
+  findGraphRevisionById,
+  listGraphRevisionApprovals,
   listGraphs,
+  listGraphRevisions,
+  publishGraphRevision,
   updateGraphLayout,
   saveCompiledPlan,
   deleteGraph,
-  type GraphNode,
-  type GraphEdge,
+  type GraphSourceProvenance,
 } from '../lib/graph-store.js';
 import { compileGraph } from '../lib/graph-compiler.js';
+import { requireConfirmation } from '../middleware/require-confirmation.js';
+import {
+  parseGraphCreateInput,
+  parseGraphPatchInput,
+} from '../lib/graph-validation.js';
 
 const capabilities = new Hono<AppEnv>();
 
@@ -598,12 +607,17 @@ capabilities.get('/graphs', async (c) => {
 capabilities.post('/graphs', async (c) => {
   const ctx = c.var.envContext;
   if (!ctx) return c.json({ error: 'auth required' }, 401);
-  type GraphCreateBody = { name?: string; description?: string };
-  const body = await c.req.json<GraphCreateBody>().catch((): GraphCreateBody => ({}));
-  if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
+  const body = await c.req.json<unknown>().catch((): unknown => ({}));
+  const parsed = parseGraphCreateInput(body);
+  if (!parsed.ok) {
+    return c.json({
+      error: parsed.issues[0]?.message ?? 'Invalid graph create payload',
+      issues: parsed.issues,
+    }, 400);
+  }
   const graph = await createGraph(c.env.DB, {
-    name: body.name.trim(),
-    description: body.description,
+    name: parsed.value.name,
+    description: parsed.value.description,
     createdBy: ctx.userId,
   });
   c.set('auditAction', 'capabilities.graph.create');
@@ -628,6 +642,183 @@ capabilities.get('/graphs/:id', async (c) => {
 });
 
 /**
+ * List immutable graph revisions for a graph.
+ * GET /capabilities/graphs/:id/revisions?limit=20
+ */
+capabilities.get('/graphs/:id/revisions', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const limitRaw = c.req.query('limit');
+  const limit = limitRaw ? Math.max(1, Math.min(100, Number.parseInt(limitRaw, 10) || 20)) : 20;
+  const revisions = await listGraphRevisions(c.env.DB, id, { limit });
+  return c.json({
+    generatedAt: new Date().toISOString(),
+    graph: {
+      id: graph.id,
+      name: graph.name,
+      currentRevisionId: graph.currentRevisionId,
+      currentRevisionNumber: graph.currentRevisionNumber,
+      currentRevisionHash: graph.currentRevisionHash,
+      publishedRevisionId: graph.publishedRevisionId,
+      publishedRevisionNumber: graph.publishedRevisionNumber,
+      publishedRevisionHash: graph.publishedRevisionHash,
+    },
+  revisions,
+  });
+});
+
+/**
+ * Approve a graph revision for future execution.
+ * POST /capabilities/graphs/:id/revisions/:revisionId/approve
+ *   body: { summary: string }
+ */
+capabilities.post(
+  '/graphs/:id/revisions/:revisionId/approve',
+  requireConfirmation({
+    action: 'capabilities.graph.approve',
+    reversibility: 'trivial',
+    minRole: 'admin',
+  }),
+  async (c) => {
+    const ctx = c.var.envContext;
+    if (!ctx) return c.json({ error: 'auth required' }, 401);
+    const id = c.req.param('id');
+    const revisionId = c.req.param('revisionId');
+    const rawBody = await c.req.json<{ summary?: unknown }>().catch(() => ({} as { summary?: unknown }));
+    const summary = rawBody.summary;
+    if (typeof summary !== 'string' || summary.trim().length === 0) {
+      return c.json({ error: 'summary is required' }, 400);
+    }
+    c.set('auditAction', 'capabilities.graph.approve');
+    c.set('auditResource', 'capability_graphs');
+    c.set('auditResourceId', id);
+    c.set('auditReversibility', 'trivial');
+    const result = await approveGraphRevision(c.env.DB, id, revisionId, {
+      approvedBy: ctx.userId,
+      approvalSummary: summary,
+      env: ctx.env,
+    });
+    if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
+    if (result.status === 'revision_not_found') {
+      return c.json({ error: 'Revision not found for this graph' }, 404);
+    }
+    if (result.status === 'revision_already_approved') {
+      return c.json({ error: 'Revision has already been approved' }, 409);
+    }
+    if (result.status === 'self_approval_forbidden') {
+      return c.json({ error: 'Production revisions must be approved by a different principal than the author' }, 409);
+    }
+    c.set('auditResourceId', result.graph.id);
+    c.set('auditResultDetail', {
+      graphId: result.graph.id,
+      revisionId: result.revision.id,
+      revisionNumber: result.revision.revisionNumber,
+      graphVersion: result.revision.graphVersion,
+      approvalId: result.approval.id,
+      targetEnvironment: result.approval.targetEnvironment,
+      approvalSummary: result.revision.approvalSummary,
+    });
+    return c.json({
+      graph: result.graph,
+      revision: result.revision,
+      approval: result.approval,
+    });
+  },
+);
+
+/**
+ * List append-only approval records for a graph revision.
+ * GET /capabilities/graphs/:id/revisions/:revisionId/approvals
+ */
+capabilities.get('/graphs/:id/revisions/:revisionId/approvals', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const revisionId = c.req.param('revisionId');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const revision = await findGraphRevisionById(c.env.DB, revisionId);
+  if (!revision || revision.graphId !== id) {
+    return c.json({ error: 'Revision not found for this graph' }, 404);
+  }
+  const approvals = await listGraphRevisionApprovals(c.env.DB, id, revisionId);
+  return c.json({
+    generatedAt: new Date().toISOString(),
+    graph: { id: graph.id, name: graph.name },
+    revision: {
+      id: revision.id,
+      revisionNumber: revision.revisionNumber,
+      graphVersion: revision.graphVersion,
+      contentHash: revision.contentHash,
+    },
+    approvals,
+  });
+});
+
+/**
+ * Publish a graph revision for execution.
+ * POST /capabilities/graphs/:id/publish
+ *   body: { revisionId? } defaults to current draft revision
+ */
+capabilities.post(
+  '/graphs/:id/publish',
+  requireConfirmation({
+    action: 'capabilities.graph.publish',
+    reversibility: 'reversible',
+    minRole: 'admin',
+  }),
+  async (c) => {
+    const ctx = c.var.envContext;
+    if (!ctx) return c.json({ error: 'auth required' }, 401);
+    const id = c.req.param('id');
+    const rawBody = await c.req.json<{ revisionId?: unknown }>().catch(() => ({} as { revisionId?: unknown }));
+    const revisionId = rawBody.revisionId;
+    if (revisionId !== undefined && typeof revisionId !== 'string') {
+      return c.json({ error: 'revisionId must be a string when provided' }, 400);
+    }
+    c.set('auditAction', 'capabilities.graph.publish');
+    c.set('auditResource', 'capability_graphs');
+    c.set('auditResourceId', id);
+    c.set('auditReversibility', 'reversible');
+    const result = await publishGraphRevision(c.env.DB, id, {
+      revisionId: typeof revisionId === 'string' ? revisionId : undefined,
+      publishedBy: ctx.userId,
+      env: ctx.env,
+    });
+    if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
+    if (result.status === 'no_revision') {
+      return c.json({ error: 'Graph has no draft revision to publish' }, 409);
+    }
+    if (result.status === 'revision_not_found') {
+      return c.json({ error: 'Revision not found for this graph' }, 404);
+    }
+    if (result.status === 'revision_not_approved') {
+      return c.json({ error: 'Revision must be approved before publishing' }, 409);
+    }
+    if (result.status === 'approval_environment_mismatch') {
+      return c.json({ error: 'Revision approval does not match the requested environment' }, 409);
+    }
+    if (result.status === 'publisher_must_differ_from_approver') {
+      return c.json({ error: 'Production revisions must be published by a different principal than the approver' }, 409);
+    }
+    c.set('auditResourceId', result.graph.id);
+    c.set('auditResultDetail', {
+      graphId: result.graph.id,
+      revisionId: result.revision.id,
+      revisionNumber: result.revision.revisionNumber,
+      graphVersion: result.revision.graphVersion,
+    });
+    return c.json({
+      graph: result.graph,
+      revision: result.revision,
+    });
+  },
+);
+
+/**
  * Update graph nodes/edges/name/description.
  * PUT /capabilities/graphs/:id
  *   body: { name?, description?, nodes?, edges? }
@@ -637,20 +828,28 @@ capabilities.put('/graphs/:id', async (c) => {
   const ctx = c.var.envContext;
   if (!ctx) return c.json({ error: 'auth required' }, 401);
   const id = c.req.param('id');
-  type GraphPatchBody = {
-    name?: string;
-    description?: string;
-    nodes?: unknown[];
-    edges?: unknown[];
+  const body = await c.req.json<unknown>().catch((): unknown => ({}));
+  const parsed = parseGraphPatchInput(body);
+  if (!parsed.ok) {
+    return c.json({
+      error: parsed.issues[0]?.message ?? 'Invalid graph patch payload',
+      issues: parsed.issues,
+    }, 400);
+  }
+  const updateInput = {
+    ...parsed.value,
+    updatedBy: ctx.userId,
   };
-  const body = await c.req.json<GraphPatchBody>().catch((): GraphPatchBody => ({}));
-  const graph = await updateGraphLayout(c.env.DB, id, {
-    name: body.name,
-    description: body.description,
-    nodes: body.nodes as GraphNode[] | undefined,
-    edges: body.edges as GraphEdge[] | undefined,
-  });
-  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const result = await updateGraphLayout(c.env.DB, id, updateInput);
+  if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
+  if (result.status === 'conflict') {
+    return c.json({
+      error: 'Graph was updated by another session. Refresh and try again.',
+      currentVersion: result.currentGraph.version,
+      graph: result.currentGraph,
+    }, 409);
+  }
+  const graph = result.graph;
   c.set('auditAction', 'capabilities.graph.update');
   c.set('auditResource', 'capability_graphs');
   c.set('auditResourceId', graph.id);
@@ -693,7 +892,12 @@ capabilities.post('/graphs/:id/compile', async (c) => {
   const id = c.req.param('id');
   const graph = await findGraphById(c.env.DB, id);
   if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
-  const result = compileGraph(graph);
+  const revision = await getPublishedGraphRevision(c.env.DB, graph);
+  if (!revision) {
+    return c.json({ error: 'Graph has no published revision. Publish a revision before compiling.' }, 409);
+  }
+  const compileInput = graphDocumentFromRevision(graph, revision);
+  const result = compileGraph(compileInput);
   if (result.success && result.plan) {
     await saveCompiledPlan(c.env.DB, id, result.plan as unknown as Record<string, unknown>);
   }
@@ -715,6 +919,7 @@ capabilities.post('/graphs/:id/compile', async (c) => {
     plan: result.plan,
     recipeId: result.recipeId,
     compiledAt: result.success ? new Date().toISOString() : null,
+    sourceGraph: toGraphSourceProvenance(revision),
   });
 });
 
@@ -729,7 +934,12 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
   const id = c.req.param('id');
   const graph = await findGraphById(c.env.DB, id);
   if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
-  const compileResult = compileGraph(graph);
+  const revision = await getPublishedGraphRevision(c.env.DB, graph);
+  if (!revision) {
+    return c.json({ error: 'Graph has no published revision. Publish a revision before generating a handoff.' }, 409);
+  }
+  const compileInput = graphDocumentFromRevision(graph, revision);
+  const compileResult = compileGraph(compileInput);
   if (!compileResult.success || !compileResult.plan || !compileResult.resolution) {
     return c.json(
       {
@@ -740,6 +950,7 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
       422,
     );
   }
+  const sourceGraph = toGraphSourceProvenance(revision);
   const handoffBody = {
     schemaVersion: HANDOFF_SCHEMA_VERSION,
     kind: 'scaffold-handoff' as const,
@@ -753,6 +964,7 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
       conceptId: compileResult.resolution.concept.id,
       recipeId: compileResult.recipeId!,
     },
+    sourceGraph,
   };
   const hash = await hashHandoffBody(handoffBody);
   const persisted = await persistHandoff(c.env.DB, {
@@ -764,6 +976,7 @@ capabilities.post('/graphs/:id/handoff', async (c) => {
     plan: handoffBody.plan,
     preview: handoffBody.preview,
     nextAction: handoffBody.nextAction,
+    sourceGraph: handoffBody.sourceGraph,
     createdBy: ctx.userId,
     env: ctx.env,
   });
@@ -828,6 +1041,44 @@ function buildHandoffBody(previewResponse: {
       conceptId: previewResponse.nextStep.conceptId,
       recipeId: previewResponse.nextStep.recipeId,
     },
+  };
+}
+
+async function getPublishedGraphRevision(
+  db: AppEnv['Bindings']['DB'],
+  graph: Awaited<ReturnType<typeof findGraphById>>,
+) {
+  if (!graph?.publishedRevisionId) return null;
+  return findGraphRevisionById(db, graph.publishedRevisionId);
+}
+
+function toGraphSourceProvenance(revision: Awaited<ReturnType<typeof findGraphRevisionById>>): GraphSourceProvenance {
+  if (!revision) {
+    throw new Error('graph revision is required for source provenance');
+  }
+  return {
+    graphId: revision.graphId,
+    revisionId: revision.id,
+    revisionNumber: revision.revisionNumber,
+    graphVersion: revision.graphVersion,
+    contentHash: revision.contentHash,
+  };
+}
+
+function graphDocumentFromRevision(
+  graph: NonNullable<Awaited<ReturnType<typeof findGraphById>>>,
+  revision: NonNullable<Awaited<ReturnType<typeof findGraphRevisionById>>>,
+) {
+  return {
+    ...graph,
+    name: revision.name,
+    description: revision.description,
+    version: revision.graphVersion,
+    currentRevisionId: revision.id,
+    currentRevisionNumber: revision.revisionNumber,
+    currentRevisionHash: revision.contentHash,
+    nodes: revision.nodes,
+    edges: revision.edges,
   };
 }
 

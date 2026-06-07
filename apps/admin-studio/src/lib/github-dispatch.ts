@@ -6,7 +6,7 @@
  * a structured error otherwise so the caller can react.
  *
  * Secrets used:
- *   - GITHUB_TOKEN: PAT with `repo` + `workflow` scopes for the Factory repo
+ *   - A GitHub App installation token or PAT with workflow dispatch permission
  */
 
 const FACTORY_OWNER = 'Latimer-Woods-Tech';

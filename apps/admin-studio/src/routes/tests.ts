@@ -25,6 +25,7 @@ import type {
 import type { AppEnv } from '../types.js';
 import { requireConfirmation } from '../middleware/require-confirmation.js';
 import { dispatchTestWorkflow, DispatchError } from '../lib/github-dispatch.js';
+import { getGithubToken, hasGithubAuth } from '../lib/github-app.js';
 import {
   getTestRun,
   insertTestRun,
@@ -76,8 +77,8 @@ tests.post(
 
     const ctx = c.var.envContext;
     const env = c.env;
-    if (!env.GITHUB_TOKEN) {
-      return c.json({ error: 'GITHUB_TOKEN secret not configured' }, 503);
+    if (!hasGithubAuth(env)) {
+      return c.json({ error: 'GitHub auth not configured' }, 503);
     }
     if (!env.STUDIO_WEBHOOK_SECRET) {
       return c.json({ error: 'STUDIO_WEBHOOK_SECRET not configured' }, 503);
@@ -107,7 +108,7 @@ tests.post(
       (env.STUDIO_PUBLIC_URL ?? new URL(c.req.url).origin) + '/webhooks/studio-tests';
 
     try {
-      await dispatchTestWorkflow(env.GITHUB_TOKEN, {
+      await dispatchTestWorkflow(await getGithubToken(env), {
         runId,
         suites,
         filter,

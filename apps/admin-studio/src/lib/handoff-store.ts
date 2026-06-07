@@ -17,6 +17,7 @@
 
 import { createDb, sql, type FactoryDb, type HyperdriveBinding } from '@latimer-woods-tech/neon';
 import type { CapabilityPlan } from './capability-plan.js';
+import type { GraphSourceProvenance } from './graph-store.js';
 
 export interface HandoffRecord {
   id: string;
@@ -39,6 +40,7 @@ export interface HandoffRecord {
     conceptId: string;
     recipeId: string;
   };
+  sourceGraph?: GraphSourceProvenance;
   createdAt: string;
   createdBy: string;
   env: 'local' | 'staging' | 'production';
@@ -144,10 +146,15 @@ async function ensureSchema(hyperdrive: HyperdriveBinding): Promise<void> {
           plan JSONB NOT NULL,
           preview TEXT NOT NULL,
           next_action JSONB NOT NULL,
+          source_graph JSONB,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           created_by TEXT NOT NULL,
           env TEXT NOT NULL CHECK (env IN ('local','staging','production'))
         )
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_handoffs
+        ADD COLUMN IF NOT EXISTS source_graph JSONB
       `);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_handoffs_concept ON capability_handoffs (concept_id, created_at DESC)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_handoffs_recipe  ON capability_handoffs (recipe_id,  created_at DESC)`);
@@ -226,7 +233,8 @@ export async function persistHandoff(
   const db = getDb(hyperdrive);
 
   const existing = await db.execute(sql`
-    SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+    SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview,
+           next_action, source_graph, created_at, created_by, env
     FROM capability_handoffs
     WHERE hash = ${record.hash}
     LIMIT 1
@@ -238,13 +246,15 @@ export async function persistHandoff(
 
   await db.execute(sql`
     INSERT INTO capability_handoffs (
-      id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+      id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview,
+      next_action, source_graph, created_at, created_by, env
     ) VALUES (
       ${id}, ${record.hash}, ${record.schemaVersion}, ${record.conceptId}, ${record.recipeId},
       ${JSON.stringify(record.parameters)}::jsonb,
       ${JSON.stringify(record.plan)}::jsonb,
       ${record.preview},
       ${JSON.stringify(record.nextAction)}::jsonb,
+      ${record.sourceGraph ? JSON.stringify(record.sourceGraph) : null}::jsonb,
       ${createdAt}, ${record.createdBy}, ${record.env}
     )
     ON CONFLICT (hash) DO NOTHING
@@ -265,7 +275,7 @@ export async function findHandoffById(
     await ensureSchema(hyperdrive);
     const db = getDb(hyperdrive);
     const result = await db.execute(sql`
-      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, source_graph, created_at, created_by, env
       FROM capability_handoffs
       WHERE id = ${id}
       LIMIT 1
@@ -293,7 +303,7 @@ export async function findHandoffByHash(
     await ensureSchema(hyperdrive);
     const db = getDb(hyperdrive);
     const result = await db.execute(sql`
-      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, source_graph, created_at, created_by, env
       FROM capability_handoffs
       WHERE hash = ${hash}
       LIMIT 1
@@ -326,7 +336,7 @@ export async function listHandoffs(
     const whereClause = sql.join(whereChunks, sql` `);
 
     const result = await db.execute(sql`
-      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, created_at, created_by, env
+      SELECT id, hash, schema_version, concept_id, recipe_id, parameters, plan, preview, next_action, source_graph, created_at, created_by, env
       FROM capability_handoffs
       ${whereClause}
       ORDER BY created_at DESC
@@ -536,6 +546,7 @@ interface HandoffRow {
   plan: CapabilityPlan;
   preview: string;
   next_action: HandoffRecord['nextAction'];
+  source_graph?: GraphSourceProvenance | null;
   created_at: string;
   created_by: string;
   env: HandoffRecord['env'];
@@ -553,6 +564,7 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
     plan: row.plan,
     preview: row.preview,
     nextAction: row.next_action,
+    ...(row.source_graph ? { sourceGraph: row.source_graph } : {}),
     createdAt: row.created_at,
     createdBy: row.created_by,
     env: row.env,
