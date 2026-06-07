@@ -27,6 +27,7 @@ import { requireConfirmation } from '../middleware/require-confirmation.js';
 import { requireEnv, requireRole } from '@latimer-woods-tech/studio-core';
 import { dispatchWorkflow, fetchDispatchedRunUrl, GitHubApiError } from '../lib/github-api.js';
 import { dispatchTestWorkflow, DispatchError } from '../lib/github-dispatch.js';
+import { getGithubToken, hasGithubAuth } from '../lib/github-app.js';
 import {
   insertTestRun,
   updateTestRunStatus,
@@ -182,8 +183,8 @@ ops.post(
       });
     }
 
-    if (!env.GITHUB_TOKEN) {
-      return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
+    if (!hasGithubAuth(env)) {
+      return c.json({ error: 'GitHub auth not configured' }, 503);
     }
     if (!env.STUDIO_WEBHOOK_SECRET) {
       return c.json({ error: 'STUDIO_WEBHOOK_SECRET not configured' }, 503);
@@ -211,7 +212,7 @@ ops.post(
       (env.STUDIO_PUBLIC_URL ?? new URL(c.req.url).origin) + '/webhooks/studio-tests';
 
     try {
-      await dispatchTestWorkflow(env.GITHUB_TOKEN, { runId, suites, filter, callbackUrl });
+      await dispatchTestWorkflow(await getGithubToken(env), { runId, suites, filter, callbackUrl });
       await updateTestRunStatus(env.DB, runId, { status: 'dispatched' });
     } catch (err) {
       const detail = err instanceof DispatchError ? err.body : (err as Error).message;
@@ -277,8 +278,8 @@ ops.post(
       return c.json({ dryRun: true, plan, idempotencyKey: body.idempotencyKey ?? null });
     }
 
-    if (!c.env.GITHUB_TOKEN) {
-      return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
+    if (!hasGithubAuth(c.env)) {
+      return c.json({ error: 'GitHub auth not configured' }, 503);
     }
 
     // Rate limit: 5 deploys per 10 minutes.
@@ -291,8 +292,9 @@ ops.post(
     }
 
     try {
+      const githubToken = await getGithubToken(c.env);
       const dispatchedAt = new Date();
-      await dispatchWorkflow(c.env.GITHUB_TOKEN, {
+      await dispatchWorkflow(githubToken, {
         workflowFile: plan.workflow,
         ref: plan.ref,
         inputs: plan.inputs,
@@ -305,7 +307,7 @@ ops.post(
       c.set('auditResource', body.app);
       c.set('auditReversibility', 'manual-rollback');
 
-      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, plan.workflow, dispatchedAt);
+      const runUrl = await fetchDispatchedRunUrl(githubToken, plan.workflow, dispatchedAt);
 
       c.set('auditResultDetail', {
         env: plan.targetEnv,
@@ -400,8 +402,8 @@ ops.post(
       });
     }
 
-    if (!c.env.GITHUB_TOKEN) {
-      return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
+    if (!hasGithubAuth(c.env)) {
+      return c.json({ error: 'GitHub auth not configured' }, 503);
     }
 
     // Rate limit: shared with deploy.
@@ -419,8 +421,9 @@ ops.post(
     const rollbackWorkflow = `rollback-${body.app}.yml`;
 
     try {
+      const githubToken = await getGithubToken(c.env);
       const dispatchedAt = new Date();
-      await dispatchWorkflow(c.env.GITHUB_TOKEN, {
+      await dispatchWorkflow(githubToken, {
         workflowFile: rollbackWorkflow,
         ref: 'main',
         inputs: { version_id: body.versionId, env: ctx.env },
@@ -433,7 +436,7 @@ ops.post(
       c.set('auditResource', body.app);
       c.set('auditReversibility', 'irreversible');
 
-      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, rollbackWorkflow, dispatchedAt);
+      const runUrl = await fetchDispatchedRunUrl(githubToken, rollbackWorkflow, dispatchedAt);
 
       c.set('auditResultDetail', {
         env: ctx.env,

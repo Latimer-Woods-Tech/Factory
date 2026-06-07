@@ -695,7 +695,7 @@ export async function runAnalysisCycle(env: Env): Promise<void> {
   try {
     const res = await env.SCHEDULE_WORKER.fetch(
       new Request('https://schedule-worker.internal/diagnostics', {
-        headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}` },
+        headers: { Authorization: `Bearer ${await getGithubToken(env)}` },
       })
     );
     diag = await res.json();

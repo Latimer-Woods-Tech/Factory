@@ -19,8 +19,8 @@ export interface Env {
   STUDIO_ADMIN_EMAIL: string;
   /** Lowercase hex SHA-256 digest of the bootstrap operator password. */
   STUDIO_ADMIN_PASSWORD_SHA256: string;
-  /** Personal access token used to dispatch GH Actions workflows */
-  GITHUB_TOKEN: string;
+  /** Legacy PAT fallback used when GitHub App credentials are unavailable. */
+  GITHUB_TOKEN?: string;
   /** Anthropic API key for AI chat */
   ANTHROPIC_API_KEY: string;
   /** GCP service account key (base64-encoded JSON) for Secret Manager access */

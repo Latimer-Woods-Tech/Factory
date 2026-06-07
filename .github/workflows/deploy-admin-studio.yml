@@ -86,6 +86,7 @@ jobs:
           fetch_to_env GOOGLE_CLIENT_ID                     ADMIN_STUDIO_GOOGLE_CLIENT_ID GOOGLE_CLIENT_ID google-client-id
           fetch_to_env STUDIO_ALLOWED_USERS_JSON            ADMIN_STUDIO_ALLOWED_USERS_JSON STUDIO_ALLOWED_USERS_JSON
           fetch_to_env STUDIO_GOOGLE_WORKSPACE_DOMAIN       STUDIO_GOOGLE_WORKSPACE_DOMAIN ADMIN_STUDIO_GOOGLE_WORKSPACE_DOMAIN
+          fetch_to_env FACTORY_APP_INSTALLATION_ID           FACTORY_APP_INSTALLATION_ID factory-app-installation-id
           fetch_to_env GCP_SA_KEY                           ADMIN_STUDIO_GCP_SA_KEY
 
       - name: Verify AI Gateway exists (preflight)
@@ -234,6 +235,7 @@ jobs:
           put_required_secret ANTHROPIC_API_KEY "$anthropic_api_key"
           put_required_secret FACTORY_APP_ID "${{ secrets.FACTORY_APP_ID }}"
           put_required_secret FACTORY_APP_PRIVATE_KEY "${{ secrets.FACTORY_APP_PRIVATE_KEY }}"
+          put_required_secret FACTORY_APP_INSTALLATION_ID "${FACTORY_APP_INSTALLATION_ID:-${FALLBACK_FACTORY_APP_INSTALLATION_ID}}"
 
           put_optional_secret DEEPSEEK_API_KEY "${DEEPSEEK_API_KEY:-}"
           put_optional_secret XAI_API_KEY "${XAI_API_KEY:-}"
@@ -256,6 +258,7 @@ jobs:
           FALLBACK_WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
           FALLBACK_GOOGLE_CLIENT_ID: ${{ secrets.ADMIN_STUDIO_GOOGLE_CLIENT_ID }}
           FALLBACK_STUDIO_ALLOWED_USERS_JSON: ${{ secrets.ADMIN_STUDIO_ALLOWED_USERS_JSON }}
+          FALLBACK_FACTORY_APP_INSTALLATION_ID: ${{ secrets.FACTORY_APP_INSTALLATION_ID }}
 
       - name: Apply database migrations
         if: steps.migrations.outputs.has_migrations == 'true'
