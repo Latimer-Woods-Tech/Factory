@@ -34,13 +34,25 @@ const PAGES = [
   },
   {
     slug: 'watch',
-    url: 'https://capricast.com/watch/5209dd21-71a8-4ee4-afeb-0c030ade1a70',
+    url: 'https://capricast.com/watch/7646228e-f046-43fa-92eb-ef2bef7ecab7',
     rubric: [
       'Check that the video player renders and is not a blank/broken element.',
       'Verify that video title and metadata (author, date) are present and readable.',
       'Look for layout issues around the player on mobile viewport.',
       'Check that related/recommended video section is present.',
       'Identify any console-driven loading errors visible in the UI.',
+    ],
+    runAxe: true,
+  },
+  {
+    slug: 'conference',
+    url: 'https://capricast.com/conference/visual-audit-review-3b6d0467',
+    rubric: [
+      'Check that the conference room UI renders correctly — participant grid, controls bar, chat panel.',
+      'Verify that the join/start button is visible and clearly labeled.',
+      'Look for layout issues on mobile viewport — controls should not overlap video areas.',
+      'Check for any placeholder text, broken icons, or unfinished UI elements.',
+      'Identify accessibility issues: missing button labels, poor contrast on controls.',
     ],
     runAxe: true,
   },
