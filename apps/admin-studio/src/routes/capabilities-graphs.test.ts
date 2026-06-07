@@ -6,6 +6,7 @@ const {
   deleteGraphMock,
   findGraphByIdMock,
   findGraphRevisionByIdMock,
+  listGraphRevisionApprovalsMock,
   listGraphsMock,
   listGraphRevisionsMock,
   publishGraphRevisionMock,
@@ -30,6 +31,7 @@ const {
   deleteGraphMock: vi.fn(),
   findGraphByIdMock: vi.fn(),
   findGraphRevisionByIdMock: vi.fn(),
+  listGraphRevisionApprovalsMock: vi.fn(),
   listGraphsMock: vi.fn(),
   listGraphRevisionsMock: vi.fn(),
   publishGraphRevisionMock: vi.fn(),
@@ -56,6 +58,7 @@ vi.mock('../lib/graph-store.js', () => ({
   deleteGraph: deleteGraphMock,
   findGraphById: findGraphByIdMock,
   findGraphRevisionById: findGraphRevisionByIdMock,
+  listGraphRevisionApprovals: listGraphRevisionApprovalsMock,
   listGraphs: listGraphsMock,
   listGraphRevisions: listGraphRevisionsMock,
   publishGraphRevision: publishGraphRevisionMock,
@@ -97,6 +100,7 @@ afterEach(() => {
   deleteGraphMock.mockReset();
   findGraphByIdMock.mockReset();
   findGraphRevisionByIdMock.mockReset();
+  listGraphRevisionApprovalsMock.mockReset();
   listGraphsMock.mockReset();
   listGraphRevisionsMock.mockReset();
   publishGraphRevisionMock.mockReset();
@@ -323,11 +327,24 @@ describe('capability graph routes', () => {
         contentHash: 'hash-4',
         createdBy: 'operator@example.com',
         createdAt: '2026-06-07T00:05:00.000Z',
+        approvalId: 'approval-1',
+        approvedEnvironment: 'staging',
         approvedAt: '2026-06-07T00:05:30.000Z',
         approvedBy: 'operator@example.com',
         approvalSummary: 'Reviewed topology and ready for staging compile.',
         publishedAt: null,
         publishedBy: null,
+      },
+      approval: {
+        id: 'approval-1',
+        graphId: 'graph-1',
+        revisionId: 'rev-4',
+        targetEnvironment: 'staging',
+        mutationClass: 'graph-revision-publish',
+        summary: 'Reviewed topology and ready for staging compile.',
+        approvedBy: 'operator@example.com',
+        approvedAt: '2026-06-07T00:05:30.000Z',
+        expiresAt: null,
       },
     });
 
@@ -351,12 +368,100 @@ describe('capability graph routes', () => {
         approvedBy: 'operator@example.com',
         approvalSummary: 'Reviewed topology and ready for staging compile.',
       },
+      approval: {
+        id: 'approval-1',
+        targetEnvironment: 'staging',
+        mutationClass: 'graph-revision-publish',
+      },
     });
     expect(approveGraphRevisionMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', 'rev-4', {
       approvedBy: 'operator@example.com',
       approvalSummary: 'Reviewed topology and ready for staging compile.',
       env: 'staging',
     });
+  });
+
+  it('lists append-only approval records for a revision', async () => {
+    const authToken = await login();
+    findGraphByIdMock.mockResolvedValue({
+      id: 'graph-1',
+      name: 'Sales graph',
+      description: null,
+      version: 4,
+      currentRevisionId: 'rev-4',
+      currentRevisionNumber: 4,
+      currentRevisionHash: 'hash-4',
+      publishedRevisionId: null,
+      publishedRevisionNumber: null,
+      publishedRevisionHash: null,
+      nodes: [],
+      edges: [],
+      compiledPlan: null,
+      compiledAt: null,
+      createdBy: 'operator@example.com',
+      createdAt: '2026-06-07T00:00:00.000Z',
+      updatedAt: '2026-06-07T00:05:00.000Z',
+    });
+    findGraphRevisionByIdMock.mockResolvedValue({
+      id: 'rev-4',
+      graphId: 'graph-1',
+      revisionNumber: 4,
+      graphVersion: 4,
+      name: 'Sales graph',
+      description: null,
+      nodes: [],
+      edges: [],
+      contentHash: 'hash-4',
+      createdBy: 'operator@example.com',
+      createdAt: '2026-06-07T00:05:00.000Z',
+      approvalId: 'approval-1',
+      approvedEnvironment: 'staging',
+      approvedAt: '2026-06-07T00:05:30.000Z',
+      approvedBy: 'reviewer@example.com',
+      approvalSummary: 'Reviewed topology and ready for staging compile.',
+      publishedAt: null,
+      publishedBy: null,
+    });
+    listGraphRevisionApprovalsMock.mockResolvedValue([
+      {
+        id: 'approval-1',
+        graphId: 'graph-1',
+        revisionId: 'rev-4',
+        targetEnvironment: 'staging',
+        mutationClass: 'graph-revision-publish',
+        summary: 'Reviewed topology and ready for staging compile.',
+        approvedBy: 'reviewer@example.com',
+        approvedAt: '2026-06-07T00:05:30.000Z',
+        expiresAt: null,
+      },
+    ]);
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/revisions/rev-4/approvals', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      revision: {
+        id: 'rev-4',
+        revisionNumber: 4,
+      },
+      approvals: [
+        expect.objectContaining({
+          id: 'approval-1',
+          targetEnvironment: 'staging',
+          approvedBy: 'reviewer@example.com',
+        }),
+      ],
+    });
+    expect(listGraphRevisionApprovalsMock).toHaveBeenCalledWith(expect.anything(), 'graph-1', 'rev-4');
   });
 
   it('rejects production self-approval of a revision', async () => {
@@ -520,6 +625,32 @@ describe('capability graph routes', () => {
     expect(res.status).toBe(409);
     await expect(res.json()).resolves.toMatchObject({
       error: 'Revision must be approved before publishing',
+    });
+  });
+
+  it('rejects publishing with an approval scoped to another environment', async () => {
+    const authToken = await login();
+    publishGraphRevisionMock.mockResolvedValue({
+      status: 'approval_environment_mismatch',
+    });
+
+    const res = await worker.fetch(
+      new Request('https://admin-studio.example/capabilities/graphs/graph-1/publish', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          'X-Confirmed': 'true',
+        },
+        body: JSON.stringify({ revisionId: 'rev-4' }),
+      }),
+      buildEnv({ STUDIO_ENV: 'staging' }),
+      executionContext,
+    );
+
+    expect(res.status).toBe(409);
+    await expect(res.json()).resolves.toMatchObject({
+      error: 'Revision approval does not match the requested environment',
     });
   });
 

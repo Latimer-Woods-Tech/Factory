@@ -6,7 +6,7 @@
 
 ## Implementation Status
 
-The recipe-first end-to-end thin slice (resolve → provision → deploy) is operational. Drift detection and the constrained visual composer v1 are implemented. The composer now has runtime payload validation, optimistic concurrency, immutable revision lineage, explicit revision approval, published execution heads, and production reviewer separation. It is not complete as a governed Autonomous OS surface: explicit access control, deterministic relationship semantics, actual-state binding, compile-result/environment-bound approval, an append-only approval ledger, and graph-specific staging proof remain open.
+The recipe-first end-to-end thin slice (resolve → provision → deploy) is operational. Drift detection and the constrained visual composer v1 are implemented. The composer now has runtime payload validation, optimistic concurrency, immutable revision lineage, environment-bound append-only revision approvals, published execution heads, and production reviewer separation. It is not complete as a governed Autonomous OS surface: explicit access control, deterministic relationship semantics, actual-state binding, compile-result-bound approval with expiry and execution-time revalidation, and graph-specific staging proof remain open.
 
 ### Assembly Line (Stages 1A–1E)
 
@@ -28,7 +28,7 @@ The recipe-first end-to-end thin slice (resolve → provision → deploy) is ope
 | Drift UI badges | `DeployedServicesPanel` + `DriftStatusBadge` in `CapabilitiesTab.tsx`; polls `GET /capabilities/services?conceptId=...`; 3-state badge (unchecked / ok / drift) | 🔄 Auto-merge queue | #1119 |
 | Graph compiler backend | `capability_graphs` table, `graph-store.ts`, `graph-compiler.ts` (v1 constraint: exactly one concept node), graph routes (`GET/POST /capabilities/graphs`, `/:id/compile`, `/:id/handoff`), migration `0009_capability_graphs.sql` | Implemented v1; hardening required | #1120 |
 | Phase 5 — Visual Composer | `GraphComposerTab.tsx` (1178 lines): 3-panel layout (palette / canvas / properties), drag-drop nodes, SVG edge overlay, concept param editor, compile→handoff flow | Implemented v1; maturity gates open | #1121 |
-| Graph governance foundation | Strict payload validation, optimistic concurrency, immutable revisions, revision-pinned compile/handoff, review UI, explicit approval and published heads, production author/reviewer/publisher separation | Implemented; deeper approval binding and authorization remain | In progress |
+| Graph governance foundation | Strict payload validation, optimistic concurrency, immutable revisions, revision-pinned compile/handoff, review UI, environment-bound append-only approval ledger and published heads, production author/reviewer/publisher separation | Implemented; compile-bound approval and authorization remain | In progress |
 
 **Full operator flow (assembly line + composer):**
 ```
@@ -46,7 +46,7 @@ Drift cron: 0 */6 * * * → runDriftCheck() → GET /manifest on each live servi
   → DriftStatusBadge in CapabilitiesTab shows amber when drift detected
 ```
 
-**Remaining work:** First real graph-authored end-to-end provision run with a live handoff; drift cron validation in production; typed relationship semantics; actual-state binding; explicit graph authorization; compiler/version-pinned approvals; append-only approval history; broader graph-specific tests; and approval integration with execution. Multi-concept graph support remains locked until the single-concept lifecycle passes the maturity gates below.
+**Remaining work:** First real graph-authored end-to-end provision run with a live handoff; drift cron validation in production; typed relationship semantics; actual-state binding; explicit graph authorization; compiler/version-pinned approvals with expiry; broader graph-specific tests; and approval integration with execution-time revalidation. Multi-concept graph support remains locked until the single-concept lifecycle passes the maturity gates below.
 
 ## Phase 5 Maturity Revision
 
@@ -162,7 +162,7 @@ Known constraints:
 1. Exactly one concept node is supported.
 2. Primitive nodes and edges are mostly informational.
 3. Relationship semantics remain mostly informational and are not registry-owned typed contracts.
-4. Revision approval is revision-bound and immutable, but is not yet an append-only ledger bound to compile hash, target environment, mutation class, and expiry.
+4. Revision approval is revision-bound, environment-bound, immutable, and stored in an append-only ledger, but is not yet bound to compile hash, registry/compiler versions, expiry, or execution-time revalidation.
 5. Graph-specific authorization, compiler fixtures, migration tests, and end-to-end staging proof are incomplete.
 6. Desired state is not bound into a complete desired-versus-actual lifecycle.
 

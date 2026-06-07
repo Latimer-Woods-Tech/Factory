@@ -120,11 +120,25 @@ interface GraphRevision {
   contentHash: string;
   createdBy: string;
   createdAt: string;
+  approvalId: string | null;
+  approvedEnvironment: 'local' | 'staging' | 'production' | null;
   approvedAt: string | null;
   approvedBy: string | null;
   approvalSummary: string | null;
   publishedAt: string | null;
   publishedBy: string | null;
+}
+
+interface GraphRevisionApproval {
+  id: string;
+  graphId: string;
+  revisionId: string;
+  targetEnvironment: 'local' | 'staging' | 'production';
+  mutationClass: 'graph-revision-publish';
+  summary: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string | null;
 }
 
 interface GraphRevisionsResponse {
@@ -390,6 +404,8 @@ export function GraphComposerTab() {
   const [revisionsLoading, setRevisionsLoading] = useState(false);
   const [revisionsError, setRevisionsError] = useState<string | null>(null);
   const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
+  const [revisionApprovals, setRevisionApprovals] = useState<GraphRevisionApproval[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
   const [approvalSummaryDraft, setApprovalSummaryDraft] = useState('');
 
   // Current graph working state
@@ -489,6 +505,20 @@ export function GraphComposerTab() {
     }
   }, []);
 
+  const loadRevisionApprovals = useCallback(async (graphId: string, revisionId: string) => {
+    setApprovalsLoading(true);
+    try {
+      const data = await apiFetch<{ approvals: GraphRevisionApproval[] }>(
+        `/capabilities/graphs/${graphId}/revisions/${revisionId}/approvals`,
+      );
+      setRevisionApprovals(data.approvals ?? []);
+    } catch {
+      setRevisionApprovals([]);
+    } finally {
+      setApprovalsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadGraphs();
   }, [loadGraphs]);
@@ -543,10 +573,19 @@ export function GraphComposerTab() {
 
   useEffect(() => {
     const selectedRevision = graphRevisions.find((revision) => revision.id === selectedRevisionId);
-    setApprovalSummaryDraft(selectedRevision?.approvalSummary ?? '');
+    const environmentApproval = revisionApprovals.find((approval) => approval.targetEnvironment === sessionEnv);
+    setApprovalSummaryDraft(environmentApproval?.summary ?? selectedRevision?.approvalSummary ?? '');
     setApproveError(null);
     setApproveSuccess(false);
-  }, [graphRevisions, selectedRevisionId]);
+  }, [graphRevisions, revisionApprovals, selectedRevisionId, sessionEnv]);
+
+  useEffect(() => {
+    if (!selectedGraphId || !selectedRevisionId) {
+      setRevisionApprovals([]);
+      return;
+    }
+    void loadRevisionApprovals(selectedGraphId, selectedRevisionId);
+  }, [loadRevisionApprovals, selectedGraphId, selectedRevisionId]);
 
   // ── Create graph ──────────────────────────────────────────────────────────
 
@@ -649,6 +688,7 @@ export function GraphComposerTab() {
         },
       );
       await loadRevisions(selectedGraphId);
+      await loadRevisionApprovals(selectedGraphId, revisionId);
       setApproveSuccess(true);
       window.setTimeout(() => setApproveSuccess(false), 2000);
     } catch (err) {
@@ -881,13 +921,16 @@ export function GraphComposerTab() {
   const approvalTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'trivial');
   const publishTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'reversible');
   const isProductionSession = sessionEnv === 'production';
-  const selectedRevisionIsApproved = !!selectedRevision?.approvedAt && !!selectedRevision?.approvedBy;
+  const sessionApproval = revisionApprovals.find((approval) => approval.targetEnvironment === sessionEnv) ?? null;
+  const selectedRevisionIsApproved = !!sessionApproval;
+  const approvalEnvironmentMismatch =
+    !selectedRevisionIsApproved && revisionApprovals.length > 0;
   const selectedRevisionIsPublished = !!selectedRevision && selectedRevision.id === selectedGraph?.publishedRevisionId;
   const selectedRevisionIsCurrent = !!selectedRevision && selectedRevision.id === selectedGraph?.currentRevisionId;
   const productionSelfApprovalBlocked =
     isProductionSession && !!selectedRevision && selectedRevision.createdBy === sessionUserId;
   const productionSelfPublishBlocked =
-    isProductionSession && !!selectedRevision?.approvedBy && selectedRevision.approvedBy === sessionUserId;
+    isProductionSession && !!sessionApproval?.approvedBy && sessionApproval.approvedBy === sessionUserId;
   const approveTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
   const publishTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
   const publishDiff = selectedRevision && publishedRevision && selectedRevision.id !== publishedRevision.id
@@ -1039,6 +1082,7 @@ export function GraphComposerTab() {
             !selectedRevision ||
             selectedRevisionIsPublished ||
             !selectedRevisionIsApproved ||
+            approvalEnvironmentMismatch ||
             productionSelfPublishBlocked
           }
         >
@@ -1494,12 +1538,20 @@ export function GraphComposerTab() {
                     <div>
                       <dt className="text-slate-500">Approved at</dt>
                       <dd className="text-slate-200">
-                        {selectedRevision.approvedAt ? new Date(selectedRevision.approvedAt).toLocaleString() : 'Not approved'}
+                        {sessionApproval ? new Date(sessionApproval.approvedAt).toLocaleString() : 'Not approved for this environment'}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-slate-500">Approved by</dt>
-                      <dd className="text-slate-200">{selectedRevision.approvedBy ?? '—'}</dd>
+                      <dd className="text-slate-200">{sessionApproval?.approvedBy ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approval environment</dt>
+                      <dd className="font-mono text-slate-200">{sessionApproval?.targetEnvironment ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approval record</dt>
+                      <dd className="font-mono text-slate-200 break-all">{sessionApproval?.id ?? '—'}</dd>
                     </div>
                     <div>
                       <dt className="text-slate-500">Published at</dt>
@@ -1571,11 +1623,35 @@ export function GraphComposerTab() {
                         <span className="text-xs text-red-400">{approveError}</span>
                       )}
                     </div>
-                    {selectedRevision.approvalSummary && (
+                    {sessionApproval?.summary && (
                       <p className="mt-3 text-xs text-slate-400">
-                        Current approval note: {selectedRevision.approvalSummary}
+                        Current approval note: {sessionApproval.summary}
                       </p>
                     )}
+                    <div className="mt-3 border-t border-slate-800 pt-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                        Approval Ledger
+                      </p>
+                      {approvalsLoading ? (
+                        <p className="mt-2 text-xs text-slate-500">Loading approval history…</p>
+                      ) : revisionApprovals.length === 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">No approval records.</p>
+                      ) : (
+                        <div className="mt-2 space-y-2">
+                          {revisionApprovals.map((approval) => (
+                            <div key={approval.id} className="border-l-2 border-emerald-700/60 pl-3 text-xs">
+                              <p className="text-slate-300">
+                                <span className="font-mono text-emerald-300">{approval.targetEnvironment}</span>
+                                {' · '}
+                                {approval.approvedBy}
+                              </p>
+                              <p className="mt-1 text-slate-500">{new Date(approval.approvedAt).toLocaleString()}</p>
+                              <p className="mt-1 text-slate-400">{approval.summary}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-3">
@@ -1585,6 +1661,10 @@ export function GraphComposerTab() {
                     {selectedRevisionIsPublished ? (
                       <p className="mt-2 text-sm text-emerald-300">
                         This revision is already the published execution head.
+                      </p>
+                    ) : approvalEnvironmentMismatch ? (
+                      <p className="mt-2 text-sm text-amber-300">
+                        Existing approval records target another environment; approve this revision for {sessionEnv} before publishing here.
                       </p>
                     ) : productionSelfPublishBlocked ? (
                       <p className="mt-2 text-sm text-amber-300">

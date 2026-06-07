@@ -59,6 +59,7 @@ import {
   createGraph,
   findGraphById,
   findGraphRevisionById,
+  listGraphRevisionApprovals,
   listGraphs,
   listGraphRevisions,
   publishGraphRevision,
@@ -716,14 +717,46 @@ capabilities.post(
       revisionId: result.revision.id,
       revisionNumber: result.revision.revisionNumber,
       graphVersion: result.revision.graphVersion,
+      approvalId: result.approval.id,
+      targetEnvironment: result.approval.targetEnvironment,
       approvalSummary: result.revision.approvalSummary,
     });
     return c.json({
       graph: result.graph,
       revision: result.revision,
+      approval: result.approval,
     });
   },
 );
+
+/**
+ * List append-only approval records for a graph revision.
+ * GET /capabilities/graphs/:id/revisions/:revisionId/approvals
+ */
+capabilities.get('/graphs/:id/revisions/:revisionId/approvals', async (c) => {
+  const ctx = c.var.envContext;
+  if (!ctx) return c.json({ error: 'auth required' }, 401);
+  const id = c.req.param('id');
+  const revisionId = c.req.param('revisionId');
+  const graph = await findGraphById(c.env.DB, id);
+  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const revision = await findGraphRevisionById(c.env.DB, revisionId);
+  if (!revision || revision.graphId !== id) {
+    return c.json({ error: 'Revision not found for this graph' }, 404);
+  }
+  const approvals = await listGraphRevisionApprovals(c.env.DB, id, revisionId);
+  return c.json({
+    generatedAt: new Date().toISOString(),
+    graph: { id: graph.id, name: graph.name },
+    revision: {
+      id: revision.id,
+      revisionNumber: revision.revisionNumber,
+      graphVersion: revision.graphVersion,
+      contentHash: revision.contentHash,
+    },
+    approvals,
+  });
+});
 
 /**
  * Publish a graph revision for execution.
@@ -764,6 +797,9 @@ capabilities.post(
     }
     if (result.status === 'revision_not_approved') {
       return c.json({ error: 'Revision must be approved before publishing' }, 409);
+    }
+    if (result.status === 'approval_environment_mismatch') {
+      return c.json({ error: 'Revision approval does not match the requested environment' }, 409);
     }
     if (result.status === 'publisher_must_differ_from_approver') {
       return c.json({ error: 'Production revisions must be published by a different principal than the approver' }, 409);

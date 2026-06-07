@@ -60,11 +60,25 @@ export interface GraphRevision {
   contentHash: string;
   createdBy: string;
   createdAt: string;
+  approvalId: string | null;
+  approvedEnvironment: 'local' | 'staging' | 'production' | null;
   approvedAt: string | null;
   approvedBy: string | null;
   approvalSummary: string | null;
   publishedAt: string | null;
   publishedBy: string | null;
+}
+
+export interface GraphRevisionApproval {
+  id: string;
+  graphId: string;
+  revisionId: string;
+  targetEnvironment: 'local' | 'staging' | 'production';
+  mutationClass: 'graph-revision-publish';
+  summary: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string | null;
 }
 
 export interface GraphSourceProvenance {
@@ -108,11 +122,25 @@ interface GraphRevisionRow {
   content_hash: string;
   created_by: string;
   created_at: string;
+  approval_id: string | null;
+  approved_environment: 'local' | 'staging' | 'production' | null;
   approved_at: string | null;
   approved_by: string | null;
   approval_summary: string | null;
   published_at: string | null;
   published_by: string | null;
+}
+
+interface GraphRevisionApprovalRow {
+  id: string;
+  graph_id: string;
+  revision_id: string;
+  target_environment: 'local' | 'staging' | 'production';
+  mutation_class: 'graph-revision-publish';
+  summary: string;
+  approved_by: string;
+  approved_at: string;
+  expires_at: string | null;
 }
 
 function rowToDocument(row: GraphRow): GraphDocument {
@@ -150,11 +178,27 @@ function rowToRevision(row: GraphRevisionRow): GraphRevision {
     contentHash: row.content_hash,
     createdBy: row.created_by,
     createdAt: row.created_at,
+    approvalId: row.approval_id,
+    approvedEnvironment: row.approved_environment,
     approvedAt: row.approved_at,
     approvedBy: row.approved_by,
     approvalSummary: row.approval_summary,
     publishedAt: row.published_at,
     publishedBy: row.published_by,
+  };
+}
+
+function rowToApproval(row: GraphRevisionApprovalRow): GraphRevisionApproval {
+  return {
+    id: row.id,
+    graphId: row.graph_id,
+    revisionId: row.revision_id,
+    targetEnvironment: row.target_environment,
+    mutationClass: row.mutation_class,
+    summary: row.summary,
+    approvedBy: row.approved_by,
+    approvedAt: row.approved_at,
+    expiresAt: row.expires_at,
   };
 }
 
@@ -244,6 +288,8 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
           content_hash TEXT NOT NULL,
           created_by TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          approval_id UUID,
+          approved_environment TEXT,
           approved_at TIMESTAMPTZ,
           approved_by TEXT,
           approval_summary TEXT,
@@ -252,6 +298,14 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
           UNIQUE (graph_id, revision_number),
           UNIQUE (graph_id, graph_version)
         )
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graph_revisions
+        ADD COLUMN IF NOT EXISTS approval_id UUID
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graph_revisions
+        ADD COLUMN IF NOT EXISTS approved_environment TEXT
       `);
       await db.execute(sql`
         ALTER TABLE capability_graph_revisions
@@ -273,10 +327,56 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
         ALTER TABLE capability_graph_revisions
         ADD COLUMN IF NOT EXISTS published_by TEXT
       `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS capability_graph_revision_approvals (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          graph_id UUID NOT NULL REFERENCES capability_graphs(id) ON DELETE CASCADE,
+          revision_id UUID NOT NULL REFERENCES capability_graph_revisions(id) ON DELETE CASCADE,
+          target_environment TEXT NOT NULL CHECK (target_environment IN ('local', 'staging', 'production')),
+          mutation_class TEXT NOT NULL CHECK (mutation_class IN ('graph-revision-publish')),
+          summary TEXT NOT NULL,
+          approved_by TEXT NOT NULL,
+          approved_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          expires_at TIMESTAMPTZ,
+          UNIQUE (revision_id, target_environment, mutation_class)
+        )
+      `);
+      await db.execute(sql`
+        UPDATE capability_graph_revisions
+        SET approved_environment = 'staging'
+        WHERE approved_environment IS NULL
+          AND approved_at IS NOT NULL
+          AND approved_by IS NOT NULL
+      `);
+      await db.execute(sql`
+        INSERT INTO capability_graph_revision_approvals (
+          graph_id, revision_id, target_environment, mutation_class,
+          summary, approved_by, approved_at
+        )
+        SELECT graph_id, id, approved_environment, ${'graph-revision-publish'},
+               COALESCE(approval_summary, 'Legacy graph revision approval'),
+               approved_by, approved_at
+        FROM capability_graph_revisions
+        WHERE approval_id IS NULL
+          AND approved_environment IS NOT NULL
+          AND approved_at IS NOT NULL
+          AND approved_by IS NOT NULL
+        ON CONFLICT (revision_id, target_environment, mutation_class) DO NOTHING
+      `);
+      await db.execute(sql`
+        UPDATE capability_graph_revisions revision
+        SET approval_id = approval.id
+        FROM capability_graph_revision_approvals approval
+        WHERE revision.approval_id IS NULL
+          AND approval.revision_id = revision.id
+          AND approval.target_environment = revision.approved_environment
+          AND approval.mutation_class = ${'graph-revision-publish'}
+      `);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graphs_created ON capability_graphs (created_at DESC)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graphs_author  ON capability_graphs (created_by, created_at DESC)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graph_revisions_graph_created ON capability_graph_revisions (graph_id, created_at DESC)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graph_revisions_graph_revision ON capability_graph_revisions (graph_id, revision_number DESC)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graph_revision_approvals_revision ON capability_graph_revision_approvals (revision_id, approved_at DESC)`);
     })();
     schemaInitCache.set(hyperdrive, init);
     init.catch(() => { schemaInitCache.delete(hyperdrive); });
@@ -502,7 +602,8 @@ export async function listGraphRevisions(
     const limit = clamp(filter.limit ?? 20, 1, 100);
     const result = await db.execute(sql`
       SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-             content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+             content_hash, created_by, created_at, approval_id, approved_environment,
+             approved_at, approved_by, approval_summary,
              published_at, published_by
       FROM capability_graph_revisions
       WHERE graph_id = ${graphId}
@@ -525,7 +626,8 @@ export async function findGraphRevisionById(
     const db = getDb(hyperdrive);
     const result = await db.execute(sql`
       SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-             content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+             content_hash, created_by, created_at, approval_id, approved_environment,
+             approved_at, approved_by, approval_summary,
              published_at, published_by
       FROM capability_graph_revisions
       WHERE id = ${revisionId}
@@ -536,6 +638,28 @@ export async function findGraphRevisionById(
   } catch (err) {
     console.error('[graph-store] findGraphRevisionById failed:', (err as Error).message);
     return null;
+  }
+}
+
+export async function listGraphRevisionApprovals(
+  hyperdrive: HyperdriveBinding,
+  graphId: string,
+  revisionId: string,
+): Promise<GraphRevisionApproval[]> {
+  try {
+    await ensureGraphSchema(hyperdrive);
+    const db = getDb(hyperdrive);
+    const result = await db.execute(sql`
+      SELECT id, graph_id, revision_id, target_environment, mutation_class,
+             summary, approved_by, approved_at, expires_at
+      FROM capability_graph_revision_approvals
+      WHERE graph_id = ${graphId} AND revision_id = ${revisionId}
+      ORDER BY approved_at DESC
+    `);
+    return (result.rows as unknown as GraphRevisionApprovalRow[]).map(rowToApproval);
+  } catch (err) {
+    console.error('[graph-store] listGraphRevisionApprovals failed:', (err as Error).message);
+    return [];
   }
 }
 
@@ -558,10 +682,14 @@ export async function publishGraphRevision(
       if (!revision || revision.graphId !== graphId) {
         return { status: 'revision_not_found' } as const;
       }
-      if (!revision.approvedAt || !revision.approvedBy) {
+      const approval = await findGraphRevisionApprovalUsingDb(txDb, revision.id, input.env);
+      if (!approval && !revision.approvedAt && !revision.approvedBy) {
         return { status: 'revision_not_approved' } as const;
       }
-      if (input.env === 'production' && revision.approvedBy === input.publishedBy) {
+      if (!approval) {
+        return { status: 'approval_environment_mismatch' } as const;
+      }
+      if (input.env === 'production' && approval.approvedBy === input.publishedBy) {
         return { status: 'publisher_must_differ_from_approver' } as const;
       }
 
@@ -572,7 +700,8 @@ export async function publishGraphRevision(
             published_by = ${input.publishedBy}
         WHERE id = ${revision.id}
         RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-                  content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+                  content_hash, created_by, created_at, approval_id, approved_environment,
+                  approved_at, approved_by, approval_summary,
                   published_at, published_by
       `);
       const publishedRevisionRow = (revisionUpdate.rows as unknown as GraphRevisionRow[])[0];
@@ -621,7 +750,8 @@ export async function approveGraphRevision(
       if (!revision || revision.graphId !== graphId) {
         return { status: 'revision_not_found' } as const;
       }
-      if (revision.approvedAt || revision.approvedBy) {
+      const existingApproval = await findGraphRevisionApprovalUsingDb(txDb, revision.id, input.env);
+      if (existingApproval) {
         return { status: 'revision_already_approved' } as const;
       }
       if (input.env === 'production' && revision.createdBy === input.approvedBy) {
@@ -630,14 +760,32 @@ export async function approveGraphRevision(
 
       const approvedAt = new Date().toISOString();
       const approvalSummary = input.approvalSummary.trim();
+      const approvalInsert = await txDb.execute(sql`
+        INSERT INTO capability_graph_revision_approvals (
+          graph_id, revision_id, target_environment, mutation_class,
+          summary, approved_by, approved_at
+        )
+        VALUES (
+          ${graphId}, ${revision.id}, ${input.env}, ${'graph-revision-publish'},
+          ${approvalSummary}, ${input.approvedBy}, ${approvedAt}
+        )
+        RETURNING id, graph_id, revision_id, target_environment, mutation_class,
+                  summary, approved_by, approved_at, expires_at
+      `);
+      const approvalRow = (approvalInsert.rows as unknown as GraphRevisionApprovalRow[])[0];
+      if (!approvalRow) return { status: 'revision_not_found' } as const;
+
       const revisionUpdate = await txDb.execute(sql`
         UPDATE capability_graph_revisions
-        SET approved_at = ${approvedAt},
+        SET approval_id = ${approvalRow.id},
+            approved_environment = ${approvalRow.target_environment},
+            approved_at = ${approvedAt},
             approved_by = ${input.approvedBy},
             approval_summary = ${approvalSummary}
         WHERE id = ${revision.id}
         RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-                  content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+                  content_hash, created_by, created_at, approval_id, approved_environment,
+                  approved_at, approved_by, approval_summary,
                   published_at, published_by
       `);
       const approvedRevisionRow = (revisionUpdate.rows as unknown as GraphRevisionRow[])[0];
@@ -647,6 +795,7 @@ export async function approveGraphRevision(
         status: 'ok',
         graph,
         revision: rowToRevision(approvedRevisionRow),
+        approval: rowToApproval(approvalRow),
       } as const;
     });
   } catch (err) {
@@ -661,7 +810,7 @@ export type GraphUpdateResult =
   | { status: 'not_found' };
 
 export type GraphApproveResult =
-  | { status: 'ok'; graph: GraphDocument; revision: GraphRevision }
+  | { status: 'ok'; graph: GraphDocument; revision: GraphRevision; approval: GraphRevisionApproval }
   | { status: 'not_found' }
   | { status: 'revision_not_found' }
   | { status: 'revision_already_approved' }
@@ -673,6 +822,7 @@ export type GraphPublishResult =
   | { status: 'no_revision' }
   | { status: 'revision_not_found' }
   | { status: 'revision_not_approved' }
+  | { status: 'approval_environment_mismatch' }
   | { status: 'publisher_must_differ_from_approver' };
 
 async function findGraphByIdUsingDb(
@@ -713,7 +863,8 @@ async function persistGraphRevision(
       ${contentHash}, ${createdBy}
     )
     RETURNING id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-              content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+              content_hash, created_by, created_at, approval_id, approved_environment,
+              approved_at, approved_by, approval_summary,
               published_at, published_by
   `);
   const revisionRow = (revisionInsert.rows as unknown as GraphRevisionRow[])[0];
@@ -754,7 +905,8 @@ async function findGraphRevisionByIdUsingDb(
 ): Promise<GraphRevision | null> {
   const result = await db.execute(sql`
     SELECT id, graph_id, revision_number, graph_version, name, description, nodes, edges,
-           content_hash, created_by, created_at, approved_at, approved_by, approval_summary,
+           content_hash, created_by, created_at, approval_id, approved_environment,
+           approved_at, approved_by, approval_summary,
            published_at, published_by
     FROM capability_graph_revisions
     WHERE id = ${revisionId}
@@ -762,4 +914,22 @@ async function findGraphRevisionByIdUsingDb(
   `);
   const row = (result.rows as unknown as GraphRevisionRow[])[0];
   return row ? rowToRevision(row) : null;
+}
+
+async function findGraphRevisionApprovalUsingDb(
+  db: FactoryDb,
+  revisionId: string,
+  targetEnvironment: 'local' | 'staging' | 'production',
+): Promise<GraphRevisionApproval | null> {
+  const result = await db.execute(sql`
+    SELECT id, graph_id, revision_id, target_environment, mutation_class,
+           summary, approved_by, approved_at, expires_at
+    FROM capability_graph_revision_approvals
+    WHERE revision_id = ${revisionId}
+      AND target_environment = ${targetEnvironment}
+      AND mutation_class = ${'graph-revision-publish'}
+    LIMIT 1
+  `);
+  const row = (result.rows as unknown as GraphRevisionApprovalRow[])[0];
+  return row ? rowToApproval(row) : null;
 }
