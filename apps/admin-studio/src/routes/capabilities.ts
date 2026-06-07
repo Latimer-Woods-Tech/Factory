@@ -61,10 +61,12 @@ import {
   updateGraphLayout,
   saveCompiledPlan,
   deleteGraph,
-  type GraphNode,
-  type GraphEdge,
 } from '../lib/graph-store.js';
 import { compileGraph } from '../lib/graph-compiler.js';
+import {
+  parseGraphCreateInput,
+  parseGraphPatchInput,
+} from '../lib/graph-validation.js';
 
 const capabilities = new Hono<AppEnv>();
 
@@ -598,12 +600,17 @@ capabilities.get('/graphs', async (c) => {
 capabilities.post('/graphs', async (c) => {
   const ctx = c.var.envContext;
   if (!ctx) return c.json({ error: 'auth required' }, 401);
-  type GraphCreateBody = { name?: string; description?: string };
-  const body = await c.req.json<GraphCreateBody>().catch((): GraphCreateBody => ({}));
-  if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400);
+  const body = await c.req.json<unknown>().catch((): unknown => ({}));
+  const parsed = parseGraphCreateInput(body);
+  if (!parsed.ok) {
+    return c.json({
+      error: parsed.issues[0]?.message ?? 'Invalid graph create payload',
+      issues: parsed.issues,
+    }, 400);
+  }
   const graph = await createGraph(c.env.DB, {
-    name: body.name.trim(),
-    description: body.description,
+    name: parsed.value.name,
+    description: parsed.value.description,
     createdBy: ctx.userId,
   });
   c.set('auditAction', 'capabilities.graph.create');
@@ -637,20 +644,24 @@ capabilities.put('/graphs/:id', async (c) => {
   const ctx = c.var.envContext;
   if (!ctx) return c.json({ error: 'auth required' }, 401);
   const id = c.req.param('id');
-  type GraphPatchBody = {
-    name?: string;
-    description?: string;
-    nodes?: unknown[];
-    edges?: unknown[];
-  };
-  const body = await c.req.json<GraphPatchBody>().catch((): GraphPatchBody => ({}));
-  const graph = await updateGraphLayout(c.env.DB, id, {
-    name: body.name,
-    description: body.description,
-    nodes: body.nodes as GraphNode[] | undefined,
-    edges: body.edges as GraphEdge[] | undefined,
-  });
-  if (!graph) return c.json({ error: `Unknown graph: ${id}` }, 404);
+  const body = await c.req.json<unknown>().catch((): unknown => ({}));
+  const parsed = parseGraphPatchInput(body);
+  if (!parsed.ok) {
+    return c.json({
+      error: parsed.issues[0]?.message ?? 'Invalid graph patch payload',
+      issues: parsed.issues,
+    }, 400);
+  }
+  const result = await updateGraphLayout(c.env.DB, id, parsed.value);
+  if (result.status === 'not_found') return c.json({ error: `Unknown graph: ${id}` }, 404);
+  if (result.status === 'conflict') {
+    return c.json({
+      error: 'Graph was updated by another session. Refresh and try again.',
+      currentVersion: result.currentGraph.version,
+      graph: result.currentGraph,
+    }, 409);
+  }
+  const graph = result.graph;
   c.set('auditAction', 'capabilities.graph.update');
   c.set('auditResource', 'capability_graphs');
   c.set('auditResourceId', graph.id);

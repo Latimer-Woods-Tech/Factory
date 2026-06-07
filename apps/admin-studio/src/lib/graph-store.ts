@@ -31,6 +31,7 @@ export interface GraphDocument {
   id: string;
   name: string;
   description: string | null;
+  version: number;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiledPlan: Record<string, unknown> | null;
@@ -45,6 +46,7 @@ interface GraphRow {
   id: string;
   name: string;
   description: string | null;
+  version: number;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiled_plan: Record<string, unknown> | null;
@@ -59,6 +61,7 @@ function rowToDocument(row: GraphRow): GraphDocument {
     id: row.id,
     name: row.name,
     description: row.description,
+    version: row.version,
     nodes: row.nodes,
     edges: row.edges,
     compiledPlan: row.compiled_plan,
@@ -98,6 +101,7 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
           id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           name        TEXT NOT NULL,
           description TEXT,
+          version     INTEGER NOT NULL DEFAULT 1,
           nodes       JSONB NOT NULL DEFAULT '[]'::jsonb,
           edges       JSONB NOT NULL DEFAULT '[]'::jsonb,
           compiled_plan JSONB,
@@ -106,6 +110,10 @@ export async function ensureGraphSchema(hyperdrive: HyperdriveBinding): Promise<
           created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
         )
+      `);
+      await db.execute(sql`
+        ALTER TABLE capability_graphs
+        ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 1
       `);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graphs_created ON capability_graphs (created_at DESC)`);
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_capability_graphs_author  ON capability_graphs (created_by, created_at DESC)`);
@@ -125,7 +133,7 @@ function clamp(n: number, min: number, max: number): number {
  */
 export async function createGraph(
   hyperdrive: HyperdriveBinding,
-  input: { name: string; description?: string; createdBy: string },
+  input: { name: string; description?: string | null; createdBy: string },
 ): Promise<GraphDocument> {
   await ensureGraphSchema(hyperdrive);
   const db = getDb(hyperdrive);
@@ -133,7 +141,7 @@ export async function createGraph(
   const result = await db.execute(sql`
     INSERT INTO capability_graphs (name, description, created_by, created_at, updated_at)
     VALUES (${input.name}, ${input.description ?? null}, ${input.createdBy}, ${now}, ${now})
-    RETURNING id, name, description, nodes, edges, compiled_plan, compiled_at, created_by, created_at, updated_at
+    RETURNING id, name, description, version, nodes, edges, compiled_plan, compiled_at, created_by, created_at, updated_at
   `);
   const row = (result.rows as unknown as GraphRow[])[0];
   if (!row) throw new Error('[graph-store] createGraph returned no row');
@@ -153,7 +161,7 @@ export async function findGraphById(
     const db = getDb(hyperdrive);
     const result = await db.execute(sql`
       SELECT id, name, description, nodes, edges, compiled_plan, compiled_at,
-             created_by, created_at, updated_at
+             created_by, created_at, updated_at, version
       FROM capability_graphs WHERE id = ${id} LIMIT 1
     `);
     const row = (result.rows as unknown as GraphRow[])[0];
@@ -185,7 +193,7 @@ export async function listGraphs(
     const whereClause = sql.join(whereChunks, sql` `);
     const result = await db.execute(sql`
       SELECT id, name, description, nodes, edges, compiled_plan, compiled_at,
-             created_by, created_at, updated_at
+             created_by, created_at, updated_at, version
       FROM capability_graphs ${whereClause}
       ORDER BY updated_at DESC LIMIT ${limit}
     `);
@@ -206,8 +214,14 @@ export async function listGraphs(
 export async function updateGraphLayout(
   hyperdrive: HyperdriveBinding,
   id: string,
-  patch: { name?: string; description?: string; nodes?: GraphNode[]; edges?: GraphEdge[] },
-): Promise<GraphDocument | null> {
+  patch: {
+    name?: string;
+    description?: string | null;
+    nodes?: GraphNode[];
+    edges?: GraphEdge[];
+    expectedVersion?: number;
+  },
+): Promise<GraphUpdateResult> {
   try {
     await ensureGraphSchema(hyperdrive);
     const db = getDb(hyperdrive);
@@ -217,22 +231,39 @@ export async function updateGraphLayout(
       sql`updated_at = ${now}`,
       sql`compiled_plan = NULL`,
       sql`compiled_at = NULL`,
+      sql`version = version + 1`,
     ];
     if (patch.name !== undefined)        updates.push(sql`name = ${patch.name}`);
     if (patch.description !== undefined) updates.push(sql`description = ${patch.description}`);
     if (patch.nodes !== undefined)       updates.push(sql`nodes = ${JSON.stringify(patch.nodes)}::jsonb`);
     if (patch.edges !== undefined)       updates.push(sql`edges = ${JSON.stringify(patch.edges)}::jsonb`);
     const setClause = sql.join(updates, sql`, `);
+    const whereParts: Array<ReturnType<typeof sql>> = [sql`id = ${id}`];
+    if (patch.expectedVersion !== undefined) {
+      whereParts.push(sql`version = ${patch.expectedVersion}`);
+    }
+    const whereClause = sql.join(whereParts, sql` AND `);
     const result = await db.execute(sql`
-      UPDATE capability_graphs SET ${setClause} WHERE id = ${id}
-      RETURNING id, name, description, nodes, edges, compiled_plan, compiled_at,
+      UPDATE capability_graphs SET ${setClause} WHERE ${whereClause}
+      RETURNING id, name, description, version, nodes, edges, compiled_plan, compiled_at,
                 created_by, created_at, updated_at
     `);
     const row = (result.rows as unknown as GraphRow[])[0];
-    return row ? rowToDocument(row) : null;
+    if (row) {
+      return { status: 'ok', graph: rowToDocument(row) };
+    }
+
+    const current = await findGraphById(hyperdrive, id);
+    if (!current) {
+      return { status: 'not_found' };
+    }
+    if (patch.expectedVersion !== undefined && current.version !== patch.expectedVersion) {
+      return { status: 'conflict', currentGraph: current };
+    }
+    return { status: 'not_found' };
   } catch (err) {
     console.error('[graph-store] updateGraphLayout failed:', (err as Error).message);
-    return null;
+    return { status: 'not_found' };
   }
 }
 
@@ -255,7 +286,7 @@ export async function saveCompiledPlan(
           compiled_at   = ${now},
           updated_at    = ${now}
       WHERE id = ${id}
-      RETURNING id, name, description, nodes, edges, compiled_plan, compiled_at,
+      RETURNING id, name, description, version, nodes, edges, compiled_plan, compiled_at,
                 created_by, created_at, updated_at
     `);
     const row = (result.rows as unknown as GraphRow[])[0];
@@ -284,3 +315,8 @@ export async function deleteGraph(
     return false;
   }
 }
+
+export type GraphUpdateResult =
+  | { status: 'ok'; graph: GraphDocument }
+  | { status: 'conflict'; currentGraph: GraphDocument }
+  | { status: 'not_found' };

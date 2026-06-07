@@ -73,6 +73,7 @@ interface GraphDocument {
   id: string;
   name: string;
   description: string | null;
+  version: number;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiledPlan: Record<string, unknown> | null;
@@ -100,6 +101,12 @@ interface GraphHandoffResult {
     graphId: string;
     createdAt: string;
   };
+}
+
+interface ConflictApiBody {
+  error?: string;
+  currentVersion?: number;
+  graph?: GraphDocument;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -379,6 +386,8 @@ export function GraphComposerTab() {
 
   async function saveGraph() {
     if (!selectedGraphId) return;
+    const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId);
+    if (!selectedGraph) return;
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
@@ -387,13 +396,27 @@ export function GraphComposerTab() {
         `/capabilities/graphs/${selectedGraphId}`,
         {
           method: 'PUT',
-          body: JSON.stringify({ nodes, edges }),
+          body: JSON.stringify({
+            nodes,
+            edges,
+            expectedVersion: selectedGraph.version,
+          }),
         },
       );
       setGraphs((prev) => prev.map((g) => (g.id === data.graph.id ? data.graph : g)));
       setSaveSuccess(true);
       window.setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
+      const body = (err as { body?: unknown }).body as ConflictApiBody | undefined;
+      if ((err as { status?: number }).status === 409 && body?.graph) {
+        setGraphs((prev) => prev.map((graph) => (
+          graph.id === body.graph?.id ? body.graph : graph
+        )));
+        setNodes(body.graph.nodes ?? []);
+        setEdges(body.graph.edges ?? []);
+        setCompileResult(null);
+        setHandoffResult(null);
+      }
       setSaveError(extractErrorMessage(err));
     } finally {
       setSaving(false);
