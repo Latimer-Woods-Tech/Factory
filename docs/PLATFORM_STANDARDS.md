@@ -406,8 +406,8 @@ Client code that needs a direct API origin (e.g. for dev, or for SSE where same-
 const _DIRECT_API = import.meta.env?.VITE_API_ORIGIN?.trim().replace(/\/$/, '')
   ?? 'https://api.myapp.com';
 
-// WRONG — never in shipped code
-const _DIRECT_API = 'https://my-worker.adrper79.workers.dev';
+// WRONG — never in shipped code (exposes the CF infrastructure URL)
+const _DIRECT_API = 'https://my-worker.{account}.workers.dev';
 ```
 
 ### 15.6 Sequencing when migrating an existing worker
