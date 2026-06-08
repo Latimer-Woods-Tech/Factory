@@ -41,6 +41,7 @@ apps:
     repo: Latimer-Woods-Tech/coh
     kind: product
     conformance_key: CH
+    # cypher-healing is also a standalone repo in the org (legacy surface of the same product)
     aliases: [cypher-healing, cipher-healing, cypherofhealing, coh-api, CH]
 
   - canonical: xico-city
@@ -85,7 +86,7 @@ apps:
     aliases: [focus-bro, FB]
 
   - canonical: itsjusus
-    repo: Latimer-Woods-Tech/itsjusus
+    repo: Latimer-Woods-Tech/ijustus
     kind: product
     conformance_key: IJ
     aliases: [ijustus, IJ]

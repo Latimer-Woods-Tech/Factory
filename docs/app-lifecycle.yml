@@ -309,7 +309,7 @@ apps:
   # ── Not yet started (hands-off) ───────────────────────────────────────────────
   - id: itsjusus
     name: ItsJusUs
-    repo: itsjusus
+    repo: ijustus
     stage: provisioned
     mode: hands-off
     health_url: null
