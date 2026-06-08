@@ -211,6 +211,39 @@ workers:
         pattern: "fetch('https://status.latwoodtech.work/current'"
         note: live-data fetch with timeout + fall-back to /data/pulse.json
 
+  - id: analytics-proxy
+    name: analytics-proxy                                  # matches apps/analytics-proxy/wrangler.jsonc `name`
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://analytics.latwoodtech.work                # canonical custom domain
+    workers_dev_url: https://analytics-proxy.adrper79.workers.dev
+    custom_domain: analytics.latwoodtech.work
+    health_endpoint: /                                     # returns per-Worker traffic JSON; no separate /health
+    telemetry_required: false                              # infra-class — powers the /platform/ dashboard Flow mode
+    deployment_status: live_verified_2026-06-08
+    critical_endpoints:
+      - /
+    required_bindings:
+      - ANALYTICS_CACHE                                    # KV namespace analytics-proxy-cache (id f712da4678f74762b0d10fcd777881a1)
+    required_secrets:
+      - CF_API_TOKEN
+      - CF_ACCOUNT_ID
+    required_vars: []
+    consumers:
+      - repo: Latimer-Woods-Tech/factory
+        file: apps/latwoodtech-web/src/platform/platform.js
+        line: ~0
+        pattern: "const ANALYTICS_URL = 'https://analytics.latwoodtech.work/'"
+        note: Flow-mode particle data; fetched only when the user activates Flow mode (60s KV cache, fails gracefully)
+    notes: >
+      60s KV-cached proxy over the Cloudflare Analytics GraphQL API
+      (`workersInvocationsAdaptive`, grouped by `scriptName` only — that dataset has
+      NO `outcome` dimension; querying it returns a GraphQL error). Returns
+      requests/errors/errorRate/cpuTimeP50Ms/cpuTimeP99Ms per Worker for the previous
+      60 min. CORS locked to https://latwoodtech.com. Powers the Platform Brain
+      dashboard Flow mode. GCP CF_ACCOUNT_ID secret carries a BOM — strip with
+      `tr -d '\r\n\357\273\277'`.
+
   - id: admin-studio-staging
     name: admin-studio-staging                             # matches apps/admin-studio/wrangler.jsonc env.staging.name
     health_state: live
