@@ -15,6 +15,8 @@ export interface Env {
   // ── Secrets (wrangler secret put) ───────────────────────────────────────────────────────────────────────
   /** Signing key for Studio-issued JWTs */
   JWT_SECRET: string;
+  /** Shared bearer token admin-studio uses when calling schedule-worker via service binding */
+  WORKER_API_TOKEN?: string;
   /** Bootstrap operator email allowed to obtain Studio JWTs. */
   STUDIO_ADMIN_EMAIL: string;
   /** Lowercase hex SHA-256 digest of the bootstrap operator password. */
