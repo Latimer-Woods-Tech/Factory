@@ -46,6 +46,27 @@ const MIN_SCORE = (() => {
   return i !== -1 ? Number(process.argv[i + 1]) || 0 : 0;
 })();
 
+// ── Mode-based proposal filter ──────────────────────────────────────────────
+// Each mode restricts which opportunity types the scanner will propose for that app.
+// build:     full suite — all types
+// growth:    quality + regression only — no new feature/registry nagging
+// maintain:  regression alerts only — infra is stable, don't add churn
+// hands-off: silence — no proposals (not started or intentionally dormant)
+const MODE_ALLOWS = {
+  'missing-registry':      new Set(['build']),
+  'low-cohesion':          new Set(['build', 'growth']),
+  'open-gap-no-ticket':    new Set(['build', 'growth', 'maintain']),
+  'regressed-kpi':         new Set(['build', 'growth', 'maintain']),
+  'cross-app-feature-gap': new Set(['build']),
+};
+
+function modeAllows(appMode, type) {
+  const mode = appMode ?? 'build'; // default: treat unset as build (existing apps pre-mode)
+  const allowed = MODE_ALLOWS[type];
+  if (!allowed) return true; // unknown type → fail-open
+  return allowed.has(mode);
+}
+
 // ── Scoring: balanced composite (axis profiles per opportunity type) ──
 const AXIS = {
   'missing-registry':      { revenueImpact: 0.1, cohesionImpact: 0.6, strategicBreadth: 0.3, riskReduction: 0.2 },
@@ -75,10 +96,18 @@ const marker = (c) => `<!-- opp:${fingerprint(c)} -->`;
 
 // ── Scanners ──
 function scanMissingRegistry(graph) {
-  // Only products need a feature-registry.yml. Internal/infra workers are surfaced
-  // as shadow nodes in the graph for visibility but don't each warrant a ticket.
+  // Products always need a feature-registry.yml; so do in-scope org-scan repos
+  // (needsRegistry===true). Internal/infra workers and excluded/denylisted repos
+  // are graph nodes for visibility but are NOT ticketed.
   return (graph.nodes?.apps ?? [])
-    .filter((a) => a.registryStatus === 'missing' && a.kind === 'product')
+    .filter(
+      (a) =>
+        a.registryStatus === 'missing' &&
+        a.scope !== 'excluded' &&
+        a.scope !== 'denylisted' &&
+        (a.kind === 'product' || a.needsRegistry === true) &&
+        modeAllows(a.mode, 'missing-registry'),
+    )
     .map((a) => ({
       type: 'missing-registry',
       target: a.id,
@@ -92,7 +121,12 @@ function scanMissingRegistry(graph) {
 function scanLowCohesion(graph, objectives) {
   const floor = objectives.cohesion?.floor ?? 50;
   return (graph.nodes?.apps ?? [])
-    .filter((a) => a.kind === 'product' && a.cohesion != null && a.cohesion < floor)
+    .filter((a) =>
+      a.kind === 'product' &&
+      a.cohesion != null &&
+      a.cohesion < floor &&
+      modeAllows(a.mode, 'low-cohesion'),
+    )
     .map((a) => ({
       type: 'low-cohesion',
       target: a.id,
@@ -118,8 +152,10 @@ function scanOpenGaps(graph) {
 
 function scanRegressedKpi(graph) {
   const movers = graph.kpis?.movers?.cohesion ?? [];
+  const appMode = {};
+  for (const a of graph.nodes?.apps ?? []) appMode[a.id] = a.mode;
   return movers
-    .filter((m) => m.delta != null && m.delta <= -2)
+    .filter((m) => m.delta != null && m.delta <= -2 && modeAllows(appMode[m.app], 'regressed-kpi'))
     .map((m) => ({
       type: 'regressed-kpi',
       target: m.app,
@@ -130,7 +166,9 @@ function scanRegressedKpi(graph) {
 }
 
 function scanCrossAppFeatureGap(graph) {
-  const products = (graph.nodes?.apps ?? []).filter((a) => a.kind === 'product');
+  const products = (graph.nodes?.apps ?? []).filter(
+    (a) => a.kind === 'product' && modeAllows(a.mode, 'cross-app-feature-gap'),
+  );
   const productIds = new Set(products.map((a) => a.id));
   const featuresByApp = {};
   for (const f of graph.nodes?.features ?? []) {
