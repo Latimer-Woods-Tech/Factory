@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-08T03:04:12.628Z",
+  "generatedAt": "2026-06-08T03:21:14.698Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -839,6 +839,48 @@
         "tier": "infra"
       },
       {
+        "id": "capricast:video-playback",
+        "appId": "capricast",
+        "label": "CF Stream video playback",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:stripe-payments",
+        "appId": "capricast",
+        "label": "Stripe payments",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:conference",
+        "appId": "capricast",
+        "label": "Conference scheduling and hosting",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:chat-1to1",
+        "appId": "capricast",
+        "label": "1:1 text chat",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "capricast:live-stream",
+        "appId": "capricast",
+        "label": "Live streaming",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:group-video",
+        "appId": "capricast",
+        "label": "16-way video chat",
+        "status": "roadmap",
+        "tier": "growth"
+      },
+      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -886,48 +928,6 @@
         "label": "Row-Level Security on all tables",
         "status": "roadmap",
         "tier": "compliance"
-      },
-      {
-        "id": "capricast:video-playback",
-        "appId": "capricast",
-        "label": "CF Stream video playback",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:stripe-payments",
-        "appId": "capricast",
-        "label": "Stripe payments",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:conference",
-        "appId": "capricast",
-        "label": "Conference scheduling and hosting",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:chat-1to1",
-        "appId": "capricast",
-        "label": "1:1 text chat",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "capricast:live-stream",
-        "appId": "capricast",
-        "label": "Live streaming",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:group-video",
-        "appId": "capricast",
-        "label": "16-way video chat",
-        "status": "roadmap",
-        "tier": "growth"
       },
       {
         "id": "coh:the-chair",
@@ -1044,34 +1044,6 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "selfprime:sp-launch",
-        "appId": "selfprime",
-        "label": "Public Launch",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "selfprime:sp-rls",
-        "appId": "selfprime",
-        "label": "RLS enforced across all tables",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "selfprime:sp-referrals",
-        "appId": "selfprime",
-        "label": "Practitioner referral engine GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "selfprime:sp-ios",
-        "appId": "selfprime",
-        "label": "iOS PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
         "id": "capricast:cc-monetize",
         "appId": "capricast",
         "label": "Creator Monetization Live",
@@ -1096,6 +1068,34 @@
         "id": "capricast:cc-mobile",
         "appId": "capricast",
         "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced across all tables",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
         "status": "design",
         "quarter": "Q2-2027"
       },
@@ -1474,6 +1474,81 @@
       "type": "uses_package"
     },
     {
+      "from": "capricast",
+      "to": "capricast:video-playback",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:stripe-payments",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:conference",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:chat-1to1",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:live-stream",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:group-video",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-monetize",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-live-stream",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-group-chat",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:video",
+      "type": "uses_package"
+    },
+    {
       "from": "selfprime",
       "to": "selfprime:energy-blueprint",
       "type": "has_feature"
@@ -1564,81 +1639,6 @@
       "type": "uses_package"
     },
     {
-      "from": "capricast",
-      "to": "capricast:video-playback",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:stripe-payments",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:conference",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:chat-1to1",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:live-stream",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:group-video",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-monetize",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-live-stream",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-group-chat",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:video",
-      "type": "uses_package"
-    },
-    {
       "from": "coh",
       "to": "coh:the-chair",
       "type": "has_feature"
@@ -1721,5 +1721,122 @@
     "gapCount": 14,
     "templateCount": 11,
     "edgeCount": 87
+  },
+  "kpis": {
+    "generatedAt": "2026-06-08T03:21:19.911Z",
+    "current": {
+      "overallCohesion": 51.4,
+      "registryCoverage": 45.45,
+      "openGaps": 14,
+      "gaps": {
+        "p0": 1,
+        "p1": 0,
+        "p2": 4,
+        "p3": 9
+      },
+      "cost30dUsd": 4.87,
+      "mrrUsd": 0,
+      "completionWeighted": 0
+    },
+    "trends": {
+      "cohesion": {
+        "current": 51.4,
+        "prior": 49.6,
+        "priorDate": "2026-05-30",
+        "dayGap": 7,
+        "delta": 1.8,
+        "direction": "up"
+      },
+      "cost": {
+        "current": 4.87,
+        "prior": 1.25,
+        "priorDate": "2026-05-29",
+        "dayGap": 7,
+        "delta": 3.62,
+        "direction": "up"
+      },
+      "mrr": {
+        "current": 0,
+        "prior": 0,
+        "priorDate": "2026-05-30",
+        "dayGap": 7,
+        "delta": 0,
+        "direction": "flat"
+      },
+      "completion": {
+        "current": 0,
+        "prior": 26.5,
+        "priorDate": "2026-05-17",
+        "dayGap": 8,
+        "delta": -26.5,
+        "direction": "down"
+      },
+      "registryCoverage": {
+        "current": 45.45,
+        "prior": null,
+        "priorDate": null,
+        "dayGap": null,
+        "delta": null,
+        "direction": "flat"
+      },
+      "openGaps": {
+        "current": 14,
+        "prior": null,
+        "priorDate": null,
+        "dayGap": null,
+        "delta": null,
+        "direction": "flat"
+      }
+    },
+    "movers": {
+      "cohesion": [
+        {
+          "app": "coh",
+          "current": 49,
+          "prior": 40,
+          "priorDate": "2026-05-30",
+          "dayGap": 7,
+          "delta": 9,
+          "direction": "up"
+        },
+        {
+          "app": "selfprime",
+          "current": 53,
+          "prior": 53,
+          "priorDate": "2026-05-30",
+          "dayGap": 7,
+          "delta": 0,
+          "direction": "flat"
+        },
+        {
+          "app": "capricast",
+          "current": 42,
+          "prior": 42,
+          "priorDate": "2026-05-30",
+          "dayGap": 7,
+          "delta": 0,
+          "direction": "flat"
+        },
+        {
+          "app": "admin-studio",
+          "current": 62,
+          "prior": 62,
+          "priorDate": "2026-05-30",
+          "dayGap": 7,
+          "delta": 0,
+          "direction": "flat"
+        },
+        {
+          "app": "xico-city",
+          "current": 51,
+          "prior": 51,
+          "priorDate": "2026-05-30",
+          "dayGap": 7,
+          "delta": 0,
+          "direction": "flat"
+        }
+      ]
+    },
+    "seriesPoints": 1
   }
 }
