@@ -47,6 +47,13 @@ export const BRIEF_TYPES = new Set([
   'pricing-change',
 ]);
 
+// Apps whose debt is governed by an external authoritative register. The loop must NOT
+// propose or auto-file parallel debt tickets for these — the register is the single
+// source and explicitly forbids parallel backlogs. Keyed by canonical app id.
+export const EXTERNALLY_GOVERNED = {
+  'admin-studio': 'docs/admin-studio/06-DEBT-DELIVERY-PLAN.md',
+};
+
 let _denylistCache = null;
 async function loadDenylist() {
   if (_denylistCache) return _denylistCache;
@@ -82,6 +89,14 @@ export async function evaluate(candidate, ctx = {}) {
   );
   if (hit) {
     reasons.push(`FRIDGE rule 1: ${hit.id} (${hit.scope}) is on the automation denylist — never auto-file`);
+    return { decision: 'reject', reasons };
+  }
+
+  // 1b. Externally-governed apps — defer to their authoritative debt register (no
+  //     parallel backlog). e.g. Admin Studio control-plane debt → 06-DEBT-DELIVERY-PLAN.
+  const govReg = candidate.app && EXTERNALLY_GOVERNED[String(candidate.app).toLowerCase()];
+  if (govReg) {
+    reasons.push(`${candidate.app} debt is governed by ${govReg} (single register) — the loop does not file parallel tickets`);
     return { decision: 'reject', reasons };
   }
 
