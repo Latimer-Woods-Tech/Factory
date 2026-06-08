@@ -10,7 +10,7 @@ name: Opportunity Scan
 
 on:
   schedule:
-    - cron: '30 * * * *'   # hourly at :30, offset from generate-founder-stats (:00)
+    - cron: '30 */4 * * *'   # every 4h at :30 — matches the CI-cost posture (#1482 advisory sweep)
   workflow_dispatch:
     inputs:
       dry_run:
