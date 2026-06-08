@@ -1,0 +1,1295 @@
+{
+  "generatedAt": "2026-06-08T02:58:15.359Z",
+  "schemaVersion": 1,
+  "aliasIndex": {
+    "selfprime": "selfprime",
+    "prime-self": "selfprime",
+    "prime-self-ui": "selfprime",
+    "prime-self-smoke": "selfprime",
+    "prime-self-reference": "selfprime",
+    "humandesign": "selfprime",
+    "hd": "selfprime",
+    "capricast": "capricast",
+    "capricast-api": "capricast",
+    "capricast-ui": "capricast",
+    "videoking": "capricast",
+    "cc": "capricast",
+    "coh": "coh",
+    "cypher-healing": "coh",
+    "cipher-healing": "coh",
+    "cypherofhealing": "coh",
+    "coh-api": "coh",
+    "ch": "coh",
+    "xico-city": "xico-city",
+    "xicocity": "xico-city",
+    "xico-city-api": "xico-city",
+    "xc": "xico-city",
+    "admin-studio": "admin-studio",
+    "admin-studio-production": "admin-studio",
+    "admin-studio-staging": "admin-studio",
+    "admin-studio-ui": "admin-studio",
+    "factory-admin-studio": "admin-studio",
+    "factory-admin": "admin-studio",
+    "fa": "admin-studio",
+    "agent-gateway": "agent-gateway",
+    "factory-agent-gateway": "agent-gateway"
+  },
+  "nodes": {
+    "apps": [
+      {
+        "id": "admin-studio",
+        "name": "Admin Studio (API)",
+        "repo": "Latimer-Woods-Tech/Factory",
+        "kind": "product",
+        "domain": "admin.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": 73,
+        "registryStatus": "missing",
+        "aliases": [
+          "admin-studio-production",
+          "admin-studio-staging",
+          "admin-studio-ui",
+          "factory-admin-studio",
+          "factory-admin",
+          "FA"
+        ],
+        "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 60,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 80,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 100,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 60,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 100,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 67,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 100,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 100,
+            "weight": 5
+          }
+        ]
+      },
+      {
+        "id": "agent-gateway",
+        "name": "schedule-worker",
+        "repo": "Latimer-Woods-Tech/Factory",
+        "kind": "product",
+        "domain": "schedule.latwoodtech.work",
+        "url": "https://schedule.latwoodtech.work",
+        "healthState": "planned",
+        "lifecycleStage": null,
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [
+          "factory-agent-gateway"
+        ],
+        "packages": []
+      },
+      {
+        "id": "browser-agent",
+        "name": "Browser Agent",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "scaffolded",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "capricast",
+        "name": "Capricast",
+        "repo": "Latimer-Woods-Tech/capricast",
+        "kind": "product",
+        "domain": "capricast.com",
+        "url": "https://api.capricast.latimerwoods.dev",
+        "healthState": "live",
+        "lifecycleStage": "live",
+        "maturity": "production",
+        "cohesion": 42,
+        "registryStatus": "present",
+        "aliases": [
+          "capricast-api",
+          "capricast-ui",
+          "videoking",
+          "CC"
+        ],
+        "packages": [
+          "auth",
+          "neon",
+          "stripe",
+          "analytics",
+          "video"
+        ],
+        "registrySource": "Latimer-Woods-Tech/capricast/feature-registry.yml",
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 40,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 60,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 67,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 50,
+            "weight": 5
+          }
+        ]
+      },
+      {
+        "id": "coh",
+        "name": "Cypher of Healing",
+        "repo": "Latimer-Woods-Tech/coh",
+        "kind": "product",
+        "domain": "cypherofhealing.com",
+        "url": "https://api.cipherofhealing.com",
+        "healthState": "live",
+        "lifecycleStage": "live",
+        "maturity": "production",
+        "cohesion": 47,
+        "registryStatus": "present",
+        "aliases": [
+          "cypher-healing",
+          "cipher-healing",
+          "cypherofhealing",
+          "coh-api",
+          "CH"
+        ],
+        "packages": [
+          "auth",
+          "neon",
+          "stripe",
+          "telephony",
+          "email"
+        ],
+        "registrySource": "Latimer-Woods-Tech/coh/feature-registry.yml",
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 60,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 80,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 60,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 40,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 67,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ]
+      },
+      {
+        "id": "daily-brief",
+        "name": "Daily Brief",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "lead-gen",
+        "name": "Lead Gen",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "scaffolded",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "schedule-worker",
+        "name": "Schedule Worker",
+        "repo": null,
+        "kind": "infra",
+        "domain": "schedule.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "selfprime",
+        "name": "Self Prime",
+        "repo": "Latimer-Woods-Tech/HumanDesign",
+        "kind": "product",
+        "domain": "selfprime.net",
+        "url": "https://api.selfprime.net",
+        "healthState": "live",
+        "lifecycleStage": "live",
+        "maturity": "revenue",
+        "cohesion": 53,
+        "registryStatus": "present",
+        "aliases": [
+          "prime-self",
+          "prime-self-ui",
+          "prime-self-smoke",
+          "prime-self-reference",
+          "humandesign",
+          "HumanDesign",
+          "HD"
+        ],
+        "packages": [
+          "auth",
+          "neon",
+          "stripe",
+          "llm",
+          "analytics",
+          "bodygraph",
+          "telephony"
+        ],
+        "registrySource": "Latimer-Woods-Tech/HumanDesign/feature-registry.yml",
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 0,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 100,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 80,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 67,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 67,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 67,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ]
+      },
+      {
+        "id": "supervisor",
+        "name": "Supervisor",
+        "repo": null,
+        "kind": "infra",
+        "domain": "supervisor.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "synthetic-monitor",
+        "name": "Synthetic Monitor",
+        "repo": null,
+        "kind": "infra",
+        "domain": "monitor.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "video-cron",
+        "name": "Video Cron",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "webhook-fanout",
+        "name": "Webhook Fanout",
+        "repo": null,
+        "kind": "infra",
+        "domain": "webhooks.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "xico-city",
+        "name": "xico-city-staging",
+        "repo": "Latimer-Woods-Tech/xico-city",
+        "kind": "product",
+        "domain": "xicocity.com",
+        "url": "https://xicocity.com",
+        "healthState": "live",
+        "lifecycleStage": null,
+        "maturity": null,
+        "cohesion": 51,
+        "registryStatus": "missing",
+        "aliases": [
+          "xicocity",
+          "xico-city-api",
+          "XC"
+        ],
+        "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 80,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 80,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 60,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 100,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 67,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 50,
+            "weight": 5
+          }
+        ]
+      }
+    ],
+    "packages": [
+      {
+        "id": "pkg:admin",
+        "name": "admin",
+        "tier": null
+      },
+      {
+        "id": "pkg:analytics",
+        "name": "analytics",
+        "tier": null
+      },
+      {
+        "id": "pkg:auth",
+        "name": "auth",
+        "tier": null
+      },
+      {
+        "id": "pkg:bodygraph",
+        "name": "bodygraph",
+        "tier": null
+      },
+      {
+        "id": "pkg:browser",
+        "name": "browser",
+        "tier": null
+      },
+      {
+        "id": "pkg:compliance",
+        "name": "compliance",
+        "tier": null
+      },
+      {
+        "id": "pkg:content",
+        "name": "content",
+        "tier": null
+      },
+      {
+        "id": "pkg:copy",
+        "name": "copy",
+        "tier": null
+      },
+      {
+        "id": "pkg:crm",
+        "name": "crm",
+        "tier": null
+      },
+      {
+        "id": "pkg:deploy",
+        "name": "deploy",
+        "tier": null
+      },
+      {
+        "id": "pkg:email",
+        "name": "email",
+        "tier": null
+      },
+      {
+        "id": "pkg:errors",
+        "name": "errors",
+        "tier": null
+      },
+      {
+        "id": "pkg:llm",
+        "name": "llm",
+        "tier": null
+      },
+      {
+        "id": "pkg:logger",
+        "name": "logger",
+        "tier": null
+      },
+      {
+        "id": "pkg:monitoring",
+        "name": "monitoring",
+        "tier": null
+      },
+      {
+        "id": "pkg:neon",
+        "name": "neon",
+        "tier": null
+      },
+      {
+        "id": "pkg:schedule",
+        "name": "schedule",
+        "tier": null
+      },
+      {
+        "id": "pkg:seo",
+        "name": "seo",
+        "tier": null
+      },
+      {
+        "id": "pkg:social",
+        "name": "social",
+        "tier": null
+      },
+      {
+        "id": "pkg:stripe",
+        "name": "stripe",
+        "tier": null
+      },
+      {
+        "id": "pkg:studio-core",
+        "name": "studio-core",
+        "tier": null
+      },
+      {
+        "id": "pkg:telephony",
+        "name": "telephony",
+        "tier": null
+      },
+      {
+        "id": "pkg:testing",
+        "name": "testing",
+        "tier": null
+      },
+      {
+        "id": "pkg:video",
+        "name": "video",
+        "tier": null
+      }
+    ],
+    "features": [
+      {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:energy-blueprint",
+        "appId": "selfprime",
+        "label": "Energy Blueprint synthesis",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "selfprime:narration",
+        "appId": "selfprime",
+        "label": "AI voice narration",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "selfprime:video-engine",
+        "appId": "selfprime",
+        "label": "Energy Blueprint video engine",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "selfprime:notification-inbox",
+        "appId": "selfprime",
+        "label": "In-app notification inbox",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:practitioner-network",
+        "appId": "selfprime",
+        "label": "Practitioner referral network",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:group-readings",
+        "appId": "selfprime",
+        "label": "Group reading sessions",
+        "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:rls-enforcement",
+        "appId": "selfprime",
+        "label": "Row-Level Security on all tables",
+        "status": "roadmap",
+        "tier": "compliance"
+      },
+      {
+        "id": "capricast:video-playback",
+        "appId": "capricast",
+        "label": "CF Stream video playback",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:stripe-payments",
+        "appId": "capricast",
+        "label": "Stripe payments",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:conference",
+        "appId": "capricast",
+        "label": "Conference scheduling and hosting",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:chat-1to1",
+        "appId": "capricast",
+        "label": "1:1 text chat",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "capricast:live-stream",
+        "appId": "capricast",
+        "label": "Live streaming",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:group-video",
+        "appId": "capricast",
+        "label": "16-way video chat",
+        "status": "roadmap",
+        "tier": "growth"
+      }
+    ],
+    "roadmapItems": [
+      {
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-mobile",
+        "appId": "coh",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced across all tables",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "capricast:cc-monetize",
+        "appId": "capricast",
+        "label": "Creator Monetization Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "capricast:cc-live-stream",
+        "appId": "capricast",
+        "label": "Live Streaming GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "capricast:cc-group-chat",
+        "appId": "capricast",
+        "label": "16-way Video Chat",
+        "status": "queued",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "capricast:cc-mobile",
+        "appId": "capricast",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      }
+    ],
+    "gaps": [
+      {
+        "id": "G6",
+        "tier": "p0",
+        "title": "Bootstrap workflow on PR #622 hasn't run yet",
+        "status": "open (sequence dep)"
+      },
+      {
+        "id": "G14",
+        "tier": "p2",
+        "title": "No retro mechanism for missed milestones",
+        "status": "open"
+      },
+      {
+        "id": "G16",
+        "tier": "p2",
+        "title": "No customer feedback loop in the system",
+        "status": "open"
+      },
+      {
+        "id": "G17",
+        "tier": "p2",
+        "title": "No competitive intel watch",
+        "status": "open"
+      },
+      {
+        "id": "G20",
+        "tier": "p2",
+        "title": "No backup/DR strategy per product",
+        "status": "open"
+      },
+      {
+        "id": "G21",
+        "tier": "p3",
+        "title": "Supply-chain checks beyond CodeQL (Sigstore TLOG for all deps)",
+        "status": "open"
+      },
+      {
+        "id": "G22",
+        "tier": "p3",
+        "title": "No pen-test schedule",
+        "status": "open"
+      },
+      {
+        "id": "G23",
+        "tier": "p3",
+        "title": "No bug bounty program",
+        "status": "open"
+      },
+      {
+        "id": "G24",
+        "tier": "p3",
+        "title": "No multi-region story for D1",
+        "status": "open"
+      },
+      {
+        "id": "G25",
+        "tier": "p3",
+        "title": "Per-product rate limiting standardized",
+        "status": "open"
+      },
+      {
+        "id": "G26",
+        "tier": "p3",
+        "title": "Queue / DO backpressure documented per Worker",
+        "status": "open"
+      },
+      {
+        "id": "G29",
+        "tier": "p3",
+        "title": "HubSpot keep-or-delete pending",
+        "status": "open (leaning keep)"
+      },
+      {
+        "id": "G38",
+        "tier": "p3",
+        "title": "GCP billing line in cost digest is a placeholder — needs BQ billing export",
+        "status": "open"
+      },
+      {
+        "id": "G46",
+        "tier": "p3",
+        "title": "coh: 20+ obsolete root-level MD docs (DEPLOYMENT-*, DEPLOY-*, INTEGRATION-*, GETTING-STARTED, etc.) with internally inconsistent README",
+        "status": "open"
+      }
+    ],
+    "templates": [
+      {
+        "id": "db-migration-gap-fix",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "deps-bump-minor-patch",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "docs-naming-convention",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "feat-ci-workflow",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "package-version-migration",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "reusable-workflow-rollout",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "security-codeql-fix",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "sentry-triage-new-issue",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "syn-package-migration",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "ux-regression-triage",
+        "tier": null,
+        "status": "active"
+      },
+      {
+        "id": "wrangler-config-drift-fix",
+        "tier": null,
+        "status": "active"
+      }
+    ]
+  },
+  "edges": [
+    {
+      "from": "coh",
+      "to": "coh:the-chair",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-vault",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-academy",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-stage",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:energy-blueprint",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:narration",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:video-engine",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:notification-inbox",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:practitioner-network",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:group-readings",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:rls-enforcement",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-launch",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-rls",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-referrals",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-ios",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:llm",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:bodygraph",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:video-playback",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:stripe-payments",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:conference",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:chat-1to1",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:live-stream",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:group-video",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-monetize",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-live-stream",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-group-chat",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:video",
+      "type": "uses_package"
+    }
+  ],
+  "stats": {
+    "appCount": 14,
+    "productCount": 6,
+    "infraCount": 8,
+    "registryPresent": 3,
+    "registryMissing": 11,
+    "featureCount": 18,
+    "roadmapCount": 12,
+    "packageCount": 24,
+    "gapCount": 14,
+    "templateCount": 11,
+    "edgeCount": 47
+  }
+}
