@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 447,
+    "total_docs": 448,
     "canonical": 17,
-    "active": 382,
+    "active": 383,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -374,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:bcb3664dfe71c1bc59d43bd8acdff74ac949010fcb9c63ace541f8687b4410e5",
+      "content_hash": "sha256:fc26cdaf61b16f542cc20878f354c11240864b1a4765f611dfe554e75562e882",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -1130,7 +1130,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9eca86c08e36a1cbc820469d5fc3243d5562da2e09c10d7bf5d49752498eb90a",
+      "content_hash": "sha256:ca15abcc92af56a43c2b126b7a5c5b0e7b6b2c3797eee5b636007754b4f4fcce",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -3116,6 +3116,27 @@
       "content_hash": "sha256:33657a601a5d733c953bb4988012853b555a7171d63fb416e22215da6c151402",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/decisions/2026-06-08-admin-studio-boundary.md",
+      "title": "2026-06-08 — Admin Studio surface & responsibility boundary",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:73ccedd8abd6da4bc954d35f97ee77ec338f54b36fc79482efd393362ee0983c",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/decisions/**"
       },
@@ -7878,7 +7899,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:43a1e62c5bc98a207b66613e3f2ccfcdb415e9b5fc4d6474e322ee31c04598b2",
+      "content_hash": "sha256:6676a659115cc09224cd44b8ffd349cac3188bfdd7db92229b223af33a8c43d4",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -8256,7 +8277,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6e43f40ee8f2fbe78f7db0cf5bd06ce4f0cfa8996f4595e7661563e784c0b4de",
+      "content_hash": "sha256:1b6cd335930cf9ffe1b8707ff6f6e708df46be34068b03aee5839b74a8ce5a8c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
