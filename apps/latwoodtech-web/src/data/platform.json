@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-08T17:54:28.527Z",
+  "generatedAt": "2026-06-08T20:15:55.632Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -1018,10 +1018,10 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-08T17:54:29.006Z",
+    "generatedAt": "2026-06-08T20:15:56.354Z",
     "current": {
       "overallCohesion": 51.4,
-      "registryCoverage": 50,
+      "registryCoverage": 17.65,
       "openGaps": 14,
       "gaps": {
         "p0": 1,
@@ -1067,7 +1067,7 @@
         "direction": "down"
       },
       "registryCoverage": {
-        "current": 50,
+        "current": 17.65,
         "prior": null,
         "priorDate": null,
         "dayGap": null,
