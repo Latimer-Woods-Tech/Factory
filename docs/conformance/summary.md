@@ -1,12 +1,12 @@
 # Platform Conformance — Shadow Mode
 
-*Generated: 2026-06-06 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
+*Generated: 2026-06-08 (UTC). Stage 1 shadow — scores are advisory, not enforced.*
 
 ## Cohesion summary
 
 | Repo | Cohesion | Stack (10) | Code patterns (15) | Tests (15) | Observability (10) | Security (15) | Schema (5) | Workflows (10) | Release (5) | Performance (10) | Privacy (5) |
 |------|---------:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|-----:|
-| HumanDesign | **53** | 40 | 0 | 100 | 40 | 80 | 67 | 33 | 67 | 67 | 25 |
+| HumanDesign | **51** | 40 | 0 | 100 | 40 | 80 | 33 | 33 | 67 | 67 | 25 |
 | capricast | **42** | 40 | 20 | 40 | 40 | 60 | 33 | 33 | 33 | 67 | 50 |
 | factory-admin-studio | **73** | 60 | 80 | 100 | 40 | 60 | 100 | 33 | 67 | 100 | 100 |
 | cypher-healing | **47** | 60 | 80 | 60 | 40 | 40 | 67 | 33 | 33 | 0 | 25 |
@@ -14,7 +14,7 @@
 
 **Shadow threshold:** 70. Below this would block deploys once Stage 4 ships.
 
-## HumanDesign — 53/100
+## HumanDesign — 51/100
 
 ### Stack — 40/100 (weight 10)
 - ❌ wrangler.jsonc present
@@ -51,9 +51,9 @@
 - ❌ Trusted Publishers (OIDC)
 - ✅ Renovate config present
 
-### Schema — 67/100 (weight 5)
-- ✅ Migrations directory present
-- ✅ ROLLBACK block enforced — WARN: 9 existing migration(s) missing -- ROLLBACK: block (debt — not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql, migrations/20260603_rls_app_role.sql, migrations/20260603_rls_defn_lookups.sql, migrations/20260603_rls_policies.sql, migrations/20260603_rls_policies_crossuser.sql, migrations/20260603_rls_policies_writes.sql, migrations/20260604_add_comped_tier.sql, migrations/20260604_notifications_inbox.sql
+### Schema — 33/100 (weight 5)
+- ❌ Migrations directory present
+- ✅ ROLLBACK block enforced
 - ❌ Numbered file naming
 
 ### Workflows — 33/100 (weight 10)
