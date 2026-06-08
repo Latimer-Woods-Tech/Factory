@@ -55,6 +55,7 @@ import privacy from './routes/privacy.js';
 import { flagship } from './routes/flagship.js';
 import blocking from './routes/blocking.js';
 import commandCenter from './routes/command-center.js';
+import scheduleProxy from './routes/schedule-proxy.js';
 
 const app = new Hono<AppEnv>();
 
@@ -174,6 +175,8 @@ app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
 app.use('/v1/blocking/*', envContextMiddleware());
 app.use('/v1/command-center/*', envContextMiddleware());
+app.use('/training-library', envContextMiddleware());
+app.use('/jobs/*', envContextMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -198,6 +201,8 @@ app.route('/privacy', privacy);
 app.route('/api/flags', flagship);
 app.route('/v1/blocking', blocking);
 app.route('/v1/command-center', commandCenter);
+app.route('/training-library', scheduleProxy);
+app.route('/jobs', scheduleProxy);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
