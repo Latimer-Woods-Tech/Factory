@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 446,
+    "total_docs": 447,
     "canonical": 17,
-    "active": 381,
+    "active": 382,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -6150,6 +6150,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:7b4a226ef9003b839a3ae017d21be9edfdacdf9a471f3af5820d530eacc4be06",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-08.md",
+      "title": "Platform Planning Brief — 2026-06-08",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:e269a259be4ad992770cb50ac60fa61096bef474711165d88c7aaf73e29b34bd",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
