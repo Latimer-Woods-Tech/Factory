@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 447,
+    "total_docs": 448,
     "canonical": 17,
-    "active": 382,
+    "active": 383,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -1130,7 +1130,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9eca86c08e36a1cbc820469d5fc3243d5562da2e09c10d7bf5d49752498eb90a",
+      "content_hash": "sha256:ca15abcc92af56a43c2b126b7a5c5b0e7b6b2c3797eee5b636007754b4f4fcce",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -3116,6 +3116,27 @@
       "content_hash": "sha256:33657a601a5d733c953bb4988012853b555a7171d63fb416e22215da6c151402",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/decisions/2026-06-08-admin-studio-boundary.md",
+      "title": "2026-06-08 — Admin Studio surface & responsibility boundary",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:a4ce0a3a64e3c83dcb29777c61795254b21c84668fba2a6c81a62fda95f12071",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/decisions/**"
       },
