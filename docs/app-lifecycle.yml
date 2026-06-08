@@ -190,6 +190,7 @@ apps:
     repo: factory
     stage: live
     mode: maintain
+    aliases: [factory-supervisor]
     health_url: https://supervisor.latwoodtech.work/health
     custom_domain: supervisor.latwoodtech.work
     provisioned_at: "2026-04-01"
