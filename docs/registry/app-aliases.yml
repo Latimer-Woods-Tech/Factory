@@ -53,10 +53,12 @@ apps:
     repo: Latimer-Woods-Tech/Factory
     kind: product
     conformance_key: FA
-    # NOTE: `factory-admin` (the standalone repo Latimer-Woods-Tech/factory-admin) is
-    # NOT aliased here — it is a separate active Worker repo, tracked as its own app.
-    # `factory-admin-studio` + `FA` remain (they map the monorepo's conformance entry).
-    aliases: [admin-studio-production, admin-studio-staging, admin-studio-ui, factory-admin-studio, FA]
+    # `factory-admin` (repo Latimer-Woods-Tech/factory-admin) is a LEGACY/secondary
+    # deployment surface of Admin Studio — the same product, not a separate one
+    # (see docs/decisions/2026-06-08-admin-studio-boundary.md). It is aliased back here
+    # so the loop does not nag it for its own feature-registry. It will be folded into
+    # / retired in favor of the monorepo apps/admin-studio (API) + apps/admin-studio-ui (UI).
+    aliases: [admin-studio-production, admin-studio-staging, admin-studio-ui, factory-admin-studio, factory-admin, FA]
 
   - canonical: agent-gateway
     repo: Latimer-Woods-Tech/Factory

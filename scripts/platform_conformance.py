@@ -67,7 +67,9 @@ REPOS: list[dict[str, str]] = [
     # Extended 2026-06-08 — every in-scope Factory repo is now scored (sense-layer
     # evenness). Repos lacking the expected structure simply score low; that is an
     # accurate signal, not an error.
-    {"key": "FAD", "name": "factory-admin",       "repo": "Latimer-Woods-Tech/factory-admin"},
+    # NOTE: factory-admin is intentionally NOT scored as a peer — it is a legacy
+    # deployment surface of Admin Studio (= the monorepo, scored as FA), not a
+    # separate product. See docs/decisions/2026-06-08-admin-studio-boundary.md.
     {"key": "FB", "name": "focusbro",             "repo": "Latimer-Woods-Tech/focusbro"},
     {"key": "IJ", "name": "ijustus",              "repo": "Latimer-Woods-Tech/ijustus"},
     {"key": "KC", "name": "kairoscouncil",        "repo": "Latimer-Woods-Tech/kairoscouncil"},
