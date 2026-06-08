@@ -307,6 +307,298 @@ apps:
     live_at: null
     notes: Growth mode — scaling and distribution focus.
 
+  # ── Factory monorepo — Platform infra (build) ────────────────────────────────
+  - id: factory-core-api
+    name: Factory Core API
+    repo: factory
+    stage: live
+    mode: build
+    health_url: https://core.latwoodtech.work/health
+    custom_domain: core.latwoodtech.work
+    provisioned_at: "2026-05-26"
+    deployed_at: "2026-05-26"
+    live_at: "2026-05-26"
+    notes: Read-layer ingestion + auth API (Admin Build Plan P1.1+). Hyperdrive DB binds THE_FACTORY Neon. Migrations 0101-0105 applied. JWT_SIGNING_KEY + SUPERVISOR_PUSH_KEY set on worker; need backfilling into GCP SM.
+
+  - id: qa-tools-worker
+    name: QA Tools Worker
+    repo: factory
+    stage: live
+    mode: build
+    health_url: https://api.qa.latimerwoods.dev/health
+    custom_domain: api.qa.latimerwoods.dev
+    provisioned_at: "2026-05-27"
+    deployed_at: "2026-05-27"
+    live_at: "2026-05-28"
+    notes: QA Tools Platform API — accessibility audits, screenshot capture, performance testing. Wraps browser-agent Cloud Run service. Phase 1 MVP live. Architecture in docs/architecture/QA_TOOLS_ARCHITECTURE.md.
+
+  - id: qa-tools-ui
+    name: QA Tools UI
+    repo: factory
+    stage: live
+    mode: build
+    health_url: null
+    custom_domain: null
+    provisioned_at: "2026-05-27"
+    deployed_at: null
+    live_at: null
+    notes: Frontend for qa-tools-worker. Phase 1 companion to the QA Tools API.
+
+  - id: inbound-oracle
+    name: Inbound Oracle
+    repo: factory
+    stage: live
+    mode: build
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Telnyx SMS webhook → Human Design reading via LLM → ElevenLabs TTS → MMS reply. Feature surface of the selfprime product family.
+
+  - id: video-studio
+    name: Video Studio
+    repo: factory
+    stage: scaffolded
+    mode: build
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Automated video render engine — Remotion compositions for Factory applications. Part of the active video production pipeline.
+
+  - id: latwoodtech-web
+    name: LatwoodTech Web
+    repo: factory
+    stage: live
+    mode: build
+    health_url: https://latwoodtech.com/
+    custom_domain: latwoodtech.com
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Main marketing + platform dashboard site (apps/latwoodtech-web). Includes /platform/ SVG constellation, /status/ live widget, /work/, /founder/ pages.
+
+  # ── Factory monorepo — Platform infra (maintain) ──────────────────────────────
+  - id: status-prober
+    name: Status Prober
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: https://status.latwoodtech.work/health
+    custom_domain: status.latwoodtech.work
+    provisioned_at: "2026-05-23"
+    deployed_at: "2026-05-23"
+    live_at: "2026-05-23"
+    notes: "Cron (*/5 * * * *) — HEAD-checks four brand surfaces (selfprime.net, capricast.com, cypherofhealing.com, apunlimited.com), writes envelope to STATUS_KV. GET /current consumed by latwoodtech.com/status/ with CORS *."
+
+  - id: factory-cross-repo
+    name: Factory Cross-Repo
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: https://factory-cross-repo.latwoodtech.work/health
+    custom_domain: factory-cross-repo.latwoodtech.work
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: "Cross-repo GitHub App operations worker. Accepts POST /api/supervisor/create-pr from supervisor to open audit PRs in affected repos. health_state: broken — custom domain pending, needs investigation."
+
+  - id: factory-events-replay
+    name: Factory Events Replay
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: "2026-05-26"
+    deployed_at: "2026-05-26"
+    live_at: "2026-05-26"
+    notes: "Cron (*/15 * * * *) — scans factory_events_ingest for derivation_status='failed', re-derives into factory_gates/factory_artifacts. No public route by design. P2.13a."
+
+  - id: factory-events-archiver
+    name: Factory Events Archiver
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: "Cron (Sundays 02:00 UTC) — archives factory_events_ingest rows >90 days to R2, deletes from Neon to control table growth. P2.13c."
+
+  - id: factory-stuck-watcher
+    name: Factory Stuck Watcher
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: "Cron (*/5 * * * *) — detects supervisor runs stuck past grace period without expected gate type, writes gate_type='stuck-detection' rows so Command Center surfaces blockages. P2.13b. Config in docs/observability/expected-gates.yml."
+
+  - id: supervisor-mirror
+    name: Supervisor Mirror
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: "Cron (*/5 * * * *) — mirrors supervisor_runs from D1 into factory_runs_mirror in Neon so the admin read layer can run cross-table queries alongside factory_gates and factory_artifacts. P1.8."
+
+  - id: analytics-proxy
+    name: Analytics Proxy
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: https://analytics.latwoodtech.work/health
+    custom_domain: analytics.latwoodtech.work
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Thin CORS proxy querying the Cloudflare Analytics API. Consumed by latwoodtech.com/platform/ platform dashboard. KV binding ANALYTICS_CACHE.
+
+  - id: linkedin-publisher
+    name: LinkedIn Publisher
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: "2026-05-25"
+    deployed_at: "2026-05-25"
+    live_at: "2026-05-25"
+    notes: "Cron (Tue/Thu 14:00 UTC) — composes LinkedIn post via Anthropic LLM, delivers to Pushover for manual posting. No public route; workers_dev=false in prod."
+
+  - id: video-render-service
+    name: Video Render Service
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Energy Blueprint video render service running on Cloud Run (not a CF Worker). Remotion + ffmpeg. I1 Slice 1. Accepts signed render-request, uploads to private Cloudflare Stream via signed callback.
+
+  - id: latimerwoods-dev
+    name: LatimerWoods Dev
+    repo: factory
+    stage: live
+    mode: maintain
+    health_url: https://dev.latimerwoods.dev/
+    custom_domain: dev.latimerwoods.dev
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Developer dashboard for the Factory ecosystem. Static site auto-generated from docs/service-registry.yml. Deployed to dev.latimerwoods.dev.
+
+  - id: prime-self-reference
+    name: Prime Self Reference
+    repo: HumanDesign
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Reference implementation app for selfprime. Used for smoke/integration testing baseline.
+
+  - id: prime-self-smoke
+    name: Prime Self Smoke
+    repo: HumanDesign
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Smoke test runner for selfprime. Provisions a dedicated smoke test user account; bounded by E2E secret triad (SMOKE_EMAIL/SMOKE_PASSWORD/SMOKE_USER_ID).
+
+  # ── Staging environments ───────────────────────────────────────────────────────
+  - id: capricast-api-staging
+    name: Capricast API (Staging)
+    repo: capricast
+    stage: live
+    mode: build
+    health_url: https://api.capricast.latimerwoods.dev/health
+    custom_domain: api.capricast.latimerwoods.dev
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Staging environment for capricast-api. Neon staging branch + separate Hyperdrive. Mode mirrors parent (build).
+
+  - id: xico-city-staging
+    name: Xico City (Staging)
+    repo: xico-city
+    stage: live
+    mode: growth
+    health_url: https://staging.xicocity.com/health
+    custom_domain: staging.xicocity.com
+    provisioned_at: null
+    deployed_at: null
+    live_at: "2026-05-21"
+    notes: Staging environment for xico-city. Custom domain staging.xicocity.com verified live 2026-05-21. Mode mirrors parent (growth).
+
+  # ── Planned / not yet deployed (hands-off) ────────────────────────────────────
+  - id: marketing-supervisor
+    name: Marketing Supervisor
+    repo: factory
+    stage: provisioned
+    mode: hands-off
+    health_url: null
+    custom_domain: marketing.latwoodtech.work
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Marketing automation supervisor (Stage 3). Orchestrates email drip, social adapters, topic queue, shareables, embeds, brand safety. Not yet deployed.
+
+  - id: marketing-supervisor-staging
+    name: Marketing Supervisor (Staging)
+    repo: factory
+    stage: provisioned
+    mode: hands-off
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Staging environment for marketing-supervisor. Not yet deployed.
+
+  - id: referrals
+    name: Referrals
+    repo: factory
+    stage: provisioned
+    mode: hands-off
+    health_url: null
+    custom_domain: referrals.latwoodtech.work
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Referral tracking worker (Stage 3, PR brief 3j). Not yet deployed.
+
+  - id: llm-rank-worker
+    name: LLM Rank Worker
+    repo: factory
+    stage: provisioned
+    mode: hands-off
+    health_url: null
+    custom_domain: llm-rank.latwoodtech.work
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: LLM ranking worker for surfacing most-relevant content (Stage 3, PR brief 3l). Not yet deployed.
+
   # ── Not yet started (hands-off) ───────────────────────────────────────────────
   - id: itsjusus
     name: ItsJusUs
