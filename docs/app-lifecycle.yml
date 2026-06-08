@@ -1,9 +1,8 @@
 # App Lifecycle Registry
 #
 # PURPOSE:
-#   Tracks the lifecycle stage of every Factory application — from provisioning
-#   through to live production traffic. Used by the admin-studio Apps tab to
-#   show operators the current state of each application.
+#   Tracks the lifecycle stage and operational mode of every Factory application.
+#   Used by the admin-studio Apps tab and the Platform Brain opportunity scanner.
 #
 # STAGES:
 #   provisioned  — Neon DB + Hyperdrive + GH secrets created; no code yet
@@ -11,11 +10,18 @@
 #   deployed     — wrangler deploy succeeded on production
 #   live         — production traffic confirmed via curl /health and custom domain
 #
+# MODES (governs what the Platform Brain proposes):
+#   build      — active feature development; full proposal suite
+#   growth     — feature-complete, scaling/optimizing; quality + UX proposals only
+#   maintain   — stable infra/product; deps, security, regression alerts only
+#   hands-off  — dormant or not yet started; all proposals suppressed
+#
 # FORMAT:
 #   id            — kebab-case identifier; must match service-registry.yml
 #   name          — Human-readable display name
 #   repo          — GitHub repo (Latimer-Woods-Tech/<repo>)
 #   stage         — Current lifecycle stage (see STAGES above)
+#   mode          — Operational mode (see MODES above)
 #   health_url    — Canonical health check URL (null if not yet deployed)
 #   custom_domain — Production custom domain (null if none)
 #   provisioned_at — ISO 8601 date of provisioning step (null if unknown)
@@ -24,15 +30,17 @@
 #   notes         — Optional operator notes
 #
 # HOW TO UPDATE:
-#   After each stage transition, update `stage` and the corresponding `*_at` field.
+#   After each stage or mode transition, update the relevant fields.
 #   Regenerate apps/admin-studio-ui/public/app-lifecycle.json with:
 #     node scripts/compile-app-lifecycle.mjs
 
 apps:
+  # ── Factory monorepo — Admin Studio ─────────────────────────────────────────
   - id: admin-studio
     name: Admin Studio (API)
     repo: factory
     stage: live
+    mode: build
     health_url: https://admin.latwoodtech.work/health
     custom_domain: admin.latwoodtech.work
     provisioned_at: "2026-04-01"
@@ -44,6 +52,7 @@ apps:
     name: Admin Studio (Staging)
     repo: factory
     stage: live
+    mode: build
     health_url: https://admin-staging.latwoodtech.work/health
     custom_domain: admin-staging.latwoodtech.work
     provisioned_at: "2026-04-01"
@@ -55,6 +64,7 @@ apps:
     name: Admin Studio UI
     repo: factory
     stage: live
+    mode: build
     health_url: https://admin.latwoodtech.work/
     custom_domain: admin.latwoodtech.work
     provisioned_at: "2026-04-01"
@@ -62,10 +72,12 @@ apps:
     live_at: "2026-04-20"
     notes: Cloudflare Pages app serving the React admin dashboard.
 
+  # ── Factory monorepo — HumanDesign / selfprime ───────────────────────────────
   - id: prime-self
     name: Prime Self API
     repo: HumanDesign
     stage: live
+    mode: build
     health_url: https://api.selfprime.net/health
     custom_domain: api.selfprime.net
     provisioned_at: "2026-03-01"
@@ -73,10 +85,63 @@ apps:
     live_at: "2026-04-01"
     notes: Human Design practitioner API. Legacy worker name retained.
 
+  # ── Factory monorepo — Capricast ─────────────────────────────────────────────
+  - id: capricast-api
+    name: Capricast API
+    repo: capricast
+    stage: live
+    mode: build
+    health_url: https://api.capricast.com/health
+    custom_domain: api.capricast.com
+    provisioned_at: "2026-04-20"
+    deployed_at: "2026-05-01"
+    live_at: "2026-05-10"
+    notes: Backend API for the Capricast video platform.
+
+  - id: capricast-ui
+    name: Capricast UI
+    repo: capricast
+    stage: live
+    mode: build
+    health_url: https://capricast.com/
+    custom_domain: capricast.com
+    provisioned_at: "2026-04-20"
+    deployed_at: "2026-05-01"
+    live_at: "2026-05-10"
+    notes: Cloudflare Pages frontend for Capricast (project name videoking).
+
+  # ── Factory monorepo — Agent Gateway ─────────────────────────────────────────
+  - id: agent-gateway
+    name: Agent Gateway
+    repo: factory
+    stage: live
+    mode: build
+    health_url: https://factory-agent-gateway.adrper79.workers.dev/health
+    custom_domain: null
+    provisioned_at: "2026-05-20"
+    deployed_at: "2026-06-04"
+    live_at: "2026-06-04"
+    notes: Agent session runtime. Phases 0-3 shipped. Custom domain + CI deploy pending.
+
+  # ── Factory monorepo — Lead Gen ───────────────────────────────────────────────
+  - id: lead-gen
+    name: Lead Gen
+    repo: factory
+    stage: scaffolded
+    mode: build
+    health_url: null
+    custom_domain: null
+    provisioned_at: "2026-05-10"
+    deployed_at: null
+    live_at: null
+    notes: Lead generation worker. Scaffolded, not yet deployed.
+
+  # ── Factory monorepo — Infra (maintain) ──────────────────────────────────────
   - id: schedule-worker
     name: Schedule Worker
     repo: factory
     stage: live
+    mode: maintain
     health_url: https://schedule.latwoodtech.work/health
     custom_domain: schedule.latwoodtech.work
     provisioned_at: "2026-04-01"
@@ -88,6 +153,7 @@ apps:
     name: Video Cron
     repo: factory
     stage: live
+    mode: maintain
     health_url: https://video-cron.adrper79.workers.dev/health
     custom_domain: null
     provisioned_at: "2026-04-10"
@@ -99,6 +165,7 @@ apps:
     name: Synthetic Monitor
     repo: factory
     stage: live
+    mode: maintain
     health_url: https://monitor.latwoodtech.work/health
     custom_domain: monitor.latwoodtech.work
     provisioned_at: "2026-04-05"
@@ -106,43 +173,11 @@ apps:
     live_at: "2026-04-29"
     notes: Uptime monitor polling Factory app health endpoints on a cron.
 
-  - id: capricast-api
-    name: Capricast API
-    repo: factory
-    stage: live
-    health_url: https://api.capricast.com/health
-    custom_domain: api.capricast.com
-    provisioned_at: "2026-04-20"
-    deployed_at: "2026-05-01"
-    live_at: "2026-05-10"
-    notes: Backend API for the Capricast video platform.
-
-  - id: capricast-ui
-    name: Capricast UI
-    repo: factory
-    stage: live
-    health_url: https://capricast.com/
-    custom_domain: capricast.com
-    provisioned_at: "2026-04-20"
-    deployed_at: "2026-05-01"
-    live_at: "2026-05-10"
-    notes: Cloudflare Pages frontend for Capricast (project name videoking).
-
-  - id: cypher-healing
-    name: Cypher of Healing
-    repo: factory
-    stage: live
-    health_url: https://api.cipherofhealing.com/health
-    custom_domain: api.cipherofhealing.com
-    provisioned_at: "2026-04-25"
-    deployed_at: "2026-05-05"
-    live_at: "2026-05-15"
-    notes: API for the Cypher of Healing app.
-
   - id: daily-brief
     name: Daily Brief
     repo: factory
     stage: live
+    mode: maintain
     health_url: https://daily-brief.adrper79.workers.dev/health
     custom_domain: null
     provisioned_at: "2026-04-15"
@@ -154,6 +189,7 @@ apps:
     name: Supervisor
     repo: factory
     stage: live
+    mode: maintain
     health_url: https://supervisor.latwoodtech.work/health
     custom_domain: supervisor.latwoodtech.work
     provisioned_at: "2026-04-01"
@@ -165,6 +201,7 @@ apps:
     name: Webhook Fanout
     repo: factory
     stage: live
+    mode: maintain
     health_url: https://webhooks.latwoodtech.work/health
     custom_domain: webhooks.latwoodtech.work
     provisioned_at: "2026-04-01"
@@ -172,24 +209,124 @@ apps:
     live_at: "2026-04-29"
     notes: Stripe + external webhook fan-out router.
 
-  - id: lead-gen
-    name: Lead Gen
-    repo: factory
-    stage: scaffolded
-    health_url: null
-    custom_domain: null
-    provisioned_at: "2026-05-10"
-    deployed_at: null
-    live_at: null
-    notes: Lead generation worker. Scaffolded, not yet deployed.
-
   - id: browser-agent
     name: Browser Agent
     repo: factory
     stage: scaffolded
+    mode: maintain
     health_url: null
     custom_domain: null
     provisioned_at: "2026-05-15"
     deployed_at: null
     live_at: null
     notes: Browser automation worker using @latimer-woods-tech/browser package.
+
+  # ── Standalone products ───────────────────────────────────────────────────────
+  - id: cypher-healing
+    name: Cypher of Healing
+    repo: coh
+    stage: live
+    mode: maintain
+    health_url: https://api.cipherofhealing.com/health
+    custom_domain: api.cipherofhealing.com
+    provisioned_at: "2026-04-25"
+    deployed_at: "2026-05-05"
+    live_at: "2026-05-15"
+    notes: API for the Cypher of Healing app.
+
+  - id: xico-city
+    name: Xico City
+    repo: xico-city
+    stage: live
+    mode: growth
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Growth mode — optimize and scale existing features.
+
+  - id: wordis-bond
+    name: Wordis Bond
+    repo: wordis-bond
+    stage: live
+    mode: build
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Active build. TCPA regulatory hold lifted 2026-06-08.
+
+  - id: kairoscouncil
+    name: Kings Council
+    repo: kairoscouncil
+    stage: live
+    mode: growth
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Growth mode — scale and optimize.
+
+  - id: focusbro
+    name: FocusBro
+    repo: focusbro
+    stage: live
+    mode: maintain
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Maintenance mode — stable, deps and security patches only.
+
+  - id: the-calling
+    name: The Calling
+    repo: the-calling
+    stage: live
+    mode: growth
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Growth mode — scaling and distribution focus.
+
+  - id: xpelevator
+    name: XP Elevator
+    repo: xpelevator
+    stage: live
+    mode: growth
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Growth mode — scaling and distribution focus.
+
+  # ── Not yet started (hands-off) ───────────────────────────────────────────────
+  - id: itsjusus
+    name: ItsJusUs
+    repo: itsjusus
+    stage: provisioned
+    mode: hands-off
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Not yet started. Platform Brain proposals suppressed.
+
+  - id: neighbor-aid
+    name: Neighbor Aid
+    repo: neighbor-aid
+    stage: provisioned
+    mode: hands-off
+    health_url: null
+    custom_domain: null
+    provisioned_at: null
+    deployed_at: null
+    live_at: null
+    notes: Not yet started. Platform Brain proposals suppressed.

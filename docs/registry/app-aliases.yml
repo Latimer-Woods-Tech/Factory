@@ -65,3 +65,45 @@ apps:
     kind: product
     conformance_key: null
     aliases: [factory-agent-gateway]
+
+  - canonical: wordis-bond
+    repo: Latimer-Woods-Tech/wordis-bond
+    kind: product
+    conformance_key: WB
+    aliases: [wordisbond, WB]
+
+  - canonical: kairoscouncil
+    repo: Latimer-Woods-Tech/kairoscouncil
+    kind: product
+    conformance_key: KC
+    aliases: [kings-council, kingscouncil, kings-council-app, KC]
+
+  - canonical: focusbro
+    repo: Latimer-Woods-Tech/focusbro
+    kind: product
+    conformance_key: FB
+    aliases: [focus-bro, FB]
+
+  - canonical: itsjusus
+    repo: Latimer-Woods-Tech/itsjusus
+    kind: product
+    conformance_key: IJ
+    aliases: [ijustus, IJ]
+
+  - canonical: neighbor-aid
+    repo: Latimer-Woods-Tech/neighbor-aid
+    kind: product
+    conformance_key: NA
+    aliases: [neighboraid, NA]
+
+  - canonical: the-calling
+    repo: Latimer-Woods-Tech/the-calling
+    kind: product
+    conformance_key: TC
+    aliases: [thecalling, TC]
+
+  - canonical: xpelevator
+    repo: Latimer-Woods-Tech/xpelevator
+    kind: product
+    conformance_key: XP
+    aliases: [xp-elevator, XP]

@@ -218,6 +218,13 @@ async function main() {
     { org: 'Latimer-Woods-Tech', repo: 'capricast' },
     { org: 'Latimer-Woods-Tech', repo: 'coh' },
     { org: 'Latimer-Woods-Tech', repo: 'xico-city' },
+    { org: 'Latimer-Woods-Tech', repo: 'wordis-bond' },
+    { org: 'Latimer-Woods-Tech', repo: 'kairoscouncil' },
+    { org: 'Latimer-Woods-Tech', repo: 'focusbro' },
+    { org: 'Latimer-Woods-Tech', repo: 'itsjusus' },
+    { org: 'Latimer-Woods-Tech', repo: 'neighbor-aid' },
+    { org: 'Latimer-Woods-Tech', repo: 'the-calling' },
+    { org: 'Latimer-Woods-Tech', repo: 'xpelevator' },
   ];
   const standaloneRegistries = {};
   await Promise.all(
@@ -248,6 +255,7 @@ async function main() {
         url: null,
         healthState: 'unknown',
         lifecycleStage: null,
+        mode: null, // set from app-lifecycle.yml
         maturity: null, // feature-registry stage
         cohesion: null,
         registryStatus: 'missing',
@@ -273,11 +281,12 @@ async function main() {
     if (w.health_state) node.healthState = w.health_state;
   }
 
-  // app-lifecycle → lifecycle stage, domain, name
+  // app-lifecycle → lifecycle stage, mode, domain, name
   for (const a of lifecycle?.apps ?? []) {
     const canon = resolver.resolve(a.id);
     const node = ensureApp(canon, 'infra');
     node.lifecycleStage = a.stage ?? node.lifecycleStage;
+    node.mode = a.mode ?? node.mode ?? null;
     node.domain = node.domain ?? a.custom_domain ?? null;
     if (a.name && node.name === canon) node.name = a.name;
   }
