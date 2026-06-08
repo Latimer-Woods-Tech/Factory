@@ -111,12 +111,18 @@ jobs:
           npm install js-yaml@^4.1.1 --no-save --no-audit --no-fund
           node scripts/build-entity-graph.mjs
 
+      - name: Synthesize KPI trends (Platform Brain SYNTHESIZE)
+        run: |
+          # Reads dated snapshots + entity-graph, appends kpi-series.jsonl, writes
+          # the kpis block into entity-graph.json + platform.json. No extra deps.
+          node scripts/trend-analyzer.mjs
+
       - name: Open or update auto-merge PR if stats changed
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          FILES="apps/latwoodtech-web/src/data/founder-stats.json apps/latwoodtech-web/src/data/platform.json docs/registry/entity-graph.json"
+          FILES="apps/latwoodtech-web/src/data/founder-stats.json apps/latwoodtech-web/src/data/platform.json docs/registry/entity-graph.json docs/registry/kpi-series.jsonl"
           git add $FILES
           if git diff --cached --quiet $FILES; then
             echo "No change in founder-stats.json or platform.json — skipping PR."
@@ -145,9 +151,12 @@ jobs:
           fi
 
           cp "$TMP" apps/latwoodtech-web/src/data/founder-stats.json
-          # Re-run platform data + entity graph so they land on the stable branch too
+          # Re-run platform data + entity graph + trends so they land on the branch too.
+          # Order matters: platform-data regenerates platform.json, then build-entity-graph,
+          # then trend-analyzer patches the kpis block into both.
           node .github/scripts/generate-platform-data.mjs
           node scripts/build-entity-graph.mjs
+          node scripts/trend-analyzer.mjs
           git add $FILES
           if git diff --cached --quiet $FILES; then
             echo "Existing snapshot PR already contains this content."
