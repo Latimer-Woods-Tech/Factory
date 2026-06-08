@@ -75,10 +75,17 @@ const marker = (c) => `<!-- opp:${fingerprint(c)} -->`;
 
 // ── Scanners ──
 function scanMissingRegistry(graph) {
-  // Only products need a feature-registry.yml. Internal/infra workers are surfaced
-  // as shadow nodes in the graph for visibility but don't each warrant a ticket.
+  // Products always need a feature-registry.yml; so do in-scope org-scan repos
+  // (needsRegistry===true). Internal/infra workers and excluded/denylisted repos
+  // are graph nodes for visibility but are NOT ticketed.
   return (graph.nodes?.apps ?? [])
-    .filter((a) => a.registryStatus === 'missing' && a.kind === 'product')
+    .filter(
+      (a) =>
+        a.registryStatus === 'missing' &&
+        a.scope !== 'excluded' &&
+        a.scope !== 'denylisted' &&
+        (a.kind === 'product' || a.needsRegistry === true),
+    )
     .map((a) => ({
       type: 'missing-registry',
       target: a.id,

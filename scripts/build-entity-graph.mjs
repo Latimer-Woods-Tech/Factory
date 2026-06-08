@@ -164,6 +164,37 @@ function parseGaps(text) {
   return gaps;
 }
 
+// ─── Org-repo enumeration (sense-layer coverage) ──────────────────────────────────
+
+/** List active (non-archived) org repos with their topics, via the GitHub API. */
+async function listOrgRepos(org, token) {
+  if (!token) return [];
+  const out = [];
+  for (let page = 1; page <= 5; page++) {
+    let res;
+    try {
+      res = await fetch(`https://api.github.com/orgs/${org}/repos?per_page=100&page=${page}&type=all`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+          accept: 'application/vnd.github+json',
+          'user-agent': 'factory-build-entity-graph/1.0',
+        },
+      });
+    } catch {
+      break;
+    }
+    if (!res.ok) break;
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    for (const r of batch) {
+      if (r.archived) continue;
+      out.push({ name: r.name, full: r.full_name, topics: r.topics ?? [], description: r.description ?? '' });
+    }
+    if (batch.length < 100) break;
+  }
+  return out;
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -220,6 +251,7 @@ async function main() {
         maturity: null, // feature-registry stage
         cohesion: null,
         registryStatus: 'missing',
+        scope: 'in-scope', // known platform component (product/infra); enumerator may override for org-scan repos
         aliases: aliasEntry?.aliases ?? [],
         packages: [],
       };
@@ -266,6 +298,71 @@ async function main() {
     const node = ensureApp(canon, 'product');
     node.cohesion = c.cohesion;
     node.cohesionDimensions = c.dimensions;
+  }
+
+  // ── Org-repo enumeration: make the sense layer EVENLY applied ──
+  // Every active org repo becomes a node. Repos absent from service-registry /
+  // app-lifecycle / products were previously invisible — the opportunity scanner
+  // could not even notice they lacked a registry. Classify each repo explicitly:
+  //   in-scope   → ticketable (missing registry surfaces as an opportunity)
+  //   excluded   → sense-exclusions.yml OR `platform-exclude` GitHub topic (never ticketed)
+  //   denylisted → service-registry automation_denylist (FRIDGE rule 1; never ticketed)
+  const exclusionsDoc = await loadYaml('docs/registry/sense-exclusions.yml');
+  const excluded = new Map();
+  for (const e of exclusionsDoc?.exclusions ?? []) excluded.set(String(e.repo).toLowerCase(), e.reason ?? 'excluded');
+  const denyFull = new Set();
+  const denyBare = new Set();
+  for (const d of serviceRegistry?.automation_denylist ?? []) {
+    const repo = String(d.repo ?? '').toLowerCase();
+    if (!repo) continue;
+    denyFull.add(repo);
+    denyBare.add(repo.split('/').pop());
+  }
+  const ORG = 'Latimer-Woods-Tech';
+  let discovered = 0;
+  for (const r of await listOrgRepos(ORG, token)) {
+    if (r.name.toLowerCase() === 'factory') continue; // monorepo — apps tracked individually
+    const full = r.full ?? `${ORG}/${r.name}`;
+    const canon = resolver.resolveRepo(full) ?? resolver.resolve(r.name);
+    if (appNodes[canon]) {
+      appNodes[canon].repoConfirmed = true; // already a tracked platform component
+      continue;
+    }
+    const lc = r.name.toLowerCase();
+    let scope = 'in-scope';
+    let exclusionReason = null;
+    if (denyFull.has(full.toLowerCase()) || denyBare.has(lc)) {
+      scope = 'denylisted';
+      exclusionReason = 'FRIDGE rule 1 — automation_denylist';
+    } else if (excluded.has(lc)) {
+      scope = 'excluded';
+      exclusionReason = excluded.get(lc);
+    } else if ((r.topics ?? []).includes('platform-exclude')) {
+      scope = 'excluded';
+      exclusionReason = 'GitHub topic: platform-exclude';
+    }
+    const reg = registriesByCanonical[canon];
+    appNodes[canon] = {
+      id: canon,
+      name: r.name,
+      repo: full,
+      kind: 'repo',
+      domain: null,
+      url: null,
+      healthState: 'unknown',
+      lifecycleStage: null,
+      maturity: reg?.stage ?? null,
+      cohesion: null,
+      registryStatus: reg ? 'present' : 'missing',
+      scope,
+      exclusionReason,
+      needsRegistry: scope === 'in-scope' && !reg,
+      discovered: 'org-scan',
+      description: r.description || null,
+      aliases: [],
+      packages: reg?.packages ?? [],
+    };
+    discovered++;
   }
 
   // ── Build feature / roadmap / package / gap / template nodes + edges ──
@@ -318,12 +415,19 @@ async function main() {
   // ── Stats ──
   const appList = Object.values(appNodes);
   const products = appList.filter((a) => PRODUCT_KINDS.has(a.kind));
+  const inScope = appList.filter((a) => a.scope === 'in-scope');
+  const needsRegistry = appList.filter((a) => a.needsRegistry === true);
   const stats = {
     appCount: appList.length,
     productCount: products.length,
-    infraCount: appList.length - products.length,
+    infraCount: appList.filter((a) => a.kind === 'infra').length,
+    discoveredRepoCount: appList.filter((a) => a.discovered === 'org-scan').length,
     registryPresent: appList.filter((a) => a.registryStatus === 'present').length,
     registryMissing: appList.filter((a) => a.registryStatus === 'missing').length,
+    scopeInScope: inScope.length,
+    scopeExcluded: appList.filter((a) => a.scope === 'excluded').length,
+    scopeDenylisted: appList.filter((a) => a.scope === 'denylisted').length,
+    needsRegistry: needsRegistry.length, // in-scope repos still missing a registry (ticketable)
     featureCount: features.length,
     roadmapCount: roadmapItems.length,
     packageCount: packageSet.size,
@@ -350,10 +454,10 @@ async function main() {
 
   await writeFile(OUT_FILE, `${JSON.stringify(output, null, 2)}\n`, 'utf8');
   console.log(
-    `entity-graph.json written — ${stats.appCount} apps (${stats.productCount} product / ${stats.infraCount} infra), ` +
-      `registry ${stats.registryPresent} present / ${stats.registryMissing} missing, ` +
-      `${stats.featureCount} features, ${stats.roadmapCount} roadmap, ${stats.packageCount} packages, ` +
-      `${stats.gapCount} gaps, ${stats.edgeCount} edges`,
+    `entity-graph.json written — ${stats.appCount} apps (${stats.productCount} product / ${stats.infraCount} infra / ${stats.discoveredRepoCount} org-scan), ` +
+      `scope ${stats.scopeInScope} in / ${stats.scopeExcluded} excluded / ${stats.scopeDenylisted} denylisted, ` +
+      `needsRegistry ${stats.needsRegistry}, ` +
+      `${stats.featureCount} features, ${stats.gapCount} gaps, ${stats.edgeCount} edges`,
   );
 }
 
