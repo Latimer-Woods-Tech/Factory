@@ -350,3 +350,70 @@ Every UI design decision passes both filters. Sub-agents reading this section ap
 | Forced password reset for marketing reasons | Trust killer; only for security incidents |
 
 Enforced via: Stage 6 conformance dimension (machine checks), Claude reviewer (pattern detection), human reviewer on Red tier.
+
+---
+
+## 15. Worker Domain Policy
+
+Every production Cloudflare Worker must be served exclusively via a branded custom domain. The `.workers.dev` URL is CF infrastructure only — it must be disabled in production and must never appear in any user-facing code or client asset.
+
+### 15.1 The rule
+- `workers_dev = false` in **every** `[env.production]` block.
+- Routes declared via `routes = []` in `wrangler.toml` so they are reproducible from the repo and owned by `wrangler deploy` — not managed in the CF dashboard.
+- The `.workers.dev` URL is acceptable in staging/dev environments only.
+- No `.workers.dev` URL in any frontend JS, HTML, API client, or env var that ships to end users.
+
+### 15.2 Why
+The `.workers.dev` endpoint being live creates a **shadow access path** that:
+- Bypasses any CF WAF, firewall rules, or rate-limiting tied to the hostname
+- Is not monitored by the same health checks and SLO alerts
+- Is not bound by any geo-blocking, IP allowlisting, or Zero Trust policy you may add later
+- May leak internal worker names
+
+### 15.3 DNS sensitivity trade-off
+Disabling `.workers.dev` does increase dependency on DNS being correct. The accepted answer is:
+- **Cloudflare manages `selfprime.net` DNS** — the same entity that runs `.workers.dev`. A zone-wide CF outage fails both. The only new failure mode is an operator DNS mistake.
+- Mitigation: health alert on `https://{branded-domain}/health` (Cloudflare Synthetic Monitoring, 1/min), not a `.workers.dev` fallback. A broken `.workers.dev` fallback hidden in client code is a security hole, not a reliability tool.
+
+### 15.4 How to set up a new worker
+In `wrangler.toml` (or `wrangler.jsonc`):
+
+```toml
+# ── Development / staging ──
+workers_dev = true   # .workers.dev URL active for local curl testing
+
+# ── Production ──
+[env.production]
+name = "my-worker"
+workers_dev = false
+routes = [
+  { pattern = "api.myapp.com/*",  zone_name = "myapp.com" },
+  { pattern = "myapp.com/api/*",  zone_name = "myapp.com" },
+]
+```
+
+DNS prerequisite: a CNAME `api.myapp.com → {account}.workers.dev` must exist in the CF zone **before** the first deploy with `routes[]`. The `routes[]` entry tells CF to route traffic; the CNAME tells DNS where to point. You can create the CNAME once via `scripts/setup-api-subdomain.sh`; wrangler then owns the route.
+
+**First-deploy conflict:** if those routes were previously set via the CF dashboard manually, `wrangler deploy` will error on conflict. Fix: delete the manual route in the CF dashboard → deploy → wrangler adopts it.
+
+**Verify:** after deploy, `curl https://api.myapp.com/health` must return 200. Confirm `.workers.dev` no longer responds (or returns 404/no-route).
+
+### 15.5 Frontend fallback pattern
+Client code that needs a direct API origin (e.g. for dev, or for SSE where same-origin proxy doesn't apply) must always resolve to the **branded domain**, not `.workers.dev`:
+
+```js
+// CORRECT
+const _DIRECT_API = import.meta.env?.VITE_API_ORIGIN?.trim().replace(/\/$/, '')
+  ?? 'https://api.myapp.com';
+
+// WRONG — never in shipped code
+const _DIRECT_API = 'https://my-worker.adrper79.workers.dev';
+```
+
+### 15.6 Sequencing when migrating an existing worker
+If a worker currently has `workers_dev = true` and a frontend fallback pointing at `.workers.dev`, the safe migration order is:
+
+1. **Frontend first:** update the fallback URL to the branded domain → merge + deploy frontend → verify the app still works end-to-end.
+2. **Worker second:** add `routes[]` + flip `workers_dev = false` → deploy worker → `curl` branded domain `/health` → 200 → confirm `.workers.dev` no longer serves.
+
+Doing step 2 before step 1 breaks the frontend fallback while it's still pointing at `.workers.dev`.
