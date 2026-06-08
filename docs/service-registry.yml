@@ -481,12 +481,12 @@ workers:
 
   - id: factory-cross-repo
     name: factory-cross-repo
-    health_state: broken   # reclassified 2026-06-05: /health probe returned 530
+    health_state: live
     repo: Latimer-Woods-Tech/factory
     url: https://factory-cross-repo.latwoodtech.work
     workers_dev_url: https://factory-cross-repo.adrper79.workers.dev
     custom_domain: factory-cross-repo.latwoodtech.work
-    custom_domain_status: pending
+    custom_domain_status: pending_dns   # workers.dev live 200; custom domain needs DNS record in latwoodtech.work zone then re-deploy
     health_endpoint: /health
     verification_targets:
       staging: https://factory-cross-repo.adrper79.workers.dev/health
