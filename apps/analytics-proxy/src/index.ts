@@ -80,7 +80,6 @@ async function fetchWorkerMetrics(env: Env): Promise<AnalyticsPayload> {
         ) {
           dimensions {
             scriptName
-            outcome
           }
           sum {
             requests
@@ -114,7 +113,7 @@ async function fetchWorkerMetrics(env: Env): Promise<AnalyticsPayload> {
       viewer?: {
         accounts?: Array<{
           workersInvocationsAdaptive?: Array<{
-            dimensions: { scriptName: string; outcome: string };
+            dimensions: { scriptName: string };
             sum: { requests: number; errors: number; subrequests: number };
             quantiles: { cpuTimeP50: number; cpuTimeP99: number };
           }>;
