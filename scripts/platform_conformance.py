@@ -64,6 +64,17 @@ REPOS: list[dict[str, str]] = [
     {"key": "FA", "name": "factory-admin-studio", "repo": "Latimer-Woods-Tech/Factory"},
     {"key": "CH", "name": "cypher-healing",       "repo": "Latimer-Woods-Tech/coh"},
     {"key": "XC", "name": "xico-city",            "repo": "Latimer-Woods-Tech/xico-city"},
+    # Extended 2026-06-08 — every in-scope Factory repo is now scored (sense-layer
+    # evenness). Repos lacking the expected structure simply score low; that is an
+    # accurate signal, not an error.
+    {"key": "FAD", "name": "factory-admin",       "repo": "Latimer-Woods-Tech/factory-admin"},
+    {"key": "FB", "name": "focusbro",             "repo": "Latimer-Woods-Tech/focusbro"},
+    {"key": "IJ", "name": "ijustus",              "repo": "Latimer-Woods-Tech/ijustus"},
+    {"key": "KC", "name": "kairoscouncil",        "repo": "Latimer-Woods-Tech/kairoscouncil"},
+    {"key": "NA", "name": "neighbor-aid",         "repo": "Latimer-Woods-Tech/neighbor-aid"},
+    {"key": "TC", "name": "the-calling",          "repo": "Latimer-Woods-Tech/the-calling"},
+    {"key": "XP", "name": "xpelevator",           "repo": "Latimer-Woods-Tech/xpelevator"},
+    {"key": "WB", "name": "wordis-bond",          "repo": "Latimer-Woods-Tech/wordis-bond"},
 ]
 
 DIMENSIONS: list[tuple[str, str, int]] = [
