@@ -16,10 +16,8 @@
 #
 # FIELDS: repo (bare org repo name), reason, since (ISO date).
 
-exclusions:
-  - repo: factory-admin
-    reason: >
-      Under review — appears to duplicate the monorepo apps/admin-studio operator
-      dashboard. Decide archive-vs-register before adding a feature-registry.yml;
-      excluded for now so the loop does not nag a possible duplicate.
-    since: "2026-06-08"
+exclusions: []
+# No repos are currently excluded — every active org repo is in-scope for the sense
+# layer (operator decision, 2026-06-08). factory-admin is now tracked as its own app
+# (its admin-studio alias was removed). To exclude a repo later, add an entry here
+# ({ repo, reason, since }) or apply the `platform-exclude` GitHub topic.

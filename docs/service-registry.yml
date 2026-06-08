@@ -43,17 +43,13 @@
 # automation: forbidden  — The supervisor, Copilot, and any automated agent must
 #   never open a PR, touch a worker, or read data in this repo under any circumstances.
 #
-automation_denylist:
-  - id: wordis-bond-frontend
-    repo: Latimer-Woods-Tech/wordis-bond
-    scope: frontend-ui-only                              # ONLY the UI/frontend layer is restricted
-    automation: forbidden
-    reason: >
-      FRIDGE rule 1 — the wordis-bond frontend/UI carries TCPA regulatory risk.
-      Three-layer lockout (CODEOWNERS + this registry + supervisor denylist) applies
-      to the UI application layer only. The wordis-bond engine/worker backend does NOT
-      have a regulatory hold and may be worked on normally. Contact @adrper79-dot
-      before touching any file in the wordis-bond UI/client directory.
+automation_denylist: []
+# No repos are currently under an automation hold. The wordis-bond TCPA/regulatory
+# hold was lifted 2026-06-08 (regulation language removed); wordis-bond is now a
+# normal Factory repo, in-scope for the sense layer like any other. To place a future
+# legal/regulatory hold on a repo, add an entry here
+# ({ id, repo, scope, automation: forbidden, reason }) — gate.mjs and the entity-graph
+# enumerator both treat denylisted repos as never-automatable (FRIDGE rule 1).
 
 workers:
   - id: prime-self
