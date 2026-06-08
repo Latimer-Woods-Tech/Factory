@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
   "name": "factory-cross-repo",
   "main": "src/index.ts",
   "compatibility_date": "2026-05-01",
@@ -11,13 +12,28 @@
   //   FACTORY_APP_PRIVATE_KEY     — GitHub App RSA private key PEM
   //   FACTORY_APP_INSTALLATION_ID — GitHub App installation ID for Latimer-Woods-Tech org
 
+  "vars": {
+    "ENVIRONMENT": "development",
+    "WORKER_NAME": "factory-cross-repo"
+  },
+
   "env": {
+    "staging": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "WORKER_NAME": "factory-cross-repo"
+      }
+    },
     "production": {
       "workers_dev": false,
       "routes": [
         { "pattern": "factory-cross-repo.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
-      ]
+      ],
+      "vars": {
+        "ENVIRONMENT": "production",
+        "WORKER_NAME": "factory-cross-repo"
+      }
     }
   }
 }
-
