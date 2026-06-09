@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-09T00:06:33.546Z",
+  "generatedAt": "2026-06-09T18:06:36.570Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -229,6 +229,7 @@
           "analytics",
           "video"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/capricast/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -329,6 +330,7 @@
           "telephony",
           "email"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/coh/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -416,7 +418,8 @@
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [],
-        "packages": []
+        "packages": [],
+        "networkTokenConfigured": true
       },
       {
         "id": "factory-cross-repo",
@@ -808,6 +811,7 @@
           "bodygraph",
           "telephony"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/HumanDesign/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -1066,6 +1070,7 @@
           "analytics",
           "monitoring"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/xico-city/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -2417,7 +2422,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-09T00:06:33.606Z",
+    "generatedAt": "2026-06-09T18:06:36.628Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
