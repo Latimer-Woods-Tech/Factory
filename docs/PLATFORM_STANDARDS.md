@@ -137,6 +137,7 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | 9 | Performance | 10 | SLO budgets declared, synthetic checks live, smoke + canary green |
 | 10 | Privacy | 5 | PII_INVENTORY present, DSR endpoints present where required, audit log middleware on admin routes |
 | 11 | Feature Registry | 5 | `feature-registry.yml` present, schema valid, roadmap entries have status + quarter, cohesion field populated |
+| 12 | Network Events | 5 | `FACTORY_NETWORK_TOKEN` wired as wrangler secret, `fireNetworkEvent()` called at declared fire locations, event names match `docs/registry/network-events.yml` taxonomy |
 
 Each repo's score = weighted average across dimensions. Anything < 70 blocks deploys (after Stage 4 enforcement; advisory before).
 
@@ -177,6 +178,25 @@ packages:            # @latimer-woods-tech/* deps consumed
 ```
 
 **When to update:** After any shipped milestone (update `status: done`), when roadmap priorities shift, and as part of the Stage 4+ conformance cycle. The `/platform/` dashboard reflects the next hourly CI run.
+
+## 12. Network Events
+
+Every deployed product app — whether in the Factory monorepo or a standalone repo — must emit standardized cross-app events via the Factory network layer once the infrastructure is wired (Phase 0 of `docs/planning/factory-network-layer.md`).
+
+**Purpose:** Powers cross-app journeys (selfprime → capricast referral loops), feeds the Platform Brain's synergize scanner, and makes portfolio-level engagement signals machine-readable.
+
+**Integration contract:**
+
+1. `FACTORY_NETWORK_TOKEN` added as a wrangler secret (via GCP SM, same pattern as `WEBHOOK_FANOUT_INGEST_KEY`)
+2. `fireNetworkEvent(ctx, env, eventName, userId, properties)` helper installed in `src/lib/network.ts`
+3. Events fired at the locations declared in `docs/registry/network-events.yml` for the app
+4. `networkTokenConfigured: true` set in `docs/app-lifecycle.yml` once wired and verified
+
+**Enforcement:** The `missing-network-token` opportunity scanner (in `scripts/opportunity-scan.mjs`) auto-files an issue for every `kind: product` app at `stage: deployed|live` that has not set `networkTokenConfigured: true`. This scanner is platform-integration-exempt — it fires regardless of the app's mode.
+
+**Event taxonomy:** All event names and schemas are declared in `docs/registry/network-events.yml`. Events must match the registry; undeclared event names fail schema enforcement (`scripts/check-network-events.mjs`).
+
+**Non-goals:** No SSO, no shared user database, no PII sync across apps. The network layer records opaque `user_id_local` values per app; cross-app resolution requires an explicit `factory_network_links` record established via OAuth handshake.
 
 **Machine checks (conformance dimension 11):**
 - File exists at expected path

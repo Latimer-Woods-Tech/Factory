@@ -486,7 +486,7 @@ workers:
     url: https://factory-cross-repo.latwoodtech.work
     workers_dev_url: https://factory-cross-repo.adrper79.workers.dev
     custom_domain: factory-cross-repo.latwoodtech.work
-    custom_domain_status: pending_dns   # workers.dev live 200; custom domain needs DNS record in latwoodtech.work zone then re-deploy
+    custom_domain_status: attached_2026-06-08   # AAAA 100:: proxied DNS record created; wrangler deploy confirmed 200
     health_endpoint: /health
     verification_targets:
       staging: https://factory-cross-repo.adrper79.workers.dev/health
@@ -630,13 +630,37 @@ workers:
     telemetry_required: false
     deployment_status: deployed_verified_2026-05-26
     notes: >
-      Read-layer ingestion + auth API (Admin Build Plan P1.1+). Hyperdrive `DB`
-      binds the THE_FACTORY Neon project (factory-core-db,
-      efe957f404bb457593e6bd08b733b7c4). Worker secrets JWT_SIGNING_KEY and
-      SUPERVISOR_PUSH_KEY are set on the worker (still need backfilling into GCP
-      Secret Manager for the CI deploy path). Read-layer migrations 0101-0105
-      were applied to THE_FACTORY on 2026-05-26. Verified: /health 200,
-      /v1/runs/mirror 200 with the push key (401 without).
+      Factory platform infrastructure API (expanded scope 2026-06-08 — was CI/CD
+      auth only). Surfaces: core.latwoodtech.work (CI/CD auth + ingestion) and
+      network.latwoodtech.work (Factory network layer — /v1/network/*). Hyperdrive
+      `DB` binds THE_FACTORY Neon project (factory-core-db,
+      efe957f404bb457593e6bd08b733b7c4). `NETWORK_DB` (pending) binds the factory_core
+      spare Neon project for cross-app factory_network_links + factory_network_events.
+      Worker secrets: JWT_SIGNING_KEY, SUPERVISOR_PUSH_KEY, WEBHOOK_FANOUT_INGEST_KEY,
+      AUDIT_INGEST_KEY (set). FACTORY_NETWORK_TOKEN per-app keys pending Phase 0.
+      Read-layer migrations 0101-0105 applied 2026-05-26. Verified: /health 200.
+
+  - id: factory-network
+    name: Factory Network Layer
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://network.latwoodtech.work
+    workers_dev_url: https://factory-core-api.adrper79.workers.dev
+    custom_domain: network.latwoodtech.work
+    custom_domain_status: attached_2026-06-08
+    health_endpoint: /health
+    verification_targets:
+      default: https://network.latwoodtech.work/v1/network/events
+    telemetry_required: false
+    deployment_status: live_2026-06-08
+    notes: >
+      Second custom domain alias on factory-core-api (same worker). Serves
+      /v1/network/links, /v1/network/events, /v1/network/resolve. Cross-app
+      identity link registry + event bus for selfprime, capricast, coh, xico-city.
+      Backed by NETWORK_DB Hyperdrive binding (factory_core spare Neon project).
+      Platform Standard §12 — see docs/registry/network-events.yml and
+      docs/planning/factory-network-layer.md. Phase 0 target: 2026-06 Week 1.
+
   - id: factory-events-replay
     name: factory-events-replay
     health_state: provisioned
