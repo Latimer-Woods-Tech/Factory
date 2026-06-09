@@ -262,7 +262,8 @@ apps:
     provisioned_at: null
     deployed_at: null
     live_at: null
-    notes: Growth mode — optimize and scale existing features.
+    network_token_configured: true
+    notes: Growth mode — optimize and scale existing features. Factory Network Layer wired 2026-06-09 (asset_purchased event + /api/internal/signal receiver).
 
   - id: wordis-bond
     name: Wordis Bond
