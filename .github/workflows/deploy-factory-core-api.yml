@@ -54,6 +54,7 @@ jobs:
           fetch_to_env SUPERVISOR_PUSH_KEY         SUPERVISOR_PUSH_KEY
           fetch_to_env SENTRY_DSN                  FACTORY_CORE_API_SENTRY_DSN SENTRY_DSN
           fetch_to_env FACTORY_NETWORK_CONNECTION_STRING  FACTORY_NETWORK_CONNECTION_STRING
+          fetch_to_env FACTORY_OUTBOUND_SIGNAL_KEY  FACTORY_SIGNAL_KEY
 
       - name: Build local package dependencies
         run: |
@@ -94,8 +95,9 @@ jobs:
             fi
             printf '%s' "$val" | npx wrangler secret put "$name" --env production
           }
-          put_secret JWT_SIGNING_KEY     "${JWT_SIGNING_KEY:-}"
-          put_secret SUPERVISOR_PUSH_KEY "${SUPERVISOR_PUSH_KEY:-}"
+          put_secret JWT_SIGNING_KEY              "${JWT_SIGNING_KEY:-}"
+          put_secret SUPERVISOR_PUSH_KEY          "${SUPERVISOR_PUSH_KEY:-}"
+          put_secret FACTORY_OUTBOUND_SIGNAL_KEY  "${FACTORY_OUTBOUND_SIGNAL_KEY:-}"
           [ -n "${SENTRY_DSN:-}" ] && put_secret SENTRY_DSN "${SENTRY_DSN}" || true
           npx wrangler deploy --env production --var BUILD_SHA:"${GITHUB_SHA}"
 

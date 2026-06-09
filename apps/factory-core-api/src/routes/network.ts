@@ -162,5 +162,70 @@ export function createNetworkRouter() {
     return c.json({ app_id: appId, user_id: userId, events: events.rows });
   });
 
+  /**
+   * POST /v1/network/signals
+   * Body: { user_id_local: string, signal: string, properties?: object }
+   *
+   * Fire-and-forget cross-app signal relay. Looks up all linked accounts for
+   * the caller's (app_id, user_id_local) pair and delivers the signal to each
+   * target app's /api/internal/signal endpoint using FACTORY_OUTBOUND_SIGNAL_KEY.
+   * Returns 202 immediately — delivery is ctx.waitUntil fire-and-forget.
+   */
+  router.post('/signals', async (c) => {
+    const requestId = c.get('requestId') ?? generateRequestId();
+    const log = createLogger({ workerId: SERVICE, requestId, environment: resolveEnv(c.env.ENVIRONMENT) });
+    const sourceAppId = c.get('networkAppId');
+
+    const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+    const userIdLocal = typeof body?.user_id_local === 'string' ? body.user_id_local : '';
+    const signal = typeof body?.signal === 'string' ? body.signal : '';
+    const properties = (body?.properties && typeof body.properties === 'object' && !Array.isArray(body.properties))
+      ? body.properties
+      : {};
+
+    if (!userIdLocal || !signal) {
+      throw new BadRequestError('user_id_local and signal are required');
+    }
+
+    const signalKey = c.env.FACTORY_OUTBOUND_SIGNAL_KEY;
+    if (!signalKey) {
+      log.warn('network.signal_key_missing', { sourceAppId });
+      return c.json({ ok: true, delivered: 0 }, 202);
+    }
+
+    const db = createDb(c.env.NETWORK_DB);
+    const links = await db.execute<{ target_app: string; target_user_id: string; worker_url: string | null }>(sql`
+      SELECT fnl.target_app, fnl.target_user_id, fak.worker_url
+      FROM factory_network_links fnl
+      JOIN factory_app_keys fak ON fak.app_id = fnl.target_app AND fak.revoked_at IS NULL
+      WHERE fnl.source_app = ${sourceAppId}
+        AND fnl.source_user_id = ${userIdLocal}
+        AND fak.worker_url IS NOT NULL
+    `);
+
+    const deliveries = links.rows.map(({ target_app, target_user_id, worker_url }) =>
+      fetch(`${worker_url}/api/internal/signal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Factory-Signal-Key': signalKey,
+        },
+        signal: AbortSignal.timeout(8_000),
+        body: JSON.stringify({
+          signal,
+          source_app: sourceAppId,
+          target_user_id,
+          properties,
+        }),
+      }).catch((err) => {
+        log.warn('network.signal_delivery_failed', { target_app, signal, error: String(err) });
+      }),
+    );
+
+    c.executionCtx.waitUntil(Promise.all(deliveries));
+    log.info('network.signals_dispatched', { sourceAppId, signal, targets: links.rows.length });
+    return c.json({ ok: true, delivered: links.rows.length }, 202);
+  });
+
   return router;
 }

@@ -57,4 +57,10 @@ export interface Env extends Record<string, unknown> {
    * Declared here for completeness; only NETWORK_DB and this comment document the M2M contract.
    */
   FACTORY_NETWORK_TOKEN?: string;
+  /**
+   * Shared outbound signal delivery key. Sent as `X-Factory-Signal-Key` when calling
+   * target app /api/internal/signal endpoints. Must match FACTORY_SIGNAL_KEY on
+   * each registered target app. wrangler secret FACTORY_OUTBOUND_SIGNAL_KEY.
+   */
+  FACTORY_OUTBOUND_SIGNAL_KEY?: string;
 }
