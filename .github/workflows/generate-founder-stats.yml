@@ -125,6 +125,15 @@ jobs:
           # Folded into this scheduled job (no new workflow) per the CI-budget posture.
           node scripts/planning-session.mjs
 
+      - name: Roadmap auto-build (Platform Brain, auto-file path)
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APPLY: 'true'
+        run: |
+          # Files one deduplicated GitHub issue per queued roadmap item in build/growth apps.
+          # Issues get supervisor:no-template → template-author drafts a plan → supervisor executes.
+          node scripts/roadmap-auto-build.mjs
+
       - name: Open or update auto-merge PR if stats changed
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
