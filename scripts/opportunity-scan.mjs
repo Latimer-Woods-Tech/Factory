@@ -48,20 +48,29 @@ const MIN_SCORE = (() => {
 
 // ── Mode-based proposal filter ──────────────────────────────────────────────
 // Each mode restricts which opportunity types the scanner will propose for that app.
+// new:       base-layer only — platform integration proposals only, no product proposals
 // build:     full suite — all types
 // growth:    quality + regression only — no new feature/registry nagging
 // maintain:  regression alerts only — infra is stable, don't add churn
 // hands-off: silence — no proposals (not started or intentionally dormant)
 const MODE_ALLOWS = {
-  'missing-registry':      new Set(['build']),
-  'low-cohesion':          new Set(['build', 'growth']),
-  'open-gap-no-ticket':    new Set(['build', 'growth', 'maintain']),
-  'regressed-kpi':         new Set(['build', 'growth', 'maintain']),
-  'cross-app-feature-gap': new Set(['build']),
+  'missing-registry':        new Set(['build']),
+  'low-cohesion':            new Set(['build', 'growth']),
+  'open-gap-no-ticket':      new Set(['build', 'growth', 'maintain']),
+  'regressed-kpi':           new Set(['build', 'growth', 'maintain']),
+  'cross-app-feature-gap':   new Set(['build']),
+  'cross-app-network-gap':   new Set(['build', 'growth']), // synergize scanner
+  'missing-network-token':   new Set(['build', 'growth', 'maintain', 'new']), // platform integration — exempt from mode
 };
 
+// Platform integration types are exempt from mode restrictions: every app that
+// is deployed (stage=live/deployed) must satisfy these regardless of mode.
+const PLATFORM_INTEGRATION_TYPES = new Set(['missing-network-token']);
+
 function modeAllows(appMode, type) {
+  if (PLATFORM_INTEGRATION_TYPES.has(type)) return true; // platform integration exemption
   const mode = appMode ?? 'build'; // default: treat unset as build (existing apps pre-mode)
+  if (mode === 'new') return PLATFORM_INTEGRATION_TYPES.has(type); // new: platform integration only
   const allowed = MODE_ALLOWS[type];
   if (!allowed) return true; // unknown type → fail-open
   return allowed.has(mode);
@@ -74,6 +83,8 @@ const AXIS = {
   'open-gap-no-ticket':    { revenueImpact: 0.2, cohesionImpact: 0.5, strategicBreadth: 0.2, riskReduction: 0.8 },
   'regressed-kpi':         { revenueImpact: 0.3, cohesionImpact: 0.6, strategicBreadth: 0.2, riskReduction: 0.7 },
   'cross-app-feature-gap': { revenueImpact: 0.4, cohesionImpact: 0.2, strategicBreadth: 0.9, riskReduction: 0.2 },
+  'cross-app-network-gap': { revenueImpact: 0.5, cohesionImpact: 0.2, strategicBreadth: 1.0, riskReduction: 0.1 },
+  'missing-network-token': { revenueImpact: 0.2, cohesionImpact: 0.4, strategicBreadth: 0.8, riskReduction: 0.3 },
 };
 const TIER_MULT = { p0: 1.0, p1: 0.8, p2: 0.5, p3: 0.3 };
 
@@ -86,9 +97,14 @@ function scoreOf(candidate, objectives) {
     (w.strategicBreadth ?? 0) * axis.strategicBreadth +
     (w.riskReduction ?? 0) * axis.riskReduction;
   const sw = objectives.strategicWeight ?? {};
-  const mult = sw[candidate.app] ?? sw._default ?? 1;
+  const appMult = sw[candidate.app] ?? sw._default ?? 1;
+  // Apply mode multiplier from objectives._modeMultiplier (e.g. new=0.5, growth=1.1).
+  // Platform integration types (missing-network-token) are exempt — always full weight.
+  const modeMult = PLATFORM_INTEGRATION_TYPES.has(candidate.type)
+    ? 1
+    : (sw._modeMultiplier?.[candidate.mode] ?? 1);
   const tierMult = candidate.tier ? TIER_MULT[candidate.tier] ?? 1 : 1;
-  return Math.round(base * mult * tierMult * 100);
+  return Math.round(base * appMult * modeMult * tierMult * 100);
 }
 
 const fingerprint = (c) => `${c.type}:${c.target}`;
@@ -112,6 +128,7 @@ function scanMissingRegistry(graph) {
       type: 'missing-registry',
       target: a.id,
       app: a.id,
+      mode: a.mode,
       repo: a.repo,
       title: `feat(registry): add feature-registry.yml for ${a.name}`,
       detail: `${a.name} (${a.kind}, lifecycle=${a.lifecycleStage ?? 'n/a'}) has no feature-registry.yml, so it is invisible to the platform dashboard and the planning loop. Add one per docs/standards/feature-registry.schema.yml.`,
@@ -131,6 +148,7 @@ function scanLowCohesion(graph, objectives) {
       type: 'low-cohesion',
       target: a.id,
       app: a.id,
+      mode: a.mode,
       repo: a.repo,
       title: `chore(cohesion): raise ${a.name} cohesion (${a.cohesion} < floor ${floor})`,
       detail: `${a.name} cohesion is ${a.cohesion}, below the objectives floor of ${floor}. Lowest-scoring conformance dimensions are the place to start (see docs/conformance/${a.id}.json).`,
@@ -160,6 +178,7 @@ function scanRegressedKpi(graph) {
       type: 'regressed-kpi',
       target: m.app,
       app: m.app,
+      mode: appMode[m.app],
       title: `fix(cohesion): investigate ${m.app} cohesion regression (${m.prior}→${m.current})`,
       detail: `${m.app} cohesion dropped ${m.delta} over ${m.dayGap ?? '?'}d (${m.prior}→${m.current}). Identify which conformance dimension regressed.`,
     }));
@@ -192,6 +211,7 @@ function scanCrossAppFeatureGap(graph) {
           type: 'cross-app-feature-gap',
           target: `${p.id}:${norm.replace(/\s+/g, '-')}`,
           app: p.id,
+          mode: p.mode,
           title: `feat(${p.id}): consider "${label}" (present in ${[...apps].join(', ')})`,
           detail: `"${label}" is live in ${apps.size} products (${[...apps].join(', ')}) but absent from ${p.name}. Possible cross-pollination opportunity — strategic, so routed to the weekly brief.`,
         });
@@ -199,6 +219,66 @@ function scanCrossAppFeatureGap(graph) {
     }
   }
   return out;
+}
+
+// ── Synergize scanner: cross-app network gap ────────────────────────────────
+// Reads network metrics populated by scripts/network-sense.mjs into entity-graph.json.
+// Routes to brief (strategic — product/UX decisions, not auto-fixable).
+function scanCrossAppNetworkGap(graph) {
+  const network = graph.network ?? {};
+  const out = [];
+
+  // Link adoption below threshold → brief it
+  const linkRate = network.link_rate ?? null;
+  if (linkRate !== null && linkRate < 0.05) {
+    out.push({
+      type: 'cross-app-network-gap',
+      target: 'selfprime:capricast:link-rate',
+      app: 'selfprime',
+      title: 'chore(network): cross-app link adoption below 5% — improve link prompt placement',
+      detail: `Only ${(linkRate * 100).toFixed(1)}% of active selfprime users have linked a Capricast account (target ≥5%). Review link prompt placement and acquisition path for users without existing Capricast accounts.`,
+    });
+  }
+
+  // Cross-app funnel below threshold → brief it
+  const funnelCount = network.cross_app_funnel ?? null;
+  if (funnelCount !== null && funnelCount < 10) {
+    out.push({
+      type: 'cross-app-network-gap',
+      target: 'selfprime:capricast:funnel',
+      app: 'selfprime',
+      title: 'chore(network): selfprime→capricast verified cross-app journeys below 10',
+      detail: `Only ${funnelCount} users have completed a selfprime reading AND have a verified Capricast link. Expand pilot or accelerate link prompt improvements.`,
+    });
+  }
+
+  return out;
+}
+
+// ── Platform integration scanner: missing network token ─────────────────────
+// Detects apps that are deployed but have not wired FACTORY_NETWORK_TOKEN.
+// Platform integration exemption applies — proposed regardless of mode.
+// Routes to auto-file (infra obligation, not product decision).
+function scanMissingNetworkToken(graph) {
+  const ELIGIBLE_STAGES = new Set(['deployed', 'live']);
+  const PRODUCT_KINDS = new Set(['product']);
+  return (graph.nodes?.apps ?? [])
+    .filter(
+      (a) =>
+        PRODUCT_KINDS.has(a.kind) &&
+        ELIGIBLE_STAGES.has(a.stage) &&
+        a.networkTokenConfigured !== true &&
+        modeAllows(a.mode, 'missing-network-token'),
+    )
+    .map((a) => ({
+      type: 'missing-network-token',
+      target: a.id,
+      app: a.id,
+      mode: a.mode,
+      repo: a.repo,
+      title: `chore(network): wire ${a.name} to Factory network layer (FACTORY_NETWORK_TOKEN)`,
+      detail: `${a.name} is ${a.stage} but has not wired FACTORY_NETWORK_TOKEN. Platform Standard §12 requires deployed product apps to emit network events. See docs/planning/factory-network-layer.md §7 for the integration contract.`,
+    }));
 }
 
 // ── Dedup against existing open issues ──
@@ -271,6 +351,8 @@ async function main() {
     ...scanOpenGaps(graph),
     ...scanRegressedKpi(graph),
     ...scanCrossAppFeatureGap(graph),
+    ...scanCrossAppNetworkGap(graph),      // synergize: cross-app journey metrics
+    ...scanMissingNetworkToken(graph),     // platform integration: network layer wiring
   ].map((c) => ({ ...c, score: scoreOf(c, objectives) }))
     .filter((c) => c.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score);
