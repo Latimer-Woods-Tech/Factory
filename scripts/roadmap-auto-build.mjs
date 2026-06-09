@@ -76,7 +76,12 @@ async function existingFingerprints() {
     for (const it of issues) {
       const matches = (it.body || '').match(/<!-- roadmap:([^>]+?) -->/g) || [];
       for (const tag of matches) {
-        set.add(tag.replace('<!-- roadmap:', '').replace(' -->', '').trim());
+        const itemId = tag.replace('<!-- roadmap:', '').replace(' -->', '').trim();
+        // Store the same value fingerprint() produces so the dedup check in
+        // main() matches. Previously this stored the bare itemId while the
+        // check compared against fingerprint(itemId) (`roadmap:${itemId}`),
+        // so the set never matched and dupes were filed every run.
+        set.add(fingerprint(itemId));
       }
     }
     return set;
