@@ -97,7 +97,8 @@ apps:
     provisioned_at: "2026-03-01"
     deployed_at: "2026-03-15"
     live_at: "2026-04-01"
-    notes: Human Design practitioner API. Legacy worker name retained.
+    network_token_configured: true
+    notes: Human Design practitioner API. Legacy worker name retained. FACTORY_NETWORK_TOKEN set; fires reading_generated + registers account links (PR #506).
 
   # ── Factory monorepo — Capricast ─────────────────────────────────────────────
   - id: capricast-api
@@ -110,7 +111,8 @@ apps:
     provisioned_at: "2026-04-20"
     deployed_at: "2026-05-01"
     live_at: "2026-05-10"
-    notes: Backend API for the Capricast video platform.
+    network_token_configured: true
+    notes: Backend API for the Capricast video platform. FACTORY_NETWORK_TOKEN set; fires video_published event on import (PR #644).
 
   - id: capricast-ui
     name: Capricast UI
@@ -332,7 +334,8 @@ apps:
     provisioned_at: "2026-05-26"
     deployed_at: "2026-05-26"
     live_at: "2026-05-26"
-    notes: Read-layer ingestion + auth API (Admin Build Plan P1.1+). Hyperdrive DB binds THE_FACTORY Neon. Migrations 0101-0105 applied. JWT_SIGNING_KEY + SUPERVISOR_PUSH_KEY set on worker; need backfilling into GCP SM.
+    network_token_configured: true
+    notes: "Read-layer ingestion + auth API (Admin Build Plan P1.1+). Hyperdrive DB binds THE_FACTORY Neon. Also serves network.latwoodtech.work as the Factory Network Layer host: /v1/network/{links,events,resolve} (migration 0001 applied to factory-network Neon project)."
 
   - id: qa-tools-worker
     name: QA Tools Worker
