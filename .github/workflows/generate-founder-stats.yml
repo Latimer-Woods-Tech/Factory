@@ -117,6 +117,16 @@ jobs:
           # the kpis block into entity-graph.json + platform.json. No extra deps.
           node scripts/trend-analyzer.mjs
 
+      - name: Network sense (Platform Brain synergize)
+        env:
+          FACTORY_NETWORK_CONNECTION_STRING: ${{ secrets.FACTORY_NETWORK_CONNECTION_STRING }}
+        run: |
+          # Queries factory-network Neon for cross-app link + event metrics.
+          # Writes graph.network block into entity-graph.json for planning-session.mjs.
+          # Graceful no-op when connection string is absent.
+          npm install pg --no-save --no-audit --no-fund
+          node scripts/network-sense.mjs
+
       - name: Generate planning brief (Platform Brain, brief path)
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -174,6 +184,7 @@ jobs:
           node .github/scripts/generate-platform-data.mjs
           node scripts/build-entity-graph.mjs
           node scripts/trend-analyzer.mjs
+          node scripts/network-sense.mjs
           node scripts/planning-session.mjs
           git add $FILES
           if git diff --cached --quiet $FILES; then
