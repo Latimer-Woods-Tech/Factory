@@ -289,6 +289,9 @@ async function main() {
     node.mode = a.mode ?? node.mode ?? null;
     node.domain = node.domain ?? a.custom_domain ?? null;
     if (a.name && node.name === canon) node.name = a.name;
+    // Network layer wiring status — set manually in app-lifecycle.yml once
+    // FACTORY_NETWORK_TOKEN is provisioned for the app. Drives missing-network-token scanner.
+    if (a.network_token_configured != null) node.networkTokenConfigured = a.network_token_configured;
   }
 
   // feature registries → maturity, name, domain, packages, registryStatus=present
