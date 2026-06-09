@@ -249,7 +249,8 @@ apps:
     provisioned_at: "2026-04-25"
     deployed_at: "2026-05-05"
     live_at: "2026-05-15"
-    notes: API for the Cypher of Healing app.
+    network_token_configured: true
+    notes: API for the Cypher of Healing app. FACTORY_NETWORK_TOKEN set; fires session_booked on appointment creation (PR feat/factory-network-layer in coh repo).
 
   - id: xico-city
     name: Xico City

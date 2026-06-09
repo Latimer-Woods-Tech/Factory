@@ -98,13 +98,13 @@ events:
     fire_location: "apps/worker/src/routes/conference.ts — after session start"
 
   # ── coh ─────────────────────────────────────────────────────────────────────
-  - name: blueprint_generated
+  - name: session_booked
     app: coh
     schema_version: 1
-    description: User completed a body-graph blueprint
+    description: User booked a healing session appointment
     properties:
-      blueprint_type: string
-    fire_location: "TBD — wire in coh worker (Phase 4)"
+      service_name_anon: string   # sha256(serviceName) — no PII
+    fire_location: "src/routes/booking.ts — POST /appointments after insert"
 
   # ── xico-city ────────────────────────────────────────────────────────────────
   - name: course_started
