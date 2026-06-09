@@ -642,17 +642,17 @@ workers:
 
   - id: factory-network
     name: Factory Network Layer
-    health_state: provisioned
+    health_state: live
     repo: Latimer-Woods-Tech/factory
     url: https://network.latwoodtech.work
     workers_dev_url: https://factory-core-api.adrper79.workers.dev
     custom_domain: network.latwoodtech.work
-    custom_domain_status: pending_phase0
+    custom_domain_status: attached_2026-06-08
     health_endpoint: /health
     verification_targets:
       default: https://network.latwoodtech.work/v1/network/events
     telemetry_required: false
-    deployment_status: planned_phase0
+    deployment_status: live_2026-06-08
     notes: >
       Second custom domain alias on factory-core-api (same worker). Serves
       /v1/network/links, /v1/network/events, /v1/network/resolve. Cross-app
