@@ -35,6 +35,7 @@ export const AUTO_FILE_TYPES = new Set([
   'low-cohesion',
   'dep-bump',
   'cve',
+  'missing-network-token', // platform integration: infra obligation regardless of mode
 ]);
 
 export const BRIEF_TYPES = new Set([
@@ -43,7 +44,8 @@ export const BRIEF_TYPES = new Set([
   'kill-app',
   'stage-transition',
   'big-spend',
-  'cross-app-feature-gap', // strategic: proposes new product scope → human decides
+  'cross-app-feature-gap',   // strategic: proposes new product scope → human decides
+  'cross-app-network-gap',   // synergize: product/UX decision on link adoption → human decides
   'pricing-change',
 ]);
 
