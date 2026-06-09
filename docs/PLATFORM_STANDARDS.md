@@ -1,6 +1,6 @@
 # Platform Standards — Latimer-Woods-Tech
 
-**Version:** v1 · **Date:** 2026-05-11 · **Status:** Authoritative · **Conflicts:** `docs/supervisor/FRIDGE.md` wins; this doc wins over older scattered architecture notes; ADRs in `docs/adr/` win over this doc when explicitly marked superseding.
+**Version:** v1.1 · **Date:** 2026-06-09 · **Status:** Authoritative · **Conflicts:** `docs/supervisor/FRIDGE.md` wins; this doc wins over older scattered architecture notes; ADRs in `docs/adr/` win over this doc when explicitly marked superseding.
 
 This is the single source of truth for how every Latimer-Woods-Tech repo, package, workflow, and feature is built. Every PR is audited against it (`platform-conformance.yml`). Every AI agent reads it as a hard constraint. Every new repo inherits it by default.
 
@@ -17,8 +17,9 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Language:** TypeScript strict (`strict: true`, `noUncheckedIndexedAccess: true`, `noImplicitOverride: true`).
 - **Package manager:** pnpm + workspaces. No npm or yarn at root.
 - **Databases:** D1 for transactional, Neon (Postgres) via Hyperdrive for relational, KV for hot config, R2 for blobs, Durable Objects for stateful real-time.
-- **AI:** All LLM calls via `@latimer-woods-tech/llm`. Tiered routing (fast / balanced / smart / verifier). Anthropic primary, Gemini long-context fallback, Groq verifier. No direct vendor SDKs.
+- **AI:** All LLM calls via `@latimer-woods-tech/llm`. Tiered routing (fast / balanced / smart / verifier). Current provider assignments in [`docs/STACK.md`](../STACK.md) — do not hardcode provider names in app code. No direct vendor SDKs.
 - **Realtime:** `@latimer-woods-tech/realtime` (when published) for DO Room/Presence/Conference patterns.
+- **Build:** `tsup` (packages) and `wrangler deploy` (Workers). Published packages must produce a clean `dist/` with zero tsup errors. Workers must pass `wrangler deploy --dry-run` (or tsc) cleanly before every deploy.
 
 ## 2. Code patterns
 
@@ -32,6 +33,8 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Monitoring:** `@latimer-woods-tech/monitoring` wires Sentry + PostHog. Every Worker includes this in its middleware chain.
 - **Multi-tenant:** every Worker that holds tenant data resolves tenant via `X-Tenant-Id` header + `resolveTenant()` from `@lwt/auth`. No implicit tenant fallback.
 - **Request ID:** every request gets a `request_id` (UUIDv7) attached by middleware. Logged on every line. Propagated downstream.
+- **Linting:** ESLint with `--max-warnings 0` on every PR. No `eslint-disable` suppressions without an approved ADR. Enforced as a required CI status check.
+- **Documentation:** ≥90% of exported symbols in published `@latimer-woods-tech/*` packages carry a JSDoc one-line doc comment. Enforced via `eslint-plugin-jsdoc`.
 
 ## 3. Tests
 
@@ -61,7 +64,7 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Migrations:** SQL files under `migrations/`. Naming: `NNNN_description.sql`. Numbered, sequential, immutable once merged.
 - **Pattern:** Expand → Contract. Additive-only changes deployable to prod. Destructive changes (drop column, rename) require a two-phase migration with both versions running simultaneously for ≥1 deploy cycle.
 - **Rollback:** every migration includes `-- ROLLBACK:` block with the inverse statement, or `-- ROLLBACK: NONE — irreversible, see ADR-NNNN` referring to an approved ADR.
-- **Dry-run:** `wrangler d1 execute --dry-run` required in CI before deploy.
+- **Dry-run:** Migrations must be validated before touching production. For Neon (Postgres): run the migration against a staging or ephemeral branch first (see `docs/runbooks/database.md`). For D1: `wrangler d1 execute --dry-run` in CI. No raw SQL applied to prod without a dry-run pass.
 
 ## 7. Workflows
 
@@ -106,7 +109,8 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 
 ## How this evolves
 
-- This file is versioned. Changes via PR + ADR.
+- This file is versioned. Routine additions (new bullet in an existing §) require a PR only. Architectural changes (new §, removing a standard, changing a weight) require a PR + ADR.
+- The human-readable compliance checklist lives at [`docs/COMPLIANCE_CHECKLIST.md`](./COMPLIANCE_CHECKLIST.md). When this file changes, update the checklist in the same PR.
 - Standards that nobody meets within 90 days get re-evaluated: either drop them, or invest to fix.
 - New production incidents become candidate new standards. Recurring incidents (≥3 in a quarter) become required new standards.
 - Quarterly review (per OPERATING_FRAMEWORK §quarterly): drop, add, evolve.
@@ -127,7 +131,7 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | § | Dimension | Weight | Sample checks |
 |---:|---|---:|---|
 | 1 | Stack | 10 | wrangler.jsonc valid, ESM only, no node:crypto, Hono present |
-| 2 | Code patterns | 15 | @lwt/logger consumed, @lwt/errors consumed, idempotent webhooks, request_id middleware |
+| 2 | Code patterns | 15 | @lwt/logger consumed, @lwt/errors consumed, idempotent webhooks, request_id middleware, ESLint 0 warnings |
 | 3 | Tests | 15 | vitest deterministic, playwright tiers present, coverage ≥ floor, every route tested |
 | 4 | Observability | 10 | Sentry init, sourcemap upload step, structured logs, SLO doc present |
 | 5 | Security | 15 | CodeQL workflow, npm audit step, OIDC publish (no long-lived NPM_TOKEN), secret-scanning on |
@@ -137,6 +141,7 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | 9 | Performance | 10 | SLO budgets declared, synthetic checks live, smoke + canary green |
 | 10 | Privacy | 5 | PII_INVENTORY present, DSR endpoints present where required, audit log middleware on admin routes |
 | 11 | Feature Registry | 5 | `feature-registry.yml` present, schema valid, roadmap entries have status + quarter, cohesion field populated |
+| 12 | Network Events | 5 | `FACTORY_NETWORK_TOKEN` wired as wrangler secret, `fireNetworkEvent()` called at declared fire locations, event names match `docs/registry/network-events.yml` taxonomy |
 
 Each repo's score = weighted average across dimensions. Anything < 70 blocks deploys (after Stage 4 enforcement; advisory before).
 
@@ -177,6 +182,25 @@ packages:            # @latimer-woods-tech/* deps consumed
 ```
 
 **When to update:** After any shipped milestone (update `status: done`), when roadmap priorities shift, and as part of the Stage 4+ conformance cycle. The `/platform/` dashboard reflects the next hourly CI run.
+
+## 12. Network Events
+
+Every deployed product app — whether in the Factory monorepo or a standalone repo — must emit standardized cross-app events via the Factory network layer once the infrastructure is wired (Phase 0 of `docs/planning/factory-network-layer.md`).
+
+**Purpose:** Powers cross-app journeys (selfprime → capricast referral loops), feeds the Platform Brain's synergize scanner, and makes portfolio-level engagement signals machine-readable.
+
+**Integration contract:**
+
+1. `FACTORY_NETWORK_TOKEN` added as a wrangler secret (via GCP SM, same pattern as `WEBHOOK_FANOUT_INGEST_KEY`)
+2. `fireNetworkEvent(ctx, env, eventName, userId, properties)` helper installed in `src/lib/network.ts`
+3. Events fired at the locations declared in `docs/registry/network-events.yml` for the app
+4. `networkTokenConfigured: true` set in `docs/app-lifecycle.yml` once wired and verified
+
+**Enforcement:** The `missing-network-token` opportunity scanner (in `scripts/opportunity-scan.mjs`) auto-files an issue for every `kind: product` app at `stage: deployed|live` that has not set `networkTokenConfigured: true`. This scanner is platform-integration-exempt — it fires regardless of the app's mode.
+
+**Event taxonomy:** All event names and schemas are declared in `docs/registry/network-events.yml`. Events must match the registry; undeclared event names fail schema enforcement (`scripts/check-network-events.mjs`).
+
+**Non-goals:** No SSO, no shared user database, no PII sync across apps. The network layer records opaque `user_id_local` values per app; cross-app resolution requires an explicit `factory_network_links` record established via OAuth handshake.
 
 **Machine checks (conformance dimension 11):**
 - File exists at expected path
