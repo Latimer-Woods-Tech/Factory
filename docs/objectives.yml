@@ -34,7 +34,15 @@ strategicWeight:
   admin-studio: 1.1        # operator leverage (force-multiplier on all other work)
   xico-city: 1.0           # beta — creative economy OS
   agent-gateway: 1.0       # platform capability
+  factory-core-api: 1.2    # platform infra — network backbone (expanded scope 2026-06-08)
   _default: 0.8
+  # mode-based multipliers applied AFTER the per-app weight
+  _modeMultiplier:
+    new: 0.5               # investment phase — not yet producing; de-prioritise product opportunities
+    build: 1.0             # active development — full weight
+    growth: 1.1            # compounding returns — slight boost
+    maintain: 0.7          # stable — only critical work gets boosted
+    hands-off: 0.0         # silence
 
 # ─── Revenue targets (feed revenueImpact) ────────────────────────────────────────
 # current is updated from docs/revenue/ snapshots by the trend analyzer (Phase 2).
@@ -61,6 +69,15 @@ stage:
 # ─── North-star (what 'greatness' means, quantified) ─────────────────────────────
 # The planning session and opportunity scorer optimize toward these. Each should be
 # measurable from the entity graph + KPI block.
+# ─── Network layer targets (feed cross-app-network-gap scanner) ──────────────────
+# Thresholds read by scripts/opportunity-scan.mjs scanCrossAppNetworkGap().
+# Also read by network-sense.mjs to populate graph.network and brief sections.
+network:
+  link_rate_target: 0.15         # 15% of active users link a cross-app account (warn at <0.05)
+  funnel_target: 50              # 50 verified cross-app journeys (warn at <10)
+  events_per_day_floor: 5        # minimum daily cross-app events before LEARN is meaningful
+  pilot_apps: [selfprime, capricast]
+
 northStar:
   - id: ns-cohesion
     goal: "All product cohesion >= 70"
@@ -74,3 +91,9 @@ northStar:
   - id: ns-revenue
     goal: "Each revenue app has active paying customers"
     measure: "current_mrr > 0 for selfprime, capricast, coh"
+  - id: ns-network-wired
+    goal: "All live product apps emit network events"
+    measure: "networkTokenConfigured == true for all apps where kind=product and stage=live"
+  - id: ns-network-adoption
+    goal: "Cross-app link rate >= 15% of active users"
+    measure: "graph.network.link_rate >= 0.15"

@@ -173,6 +173,27 @@ async function main() {
   }
   md.push('');
 
+  // ── Cross-App Network section (synergize scan output) ──
+  const network = graph.network ?? null;
+  if (network) {
+    md.push('## Cross-App Network (synergize)');
+    md.push('');
+    const linkRatePct = network.link_rate != null ? `${(network.link_rate * 100).toFixed(1)}%` : '—';
+    const linkTarget = objectives.network?.link_rate_target ?? 0.15;
+    const funnelTarget = objectives.network?.funnel_target ?? 50;
+    const linkOk = network.link_rate != null && network.link_rate >= linkTarget;
+    const funnelOk = network.cross_app_funnel != null && network.cross_app_funnel >= funnelTarget;
+    md.push('| Metric | Current | Target | Status |');
+    md.push('| --- | --- | --- | --- |');
+    md.push(`| Cross-app link rate | ${linkRatePct} | ${(linkTarget * 100).toFixed(0)}% | ${linkOk ? '✅' : '⚠️'} |`);
+    md.push(`| Verified cross-app journeys | ${network.cross_app_funnel ?? '—'} | ${funnelTarget} | ${funnelOk ? '✅' : '⚠️'} |`);
+    md.push(`| Capricast links total | ${network.capricast_links_total ?? '—'} | — | — |`);
+    md.push(`| selfprime readings (7d) | ${network.selfprime_readings_7d ?? '—'} | — | — |`);
+    md.push('');
+    if (!linkOk) md.push('> **Action needed:** Cross-app link rate is below target. Review link prompt placement (capricast creator dashboard + selfprime post-reading CTA). See docs/planning/factory-network-layer.md §10 Phase 2.');
+    md.push('');
+  }
+
   md.push('## Strategic decisions awaiting human review (parked)');
   md.push('');
   if (parked.length) {
