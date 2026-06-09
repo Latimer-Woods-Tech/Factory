@@ -34,6 +34,7 @@ import { createGatesRouter } from './routes/gates.js';
 import { createArtifactsRouter } from './routes/artifacts.js';
 import { createRunsMirrorRouter } from './routes/runs.js';
 import { createAuditRouter } from './routes/audit.js';
+import { createNetworkRouter } from './routes/network.js';
 
 const SERVICE = 'factory-core-api';
 const DEFAULT_OIDC_ISSUER = 'https://token.actions.githubusercontent.com';
@@ -157,6 +158,7 @@ app.route('/v1/gates', createGatesRouter());
 app.route('/v1/artifacts', createArtifactsRouter());
 app.route('/v1/runs/mirror', createRunsMirrorRouter());
 app.route('/v1/audit', createAuditRouter());
+app.route('/v1/network', createNetworkRouter());
 
 app.notFound((c) => c.json({ error: 'Not found', path: c.req.path }, 404));
 
