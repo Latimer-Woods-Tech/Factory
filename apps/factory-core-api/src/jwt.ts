@@ -34,7 +34,7 @@ export interface ScopedTokenClaims {
  * `runs-*`. The endpoint route validates the specific `aud` against itself;
  * this gate rejects anything outside the known topic families.
  */
-const AUDIENCE_PATTERN = /^(?:gates|artifacts|audit|runs)-[a-z0-9-]{1,40}$/u;
+const AUDIENCE_PATTERN = /^(?:gates|artifacts|audit|runs|network)-[a-z0-9-]{1,40}$/u;
 
 /** Returns true when `audience` is a recognised ingestion scope. */
 export function isAllowedAudience(audience: string): boolean {
