@@ -1,6 +1,6 @@
 # Platform Standards — Latimer-Woods-Tech
 
-**Version:** v1 · **Date:** 2026-05-11 · **Status:** Authoritative · **Conflicts:** `docs/supervisor/FRIDGE.md` wins; this doc wins over older scattered architecture notes; ADRs in `docs/adr/` win over this doc when explicitly marked superseding.
+**Version:** v1.1 · **Date:** 2026-06-09 · **Status:** Authoritative · **Conflicts:** `docs/supervisor/FRIDGE.md` wins; this doc wins over older scattered architecture notes; ADRs in `docs/adr/` win over this doc when explicitly marked superseding.
 
 This is the single source of truth for how every Latimer-Woods-Tech repo, package, workflow, and feature is built. Every PR is audited against it (`platform-conformance.yml`). Every AI agent reads it as a hard constraint. Every new repo inherits it by default.
 
@@ -17,8 +17,9 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Language:** TypeScript strict (`strict: true`, `noUncheckedIndexedAccess: true`, `noImplicitOverride: true`).
 - **Package manager:** pnpm + workspaces. No npm or yarn at root.
 - **Databases:** D1 for transactional, Neon (Postgres) via Hyperdrive for relational, KV for hot config, R2 for blobs, Durable Objects for stateful real-time.
-- **AI:** All LLM calls via `@latimer-woods-tech/llm`. Tiered routing (fast / balanced / smart / verifier). Anthropic primary, Gemini long-context fallback, Groq verifier. No direct vendor SDKs.
+- **AI:** All LLM calls via `@latimer-woods-tech/llm`. Tiered routing (fast / balanced / smart / verifier). Current provider assignments in [`docs/STACK.md`](../STACK.md) — do not hardcode provider names in app code. No direct vendor SDKs.
 - **Realtime:** `@latimer-woods-tech/realtime` (when published) for DO Room/Presence/Conference patterns.
+- **Build:** `tsup` (packages) and `wrangler deploy` (Workers). Published packages must produce a clean `dist/` with zero tsup errors. Workers must pass `wrangler deploy --dry-run` (or tsc) cleanly before every deploy.
 
 ## 2. Code patterns
 
@@ -32,6 +33,8 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Monitoring:** `@latimer-woods-tech/monitoring` wires Sentry + PostHog. Every Worker includes this in its middleware chain.
 - **Multi-tenant:** every Worker that holds tenant data resolves tenant via `X-Tenant-Id` header + `resolveTenant()` from `@lwt/auth`. No implicit tenant fallback.
 - **Request ID:** every request gets a `request_id` (UUIDv7) attached by middleware. Logged on every line. Propagated downstream.
+- **Linting:** ESLint with `--max-warnings 0` on every PR. No `eslint-disable` suppressions without an approved ADR. Enforced as a required CI status check.
+- **Documentation:** ≥90% of exported symbols in published `@latimer-woods-tech/*` packages carry a JSDoc one-line doc comment. Enforced via `eslint-plugin-jsdoc`.
 
 ## 3. Tests
 
@@ -61,7 +64,7 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Migrations:** SQL files under `migrations/`. Naming: `NNNN_description.sql`. Numbered, sequential, immutable once merged.
 - **Pattern:** Expand → Contract. Additive-only changes deployable to prod. Destructive changes (drop column, rename) require a two-phase migration with both versions running simultaneously for ≥1 deploy cycle.
 - **Rollback:** every migration includes `-- ROLLBACK:` block with the inverse statement, or `-- ROLLBACK: NONE — irreversible, see ADR-NNNN` referring to an approved ADR.
-- **Dry-run:** `wrangler d1 execute --dry-run` required in CI before deploy.
+- **Dry-run:** Migrations must be validated before touching production. For Neon (Postgres): run the migration against a staging or ephemeral branch first (see `docs/runbooks/database.md`). For D1: `wrangler d1 execute --dry-run` in CI. No raw SQL applied to prod without a dry-run pass.
 
 ## 7. Workflows
 
@@ -106,7 +109,8 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 
 ## How this evolves
 
-- This file is versioned. Changes via PR + ADR.
+- This file is versioned. Routine additions (new bullet in an existing §) require a PR only. Architectural changes (new §, removing a standard, changing a weight) require a PR + ADR.
+- The human-readable compliance checklist lives at [`docs/COMPLIANCE_CHECKLIST.md`](./COMPLIANCE_CHECKLIST.md). When this file changes, update the checklist in the same PR.
 - Standards that nobody meets within 90 days get re-evaluated: either drop them, or invest to fix.
 - New production incidents become candidate new standards. Recurring incidents (≥3 in a quarter) become required new standards.
 - Quarterly review (per OPERATING_FRAMEWORK §quarterly): drop, add, evolve.
@@ -127,7 +131,7 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | § | Dimension | Weight | Sample checks |
 |---:|---|---:|---|
 | 1 | Stack | 10 | wrangler.jsonc valid, ESM only, no node:crypto, Hono present |
-| 2 | Code patterns | 15 | @lwt/logger consumed, @lwt/errors consumed, idempotent webhooks, request_id middleware |
+| 2 | Code patterns | 15 | @lwt/logger consumed, @lwt/errors consumed, idempotent webhooks, request_id middleware, ESLint 0 warnings |
 | 3 | Tests | 15 | vitest deterministic, playwright tiers present, coverage ≥ floor, every route tested |
 | 4 | Observability | 10 | Sentry init, sourcemap upload step, structured logs, SLO doc present |
 | 5 | Security | 15 | CodeQL workflow, npm audit step, OIDC publish (no long-lived NPM_TOKEN), secret-scanning on |
