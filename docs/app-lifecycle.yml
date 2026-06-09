@@ -11,10 +11,20 @@
 #   live         — production traffic confirmed via curl /health and custom domain
 #
 # MODES (governs what the Platform Brain proposes):
+#   new        — provisioning + base-layer setup; all product proposals suppressed.
+#                Platform-mandated integration work (network layer, feature-registry)
+#                IS proposed. Transitions to build when base layer is complete.
 #   build      — active feature development; full proposal suite
 #   growth     — feature-complete, scaling/optimizing; quality + UX proposals only
 #   maintain   — stable infra/product; deps, security, regression alerts only
 #   hands-off  — dormant or not yet started; all proposals suppressed
+#
+# PLATFORM INTEGRATION EXEMPTION:
+#   Apps in any mode (including maintain/hands-off) receive proposals for
+#   platform-mandated integration work: adding feature-registry.yml, wiring the
+#   Factory network layer token, and joining Platform Standard conformance checks.
+#   These are infrastructure obligations, not product features — mode does not
+#   suppress them. See opportunity-scan.mjs PLATFORM_INTEGRATION_TYPES.
 #
 # FORMAT:
 #   id            — kebab-case identifier; must match service-registry.yml
@@ -27,6 +37,10 @@
 #   provisioned_at — ISO 8601 date of provisioning step (null if unknown)
 #   deployed_at   — ISO 8601 date of first successful prod deploy (null if not yet)
 #   live_at       — ISO 8601 date of confirmed live traffic (null if not yet)
+#   network_token_configured — true once FACTORY_NETWORK_TOKEN is wired + network events
+#                              verified in factory_network_events. Drives the
+#                              missing-network-token scanner in opportunity-scan.mjs.
+#                              Leave null/absent until wired; false means explicitly skipped.
 #   notes         — Optional operator notes
 #
 # HOW TO UPDATE:
