@@ -3,7 +3,7 @@
  * Covers #564 (SUP-2.3.4).
  */
 import { useEffect, useRef } from 'react';
-import { Dialog, DialogContent } from './ui/dialog.js';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog.js';
 
 export interface NudgeProps {
   capability: string;
@@ -41,7 +41,6 @@ export function UpgradeNudge({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         className="max-w-sm bg-slate-900 border border-slate-700 text-white p-6 rounded-xl"
-        aria-label={`Upgrade required to access ${capabilityLabel}`}
       >
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -49,8 +48,8 @@ export function UpgradeNudge({
               🔒
             </div>
             <div>
-              <h2 className="font-semibold text-base">{capabilityLabel}</h2>
-              <p className="text-sm text-slate-400">Requires {TIER_LABELS[requiredTier]} plan</p>
+              <DialogTitle className="font-semibold text-base text-white">{capabilityLabel}</DialogTitle>
+              <DialogDescription className="text-sm text-slate-400">Requires {TIER_LABELS[requiredTier]} plan</DialogDescription>
             </div>
           </div>
           <p className="text-sm text-slate-300">
