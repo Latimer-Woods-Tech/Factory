@@ -264,7 +264,7 @@ export function LoginPage() {
                 onClick={() => setEnv(card.env)}
                 aria-pressed={env === card.env}
                 aria-label={`${card.title} — ${card.subtitle}`}
-                className={`${card.classes} rounded-lg p-4 text-left transition ring-1 ring-transparent focus:outline-none focus:ring-2 focus:ring-white ${
+                className={`${card.classes} target-primary rounded-lg p-4 text-left transition ring-1 ring-transparent focus:outline-none focus:ring-2 focus:ring-white ${
                   env === card.env ? 'ring-white' : ''
                 }`}
               >
