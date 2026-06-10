@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T14:22:46.730Z",
+  "generatedAt": "2026-06-10T17:57:46.626Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -1018,7 +1018,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-10T14:22:47.586Z",
+    "generatedAt": "2026-06-10T17:57:47.542Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
