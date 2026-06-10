@@ -18,8 +18,9 @@ describe('WCAG 2.2 target-size class usage', () => {
     const html = renderToStaticMarkup(<AiTab />);
     // Primary action buttons use target-primary (≥44px tap target per WCAG 2.2 §2.5.8)
     expect(html).toContain('target-primary');
-    // Verify the Send button has the class
-    expect(html).toMatch(/target-primary[^"]*"[^>]*>Streaming…/);
+    // Verify the Send button has the class (default render shows "Send"; it
+    // becomes "Streaming…" only while a stream is active — not in static markup).
+    expect(html).toMatch(/target-primary[^"]*"[^>]*>Send</);
   });
 
   it('Dashboard mobile nav links use target-min', () => {
@@ -31,12 +32,15 @@ describe('WCAG 2.2 target-size class usage', () => {
     expect(html).toContain('target-min');
   });
 
-  it('LoginPage submit button uses target-primary', () => {
+  it('LoginPage primary controls use target-primary', () => {
     const html = renderToStaticMarkup(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>,
     );
+    // The default view's primary actions are the environment-selection cards.
+    // The fallback-login submit button (also target-primary) renders only after
+    // an env is picked, which a static (non-interactive) render can't trigger.
     expect(html).toContain('target-primary');
   });
 });
