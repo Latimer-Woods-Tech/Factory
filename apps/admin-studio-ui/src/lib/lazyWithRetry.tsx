@@ -31,10 +31,15 @@ function isChunkLoadError(err: unknown): boolean {
   );
 }
 
-export function lazyWithRetry<P extends object>(
-  factory: () => Promise<{ default: ComponentType<P> }>,
-): LazyExoticComponent<ComponentType<P>> {
-  return lazy(async () => {
+// Parameterise by the whole component type `T` (like React.lazy), so it flows
+// through unchanged. Parameterising by props instead (`ComponentType<P>`) makes
+// TS widen no-prop tabs to `ComponentType<never>` and fail to unify (TS2322).
+// `ComponentType<unknown>` is the lint-clean bound that both accepts our
+// zero-prop tab components and satisfies React.lazy's own `ComponentType<any>`.
+export function lazyWithRetry<T extends ComponentType<unknown>>(
+  factory: () => Promise<{ default: T }>,
+): LazyExoticComponent<T> {
+  return lazy<T>(async (): Promise<{ default: T }> => {
     try {
       const mod = await factory();
       // Successful load — clear the guard so a future stale deploy can retry.
@@ -48,7 +53,7 @@ export function lazyWithRetry<P extends object>(
         try { window.sessionStorage.setItem(RELOAD_FLAG, '1'); } catch { /* no-op */ }
         window.location.reload();
         // Keep the Suspense fallback up until the reload navigates away.
-        return new Promise<{ default: ComponentType<P> }>(() => {});
+        return new Promise<{ default: T }>(() => {});
       }
       throw err;
     }
