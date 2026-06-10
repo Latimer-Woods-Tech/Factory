@@ -7,6 +7,64 @@ builds_on: docs/decisions/2026-05-25-factory-alignment.md
 
 # 2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers
 
+## Revision (same day, operator direction): stabilization first, numbers last
+
+There are 0 customers; marketing trails a functional product. Operator reorder:
+**fix what's broken and what's about to break — without the fixes themselves
+breaking load-bearing infra — before any metrics/revenue-reporting work.**
+Workstream order becomes: WS-2 (Fix What's Broken, expanded below) → WS-3 (COH
+safety) → WS-4 items 4.2/4.3 only after UAT is green → WS-1 (Trust the Numbers)
+moves last.
+
+### Ground truth established 2026-06-10 (live probes + UAT harness, this session)
+
+- **Selfprime UAT: 66/68 PASS, 0 failures** once sandbox TLS noise (QUIC/ECH) was
+  eliminated from the e2e runner. Real issues: 2 warnings (sign-out control not
+  discoverable on `#/more`).
+- **Capricast UAT: 71/73 PASS, 1 failure**: `POST https://capricast.com/api/sentry/envelope`
+  → 404 — the frontend Sentry tunnel has no backend route, so **client-side error
+  reporting is silently dead** (fix lives in the capricast repo). Plus 1 warning
+  (sign-out control not discoverable).
+- Earlier "failing UAT" runs were dominated by `ERR_QUIC_PROTOCOL_ERROR` /
+  `ERR_ECH_FALLBACK_CERTIFICATE_INVALID` — sandbox-network transport noise, not
+  product defects. The runner now forces TCP/TLS (`--disable-quic`,
+  ECH off, opt-in `E2E_INSECURE_TLS=1` for MITM'd CI networks).
+
+### Fixed and curl-verified this session
+
+| Item | Root cause | Fix | Evidence |
+|---|---|---|---|
+| video-cron 530/unreachable since 2026-06-05 | Workers custom domain for `video-cron.latwoodtech.work` was never attached (no DNS record at all) | Attached custom domain → `video-cron` worker via CF API | `curl /health` → 200 `{"status":"ok","worker":"video-cron"}` |
+| **Worker-name collision (P0-class):** `apps/inbound-oracle` `env.production.name` was `"prime-self"` — its deploys **overwrote the legacy Selfprime API worker's code** | Misnamed wrangler production env | Renamed to `inbound-oracle-production`, deployed, re-wired secrets (TELNYX/ELEVENLABS/ANTHROPIC/GROQ), custom domain moved | `curl inbound-oracle.latwoodtech.work/health` → 200 serving `inbound-oracle` |
+| prime-self smoke red | Smoke + monitors probed the hijacked `prime-self.adrper79.workers.dev` (serving inbound-oracle, wrong health shape) | Repointed smoke workflow, prime-self-smoke spec, synthetic-monitor host map + service binding (→ `prime-self-api`), admin-studio SLO fixtures to `api.selfprime.net` | Live API: `curl api.selfprime.net/health` → 200 `{"service":"selfprime-api"}`; real frontend confirmed clean of the stale URL |
+
+### Remaining stabilization queue (now the top of the plan)
+
+1. **Human approval needed:** delete the stale `prime-self` CF worker — it serves
+   inbound-oracle code at `prime-self.adrper79.workers.dev` while still holding the
+   old Selfprime production secret set (JWT_SECRET, STRIPE_SECRET_KEY, NEON_URL).
+   Deletion is irreversible → operator's call, per FRIDGE rule 8.
+2. **capricast repo:** implement or remove the `/api/sentry/envelope` tunnel route
+   (client error reporting is currently dead). Requires adding the capricast repo
+   to a session's scope.
+3. **xicocity.com root `/` returns 404** (`/health` is 200 — the worker has no root
+   route on a customer-facing branded domain). Fix lives in the xico-city repo.
+4. Sign-out discoverability on both Selfprime (`#/more`) and Capricast.
+5. Redeploy synthetic-monitor so the corrected `PRIME_SELF` service binding
+   (`prime-self-api`) takes effect.
+6. Dependabot: 110 vulnerabilities reported on the default branch (47 critical) —
+   triage which are runtime-reachable vs. dev-tooling noise.
+7. The duplicated-config landmine class: audit every `apps/*/wrangler.jsonc`
+   `env.production.name` against `docs/service-registry.yml` so no app can deploy
+   over another worker's name again (the inbound-oracle collision was found by
+   accident). Candidate for a deterministic CI check in `constraints-check.mjs`.
+
+The original four workstreams below stand, in the revised order. Everything in
+WS-1 (numbers/digest work) is explicitly deprioritized until UAT is green on both
+revenue products and the stabilization queue above is empty.
+
+---
+
 ## Decision
 
 For the next 30 days, Factory enters a **platform freeze**: no new packages, no new

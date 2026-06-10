@@ -57,8 +57,10 @@
           "service": "admin-studio-staging"
         },
         {
+          // prime-self-api is the live Selfprime API worker; the legacy "prime-self"
+          // worker was hijacked by a misnamed inbound-oracle deploy (found 2026-06-10)
           "binding": "PRIME_SELF",
-          "service": "prime-self"
+          "service": "prime-self-api"
         }
       ],
       "vars": {

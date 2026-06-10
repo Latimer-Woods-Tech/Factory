@@ -57,7 +57,7 @@ workers:
     health_state: live
     repo: Latimer-Woods-Tech/HumanDesign
     url: https://api.selfprime.net                         # canonical public URL (branded custom domain)
-    workers_dev_url: https://prime-self.adrper79.workers.dev  # internal/CF fallback; never hardcode in frontend
+    workers_dev_url: https://prime-self.adrper79.workers.dev  # ⚠️ STALE/HIJACKED 2026-06-10: this worker's code was overwritten by a misnamed inbound-oracle production deploy (env.production.name was "prime-self"); it now serves inbound-oracle. Live API worker is `prime-self-api` (zone routes api.selfprime.net/* + selfprime.net/api/*). Do not probe or bind to `prime-self`. Stale worker pending human-approved deletion — it still holds the old production secret set.
     custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
     custom_domain_status: attached                         # CF custom domain confirmed live 2026-05-08
     health_endpoint: /health
@@ -124,7 +124,7 @@ workers:
 
   - id: video-cron
     name: video-cron                                       # matches apps/video-cron/wrangler.jsonc `name`
-    health_state: broken   # reclassified 2026-06-05: /health probe returned 530
+    health_state: live   # 2026-06-10: root cause of the 2026-06-05 530 was a missing Workers custom domain; re-attached via API, curl /health verified 200
     repo: Latimer-Woods-Tech/factory
     url: https://video-cron.latwoodtech.work               # canonical branded custom domain
     custom_domain: video-cron.latwoodtech.work
@@ -154,6 +154,33 @@ workers:
         file: docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md
         line: ~143
         pattern: "D[video-cron]"
+
+  - id: inbound-oracle
+    name: inbound-oracle-production                        # apps/inbound-oracle/wrangler.jsonc env.production name (renamed 2026-06-10 — was "prime-self", which clobbered the legacy Selfprime API worker)
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://inbound-oracle.latwoodtech.work
+    workers_dev_url: https://inbound-oracle-production.adrper79.workers.dev
+    custom_domain: inbound-oracle.latwoodtech.work
+    custom_domain_status: attached_2026-06-10              # moved from the hijacked `prime-self` worker to `inbound-oracle-production`; curl /health verified 200
+    health_endpoint: /health
+    telemetry_required: false                              # SMS webhook worker; Telnyx → HD reading → ElevenLabs TTS → MMS reply
+    deployment_status: deployed_verified_2026-06-10
+    critical_endpoints:
+      - /webhook/telnyx
+    required_secrets:
+      - TELNYX_API_KEY
+      - ELEVENLABS_API_KEY
+      - ANTHROPIC_API_KEY
+      - GROQ_API_KEY
+    optional_secrets:
+      - VERTEX_ACCESS_TOKEN                                # short-lived; empty = fast tier only
+    notes: >
+      NEVER set env.production.name to "prime-self" — that name belongs to the
+      legacy Selfprime API worker. A misnamed deploy before 2026-06-10 overwrote
+      that worker's code; the stale `prime-self` worker still exists (serving
+      inbound-oracle code, holding the old Selfprime secret set) and is pending
+      human-approved deletion.
 
   - id: synthetic-monitor
     name: synthetic-monitor                                # matches apps/synthetic-monitor/wrangler.jsonc `name`
