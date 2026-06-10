@@ -1,7 +1,7 @@
 {
-  "generated": "2026-06-06T09:35:08.191824+00:00",
-  "date": "2026-06-06",
-  "org_composite": 67.0,
+  "generated": "2026-06-10T11:10:06.978791+00:00",
+  "date": "2026-06-10",
+  "org_composite": 68.1,
   "apps": [
     {
       "repo_key": "HD",
@@ -16,12 +16,12 @@
     {
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
-      "composite": 41.3
+      "composite": 48.7
     },
     {
       "repo_key": "CH",
       "repo_name": "cypher-healing",
-      "composite": 32.7
+      "composite": 31.3
     },
     {
       "repo_key": "XC",

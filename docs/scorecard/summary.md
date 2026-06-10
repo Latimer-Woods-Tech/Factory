@@ -1,15 +1,15 @@
 # Launch Readiness Scorecard
 
-*Generated: 2026-06-06T09:35:08.191824+00:00 · Reporting day: 2026-06-06*
+*Generated: 2026-06-10T11:10:06.978791+00:00 · Reporting day: 2026-06-10*
 
 ## Org composite
 
-**67.0 / 100** — Latimer-Woods-Tech (portfolio)
+**68.1 / 100** — Latimer-Woods-Tech (portfolio)
 
 | Dimension | Weight | Score | Detail |
 |---|--:|--:|---|
-| conformance | 40% | 51 | avg cohesion across 5 apps |
-| cost | 20% | 98 | worst-cap utilisation 3% |
+| conformance | 40% | 53 | avg cohesion across 5 apps |
+| cost | 20% | 98 | worst-cap utilisation 4% |
 | mrr | 20% | — | MRR is 0 — Stage 2 not yet generating recurring |
 | reliability | 20% | — | awaiting Sentry user-facing error rate (#723) |
 
@@ -17,10 +17,10 @@
 
 | Repo | Composite | Conformance | Completion | Reliability |
 |---|--:|--:|--:|--:|
-| **factory-admin-studio** (FA) | **41.3** | 62 | 0 | — |
+| **factory-admin-studio** (FA) | **48.7** | 73 | 0 | — |
 | **HumanDesign** (HD) | **35.3** | 53 | 0 | — |
 | **xico-city** (XC) | **34.0** | 51 | 0 | — |
-| **cypher-healing** (CH) | **32.7** | 49 | 0 | — |
+| **cypher-healing** (CH) | **31.3** | 47 | 0 | — |
 | **capricast** (CC) | **28.0** | 42 | 0 | — |
 
 ## Notes on dimensions reporting `—`
