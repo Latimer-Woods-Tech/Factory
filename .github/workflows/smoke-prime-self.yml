@@ -78,7 +78,9 @@ jobs:
         env:
           BASE_URL: ${{ github.event.inputs.base_url || 'https://selfprime.net' }}
           API_BASE_URL: 'https://api.selfprime.net'
-          WORKER_URL: 'https://prime-self.adrper79.workers.dev'
+          # Canonical API surface. The legacy prime-self.adrper79.workers.dev worker was
+          # hijacked by a misnamed inbound-oracle production deploy (found 2026-06-10).
+          WORKER_URL: 'https://api.selfprime.net'
           SMOKE_USER_EMAIL: ${{ secrets.SMOKE_USER_EMAIL }}
           SMOKE_USER_PASSWORD: ${{ secrets.SMOKE_USER_PASSWORD }}
           SMOKE_PRACTITIONER_EMAIL: ${{ secrets.SMOKE_PRACTITIONER_EMAIL }}

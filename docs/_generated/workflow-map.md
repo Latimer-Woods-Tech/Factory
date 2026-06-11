@@ -15,7 +15,7 @@ source:
 
 # Factory Workflow Map
 
-**Registry hash:** `sha256:00d046951b65e648bb22d5af12a4300478495108a50f74eb0541925347591ab7`
+**Registry hash:** `sha256:a0208d6c319b9e5eb03d9d0207784c1e5b6eab94a7308b96ef9431c721feac13`
 
 ```mermaid
 flowchart TB
@@ -102,7 +102,6 @@ flowchart TB
   Other --> governance_audit_yml["governance-audit.yml"]
   Automation --> label_sync_yml["label-sync.yml"]
   Other --> launch_readiness_yml["launch-readiness.yml"]
-  Other --> lifecycle_controller_yml["lifecycle-controller.yml"]
   Other --> lighthouse_ci_admin_studio_yml["lighthouse-ci-admin-studio.yml"]
   Other --> memory_single_writer_yml["memory-single-writer.yml"]
   Other --> mirror_org_secrets_to_dependabot_yml["mirror-org-secrets-to-dependabot.yml"]

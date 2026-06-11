@@ -190,6 +190,8 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `pr-size-warning.yml` | Demoted from T2 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
 | `reviewer-class-hints.yml` | Demoted from T2 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
 | `secret-contract-preflight.yml` | Demoted from T1 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
+| `rfc006-baseline-capture.yml` | One-time RFC-006 Phase 0 baseline capture — writes docs/rfc/RFC-006-baseline-metrics.md |
+| `setup-project-autoarchive.yml` | Bootstrap: enable Project auto-archive for Done items (30 days); prints manual UI step since API not available |
 
 ---
 

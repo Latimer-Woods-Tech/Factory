@@ -114,6 +114,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
 | [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
 | [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | platform | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
+| [docs/decisions/2026-06-10-sell-phase-action-plan.md](decisions/2026-06-10-sell-phase-action-plan.md) | active | unverified | platform | unknown | 2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers |
 | [docs/decisions/2026-06-11-rfc-006-operating-decisions.md](decisions/2026-06-11-rfc-006-operating-decisions.md) | active | unverified | platform | unknown | 2026-06-11 — RFC-006 Required Operating Decisions |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
@@ -137,6 +138,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/G2_PHASE_2_EXECUTION_PLAN.md](G2_PHASE_2_EXECUTION_PLAN.md) | active | unverified | platform | unknown | G2 Phase 2 Execution Plan — Aggregator HTTP Mocking Tests |
 | [docs/G2_PHASE_2_SUMMARY.md](G2_PHASE_2_SUMMARY.md) | active | unverified | platform | unknown | G2 Phase 2 Planning: Executive Summary |
 | [docs/GAP_REGISTER.md](GAP_REGISTER.md) | active | unverified | platform | unknown | Platform Gap Register |
+| [docs/handoffs/2026-06-11-stabilization-handoff.md](handoffs/2026-06-11-stabilization-handoff.md) | active | unverified | platform | unknown | Handoff: Stabilization-first work (worker collisions, UAT, sell-phase plan) |
 | [docs/IMPLEMENTATION_COMPLETE_SUMMARY.md](IMPLEMENTATION_COMPLETE_SUMMARY.md) | active | unverified | platform | unknown | Implementation Complete Summary |
 | [docs/IMPLEMENTATION_LAUNCH_CHECKLIST.md](IMPLEMENTATION_LAUNCH_CHECKLIST.md) | active | unverified | platform | unknown | Implementation Launch Checklist |
 | [docs/IMPLEMENTATION_MASTER_INDEX.md](IMPLEMENTATION_MASTER_INDEX.md) | active | unverified | platform | unknown | Implementation Master Index |
@@ -276,6 +278,8 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/rfc/RFC-004-browser-automation.md](rfc/RFC-004-browser-automation.md) | active | unverified | platform | unknown | RFC-004: Native Browser Automation Service |
 | [docs/rfc/RFC-005-anthropic-dreaming-pilot.md](rfc/RFC-005-anthropic-dreaming-pilot.md) | active | unverified | platform | unknown | RFC-005: Anthropic Dreaming pilot on Factory autofix loop |
 | [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | platform | unknown | RFC-006: Cohesive Automation Flow Operating Model |
+| [docs/rfc/RFC-006-baseline-metrics.md](rfc/RFC-006-baseline-metrics.md) | active | unverified | platform | unknown | RFC-006 Phase 0 Baseline Metrics |
+| [docs/rfc/RFC-006-duplicate-triage.md](rfc/RFC-006-duplicate-triage.md) | active | unverified | platform | unknown | RFC-006 Duplicate Issue Triage |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | platform | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | platform | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |

@@ -552,7 +552,17 @@ async function main() {
   browser = await puppeteer.launch({
     headless: true,
     userDataDir: path.join(os.tmpdir(), `puppeteer-${profileName}-${Date.now()}`),
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    // --disable-quic + EncryptedClientHello off: force plain TCP/TLS — QUIC and ECH
+    // are blocked/intercepted in some CI/sandbox networks and produce
+    // ERR_QUIC_PROTOCOL_ERROR / ERR_ECH_FALLBACK_CERTIFICATE_INVALID noise
+    // unrelated to the site under test
+    args: [
+      '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+      '--disable-quic', '--disable-features=EncryptedClientHello',
+      // E2E_INSECURE_TLS=1: only for sandboxed CI networks that MITM TLS with a
+      // proxy CA Chrome doesn't trust; never set this when validating real cert chains
+      ...(process.env.E2E_INSECURE_TLS === '1' ? ['--ignore-certificate-errors'] : []),
+    ],
   });
   page = await browser.newPage();
   await page.setViewport({ width: 1920, height: 1080 });

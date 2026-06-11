@@ -289,7 +289,7 @@ worker-side aggregation. Payouts are batched monthly via Stripe Connect.
 
 ## 7. Stream Webhook Handler
 
-Register in Stream dashboard: `HTTPS POST https://prime-self.adrper79.workers.dev/api/webhook/stream`
+Register in Stream dashboard: `HTTPS POST https://api.selfprime.net/api/webhook/stream`
 
 ```javascript
 // POST /api/webhook/stream

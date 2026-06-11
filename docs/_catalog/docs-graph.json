@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 452,
+    "total_docs": 456,
     "canonical": 17,
-    "active": 387,
+    "active": 391,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -57,7 +57,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:00d046951b65e648bb22d5af12a4300478495108a50f74eb0541925347591ab7",
+      "content_hash": "sha256:f89978d27ce0f01d45ba26aa87b1d0770b53442e6ee48ba2b991bc50fc035449",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:546a01dcbef474da57ead34bfba512322e2e4fa7859bcfe682e0b0440f63a136",
+      "content_hash": "sha256:312498498448fa786e8a735772f560c340e994c41a3e67f3f5720675c447cd68",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3164,6 +3164,27 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-06-10-sell-phase-action-plan.md",
+      "title": "2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:af980889035b33eb6faaffd2609f3f336d5b660bb3c8464cf764b57c21e78935",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/2026-06-11-rfc-006-operating-decisions.md",
       "title": "2026-06-11 — RFC-006 Required Operating Decisions",
       "status": "active",
@@ -3197,7 +3218,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2155d6a7292a0174f7eaec3f837a34ae5c62cbf3c2c53ad3250f4ad8d06ba66e",
+      "content_hash": "sha256:0bca3410323e2178f31e15287485f74f4d28a29f2f8a0669f5726f3b4c80d215",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3688,6 +3709,27 @@
       "content_hash": "sha256:1a1c0115d39a775fafb6b78b978de2d91bf4f34fa2e1a59fcc16bf14e02ced77",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/handoffs/2026-06-11-stabilization-handoff.md",
+      "title": "Handoff: Stabilization-first work (worker collisions, UAT, sell-phase plan)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5ca16c0c543f7168c599e249f7e1ee323360ff2351fce73e0c46544256113e74",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/**"
       },
@@ -6464,7 +6506,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a31c3700d092eba1042157880b171fe5c61bb8f7a280118cbc805e0a0205a453",
+      "content_hash": "sha256:303f9a0cfecb662a4854946b2d6cbb006443eadce9d1a15f54c0783d06be61bb",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6805,6 +6847,48 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:bec738f7919adae14ce17205d26118293cd97e3afcec87ee326f917629537312",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-baseline-metrics.md",
+      "title": "RFC-006 Phase 0 Baseline Metrics",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:67979d1ada119b20ce981075de22dadb64f79c685691fba71a3dbead9863b876",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-duplicate-triage.md",
+      "title": "RFC-006 Duplicate Issue Triage",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:1b27549119080bd5a9241efd24c911e3c30358eb565590b67e3642ac6766571b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7983,7 +8067,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:7ded8a483d47d0e45b5144d399c93765b3dba2252503be1bdbfa5bb9d61957aa",
+      "content_hash": "sha256:57ec3a2915d7dff6b3e0ac5d3abaf67bf8aa83f8bf3e0ceead0255af3af9119e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
