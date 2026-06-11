@@ -53,20 +53,22 @@ recurring class, not a one-off.
 
 ## Remaining queue (priority order)
 
-1. **[HUMAN APPROVAL REQUIRED — FRIDGE rule 8]** Delete the stale `prime-self`
-   CF worker. It currently serves inbound-oracle code at
-   `prime-self.adrper79.workers.dev` while still holding the old Selfprime
-   production secret set (JWT_SECRET, STRIPE_SECRET_KEY, NEON_URL). Irreversible
-   deletion → operator must authorize explicitly. Do not delete autonomously.
+1. ~~Delete the stale `prime-self` CF worker~~ — **DONE 2026-06-11.** Operator
+   approved in-session; worker deleted via CF API. Verified:
+   `prime-self.adrper79.workers.dev/health` → 404, `api.selfprime.net/health` →
+   200, `inbound-oracle.latwoodtech.work/health` → 200.
 2. **Collision gate (the structural fix).** Add a deterministic check to
    `scripts/constraints-check.mjs` (or `.github/scripts/`): parse every
    `apps/*/wrangler.jsonc`, collect all `name` + `env.*.name` values, fail CI on
    any duplicate, and verify each production name exists in
    `docs/service-registry.yml`. Run the audit first — the inbound-oracle
    collision was found by accident; others may be hiding.
-3. **Redeploy `synthetic-monitor`** so the corrected `PRIME_SELF` service
-   binding (`prime-self-api` in `apps/synthetic-monitor/wrangler.jsonc`) takes
-   effect — only config was changed, no deploy happened.
+3. ~~Redeploy `synthetic-monitor`~~ — **DONE 2026-06-11.** Deployed with
+   `PRIME_SELF → prime-self-api` (had to remove an invalid `flagship` key from
+   its wrangler.jsonc that blocked deploys). `/health` → 200 verified. Note:
+   production has never carried the top-level `browser`/`r2_buckets`/
+   `d1_databases` bindings (wrangler envs don't inherit them), so the
+   screenshot-on-failure path is dev-only — pre-existing, unchanged.
 4. **[capricast repo scope needed]** `POST capricast.com/api/sentry/envelope`
    → 404. The frontend Sentry tunnel has no backend route; client-side error
    reporting is silently dead. The only real Capricast UAT failure.
