@@ -44,6 +44,7 @@
 ## Document Map
 
 ### Planning & Roadmap
+- [RFC-006: Cohesive Automation Flow Operating Model](rfc/RFC-006-automation-flow-operating-model.md) — Proposed target model and phased plan for work flow, Kanban, supervisor, telemetry, and workflow automation
 - [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) — Active implementation plan (7 tracks)
 - [PHASE_6_CHECKLIST.md](../PHASE_6_CHECKLIST.md) — Infrastructure provisioning
 - [Council Space](council/README.md) — Persistent inquiry workspace for cross-cutting review and decisions

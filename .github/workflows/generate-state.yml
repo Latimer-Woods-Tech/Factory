@@ -10,6 +10,10 @@ name: Generate State
 #
 # Also runs on push to main when relevant inputs change, so the file
 # doesn't go stale on big-change days.
+#
+# RFC-006 §10: daily runs upload STATE.md as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10. Durable Git writes happen
+# via weekly-governance-checkpoint.yml (Mondays) or manual dispatch.
 
 on:
   schedule:
@@ -28,8 +32,7 @@ on:
       - '.github/workflows/generate-state.yml'
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 concurrency:
   group: generate-state
@@ -54,52 +57,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/generate_state.py
 
-      - name: Open auto-merge PR if STATE.md changed
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          git add docs/STATE.md
-          # Strip the timestamp line so trivial regenerations don't open PRs
-          if git diff --cached --quiet docs/STATE.md; then
-            echo "STATE.md unchanged."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/state-snapshot-$DATE"
-          STATE_TMP=$(mktemp)
-          cp docs/STATE.md "$STATE_TMP"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-          else
-            git checkout -b "$BRANCH"
-          fi
-
-          cp "$STATE_TMP" docs/STATE.md
-          git add docs/STATE.md
-          if git diff --cached --quiet docs/STATE.md; then
-            echo "Existing STATE.md snapshot PR already contains this content."
-          else
-            git commit -m "chore(state): auto-update STATE.md ($DATE)"
-            git push --force-with-lease --set-upstream origin "$BRANCH"
-          fi
-
-          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
-          if [ -n "$EXISTING_PR" ]; then
-            echo "Updating existing STATE.md PR #$EXISTING_PR for $DATE."
-            gh pr edit "$EXISTING_PR" \
-              --title "chore(state): auto-update STATE.md ($DATE)" \
-              --body "Automated daily `STATE.md` refresh from `scripts/generate_state.py`. Single canonical "what's true right now" snapshot for agents + humans. This branch is intentionally stable per day so reruns update one PR instead of opening timestamped duplicates."
-            gh pr merge --auto --squash "$EXISTING_PR" || true
-          else
-            gh pr create \
-              --title "chore(state): auto-update STATE.md ($DATE)" \
-              --body "Automated daily `STATE.md` refresh from `scripts/generate_state.py`. Single canonical "what's true right now" snapshot for agents + humans. This branch is intentionally stable per day so reruns update one PR instead of opening timestamped duplicates." \
-              --label automation \
-              --label documentation \
-              --label auto-merge
-          fi
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload STATE.md artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-snapshot-${{ github.run_id }}
+          path: docs/STATE.md
+          retention-days: 30
+          if-no-files-found: warn

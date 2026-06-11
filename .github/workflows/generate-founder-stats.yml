@@ -4,11 +4,11 @@ name: Generate Founder Stats
 # founder-stats.json into apps/latwoodtech-web/src/data/ so the
 # /resume page always shows current numbers.
 #
-# Direct pushes to main are blocked by branch protection, so this
-# workflow uses a stable same-day branch and opens (or updates) a
-# single auto-merge PR. Reruns update one PR instead of failing on
-# a protected-branch push. Merge of that PR triggers
-# deploy-latwoodtech-web.yml automatically.
+# RFC-006 §10 exception: this workflow keeps its stable-per-day PR because
+# merging that PR triggers deploy-latwoodtech-web.yml (production deploy).
+# The PR is functional infrastructure, not telemetry noise — it is one PR
+# per day (stable day branch), never timestamped duplicates.
+# Raw stats data is also uploaded as a 30-day artifact on every run.
 
 on:
   schedule:
@@ -143,6 +143,18 @@ jobs:
           # Files one deduplicated GitHub issue per queued roadmap item in build/growth apps.
           # Issues get supervisor:no-template → template-author drafts a plan → supervisor executes.
           node scripts/roadmap-auto-build.mjs
+
+      # RFC-006 §10: upload raw stats as artifact on every run (telemetry copy).
+      # The PR below is kept because its merge triggers deploy-latwoodtech-web.yml.
+      - name: Upload stats artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: founder-stats-${{ github.run_id }}
+          path: |
+            apps/latwoodtech-web/src/data/founder-stats.json
+            apps/latwoodtech-web/src/data/platform.json
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Open or update auto-merge PR if stats changed
         env:

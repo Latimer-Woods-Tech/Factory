@@ -80,7 +80,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `dead-mans-switch.yml` | schedule, dispatch | Liveness signal |
 | `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
-| `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
+| `label-sync.yml` | schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
 | `project-sync.yml` | issue_comment, issues, PR, schedule, dispatch | GitHub Projects v2 board sync |
 | `rfc-status-gate.yml` | PR | RFC-decision gate |
