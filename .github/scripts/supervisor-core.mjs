@@ -454,7 +454,7 @@ function planComment(issue, template, tier, extra = '') {
     extra,
     '',
     `_Run ID: ${RUN_ID}_`,
-    `_lease: claimed_at=${claimedAt} work-class=${workClass}_`,
+    `_lease: claimed_at=${claimedAt} work-class=${workClass} tier=${tier}_`,
   ].join('\n');
 }
 
@@ -1094,11 +1094,13 @@ const CLAIM_LABEL_PREFIX = 'agent:claimed:';
 // Fallback TTL for claims that predate the claimed_at lease comment (legacy).
 const LEGACY_STALE_CLAIM_DAYS = 7;
 
+// Work-class values must not contain underscores or whitespace — the trailing
+// `_` of the markdown-italic lease line is the regex terminator.
 function parseLeaseComment(body) {
   if (!body) return {};
-  const m = body.match(/_lease: claimed_at=([^\s]+) work-class=([^\s_]+)_/);
+  const m = body.match(/_lease: claimed_at=([^\s]+) work-class=([^\s_]+)(?: tier=([a-z]+))?_/);
   if (!m) return {};
-  return { claimedAt: m[1], workClass: m[2] };
+  return { claimedAt: m[1], workClass: m[2], tier: m[3] ?? 'default' };
 }
 
 async function releaseStaleClaimedIssues(outcomes) {
@@ -1122,6 +1124,7 @@ async function releaseStaleClaimedIssues(outcomes) {
       // Find the most recent supervisor plan comment to read claimed_at and work-class.
       let claimedAtMs = null;
       let workClass = 'default';
+      let claimTier = 'default';
       try {
         const comments = await gh('GET', `/repos/${ORG}/${repo}/issues/${issue.number}/comments?per_page=100`);
         // Walk newest-first (reverse) to find the last claim.
@@ -1130,6 +1133,7 @@ async function releaseStaleClaimedIssues(outcomes) {
           if (parsed.claimedAt) {
             claimedAtMs = new Date(parsed.claimedAt).getTime();
             workClass = parsed.workClass ?? 'default';
+            claimTier = parsed.tier ?? 'default';
             break;
           }
         }
@@ -1144,7 +1148,7 @@ async function releaseStaleClaimedIssues(outcomes) {
         if (now - updatedAt < legacyCutoffMs) continue;
         console.log(`[StaleClaim] ${repo}#${issue.number}: legacy claim (no claimed_at); using ${LEGACY_STALE_CLAIM_DAYS}d updated_at heuristic`);
       } else {
-        const ttl = leaseTtlMs(workClass, 'default');
+        const ttl = leaseTtlMs(workClass, claimTier);
         if (now - claimedAtMs < ttl) continue;
         const ttlHours = Math.round(ttl / 3600000);
         console.log(`[StaleClaim] ${repo}#${issue.number}: lease expired (work-class=${workClass}, ttl=${ttlHours}h)`);
