@@ -9,9 +9,145 @@ const RUN_ID = `sup-${Date.now()}`;
 const MAX_GENERATED_LINES = parseInt(process.env.MAX_GENERATED_LINES ?? '800', 10);
 const { GH_TOKEN, ANTHROPIC_API_KEY, PUSHOVER_TOKEN, PUSHOVER_USER, TRIGGER_ISSUE } = process.env;
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+
+// ─── RFC-006 Phase 2: WIP shadow mode ─────────────────────────────────────────
+// When true, WIP violations are logged but do not prevent work from starting.
+// Promote to false once 30 days of clean shadow-mode observation have passed
+// (RFC-006 §4.5 — Visibility Before Enforcement).
+const WIP_SHADOW_MODE = true;
+
 const COPILOT_ROUTED_FEATURE_ISSUES = {
   capricast: new Set([61, 62, 63, 64, 65, 66, 74, 75, 76, 77, 78, 79, 80, 81, 116]),
 };
+
+// ─── RFC-006 Phase 2: Typed blocker records (§8) ──────────────────────────────
+
+/** Enumerated blocker types from RFC-006 §8. */
+const BLOCKER_TYPES = ['dependency', 'approval', 'credential', 'ci', 'runtime', 'vendor', 'ambiguity'];
+
+/**
+ * Creates a structured blocker record per RFC-006 §8.
+ * The record is embedded in an issue comment when work is blocked.
+ *
+ * @param {object} opts
+ * @param {string} opts.type - One of BLOCKER_TYPES
+ * @param {'hard'|'advisory'} [opts.severity='hard']
+ * @param {string} opts.owner - Automation name or GitHub login
+ * @param {string|null} [opts.retryAt=null] - ISO-8601 or null
+ * @param {string} [opts.evidenceUrl] - URL to evidence (PR, CI run, etc.)
+ * @param {string} [opts.resolutionGate] - Machine-checkable condition string
+ * @param {string} [opts.resumeState='ready'] - State to resume into after resolution
+ * @returns {object} Blocker record
+ */
+function createBlockerRecord({ type, severity = 'hard', owner, retryAt = null, evidenceUrl, resolutionGate, resumeState = 'ready' }) {
+  if (!BLOCKER_TYPES.includes(type)) throw new Error(`Unknown blocker type: ${type}`);
+  return {
+    id: `blocker-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type,
+    severity,   // 'hard' | 'advisory'
+    owner,
+    detectedAt: new Date().toISOString(),
+    retryAt,
+    evidenceUrl,
+    resolutionGate,
+    resumeState,
+    attempts: 0,
+    revision: 1,
+  };
+}
+
+/**
+ * Renders a blocker record as a formatted GitHub issue comment body.
+ *
+ * @param {object} record - A blocker record produced by createBlockerRecord()
+ * @returns {string} Markdown comment body
+ */
+function formatBlockerComment(record) {
+  return [
+    `### Blocker detected`,
+    ``,
+    `| Field | Value |`,
+    `|---|---|`,
+    `| Type | \`${record.type}\` |`,
+    `| Severity | ${record.severity} |`,
+    `| Owner | ${record.owner} |`,
+    `| Detected | ${record.detectedAt} |`,
+    `| Retry at | ${record.retryAt ?? 'n/a'} |`,
+    `| Resolution gate | ${record.resolutionGate ?? 'n/a'} |`,
+    `| Resume state | ${record.resumeState} |`,
+    ``,
+    record.evidenceUrl ? `Evidence: ${record.evidenceUrl}` : '',
+    ``,
+    `_blocker-id: ${record.id} revision: ${record.revision}_`,
+  ].filter(l => l !== undefined).join('\n');
+}
+
+// ─── RFC-006 Phase 2: WIP limit checks (§7.2) — shadow mode ──────────────────
+
+/**
+ * Checks whether a repo is within the WIP limit of 3 open implementation PRs.
+ * Implementation PRs are identified by excluding snapshot/chore/docs branch
+ * prefixes and snapshot/docs-only labels.
+ *
+ * Runs in shadow mode by default (WIP_SHADOW_MODE=true): violations are logged
+ * but never prevent work from starting. Promote to enforcement by setting
+ * WIP_SHADOW_MODE = false once 30 days of clean observation have passed.
+ *
+ * @param {string} repo - Short repo name (without org prefix)
+ * @returns {Promise<{withinLimit: boolean, openImplPrs: number, limit: number, repo: string}>}
+ */
+async function checkWipLimits(repo) {
+  const WIP_PR_LIMIT = 3;
+  try {
+    const prs = await gh('GET', `/repos/${ORG}/${repo}/pulls?state=open&per_page=100`);
+    const implPrs = prs.filter(pr => {
+      const branch = pr.head?.ref ?? '';
+      const labels = (pr.labels ?? []).map(l => l.name);
+      // Exclude snapshot and chore/docs-only branches
+      if (/^(snapshot|chore)\//.test(branch)) return false;
+      // Exclude PRs labeled as snapshot or docs-only
+      if (labels.includes('type:snapshot') || labels.includes('type:docs-only')) return false;
+      return true;
+    });
+    const openImplPrs = implPrs.length;
+    const withinLimit = openImplPrs <= WIP_PR_LIMIT;
+    if (!withinLimit) {
+      const msg = `[WIP] ${repo}: ${openImplPrs} open impl PRs exceeds limit of ${WIP_PR_LIMIT}${WIP_SHADOW_MODE ? ' (shadow mode — not blocking)' : ''}`;
+      console.warn(msg);
+    }
+    return { withinLimit, openImplPrs, limit: WIP_PR_LIMIT, repo };
+  } catch (e) {
+    console.warn(`[WIP] ${repo}: could not check PR WIP limit: ${e.message}`);
+    // Fail open in shadow mode; fail closed in enforcement mode
+    return { withinLimit: WIP_SHADOW_MODE, openImplPrs: -1, limit: WIP_PR_LIMIT, repo };
+  }
+}
+
+/**
+ * Checks whether a repo is within the WIP limit of 1 active lease (in-progress issue)
+ * per app. Counts open issues labeled `status:in_progress`.
+ *
+ * Runs in shadow mode by default: violations are logged but never block work.
+ *
+ * @param {string} repo - Short repo name (without org prefix)
+ * @returns {Promise<{withinLimit: boolean, activeLeases: number, limit: number, repo: string}>}
+ */
+async function checkActiveLeases(repo) {
+  const ACTIVE_LEASE_LIMIT = 1;
+  try {
+    const issues = await gh('GET', `/repos/${ORG}/${repo}/issues?state=open&labels=status%3Ain_progress&per_page=100`);
+    const activeLeases = issues.length;
+    const withinLimit = activeLeases <= ACTIVE_LEASE_LIMIT;
+    if (!withinLimit) {
+      const msg = `[WIP] ${repo}: ${activeLeases} active lease(s) exceeds limit of ${ACTIVE_LEASE_LIMIT}${WIP_SHADOW_MODE ? ' (shadow mode — not blocking)' : ''}`;
+      console.warn(msg);
+    }
+    return { withinLimit, activeLeases, limit: ACTIVE_LEASE_LIMIT, repo };
+  } catch (e) {
+    console.warn(`[WIP] ${repo}: could not check active lease limit: ${e.message}`);
+    return { withinLimit: WIP_SHADOW_MODE, activeLeases: -1, limit: ACTIVE_LEASE_LIMIT, repo };
+  }
+}
 
 // ─── GitHub API ───────────────────────────────────────────────────────────────
 
@@ -1043,6 +1179,29 @@ async function releaseStaleClaimedIssues(outcomes) {
       const ttlDesc = claimedAtMs
         ? `lease TTL exceeded (work-class=${workClass})`
         : `no activity for ${LEGACY_STALE_CLAIM_DAYS}+ days (legacy claim)`;
+
+      // RFC-006 Phase 2: if the issue already has a status:blocked label, post a
+      // typed blocker record so the stale release is traceable to the RFC-006 §8
+      // blocker record format. If there is no blocked label, just return to Ready
+      // with the existing release comment.
+      const issueLabels = issue.labels.map(l => l.name);
+      if (issueLabels.includes('status:blocked')) {
+        const blockerRecord = createBlockerRecord({
+          type: 'ci',
+          severity: 'hard',
+          owner: 'supervisor-core',
+          retryAt: null,
+          resolutionGate: 'Issue re-queued after stale lease release; requires new execution attempt',
+          resumeState: 'ready',
+        });
+        try {
+          await postComment(repo, issue.number, formatBlockerComment(blockerRecord));
+          console.log(`[StaleClaim] ${repo}#${issue.number}: posted blocker record ${blockerRecord.id} (status:blocked was present)`);
+        } catch (e) {
+          console.warn(`[StaleClaim] ${repo}#${issue.number}: could not post blocker record: ${e.message.slice(0, 80)}`);
+        }
+      }
+
       await postComment(
         repo,
         issue.number,
