@@ -90,9 +90,8 @@ async function main() {
   const allOptions = [...existingOptions, ...newOptions];
 
   await gql(`
-    mutation($projectId: ID!, $fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
+    mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
       updateProjectV2Field(input: {
-        projectId: $projectId
         fieldId: $fieldId
         singleSelectOptions: $options
       }) {
@@ -105,7 +104,6 @@ async function main() {
       }
     }
   `, {
-    projectId: PROJECT_ID,
     fieldId: statusField.id,
     options: allOptions,
   });
