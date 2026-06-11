@@ -4,21 +4,21 @@
   "generated_at": "source-derived",
   "ok": false,
   "counts": {
-    "broken": 392,
+    "broken": 395,
     "canonical": 0,
-    "active": 276,
+    "active": 279,
     "archive": 116,
     "generated": 0
   },
   "by_owner": {
-    "platform": 274,
+    "platform": 277,
     "admin-studio": 4,
     "architecture": 4,
     "capricast": 31,
     "marketing": 79
   },
   "by_status": {
-    "active": 276,
+    "active": 279,
     "archive": 116
   },
   "broken": [
@@ -546,7 +546,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 110,
+      "line": 111,
       "target": "dashboards/incident-metrics-template.yaml",
       "reason": "file not found",
       "owner": "platform",
@@ -555,7 +555,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 115,
+      "line": 116,
       "target": "videoking/security-audit-report.md",
       "reason": "file not found",
       "owner": "platform",
@@ -564,7 +564,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 116,
+      "line": 117,
       "target": "videoking/privacy-audit-report.md",
       "reason": "file not found",
       "owner": "platform",
@@ -573,7 +573,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 117,
+      "line": 118,
       "target": "videoking/security-fixes-roadmap.md",
       "reason": "file not found",
       "owner": "platform",
@@ -582,17 +582,8 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 124,
-      "target": "templates/PRE_RELEASE_CHECKLIST.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
       "line": 125,
-      "target": "templates/smoke-test-template.md",
+      "target": "templates/PRE_RELEASE_CHECKLIST.md",
       "reason": "file not found",
       "owner": "platform",
       "status": "active",
@@ -601,213 +592,6 @@
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
       "line": 126,
-      "target": "runbooks/rollback-plan.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 127,
-      "target": "calendars/release-schedule.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 132,
-      "target": "scripts/track-delivery-metrics.mjs",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 133,
-      "target": "runbooks/delivery-kpi-targets.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 140,
-      "target": "../apps/videoking/README.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 141,
-      "target": "../apps/videoking/ENGINEERING.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 142,
-      "target": "../docs/videoking/",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 143,
-      "target": "videoking/VIDEO_TRANSCODING_RUNBOOK.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 144,
-      "target": "videoking/DURABLE_OBJECTS_RUNBOOK.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 145,
-      "target": "videoking/DATABASE_OPERATIONS.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 146,
-      "target": "videoking/API.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 147,
-      "target": "videoking/adr/",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 148,
-      "target": "videoking/adr/ADR-001-durable-objects.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 149,
-      "target": "videoking/adr/ADR-002-stripe-connect.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 150,
-      "target": "videoking/adr/ADR-003-payout-batching.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 155,
-      "target": "scripts/generate-scorecard.mjs",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 156,
-      "target": "dashboards/implementation-scorecard-template.yaml",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 157,
-      "target": "STAKEHOLDER_REPORT_TEMPLATE.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 170,
-      "target": "videoking/",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 170,
-      "target": "videoking/",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 170,
-      "target": "videoking/slo-targets.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 174,
-      "target": "../apps/videoking/",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 196,
-      "target": "templates/PRE_RELEASE_CHECKLIST.md",
-      "reason": "file not found",
-      "owner": "platform",
-      "status": "active",
-      "fidelity": "unverified"
-    },
-    {
-      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 196,
       "target": "templates/smoke-test-template.md",
       "reason": "file not found",
       "owner": "platform",
@@ -816,8 +600,215 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 206,
-      "target": "packages/errors/",
+      "line": 127,
+      "target": "runbooks/rollback-plan.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 128,
+      "target": "calendars/release-schedule.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 133,
+      "target": "scripts/track-delivery-metrics.mjs",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 134,
+      "target": "runbooks/delivery-kpi-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 141,
+      "target": "../apps/videoking/README.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 142,
+      "target": "../apps/videoking/ENGINEERING.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 143,
+      "target": "../docs/videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 144,
+      "target": "videoking/VIDEO_TRANSCODING_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 145,
+      "target": "videoking/DURABLE_OBJECTS_RUNBOOK.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 146,
+      "target": "videoking/DATABASE_OPERATIONS.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 147,
+      "target": "videoking/API.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 148,
+      "target": "videoking/adr/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 149,
+      "target": "videoking/adr/ADR-001-durable-objects.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 150,
+      "target": "videoking/adr/ADR-002-stripe-connect.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 151,
+      "target": "videoking/adr/ADR-003-payout-batching.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 156,
+      "target": "scripts/generate-scorecard.mjs",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 157,
+      "target": "dashboards/implementation-scorecard-template.yaml",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 158,
+      "target": "STAKEHOLDER_REPORT_TEMPLATE.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 171,
+      "target": "videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 171,
+      "target": "videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 171,
+      "target": "videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 175,
+      "target": "../apps/videoking/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 197,
+      "target": "templates/PRE_RELEASE_CHECKLIST.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 197,
+      "target": "templates/smoke-test-template.md",
       "reason": "file not found",
       "owner": "platform",
       "status": "active",
@@ -826,7 +817,7 @@
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
       "line": 207,
-      "target": "packages/monitoring/",
+      "target": "packages/errors/",
       "reason": "file not found",
       "owner": "platform",
       "status": "active",
@@ -835,6 +826,15 @@
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
       "line": 208,
+      "target": "packages/monitoring/",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
+      "line": 209,
       "target": "packages/logger/",
       "reason": "file not found",
       "owner": "platform",
@@ -843,7 +843,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 214,
+      "line": 215,
       "target": "packages/auth/",
       "reason": "file not found",
       "owner": "platform",
@@ -852,7 +852,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 215,
+      "line": 216,
       "target": "packages/neon/",
       "reason": "file not found",
       "owner": "platform",
@@ -861,7 +861,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 216,
+      "line": 217,
       "target": "packages/deploy/",
       "reason": "file not found",
       "owner": "platform",
@@ -870,7 +870,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 217,
+      "line": 218,
       "target": "packages/testing/",
       "reason": "file not found",
       "owner": "platform",
@@ -879,7 +879,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 223,
+      "line": 224,
       "target": "packages/stripe/",
       "reason": "file not found",
       "owner": "platform",
@@ -888,7 +888,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 224,
+      "line": 225,
       "target": "packages/llm/",
       "reason": "file not found",
       "owner": "platform",
@@ -897,7 +897,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 225,
+      "line": 226,
       "target": "packages/telephony/",
       "reason": "file not found",
       "owner": "platform",
@@ -906,7 +906,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 226,
+      "line": 227,
       "target": "packages/analytics/",
       "reason": "file not found",
       "owner": "platform",
@@ -915,7 +915,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 227,
+      "line": 228,
       "target": "packages/email/",
       "reason": "file not found",
       "owner": "platform",
@@ -924,7 +924,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 228,
+      "line": 229,
       "target": "packages/video/",
       "reason": "file not found",
       "owner": "platform",
@@ -933,7 +933,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 229,
+      "line": 230,
       "target": "packages/schedule/",
       "reason": "file not found",
       "owner": "platform",
@@ -942,7 +942,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 235,
+      "line": 236,
       "target": "packages/compliance/",
       "reason": "file not found",
       "owner": "platform",
@@ -951,7 +951,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 236,
+      "line": 237,
       "target": "packages/crm/",
       "reason": "file not found",
       "owner": "platform",
@@ -960,7 +960,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 237,
+      "line": 238,
       "target": "packages/admin/",
       "reason": "file not found",
       "owner": "platform",
@@ -969,7 +969,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 238,
+      "line": 239,
       "target": "packages/content/",
       "reason": "file not found",
       "owner": "platform",
@@ -978,7 +978,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 239,
+      "line": 240,
       "target": "packages/copy/",
       "reason": "file not found",
       "owner": "platform",
@@ -987,7 +987,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 240,
+      "line": 241,
       "target": "packages/social/",
       "reason": "file not found",
       "owner": "platform",
@@ -996,7 +996,7 @@
     },
     {
       "file": "docs/IMPLEMENTATION_MASTER_INDEX.md",
-      "line": 241,
+      "line": 242,
       "target": "packages/seo/",
       "reason": "file not found",
       "owner": "platform",
@@ -1007,6 +1007,15 @@
       "file": "docs/PHASE_A_TEAM_ONBOARDING_PACK.md",
       "line": 182,
       "target": "videoking/slo-targets.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/PLATFORM_STANDARDS.md",
+      "line": 20,
+      "target": "../STACK.md",
       "reason": "file not found",
       "owner": "platform",
       "status": "active",
@@ -2492,6 +2501,24 @@
       "file": "docs/decisions/2026-05-25-marketing-external-api.md",
       "line": 85,
       "target": "file:///C:/Users/Ultimate%20Warrior/.claude/plans/eager-seeking-valley.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-06-08-admin-studio-boundary.md",
+      "line": 10,
+      "target": "../admin-studio/06-DEBT-DELIVERY-PLAN.md",
+      "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/decisions/2026-06-08-admin-studio-boundary.md",
+      "line": 59,
+      "target": "../admin-studio/06-DEBT-DELIVERY-PLAN.md",
       "reason": "file not found",
       "owner": "platform",
       "status": "active",
