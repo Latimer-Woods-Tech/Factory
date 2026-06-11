@@ -1,5 +1,8 @@
 name: Generate Implementation Scorecard
 
+# RFC-006 §10: weekly runs upload scorecard as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10.
+
 on:
   schedule:
     - cron: '0 11 * * 1'
@@ -7,15 +10,16 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-permissions: {}
+
+permissions:
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 jobs:
   scorecard:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read # RFC-006 §10: artifact upload does not need write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Run scorecard generator
@@ -25,29 +29,12 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_SCORECARD || secrets.SLACK_WEBHOOK_OPS }}
           SCORECARD_REPO_OWNER: adrper79-dot
           SCORECARD_REPO_NAME: factory
-      - name: Open auto-merge PR for scorecard snapshot
-        # Direct push to main is rejected by branch protection (GH013).
-        # Match the cost-observability.yml + platform-conformance.yml pattern:
-        # commit to a fresh branch, open a labelled PR, let auto-merge land it.
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          git add docs/IMPLEMENTATION_SCORECARD_AUTO.md 2>/dev/null || true
-          if git diff --quiet --cached docs/IMPLEMENTATION_SCORECARD_AUTO.md; then
-            echo "No scorecard changes to commit."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/scorecard-snapshot-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(scorecard): weekly implementation scorecard ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(scorecard): weekly implementation scorecard ($DATE)" \
-            --body "Automated scorecard snapshot from \`generate-scorecard.yml\`. Source: \`scripts/generate-scorecard.mjs\`." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload scorecard artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementation-scorecard-${{ github.run_id }}
+          path: docs/IMPLEMENTATION_SCORECARD_AUTO.md
+          retention-days: 30
+          if-no-files-found: warn

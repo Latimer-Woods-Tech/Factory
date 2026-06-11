@@ -1,7 +1,5 @@
 name: label-sync
 on:
-  issues:
-    types: [opened, edited, labeled, unlabeled, closed, reopened]
   schedule:
     - cron: '0 11 * * *'   # 11:00 UTC reconcile sweep
   workflow_dispatch:
