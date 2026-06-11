@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// projection-only: reads issue labels → writes Project Status. Labels are written only by lifecycle-controller.mjs.
 // project-sync.mjs — unified GitHub Project board sync
 //
 // Replaces:
