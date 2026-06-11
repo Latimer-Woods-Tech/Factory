@@ -16,24 +16,49 @@
       "description": "Issue claimed by the supervisor loop (dedup lock)"
     },
     {
+      "name": "status:intake",
+      "color": "e4e669",
+      "description": "Created; not yet triaged or readiness-checked"
+    },
+    {
+      "name": "status:ready",
+      "color": "0075ca",
+      "description": "Executable; dependencies clear; awaiting lease"
+    },
+    {
       "name": "status:in_progress",
-      "color": "fbca04",
-      "description": "Agent is actively working the issue"
+      "color": "e99695",
+      "description": "Leased; agent or human actively executing"
+    },
+    {
+      "name": "status:in_review",
+      "color": "c5def5",
+      "description": "Linked PR or review artifact exists"
     },
     {
       "name": "status:blocked",
-      "color": "6f42c1",
-      "description": "Blocked on dep or decision"
+      "color": "d93f0b",
+      "description": "Named blocker present; cannot proceed"
+    },
+    {
+      "name": "status:verifying",
+      "color": "bfd4f2",
+      "description": "Deployed; awaiting production verification"
     },
     {
       "name": "status:done",
       "color": "0e8a16",
-      "description": "Implementation is complete and ready for merge triage"
+      "description": "Acceptance criteria and required verification passed"
+    },
+    {
+      "name": "status:cancelled",
+      "color": "cccccc",
+      "description": "Intentionally stopped or superseded"
     },
     {
       "name": "status:abandoned",
-      "color": "8c959f",
-      "description": "Agent stopped and the issue needs reassignment"
+      "color": "cccccc",
+      "description": "Retired alias for status:cancelled — do not use on new issues"
     },
     {
       "name": "area:auth",

@@ -149,7 +149,7 @@ describe('GET /observability/synthetic/journey', () => {
     expect(failed.length).toBe(1);
     expect(failed[0]?.id).toBe('slo.journey.auth-api');
     expect(failed[0]?.error).toBe('Unexpected status 500 (expected 200)');
-    expect(failed[0]?.url).toBe('https://prime-self.adrper79.workers.dev/health');
+    expect(failed[0]?.url).toBe('https://api.selfprime.net/health');
   });
 
   it('classifies outageClass:outage when all journey probes fail', async () => {
@@ -372,7 +372,7 @@ describe('observability degraded-state semantics (FRH-09)', () => {
 const JOURNEY_PROBE_URLS: Record<string, string> = {
   'slo.journey.render-ingest': 'https://schedule-worker.adrper79.workers.dev/health',
   'slo.journey.video-dispatch': 'https://video-cron.adrper79.workers.dev/health',
-  'slo.journey.auth-api': 'https://prime-self.adrper79.workers.dev/health',
+  'slo.journey.auth-api': 'https://api.selfprime.net/health',
   'slo.journey.operator-plane': 'https://admin-studio-staging.adrper79.workers.dev/health',
   'slo.journey.webhook': 'https://schedule-worker.adrper79.workers.dev/stripe/health',
 };

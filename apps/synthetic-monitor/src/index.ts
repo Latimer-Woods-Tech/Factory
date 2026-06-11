@@ -58,7 +58,7 @@ const SERVICE_BINDINGS_BY_HOST: Readonly<Record<string, ServiceBindingName>> = {
   'video-cron.adrper79.workers.dev': 'VIDEO_CRON',
   'admin-studio-staging.adrper79.workers.dev': 'ADMIN_STUDIO_STAGING',
   'api.admin.latimerwoods.dev': 'ADMIN_STUDIO_STAGING',
-  'prime-self.adrper79.workers.dev': 'PRIME_SELF',
+  'api.selfprime.net': 'PRIME_SELF',
 };
 
 const DEFAULT_TIMEOUT_MS = 8_000;
