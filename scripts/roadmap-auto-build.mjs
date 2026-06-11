@@ -86,8 +86,7 @@ async function existingFingerprints() {
     }
     return set;
   } catch (err) {
-    console.warn(`WARN: could not list issues for dedup (${err.message}); assuming none`);
-    return new Set();
+    throw new Error(`Could not verify roadmap dedup state; refusing to file issues: ${err.message}`);
   }
 }
 
