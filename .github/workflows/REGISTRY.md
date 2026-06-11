@@ -22,7 +22,7 @@
 
 CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
-### T1 — Load-bearing (27)
+### T1 — Load-bearing (38)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -34,15 +34,15 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `factory-admin-ui-ci.yml` | push, PR | Storybook + Playwright e2e for admin-studio-ui |
 | `package-integration.yml` | push, PR, dispatch | Cross-package smoke |
 | `policy-drift-guard.yml` | schedule, dispatch | Detects branch-protection drift (paired with `apply-sec-hardening`) |
-| `pr-quality-check.yml` | PR | PR-level gate (shadow mode) |
 | `pr-review.yml` | PR, merge_group | 2-party bot review (Grok→Claude consensus) |
 | `pr-size-guard.yml` | pull_request_target | Hard-blocks PRs exceeding ADR-0005 diff-size budgets (G9) |
 | `publish.yml` | push | npm package publishing |
 | `refresh-vertex-token.yml` | schedule (45min), dispatch | Vertex AI token refresh — pipeline depends on this |
 | `render-video.yml` | push, PR, dispatch | Video pipeline (Capricast) |
 | `rotate-admin-studio-tokens.yml` | schedule (40min), dispatch | Token rotation — review cadence in Phase 4 |
-| `secret-contract-preflight.yml` | PR | Required check on PRs touching secret usage |
 | `validate-service-registry.yml` | push, PR | Validates `docs/service-registry.yml` shape |
+| `admin-studio-ui-ci.yml` | push, PR | CI gate for admin-studio-ui app |
+| `ci-qa-tools.yml` | push, PR | CI gate for qa-tools app |
 | `deploy-admin-studio.yml` | push, dispatch | Production deploy — admin-studio Worker |
 | `deploy-admin-studio-ui.yml` | push, dispatch | Production deploy — admin-studio-ui Pages |
 | `deploy-daily-brief.yml` | push, dispatch | Production deploy — daily-brief Worker |
@@ -56,8 +56,16 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `deploy-factory-core-api.yml` | push, dispatch | Production deploy — factory-core-api Worker (read-layer + auth) |
 | `deploy-factory-events-replay.yml` | push, dispatch | Production deploy — factory-events-replay cron Worker (P1.10) |
 | `browser-agent-deploy.yml` | push, dispatch | Production deploy — Cloud Run browser-agent |
+| `deploy-agent-gateway.yml` | push, dispatch | Production deploy — agent-gateway Worker |
+| `deploy-factory-cross-repo.yml` | push, dispatch | Production deploy — factory-cross-repo Worker |
+| `deploy-inbound-oracle.yml` | push, dispatch | Production deploy — inbound-oracle Worker |
+| `deploy-latimerwoods-dev.yml` | push, dispatch | Production deploy — latimerwoods.dev Pages |
+| `deploy-linkedin-publisher.yml` | push, dispatch | Production deploy — linkedin-publisher Worker |
+| `deploy-qa-tools-ui.yml` | push, dispatch | Production deploy — qa-tools-ui Pages |
+| `deploy-qa-tools-worker.yml` | push, dispatch | Production deploy — qa-tools Worker |
+| `deploy-status-prober.yml` | push, dispatch | Production deploy — status-prober Worker |
 
-### T2 — Operational (30)
+### T2 — Operational (42)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -74,9 +82,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
 | `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
-| `pr-size-warning.yml` | PR | PR size advisory (warn-only) |
 | `project-sync.yml` | issue_comment, issues, PR, schedule, dispatch | GitHub Projects v2 board sync |
-| `reviewer-class-hints.yml` | PR | Reviewer suggestions |
 | `rfc-status-gate.yml` | PR | RFC-decision gate |
 | `scripts-tests.yml` | push, PR, schedule | Tests for `scripts/` directory |
 | `sentry-to-github.yml` | schedule (4h), dispatch | Sentry issue → GH issue mirror |
@@ -91,8 +97,22 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `_canary-watch.yml` | workflow_call | Canary watcher (called by deploys) — see TR |
 | `_migration-drift-guard.yml` | workflow_call | Migration drift detection — see TR |
 | `_post-deploy-verify.yml` | workflow_call | Post-deploy verification — see TR |
+| `auto-dispatch-provision.yml` | schedule, dispatch | Auto-dispatch app provisioning |
+| `coherence-check.yml` | schedule, PR, dispatch | Cross-doc coherence warden |
+| `council-deliberate.yml` | PR | Multi-model council deliberation on PRs |
+| `fridge-semantic-check.yml` | pull_request_target, dispatch | FRIDGE semantic-drift check |
+| `governance-audit.yml` | schedule, dispatch | Governance surface audit |
+| `lighthouse-ci-admin-studio.yml` | PR | Lighthouse perf gate for admin-studio-ui |
+| `opportunity-scan.yml` | schedule, dispatch | Opportunity intake scanner |
+| `pr-advisory-sweep.yml` | schedule (4h), dispatch | Consolidated PR advisories — absorbed pr-quality-check, pr-size-warning, reviewer-class-hints, secret-contract-preflight (2026-06-11 reconciliation) |
+| `snapshot-pr-auto-merge.yml` | pull_request_target | Auto-merge enable for snapshot PRs |
+| `supervisor-readonly-smoke.yml` | schedule, dispatch | Supervisor read-only smoke probe |
+| `telnyx-path-smoke.yml` | schedule, dispatch | Telephony path smoke probe |
+| `workflow-budget-check.yml` | PR | Workflow admission budget gate (ADR 2026-05-23) |
+| `workflow-concurrency-check.yml` | PR | Requires `concurrency:` on new/changed workflows |
+| `workflow-health-warden.yml` | schedule, dispatch | Tier-based workflow SLO enforcement (this registry's consumer) |
 
-### T3 — Informational (25)
+### T3 — Informational (16)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -111,8 +131,9 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `revenue-digest.yml` | schedule (daily), dispatch | Revenue + reliability digest |
 | `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker |
 | `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
+| `generate-founder-stats.yml` | schedule, dispatch | Founder stats digest |
 
-### TR — Reusable (12)
+### TR — Reusable (15)
 
 | Workflow | Notes |
 |---|---|
@@ -124,12 +145,15 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `_app-prod-canary.yml` | (also T2 — caller-context defines tier) |
 | `_app-reliability-gate.yml` | (caller-context) |
 | `_canary-watch.yml` | (caller-context) |
+| `_app-capability-lint.yml` | Capability registry lint (called by app CIs) |
+| `_app-constraints-gate.yml` | Hard-constraints gate (called by app CIs) |
 | `_docs-health.yml` | Reusable documentation control-plane health workflow |
 | `_hello-reusable.yml` | Reusable example/template |
+| `_neon-pr-lifecycle.yml` | Neon ephemeral PR branch lifecycle (called by app CIs) |
 | `_migration-drift-guard.yml` | (caller-context) |
 | `_post-deploy-verify.yml` | (caller-context) |
 
-### TM — Manual (15)
+### TM — Manual (30)
 
 `workflow_dispatch`-only — no schedule, no auto-trigger. SLO is "works when invoked."
 
@@ -155,6 +179,16 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `studio-test-dispatch.yml` | Studio test dispatcher |
 | `update-app-lockfiles.yml` | Lockfile update (third duplicate candidate) |
 | `validate-sentry-auth-token.yml` | Sentry token validation |
+| `cf-domain-reconcile.yml` | Cloudflare custom-domain reconciliation |
+| `provision-app-staging.yml` | App staging environment provisioner |
+| `render-daily-brief.yml` | Manual daily-brief render |
+| `seed-provisioner-secrets-to-gcp.yml` | Seed provisioner secrets into GCP SM |
+| `setup-coh-observability.yml` | One-off coh observability bootstrap |
+| `upload-sybil-music.yml` | One-off media upload helper |
+| `pr-quality-check.yml` | Demoted from T1 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
+| `pr-size-warning.yml` | Demoted from T2 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
+| `reviewer-class-hints.yml` | Demoted from T2 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
+| `secret-contract-preflight.yml` | Demoted from T1 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
 
 ---
 
@@ -165,6 +199,7 @@ Pre-flagged for consolidation review — not deleted yet, but new additions in t
 - **Lockfile generators** (4 workflows): `generate-app-lockfiles`, `regen-lockfile-on-branch`, `regenerate-app-lockfiles`, `update-app-lockfiles` — likely consolidatable to 1
 - **Bootstrap helpers** (2 workflows): `bootstrap-completion-tracker-private`, `bootstrap-publish` — review post-Phase 4
 - `_hello-reusable.yml` — example file; retire if unused
+- **Consolidated advisory shells** (4 workflows): `pr-quality-check`, `pr-size-warning`, `reviewer-class-hints`, `secret-contract-preflight` — logic absorbed by `pr-advisory-sweep.yml`; delete shells after 30 days with no manual dispatch (flagged 2026-06-11)
 
 ---
 
