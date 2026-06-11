@@ -54,6 +54,21 @@ async function ghPost(path, data) {
   return res.json();
 }
 
+async function ghGet(path) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${GH_TOKEN}`,
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`GH GET ${path} → ${res.status}: ${t.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
 async function ghSearch(query) {
   const res = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&per_page=5`, {
     headers: {
@@ -62,11 +77,32 @@ async function ghSearch(query) {
       'X-GitHub-Api-Version': '2022-11-28',
     },
   });
-  if (!res.ok) return { items: [] };
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`GH search → ${res.status}: ${t.slice(0, 200)}`);
+  }
   return res.json();
 }
 
+function titleKey(project, title) {
+  return `${project}:${title}`.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+async function existingOpenSentryTitles() {
+  const titles = new Set();
+  for (let page = 1; ; page++) {
+    const issues = await ghGet(
+      `/repos/${GH_ORG}/${GH_REPO}/issues?state=open&labels=source%3Asentry&per_page=100&page=${page}`,
+    );
+    for (const issue of issues) {
+      if (!issue.pull_request) titles.add(issue.title.toLowerCase().replace(/\s+/g, ' ').trim());
+    }
+    if (issues.length < 100) return titles;
+  }
+}
+
 const projects = await sentry(`/organizations/${ORG_SLUG}/projects/`);
+const openSentryTitles = await existingOpenSentryTitles();
 console.log(`Scanning ${projects.length} projects for new issues since ${since}...`);
 
 let created = 0, skipped = 0;
@@ -87,6 +123,7 @@ for (const project of projects) {
     const title = `[Sentry/${slug}] ${issue.title}`;
     const sentryUrl = `https://sentry.io/organizations/${ORG_SLUG}/issues/${issue.id}/`;
 
+    if (openSentryTitles.has(titleKey(slug, issue.title))) { skipped++; continue; }
     const existing = await ghSearch(`repo:${GH_ORG}/${GH_REPO} ${issue.id} in:body label:source:sentry`);
     if (existing.items.length > 0) { skipped++; continue; }
 
@@ -113,6 +150,7 @@ for (const project of projects) {
       body,
       labels: ['bug', priority, 'source:sentry', 'supervisor:approved-source'],
     });
+    openSentryTitles.add(titleKey(slug, issue.title));
     console.log(`✓ Created: ${slug}/${issue.shortId} — ${issue.title.slice(0, 60)}`);
     created++;
     await new Promise(r => setTimeout(r, 500));
