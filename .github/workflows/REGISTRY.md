@@ -151,6 +151,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `set-jwt-secrets.yml` | JWT secret bulk set |
 | `setup-app-secrets.yml` | App secret setup |
 | `setup-sentry-alerts.yml` | Sentry alert provisioning |
+| `setup-project-status-options.yml` | One-time bootstrap: adds RFC-006 lifecycle Status options to the Projects v2 board (idempotent) |
 | `studio-test-dispatch.yml` | Studio test dispatcher |
 | `update-app-lockfiles.yml` | Lockfile update (third duplicate candidate) |
 | `validate-sentry-auth-token.yml` | Sentry token validation |
