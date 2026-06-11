@@ -454,7 +454,17 @@ async function reconcile() {
       const terminal = terminalStatusFromLabels(labels);
       if (boardStatus !== terminal) {
         target = terminal;
-        targetOpt = terminal === 'Done' ? doneOpt : (cancelledOpt ?? doneOpt);
+        if (terminal === 'Done') {
+          targetOpt = doneOpt;
+        } else if (cancelledOpt) {
+          targetOpt = cancelledOpt;
+        } else {
+          // Board not yet bootstrapped with the Cancelled option
+          // (setup-project-status-options.yml hasn't run) — fall back to Done
+          // loudly so the bootstrap-ordering dependency is visible in logs.
+          console.log(`[warn] ${issueRepo}#${num}: "Cancelled" option missing on board — falling back to Done (run setup-project-status-options)`);
+          targetOpt = doneOpt;
+        }
       }
     } else if (issueState === 'OPEN' && boardStatus === 'Done') {
       if (labels.some(l => /^status:(wip|in_progress)$/.test(l))) {
