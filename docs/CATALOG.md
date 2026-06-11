@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 452 |
+| total_docs | 451 |
 | canonical | 17 |
-| active | 387 |
+| active | 386 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (387)
+## Active Docs (386)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -155,7 +155,6 @@
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
 | [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
 | [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | platform | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
-| [docs/decisions/2026-06-11-rfc-006-operating-decisions.md](decisions/2026-06-11-rfc-006-operating-decisions.md) | active | unverified | platform | unknown | 2026-06-11 — RFC-006 Required Operating Decisions |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | platform | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
