@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 446 |
+| total_docs | 452 |
 | canonical | 17 |
-| active | 381 |
+| active | 387 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (381)
+## Active Docs (387)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -136,6 +136,7 @@
 | [docs/CLEAN_PASS_3_QUALITY_REPORT.md](CLEAN_PASS_3_QUALITY_REPORT.md) | active | unverified | platform | unknown | Clean Pass 3: Quality & Production Readiness Report |
 | [docs/CLEAN_PASSES_COMPLETE_SUMMARY.md](CLEAN_PASSES_COMPLETE_SUMMARY.md) | active | unverified | platform | unknown | Clean Passes Complete: Summary & Status Report |
 | [docs/COMPLETION_TRACKER.md](COMPLETION_TRACKER.md) | active | unverified | platform | unknown | Completion Tracker |
+| [docs/COMPLIANCE_CHECKLIST.md](COMPLIANCE_CHECKLIST.md) | active | unverified | platform | unknown | New-Repo Compliance Checklist |
 | [docs/CONFIG_NORMALIZATION_AUDIT.md](CONFIG_NORMALIZATION_AUDIT.md) | active | unverified | platform | unknown | W360-034 Configuration Normalization Audit & Playbook |
 | [docs/conformance/summary.md](conformance/summary.md) | active | unverified | platform | unknown | Platform Conformance — Shadow Mode |
 | [docs/cost/summary.md](cost/summary.md) | active | unverified | platform | unknown | Cost Digest — Rolling 30 days |
@@ -153,6 +154,8 @@
 | [docs/decisions/2026-05-23-workflow-lifecycle.md](decisions/2026-05-23-workflow-lifecycle.md) | active | unverified | platform | unknown | 2026-05-23 — Workflow Lifecycle & Automation Hygiene |
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
 | [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
+| [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | platform | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
+| [docs/decisions/2026-06-11-rfc-006-operating-decisions.md](decisions/2026-06-11-rfc-006-operating-decisions.md) | active | unverified | platform | unknown | 2026-06-11 — RFC-006 Required Operating Decisions |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | platform | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -291,6 +294,8 @@
 | [docs/PHASE_6_EXECUTION_CHECKLIST.md](PHASE_6_EXECUTION_CHECKLIST.md) | active | unverified | platform | unknown | Phase 6: Infrastructure Setup — Execution Checklist |
 | [docs/PHASE_A_TEAM_ONBOARDING_PACK.md](PHASE_A_TEAM_ONBOARDING_PACK.md) | active | unverified | platform | unknown | Phase A Team Onboarding Pack |
 | [docs/PII_INVENTORY.md](PII_INVENTORY.md) | active | unverified | platform | unknown | PII Inventory — Factory / Admin Studio |
+| [docs/planning/brief-2026-06-08.md](planning/brief-2026-06-08.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-08 |
+| [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
 | [docs/PORTFOLIO_CAPABILITY_RECONCILIATION.md](PORTFOLIO_CAPABILITY_RECONCILIATION.md) | active | unverified | platform | unknown | Portfolio Capability ↔ Marketing Reconciliation |
@@ -314,6 +319,7 @@
 | [docs/rfc/RFC-003-creator-onboarding-robustness.md](rfc/RFC-003-creator-onboarding-robustness.md) | active | unverified | platform | unknown | RFC-003: Creator Onboarding Robustness |
 | [docs/rfc/RFC-004-browser-automation.md](rfc/RFC-004-browser-automation.md) | active | unverified | platform | unknown | RFC-004: Native Browser Automation Service |
 | [docs/rfc/RFC-005-anthropic-dreaming-pilot.md](rfc/RFC-005-anthropic-dreaming-pilot.md) | active | unverified | platform | unknown | RFC-005: Anthropic Dreaming pilot on Factory autofix loop |
+| [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | platform | unknown | RFC-006: Cohesive Automation Flow Operating Model |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | platform | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | platform | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |
