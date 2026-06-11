@@ -27,4 +27,5 @@ export const GENERATED_TARGETS = [
   { id: "marketing-supervisor-staging.health", url: "https://marketing-supervisor-staging.adrper79.workers.dev/health", contains: "ok" },
   { id: "referrals.health", url: "https://referrals.adrper79.workers.dev/health", contains: "ok" },
   { id: "llm-rank-worker.health", url: "https://llm-rank-worker.adrper79.workers.dev/health", contains: "ok" },
+  { id: "analytics-proxy.health", url: "https://analytics.latwoodtech.work/health", contains: "ok" },
 ] as const;

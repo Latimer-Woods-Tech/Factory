@@ -1020,6 +1020,33 @@ workers:
       Planned — not yet deployed.
     consumers: []
 
+  - id: analytics-proxy
+    name: analytics-proxy                                    # matches apps/analytics-proxy/wrangler.jsonc env.production.name
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://analytics.latwoodtech.work
+    workers_dev_url: https://analytics-proxy.adrper79.workers.dev
+    custom_domain: analytics.latwoodtech.work
+    health_endpoint: /health
+    telemetry_required: false
+    deployment_status: live_health_verified_2026-06-08
+    critical_endpoints:
+      - /health
+      - /metrics
+    required_bindings:
+      - ANALYTICS_KV
+    required_secrets: []
+    required_vars:
+      - ENVIRONMENT
+    consumers:
+      - file: apps/latimerwoods-dev/src/
+        pattern: "analytics.latwoodtech.work"
+    notes: >
+      Thin CORS proxy that queries the Cloudflare Analytics GraphQL API for
+      per-Worker traffic metrics and caches responses in KV (60 s TTL).
+      Serves the /platform/ Flow mode on latwoodtech.com. CORS locked to
+      latwoodtech.com only. Deployed 2026-06-07.
+
 pages:
   - id: prime-self-ui
     repo: Latimer-Woods-Tech/HumanDesign
