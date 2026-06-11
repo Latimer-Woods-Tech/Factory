@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 452,
+    "total_docs": 451,
     "canonical": 17,
-    "active": 387,
+    "active": 386,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -57,7 +57,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:a0208d6c319b9e5eb03d9d0207784c1e5b6eab94a7308b96ef9431c721feac13",
+      "content_hash": "sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:12c86d241781104ae50f3f0f2c8a86ab0ca74794d45ae924079328a6caed3479",
+      "content_hash": "sha256:d6e97a356e59298b13b29d6b42066fde8a935df58ba09536aa70694feef789da",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b4311a73e89a9afe4f40c3acb8947ffc84f7b19428c303e5ebd0692315784c44",
+      "content_hash": "sha256:879c54e7dc37bc05e1c3358aa2d4b2964b1e089846afb673fd193d350fdd26f5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:312498498448fa786e8a735772f560c340e994c41a3e67f3f5720675c447cd68",
+      "content_hash": "sha256:eeb907e0acd8fe94eef11adc80efda4605ebc75b2842682bbf7ea24ebf4ba5ed",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3156,27 +3156,6 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:21d6367475fb6a5d989d0ee1f815facbbab2a0d119b662a2ec42db13efd7d3d2",
-      "source": {
-        "frontmatter": true,
-        "canonical_allowlist": false,
-        "override": "docs/decisions/**"
-      },
-      "errors": []
-    },
-    {
-      "path": "docs/decisions/2026-06-11-rfc-006-operating-decisions.md",
-      "title": "2026-06-11 — RFC-006 Required Operating Decisions",
-      "status": "active",
-      "owner": "platform",
-      "doc_type": "decision",
-      "fidelity": "unverified",
-      "quality": "usable",
-      "last_updated": null,
-      "last_verified": null,
-      "scope": null,
-      "truth_sources": [],
-      "verified_by": [],
-      "content_hash": "sha256:85de2e586e67f1e16efde5bad443fac8ddca9482c38cc522c92bdb153a4a69c7",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -6506,7 +6485,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:da395dcc83dd504da9ea1cd1c2181f6d054aaf06eda472814cd7ad6b9ac48f41",
+      "content_hash": "sha256:f84aa73e4a55bfe07d2a6ea1142f10c85c5bfeb2ad7fe5396da5c01d4b239f3e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6804,7 +6783,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:bec738f7919adae14ce17205d26118293cd97e3afcec87ee326f917629537312",
+      "content_hash": "sha256:9a072de0ae1bd6133eb1fcefa1b0777a2c8c15d29661c4030ead9a6d101d063a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7266,7 +7245,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d3ac69cd65ad9fed3a833c8f2ef6cef341f02dbe5808313111b3e458abcb9b96",
+      "content_hash": "sha256:3595a41a9de879adac41c59b1bbc624c4e951618361710b1e7b41df31c55cb76",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
