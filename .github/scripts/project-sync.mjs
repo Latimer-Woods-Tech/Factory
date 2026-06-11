@@ -218,13 +218,26 @@ function parseLinkedIssues(body) {
 function statusFromLabel(labelName) {
   const state = labelName.replace(/^status:/, '');
   switch (state) {
+    case 'intake':                   return ['Intake', null];
+    case 'ready':                    return ['Ready', null];
     case 'in_progress':
-    case 'wip':       return ['In Progress', null];
-    case 'blocked':   return ['Blocked', 'In Progress'];
-    case 'done':      return ['Done', null];
-    case 'abandoned': return ['Abandoned', 'Done'];
-    default:          return [null, null];
+    case 'wip':                      return ['In Progress', null];
+    case 'in_review':                return ['In Review', 'In Progress'];
+    case 'blocked':                  return ['Blocked', 'In Progress'];
+    case 'verifying':                return ['Verifying', 'In Review'];
+    case 'done':                     return ['Done', null];
+    case 'cancelled':
+    case 'abandoned':                return ['Cancelled', null];
+    default:                         return [null, null];
   }
+}
+
+// Determine Done vs Cancelled from issue labels when a close event fires.
+// A manual close without a status:done label → Cancelled.
+// Returns 'Done' only when the issue carried explicit completion evidence.
+function terminalStatusFromLabels(labelNames) {
+  if (labelNames.some(l => l === 'status:done' || l === 'status:verifying')) return 'Done';
+  return 'Cancelled';
 }
 
 function statusFromComment(body) {
@@ -266,7 +279,7 @@ async function main() {
       }
       if (EVENT_KIND === 'issue.reopened') {
         const issue = await ghRest('GET', `/repos/${REPO}/issues/${ISSUE_NUMBER}`);
-        const status = (issue.assignees ?? []).length > 0 ? 'In Progress' : 'Todo';
+        const status = (issue.assignees ?? []).length > 0 ? 'In Progress' : 'Intake';
         await setStatus(ISSUE_NODE_ID, 'Issue', status);
       }
       break;
@@ -278,7 +291,15 @@ async function main() {
     }
 
     case 'issue.closed': {
-      await setStatus(ISSUE_NODE_ID, 'Issue', 'Done');
+      // Closing an issue is transport state, not proof of completion.
+      // Read labels to decide Done vs Cancelled per RFC-006 §5.3 and ADR
+      // 2026-06-11 Decision 3: only status:done or status:verifying labels
+      // (written by the verifier or an authorized human) warrant Done.
+      const closedIssue = await ghRest('GET', `/repos/${REPO}/issues/${ISSUE_NUMBER}`);
+      const closedLabels = (closedIssue.labels ?? []).map(l => l.name);
+      const terminal = terminalStatusFromLabels(closedLabels);
+      await setStatus(ISSUE_NODE_ID, 'Issue', terminal);
+      console.log(`[ok] #${ISSUE_NUMBER} closed → "${terminal}" (labels: ${closedLabels.filter(l => l.startsWith('status:')).join(', ') || 'none'})`);
       break;
     }
 
@@ -374,9 +395,11 @@ async function reconcile() {
   const repo = REPO;
   const status = await getStatusField();
   if (!status) { console.log('[skip] no Status field'); return; }
-  const todoOpt = await getOptionId('Todo');
+  const todoOpt = await getOptionId('Todo') ?? await getOptionId('Intake');
+  const intakeOpt = await getOptionId('Intake') ?? todoOpt;
   const inProgressOpt = await getOptionId('In Progress');
   const doneOpt = await getOptionId('Done');
+  const cancelledOpt = await getOptionId('Cancelled');
 
   const boardJson = exec(
     `gh project item-list ${PROJECT_NUMBER} --owner ${PROJECT_OWNER} --limit 1000 --format json`
@@ -427,15 +450,19 @@ async function reconcile() {
 
     let target = null;
     let targetOpt = null;
-    if (issueState === 'CLOSED' && boardStatus !== 'Done') {
-      target = 'Done'; targetOpt = doneOpt;
+    if (issueState === 'CLOSED') {
+      const terminal = terminalStatusFromLabels(labels);
+      if (boardStatus !== terminal) {
+        target = terminal;
+        targetOpt = terminal === 'Done' ? doneOpt : (cancelledOpt ?? doneOpt);
+      }
     } else if (issueState === 'OPEN' && boardStatus === 'Done') {
       if (labels.some(l => /^status:(wip|in_progress)$/.test(l))) {
         target = 'In Progress'; targetOpt = inProgressOpt;
       } else if (assigneeCount > 0) {
         target = 'In Progress'; targetOpt = inProgressOpt;
       } else {
-        target = 'Todo'; targetOpt = todoOpt;
+        target = 'Intake'; targetOpt = intakeOpt;
       }
     }
     if (!target || !targetOpt) continue;
