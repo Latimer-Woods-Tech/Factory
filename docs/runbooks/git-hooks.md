@@ -129,6 +129,23 @@ Wire it into `.claude/settings.json` (project-shared) or `.claude/settings.local
 
 This is **opt-in by the same logic as the pre-commit hook** — a safety net, not a gate. It's documented here rather than installed by default so you can evaluate whether it produces too many false positives in your specific multi-agent workflow before turning it on.
 
+## Worktree & merged-branch hygiene policy (RFC-006 Phase 0)
+
+Adopted 2026-06-11 per RFC-006 Phase 0. Governs local clones, agent worktrees, and remote branches.
+
+**Worktrees:**
+
+- A worktree whose branch is **merged and whose tree is clean** may be removed automatically (`git worktree remove`). No approval needed.
+- A worktree that is **dirty or whose branch is unmerged** is REPORTED but never deleted automatically — by any agent, sweep, or cleanup script. Uncommitted work is unrecoverable; deletion requires the human operator.
+- Agents finishing a task in an isolated worktree must commit and push BEFORE ending their session. An uncommitted worktree at session end is a defect (this policy exists because of a real loss: the original RFC-006 draft died in an unpushed worktree, 2026-06-10).
+
+**Remote branches:**
+
+- `claude/*`, `auto/*`, `matrix-sync/*`, and `supervisor/*` branches whose PR is merged or closed may be deleted automatically (GitHub's "Automatically delete head branches" + periodic sweep).
+- Unmerged remote branches older than 30 days are listed in the weekly governance checkpoint for manual review — never auto-deleted.
+
+**Recovery:** a deleted merged branch is always recoverable from the merge commit. A deleted dirty worktree is not. That asymmetry is the entire policy.
+
 ## Future iterations
 
 Possible additions, NOT in this PR:
