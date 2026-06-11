@@ -5,6 +5,7 @@ export const GENERATED_TARGETS = [
   { id: "prime-self.health", url: "https://api.selfprime.net/health", contains: "ok" },
   { id: "schedule-worker.health", url: "https://schedule.latwoodtech.work/health", contains: "ok" },
   { id: "video-cron.health", url: "https://video-cron.latwoodtech.work/health", contains: "ok" },
+  { id: "inbound-oracle.health", url: "https://inbound-oracle.latwoodtech.work/health", contains: "ok" },
   { id: "status-prober.health", url: "https://status.latwoodtech.work/health", contains: "ok" },
   { id: "admin-studio-staging.health", url: "https://api.admin.latimerwoods.dev/health", contains: "ok" },
   { id: "capricast-api-staging.health", url: "https://api.capricast.latimerwoods.dev/health", contains: "ok" },
