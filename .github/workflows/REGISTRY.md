@@ -81,6 +81,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
 | `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
+| `lifecycle-controller.yml` | issues, dispatch | RFC-006 Phase 1: lifecycle state machine enforcer — shadow mode until 2026-06-25 |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
 | `project-sync.yml` | issue_comment, issues, PR, schedule, dispatch | GitHub Projects v2 board sync |
 | `rfc-status-gate.yml` | PR | RFC-decision gate |
