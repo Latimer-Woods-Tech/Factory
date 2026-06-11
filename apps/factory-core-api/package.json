@@ -15,7 +15,7 @@
     "@latimer-woods-tech/logger": "file:../../packages/logger",
     "@latimer-woods-tech/monitoring": "file:../../packages/monitoring",
     "@latimer-woods-tech/neon": "file:../../packages/neon",
-    "hono": "^4.12.14",
+    "hono": "^4.12.21",
     "zod": "^3.23.8"
   },
   "devDependencies": {
