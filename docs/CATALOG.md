@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 454 |
+| total_docs | 456 |
 | canonical | 17 |
-| active | 389 |
+| active | 391 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -39,7 +39,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (389)
+## Active Docs (391)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -155,6 +155,7 @@
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
 | [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
 | [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | platform | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
+| [docs/decisions/2026-06-10-sell-phase-action-plan.md](decisions/2026-06-10-sell-phase-action-plan.md) | active | unverified | platform | unknown | 2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers |
 | [docs/decisions/2026-06-11-rfc-006-operating-decisions.md](decisions/2026-06-11-rfc-006-operating-decisions.md) | active | unverified | platform | unknown | 2026-06-11 — RFC-006 Required Operating Decisions |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
@@ -179,6 +180,7 @@
 | [docs/G2_PHASE_2_EXECUTION_PLAN.md](G2_PHASE_2_EXECUTION_PLAN.md) | active | unverified | platform | unknown | G2 Phase 2 Execution Plan — Aggregator HTTP Mocking Tests |
 | [docs/G2_PHASE_2_SUMMARY.md](G2_PHASE_2_SUMMARY.md) | active | unverified | platform | unknown | G2 Phase 2 Planning: Executive Summary |
 | [docs/GAP_REGISTER.md](GAP_REGISTER.md) | active | unverified | platform | unknown | Platform Gap Register |
+| [docs/handoffs/2026-06-11-stabilization-handoff.md](handoffs/2026-06-11-stabilization-handoff.md) | active | unverified | platform | unknown | Handoff: Stabilization-first work (worker collisions, UAT, sell-phase plan) |
 | [docs/IMPLEMENTATION_COMPLETE_SUMMARY.md](IMPLEMENTATION_COMPLETE_SUMMARY.md) | active | unverified | platform | unknown | Implementation Complete Summary |
 | [docs/IMPLEMENTATION_LAUNCH_CHECKLIST.md](IMPLEMENTATION_LAUNCH_CHECKLIST.md) | active | unverified | platform | unknown | Implementation Launch Checklist |
 | [docs/IMPLEMENTATION_MASTER_INDEX.md](IMPLEMENTATION_MASTER_INDEX.md) | active | unverified | platform | unknown | Implementation Master Index |

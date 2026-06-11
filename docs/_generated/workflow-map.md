@@ -15,7 +15,7 @@ source:
 
 # Factory Workflow Map
 
-**Registry hash:** `sha256:51941e325c6bf4b13f707f2ff6f88fe6d50e82b936323a4f0fe00ad21c8ad899`
+**Registry hash:** `sha256:a0208d6c319b9e5eb03d9d0207784c1e5b6eab94a7308b96ef9431c721feac13`
 
 ```mermaid
 flowchart TB
@@ -130,7 +130,6 @@ flowchart TB
   Reporting --> revenue_digest_yml["revenue-digest.yml"]
   Other --> reviewer_class_hints_yml["reviewer-class-hints.yml"]
   Other --> rfc_status_gate_yml["rfc-status-gate.yml"]
-  Other --> rfc006_baseline_capture_yml["rfc006-baseline-capture.yml"]
   Other --> rotate_admin_studio_tokens_yml["rotate-admin-studio-tokens.yml"]
   Other --> run_app_migrations_yml["run-app-migrations.yml"]
   Other --> run_migrations_yml["run-migrations.yml"]
@@ -141,7 +140,6 @@ flowchart TB
   Other --> set_jwt_secrets_yml["set-jwt-secrets.yml"]
   Other --> setup_app_secrets_yml["setup-app-secrets.yml"]
   Other --> setup_coh_observability_yml["setup-coh-observability.yml"]
-  Other --> setup_project_autoarchive_yml["setup-project-autoarchive.yml"]
   Other --> setup_project_status_options_yml["setup-project-status-options.yml"]
   Other --> setup_sentry_alerts_yml["setup-sentry-alerts.yml"]
   Quality --> smoke_admin_studio_yml["smoke-admin-studio.yml"]
