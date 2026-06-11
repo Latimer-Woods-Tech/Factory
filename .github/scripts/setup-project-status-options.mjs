@@ -50,7 +50,7 @@ async function main() {
               ... on ProjectV2SingleSelectField {
                 id
                 name
-                options { id name }
+                options { id name color description }
               }
             }
           }
@@ -78,16 +78,20 @@ async function main() {
 
   console.log(`[info] Adding ${missing.length} missing option(s): ${missing.map(o => o.name).join(', ')}`);
 
-  // 2. Build the complete options list: existing names + new entries.
-  // GitHub requires the full options array on update.
-  const existingOptions = (statusField.options ?? []).map(o => ({ name: o.name }));
+  // 2. Build the complete options list: existing entries (with their current
+  // color + description preserved — the API replaces the whole array, and
+  // omitting fields would reset them) + new entries.
+  const existingOptions = (statusField.options ?? []).map(o => ({
+    name: o.name,
+    color: o.color ?? 'GRAY',
+    description: o.description ?? '',
+  }));
   const newOptions = missing.map(o => ({ name: o.name, color: o.color, description: o.description }));
   const allOptions = [...existingOptions, ...newOptions];
 
   await gql(`
-    mutation($projectId: ID!, $fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
+    mutation($fieldId: ID!, $options: [ProjectV2SingleSelectFieldOptionInput!]!) {
       updateProjectV2Field(input: {
-        projectId: $projectId
         fieldId: $fieldId
         singleSelectOptions: $options
       }) {
@@ -100,7 +104,6 @@ async function main() {
       }
     }
   `, {
-    projectId: PROJECT_ID,
     fieldId: statusField.id,
     options: allOptions,
   });

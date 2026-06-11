@@ -15,7 +15,7 @@ source:
 
 # Factory Workflow Map
 
-**Registry hash:** `sha256:53a5617836c29b7bd21e7b7e997e0f0c4407f19e8325b30813bd6ff5594dec20`
+**Registry hash:** `sha256:a0208d6c319b9e5eb03d9d0207784c1e5b6eab94a7308b96ef9431c721feac13`
 
 ```mermaid
 flowchart TB
@@ -158,7 +158,6 @@ flowchart TB
   Other --> upload_sybil_music_yml["upload-sybil-music.yml"]
   Quality --> validate_sentry_auth_token_yml["validate-sentry-auth-token.yml"]
   Quality --> validate_service_registry_yml["validate-service-registry.yml"]
-  Other --> weekly_governance_checkpoint_yml["weekly-governance-checkpoint.yml"]
   Other --> workflow_budget_check_yml["workflow-budget-check.yml"]
   Other --> workflow_concurrency_check_yml["workflow-concurrency-check.yml"]
   Quality --> workflow_health_warden_yml["workflow-health-warden.yml"]
