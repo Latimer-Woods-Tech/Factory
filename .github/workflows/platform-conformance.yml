@@ -1,6 +1,8 @@
 name: Platform Conformance
 
 # Stage 1 M1 — Shadow mode. Scores are advisory; no merge gating until Stage 4.
+# RFC-006 §10: daily runs upload conformance snapshot as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10.
 on:
   schedule:
     - cron: '23 5 * * *' # daily 05:23 UTC
@@ -15,8 +17,7 @@ on:
         default: 'true'
 
 permissions:
-  contents: write
-  pull-requests: write # open auto-merge PR (direct push to main is blocked by branch protection)
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 concurrency:
   group: platform-conformance
@@ -84,27 +85,11 @@ jobs:
           fi
           python scripts/platform_conformance.py $args
 
-      - name: Open auto-merge PR for conformance snapshots
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          # Stage first; git diff against HEAD doesn't see new untracked files.
-          git add docs/conformance/ 2>/dev/null || true
-          if git diff --quiet --cached docs/conformance/; then
-            echo "No conformance changes to commit."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/conformance-snapshot-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(conformance): auto-update shadow scores ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(conformance): shadow scores ($DATE)" \
-            --body "Automated daily conformance scan output from \`platform-conformance.yml\`. Shadow mode — scores are advisory until Stage 4." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload conformance snapshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-snapshot-${{ github.run_id }}
+          path: docs/conformance/
+          retention-days: 30
+          if-no-files-found: warn
