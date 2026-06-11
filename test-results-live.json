@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "execution_date": null,
+    "api_base": "https://api.selfprime.net",
+    "results": []
+  },
+  "results": [
+    {
+      "test_id": "T1.0.0",
+      "endpoint": "C:/Program Files/Git/health",
+      "method": "GET",
+      "expected_result": "200 OK",
+      "actual_result": "200",
+      "http_status": "200",
+      "response_body": "{\"status\":\"ok\",\"service\":\"selfprime-api\",\"commit\":\"unknown\",\"time\":\"2026-06-11T15:39:59.517Z\"}",
+      "latency_ms": "12482",
+      "match": true,
+      "timestamp": "2026-06-11T15:39:33Z"
+    },
+    {
+      "test_id": "T6.0.0",
+      "endpoint": "C:/Program Files/Git/api/feature-flags",
+      "method": "GET",
+      "expected_result": "200 OK (or 401)",
+      "actual_result": "404",
+      "http_status": "404",
+      "response_body": "{\"error\":\"Not Found\",\"path\":\"/api/feature-flags\"}",
+      "latency_ms": "8220",
+      "match": false,
+      "timestamp": "2026-06-11T15:39:33Z"
+    },
+    {
+      "test_id": "T4.2.0",
+      "endpoint": "C:/Program Files/Git/api/products",
+      "method": "GET",
+      "expected_result": "200 OK",
+      "actual_result": "404",
+      "http_status": "404",
+      "response_body": "{\"error\":\"Not Found\",\"path\":\"/api/products\"}",
+      "latency_ms": "10759",
+      "match": false,
+      "timestamp": "2026-06-11T15:39:33Z"
+    },
+    {
+      "test_id": "T3.1.0",
+      "endpoint": "C:/Program Files/Git/api/profile/generate",
+      "method": "POST",
+      "expected_result": "401 without auth",
+      "actual_result": "401",
+      "http_status": "401",
+      "response_body": "{\"error\":\"Missing or invalid Authorization header\"}",
+      "latency_ms": "7350",
+      "match": true,
+      "timestamp": "2026-06-11T15:39:33Z"
+    },
+    {
+      "test_id": "T2.1.0",
+      "endpoint": "C:/Program Files/Git/api/charts",
+      "method": "POST",
+      "expected_result": "401 without auth",
+      "actual_result": "404",
+      "http_status": "404",
+      "response_body": "{\"error\":\"Not Found\",\"path\":\"/api/charts\"}",
+      "latency_ms": "7855",
+      "match": false,
+      "timestamp": "2026-06-11T15:39:33Z"
+    }
+  ]
+}

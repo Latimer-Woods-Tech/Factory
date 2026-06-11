@@ -1,0 +1,252 @@
+{
+  "metadata": {
+    "test_suite": "HumanDesign Comprehensive Logic & Routing Test",
+    "app": "selfprime",
+    "live_url": "https://selfprime.net/?start=1",
+    "plan_document": "docs/HUMANDESIGN_COMPREHENSIVE_TEST_PLAN.md",
+    "results_document": "docs/HUMANDESIGN_TEST_RESULTS.md",
+    "execution_start": "2026-06-11T00:00:00Z",
+    "execution_end": null,
+    "total_tests": 129,
+    "tests_executed": 0,
+    "tests_passed": 0,
+    "tests_failed": 0,
+    "tests_pending": 129
+  },
+  "test_categories": {
+    "user_signup_auth": {
+      "name": "User Signup & Authentication",
+      "count": 14,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 14
+      }
+    },
+    "chart_calculation": {
+      "name": "Chart Calculation Flow",
+      "count": 11,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 11
+      }
+    },
+    "profile_generation": {
+      "name": "Profile Generation (Oracle)",
+      "count": 12,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 12
+      }
+    },
+    "tier_subscription": {
+      "name": "Tier & Subscription Flow",
+      "count": 16,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 16
+      }
+    },
+    "practitioner_features": {
+      "name": "Practitioner Features",
+      "count": 11,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 11
+      }
+    },
+    "feature_flags": {
+      "name": "Feature Flags",
+      "count": 23,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 23
+      }
+    },
+    "daily_engagement": {
+      "name": "Daily Engagement & Streaks",
+      "count": 9,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 9
+      }
+    },
+    "data_content": {
+      "name": "Data & Content Features",
+      "count": 16,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 16
+      }
+    },
+    "referral_promo": {
+      "name": "Referral & Promotions",
+      "count": 8,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 8
+      }
+    },
+    "error_handling": {
+      "name": "Error Handling & Edge Cases",
+      "count": 9,
+      "tests": [],
+      "summary": {
+        "passed": 0,
+        "failed": 0,
+        "pending": 9
+      }
+    }
+  },
+  "test_result_template": {
+    "test_id": "T1.1.1",
+    "category": "user_signup_auth",
+    "subcategory": "New user signup",
+    "scenario": "New user signup (email)",
+    "timestamp": null,
+    "status": "PENDING",
+    "input": {
+      "email": null,
+      "password": null,
+      "additional_params": {}
+    },
+    "expected_result": "Description of what should happen",
+    "actual_result": null,
+    "http_status": null,
+    "response_headers": {},
+    "response_body": {},
+    "side_effects": {
+      "db_changes": [],
+      "events_fired": [],
+      "notifications_sent": [],
+      "api_calls_made": []
+    },
+    "performance": {
+      "latency_ms": null,
+      "cold_start": false,
+      "cached": false
+    },
+    "match": null,
+    "match_notes": "What did/didn't match expected",
+    "error_message": null,
+    "screenshot_urls": [],
+    "priority": "NORMAL",
+    "tags": [],
+    "notes": "Any additional observations",
+    "follow_up_tests": []
+  },
+  "known_issues": [
+    {
+      "issue_id": "KI-001",
+      "test_ids": ["T4.2.2"],
+      "title": "Checkout disabled in ACS feed",
+      "description": "Production ACS has disable_checkout=true, blocking all external agent checkouts",
+      "source": "docs/kpis/humandesign.md line 68",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "expected_behavior": "Users can proceed to checkout",
+      "actual_behavior": "Checkout unavailable or fails silently",
+      "impact": "Zero ACS revenue; feature dead code"
+    },
+    {
+      "issue_id": "KI-002",
+      "test_ids": ["T3.1.2"],
+      "title": "LLM synthesis latency unknown, may exceed 5s target",
+      "description": "Profile generation latency SLA not monitored; likely >5s on cold starts",
+      "source": "docs/kpis/humandesign.md line 77",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "expected_behavior": "p95 latency < 5s",
+      "actual_behavior": "Unknown; cold starts likely exceed target",
+      "impact": "Poor user experience, possible 30s+ timeouts"
+    },
+    {
+      "issue_id": "KI-003",
+      "test_ids": ["T6.1.2"],
+      "title": "Achievements CCR cron triggers unknown timing",
+      "description": "Daily CCR routine trig_01Bwsi2Ksn8yQ9MgVvgRSSwR timing not documented",
+      "source": "docs/kpis/humandesign.md line 62",
+      "severity": "LOW",
+      "status": "OPEN",
+      "expected_behavior": "Achievements computed and awarded daily",
+      "actual_behavior": "Unknown if cron fires, when, or if staleness is detected",
+      "impact": "Achievement unlock timing unpredictable"
+    },
+    {
+      "issue_id": "KI-004",
+      "test_ids": ["T8.1.3", "T8.2.3", "T8.3.3", "T8.4.3", "T9.2.3", "T9.1.5"],
+      "title": "Missing trackEvent on 50+ features",
+      "description": "Diary, dream analysis, messaging, testimonials, promo code, referral click-through don't fire analytics events",
+      "source": "docs/kpis/humandesign.md line 91",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "expected_behavior": "All user actions tracked via trackEvent()",
+      "actual_behavior": "54 features fire zero events; ~40% of codebase unmonitored",
+      "impact": "Complete analytics blind spot on major features; no conversion measurement"
+    },
+    {
+      "issue_id": "KI-005",
+      "test_ids": ["T6.2", "T6.3", "T6.4", "T6.5", "T6.6"],
+      "title": "5 of 7 feature flags OFF; features hidden",
+      "description": "CLUSTERS_VISIBLE, DIVINATION_ENABLED, ONE_TIME_PURCHASES_VISIBLE, EXPERIMENTS_ENABLED all OFF",
+      "source": "docs/kpis/humandesign.md lines 62-68",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "expected_behavior": "Feature flags have gradual-rollout instrumentation; conversion measured",
+      "actual_behavior": "Flags OFF; features built but not shipped; no rollout measurement",
+      "impact": "ONE_TIME_PURCHASES = $500-2K/month hidden revenue; CLUSTERS/DIVINATION = engagement upside capped"
+    }
+  ],
+  "findings": {
+    "logic_errors": [],
+    "routing_errors": [],
+    "missing_validations": [],
+    "state_management_issues": [],
+    "race_conditions": [],
+    "analytics_gaps": [],
+    "performance_issues": [],
+    "security_issues": []
+  },
+  "summary_by_severity": {
+    "CRITICAL": {
+      "count": 0,
+      "issues": []
+    },
+    "HIGH": {
+      "count": 1,
+      "issues": ["KI-001"]
+    },
+    "MEDIUM": {
+      "count": 3,
+      "issues": ["KI-002", "KI-004", "KI-005"]
+    },
+    "LOW": {
+      "count": 1,
+      "issues": ["KI-003"]
+    }
+  },
+  "opus_review": {
+    "status": "PENDING",
+    "review_date": null,
+    "findings": null,
+    "recommendations": null,
+    "fix_priority": null
+  }
+}

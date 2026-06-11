@@ -1,0 +1,210 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                   HumanDesign Testing Quick Start                          ║
+║                                                                            ║
+║           Systematically test selfprime.net for logic routing errors       ║
+║           Then Opus reviews results to identify root causes                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📚 DOCUMENT NAVIGATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+THIS FILE (QUICK START)
+  → You are here. Use for navigation only.
+
+🎯 START HERE
+  📄 HUMANDESIGN_TESTING_README.md
+     Overview, timeline, 5 critical issues, what gets tested
+     Read this first (10 min)
+
+📋 UNDERSTAND THE TESTS
+  📄 docs/HUMANDESIGN_COMPREHENSIVE_TEST_PLAN.md
+     All 129 tests with input/expected/steps
+     Scan section headers for coverage (5 min)
+
+🚀 EXECUTE TESTS
+  📄 docs/HUMANDESIGN_TEST_EXECUTION_GUIDE.md
+     Step-by-step Phase 1-10 execution instructions
+     Follow this when running tests (10-15 hours)
+
+📊 RECORD RESULTS
+  📄 docs/HUMANDESIGN_TEST_RESULTS.md
+     Human-readable results template (Markdown)
+     Fill in as you execute tests
+
+  📄 docs/HUMANDESIGN_TEST_RESULTS.json
+     Structured results template (JSON)
+     Fill in for Opus analysis
+
+🏗️ UNDERSTAND THE PROCESS
+  📄 docs/HUMANDESIGN_TESTING_ORCHESTRATION.md
+     Timeline, Opus review process, success criteria
+     Read when you need process clarity (15 min)
+
+
+🎯 YOUR ROLE (Executor)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Day 1-5: Run Tests
+  → Open https://selfprime.net/?start=1
+  → Follow docs/HUMANDESIGN_TEST_EXECUTION_GUIDE.md (Phase 1-10)
+  → Record results in JSON + Markdown as you go
+  
+Day 6: Export for Opus
+  → Fill in docs/HUMANDESIGN_TEST_RESULTS.json completely
+  → Ensure all 129 tests have actual_result + match recorded
+  
+Day 7: Opus Review
+  → Opus analyzes JSON results
+  → Identifies logic routing errors
+  → Creates GitHub issues with fixes
+
+
+🚨 CRITICAL ISSUES TO WATCH FOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test T4.2.2 (Checkout disabled)
+  → Users cannot upgrade; ACS = zero revenue
+  → Look for: error_message, disabled form, 403 response
+
+Test T3.1.2 (LLM latency)
+  → Target: p95 < 5 seconds
+  → Measure: time profile generation 5 times, calculate p95
+  → Look for: timeouts, slow starts
+
+Tests T8.1.3, T8.2.3, T8.3.3, T8.4.3 (Missing trackEvent)
+  → Check DevTools Console & Network for trackEvent calls
+  → Expected: NONE (known issue: these don't fire)
+  → Confirm they don't fire (validates known issue)
+
+Test T6.1-T6.6 (Feature flags)
+  → 5 of 7 flags are OFF in production
+  → Verify: UI gates, API gates, feature availability changes with flag
+
+
+✅ QUICK CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before Testing
+  ☐ Create test accounts (free, paid, practitioner)
+  ☐ Have Chrome DevTools open
+  ☐ Read first 3 documents
+  ☐ Understand 5 critical issues
+
+During Testing
+  ☐ Record: input, expected, actual, HTTP status, latency
+  ☐ Note: side effects (DB changes, events, notifications)
+  ☐ Save: screenshots of errors
+  ☐ Verify: 5 critical issues specifically
+
+After Testing
+  ☐ Fill in JSON: all 129 tests
+  ☐ Update counts: pass/fail summary
+  ☐ Classify: findings (logic error, routing, missing tracking, etc.)
+  ☐ Export: JSON to Opus
+
+
+📞 DOCUMENT PURPOSES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HUMANDESIGN_TESTING_README.md
+  Purpose: Overview, context, what's been created
+  Length: 5 min read
+  When to use: Orientation
+
+HUMANDESIGN_COMPREHENSIVE_TEST_PLAN.md
+  Purpose: All 129 tests with tables
+  Length: 30 min skim, reference during execution
+  When to use: Understanding test scope, during execution
+
+HUMANDESIGN_TEST_EXECUTION_GUIDE.md
+  Purpose: Step-by-step how to run each phase
+  Length: Follow in real-time, 10-15 hours total
+  When to use: Actually running tests
+
+HUMANDESIGN_TEST_RESULTS.md
+  Purpose: Record results in human-readable format
+  Length: Grows as you add results
+  When to use: Recording findings, summary tables
+
+HUMANDESIGN_TEST_RESULTS.json
+  Purpose: Structured data for Opus analysis
+  Length: Grows as you add results
+  When to use: Final export to Opus
+
+HUMANDESIGN_TESTING_ORCHESTRATION.md
+  Purpose: Full process, timeline, Opus workflow
+  Length: 15 min read
+  When to use: Understanding big picture, troubleshooting
+
+
+💡 TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. DevTools Console Magic
+   Paste this to monitor all trackEvent calls:
+   
+   window.originalFetch = window.fetch;
+   window.fetch = function(...args) {
+     if (args[0].includes('track') || args[0].includes('event'))
+       console.log('EVENT:', args[0], args[1]);
+     return window.originalFetch(...args);
+   };
+
+2. Database Verification
+   psql "$NEON_CONNECTION_STRING" -c "SELECT * FROM analytics_events ORDER BY created_at DESC LIMIT 5"
+   
+3. Feature Flag Toggle (backend)
+   psql "$DB" -c "UPDATE feature_flags SET enabled=true WHERE flag_name='CLUSTERS_VISIBLE'"
+   
+4. Screenshots
+   Save any error screens with: Cmd+Shift+5 (Mac) or Win+Shift+S (Windows)
+   Name them: T4.2.2_checkout_error.png (test ID + description)
+
+
+⏱️ REALISTIC TIMELINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Day 1 (4 hours)
+  Phase 1: Auth tests (14 tests, 2 hours)
+  Phase 2: Chart tests (11 tests, 2 hours)
+
+Day 2 (4 hours)
+  Phase 3: Profile tests (12 tests, 2 hours) ← FOCUS: T3.1.2 latency
+  Phase 4: Subscription tests (16 tests, 2 hours) ← FOCUS: T4.2.2 checkout
+
+Day 3 (4 hours)
+  Phase 5: Practitioner tests (11 tests, 1.5 hours)
+  Phase 6: Feature flag tests (23 tests, 2.5 hours) ← FOCUS: All 7 flags
+
+Day 4 (3 hours)
+  Phase 7: Engagement tests (9 tests, 1 hour)
+  Phase 8: Data/content tests (16 tests, 1.5 hours) ← FOCUS: T8.X missing trackEvent
+  Phase 9: Referral tests (8 tests, 1 hour) ← FOCUS: T9.1.5 click tracking
+
+Day 5 (2 hours)
+  Phase 10: Error handling tests (9 tests, 1 hour)
+  Consolidation & JSON export (1 hour)
+
+Day 6: Rest or prep for Opus
+
+Day 7: Opus review starts
+
+
+🎯 SUCCESS = 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+129 tests executed ✓
+Results recorded in JSON ✓
+Opus identifies logic errors ✓
+GitHub issues created ✓
+Fixes deployed ✓
+
+
+Need help? See the full orchestration doc:
+→ docs/HUMANDESIGN_TESTING_ORCHESTRATION.md
+
+Ready to start? Open:
+→ HUMANDESIGN_TESTING_README.md
+→ docs/HUMANDESIGN_TEST_EXECUTION_GUIDE.md Phase 1
+
+╚════════════════════════════════════════════════════════════════════════════╝
