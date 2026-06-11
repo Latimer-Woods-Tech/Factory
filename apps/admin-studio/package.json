@@ -23,7 +23,7 @@
     "@latimer-woods-tech/studio-core": "file:../../packages/studio-core",
     "@neondatabase/serverless": "^0.10.4",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.18",
+    "hono": "4.12.25",
     "stripe": "^17.0.0"
   },
   "devDependencies": {
