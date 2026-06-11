@@ -80,8 +80,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `dead-mans-switch.yml` | schedule, dispatch | Liveness signal |
 | `dependabot-security-auto-merge.yml` | pull_request_target | Auto-merges Dependabot security + patch PRs after CI green |
 | `factory-status-dashboard.yml` | schedule (hourly), dispatch | Status writeup → STATE.md |
-| `label-sync.yml` | issues, schedule, dispatch | Label reconciliation |
-| `lifecycle-controller.yml` | issues, dispatch | RFC-006 Phase 1: lifecycle state machine enforcer — shadow mode until 2026-06-25 |
+| `label-sync.yml` | schedule, dispatch | Label reconciliation |
 | `memory-single-writer.yml` | PR | Memory file write-coordination |
 | `project-sync.yml` | issue_comment, issues, PR, schedule, dispatch | GitHub Projects v2 board sync |
 | `rfc-status-gate.yml` | PR | RFC-decision gate |
@@ -113,27 +112,26 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `workflow-concurrency-check.yml` | PR | Requires `concurrency:` on new/changed workflows |
 | `workflow-health-warden.yml` | schedule, dispatch | Tier-based workflow SLO enforcement (this registry's consumer) |
 
-### T3 — Informational (17)
+### T3 — Informational (16)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
 | `bootstrap-completion-tracker-private.yml` | dispatch | Bootstrap helper — should likely be retired post-Phase 4 |
-| `cost-observability.yml` | schedule (daily), dispatch | Cost digest → artifact (snapshot PR retired per RFC-006 §10) |
-| `doc-freshness-audit.yml` | schedule (weekly), dispatch | Doc staleness check — writes issues, no PR |
+| `cost-observability.yml` | schedule (daily), dispatch | Cost digest → snapshot PR |
+| `doc-freshness-audit.yml` | schedule (weekly), dispatch | Doc staleness check |
 | `docs-health.yml` | PR, push, schedule, dispatch | Documentation control-plane catalog, self-check, registry, link, and freshness health |
-| `flaky-check-report.yml` | schedule (weekly), dispatch | Flaky-test summary — writes issues, no PR |
-| `generate-scorecard.yml` | schedule (weekly), dispatch | Scorecard summary → artifact (snapshot PR retired per RFC-006 §10) |
-| `generate-state.yml` | push, schedule (daily), dispatch | STATE.md snapshot generator → artifact (snapshot PR retired per RFC-006 §10) |
-| `launch-readiness.yml` | schedule (daily), dispatch | Launch readiness scorecard → artifact (snapshot PR retired per RFC-006 §10) |
-| `morning-digest.yml` | schedule (daily), dispatch | Morning digest → artifact (snapshot PR retired per RFC-006 §10) |
-| `offsite-mirror.yml` | schedule (daily), dispatch | Repo mirror to off-site — no PR |
-| `platform-conformance.yml` | schedule (daily), dispatch | Conformance shadow scores → artifact (snapshot PR retired per RFC-006 §10) |
-| `pr-queue-digest.yml` | schedule (weekdays), dispatch | PR queue digest — Pushover only, no PR |
-| `revenue-digest.yml` | schedule (daily), dispatch | Revenue + reliability digest → artifact (snapshot PR retired per RFC-006 §10) |
-| `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker → artifact (snapshot PR retired per RFC-006 §10) |
-| `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration — stable branch PR (one PR, not daily timestamped) per RFC-006 §10 |
-| `generate-founder-stats.yml` | schedule (hourly), dispatch | Founder stats + platform data — stable-per-day PR kept (triggers deploy-latwoodtech-web); raw stats also artifact |
-| `weekly-governance-checkpoint.yml` | schedule (Monday 08:00 UTC), dispatch | Weekly governance checkpoint — replaces daily snapshot PRs (RFC-006 §10) |
+| `flaky-check-report.yml` | schedule (weekly), dispatch | Flaky-test summary |
+| `generate-scorecard.yml` | schedule (weekly), dispatch | Scorecard summary |
+| `generate-state.yml` | push, schedule (daily), dispatch | STATE.md snapshot generator |
+| `launch-readiness.yml` | schedule (daily), dispatch | Launch readiness scorecard snapshot |
+| `morning-digest.yml` | schedule (daily), dispatch | Morning digest snapshot |
+| `offsite-mirror.yml` | schedule (daily), dispatch | Repo mirror to off-site |
+| `platform-conformance.yml` | schedule (daily), dispatch | Conformance shadow scores → snapshot PR |
+| `pr-queue-digest.yml` | schedule (weekdays), dispatch | PR queue digest |
+| `revenue-digest.yml` | schedule (daily), dispatch | Revenue + reliability digest |
+| `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker |
+| `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
+| `generate-founder-stats.yml` | schedule, dispatch | Founder stats digest |
 
 ### TR — Reusable (15)
 
@@ -191,8 +189,6 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `pr-size-warning.yml` | Demoted from T2 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
 | `reviewer-class-hints.yml` | Demoted from T2 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
 | `secret-contract-preflight.yml` | Demoted from T1 2026-06-11 — consolidated into `pr-advisory-sweep.yml`; dispatch-only shell retained |
-| `rfc006-baseline-capture.yml` | One-time RFC-006 Phase 0 baseline capture — writes docs/rfc/RFC-006-baseline-metrics.md |
-| `setup-project-autoarchive.yml` | Bootstrap: enable Project auto-archive for Done items (30 days); prints manual UI step since API not available |
 
 ---
 
@@ -204,24 +200,6 @@ Pre-flagged for consolidation review — not deleted yet, but new additions in t
 - **Bootstrap helpers** (2 workflows): `bootstrap-completion-tracker-private`, `bootstrap-publish` — review post-Phase 4
 - `_hello-reusable.yml` — example file; retire if unused
 - **Consolidated advisory shells** (4 workflows): `pr-quality-check`, `pr-size-warning`, `reviewer-class-hints`, `secret-contract-preflight` — logic absorbed by `pr-advisory-sweep.yml`; delete shells after 30 days with no manual dispatch (flagged 2026-06-11)
-
-### Deprecated behaviors (RFC-006 §10 — flagged 2026-06-11)
-
-The following snapshot PR behaviors have been retired in favour of GitHub Actions artifacts:
-
-| Workflow | Deprecated behavior |
-|---|---|
-| `cost-observability.yml` | Daily `chore/cost-snapshot-*` branch + PR |
-| `generate-state.yml` | Daily `chore/state-snapshot-*` branch + PR |
-| `launch-readiness.yml` | Daily `chore/scorecard-snapshot-*` branch + PR |
-| `morning-digest.yml` | Daily `chore/morning-digest-*` branch + PR |
-| `revenue-digest.yml` | Daily `chore/revenue-snapshot-*` branch + PR |
-| `generate-scorecard.yml` | Weekly `chore/scorecard-snapshot-*` branch + PR |
-| `platform-conformance.yml` | Daily `chore/conformance-snapshot-*` branch + PR |
-| `track-kpis.yml` | Weekly `chore/kpi-snapshot-*` branch + PR |
-| `update-stack-manifest.yml` | Daily `chore/stack-manifest-*` timestamped branch + PR (replaced with stable `chore/stack-manifest` branch) |
-
-Durable weekly Git checkpoint is now handled by `weekly-governance-checkpoint.yml`.
 
 ---
 

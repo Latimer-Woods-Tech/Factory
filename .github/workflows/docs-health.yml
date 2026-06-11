@@ -38,4 +38,6 @@ jobs:
     with:
       repo_profile: factory
       tools_ref: ${{ github.sha }}
-      enforce_generated: true
+      # Generated catalogs describe the whole repository. Enforce them on
+      # mainline/scheduled runs so unrelated PRs are not blocked by global drift.
+      enforce_generated: ${{ github.event_name != 'pull_request' }}
