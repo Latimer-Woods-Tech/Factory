@@ -2,8 +2,8 @@
   "repo_key": "FA",
   "repo_name": "factory-admin-studio",
   "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-06-06T08:05:49.062724+00:00",
-  "cohesion": 73,
+  "timestamp": "2026-06-11T09:48:32.699499+00:00",
+  "cohesion": 71,
   "dimensions": [
     {
       "key": "stack",
@@ -266,7 +266,7 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 100,
+      "score": 75,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
@@ -280,7 +280,7 @@
         },
         {
           "name": "DSR endpoint hints (export + delete)",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {

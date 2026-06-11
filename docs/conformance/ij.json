@@ -1,19 +1,19 @@
 {
-  "repo_key": "HD",
-  "repo_name": "HumanDesign",
-  "repo_path": "Latimer-Woods-Tech/HumanDesign",
-  "timestamp": "2026-06-11T09:48:00.783951+00:00",
-  "cohesion": 53,
+  "repo_key": "IJ",
+  "repo_name": "ijustus",
+  "repo_path": "Latimer-Woods-Tech/ijustus",
+  "timestamp": "2026-06-11T09:49:23.377277+00:00",
+  "cohesion": 44,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 40,
+      "score": 80,
       "checks": [
         {
           "name": "wrangler.jsonc present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -23,7 +23,7 @@
         },
         {
           "name": "Hono in deps",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -42,26 +42,26 @@
       "key": "code_patterns",
       "title": "Code patterns",
       "weight": 15,
-      "score": 0,
+      "score": 80,
       "checks": [
         {
           "name": "@latimer-woods-tech/logger in deps",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "@latimer-woods-tech/errors in deps",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "@latimer-woods-tech/monitoring in deps",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "No console.log in src/",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -75,7 +75,7 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 100,
+      "score": 40,
       "checks": [
         {
           "name": "vitest.config present",
@@ -84,17 +84,17 @@
         },
         {
           "name": "playwright.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Smoke tier present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 40,
+      "score": 0,
       "checks": [
         {
           "name": "Sentry import",
@@ -122,12 +122,12 @@
         },
         {
           "name": "Sourcemap upload step",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "SLO doc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -141,21 +141,21 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 80,
+      "score": 20,
       "checks": [
         {
           "name": "CodeQL workflow present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "npm audit step in CI",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "No NPM_TOKEN in workflows",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -174,7 +174,7 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 67,
+      "score": 100,
       "checks": [
         {
           "name": "Migrations directory present",
@@ -184,11 +184,11 @@
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 12 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql, migrations/20260603_rls_app_role.sql, migrations/20260603_rls_defn_lookups.sql, migrations/20260603_rls_policies.sql, migrations/20260603_rls_policies_crossuser.sql, migrations/20260603_rls_policies_writes.sql, migrations/20260604_add_comped_tier.sql, migrations/20260604_notifications_inbox.sql, migrations/20260610_directory_waitlist.sql, migrations/20260610_light_up_features.sql, migrations/20260610_share_token.sql"
+          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): src/db/migrations/0000_gifted_praxagora.sql"
         },
         {
           "name": "Numbered file naming",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -197,11 +197,11 @@
       "key": "workflows",
       "title": "Workflows",
       "weight": 10,
-      "score": 33,
+      "score": 67,
       "checks": [
         {
           "name": "\u22645 workflow files",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -220,11 +220,11 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 67,
+      "score": 33,
       "checks": [
         {
           "name": "CHANGELOG.md present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -243,11 +243,11 @@
       "key": "performance",
       "title": "Performance",
       "weight": 10,
-      "score": 67,
+      "score": 0,
       "checks": [
         {
           "name": "p95 budgets declared",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -257,7 +257,7 @@
         },
         {
           "name": "Synthetic / smoke workflow",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -286,7 +286,7 @@
         {
           "name": "Migration PII columns documented",
           "passed": true,
-          "detail": "WARN: 1 existing migration PII column(s) not documented in PII_INVENTORY.md (debt \u2014 not blocking): migrations/20260610_directory_waitlist.sql: email"
+          "detail": ""
         }
       ]
     }

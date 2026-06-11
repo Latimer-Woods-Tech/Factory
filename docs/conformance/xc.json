@@ -2,8 +2,8 @@
   "repo_key": "XC",
   "repo_name": "xico-city",
   "repo_path": "Latimer-Woods-Tech/xico-city",
-  "timestamp": "2026-06-06T08:06:27.722111+00:00",
-  "cohesion": 51,
+  "timestamp": "2026-06-11T09:49:01.275365+00:00",
+  "cohesion": 57,
   "dimensions": [
     {
       "key": "stack",
@@ -61,12 +61,12 @@
         },
         {
           "name": "No console.log in src/",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Typed Env bindings",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -108,16 +108,16 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 0,
+      "score": 60,
       "checks": [
         {
           "name": "Sentry import",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -132,7 +132,7 @@
         },
         {
           "name": "Structured log fields",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
