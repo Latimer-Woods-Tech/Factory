@@ -53,11 +53,11 @@ automation_denylist: []
 
 workers:
   - id: prime-self
-    name: prime-self                                       # legacy worker name retained in registry; live repo is HumanDesign
+    name: prime-self-api                                   # live Selfprime API worker (zone routes api.selfprime.net/* + selfprime.net/api/*); live repo is HumanDesign
     health_state: live
     repo: Latimer-Woods-Tech/HumanDesign
     url: https://api.selfprime.net                         # canonical public URL (branded custom domain)
-    workers_dev_url: https://prime-self.adrper79.workers.dev  # ⚠️ STALE/HIJACKED 2026-06-10: this worker's code was overwritten by a misnamed inbound-oracle production deploy (env.production.name was "prime-self"); it now serves inbound-oracle. Live API worker is `prime-self-api` (zone routes api.selfprime.net/* + selfprime.net/api/*). Do not probe or bind to `prime-self`. Stale worker pending human-approved deletion — it still holds the old production secret set.
+    workers_dev_url: null                                  # ⚠️ the legacy `prime-self` worker was hijacked by a misnamed inbound-oracle deploy (2026-06-10) and DELETED with operator approval 2026-06-11 (verified: prime-self.adrper79.workers.dev → 404, api.selfprime.net → 200). Never reuse the name "prime-self" for any worker.
     custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
     custom_domain_status: attached                         # CF custom domain confirmed live 2026-05-08
     health_endpoint: /health
@@ -176,11 +176,11 @@ workers:
     optional_secrets:
       - VERTEX_ACCESS_TOKEN                                # short-lived; empty = fast tier only
     notes: >
-      NEVER set env.production.name to "prime-self" — that name belongs to the
+      NEVER set env.production.name to "prime-self" — that name belonged to the
       legacy Selfprime API worker. A misnamed deploy before 2026-06-10 overwrote
-      that worker's code; the stale `prime-self` worker still exists (serving
-      inbound-oracle code, holding the old Selfprime secret set) and is pending
-      human-approved deletion.
+      that worker's code; the stale `prime-self` worker (which had been serving
+      inbound-oracle code while holding the old Selfprime secret set) was deleted
+      with operator approval on 2026-06-11.
 
   - id: synthetic-monitor
     name: synthetic-monitor                                # matches apps/synthetic-monitor/wrangler.jsonc `name`

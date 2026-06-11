@@ -11,9 +11,6 @@
       "*/5 * * * *"
     ]
   },
-  "flagship": {
-    "binding": "FLAGS"
-  },
   "d1_databases": [
     {
       "binding": "FLAG_TELEMETRY",
