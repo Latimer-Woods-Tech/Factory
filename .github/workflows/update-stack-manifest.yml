@@ -4,6 +4,10 @@ name: Update STACK Manifest
 # - Every successful publish (workflow_run of Publish Package)
 # - Manual dispatch
 # - Daily safety net (catches missed updates if workflow_run fires before main is updated)
+#
+# RFC-006 §10 special case: STACK.md is a human-readable reference doc, not
+# telemetry. The commit/PR is kept but uses a stable branch (chore/stack-manifest)
+# instead of daily-timestamped branches, so only one PR accumulates at a time.
 on:
   workflow_run:
     workflows: ['Publish Package']
@@ -45,7 +49,10 @@ jobs:
       - name: Run update-stack-manifest.js
         run: node scripts/update-stack-manifest.js
 
-      - name: Open auto-merge PR if STACK.md changed
+      # RFC-006 §10 special case: STACK.md is a reference doc — keep the Git
+      # commit, but use a stable branch (no daily timestamp) so only one PR
+      # accumulates. Reruns update the existing PR rather than opening new ones.
+      - name: Open or update auto-merge PR if STACK.md changed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -56,15 +63,37 @@ jobs:
             exit 0
           fi
           DATE=$(date -u +%F)
-          BRANCH="chore/stack-manifest-$DATE-$(date -u +%H%M)"
+          BRANCH="chore/stack-manifest"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(stack): auto-update STACK.md package versions ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(stack): auto-update STACK.md ($DATE)" \
-            --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`)." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+          git add docs/STACK.md
+          if git diff --cached --quiet docs/STACK.md; then
+            echo "Existing STACK.md branch already contains this content."
+          else
+            git commit -m "chore(stack): auto-update STACK.md package versions ($DATE)"
+            git push --force-with-lease --set-upstream origin "$BRANCH"
+          fi
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing STACK.md PR #$EXISTING_PR."
+            gh pr edit "$EXISTING_PR" \
+              --title "chore(stack): auto-update STACK.md ($DATE)" \
+              --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`). Stable branch — reruns update this PR instead of opening new ones."
+            gh pr merge --auto --squash "$EXISTING_PR" || true
+          else
+            gh pr create \
+              --title "chore(stack): auto-update STACK.md ($DATE)" \
+              --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`). Stable branch — reruns update this PR instead of opening new ones." \
+              --label automation \
+              --label documentation \
+              --label auto-merge
+          fi
