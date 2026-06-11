@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-07
+last_generated: 2026-06-11
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -15,7 +15,7 @@ source:
 
 # Factory Workflow Map
 
-**Registry hash:** `sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343`
+**Registry hash:** `sha256:a0208d6c319b9e5eb03d9d0207784c1e5b6eab94a7308b96ef9431c721feac13`
 
 ```mermaid
 flowchart TB
@@ -107,9 +107,11 @@ flowchart TB
   Other --> mirror_org_secrets_to_dependabot_yml["mirror-org-secrets-to-dependabot.yml"]
   Reporting --> morning_digest_yml["morning-digest.yml"]
   Other --> offsite_mirror_yml["offsite-mirror.yml"]
+  Other --> opportunity_scan_yml["opportunity-scan.yml"]
   Other --> package_integration_yml["package-integration.yml"]
   Other --> platform_conformance_yml["platform-conformance.yml"]
   Other --> policy_drift_guard_yml["policy-drift-guard.yml"]
+  Other --> pr_advisory_sweep_yml["pr-advisory-sweep.yml"]
   Quality --> pr_quality_check_yml["pr-quality-check.yml"]
   Reporting --> pr_queue_digest_yml["pr-queue-digest.yml"]
   Other --> pr_review_yml["pr-review.yml"]
@@ -138,6 +140,7 @@ flowchart TB
   Other --> set_jwt_secrets_yml["set-jwt-secrets.yml"]
   Other --> setup_app_secrets_yml["setup-app-secrets.yml"]
   Other --> setup_coh_observability_yml["setup-coh-observability.yml"]
+  Other --> setup_project_status_options_yml["setup-project-status-options.yml"]
   Other --> setup_sentry_alerts_yml["setup-sentry-alerts.yml"]
   Quality --> smoke_admin_studio_yml["smoke-admin-studio.yml"]
   Quality --> smoke_prime_self_yml["smoke-prime-self.yml"]
