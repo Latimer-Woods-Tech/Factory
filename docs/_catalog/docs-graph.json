@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 448,
+    "total_docs": 452,
     "canonical": 17,
-    "active": 383,
+    "active": 387,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -57,7 +57,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343",
+      "content_hash": "sha256:00d046951b65e648bb22d5af12a4300478495108a50f74eb0541925347591ab7",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -374,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:fc26cdaf61b16f542cc20878f354c11240864b1a4765f611dfe554e75562e882",
+      "content_hash": "sha256:459fa81c4bd8e4ac0e7cecb3558815b77bdf710e58d8bbfd487dc9ba51276a87",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a21573b4f5f511544cb80b85f17c19f601bd03ced7deb1a934fd47640b27f600",
+      "content_hash": "sha256:12c86d241781104ae50f3f0f2c8a86ab0ca74794d45ae924079328a6caed3479",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:54a777ec60df60456642bfca77da5d9c530eb9ace347d396eaf30dc53d942e96",
+      "content_hash": "sha256:b4311a73e89a9afe4f40c3acb8947ffc84f7b19428c303e5ebd0692315784c44",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:289c846fec2adca92590f791f3a1280c80ea35a96f0c4f393647cc01cb1c1382",
+      "content_hash": "sha256:546a01dcbef474da57ead34bfba512322e2e4fa7859bcfe682e0b0440f63a136",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2742,6 +2742,27 @@
       "errors": []
     },
     {
+      "path": "docs/COMPLIANCE_CHECKLIST.md",
+      "title": "New-Repo Compliance Checklist",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4d2d5463aca33d5c8e9d128e259ac06d5f687c76c1046d0548ba12017bb76774",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/CONFIG_NORMALIZATION_AUDIT.md",
       "title": "W360-034 Configuration Normalization Audit & Playbook",
       "status": "active",
@@ -3134,7 +3155,28 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:73ccedd8abd6da4bc954d35f97ee77ec338f54b36fc79482efd393362ee0983c",
+      "content_hash": "sha256:21d6367475fb6a5d989d0ee1f815facbbab2a0d119b662a2ec42db13efd7d3d2",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/decisions/2026-06-11-rfc-006-operating-decisions.md",
+      "title": "2026-06-11 — RFC-006 Required Operating Decisions",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:85de2e586e67f1e16efde5bad443fac8ddca9482c38cc522c92bdb153a4a69c7",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -3706,7 +3748,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1b6fce7b1e728053f97d47d2138470e31544acf7b9826ec540d55707a5cb2c2c",
+      "content_hash": "sha256:b4458738d8f6a51ae8186a7a8fcd19faea006ace2c3e18d75ab81cefb8ff4f76",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6200,6 +6242,27 @@
       "errors": []
     },
     {
+      "path": "docs/planning/factory-network-layer.md",
+      "title": "Factory Network Layer — Design & Build Plan",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5b4e4e9f30437379704803c96945a19577b5779ba63df509490c0709482d9ed3",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/PLATFORM_STANDARDS.md",
       "title": "Platform Standards — Latimer-Woods-Tech",
       "status": "active",
@@ -6212,7 +6275,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:4db3bbb264ffe41b2a04a300b67b532d9d55de6f492e1c1b673097ec18973545",
+      "content_hash": "sha256:7dfb13281737614cc025bb4215292b7ebdb7b0b5a12f859c8c3a4aa688100e9c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6729,6 +6792,27 @@
       "errors": []
     },
     {
+      "path": "docs/rfc/RFC-006-automation-flow-operating-model.md",
+      "title": "RFC-006: Cohesive Automation Flow Operating Model",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:bec738f7919adae14ce17205d26118293cd97e3afcec87ee326f917629537312",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/ROADMAP.md",
       "title": "Platform Roadmap",
       "status": "active",
@@ -7182,7 +7266,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:3595a41a9de879adac41c59b1bbc624c4e951618361710b1e7b41df31c55cb76",
+      "content_hash": "sha256:d3ac69cd65ad9fed3a833c8f2ef6cef341f02dbe5808313111b3e458abcb9b96",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7899,7 +7983,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:6676a659115cc09224cd44b8ffd349cac3188bfdd7db92229b223af33a8c43d4",
+      "content_hash": "sha256:7ded8a483d47d0e45b5144d399c93765b3dba2252503be1bdbfa5bb9d61957aa",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
