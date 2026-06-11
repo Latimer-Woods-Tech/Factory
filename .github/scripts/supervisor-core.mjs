@@ -35,11 +35,17 @@ async function gh(method, path, body) {
 }
 
 async function addLabels(repo, issue, labels) {
-  for (const label of labels) {
-    try {
-      await gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/labels`, { labels: [label] });
-    } catch (e) {
-      console.warn(`[WARN] label "${label}" on ${repo}#${issue}: ${e.message}`);
+  if (labels.length === 0) return;
+  try {
+    await gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/labels`, { labels });
+  } catch (e) {
+    console.warn(`[WARN] batch labels on ${repo}#${issue} failed; retrying individually: ${e.message}`);
+    for (const label of labels) {
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/labels`, { labels: [label] });
+      } catch (labelError) {
+        console.warn(`[WARN] label "${label}" on ${repo}#${issue}: ${labelError.message}`);
+      }
     }
   }
 }
@@ -53,6 +59,17 @@ async function removeLabel(repo, issueNumber, label) {
     await gh('DELETE', `/repos/${ORG}/${repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`);
   } catch (e) {
     console.warn(`[WARN] remove label "${label}" on ${repo}#${issueNumber}: ${e.message}`);
+  }
+}
+
+async function setStatusLabel(repo, issueNumber, desired) {
+  const issue = await gh('GET', `/repos/${ORG}/${repo}/issues/${issueNumber}`);
+  const current = issue.labels.map((label) => label.name).filter((label) => label.startsWith('status:'));
+  for (const label of current) {
+    if (label !== desired) await removeLabel(repo, issueNumber, label);
+  }
+  if (desired && !current.includes(desired)) {
+    await addLabels(repo, issueNumber, [desired]);
   }
 }
 
@@ -269,30 +286,6 @@ function isCopilotRerouteCandidate(repo, issue) {
 
 // ─── Plan comment ─────────────────────────────────────────────────────────────
 
-// TTL per work class (ADR 2026-06-11 Decision 5).
-// Keyed by template.workClass or 'default'. Values in milliseconds.
-const LEASE_TTL_MS = {
-  'code:deploy':   30 * 60 * 1000,
-  'code:package':  30 * 60 * 1000,
-  'code:pr:green':  4 * 60 * 60 * 1000,
-  'code:pr':       48 * 60 * 60 * 1000,
-  'incident:p0':   30 * 60 * 1000,
-  'incident:p1':   30 * 60 * 1000,
-  'incident:p2':    4 * 60 * 60 * 1000,
-  'incident:p3':    4 * 60 * 60 * 1000,
-  'incident':       4 * 60 * 60 * 1000,
-  'docs':          48 * 60 * 60 * 1000,
-  'ops':           48 * 60 * 60 * 1000,
-  'decision':      48 * 60 * 60 * 1000,
-  'infra':          4 * 60 * 60 * 1000,
-  default:         48 * 60 * 60 * 1000,
-};
-
-function leaseTtlMs(workClass, tier) {
-  if (workClass === 'code:pr' && tier === 'green') return LEASE_TTL_MS['code:pr:green'];
-  return LEASE_TTL_MS[workClass] ?? LEASE_TTL_MS.default;
-}
-
 function planComment(issue, template, tier, extra = '') {
   const emoji = { green: '🟢', yellow: '🟡', red: '🔴' }[tier] ?? '⚪';
   const steps =
@@ -303,8 +296,6 @@ function planComment(issue, template, tier, extra = '') {
     tier === 'green'
       ? 'This executes automatically (Green tier).'
       : '@adrper79-dot — React ✅ to approve.';
-  const workClass = template.workClass ?? 'code:pr';
-  const claimedAt = new Date().toISOString();
   return [
     `🤖 Supervisor plan for **${issue.title}**`,
     '',
@@ -318,7 +309,6 @@ function planComment(issue, template, tier, extra = '') {
     extra,
     '',
     `_Run ID: ${RUN_ID}_`,
-    `_lease: claimed_at=${claimedAt} work-class=${workClass} tier=${tier}_`,
   ].join('\n');
 }
 
@@ -949,25 +939,16 @@ If a concern cannot be resolved without human input, output an empty fixes array
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 // ─── Stale claim cleanup ──────────────────────────────────────────────────────
-// Releases claims whose TTL has expired based on work-class (ADR 2026-06-11
-// Decision 5). TTL is measured from claimed_at in the supervisor plan comment,
-// NOT from issue.updated_at (which is bumped by any label/comment activity and
-// cannot be used as a claim-start signal).
+// If an issue has been claimed by any agent for more than STALE_CLAIM_DAYS days
+// with no update (no linked PR progress, no label change), strip the claim label
+// so the supervisor can re-pick it up. Prevents issues from rotting indefinitely
+// when an agent claimed them but never delivered.
 
+const STALE_CLAIM_DAYS = 7;
 const CLAIM_LABEL_PREFIX = 'agent:claimed:';
-// Fallback TTL for claims that predate the claimed_at lease comment (legacy).
-const LEGACY_STALE_CLAIM_DAYS = 7;
-
-// Work-class values must not contain underscores or whitespace — the trailing
-// `_` of the markdown-italic lease line is the regex terminator.
-function parseLeaseComment(body) {
-  if (!body) return {};
-  const m = body.match(/_lease: claimed_at=([^\s]+) work-class=([^\s_]+)(?: tier=([a-z]+))?_/);
-  if (!m) return {};
-  return { claimedAt: m[1], workClass: m[2], tier: m[3] ?? 'default' };
-}
 
 async function releaseStaleClaimedIssues(outcomes) {
+  const cutoffMs = STALE_CLAIM_DAYS * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
   for (const repo of MONITORED_REPOS) {
@@ -985,53 +966,28 @@ async function releaseStaleClaimedIssues(outcomes) {
       const claimLabels = labels.filter(l => l.startsWith(CLAIM_LABEL_PREFIX));
       if (claimLabels.length === 0) continue;
 
-      // Find the most recent supervisor plan comment to read claimed_at and work-class.
-      let claimedAtMs = null;
-      let workClass = 'default';
-      let claimTier = 'default';
-      try {
-        const comments = await gh('GET', `/repos/${ORG}/${repo}/issues/${issue.number}/comments?per_page=100`);
-        // Walk newest-first (reverse) to find the last claim.
-        for (let i = comments.length - 1; i >= 0; i--) {
-          const parsed = parseLeaseComment(comments[i].body ?? '');
-          if (parsed.claimedAt) {
-            claimedAtMs = new Date(parsed.claimedAt).getTime();
-            workClass = parsed.workClass ?? 'default';
-            claimTier = parsed.tier ?? 'default';
-            break;
-          }
-        }
-      } catch (e) {
-        console.warn(`[StaleClaim] ${repo}#${issue.number}: could not read comments: ${e.message.slice(0, 80)}`);
-      }
+      const updatedAt = new Date(issue.updated_at).getTime();
+      if (now - updatedAt < cutoffMs) continue;
 
-      // Fall back to updated_at + legacy TTL for pre-lease claims.
-      if (!claimedAtMs) {
-        const updatedAt = new Date(issue.updated_at).getTime();
-        const legacyCutoffMs = LEGACY_STALE_CLAIM_DAYS * 24 * 60 * 60 * 1000;
-        if (now - updatedAt < legacyCutoffMs) continue;
-        console.log(`[StaleClaim] ${repo}#${issue.number}: legacy claim (no claimed_at); using ${LEGACY_STALE_CLAIM_DAYS}d updated_at heuristic`);
-      } else {
-        const ttl = leaseTtlMs(workClass, claimTier);
-        if (now - claimedAtMs < ttl) continue;
-        const ttlHours = Math.round(ttl / 3600000);
-        console.log(`[StaleClaim] ${repo}#${issue.number}: lease expired (work-class=${workClass}, ttl=${ttlHours}h)`);
-      }
-
-      // Verify no linked open PR before releasing — skip to avoid false positives.
+      // Verify no linked open PR before releasing the claim
+      // A simple heuristic: search for PRs referencing this issue number
       let hasLinkedPR = false;
       try {
         const searchRes = await gh('GET', `/search/issues?q=repo:${ORG}/${repo}+is:pr+is:open+%23${issue.number}&per_page=5`);
         hasLinkedPR = (searchRes.total_count ?? 0) > 0;
       } catch {
-        continue;
-      }
-      if (hasLinkedPR) {
-        console.log(`[StaleClaim] ${repo}#${issue.number}: lease expired but has linked PR — skipping`);
+        // Search API rate-limited or unavailable — skip release to avoid false positives
         continue;
       }
 
-      // Apply cooldown label to prevent immediate re-claim.
+      if (hasLinkedPR) {
+        console.log(`[StaleClaim] ${repo}#${issue.number}: stale but has linked PR — skipping`);
+        continue;
+      }
+
+      console.log(`[StaleClaim] ${repo}#${issue.number}: releasing stale claim (${claimLabels.join(', ')}) after ${STALE_CLAIM_DAYS}d`);
+      // PR-2 cooldown — block immediate re-claim on the same scheduler run and
+      // for STALE_RELEASE_COOLDOWN_MINUTES afterwards.
       try {
         await gh('POST', `/repos/${ORG}/${repo}/issues/${issue.number}/labels`, { labels: [COOLDOWN_LABEL] });
       } catch (e) {
@@ -1044,13 +1000,11 @@ async function releaseStaleClaimedIssues(outcomes) {
           console.warn(`[StaleClaim] could not remove ${label}: ${e.message.slice(0, 80)}`);
         }
       }
-      const ttlDesc = claimedAtMs
-        ? `lease TTL exceeded (work-class=${workClass})`
-        : `no activity for ${LEGACY_STALE_CLAIM_DAYS}+ days (legacy claim)`;
+      await setStatusLabel(repo, issue.number, null);
       await postComment(
         repo,
         issue.number,
-        `🔄 Supervisor: releasing stale agent claim (${claimLabels.join(', ')}) — ${ttlDesc}, no linked open PR. Issue is back in the queue.`,
+        `🔄 Supervisor: releasing stale agent claim (${claimLabels.join(', ')}) — no activity for ${STALE_CLAIM_DAYS}+ days and no linked open PR. Issue is back in the queue.`,
       );
       outcomes.push(`♻️ ${repo}#${issue.number}: stale claim released (${claimLabels.join(', ')})`);
     }
@@ -1216,8 +1170,9 @@ async function main() {
           // we then mark it needs-human/blocked instead of pretending Copilot owns it.
           const copilotOk = await assignCopilot(repo, issue.number);
           await addLabels(repo, issue.number, copilotOk
-            ? ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']
-            : ['supervisor:no-template', 'needs-human', 'status:blocked']);
+            ? ['supervisor:no-template', 'agent:claimed:copilot']
+            : ['supervisor:no-template', 'needs-human']);
+          await setStatusLabel(repo, issue.number, copilotOk ? 'status:in_progress' : 'status:blocked');
           await removeLabel(repo, issue.number, 'agent:claimed:supervisor');
           await postComment(
             repo,
@@ -1242,7 +1197,8 @@ async function main() {
         }
 
         console.log(`[SKIP] ${repo}#${issue.number} "${issue.title}" — no template match`);
-        await addLabels(repo, issue.number, ['supervisor:no-template']);
+        await addLabels(repo, issue.number, ['supervisor:no-template', 'needs-human']);
+        await setStatusLabel(repo, issue.number, 'status:blocked');
         await postComment(
           repo,
           issue.number,
@@ -1274,7 +1230,8 @@ async function main() {
           issue.number,
           planComment(ctx, template, 'red', '\n\n@adrper79-dot — Red-tier: human review required before any execution.'),
         );
-        await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
+        await addLabels(repo, issue.number, ['agent:claimed:supervisor']);
+        await setStatusLabel(repo, issue.number, 'status:blocked');
         outcomes.push(
           `🔴 ${repo}#${issue.number}: ${template.id} — awaiting review. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
@@ -1283,7 +1240,8 @@ async function main() {
 
       if (tier === 'yellow') {
         await postComment(repo, issue.number, planComment(ctx, template, 'yellow'));
-        await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
+        await addLabels(repo, issue.number, ['agent:claimed:supervisor']);
+        await setStatusLabel(repo, issue.number, 'status:blocked');
         outcomes.push(
           `🟡 ${repo}#${issue.number}: ${template.id} — waiting ✅. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
@@ -1315,7 +1273,8 @@ async function main() {
       }
 
       await postComment(repo, issue.number, planComment(ctx, template, 'green', execNote));
-      await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
+      await addLabels(repo, issue.number, ['agent:claimed:supervisor']);
+      await setStatusLabel(repo, issue.number, 'status:in_progress');
 
       const landedPr = prInfo && !prInfo.skipped ? prInfo : null;
       const url = landedPr?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;
