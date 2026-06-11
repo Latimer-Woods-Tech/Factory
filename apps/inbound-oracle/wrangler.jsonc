@@ -30,7 +30,6 @@
     "TELNYX_FROM_NUMBER": "+15045204977",
     "ELEVENLABS_VOICE_ID": "21m00Tcm4TlvDq8ikWAM",
     "AUDIO_PUBLIC_BASE_URL": "https://inbound-oracle.latwoodtech.work",
-        "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/prime-self",
     "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/prime-self"
   },
 
@@ -46,7 +45,9 @@
 
   "env": {
     "production": {
-      "name": "prime-self",
+      // NEVER "prime-self": that name belongs to the legacy Selfprime API worker —
+      // deploying under it overwrites that worker's code (incident discovered 2026-06-10)
+      "name": "inbound-oracle-production",
       "routes": [
         {
           "pattern": "inbound-oracle.latwoodtech.work",
