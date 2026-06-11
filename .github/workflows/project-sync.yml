@@ -102,7 +102,7 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────
   # ISSUE LIFECYCLE → BOARD
-  # opened/reopened: add card + (opened only) auto-assign Copilot
+  # opened/reopened: add card; assignment is owned by gated supervisor routing
   # assigned: → In Progress
   # closed: → Done
   # ─────────────────────────────────────────────────────────────────────────
@@ -151,9 +151,9 @@ jobs:
   issue-label-status:
     if: |
       github.event_name == 'issues' &&
-      github.event.action == 'labeled' &&
+      (github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
       startsWith(github.event.label.name, 'status:')
-    name: Status label → board
+    name: Status labels → board
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -166,7 +166,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          EVENT_KIND: issue.labeled.status
+          EVENT_KIND: issue.status.changed
           REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
