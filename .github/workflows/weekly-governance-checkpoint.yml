@@ -1,0 +1,147 @@
+name: Weekly governance checkpoint
+
+# T3 — Informational. Replaces daily snapshot PR accumulation.
+# Creates one PR per week with all generated docs (STATE.md, cost summary,
+# scorecard, conformance summary). Runs Monday 08:00 UTC so it fires after
+# the generate-state daily run at 12:11 UTC on Sunday (well, Monday morning
+# before the daily runs). Can also be triggered manually.
+#
+# RFC-006 §10: weekly governance checkpoint is the one durable Git record
+# for generated docs. Daily runs of individual workflows write artifacts only.
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Monday 08:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: weekly-governance-checkpoint
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Mint Factory App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Fetch GCP secrets
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env CF_API_TOKEN           CF_API_TOKEN CLOUDFLARE_API_TOKEN CLOUDFLARE_API cloudflare-api-token
+          fetch_to_env CF_ACCOUNT_ID          CF_ACCOUNT_ID cloudflare-account-id
+          fetch_to_env ANTHROPIC_ADMIN_KEY    ANTHROPIC_ADMIN_KEY LATIMER_ANTHROPIC_API ANTHROPIC_API_KEY
+          fetch_to_env SENTRY_AUTH_TOKEN      FACTORY_SENTRY_API LATIMERWOODS_SENTRY_AUTH SENTRY_AUTH_TOKEN
+          fetch_to_env STRIPE_API_KEY         STRIPE_SECRET_KEY stripe-api-key-readonly STRIPE_API_KEY
+          fetch_to_env GCP_BILLING_TOKEN      gcp-billing-token GCP_BILLING_TOKEN
+          fetch_to_env GCP_BILLING_ACCOUNT_ID gcp-billing-account-id GCP_BILLING_ACCOUNT_ID
+          fetch_to_env PUSHOVER_USER          FACTORY_PUSHOVER_USER PUSHOVER_USER pushover-user
+          fetch_to_env PUSHOVER_TOKEN         FACTORY_PUSHOVER_API PUSHOVER_TOKEN pushover-token
+          fetch_to_env POSTHOG_API_KEY        posthog-api-key POSTHOG_API_KEY
+          fetch_to_env POSTHOG_PROJECT_ID     posthog-project-id POSTHOG_PROJECT_ID
+          fetch_to_env POSTHOG_FUNNEL_ID      posthog-funnel-id POSTHOG_FUNNEL_ID
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: '3.12'
+
+      - name: Regenerate STATE.md
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: python scripts/generate_state.py
+
+      - name: Regenerate cost snapshot
+        env:
+          CF_API_TOKEN: ${{ env.CF_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+          SENTRY_ORG: latwood-tech
+        run: python scripts/cost_digest.py || echo "::warning::cost_digest.py failed (non-blocking)"
+
+      - name: Regenerate conformance snapshot
+        env:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+        run: python scripts/platform_conformance.py || echo "::warning::platform_conformance.py failed (non-blocking)"
+
+      - name: Create or update weekly checkpoint branch
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          WEEK=$(date -u +%Y-W%V)
+          BRANCH="chore/weekly-checkpoint-${WEEK}"
+          git config user.name "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+          git remote set-url origin \
+            "https://x-access-token:${{ steps.app.outputs.token }}@github.com/${GITHUB_REPOSITORY}.git"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+          echo "CHECKPOINT_BRANCH=$BRANCH" >> "$GITHUB_ENV"
+          echo "WEEK=$WEEK" >> "$GITHUB_ENV"
+
+      - name: Stage generated docs
+        run: |
+          set -euo pipefail
+          git add docs/STATE.md docs/cost/ docs/conformance/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No generated docs changed — skipping commit."
+            echo "NOTHING_TO_COMMIT=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Commit and open PR
+        if: env.NOTHING_TO_COMMIT != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%F)
+          git commit -m "chore(docs): weekly governance checkpoint ${WEEK} ($DATE)"
+          git push --force-with-lease --set-upstream origin "$CHECKPOINT_BRANCH"
+
+          EXISTING_PR=$(gh pr list --head "$CHECKPOINT_BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing checkpoint PR #$EXISTING_PR for ${WEEK}."
+            gh pr edit "$EXISTING_PR" \
+              --title "chore(docs): weekly governance checkpoint ${WEEK}" \
+              --body "Auto-generated weekly checkpoint. Replaces daily snapshot PRs per RFC-006 §10. Includes: STATE.md, cost summary, conformance scores."
+            gh pr merge --auto --squash "$EXISTING_PR" || true
+          else
+            gh pr create \
+              --title "chore(docs): weekly governance checkpoint ${WEEK}" \
+              --body "Auto-generated weekly checkpoint. Replaces daily snapshot PRs per RFC-006 §10. Includes: STATE.md, cost summary, conformance scores." \
+              --label "automerge:allow-bot-branch" \
+              --label automation \
+              --label documentation \
+              --base main || echo "PR already exists"
+          fi
