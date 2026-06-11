@@ -80,6 +80,7 @@ This is the single entry point for all Factory implementation docs. It replaces 
 - **[Published RFCs](rfc/)** — Live RFC repository
   - [RFC-001: Payout Batching Fix](rfc/RFC-001-payout-batching-fix.md) — Historical example (implemented March 2026)
   - [RFC-002: Creator Onboarding Journey](rfc/RFC-002-creator-onboarding-redesign.md) — In review; target Q2 2026 ship
+  - [RFC-006: Cohesive Automation Flow Operating Model](rfc/RFC-006-automation-flow-operating-model.md) — Proposed control-plane and operational-flow maturity plan
 
 ### Documentation Ownership
 - **[DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md)** — Who owns each doc, update cadence, how to propose changes

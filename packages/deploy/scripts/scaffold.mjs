@@ -414,7 +414,16 @@ function renderWranglerJson(plan, hyperdriveId, rateLimiterId) {
     ],
     vars: { ENVIRONMENT: 'production', WORKER_NAME: APP_NAME },
     ...(rateLimiterId ? {
-      rate_limiters: [{ binding: 'AUTH_RATE_LIMITER', namespace_id: rateLimiterId, simple: { limit: 60, period: 60 } }],
+      unsafe: {
+        bindings: [
+          {
+            type: 'ratelimit',
+            name: 'AUTH_RATE_LIMITER',
+            namespace_id: String(rateLimiterId),
+            simple: { limit: 60, period: 60 },
+          },
+        ],
+      },
     } : {}),
     ...(bindings.kv?.length ? {
       kv_namespaces: bindings.kv.map((b) => ({ binding: b, id: 'REPLACE_WITH_KV_ID' })),
