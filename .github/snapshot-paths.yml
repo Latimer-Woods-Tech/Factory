@@ -37,9 +37,15 @@ paths:
   - docs/digest/**
   - docs/digests/**
 
-  # Completion tracker (both legacy + canonical paths)
+  # Completion tracker (both legacy + canonical paths).
+  # The completion-tracker.yml drift PR commits all three files below in one
+  # PR (see its "Detect drift" step) — the allowlist was originally written
+  # while the tracker data was frozen, so the .md and .jsonl companions were
+  # missed and the first live drift PR (#1663) was rejected.
   - completion-tracker.json
   - docs/completion-tracker.json
+  - docs/COMPLETION_TRACKER.md
+  - docs/completion-tracker-history.jsonl
 
   # KPI tracking
   - docs/kpis/**
