@@ -58,12 +58,14 @@ export {
   totalDurationFrames,
 } from './sourceScenes.js';
 
-// Remotion Root registration + render dimensions (consumed by the render
-// service / app bundlers).
-export {
-  EnergyBlueprintRoot,
-  VIDEO_FPS,
-  VIDEO_WIDTH,
-  VIDEO_HEIGHT,
-  ENERGY_BLUEPRINT_FRAMES,
-} from './Root.js';
+// Render dimensions — exported for type-safe usage by consumers that need
+// them without triggering the registerRoot side effect in Root.tsx.
+// Root.tsx is the standalone Remotion bundle entry for the Cloud Run render
+// service (packages/video-studio/src/render.ts bundles it directly).
+// Do NOT re-export Root.tsx here: doing so causes registerRoot() to fire
+// as a module side effect when apps/video-studio imports from this index,
+// which makes Remotion fatal with "registerRoot() was called more than once".
+export const VIDEO_FPS = 30;
+export const VIDEO_WIDTH = 1920;
+export const VIDEO_HEIGHT = 1080;
+export const ENERGY_BLUEPRINT_FRAMES = 2250;
