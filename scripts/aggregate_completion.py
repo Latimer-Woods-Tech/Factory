@@ -214,9 +214,11 @@ def github_get(path: str, token: str, *, raw: bool = False, fetch_fn: FetchFn | 
         "User-Agent": "latwood-completion-aggregator",
         "X-GitHub-Api-Version": "2022-11-28",
     }
+    url = f"https://api.github.com{path}"
     if fetch_fn is None:
-        fetch_fn = http_request
-    status, body, _ = fetch_fn(f"https://api.github.com{path}")
+        status, body, _ = http_request(url, headers=headers)
+    else:
+        status, body, _ = fetch_fn(url)
     return status, body
 
 
@@ -284,11 +286,13 @@ def fetch_stripe_data(stripe_key: str, fetch_fn: FetchFn | None = None) -> dict[
         return {"mrr": 0.0, "trials": 0, "new_charges_24h": 0}
     creds = _b64.b64encode(f"{stripe_key}:".encode()).decode()
     hdrs = {"Authorization": f"Basic {creds}", "User-Agent": "latwood-completion-aggregator"}
-    if fetch_fn is None:
-        fetch_fn = http_request
 
     def sg(path: str) -> dict[str, Any]:
-        st, body, _ = fetch_fn(f"https://api.stripe.com/v1{path}")
+        url = f"https://api.stripe.com/v1{path}"
+        if fetch_fn is None:
+            st, body, _ = http_request(url, headers=hdrs)
+        else:
+            st, body, _ = fetch_fn(url)
         if st != 200:
             jerr("stripe_fail", path=path, status=st)
             return {}
@@ -338,14 +342,18 @@ def fetch_sentry_unresolved(token: str, project: str | None = None, fetch_fn: Fe
     if not token:
         jwarn("sentry_skipped_no_token")
         return []
-    if fetch_fn is None:
-        fetch_fn = http_request
     # If project specified, query that project; otherwise query org-wide
     if project:
         url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/projects/{project}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
     else:
         url = f"https://sentry.io/api/0/organizations/{SENTRY_ORG}/issues/?{urlencode({'statsPeriod':'24h','query':'is:unresolved'})}"
-    status, body, _ = fetch_fn(url)
+    if fetch_fn is None:
+        status, body, _ = http_request(url, headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "latwood-completion-aggregator",
+        })
+    else:
+        status, body, _ = fetch_fn(url)
     if status != 200:
         jerr("sentry_fail", project=project, status=status)
         return []
@@ -572,12 +580,17 @@ def send_pushover(text: str, user: str, token: str, fetch_fn: FetchFn | None = N
     if not user or not token:
         jwarn("pushover_skipped_no_creds")
         return
-    if fetch_fn is None:
-        fetch_fn = http_request
     body = urlencode({"user": user, "token": token, "message": text, "title": "Completion tracker"}).encode()
-    status, resp, _ = fetch_fn(
-        "https://api.pushover.net/1/messages.json"
-    )
+    url = "https://api.pushover.net/1/messages.json"
+    if fetch_fn is None:
+        status, resp, _ = http_request(
+            url,
+            method="POST",
+            body=body,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+    else:
+        status, resp, _ = fetch_fn(url)
     if status != 200:
         jerr("pushover_fail", status=status, body=resp[:200].decode("utf-8", "replace"))
 
@@ -702,6 +715,14 @@ def main(fetch_fn: FetchFn | None = None) -> int:
         smoke = fetch_smoke_run(repo["repo"], token, fetch_fn=fetch_fn)
         if smoke and smoke.get("conclusion") == "failure":
             red_smoke.add(repo["key"])
+
+    # Fail loud: zero rows across every repo means the fetch or parse layer is
+    # broken (e.g. auth regression), not that completion is 0. Publishing a
+    # 0-row snapshot as truth froze the tracker at 0.0% for 17 days once
+    # (2026-05-25 → 2026-06-11). Never again.
+    if not all_rows:
+        jerr("no_rows_any_repo", repos=[r["repo"] for r in REPOS])
+        return 1
 
     # sentry overlay (per-project)
     apply_sentry_overlay(all_rows, sentry_token, fetch_fn=fetch_fn)
