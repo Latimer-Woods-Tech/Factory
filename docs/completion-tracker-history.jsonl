@@ -1,3 +1,4 @@
 {"ts": "2026-05-15T11:32:15.089891+00:00", "overall_weighted": 26.5, "overall_known": 43.2, "repo_weighted": {"HD": 74.9, "VK": 0.0, "FA": 0.0, "CH": 0.0, "XC": 0.0}, "ci_red": ["HD", "XC"], "smoke_red": ["FA", "XC"], "malformed_count": 0}
 {"ts": "2026-05-17T19:07:57.484975+00:00", "overall_weighted": 26.5, "overall_known": 43.2, "repo_weighted": {"HD": 74.9, "CC": 0.0, "FA": 0.0, "CH": 0.0, "XC": 0.0}, "ci_red": ["XC"], "smoke_red": ["FA", "XC"], "malformed_count": 0}
 {"ts": "2026-05-25T13:46:06.477816+00:00", "overall_weighted": 0.0, "overall_known": 0.0, "repo_weighted": {"HD": 0.0, "CC": 0.0, "FA": 0.0, "CH": 0.0, "XC": 0.0}, "ci_red": [], "smoke_red": ["FA"], "malformed_count": 0}
+{"ts": "2026-06-12T00:36:59.392378+00:00", "overall_weighted": 3.0, "overall_known": 10.9, "repo_weighted": {"HD": 5.4, "CC": 0.0, "FA": 0.0, "CH": 0.0, "XC": 0.0}, "ci_red": ["CH", "XC"], "smoke_red": ["XC"], "malformed_count": 29}
