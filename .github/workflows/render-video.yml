@@ -422,9 +422,15 @@ jobs:
         # file:../bodygraph. apps/video-studio resolves video-studio's deps
         # transitively, so the engine's dist/ must exist before the install
         # below. bodygraph has zero deps, so it builds first.
+        # `video-studio` added last: apps/video-studio imports
+        # @latimer-woods-tech/video-studio (file:../../packages/video-studio),
+        # whose exports point at dist/ — without building it here the Remotion
+        # render dies with "Package path . is not exported … no valid target
+        # file" (first live cadence dispatch, run 27389394134). It depends on
+        # bodygraph, which builds first.
         run: |
           set -euo pipefail
-          for package in bodygraph errors monitoring logger neon llm video schedule; do
+          for package in bodygraph errors monitoring logger neon llm video schedule video-studio; do
             echo "=== ${package} ==="
             cd "packages/${package}"
             npm ci --ignore-scripts

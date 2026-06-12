@@ -35,7 +35,12 @@ async function fetchScheduleWorker(env: Env, path: string, init: RequestInit = {
  * Fetches pending render jobs from the schedule-worker.
  */
 async function fetchPendingJobs(env: Env): Promise<RenderJob[]> {
-  const search = new URLSearchParams({ limit: String(PENDING_LIMIT), appId: env.APP_ID });
+  // No appId filter: video-cron is the single dispatcher for every brand's
+  // calendar. Filtering by its own APP_ID ("selfprime") silently matched zero
+  // jobs — rows are created with appId "prime_self"/"capricast"/etc., so the
+  // hourly tick dispatched nothing. The internal WORKER_API_TOKEN returns all
+  // apps' pending jobs when appId is omitted.
+  const search = new URLSearchParams({ limit: String(PENDING_LIMIT) });
   const path = `/jobs/pending?${search.toString()}`;
   const res = await fetchScheduleWorker(env, path, {
     headers: { Authorization: `Bearer ${env.WORKER_API_TOKEN}` },
@@ -185,6 +190,13 @@ async function processPendingJobs(env: Env): Promise<{ dispatched: number; faile
         error: reason,
       }));
     }
+  }
+
+  if (batch.length > 0 && dispatched === 0) {
+    throw new InternalError(
+      `video-cron: ${batch.length} job(s) fetched but none dispatched — all attempts failed`,
+      { batchSize: batch.length, failed },
+    );
   }
 
   return { dispatched, failed };

@@ -1,7 +1,7 @@
 > 📘 **Canonical architecture:** [`docs/architecture/FACTORY_V1.md`](./docs/architecture/FACTORY_V1.md). Read it to understand the system. [`docs/supervisor/FRIDGE.md`](./docs/supervisor/FRIDGE.md) overrides these Standing Orders.
 
 > 🗺️ **Where to look first** (in order):
-> 1. [`docs/STATE.md`](./docs/STATE.md) — auto-generated daily; current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding.
+> 1. [`docs/STATE.md`](./docs/STATE.md) — current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding. Durably refreshed weekly (Monday governance checkpoint, RFC-006 §10) — check the `Generated:` stamp; fresher daily snapshots are uploaded as `state-snapshot-*` artifacts on the Generate State workflow.
 > 2. This file (CLAUDE.md) — norms + hard constraints
 > 3. [`docs/architecture/PATTERNS.md`](./docs/architecture/PATTERNS.md) — operational know-how (gcloud auth, workflow patterns, merge escape hatches) captured from production debugging
 > 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — conformance standards (15 sections, 12-dimension scoring table)
