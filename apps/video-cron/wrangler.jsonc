@@ -23,7 +23,7 @@
   ],
   "vars": {
     "APP_ID": "selfprime",
-    "DEFAULT_COMPOSITION_ID": "MarketingVideo",
+    "DEFAULT_COMPOSITION_ID": "EnergyBlueprintVideo",
     "ENVIRONMENT": "development",
     "GITHUB_REPO": "Latimer-Woods-Tech/factory",
     "SCHEDULE_WORKER_URL": "https://schedule.latwoodtech.work"
@@ -48,7 +48,7 @@
       ],
       "vars": {
         "APP_ID": "selfprime",
-        "DEFAULT_COMPOSITION_ID": "MarketingVideo",
+        "DEFAULT_COMPOSITION_ID": "EnergyBlueprintVideo",
         "ENVIRONMENT": "production",
         "GITHUB_REPO": "Latimer-Woods-Tech/factory",
         "SCHEDULE_WORKER_URL": "https://schedule.latwoodtech.work"

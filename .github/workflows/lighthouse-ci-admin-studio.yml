@@ -22,6 +22,11 @@ jobs:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@latimer-woods-tech'
+      - name: Build studio-core dependency
+        working-directory: packages/studio-core
+        run: npm ci && npm run build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install deps
         working-directory: apps/admin-studio-ui
         run: npm ci
