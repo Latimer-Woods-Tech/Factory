@@ -111,17 +111,21 @@ if (res.status === 201) {
   if (!json || typeof json !== 'object') {
     die(`Capricast returned 201 with non-JSON body: ${text.slice(0, 200)}`);
   }
-  const id = String(json.id ?? '');
-  const watchUrl = String(json.url ?? '');
+  // Endpoint returns { video: { id, ... } } — not a top-level id/url.
+  const video = json.video && typeof json.video === 'object' ? json.video : {};
+  const id = String(video.id ?? '');
+  const watchUrl = id ? `https://capricast.com/watch/${id}` : '';
   console.error(`✅ Published to Capricast: id=${id} url=${watchUrl}`);
   writeOutputs({ capricastId: id, capricastUrl: watchUrl });
   process.exit(0);
 }
 
-if (res.status === 409 && json && json.error === 'DuplicateStreamUid') {
-  const existingId = String(json.existingId ?? '');
+if (res.status === 409 && json && json.error === 'Conflict') {
+  // Endpoint returns { error: "Conflict", existingVideoId: "..." }
+  const existingId = String(json.existingVideoId ?? '');
+  const existingWatchUrl = existingId ? `https://capricast.com/watch/${existingId}` : '';
   console.error(`⚠️  Capricast already has streamUid=${STREAM_UID} (existingId=${existingId}); skipping`);
-  writeOutputs({ capricastId: existingId, capricastUrl: '', duplicate: 'true' });
+  writeOutputs({ capricastId: existingId, capricastUrl: existingWatchUrl, duplicate: 'true' });
   process.exit(0);
 }
 
