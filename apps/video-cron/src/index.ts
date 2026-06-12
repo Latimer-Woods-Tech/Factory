@@ -192,6 +192,13 @@ async function processPendingJobs(env: Env): Promise<{ dispatched: number; faile
     }
   }
 
+  if (batch.length > 0 && dispatched === 0) {
+    throw new InternalError(
+      `video-cron: ${batch.length} job(s) fetched but none dispatched — all attempts failed`,
+      { batchSize: batch.length, failed },
+    );
+  }
+
   return { dispatched, failed };
 }
 
