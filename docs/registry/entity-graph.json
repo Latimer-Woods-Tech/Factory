@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-08T03:21:14.698Z",
+  "generatedAt": "2026-06-12T03:58:28.275Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -32,7 +32,30 @@
     "factory-admin": "admin-studio",
     "fa": "admin-studio",
     "agent-gateway": "agent-gateway",
-    "factory-agent-gateway": "agent-gateway"
+    "factory-agent-gateway": "agent-gateway",
+    "wordis-bond": "wordis-bond",
+    "wordisbond": "wordis-bond",
+    "wb": "wordis-bond",
+    "kairoscouncil": "kairoscouncil",
+    "kings-council": "kairoscouncil",
+    "kingscouncil": "kairoscouncil",
+    "kings-council-app": "kairoscouncil",
+    "kc": "kairoscouncil",
+    "focusbro": "focusbro",
+    "focus-bro": "focusbro",
+    "fb": "focusbro",
+    "itsjusus": "itsjusus",
+    "ijustus": "itsjusus",
+    "ij": "itsjusus",
+    "neighbor-aid": "neighbor-aid",
+    "neighboraid": "neighbor-aid",
+    "na": "neighbor-aid",
+    "the-calling": "the-calling",
+    "thecalling": "the-calling",
+    "tc": "the-calling",
+    "xpelevator": "xpelevator",
+    "xp-elevator": "xpelevator",
+    "xp": "xpelevator"
   },
   "nodes": {
     "apps": [
@@ -42,12 +65,14 @@
         "repo": "Latimer-Woods-Tech/Factory",
         "kind": "product",
         "domain": "apunlimited.com",
-        "url": null,
-        "healthState": "unknown",
+        "url": "https://schedule.latwoodtech.work",
+        "healthState": "live",
         "lifecycleStage": "live",
+        "mode": "build",
         "maturity": "production",
         "cohesion": 73,
         "registryStatus": "present",
+        "scope": "in-scope",
         "aliases": [
           "admin-studio-production",
           "admin-studio-staging",
@@ -115,20 +140,23 @@
             "score": 100,
             "weight": 5
           }
-        ]
+        ],
+        "repoConfirmed": true
       },
       {
         "id": "agent-gateway",
         "name": "Agent Gateway",
-        "repo": "Latimer-Woods-Tech/Factory",
+        "repo": null,
         "kind": "product",
         "domain": "agent-gateway.latwoodtech.work",
-        "url": "https://schedule.latwoodtech.work",
-        "healthState": "planned",
-        "lifecycleStage": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
         "maturity": "beta",
         "cohesion": null,
         "registryStatus": "present",
+        "scope": "in-scope",
         "aliases": [
           "factory-agent-gateway"
         ],
@@ -141,6 +169,23 @@
         "registrySource": "apps/agent-gateway/feature-registry.yml"
       },
       {
+        "id": "analytics-proxy",
+        "name": "Analytics Proxy",
+        "repo": null,
+        "kind": "infra",
+        "domain": "analytics.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
         "id": "browser-agent",
         "name": "Browser Agent",
         "repo": null,
@@ -149,9 +194,11 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "scaffolded",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
@@ -164,9 +211,11 @@
         "url": "https://api.capricast.latimerwoods.dev",
         "healthState": "live",
         "lifecycleStage": "live",
+        "mode": "build",
         "maturity": "production",
         "cohesion": 42,
         "registryStatus": "present",
+        "scope": "in-scope",
         "aliases": [
           "capricast-api",
           "capricast-ui",
@@ -180,6 +229,7 @@
           "analytics",
           "video"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/capricast/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -232,7 +282,25 @@
             "score": 50,
             "weight": 5
           }
-        ]
+        ],
+        "repoConfirmed": true
+      },
+      {
+        "id": "capricast-api-staging",
+        "name": "Capricast API (Staging)",
+        "repo": null,
+        "kind": "infra",
+        "domain": "api.capricast.latimerwoods.dev",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
       },
       {
         "id": "coh",
@@ -243,9 +311,11 @@
         "url": "https://api.cipherofhealing.com",
         "healthState": "live",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": "production",
         "cohesion": 47,
         "registryStatus": "present",
+        "scope": "in-scope",
         "aliases": [
           "cypher-healing",
           "cipher-healing",
@@ -260,6 +330,7 @@
           "telephony",
           "email"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/coh/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -312,7 +383,8 @@
             "score": 25,
             "weight": 5
           }
-        ]
+        ],
+        "repoConfirmed": true
       },
       {
         "id": "daily-brief",
@@ -323,9 +395,213 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "factory-core-api",
+        "name": "Factory Core API",
+        "repo": null,
+        "kind": "infra",
+        "domain": "core.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": [],
+        "networkTokenConfigured": true
+      },
+      {
+        "id": "factory-cross-repo",
+        "name": "Factory Cross-Repo",
+        "repo": null,
+        "kind": "infra",
+        "domain": "factory-cross-repo.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "factory-events-archiver",
+        "name": "Factory Events Archiver",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "factory-events-replay",
+        "name": "Factory Events Replay",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "factory-stuck-watcher",
+        "name": "Factory Stuck Watcher",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "focusbro",
+        "name": "FocusBro",
+        "repo": "Latimer-Woods-Tech/focusbro",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "focus-bro",
+          "FB"
+        ],
+        "packages": [],
+        "repoConfirmed": true
+      },
+      {
+        "id": "inbound-oracle",
+        "name": "Inbound Oracle",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "itsjusus",
+        "name": "ItsJusUs",
+        "repo": "Latimer-Woods-Tech/ijustus",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "provisioned",
+        "mode": "hands-off",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "ijustus",
+          "IJ"
+        ],
+        "packages": [],
+        "repoConfirmed": true
+      },
+      {
+        "id": "kairoscouncil",
+        "name": "Kings Council",
+        "repo": "Latimer-Woods-Tech/kairoscouncil",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "growth",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "kings-council",
+          "kingscouncil",
+          "kings-council-app",
+          "KC"
+        ],
+        "packages": [],
+        "repoConfirmed": true
+      },
+      {
+        "id": "latimerwoods-dev",
+        "name": "LatimerWoods Dev",
+        "repo": null,
+        "kind": "infra",
+        "domain": "dev.latimerwoods.dev",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "latwoodtech-web",
+        "name": "LatwoodTech Web",
+        "repo": null,
+        "kind": "infra",
+        "domain": "latwoodtech.com",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
@@ -338,9 +614,151 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "scaffolded",
+        "mode": "build",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "linkedin-publisher",
+        "name": "LinkedIn Publisher",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "llm-rank-worker",
+        "name": "LLM Rank Worker",
+        "repo": null,
+        "kind": "infra",
+        "domain": "llm-rank.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "provisioned",
+        "mode": "hands-off",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "marketing-supervisor",
+        "name": "Marketing Supervisor",
+        "repo": null,
+        "kind": "infra",
+        "domain": "marketing.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "provisioned",
+        "mode": "hands-off",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "marketing-supervisor-staging",
+        "name": "Marketing Supervisor (Staging)",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "provisioned",
+        "mode": "hands-off",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "neighbor-aid",
+        "name": "Neighbor Aid",
+        "repo": "Latimer-Woods-Tech/neighbor-aid",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "provisioned",
+        "mode": "hands-off",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "neighboraid",
+          "NA"
+        ],
+        "packages": [],
+        "repoConfirmed": true
+      },
+      {
+        "id": "qa-tools-ui",
+        "name": "QA Tools UI",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "qa-tools-worker",
+        "name": "QA Tools Worker",
+        "repo": null,
+        "kind": "infra",
+        "domain": "api.qa.latimerwoods.dev",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "referrals",
+        "name": "Referrals",
+        "repo": null,
+        "kind": "infra",
+        "domain": "referrals.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "provisioned",
+        "mode": "hands-off",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
@@ -353,9 +771,11 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
@@ -368,9 +788,11 @@
         "url": "https://api.selfprime.net",
         "healthState": "live",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": "revenue",
         "cohesion": 53,
         "registryStatus": "present",
+        "scope": "in-scope",
         "aliases": [
           "prime-self",
           "prime-self-ui",
@@ -389,6 +811,7 @@
           "bodygraph",
           "telephony"
         ],
+        "networkTokenConfigured": true,
         "registrySource": "Latimer-Woods-Tech/HumanDesign/feature-registry.yml",
         "cohesionDimensions": [
           {
@@ -441,7 +864,25 @@
             "score": 25,
             "weight": 5
           }
-        ]
+        ],
+        "repoConfirmed": true
+      },
+      {
+        "id": "status-prober",
+        "name": "Status Prober",
+        "repo": null,
+        "kind": "infra",
+        "domain": "status.latwoodtech.work",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
       },
       {
         "id": "supervisor",
@@ -452,9 +893,28 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "supervisor-mirror",
+        "name": "Supervisor Mirror",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
@@ -467,11 +927,34 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
+      },
+      {
+        "id": "the-calling",
+        "name": "The Calling",
+        "repo": "Latimer-Woods-Tech/the-calling",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "growth",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "thecalling",
+          "TC"
+        ],
+        "packages": [],
+        "repoConfirmed": true
       },
       {
         "id": "video-cron",
@@ -482,9 +965,45 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "video-render-service",
+        "name": "Video Render Service",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "maintain",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "video-studio",
+        "name": "Video Studio",
+        "repo": null,
+        "kind": "infra",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "scaffolded",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
@@ -497,30 +1016,62 @@
         "url": null,
         "healthState": "unknown",
         "lifecycleStage": "live",
+        "mode": "maintain",
         "maturity": null,
         "cohesion": null,
         "registryStatus": "missing",
+        "scope": "in-scope",
         "aliases": [],
         "packages": []
       },
       {
+        "id": "wordis-bond",
+        "name": "Wordis Bond",
+        "repo": "Latimer-Woods-Tech/wordis-bond",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "build",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "wordisbond",
+          "WB"
+        ],
+        "packages": [],
+        "repoConfirmed": true
+      },
+      {
         "id": "xico-city",
-        "name": "xico-city-staging",
+        "name": "Xico City",
         "repo": "Latimer-Woods-Tech/xico-city",
         "kind": "product",
         "domain": "xicocity.com",
         "url": "https://xicocity.com",
         "healthState": "live",
-        "lifecycleStage": null,
-        "maturity": null,
+        "lifecycleStage": "live",
+        "mode": "growth",
+        "maturity": "beta",
         "cohesion": 51,
-        "registryStatus": "missing",
+        "registryStatus": "present",
+        "scope": "in-scope",
         "aliases": [
           "xicocity",
           "xico-city-api",
           "XC"
         ],
-        "packages": [],
+        "packages": [
+          "auth",
+          "neon",
+          "analytics",
+          "monitoring"
+        ],
+        "networkTokenConfigured": true,
+        "registrySource": "Latimer-Woods-Tech/xico-city/feature-registry.yml",
         "cohesionDimensions": [
           {
             "key": "stack",
@@ -572,7 +1123,46 @@
             "score": 50,
             "weight": 5
           }
-        ]
+        ],
+        "repoConfirmed": true
+      },
+      {
+        "id": "xico-city-staging",
+        "name": "Xico City (Staging)",
+        "repo": null,
+        "kind": "infra",
+        "domain": "staging.xicocity.com",
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "growth",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [],
+        "packages": []
+      },
+      {
+        "id": "xpelevator",
+        "name": "XP Elevator",
+        "repo": "Latimer-Woods-Tech/xpelevator",
+        "kind": "product",
+        "domain": null,
+        "url": null,
+        "healthState": "unknown",
+        "lifecycleStage": "live",
+        "mode": "growth",
+        "maturity": null,
+        "cohesion": null,
+        "registryStatus": "missing",
+        "scope": "in-scope",
+        "aliases": [
+          "xp-elevator",
+          "XP"
+        ],
+        "packages": [],
+        "repoConfirmed": true
       }
     ],
     "packages": [
@@ -839,48 +1429,6 @@
         "tier": "infra"
       },
       {
-        "id": "capricast:video-playback",
-        "appId": "capricast",
-        "label": "CF Stream video playback",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:stripe-payments",
-        "appId": "capricast",
-        "label": "Stripe payments",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:conference",
-        "appId": "capricast",
-        "label": "Conference scheduling and hosting",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:chat-1to1",
-        "appId": "capricast",
-        "label": "1:1 text chat",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "capricast:live-stream",
-        "appId": "capricast",
-        "label": "Live streaming",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:group-video",
-        "appId": "capricast",
-        "label": "16-way video chat",
-        "status": "roadmap",
-        "tier": "growth"
-      },
-      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -963,6 +1511,76 @@
         "label": "Inner Circle (membership)",
         "status": "in-progress",
         "tier": "growth"
+      },
+      {
+        "id": "capricast:video-playback",
+        "appId": "capricast",
+        "label": "CF Stream video playback",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:stripe-payments",
+        "appId": "capricast",
+        "label": "Stripe payments",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:conference",
+        "appId": "capricast",
+        "label": "Conference scheduling and hosting",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:chat-1to1",
+        "appId": "capricast",
+        "label": "1:1 text chat",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "capricast:live-stream",
+        "appId": "capricast",
+        "label": "Live streaming",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:group-video",
+        "appId": "capricast",
+        "label": "16-way video chat",
+        "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
+        "tier": "core"
       }
     ],
     "roadmapItems": [
@@ -1044,34 +1662,6 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "capricast:cc-monetize",
-        "appId": "capricast",
-        "label": "Creator Monetization Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "capricast:cc-live-stream",
-        "appId": "capricast",
-        "label": "Live Streaming GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "capricast:cc-group-chat",
-        "appId": "capricast",
-        "label": "16-way Video Chat",
-        "status": "queued",
-        "quarter": "Q1-2027"
-      },
-      {
-        "id": "capricast:cc-mobile",
-        "appId": "capricast",
-        "label": "Mobile PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
         "id": "selfprime:sp-launch",
         "appId": "selfprime",
         "label": "Public Launch",
@@ -1126,6 +1716,55 @@
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
+      },
+      {
+        "id": "capricast:cc-monetize",
+        "appId": "capricast",
+        "label": "Creator Monetization Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "capricast:cc-live-stream",
+        "appId": "capricast",
+        "label": "Live Streaming GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "capricast:cc-group-chat",
+        "appId": "capricast",
+        "label": "16-way Video Chat",
+        "status": "queued",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "capricast:cc-mobile",
+        "appId": "capricast",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
+        "status": "design",
+        "quarter": "Q1-2027"
       }
     ],
     "gaps": [
@@ -1474,81 +2113,6 @@
       "type": "uses_package"
     },
     {
-      "from": "capricast",
-      "to": "capricast:video-playback",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:stripe-payments",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:conference",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:chat-1to1",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:live-stream",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:group-video",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-monetize",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-live-stream",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-group-chat",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:video",
-      "type": "uses_package"
-    },
-    {
       "from": "selfprime",
       "to": "selfprime:energy-blueprint",
       "type": "has_feature"
@@ -1707,26 +2271,161 @@
       "from": "coh",
       "to": "pkg:email",
       "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:video-playback",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:stripe-payments",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:conference",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:chat-1to1",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:live-stream",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:group-video",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-monetize",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-live-stream",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-group-chat",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "capricast",
+      "to": "pkg:video",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:booking",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:monitoring",
+      "type": "uses_package"
     }
   ],
   "stats": {
-    "appCount": 14,
-    "productCount": 6,
-    "infraCount": 8,
-    "registryPresent": 5,
-    "registryMissing": 9,
-    "featureCount": 38,
-    "roadmapCount": 23,
+    "appCount": 43,
+    "productCount": 13,
+    "infraCount": 30,
+    "discoveredRepoCount": 0,
+    "registryPresent": 6,
+    "registryMissing": 37,
+    "scopeInScope": 43,
+    "scopeExcluded": 0,
+    "scopeDenylisted": 0,
+    "needsRegistry": 0,
+    "featureCount": 42,
+    "roadmapCount": 26,
     "packageCount": 24,
     "gapCount": 14,
     "templateCount": 11,
-    "edgeCount": 87
+    "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-08T03:21:19.911Z",
+    "generatedAt": "2026-06-12T03:58:28.336Z",
     "current": {
       "overallCohesion": 51.4,
-      "registryCoverage": 45.45,
+      "registryCoverage": 17.65,
       "openGaps": 14,
       "gaps": {
         "p0": 1,
@@ -1736,7 +2435,7 @@
       },
       "cost30dUsd": 4.87,
       "mrrUsd": 0,
-      "completionWeighted": 0
+      "completionWeighted": 3
     },
     "trends": {
       "cohesion": {
@@ -1764,27 +2463,27 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 0,
-        "prior": 26.5,
-        "priorDate": "2026-05-17",
-        "dayGap": 8,
-        "delta": -26.5,
-        "direction": "down"
+        "current": 3,
+        "prior": 0,
+        "priorDate": "2026-05-25",
+        "dayGap": 18,
+        "delta": 3,
+        "direction": "up"
       },
       "registryCoverage": {
-        "current": 45.45,
-        "prior": null,
-        "priorDate": null,
-        "dayGap": null,
-        "delta": null,
-        "direction": "flat"
+        "current": 17.65,
+        "prior": 45.45,
+        "priorDate": "2026-06-08",
+        "dayGap": 4,
+        "delta": -27.8,
+        "direction": "down"
       },
       "openGaps": {
         "current": 14,
-        "prior": null,
-        "priorDate": null,
-        "dayGap": null,
-        "delta": null,
+        "prior": 14,
+        "priorDate": "2026-06-08",
+        "dayGap": 4,
+        "delta": 0,
         "direction": "flat"
       }
     },
@@ -1837,6 +2536,6 @@
         }
       ]
     },
-    "seriesPoints": 1
+    "seriesPoints": 2
   }
 }
