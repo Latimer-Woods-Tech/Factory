@@ -359,7 +359,7 @@ workers:
     deployment_status: live
     neon_project_id: dry-poetry-91897020
     neon_staging_branch: staging                               # br-curly-rice-amw5jk6i — Neon PR preview branches fork from here
-    neon_hyperdrive_id: "43f49bb7de7a49edb290c66a7b9cab9e"    # staging Hyperdrive; sed-replaced per-PR by _neon-pr-lifecycle.yml
+    neon_hyperdrive_id: "caab7edc66a743f9b9856e7b074167b9"    # staging Hyperdrive (capricast-staging-db-20260601 → ep-sweet-union-am6jqo1u staging branch br-curly-rice-amw5jk6i); sed-replaced per-PR by _neon-pr-lifecycle.yml
     consumers: []
 
   - id: capricast-api

@@ -100,11 +100,15 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
-          GITHUB_APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          # GITHUB_TOKEN must be LONG-LIVED: the worker dispatches from an
+          # hourly cron forever. An App installation token (steps.app-token)
+          # expires in 1h AND is revoked by this workflow's post-job cleanup —
+          # storing it bricked every dispatch after deploy ("Bad credentials").
+          GH_DISPATCH_PAT: ${{ secrets.GH_PAT }}
           WORKER_API_TOKEN: ${{ secrets.WORKER_API_TOKEN }}
         run: |
           set -euo pipefail
-          printf '%s' "$GITHUB_APP_TOKEN" | npx wrangler secret put GITHUB_TOKEN --env production
+          printf '%s' "$GH_DISPATCH_PAT" | npx wrangler secret put GITHUB_TOKEN --env production
           printf '%s' "$WORKER_API_TOKEN" | npx wrangler secret put WORKER_API_TOKEN --env production
           BUILT_FILE=$(ls .sentry-dist/*.js | grep -v '\.map$' | head -1)
           echo "Deploying pre-built bundle: $BUILT_FILE"
