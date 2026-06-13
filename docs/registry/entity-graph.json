@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T15:01:31.524Z",
+  "generatedAt": "2026-06-13T17:22:41.307Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,53 +1793,39 @@
         "tier": "infra"
       },
       {
-        "id": "selfprime:energy-blueprint",
-        "appId": "selfprime",
-        "label": "Energy Blueprint synthesis",
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "selfprime:narration",
-        "appId": "selfprime",
-        "label": "AI voice narration",
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "selfprime:video-engine",
-        "appId": "selfprime",
-        "label": "Energy Blueprint video engine",
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "selfprime:notification-inbox",
-        "appId": "selfprime",
-        "label": "In-app notification inbox",
-        "status": "live",
-        "tier": "growth"
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
       },
       {
-        "id": "selfprime:practitioner-network",
-        "appId": "selfprime",
-        "label": "Practitioner referral network",
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
         "status": "in-progress",
         "tier": "growth"
-      },
-      {
-        "id": "selfprime:group-readings",
-        "appId": "selfprime",
-        "label": "Group reading sessions",
-        "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:rls-enforcement",
-        "appId": "selfprime",
-        "label": "Row-Level Security on all tables",
-        "status": "roadmap",
-        "tier": "compliance"
       },
       {
         "id": "xico-city:artist-roles",
@@ -1912,39 +1898,53 @@
         "tier": "growth"
       },
       {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
+        "id": "selfprime:energy-blueprint",
+        "appId": "selfprime",
+        "label": "Energy Blueprint synthesis",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
+        "id": "selfprime:narration",
+        "appId": "selfprime",
+        "label": "AI voice narration",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
+        "id": "selfprime:video-engine",
+        "appId": "selfprime",
+        "label": "Energy Blueprint video engine",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
+        "id": "selfprime:notification-inbox",
+        "appId": "selfprime",
+        "label": "In-app notification inbox",
+        "status": "live",
+        "tier": "growth"
       },
       {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
+        "id": "selfprime:practitioner-network",
+        "appId": "selfprime",
+        "label": "Practitioner referral network",
         "status": "in-progress",
         "tier": "growth"
+      },
+      {
+        "id": "selfprime:group-readings",
+        "appId": "selfprime",
+        "label": "Group reading sessions",
+        "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:rls-enforcement",
+        "appId": "selfprime",
+        "label": "Row-Level Security on all tables",
+        "status": "roadmap",
+        "tier": "compliance"
       }
     ],
     "roadmapItems": [
@@ -2026,30 +2026,30 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "selfprime:sp-launch",
-        "appId": "selfprime",
-        "label": "Public Launch",
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "selfprime:sp-rls",
-        "appId": "selfprime",
-        "label": "RLS enforced across all tables",
-        "status": "queued",
-        "quarter": "Q4-2026"
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
       },
       {
-        "id": "selfprime:sp-referrals",
-        "appId": "selfprime",
-        "label": "Practitioner referral engine GA",
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
         "status": "queued",
-        "quarter": "Q4-2026"
+        "quarter": "Q3-2026"
       },
       {
-        "id": "selfprime:sp-ios",
-        "appId": "selfprime",
-        "label": "iOS PWA",
+        "id": "coh:coh-mobile",
+        "appId": "coh",
+        "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
       },
@@ -2103,30 +2103,30 @@
         "quarter": "Q2-2027"
       },
       {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced across all tables",
         "status": "queued",
-        "quarter": "Q3-2026"
+        "quarter": "Q4-2026"
       },
       {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
-        "label": "Mobile PWA",
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
         "status": "design",
         "quarter": "Q2-2027"
       }
@@ -2477,93 +2477,73 @@
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:energy-blueprint",
+      "from": "coh",
+      "to": "coh:the-chair",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:narration",
+      "from": "coh",
+      "to": "coh:the-vault",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:video-engine",
+      "from": "coh",
+      "to": "coh:the-academy",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:notification-inbox",
+      "from": "coh",
+      "to": "coh:the-stage",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:practitioner-network",
+      "from": "coh",
+      "to": "coh:inner-circle",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:group-readings",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:rls-enforcement",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-launch",
+      "from": "coh",
+      "to": "coh:coh-5streams",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-rls",
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-referrals",
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-ios",
+      "from": "coh",
+      "to": "coh:coh-mobile",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
+      "from": "coh",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
+      "from": "coh",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
+      "from": "coh",
       "to": "pkg:stripe",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "pkg:llm",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:bodygraph",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
+      "from": "coh",
       "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
       "type": "uses_package"
     },
     {
@@ -2697,73 +2677,93 @@
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "coh:the-chair",
+      "from": "selfprime",
+      "to": "selfprime:energy-blueprint",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-vault",
+      "from": "selfprime",
+      "to": "selfprime:narration",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-academy",
+      "from": "selfprime",
+      "to": "selfprime:video-engine",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-stage",
+      "from": "selfprime",
+      "to": "selfprime:notification-inbox",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:inner-circle",
+      "from": "selfprime",
+      "to": "selfprime:practitioner-network",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-5streams",
+      "from": "selfprime",
+      "to": "selfprime:group-readings",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:rls-enforcement",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-launch",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
+      "from": "selfprime",
+      "to": "selfprime:sp-rls",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
+      "from": "selfprime",
+      "to": "selfprime:sp-referrals",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-mobile",
+      "from": "selfprime",
+      "to": "selfprime:sp-ios",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
+      "from": "selfprime",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "coh",
+      "from": "selfprime",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "coh",
+      "from": "selfprime",
       "to": "pkg:stripe",
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "pkg:telephony",
+      "from": "selfprime",
+      "to": "pkg:llm",
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "pkg:email",
+      "from": "selfprime",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:bodygraph",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:telephony",
       "type": "uses_package"
     }
   ],
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-13T15:01:31.586Z",
+    "generatedAt": "2026-06-13T17:22:41.367Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
