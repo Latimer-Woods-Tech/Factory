@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T23:17:18.406Z",
+  "generatedAt": "2026-06-13T03:43:07.362Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -70,7 +70,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 73,
+        "cohesion": 71,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -137,7 +137,7 @@
           },
           {
             "key": "privacy",
-            "score": 100,
+            "score": 75,
             "weight": 5
           }
         ],
@@ -213,7 +213,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 42,
+        "cohesion": 14,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -234,7 +234,7 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 40,
+            "score": 20,
             "weight": 10
           },
           {
@@ -244,17 +244,17 @@
           },
           {
             "key": "tests",
-            "score": 40,
+            "score": 0,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 60,
+            "score": 20,
             "weight": 15
           },
           {
@@ -269,17 +269,17 @@
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 67,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 50,
+            "score": 25,
             "weight": 5
           }
         ],
@@ -313,7 +313,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "production",
-        "cohesion": 47,
+        "cohesion": 14,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -335,32 +335,32 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 60,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 60,
+            "score": 0,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 40,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 67,
+            "score": 33,
             "weight": 5
           },
           {
@@ -370,7 +370,7 @@
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
@@ -500,7 +500,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 18,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -508,6 +508,58 @@
           "FB"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 40,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 0,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       },
       {
@@ -538,7 +590,7 @@
         "lifecycleStage": "provisioned",
         "mode": "hands-off",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 44,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -546,6 +598,58 @@
           "IJ"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 80,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 80,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 40,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 100,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 67,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       },
       {
@@ -559,7 +663,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 27,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -569,6 +673,58 @@
           "KC"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 20,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 40,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 67,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 67,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       },
       {
@@ -701,7 +857,7 @@
         "lifecycleStage": "provisioned",
         "mode": "hands-off",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 14,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -709,6 +865,58 @@
           "NA"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 20,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 0,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 0,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       },
       {
@@ -790,7 +998,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "revenue",
-        "cohesion": 53,
+        "cohesion": 16,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -821,27 +1029,27 @@
           },
           {
             "key": "code_patterns",
-            "score": 0,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 100,
+            "score": 0,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 67,
+            "score": 33,
             "weight": 5
           },
           {
@@ -851,12 +1059,12 @@
           },
           {
             "key": "release",
-            "score": 67,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 67,
+            "score": 0,
             "weight": 10
           },
           {
@@ -946,7 +1154,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 14,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -954,6 +1162,58 @@
           "TC"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 20,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 0,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 0,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       },
       {
@@ -1035,7 +1295,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 14,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1043,6 +1303,58 @@
           "WB"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 20,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 0,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 20,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 33,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 0,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       },
       {
@@ -1056,7 +1368,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": "beta",
-        "cohesion": 51,
+        "cohesion": 14,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1075,17 +1387,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 80,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 60,
+            "score": 0,
             "weight": 15
           },
           {
@@ -1100,7 +1412,7 @@
           },
           {
             "key": "schema",
-            "score": 100,
+            "score": 33,
             "weight": 5
           },
           {
@@ -1110,17 +1422,17 @@
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 67,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 50,
+            "score": 25,
             "weight": 5
           }
         ],
@@ -1154,7 +1466,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": null,
-        "cohesion": null,
+        "cohesion": 45,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1162,6 +1474,58 @@
           "XP"
         ],
         "packages": [],
+        "cohesionDimensions": [
+          {
+            "key": "stack",
+            "score": 80,
+            "weight": 10
+          },
+          {
+            "key": "code_patterns",
+            "score": 80,
+            "weight": 15
+          },
+          {
+            "key": "tests",
+            "score": 40,
+            "weight": 15
+          },
+          {
+            "key": "observability",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "security",
+            "score": 40,
+            "weight": 15
+          },
+          {
+            "key": "schema",
+            "score": 67,
+            "weight": 5
+          },
+          {
+            "key": "workflows",
+            "score": 67,
+            "weight": 10
+          },
+          {
+            "key": "release",
+            "score": 33,
+            "weight": 5
+          },
+          {
+            "key": "performance",
+            "score": 0,
+            "weight": 10
+          },
+          {
+            "key": "privacy",
+            "score": 25,
+            "weight": 5
+          }
+        ],
         "repoConfirmed": true
       }
     ],
@@ -1429,6 +1793,41 @@
         "tier": "infra"
       },
       {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -1517,41 +1916,6 @@
         "appId": "capricast",
         "label": "16-way video chat",
         "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
         "tier": "growth"
       },
       {
@@ -1662,6 +2026,34 @@
         "quarter": "Q1-2027"
       },
       {
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-mobile",
+        "appId": "coh",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
         "id": "selfprime:sp-launch",
         "appId": "selfprime",
         "label": "Public Launch",
@@ -1713,34 +2105,6 @@
       {
         "id": "capricast:cc-mobile",
         "appId": "capricast",
-        "label": "Mobile PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
-        "status": "queued",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
@@ -2113,6 +2477,76 @@
       "type": "uses_package"
     },
     {
+      "from": "coh",
+      "to": "coh:the-chair",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-vault",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-academy",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-stage",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
+      "type": "uses_package"
+    },
+    {
       "from": "selfprime",
       "to": "selfprime:energy-blueprint",
       "type": "has_feature"
@@ -2278,76 +2712,6 @@
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "coh:the-chair",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-vault",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-academy",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-stage",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:inner-circle",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-5streams",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:email",
-      "type": "uses_package"
-    },
-    {
       "from": "xico-city",
       "to": "xico-city:artist-roles",
       "type": "has_feature"
@@ -2422,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-12T23:17:18.454Z",
+    "generatedAt": "2026-06-13T03:43:07.423Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2433,7 +2797,7 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.87,
+      "cost30dUsd": 4.26,
       "mrrUsd": 0,
       "completionWeighted": 3
     },
@@ -2447,12 +2811,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.87,
-        "prior": 1.25,
-        "priorDate": "2026-05-29",
-        "dayGap": 7,
-        "delta": 3.62,
-        "direction": "up"
+        "current": 4.26,
+        "prior": 4.87,
+        "priorDate": "2026-06-05",
+        "dayGap": 6,
+        "delta": -0.61,
+        "direction": "down"
       },
       "mrr": {
         "current": 0,
@@ -2474,7 +2838,7 @@
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 4,
+        "dayGap": 5,
         "delta": -27.8,
         "direction": "down"
       },
@@ -2482,7 +2846,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 4,
+        "dayGap": 5,
         "delta": 0,
         "direction": "flat"
       }
@@ -2536,6 +2900,6 @@
         }
       ]
     },
-    "seriesPoints": 2
+    "seriesPoints": 3
   }
 }
