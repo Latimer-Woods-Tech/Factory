@@ -2,18 +2,18 @@
   "repo_key": "CH",
   "repo_name": "cypher-healing",
   "repo_path": "Latimer-Woods-Tech/coh",
-  "timestamp": "2026-06-06T08:06:05.146502+00:00",
-  "cohesion": 47,
+  "timestamp": "2026-06-12T01:12:16.810806+00:00",
+  "cohesion": 14,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 60,
+      "score": 20,
       "checks": [
         {
           "name": "wrangler.jsonc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -23,7 +23,7 @@
         },
         {
           "name": "Hono in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -42,31 +42,31 @@
       "key": "code_patterns",
       "title": "Code patterns",
       "weight": 15,
-      "score": 80,
+      "score": 20,
       "checks": [
         {
           "name": "@latimer-woods-tech/logger in deps",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "name": "@latimer-woods-tech/errors in deps",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "name": "@latimer-woods-tech/monitoring in deps",
-          "passed": true,
-          "detail": ""
-        },
-        {
-          "name": "No console.log in src/",
           "passed": false,
           "detail": ""
         },
         {
-          "name": "Typed Env bindings",
+          "name": "@latimer-woods-tech/errors in deps",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "@latimer-woods-tech/monitoring in deps",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "No console.log in src/",
           "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "Typed Env bindings",
+          "passed": false,
           "detail": ""
         }
       ]
@@ -75,11 +75,11 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 60,
+      "score": 0,
       "checks": [
         {
           "name": "vitest.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -89,7 +89,7 @@
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -99,7 +99,7 @@
         },
         {
           "name": "Coverage thresholds set",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -108,16 +108,16 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 40,
+      "score": 0,
       "checks": [
         {
           "name": "Sentry import",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -141,7 +141,7 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 40,
+      "score": 20,
       "checks": [
         {
           "name": "CodeQL workflow present",
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -174,17 +174,17 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 67,
+      "score": 33,
       "checks": [
         {
           "name": "Migrations directory present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): src/db/migrations/add-product-images.sql"
+          "detail": ""
         },
         {
           "name": "Numbered file naming",
@@ -220,7 +220,7 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 33,
+      "score": 0,
       "checks": [
         {
           "name": "CHANGELOG.md present",
@@ -229,7 +229,7 @@
         },
         {
           "name": "Semver version (n.n.n)",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
