@@ -1,19 +1,19 @@
 {
-  "repo_key": "FA",
-  "repo_name": "factory-admin-studio",
-  "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-06-12T01:12:11.959572+00:00",
-  "cohesion": 71,
+  "repo_key": "XP",
+  "repo_name": "xpelevator",
+  "repo_path": "Latimer-Woods-Tech/xpelevator",
+  "timestamp": "2026-06-12T01:12:48.805230+00:00",
+  "cohesion": 45,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 60,
+      "score": 80,
       "checks": [
         {
           "name": "wrangler.jsonc present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -75,7 +75,7 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 100,
+      "score": 40,
       "checks": [
         {
           "name": "vitest.config present",
@@ -84,17 +84,17 @@
         },
         {
           "name": "playwright.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Smoke tier present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 40,
+      "score": 0,
       "checks": [
         {
           "name": "Sentry import",
@@ -122,12 +122,12 @@
         },
         {
           "name": "Sourcemap upload step",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "SLO doc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -141,11 +141,11 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 60,
+      "score": 40,
       "checks": [
         {
           "name": "CodeQL workflow present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -155,12 +155,12 @@
         },
         {
           "name": "No NPM_TOKEN in workflows",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Trusted Publishers (OIDC)",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -174,7 +174,7 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 100,
+      "score": 67,
       "checks": [
         {
           "name": "Migrations directory present",
@@ -184,11 +184,11 @@
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/0100_studio_entitlements.sql"
+          "detail": ""
         },
         {
           "name": "Numbered file naming",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -197,11 +197,11 @@
       "key": "workflows",
       "title": "Workflows",
       "weight": 10,
-      "score": 33,
+      "score": 67,
       "checks": [
         {
           "name": "\u22645 workflow files",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -220,7 +220,7 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 67,
+      "score": 33,
       "checks": [
         {
           "name": "CHANGELOG.md present",
@@ -234,7 +234,7 @@
         },
         {
           "name": "ADR directory present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -243,21 +243,21 @@
       "key": "performance",
       "title": "Performance",
       "weight": 10,
-      "score": 100,
+      "score": 0,
       "checks": [
         {
           "name": "p95 budgets declared",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Canary or post-deploy verify",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Synthetic / smoke workflow",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -266,16 +266,16 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 75,
+      "score": 25,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Retention policy doc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
