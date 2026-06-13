@@ -1,9 +1,9 @@
 {
-  "generated": "2026-06-06T09:11:27.431124+00:00",
-  "window_days": 7,
+  "generated": "2026-06-12T01:11:51.140769+00:00",
+  "window_days": 8,
   "totals_by_provider": {
     "cloudflare": 0.0,
-    "anthropic": 15.23,
+    "anthropic": 19.49,
     "sentry": 0.0,
     "stripe": 0.0,
     "gcp": 0
@@ -36,6 +36,10 @@
     {
       "date": "2026-06-05",
       "total_usd": 4.87
+    },
+    {
+      "date": "2026-06-11",
+      "total_usd": 4.26
     }
   ]
 }
