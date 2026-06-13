@@ -1,15 +1,14 @@
 {
-  "generatedAt": "2026-06-07T00:00:00Z",
-  "_note": "Seed file — replaced hourly by generate-platform-data.mjs via generate-founder-stats.yml",
+  "generatedAt": "2026-06-13T03:43:06.623Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
     "cohesionThreshold": 70,
     "gaps": {
       "p0": 1,
-      "p1": 3,
-      "p2": 6,
-      "p3": 17
+      "p1": 0,
+      "p2": 4,
+      "p3": 9
     }
   },
   "apps": [
@@ -40,13 +39,22 @@
           "id": "sp-launch",
           "label": "Public Launch",
           "status": "active",
-          "quarter": "Q3-2026"
+          "quarter": "Q3-2026",
+          "description": "Remove invite gate, open to public practitioners"
         },
         {
           "id": "sp-rls",
-          "label": "RLS enforced",
+          "label": "RLS enforced across all tables",
           "status": "queued",
-          "quarter": "Q4-2026"
+          "quarter": "Q4-2026",
+          "description": "Row-Level Security on the 35 user-scoped tables"
+        },
+        {
+          "id": "sp-referrals",
+          "label": "Practitioner referral engine GA",
+          "status": "queued",
+          "quarter": "Q4-2026",
+          "description": "Automated seeker→practitioner routing with attribution"
         },
         {
           "id": "sp-ios",
@@ -69,10 +77,34 @@
           "tier": "core"
         },
         {
+          "id": "video-engine",
+          "label": "Energy Blueprint video engine",
+          "status": "live",
+          "tier": "core"
+        },
+        {
+          "id": "notification-inbox",
+          "label": "In-app notification inbox",
+          "status": "live",
+          "tier": "growth"
+        },
+        {
           "id": "practitioner-network",
           "label": "Practitioner referral network",
           "status": "in-progress",
           "tier": "growth"
+        },
+        {
+          "id": "group-readings",
+          "label": "Group reading sessions",
+          "status": "roadmap",
+          "tier": "growth"
+        },
+        {
+          "id": "rls-enforcement",
+          "label": "Row-Level Security on all tables",
+          "status": "roadmap",
+          "tier": "compliance"
         }
       ]
     },
@@ -101,19 +133,28 @@
           "id": "cc-monetize",
           "label": "Creator Monetization Live",
           "status": "active",
-          "quarter": "Q3-2026"
+          "quarter": "Q3-2026",
+          "description": "Stripe payouts and subscription tiers for creators"
         },
         {
           "id": "cc-live-stream",
           "label": "Live Streaming GA",
           "status": "queued",
-          "quarter": "Q4-2026"
+          "quarter": "Q4-2026",
+          "description": "Persisted live events with player source and DVR"
         },
         {
           "id": "cc-group-chat",
           "label": "16-way Video Chat",
           "status": "queued",
-          "quarter": "Q1-2027"
+          "quarter": "Q1-2027",
+          "description": "CF Calls SFU with simulcast for both text and video"
+        },
+        {
+          "id": "cc-mobile",
+          "label": "Mobile PWA",
+          "status": "design",
+          "quarter": "Q2-2027"
         }
       ],
       "features": [
@@ -131,9 +172,27 @@
         },
         {
           "id": "conference",
-          "label": "Conference scheduling",
+          "label": "Conference scheduling and hosting",
           "status": "live",
           "tier": "core"
+        },
+        {
+          "id": "chat-1to1",
+          "label": "1:1 text chat",
+          "status": "live",
+          "tier": "growth"
+        },
+        {
+          "id": "live-stream",
+          "label": "Live streaming",
+          "status": "in-progress",
+          "tier": "core"
+        },
+        {
+          "id": "group-video",
+          "label": "16-way video chat",
+          "status": "roadmap",
+          "tier": "growth"
         }
       ]
     },
@@ -142,7 +201,7 @@
       "name": "AP Unlimited",
       "domain": "apunlimited.com",
       "maturity": "production",
-      "cohesion": 62,
+      "cohesion": 73,
       "healthState": "live",
       "packages": [
         "auth",
@@ -162,19 +221,48 @@
           "id": "as-agent-integration",
           "label": "Agent Gateway integration",
           "status": "active",
-          "quarter": "Q3-2026"
+          "quarter": "Q3-2026",
+          "description": "Wire agent-gateway into admin-studio operator surfaces"
         },
         {
           "id": "as-conformance-dashboard",
-          "label": "Live cohesion scores",
+          "label": "Conformance dashboard (live cohesion scores)",
           "status": "queued",
-          "quarter": "Q4-2026"
+          "quarter": "Q4-2026",
+          "description": "Show per-app cohesion scores with drill-down in the operator UI"
+        },
+        {
+          "id": "as-pr-review-ui",
+          "label": "Supervisor PR review surface",
+          "status": "queued",
+          "quarter": "Q1-2027",
+          "description": "Review and approve/reject supervisor-proposed PRs from the dashboard"
+        },
+        {
+          "id": "as-cost-alerts",
+          "label": "Cost alert configuration UI",
+          "status": "queued",
+          "quarter": "Q1-2027",
+          "description": "Operator-configurable LLM and infra cost thresholds with Pushover alerts"
+        },
+        {
+          "id": "as-multi-product-overview",
+          "label": "Cross-product health overview",
+          "status": "queued",
+          "quarter": "Q2-2027",
+          "description": "Single-pane view of all platform products, health, and revenue metrics"
         }
       ],
       "features": [
         {
           "id": "auth-login",
-          "label": "Operator authentication",
+          "label": "Operator authentication (JWT + Google SSO)",
+          "status": "live",
+          "tier": "core"
+        },
+        {
+          "id": "app-registry",
+          "label": "App registry viewer",
           "status": "live",
           "tier": "core"
         },
@@ -183,6 +271,48 @@
           "label": "Supervisor task management",
           "status": "live",
           "tier": "core"
+        },
+        {
+          "id": "smoke-tests",
+          "label": "Smoke test runner",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "github-app-auth",
+          "label": "GitHub App installation token (no 90-day churn)",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "sentry-integration",
+          "label": "Sentry error tracking",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "burn-rate-alerts",
+          "label": "LLM burn-rate governance alerts",
+          "status": "live",
+          "tier": "compliance"
+        },
+        {
+          "id": "storybook",
+          "label": "Component Storybook",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "pr-automation",
+          "label": "Automated PR creation via GitHub App",
+          "status": "in-progress",
+          "tier": "growth"
+        },
+        {
+          "id": "rls-enforcement",
+          "label": "Row-Level Security (RLS) on all tables",
+          "status": "roadmap",
+          "tier": "compliance"
         }
       ]
     },
@@ -191,7 +321,7 @@
       "name": "Cypher of Healing",
       "domain": "cypherofhealing.com",
       "maturity": "production",
-      "cohesion": 49,
+      "cohesion": 47,
       "healthState": "live",
       "packages": [
         "auth",
@@ -211,13 +341,26 @@
           "id": "coh-5streams",
           "label": "All 5 Streams Live",
           "status": "active",
-          "quarter": "Q3-2026"
+          "quarter": "Q3-2026",
+          "description": "The Chair, The Vault, The Academy, The Stage, Inner Circle"
         },
         {
           "id": "coh-test-coverage",
           "label": "Test coverage 60%+",
           "status": "active",
           "quarter": "Q3-2026"
+        },
+        {
+          "id": "coh-dual-domain",
+          "label": "cipherofhealing.com alias live",
+          "status": "queued",
+          "quarter": "Q3-2026"
+        },
+        {
+          "id": "coh-mobile",
+          "label": "Mobile PWA",
+          "status": "design",
+          "quarter": "Q2-2027"
         }
       ],
       "features": [
@@ -238,6 +381,18 @@
           "label": "The Academy (courses)",
           "status": "live",
           "tier": "core"
+        },
+        {
+          "id": "the-stage",
+          "label": "The Stage (events)",
+          "status": "in-progress",
+          "tier": "core"
+        },
+        {
+          "id": "inner-circle",
+          "label": "Inner Circle (membership)",
+          "status": "in-progress",
+          "tier": "growth"
         }
       ]
     },
@@ -265,13 +420,20 @@
           "id": "xc-media-processor",
           "label": "Media Processor Live",
           "status": "active",
-          "quarter": "Q3-2026"
+          "quarter": "Q3-2026",
+          "description": "GCP Cloud Run media processing pipeline"
         },
         {
           "id": "xc-artist-profiles",
           "label": "Artist Profile GA",
           "status": "queued",
           "quarter": "Q4-2026"
+        },
+        {
+          "id": "xc-booking",
+          "label": "Artist Booking",
+          "status": "design",
+          "quarter": "Q1-2027"
         }
       ],
       "features": [
@@ -286,6 +448,18 @@
           "label": "JWT + BetterAuth",
           "status": "live",
           "tier": "infra"
+        },
+        {
+          "id": "gcp-processor",
+          "label": "GCP Cloud Run media processor",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "booking",
+          "label": "Artist booking system",
+          "status": "roadmap",
+          "tier": "core"
         }
       ]
     },
@@ -311,35 +485,105 @@
       "roadmap": [
         {
           "id": "ag-custom-domain",
-          "label": "Production custom domain",
+          "label": "Production branded domain (agent-gateway.latwoodtech.work)",
           "status": "active",
-          "quarter": "Q3-2026"
+          "quarter": "Q3-2026",
+          "description": "Wire DNS + CF custom domain so agent-gateway.latwoodtech.work is live"
+        },
+        {
+          "id": "ag-ci-deploy",
+          "label": "CI/CD deploy workflow",
+          "status": "active",
+          "quarter": "Q3-2026",
+          "description": "deploy-agent-gateway.yml deploy on tag push to production"
+        },
+        {
+          "id": "ag-admin-integration",
+          "label": "Admin Studio integration",
+          "status": "queued",
+          "quarter": "Q4-2026",
+          "description": "Expose agent session list/control in AP Unlimited operator dashboard"
         },
         {
           "id": "ag-vertical-1",
-          "label": "First production vertical",
+          "label": "Phase 4 first vertical (selfprime or capricast)",
           "status": "queued",
-          "quarter": "Q4-2026"
+          "quarter": "Q4-2026",
+          "description": "First production use-case of the agent runtime in a revenue app"
+        },
+        {
+          "id": "ag-episodic-memory",
+          "label": "Episodic memory across sessions",
+          "status": "queued",
+          "quarter": "Q1-2027"
+        },
+        {
+          "id": "ag-tool-library",
+          "label": "Platform tool library (neon, stripe, comms)",
+          "status": "queued",
+          "quarter": "Q1-2027"
         }
       ],
       "features": [
         {
           "id": "session-management",
-          "label": "AgentSessionDO lifecycle",
+          "label": "AgentSessionDO — Durable Object session lifecycle",
           "status": "live",
           "tier": "core"
         },
         {
-          "id": "tool-calling",
-          "label": "Multi-provider tool calling",
+          "id": "idempotency",
+          "label": "Idempotent session creation",
           "status": "live",
           "tier": "core"
         },
         {
           "id": "guardrails",
-          "label": "Spend guardrails",
+          "label": "Per-session spend guardrails",
           "status": "live",
           "tier": "compliance"
+        },
+        {
+          "id": "tool-calling",
+          "label": "Anthropic/Grok/DeepSeek tool calling",
+          "status": "live",
+          "tier": "core"
+        },
+        {
+          "id": "episodic-memory",
+          "label": "Episodic memory (context pruning)",
+          "status": "live",
+          "tier": "core"
+        },
+        {
+          "id": "streaming",
+          "label": "SSE streaming responses",
+          "status": "live",
+          "tier": "core"
+        },
+        {
+          "id": "run-loop",
+          "label": "Autonomous run loop with max-steps guard",
+          "status": "live",
+          "tier": "core"
+        },
+        {
+          "id": "jwt-auth",
+          "label": "JWT authentication on session routes",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "rate-limiting",
+          "label": "Per-session rate limiting",
+          "status": "live",
+          "tier": "infra"
+        },
+        {
+          "id": "custom-domain",
+          "label": "Production custom domain",
+          "status": "in-progress",
+          "tier": "infra"
         }
       ]
     }
@@ -357,7 +601,7 @@
     },
     {
       "id": "factory-supervisor",
-      "name": "Supervisor",
+      "name": "Factory Supervisor",
       "healthState": "live",
       "svgPos": {
         "cx": 645,
@@ -387,7 +631,7 @@
     },
     {
       "id": "factory-core-api",
-      "name": "Core API",
+      "name": "Factory Core Api",
       "healthState": "live",
       "svgPos": {
         "cx": 155,
@@ -397,7 +641,7 @@
     },
     {
       "id": "synthetic-monitor",
-      "name": "Monitor",
+      "name": "Synthetic Monitor",
       "healthState": "live",
       "svgPos": {
         "cx": 278,
@@ -532,59 +776,202 @@
     "milestones": [
       {
         "id": "sp-launch",
-        "label": "Self Prime: Public Launch",
-        "appId": "selfprime",
+        "label": "Public Launch",
         "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "cc-monetize",
-        "label": "Capricast: Creator Monetization",
-        "appId": "capricast",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh-5streams",
-        "label": "CoH: All 5 Streams Live",
-        "appId": "coh",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "xc-processor",
-        "label": "Xico City: Media Processor",
-        "appId": "xico-city",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "ag-custom-domain",
-        "label": "Agent Gateway: Custom Domain",
-        "appId": "agent-gateway",
-        "status": "active",
-        "quarter": "Q3-2026"
+        "quarter": "Q3-2026",
+        "description": "Remove invite gate, open to public practitioners",
+        "appId": "selfprime"
       },
       {
         "id": "sp-rls",
-        "label": "Self Prime: RLS Enforced",
-        "appId": "selfprime",
+        "label": "RLS enforced across all tables",
         "status": "queued",
-        "quarter": "Q4-2026"
+        "quarter": "Q4-2026",
+        "description": "Row-Level Security on the 35 user-scoped tables",
+        "appId": "selfprime"
       },
       {
-        "id": "as-conformance",
-        "label": "Admin: Conformance Dashboard",
-        "appId": "admin-studio",
+        "id": "sp-referrals",
+        "label": "Practitioner referral engine GA",
         "status": "queued",
-        "quarter": "Q4-2026"
+        "quarter": "Q4-2026",
+        "description": "Automated seeker→practitioner routing with attribution",
+        "appId": "selfprime"
+      },
+      {
+        "id": "sp-ios",
+        "label": "iOS PWA",
+        "status": "design",
+        "quarter": "Q2-2027",
+        "appId": "selfprime"
+      },
+      {
+        "id": "cc-monetize",
+        "label": "Creator Monetization Live",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "description": "Stripe payouts and subscription tiers for creators",
+        "appId": "capricast"
+      },
+      {
+        "id": "cc-live-stream",
+        "label": "Live Streaming GA",
+        "status": "queued",
+        "quarter": "Q4-2026",
+        "description": "Persisted live events with player source and DVR",
+        "appId": "capricast"
+      },
+      {
+        "id": "cc-group-chat",
+        "label": "16-way Video Chat",
+        "status": "queued",
+        "quarter": "Q1-2027",
+        "description": "CF Calls SFU with simulcast for both text and video",
+        "appId": "capricast"
+      },
+      {
+        "id": "cc-mobile",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027",
+        "appId": "capricast"
+      },
+      {
+        "id": "as-agent-integration",
+        "label": "Agent Gateway integration",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "description": "Wire agent-gateway into admin-studio operator surfaces",
+        "appId": "admin-studio"
+      },
+      {
+        "id": "as-conformance-dashboard",
+        "label": "Conformance dashboard (live cohesion scores)",
+        "status": "queued",
+        "quarter": "Q4-2026",
+        "description": "Show per-app cohesion scores with drill-down in the operator UI",
+        "appId": "admin-studio"
+      },
+      {
+        "id": "as-pr-review-ui",
+        "label": "Supervisor PR review surface",
+        "status": "queued",
+        "quarter": "Q1-2027",
+        "description": "Review and approve/reject supervisor-proposed PRs from the dashboard",
+        "appId": "admin-studio"
+      },
+      {
+        "id": "as-cost-alerts",
+        "label": "Cost alert configuration UI",
+        "status": "queued",
+        "quarter": "Q1-2027",
+        "description": "Operator-configurable LLM and infra cost thresholds with Pushover alerts",
+        "appId": "admin-studio"
+      },
+      {
+        "id": "as-multi-product-overview",
+        "label": "Cross-product health overview",
+        "status": "queued",
+        "quarter": "Q2-2027",
+        "description": "Single-pane view of all platform products, health, and revenue metrics",
+        "appId": "admin-studio"
+      },
+      {
+        "id": "coh-5streams",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "description": "The Chair, The Vault, The Academy, The Stage, Inner Circle",
+        "appId": "coh"
+      },
+      {
+        "id": "coh-test-coverage",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "appId": "coh"
+      },
+      {
+        "id": "coh-dual-domain",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026",
+        "appId": "coh"
+      },
+      {
+        "id": "coh-mobile",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027",
+        "appId": "coh"
+      },
+      {
+        "id": "xc-media-processor",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "description": "GCP Cloud Run media processing pipeline",
+        "appId": "xico-city"
+      },
+      {
+        "id": "xc-artist-profiles",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026",
+        "appId": "xico-city"
+      },
+      {
+        "id": "xc-booking",
+        "label": "Artist Booking",
+        "status": "design",
+        "quarter": "Q1-2027",
+        "appId": "xico-city"
+      },
+      {
+        "id": "ag-custom-domain",
+        "label": "Production branded domain (agent-gateway.latwoodtech.work)",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "description": "Wire DNS + CF custom domain so agent-gateway.latwoodtech.work is live",
+        "appId": "agent-gateway"
+      },
+      {
+        "id": "ag-ci-deploy",
+        "label": "CI/CD deploy workflow",
+        "status": "active",
+        "quarter": "Q3-2026",
+        "description": "deploy-agent-gateway.yml deploy on tag push to production",
+        "appId": "agent-gateway"
+      },
+      {
+        "id": "ag-admin-integration",
+        "label": "Admin Studio integration",
+        "status": "queued",
+        "quarter": "Q4-2026",
+        "description": "Expose agent session list/control in AP Unlimited operator dashboard",
+        "appId": "agent-gateway"
       },
       {
         "id": "ag-vertical-1",
-        "label": "Agent Gateway: First Production Vertical",
-        "appId": "agent-gateway",
+        "label": "Phase 4 first vertical (selfprime or capricast)",
         "status": "queued",
-        "quarter": "Q4-2026"
+        "quarter": "Q4-2026",
+        "description": "First production use-case of the agent runtime in a revenue app",
+        "appId": "agent-gateway"
+      },
+      {
+        "id": "ag-episodic-memory",
+        "label": "Episodic memory across sessions",
+        "status": "queued",
+        "quarter": "Q1-2027",
+        "appId": "agent-gateway"
+      },
+      {
+        "id": "ag-tool-library",
+        "label": "Platform tool library (neon, stripe, comms)",
+        "status": "queued",
+        "quarter": "Q1-2027",
+        "appId": "agent-gateway"
       },
       {
         "id": "wordis-bond-gate",
@@ -631,10 +1018,10 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-08T03:21:19.911Z",
+    "generatedAt": "2026-06-13T03:43:07.423Z",
     "current": {
       "overallCohesion": 51.4,
-      "registryCoverage": 45.45,
+      "registryCoverage": 17.65,
       "openGaps": 14,
       "gaps": {
         "p0": 1,
@@ -642,9 +1029,9 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.87,
+      "cost30dUsd": 4.26,
       "mrrUsd": 0,
-      "completionWeighted": 0
+      "completionWeighted": 3
     },
     "trends": {
       "cohesion": {
@@ -656,12 +1043,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.87,
-        "prior": 1.25,
-        "priorDate": "2026-05-29",
-        "dayGap": 7,
-        "delta": 3.62,
-        "direction": "up"
+        "current": 4.26,
+        "prior": 4.87,
+        "priorDate": "2026-06-05",
+        "dayGap": 6,
+        "delta": -0.61,
+        "direction": "down"
       },
       "mrr": {
         "current": 0,
@@ -672,27 +1059,27 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 0,
-        "prior": 26.5,
-        "priorDate": "2026-05-17",
-        "dayGap": 8,
-        "delta": -26.5,
-        "direction": "down"
+        "current": 3,
+        "prior": 0,
+        "priorDate": "2026-05-25",
+        "dayGap": 18,
+        "delta": 3,
+        "direction": "up"
       },
       "registryCoverage": {
-        "current": 45.45,
-        "prior": null,
-        "priorDate": null,
-        "dayGap": null,
-        "delta": null,
-        "direction": "flat"
+        "current": 17.65,
+        "prior": 45.45,
+        "priorDate": "2026-06-08",
+        "dayGap": 5,
+        "delta": -27.8,
+        "direction": "down"
       },
       "openGaps": {
         "current": 14,
-        "prior": null,
-        "priorDate": null,
-        "dayGap": null,
-        "delta": null,
+        "prior": 14,
+        "priorDate": "2026-06-08",
+        "dayGap": 5,
+        "delta": 0,
         "direction": "flat"
       }
     },
@@ -745,6 +1132,6 @@
         }
       ]
     },
-    "seriesPoints": 1
+    "seriesPoints": 3
   }
 }
