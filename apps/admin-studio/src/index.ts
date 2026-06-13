@@ -175,8 +175,9 @@ app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
 app.use('/v1/blocking/*', envContextMiddleware());
 app.use('/v1/command-center/*', envContextMiddleware());
+// Training Library proxy → schedule-worker. GET is a read; /jobs dispatch is audited.
 app.use('/training-library', envContextMiddleware());
-app.use('/jobs/*', envContextMiddleware());
+app.use('/jobs/*', envContextMiddleware(), auditMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
