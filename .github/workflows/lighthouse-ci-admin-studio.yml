@@ -16,12 +16,17 @@ jobs:
     name: Lighthouse mobile budget
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@latimer-woods-tech'
+      - name: Build studio-core dependency
+        working-directory: packages/studio-core
+        run: npm ci && npm run build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install deps
         working-directory: apps/admin-studio-ui
         run: npm ci

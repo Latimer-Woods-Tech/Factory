@@ -46,7 +46,7 @@ A Cloudflare Worker cannot run either; the render must execute on a real VM
 | Input            | Required | Notes                                       |
 | ---------------- | -------- | ------------------------------------------- |
 | `job_id`         | yes      | schedule-worker job id (PATCH target)       |
-| `composition_id` | yes      | `MarketingVideo` / `TrainingVideo` / `WalkthroughVideo` |
+| `composition_id` | yes      | `EnergyBlueprintVideo` (cron default since 2026-06-12) / `MarketingVideo` / `TrainingVideo` / `WalkthroughVideo` |
 | `app_id`         | yes      | Factory application id (e.g. `prime_self`)  |
 | `topic`          | yes      | Topic seed for the render                   |
 | `brand_color`    | no       | Default `#6366f1`                           |

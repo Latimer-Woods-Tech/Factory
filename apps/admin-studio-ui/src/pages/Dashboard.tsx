@@ -4,8 +4,9 @@
  * - Desktop: Left sidebar with icons.
  * - Mobile: Bottom navigation bar + "More" drawer.
  */
-import { lazy, Suspense, useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { NavLink, Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { lazyWithRetry } from '../lib/lazyWithRetry.js';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerClose } from '../components/ui/drawer.js';
 import { ThemeToggle } from '../components/ThemeToggle.js';
 import { EnvironmentBanner } from '../components/EnvironmentBanner.js';
@@ -28,20 +29,20 @@ import {
   X
 } from 'lucide-react';
 
-const OverviewTab = lazy(() => import('./tabs/OverviewTab.js').then(m => ({ default: m.OverviewTab })));
-const TestsTab = lazy(() => import('./tabs/TestsTab.js').then(m => ({ default: m.TestsTab })));
-const CodeTab = lazy(() => import('./tabs/CodeTab.js').then(m => ({ default: m.CodeTab })));
-const AiTab = lazy(() => import('./tabs/AiTab.js').then(m => ({ default: m.AiTab })));
-const AuditTab = lazy(() => import('./tabs/AuditTab.js').then(m => ({ default: m.AuditTab })));
-const FunctionsTab = lazy(() => import('./tabs/FunctionsTab.js').then(m => ({ default: m.FunctionsTab })));
-const TimelineTab = lazy(() => import('./tabs/TimelineTab.js').then(m => ({ default: m.TimelineTab })));
-const FlagsTab = lazy(() => import('./tabs/FlagsTab.js').then(m => ({ default: m.FlagsTab })));
-const TrainingLibraryTab = lazy(() => import('./tabs/TrainingLibraryTab.js').then(m => ({ default: m.TrainingLibraryTab })));
-const CapabilitiesTab = lazy(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
-const CouncilTab = lazy(() => import('./tabs/CouncilTab.js').then(m => ({ default: m.CouncilTab })));
-const AppsTab = lazy(() => import('./tabs/AppsTab.js').then(m => ({ default: m.AppsTab })));
-const CommandCenterTab = lazy(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
-const GraphComposerTab = lazy(() => import('./tabs/GraphComposerTab.js').then(m => ({ default: m.GraphComposerTab })));
+const OverviewTab = lazyWithRetry(() => import('./tabs/OverviewTab.js').then(m => ({ default: m.OverviewTab })));
+const TestsTab = lazyWithRetry(() => import('./tabs/TestsTab.js').then(m => ({ default: m.TestsTab })));
+const CodeTab = lazyWithRetry(() => import('./tabs/CodeTab.js').then(m => ({ default: m.CodeTab })));
+const AiTab = lazyWithRetry(() => import('./tabs/AiTab.js').then(m => ({ default: m.AiTab })));
+const AuditTab = lazyWithRetry(() => import('./tabs/AuditTab.js').then(m => ({ default: m.AuditTab })));
+const FunctionsTab = lazyWithRetry(() => import('./tabs/FunctionsTab.js').then(m => ({ default: m.FunctionsTab })));
+const TimelineTab = lazyWithRetry(() => import('./tabs/TimelineTab.js').then(m => ({ default: m.TimelineTab })));
+const FlagsTab = lazyWithRetry(() => import('./tabs/FlagsTab.js').then(m => ({ default: m.FlagsTab })));
+const TrainingLibraryTab = lazyWithRetry(() => import('./tabs/TrainingLibraryTab.js').then(m => ({ default: m.TrainingLibraryTab })));
+const CapabilitiesTab = lazyWithRetry(() => import('./tabs/CapabilitiesTab.js').then(m => ({ default: m.CapabilitiesTab })));
+const CouncilTab = lazyWithRetry(() => import('./tabs/CouncilTab.js').then(m => ({ default: m.CouncilTab })));
+const AppsTab = lazyWithRetry(() => import('./tabs/AppsTab.js').then(m => ({ default: m.AppsTab })));
+const CommandCenterTab = lazyWithRetry(() => import('./tabs/CommandCenterTab.js').then(m => ({ default: m.CommandCenterTab })));
+const GraphComposerTab = lazyWithRetry(() => import('./tabs/GraphComposerTab.js').then(m => ({ default: m.GraphComposerTab })));
 
 const TABS = [
   { to: '/overview',  label: 'Overview', icon: LayoutDashboard },

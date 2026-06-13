@@ -4,9 +4,9 @@
   "generated_at": "source-derived",
   "ok": true,
   "counts": {
-    "issues": 267,
+    "issues": 269,
     "errors": 0,
-    "warnings": 267
+    "warnings": 269
   },
   "issues": [
     {
@@ -49,7 +49,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 168,
+      "line": 146,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -61,7 +61,19 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 238,
+      "line": 177,
+      "owner": "platform",
+      "status": "canonical",
+      "truth_source": "package.json",
+      "message": "References missing npm script \"typecheck\".",
+      "fix": "Update the command, add the root script to package.json, or mark it as a package-local command.",
+      "blocks": []
+    },
+    {
+      "id": "docs.npm-script.missing",
+      "severity": "warning",
+      "doc": "CLAUDE.md",
+      "line": 247,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -73,7 +85,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 271,
+      "line": 280,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -942,6 +954,18 @@
       "status": "active",
       "truth_source": "package.json",
       "message": "References missing npm script \"deploy:production\".",
+      "fix": "Update the command, add the root script to package.json, or mark it as a package-local command.",
+      "blocks": []
+    },
+    {
+      "id": "docs.npm-script.missing",
+      "severity": "warning",
+      "doc": "docs/COMPLIANCE_CHECKLIST.md",
+      "line": 165,
+      "owner": "platform",
+      "status": "active",
+      "truth_source": "package.json",
+      "message": "References missing npm script \"typecheck\".",
       "fix": "Update the command, add the root script to package.json, or mark it as a package-local command.",
       "blocks": []
     },

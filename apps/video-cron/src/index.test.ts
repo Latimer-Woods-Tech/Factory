@@ -72,7 +72,7 @@ describe('video-cron', () => {
 
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ data: { dispatched: 1, failed: 0 } });
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://schedule-worker.adrper79.workers.dev/jobs/pending?limit=10&appId=selfprime');
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://schedule-worker.adrper79.workers.dev/jobs/pending?limit=10');
     expect(fetchMock.mock.calls[2]?.[0]).toBe('https://api.github.com/repos/Latimer-Woods-Tech/factory/actions/workflows/render-video.yml/dispatches');
   });
 
@@ -111,7 +111,7 @@ describe('video-cron', () => {
     });
   });
 
-  it('marks jobs failed when GitHub dispatch fails', async () => {
+  it('marks jobs failed and returns 500 when all dispatches fail (fail-loud)', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(Response.json({ data: [sampleJob] }))
       .mockResolvedValueOnce(Response.json({ data: { ...sampleJob, status: 'rendering' } }))
@@ -127,9 +127,49 @@ describe('video-cron', () => {
       {} as ExecutionContext,
     );
 
-    expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ data: { dispatched: 0, failed: 1 } });
+    expect(res.status).toBe(500);
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock.mock.calls[3]?.[0]).toBe('https://schedule-worker.adrper79.workers.dev/jobs/job-001');
+  });
+
+  it('cron scheduled handler logs fatal error when all dispatches fail', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json({ data: [sampleJob] }))
+      .mockResolvedValueOnce(Response.json({ data: { ...sampleJob, status: 'rendering' } }))
+      .mockResolvedValueOnce(Response.json({ message: 'bad credentials' }, { status: 401 }))
+      .mockResolvedValueOnce(Response.json({ data: { ...sampleJob, status: 'failed' } }));
+
+    await worker.scheduled({} as ScheduledEvent, env, {} as ExecutionContext);
+
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('video-cron fatal error'),
+    );
+  });
+
+  it('cron scheduled handler logs success when jobs dispatch', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(Response.json({ data: [sampleJob] }))
+      .mockResolvedValueOnce(Response.json({ data: { ...sampleJob, status: 'rendering' } }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    await worker.scheduled({} as ScheduledEvent, env, {} as ExecutionContext);
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('video-cron complete'),
+    );
+  });
+
+  it('GET /manifest returns machine-readable manifest', async () => {
+    const res = await worker.fetch(new Request('https://video-cron.example/manifest'), env, {} as ExecutionContext);
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toMatchObject({
+      manifestVersion: 1,
+      app: 'video-cron',
+    });
+  });
+
+  it('unknown path returns 404', async () => {
+    const res = await worker.fetch(new Request('https://video-cron.example/unknown'), env, {} as ExecutionContext);
+    expect(res.status).toBe(404);
   });
 });

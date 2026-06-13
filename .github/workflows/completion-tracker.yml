@@ -26,7 +26,7 @@ jobs:
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
@@ -98,11 +98,15 @@ jobs:
           # auto-merging). If stale, re-arm auto-merge so it doesn't block the
           # next scheduled run. Symptom that motivated this: PR #702 sat open
           # 14h because GitHub's auto-merge silently disarmed after a rebase.
+          # NOTE: `.[0] | "\(.number)|\(.createdAt)"` on an empty result emits
+          # the literal string "null|null" (non-empty!), which made this guard
+          # think a PR always existed and skip creation entirely — drift PRs
+          # silently stopped being created. select(.) emits nothing on empty.
           EXISTING_PR=$(gh pr list \
             --head "$BRANCH" \
             --state open \
             --json number,createdAt \
-            --jq '.[0] | "\(.number)|\(.createdAt)"' 2>/dev/null || true)
+            --jq '.[0] | select(.) | "\(.number)|\(.createdAt)"' 2>/dev/null || true)
           if [ -n "$EXISTING_PR" ]; then
             PR_NUM=$(echo "$EXISTING_PR" | cut -d'|' -f1)
             PR_CREATED=$(echo "$EXISTING_PR" | cut -d'|' -f2)

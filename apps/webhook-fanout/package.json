@@ -13,7 +13,7 @@
     "@latimer-woods-tech/errors": "file:../../packages/errors",
     "@latimer-woods-tech/logger": "file:../../packages/logger",
     "@latimer-woods-tech/monitoring": "file:../../packages/monitoring",
-    "hono": "^4.12.18"
+    "hono": "^4.12.21"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260423.1",

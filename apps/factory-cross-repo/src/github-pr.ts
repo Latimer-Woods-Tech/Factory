@@ -6,14 +6,7 @@
 const GITHUB_API = 'https://api.github.com';
 const TIMEOUT_MS = 15_000;
 
-interface GitHubHeaders {
-  Authorization: string;
-  Accept: string;
-  'X-GitHub-Api-Version': string;
-  'Content-Type': string;
-}
-
-function headers(token: string): GitHubHeaders {
+function headers(token: string): Record<string, string> {
   return {
     Authorization: `Bearer ${token}`,
     Accept: 'application/vnd.github+json',
