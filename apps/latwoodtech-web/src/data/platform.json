@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-12T23:17:17.703Z",
+  "generatedAt": "2026-06-13T03:43:06.623Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -201,7 +201,7 @@
       "name": "AP Unlimited",
       "domain": "apunlimited.com",
       "maturity": "production",
-      "cohesion": 62,
+      "cohesion": 73,
       "healthState": "live",
       "packages": [
         "auth",
@@ -321,7 +321,7 @@
       "name": "Cypher of Healing",
       "domain": "cypherofhealing.com",
       "maturity": "production",
-      "cohesion": 49,
+      "cohesion": 47,
       "healthState": "live",
       "packages": [
         "auth",
@@ -1018,7 +1018,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-12T23:17:18.454Z",
+    "generatedAt": "2026-06-13T03:43:07.423Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1029,7 +1029,7 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.87,
+      "cost30dUsd": 4.26,
       "mrrUsd": 0,
       "completionWeighted": 3
     },
@@ -1043,12 +1043,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.87,
-        "prior": 1.25,
-        "priorDate": "2026-05-29",
-        "dayGap": 7,
-        "delta": 3.62,
-        "direction": "up"
+        "current": 4.26,
+        "prior": 4.87,
+        "priorDate": "2026-06-05",
+        "dayGap": 6,
+        "delta": -0.61,
+        "direction": "down"
       },
       "mrr": {
         "current": 0,
@@ -1070,7 +1070,7 @@
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 4,
+        "dayGap": 5,
         "delta": -27.8,
         "direction": "down"
       },
@@ -1078,7 +1078,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 4,
+        "dayGap": 5,
         "delta": 0,
         "direction": "flat"
       }
@@ -1132,6 +1132,6 @@
         }
       ]
     },
-    "seriesPoints": 2
+    "seriesPoints": 3
   }
 }
