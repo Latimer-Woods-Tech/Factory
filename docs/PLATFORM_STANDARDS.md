@@ -1,6 +1,6 @@
 # Platform Standards — Latimer-Woods-Tech
 
-**Version:** v1 · **Date:** 2026-05-11 · **Status:** Authoritative · **Conflicts:** `docs/supervisor/FRIDGE.md` wins; this doc wins over older scattered architecture notes; ADRs in `docs/adr/` win over this doc when explicitly marked superseding.
+**Version:** v1.1 · **Date:** 2026-06-09 · **Status:** Authoritative · **Conflicts:** `docs/supervisor/FRIDGE.md` wins; this doc wins over older scattered architecture notes; ADRs in `docs/adr/` win over this doc when explicitly marked superseding.
 
 This is the single source of truth for how every Latimer-Woods-Tech repo, package, workflow, and feature is built. Every PR is audited against it (`platform-conformance.yml`). Every AI agent reads it as a hard constraint. Every new repo inherits it by default.
 
@@ -17,8 +17,9 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Language:** TypeScript strict (`strict: true`, `noUncheckedIndexedAccess: true`, `noImplicitOverride: true`).
 - **Package manager:** pnpm + workspaces. No npm or yarn at root.
 - **Databases:** D1 for transactional, Neon (Postgres) via Hyperdrive for relational, KV for hot config, R2 for blobs, Durable Objects for stateful real-time.
-- **AI:** All LLM calls via `@latimer-woods-tech/llm`. Tiered routing (fast / balanced / smart / verifier). Anthropic primary, Gemini long-context fallback, Groq verifier. No direct vendor SDKs.
+- **AI:** All LLM calls via `@latimer-woods-tech/llm`. Tiered routing (fast / balanced / smart / verifier). Current provider assignments in [`docs/STACK.md`](../STACK.md) — do not hardcode provider names in app code. No direct vendor SDKs.
 - **Realtime:** `@latimer-woods-tech/realtime` (when published) for DO Room/Presence/Conference patterns.
+- **Build:** `tsup` (packages) and `wrangler deploy` (Workers). Published packages must produce a clean `dist/` with zero tsup errors. Workers must pass `wrangler deploy --dry-run` (or tsc) cleanly before every deploy.
 
 ## 2. Code patterns
 
@@ -32,6 +33,8 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Monitoring:** `@latimer-woods-tech/monitoring` wires Sentry + PostHog. Every Worker includes this in its middleware chain.
 - **Multi-tenant:** every Worker that holds tenant data resolves tenant via `X-Tenant-Id` header + `resolveTenant()` from `@lwt/auth`. No implicit tenant fallback.
 - **Request ID:** every request gets a `request_id` (UUIDv7) attached by middleware. Logged on every line. Propagated downstream.
+- **Linting:** ESLint with `--max-warnings 0` on every PR. No `eslint-disable` suppressions without an approved ADR. Enforced as a required CI status check.
+- **Documentation:** ≥90% of exported symbols in published `@latimer-woods-tech/*` packages carry a JSDoc one-line doc comment. Enforced via `eslint-plugin-jsdoc`.
 
 ## 3. Tests
 
@@ -61,7 +64,7 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 - **Migrations:** SQL files under `migrations/`. Naming: `NNNN_description.sql`. Numbered, sequential, immutable once merged.
 - **Pattern:** Expand → Contract. Additive-only changes deployable to prod. Destructive changes (drop column, rename) require a two-phase migration with both versions running simultaneously for ≥1 deploy cycle.
 - **Rollback:** every migration includes `-- ROLLBACK:` block with the inverse statement, or `-- ROLLBACK: NONE — irreversible, see ADR-NNNN` referring to an approved ADR.
-- **Dry-run:** `wrangler d1 execute --dry-run` required in CI before deploy.
+- **Dry-run:** Migrations must be validated before touching production. For Neon (Postgres): run the migration against a staging or ephemeral branch first (see `docs/runbooks/database.md`). For D1: `wrangler d1 execute --dry-run` in CI. No raw SQL applied to prod without a dry-run pass.
 
 ## 7. Workflows
 
@@ -106,7 +109,8 @@ If a rule isn't here, it's not a rule. If a rule is here and you need to break i
 
 ## How this evolves
 
-- This file is versioned. Changes via PR + ADR.
+- This file is versioned. Routine additions (new bullet in an existing §) require a PR only. Architectural changes (new §, removing a standard, changing a weight) require a PR + ADR.
+- The human-readable compliance checklist lives at [`docs/COMPLIANCE_CHECKLIST.md`](./COMPLIANCE_CHECKLIST.md). When this file changes, update the checklist in the same PR.
 - Standards that nobody meets within 90 days get re-evaluated: either drop them, or invest to fix.
 - New production incidents become candidate new standards. Recurring incidents (≥3 in a quarter) become required new standards.
 - Quarterly review (per OPERATING_FRAMEWORK §quarterly): drop, add, evolve.
@@ -127,7 +131,7 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | § | Dimension | Weight | Sample checks |
 |---:|---|---:|---|
 | 1 | Stack | 10 | wrangler.jsonc valid, ESM only, no node:crypto, Hono present |
-| 2 | Code patterns | 15 | @lwt/logger consumed, @lwt/errors consumed, idempotent webhooks, request_id middleware |
+| 2 | Code patterns | 15 | @lwt/logger consumed, @lwt/errors consumed, idempotent webhooks, request_id middleware, ESLint 0 warnings |
 | 3 | Tests | 15 | vitest deterministic, playwright tiers present, coverage ≥ floor, every route tested |
 | 4 | Observability | 10 | Sentry init, sourcemap upload step, structured logs, SLO doc present |
 | 5 | Security | 15 | CodeQL workflow, npm audit step, OIDC publish (no long-lived NPM_TOKEN), secret-scanning on |
@@ -136,13 +140,80 @@ The conformance workflow (M1) scores each repo against these dimensions. Sample 
 | 8 | Release | 5 | semver tags, CHANGELOG present, ADRs link from PRs that need them |
 | 9 | Performance | 10 | SLO budgets declared, synthetic checks live, smoke + canary green |
 | 10 | Privacy | 5 | PII_INVENTORY present, DSR endpoints present where required, audit log middleware on admin routes |
+| 11 | Feature Registry | 5 | `feature-registry.yml` present, schema valid, roadmap entries have status + quarter, cohesion field populated |
+| 12 | Network Events | 5 | `FACTORY_NETWORK_TOKEN` wired as wrangler secret, `fireNetworkEvent()` called at declared fire locations, event names match `docs/registry/network-events.yml` taxonomy |
 
 Each repo's score = weighted average across dimensions. Anything < 70 blocks deploys (after Stage 4 enforcement; advisory before).
 
 
 ---
 
-## 11. PR size budget
+## 11. Feature Registry
+
+Every app and package — whether in the Factory monorepo or a standalone repo — must maintain a `feature-registry.yml` file at its root (`apps/{name}/feature-registry.yml` for monorepo apps; repo root for standalone repos).
+
+**Purpose:** Powers the public `/platform/` dashboard on latwoodtech.com, feeds the `platform.json` CI artifact, and enforces that product state is machine-readable rather than tribal knowledge.
+
+**Required fields:**
+
+```yaml
+app: my-app          # matches id in docs/service-registry.yml
+name: My App         # human display name
+domain: myapp.com    # canonical domain or worker URL
+stage: production    # foundation | beta | production | revenue | on-hold | design
+cohesion: 62         # current conformance score (0-100)
+description: One sentence describing what this app does.
+
+roadmap:
+  - id: my-feature-launch
+    label: Feature launch
+    status: active   # done | active | queued | on-hold | design
+    quarter: Q3-2026
+
+features:
+  - id: auth
+    label: Authentication
+    status: live     # live | in-progress | roadmap | deprecated
+    tier: core       # core | growth | compliance | infra
+
+packages:            # @latimer-woods-tech/* deps consumed
+  - auth
+  - neon
+```
+
+**When to update:** After any shipped milestone (update `status: done`), when roadmap priorities shift, and as part of the Stage 4+ conformance cycle. The `/platform/` dashboard reflects the next hourly CI run.
+
+## 12. Network Events
+
+Every deployed product app — whether in the Factory monorepo or a standalone repo — must emit standardized cross-app events via the Factory network layer once the infrastructure is wired (Phase 0 of `docs/planning/factory-network-layer.md`).
+
+**Purpose:** Powers cross-app journeys (selfprime → capricast referral loops), feeds the Platform Brain's synergize scanner, and makes portfolio-level engagement signals machine-readable.
+
+**Integration contract:**
+
+1. `FACTORY_NETWORK_TOKEN` added as a wrangler secret (via GCP SM, same pattern as `WEBHOOK_FANOUT_INGEST_KEY`)
+2. `fireNetworkEvent(ctx, env, eventName, userId, properties)` helper installed in `src/lib/network.ts`
+3. Events fired at the locations declared in `docs/registry/network-events.yml` for the app
+4. `networkTokenConfigured: true` set in `docs/app-lifecycle.yml` once wired and verified
+
+**Enforcement:** The `missing-network-token` opportunity scanner (in `scripts/opportunity-scan.mjs`) auto-files an issue for every `kind: product` app at `stage: deployed|live` that has not set `networkTokenConfigured: true`. This scanner is platform-integration-exempt — it fires regardless of the app's mode.
+
+**Event taxonomy:** All event names and schemas are declared in `docs/registry/network-events.yml`. Events must match the registry; undeclared event names fail schema enforcement (`scripts/check-network-events.mjs`).
+
+**Non-goals:** No SSO, no shared user database, no PII sync across apps. The network layer records opaque `user_id_local` values per app; cross-app resolution requires an explicit `factory_network_links` record established via OAuth handshake.
+
+**Machine checks (conformance dimension 11):**
+- File exists at expected path
+- `app`, `name`, `stage`, `cohesion` fields present and non-empty
+- At least one `roadmap` entry
+- All roadmap entries have `status` and `quarter` fields
+- `cohesion` is a number between 0 and 100
+
+Schema canonical definition: [`docs/standards/feature-registry.schema.yml`](./standards/feature-registry.schema.yml)
+
+---
+
+## 12. PR size budget
 
 Every PR has a hard size budget by tier. Bigger work decomposes before opening. Atomic PRs review in seconds; sprawling PRs hide bugs and slow merge throughput.
 
@@ -166,18 +237,18 @@ See ADR-0005 for the full decision context.
 
 ---
 
-## 12. UI/UX (customer-facing surfaces)
+## 13. UI/UX (customer-facing surfaces)
 
 Every customer-facing UI satisfies the following machine-checkable rules. Enforced by Stage 6 conformance dimension (Lighthouse + axe + bundle analyzer + visual regression).
 
-### 12.1 Foundation
+### 13.1 Foundation
 - Imports tokens from `@latimer-woods-tech/ui-tokens` (no hard-coded hex colors, spacing, font sizes)
 - Imports components from `@latimer-woods-tech/design-system` (no per-app Buttons, Inputs, Modals reinvented)
 - Imports icons from `@latimer-woods-tech/icons` (no per-app icon libraries beyond Lucide-managed)
 - Imports form patterns from `@latimer-woods-tech/forms` (no per-app form validators)
 - Imports a11y primitives from `@latimer-woods-tech/a11y` (no per-app focus management)
 
-### 12.2 Accessibility (WCAG 2.2 AA, enforced)
+### 13.2 Accessibility (WCAG 2.2 AA, enforced)
 - **axe-core: zero violations on critical paths** (login, signup, checkout, primary feature)
 - Keyboard navigation: every interactive element reachable + operable
 - Screen reader: every interactive element has accessible name + role
@@ -185,7 +256,7 @@ Every customer-facing UI satisfies the following machine-checkable rules. Enforc
 - Focus visible: every focused element shows a 2px+ outline
 - Forms: labels associated with inputs, errors announced to screen readers
 
-### 12.3 Performance budgets (Lighthouse, enforced post-deploy)
+### 13.3 Performance budgets (Lighthouse, enforced post-deploy)
 - Marketing pages: Performance ≥95, Accessibility ≥95, Best Practices ≥95, SEO ≥95
 - App pages (authenticated): Performance ≥85, Accessibility ≥95, Best Practices ≥90
 - Largest Contentful Paint: <1s on desktop, <2.5s on mid-tier mobile
@@ -195,20 +266,20 @@ Every customer-facing UI satisfies the following machine-checkable rules. Enforc
 - JS bundle (initial): <150KB gzipped per route
 - Image strategy: WebP/AVIF; LQIP for above-the-fold; lazy load below-the-fold
 
-### 12.4 Mobile-first
+### 13.4 Mobile-first
 - Design at 320px breakpoint first
 - All tap targets ≥44×44px
 - No horizontal scroll on any breakpoint
 - Forms one-column on mobile; never 2-column inputs side-by-side
 - Bottom-of-screen actions only when context requires (avoid sticky)
 
-### 12.5 Loading + error UX
+### 13.5 Loading + error UX
 - Loading state: skeleton screens (matched to final layout). **Spinners forbidden.**
 - Error state: inline, specific, actionable. Generic "something went wrong" forbidden.
 - Empty state: tells the user the next action. Never blank.
 - Success state: visible confirmation, never silent.
 
-### 12.6 Forms
+### 13.6 Forms
 - One-column on mobile, one-column on desktop unless intentional (two fields max side-by-side)
 - Autofocus the first input
 - Save progress (localStorage or URL params) on multi-step
@@ -216,20 +287,20 @@ Every customer-facing UI satisfies the following machine-checkable rules. Enforc
 - Errors inline + specific + actionable ("Email must include @" not "Invalid")
 - No captchas; use rate limiting + Cloudflare bot management
 
-### 12.7 Component standards
+### 13.7 Component standards
 - One primary action per screen (one filled Button; others are Outline or Text)
 - Modals dismiss on Escape + backdrop click + explicit Cancel
 - Toasts auto-dismiss in 5s for info, 10s for errors, require explicit dismiss for critical
 - Nav: real navigation on desktop ≥768px (no hamburger). Hamburger only <768px.
 - Tables: sortable, filterable, paginated by default. Empty state required.
 
-### 12.8 Theming
+### 13.8 Theming
 - Dark mode is the default. Light is the variant.
 - Both ship at the same time; visual parity verified by snapshot tests.
 - System preference respected on first visit; user override persisted.
 - No "auto-switching" mid-session.
 
-### 12.9 Conformance (Stage 6 conformance dimension)
+### 13.9 Conformance (Stage 6 conformance dimension)
 Sample checks:
 - 30 pts — `@lwt/design-system` in deps + at least one component import
 - 20 pts — Lighthouse Performance ≥85 (app) or ≥95 (marketing)
@@ -242,7 +313,7 @@ Weight in overall cohesion score: 10.
 
 ---
 
-## 13. Design Philosophy — The Two-Question Filter
+## 14. Design Philosophy — The Two-Question Filter
 
 Every UI design decision passes both filters. Sub-agents reading this section apply both questions before proposing UX patterns.
 
@@ -303,3 +374,70 @@ Every UI design decision passes both filters. Sub-agents reading this section ap
 | Forced password reset for marketing reasons | Trust killer; only for security incidents |
 
 Enforced via: Stage 6 conformance dimension (machine checks), Claude reviewer (pattern detection), human reviewer on Red tier.
+
+---
+
+## 15. Worker Domain Policy
+
+Every production Cloudflare Worker must be served exclusively via a branded custom domain. The `.workers.dev` URL is CF infrastructure only — it must be disabled in production and must never appear in any user-facing code or client asset.
+
+### 15.1 The rule
+- `workers_dev = false` in **every** `[env.production]` block.
+- Routes declared via `routes = []` in `wrangler.toml` so they are reproducible from the repo and owned by `wrangler deploy` — not managed in the CF dashboard.
+- The `.workers.dev` URL is acceptable in staging/dev environments only.
+- No `.workers.dev` URL in any frontend JS, HTML, API client, or env var that ships to end users.
+
+### 15.2 Why
+The `.workers.dev` endpoint being live creates a **shadow access path** that:
+- Bypasses any CF WAF, firewall rules, or rate-limiting tied to the hostname
+- Is not monitored by the same health checks and SLO alerts
+- Is not bound by any geo-blocking, IP allowlisting, or Zero Trust policy you may add later
+- May leak internal worker names
+
+### 15.3 DNS sensitivity trade-off
+Disabling `.workers.dev` does increase dependency on DNS being correct. The accepted answer is:
+- **Cloudflare manages `selfprime.net` DNS** — the same entity that runs `.workers.dev`. A zone-wide CF outage fails both. The only new failure mode is an operator DNS mistake.
+- Mitigation: health alert on `https://{branded-domain}/health` (Cloudflare Synthetic Monitoring, 1/min), not a `.workers.dev` fallback. A broken `.workers.dev` fallback hidden in client code is a security hole, not a reliability tool.
+
+### 15.4 How to set up a new worker
+In `wrangler.toml` (or `wrangler.jsonc`):
+
+```toml
+# ── Development / staging ──
+workers_dev = true   # .workers.dev URL active for local curl testing
+
+# ── Production ──
+[env.production]
+name = "my-worker"
+workers_dev = false
+routes = [
+  { pattern = "api.myapp.com/*",  zone_name = "myapp.com" },
+  { pattern = "myapp.com/api/*",  zone_name = "myapp.com" },
+]
+```
+
+DNS prerequisite: a CNAME `api.myapp.com → {account}.workers.dev` must exist in the CF zone **before** the first deploy with `routes[]`. The `routes[]` entry tells CF to route traffic; the CNAME tells DNS where to point. You can create the CNAME once via `scripts/setup-api-subdomain.sh`; wrangler then owns the route.
+
+**First-deploy conflict:** if those routes were previously set via the CF dashboard manually, `wrangler deploy` will error on conflict. Fix: delete the manual route in the CF dashboard → deploy → wrangler adopts it.
+
+**Verify:** after deploy, `curl https://api.myapp.com/health` must return 200. Confirm `.workers.dev` no longer responds (or returns 404/no-route).
+
+### 15.5 Frontend fallback pattern
+Client code that needs a direct API origin (e.g. for dev, or for SSE where same-origin proxy doesn't apply) must always resolve to the **branded domain**, not `.workers.dev`:
+
+```js
+// CORRECT
+const _DIRECT_API = import.meta.env?.VITE_API_ORIGIN?.trim().replace(/\/$/, '')
+  ?? 'https://api.myapp.com';
+
+// WRONG — never in shipped code (exposes the CF infrastructure URL)
+const _DIRECT_API = 'https://my-worker.{account}.workers.dev';
+```
+
+### 15.6 Sequencing when migrating an existing worker
+If a worker currently has `workers_dev = true` and a frontend fallback pointing at `.workers.dev`, the safe migration order is:
+
+1. **Frontend first:** update the fallback URL to the branded domain → merge + deploy frontend → verify the app still works end-to-end.
+2. **Worker second:** add `routes[]` + flip `workers_dev = false` → deploy worker → `curl` branded domain `/health` → 200 → confirm `.workers.dev` no longer serves.
+
+Doing step 2 before step 1 breaks the frontend fallback while it's still pointing at `.workers.dev`.

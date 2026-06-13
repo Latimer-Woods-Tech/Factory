@@ -95,6 +95,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/CLEAN_PASS_3_QUALITY_REPORT.md](CLEAN_PASS_3_QUALITY_REPORT.md) | active | unverified | platform | unknown | Clean Pass 3: Quality & Production Readiness Report |
 | [docs/CLEAN_PASSES_COMPLETE_SUMMARY.md](CLEAN_PASSES_COMPLETE_SUMMARY.md) | active | unverified | platform | unknown | Clean Passes Complete: Summary & Status Report |
 | [docs/COMPLETION_TRACKER.md](COMPLETION_TRACKER.md) | active | unverified | platform | unknown | Completion Tracker |
+| [docs/COMPLIANCE_CHECKLIST.md](COMPLIANCE_CHECKLIST.md) | active | unverified | platform | unknown | New-Repo Compliance Checklist |
 | [docs/CONFIG_NORMALIZATION_AUDIT.md](CONFIG_NORMALIZATION_AUDIT.md) | active | unverified | platform | unknown | W360-034 Configuration Normalization Audit & Playbook |
 | [docs/conformance/summary.md](conformance/summary.md) | active | unverified | platform | unknown | Platform Conformance — Shadow Mode |
 | [docs/cost/summary.md](cost/summary.md) | active | unverified | platform | unknown | Cost Digest — Rolling 30 days |
@@ -112,6 +113,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/decisions/2026-05-23-workflow-lifecycle.md](decisions/2026-05-23-workflow-lifecycle.md) | active | unverified | platform | unknown | 2026-05-23 — Workflow Lifecycle & Automation Hygiene |
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | platform | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
 | [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | platform | unknown | Media Room Control Plane |
+| [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | platform | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | platform | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -122,6 +124,8 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/digest/2026-05-17.md](digest/2026-05-17.md) | active | unverified | platform | unknown | Morning digest — 2026-05-17 |
 | [docs/digest/2026-05-25.md](digest/2026-05-25.md) | active | unverified | platform | unknown | Morning digest — 2026-05-25 |
 | [docs/digest/2026-05-30.md](digest/2026-05-30.md) | active | unverified | platform | unknown | Morning digest — 2026-05-30 |
+| [docs/digest/2026-06-05.md](digest/2026-06-05.md) | active | unverified | platform | unknown | Morning digest — 2026-06-05 |
+| [docs/digest/2026-06-06.md](digest/2026-06-06.md) | active | unverified | platform | unknown | Morning digest — 2026-06-06 |
 | [docs/DOCS_OWNERSHIP.md](DOCS_OWNERSHIP.md) | active | unverified | platform | unknown | Documentation Ownership & Update Cadence |
 | [docs/DOCUMENTATION_HIERARCHY.md](DOCUMENTATION_HIERARCHY.md) | active | unverified | platform | unknown | Documentation Hierarchy & Source of Truth |
 | [docs/ENVIRONMENT_VERIFICATION_SETUP.md](ENVIRONMENT_VERIFICATION_SETUP.md) | active | unverified | platform | unknown | Environment Verification Script Setup |
@@ -246,6 +250,8 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/PHASE_6_EXECUTION_CHECKLIST.md](PHASE_6_EXECUTION_CHECKLIST.md) | active | unverified | platform | unknown | Phase 6: Infrastructure Setup — Execution Checklist |
 | [docs/PHASE_A_TEAM_ONBOARDING_PACK.md](PHASE_A_TEAM_ONBOARDING_PACK.md) | active | unverified | platform | unknown | Phase A Team Onboarding Pack |
 | [docs/PII_INVENTORY.md](PII_INVENTORY.md) | active | unverified | platform | unknown | PII Inventory — Factory / Admin Studio |
+| [docs/planning/brief-2026-06-08.md](planning/brief-2026-06-08.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-08 |
+| [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
 | [docs/PORTFOLIO_CAPABILITY_RECONCILIATION.md](PORTFOLIO_CAPABILITY_RECONCILIATION.md) | active | unverified | platform | unknown | Portfolio Capability ↔ Marketing Reconciliation |
@@ -268,6 +274,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/rfc/RFC-003-creator-onboarding-robustness.md](rfc/RFC-003-creator-onboarding-robustness.md) | active | unverified | platform | unknown | RFC-003: Creator Onboarding Robustness |
 | [docs/rfc/RFC-004-browser-automation.md](rfc/RFC-004-browser-automation.md) | active | unverified | platform | unknown | RFC-004: Native Browser Automation Service |
 | [docs/rfc/RFC-005-anthropic-dreaming-pilot.md](rfc/RFC-005-anthropic-dreaming-pilot.md) | active | unverified | platform | unknown | RFC-005: Anthropic Dreaming pilot on Factory autofix loop |
+| [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | platform | unknown | RFC-006: Cohesive Automation Flow Operating Model |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | platform | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | platform | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |
@@ -330,6 +337,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
+| [docs/supervisor/AOS_COMPLETION_AUDIT.md](supervisor/AOS_COMPLETION_AUDIT.md) | active | unverified | platform | unknown | Factory Autonomous OS Completion Audit |
 | [docs/supervisor/aos-green-smoke.md](supervisor/aos-green-smoke.md) | active | unverified | platform | unknown | AOS Green Smoke |
 | [docs/supervisor/APP_INTEGRATION.md](supervisor/APP_INTEGRATION.md) | active | unverified | platform | unknown | Supervisor Integration Guide for Apps |
 | [docs/supervisor/ARCHITECTURE.md](supervisor/ARCHITECTURE.md) | active | unverified | platform | unknown | Factory as Supervisor — Architecture Plan, v2.1 |

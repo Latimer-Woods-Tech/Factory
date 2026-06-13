@@ -2,14 +2,14 @@
   "repo_key": "CC",
   "repo_name": "capricast",
   "repo_path": "Latimer-Woods-Tech/capricast",
-  "timestamp": "2026-05-30T08:00:07.469357+00:00",
-  "cohesion": 42,
+  "timestamp": "2026-06-12T01:12:01.238540+00:00",
+  "cohesion": 14,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 40,
+      "score": 20,
       "checks": [
         {
           "name": "wrangler.jsonc present",
@@ -18,7 +18,7 @@
         },
         {
           "name": "ESM ('type': 'module')",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -75,7 +75,7 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 40,
+      "score": 0,
       "checks": [
         {
           "name": "vitest.config present",
@@ -84,12 +84,12 @@
         },
         {
           "name": "playwright.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 40,
+      "score": 0,
       "checks": [
         {
           "name": "Sentry import",
@@ -122,12 +122,12 @@
         },
         {
           "name": "Sourcemap upload step",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "SLO doc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -141,11 +141,11 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 60,
+      "score": 20,
       "checks": [
         {
           "name": "CodeQL workflow present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -201,7 +201,7 @@
       "checks": [
         {
           "name": "\u22645 workflow files",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -211,7 +211,7 @@
         },
         {
           "name": "CODEOWNERS present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -220,11 +220,11 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 33,
+      "score": 0,
       "checks": [
         {
           "name": "CHANGELOG.md present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -243,16 +243,16 @@
       "key": "performance",
       "title": "Performance",
       "weight": 10,
-      "score": 67,
+      "score": 0,
       "checks": [
         {
           "name": "p95 budgets declared",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Canary or post-deploy verify",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -266,11 +266,11 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 50,
+      "score": 25,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {

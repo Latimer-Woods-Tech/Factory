@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 443,
+    "total_docs": 451,
     "canonical": 17,
-    "active": 378,
+    "active": 386,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -374,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:bcb3664dfe71c1bc59d43bd8acdff74ac949010fcb9c63ace541f8687b4410e5",
+      "content_hash": "sha256:459fa81c4bd8e4ac0e7cecb3558815b77bdf710e58d8bbfd487dc9ba51276a87",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:aa4450e69b29dbcf7b1ada926fdbeec116edcb22568f97e329cc405e3acc2df4",
+      "content_hash": "sha256:d6e97a356e59298b13b29d6b42066fde8a935df58ba09536aa70694feef789da",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:dd5951e5e661cec8131798ff8ddcc02ee693d475a90afaab5350c6b42c2e06f4",
+      "content_hash": "sha256:879c54e7dc37bc05e1c3358aa2d4b2964b1e089846afb673fd193d350fdd26f5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:bafce951511c1b12af799e03e02165d5ddedc8baed0dcaaff173ede962d72218",
+      "content_hash": "sha256:eeb907e0acd8fe94eef11adc80efda4605ebc75b2842682bbf7ea24ebf4ba5ed",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1130,7 +1130,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9eca86c08e36a1cbc820469d5fc3243d5562da2e09c10d7bf5d49752498eb90a",
+      "content_hash": "sha256:ca15abcc92af56a43c2b126b7a5c5b0e7b6b2c3797eee5b636007754b4f4fcce",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -2742,6 +2742,27 @@
       "errors": []
     },
     {
+      "path": "docs/COMPLIANCE_CHECKLIST.md",
+      "title": "New-Repo Compliance Checklist",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4d2d5463aca33d5c8e9d128e259ac06d5f687c76c1046d0548ba12017bb76774",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/CONFIG_NORMALIZATION_AUDIT.md",
       "title": "W360-034 Configuration Normalization Audit & Playbook",
       "status": "active",
@@ -2775,7 +2796,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0d5216a34490c249db85b1ddeb000492920a6a7fb7c618f8ddec0919f082866a",
+      "content_hash": "sha256:7d2cd25fc1627513fb99cf4f41ab5638afaba261c30d0d1a6e125282f98a1996",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2796,7 +2817,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:dc123025842adc61622361cdb3ea5d2ae03eac5e25dbee9089469a36502603dd",
+      "content_hash": "sha256:17d42bb5394a733cde741bed39702bf89f32d18feecf4119fd5118b066eaae34",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3122,6 +3143,27 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-06-08-admin-studio-boundary.md",
+      "title": "2026-06-08 — Admin Studio surface & responsibility boundary",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:21d6367475fb6a5d989d0ee1f815facbbab2a0d119b662a2ec42db13efd7d3d2",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/README.md",
       "title": "Decisions",
       "status": "active",
@@ -3324,6 +3366,48 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:98d6b591eeee0ec83ee5fd43ce137aa1f775ea92f2ca21ed62a485043220d84d",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/digest/2026-06-05.md",
+      "title": "Morning digest — 2026-06-05",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:217ba0bec1399f8411f47ac1aa563310a12f290cd4d78cdd907b7be12ce7a035",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/digest/2026-06-06.md",
+      "title": "Morning digest — 2026-06-06",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:a7b063f4f41462cb64965f7daabdb6fd0dfa28d08afcf9d785491e62e78d5632",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3643,7 +3727,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1b6fce7b1e728053f97d47d2138470e31544acf7b9826ec540d55707a5cb2c2c",
+      "content_hash": "sha256:b4458738d8f6a51ae8186a7a8fcd19faea006ace2c3e18d75ab81cefb8ff4f76",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3664,7 +3748,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d294f5c288cb37d2ee7913d35b8569e4d4d2c729002574418d82de15e41c6d7c",
+      "content_hash": "sha256:168ad1045cab4143ca1dec07ebf8824856a9eac9218af3b87a421d87d3728abe",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6116,6 +6200,48 @@
       "errors": []
     },
     {
+      "path": "docs/planning/brief-2026-06-08.md",
+      "title": "Platform Planning Brief — 2026-06-08",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:e269a259be4ad992770cb50ac60fa61096bef474711165d88c7aaf73e29b34bd",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/factory-network-layer.md",
+      "title": "Factory Network Layer — Design & Build Plan",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5b4e4e9f30437379704803c96945a19577b5779ba63df509490c0709482d9ed3",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/PLATFORM_STANDARDS.md",
       "title": "Platform Standards — Latimer-Woods-Tech",
       "status": "active",
@@ -6128,7 +6254,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f9573c7055dc5ba8475783722534a4235f07aa76d928935e377e0b46970fda36",
+      "content_hash": "sha256:7dfb13281737614cc025bb4215292b7ebdb7b0b5a12f859c8c3a4aa688100e9c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6359,7 +6485,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:da395dcc83dd504da9ea1cd1c2181f6d054aaf06eda472814cd7ad6b9ac48f41",
+      "content_hash": "sha256:f84aa73e4a55bfe07d2a6ea1142f10c85c5bfeb2ad7fe5396da5c01d4b239f3e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6466,7 +6592,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1a971c4803ff3a2b38db07c210e349f9a1d1a43e18dde255174952701be1fa8b",
+      "content_hash": "sha256:37b67addcc3c11c285454952b44abad7f8c892902c2e1296f71dd12c887deddc",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6637,6 +6763,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:aefc71c1594a1e2726f7e59fc1732f475ac072ac7687d8b7523fda0bee58484d",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-automation-flow-operating-model.md",
+      "title": "RFC-006: Cohesive Automation Flow Operating Model",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:9a072de0ae1bd6133eb1fcefa1b0777a2c8c15d29661c4030ead9a6d101d063a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7749,7 +7896,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a394fbefa3102826cb986909e6252a6a5a802be21a6e5d4b82de5fede83395bc",
+      "content_hash": "sha256:3350c90484d9ed6217224a1ca93b694ea0448a28e9ea026d9c84b1a8922475df",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7815,7 +7962,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:43a1e62c5bc98a207b66613e3f2ccfcdb415e9b5fc4d6474e322ee31c04598b2",
+      "content_hash": "sha256:7ded8a483d47d0e45b5144d399c93765b3dba2252503be1bdbfa5bb9d61957aa",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -7894,12 +8041,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-05-30",
+      "last_updated": "2026-06-05",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:8a12ca69aaf68f04719c76ec84558455ae1e21770cc7ccf7ed32945d021ee7b3",
+      "content_hash": "sha256:c577089f1a3a0ef49ca677c2366ebc1e62bdd65bc3ef3c0d20ca775fa4e83f5b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8005,6 +8152,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:ba52423e2db70df842d1343d21db8478a5aa6918eb00f0aa5131bfbc37d59553",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/supervisor/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/supervisor/AOS_COMPLETION_AUDIT.md",
+      "title": "Factory Autonomous OS Completion Audit",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "audit",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:6b0e28f86113f350c07e43a3df8fe2398e1d2760233da0373755485f624b291a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8172,7 +8340,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6e43f40ee8f2fbe78f7db0cf5bd06ce4f0cfa8996f4595e7661563e784c0b4de",
+      "content_hash": "sha256:1b6cd335930cf9ffe1b8707ff6f6e708df46be34068b03aee5839b74a8ce5a8c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,

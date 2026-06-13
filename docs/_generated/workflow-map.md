@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-06
+last_generated: 2026-06-09
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -107,9 +107,11 @@ flowchart TB
   Other --> mirror_org_secrets_to_dependabot_yml["mirror-org-secrets-to-dependabot.yml"]
   Reporting --> morning_digest_yml["morning-digest.yml"]
   Other --> offsite_mirror_yml["offsite-mirror.yml"]
+  Other --> opportunity_scan_yml["opportunity-scan.yml"]
   Other --> package_integration_yml["package-integration.yml"]
   Other --> platform_conformance_yml["platform-conformance.yml"]
   Other --> policy_drift_guard_yml["policy-drift-guard.yml"]
+  Other --> pr_advisory_sweep_yml["pr-advisory-sweep.yml"]
   Quality --> pr_quality_check_yml["pr-quality-check.yml"]
   Reporting --> pr_queue_digest_yml["pr-queue-digest.yml"]
   Other --> pr_review_yml["pr-review.yml"]

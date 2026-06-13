@@ -12,12 +12,21 @@ export interface Env {
   FACTORY_APP_PRIVATE_KEY: string;
   /** GitHub App installation ID. Set via `wrangler secret put FACTORY_APP_INSTALLATION_ID`. */
   FACTORY_APP_INSTALLATION_ID: string;
+  /** Deployment environment — set via wrangler.jsonc vars. */
+  ENVIRONMENT?: string;
+  /** Worker name — set via wrangler.jsonc vars. */
+  WORKER_NAME?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
 app.get('/health', (c) =>
-  c.json({ ok: true, service: 'factory-cross-repo', ts: new Date().toISOString() }),
+  c.json({
+    ok: true,
+    service: 'factory-cross-repo',
+    env: c.env.ENVIRONMENT ?? 'unknown',
+    ts: new Date().toISOString(),
+  }),
 );
 
 app.post('/api/supervisor/create-pr', async (c) => {

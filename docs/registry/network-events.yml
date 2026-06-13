@@ -1,0 +1,122 @@
+# Factory Network Events — canonical event taxonomy
+#
+# Platform Standard §12: deployed product apps in build/growth mode MUST emit
+# network events on key user lifecycle moments via fireNetworkEvent() to
+# https://network.latwoodtech.work/v1/network/events.
+#
+# GOVERNANCE:
+#   - Add new events here BEFORE wiring them in app code.
+#   - Increment schema_version when properties shape changes for an event_name.
+#   - Events are immutable facts (never updated — add new schema_version rows).
+#   - PII rules: user_id_local is a UUID (not email/name). No PII in properties.
+#   - CI check: scripts/check-network-events.mjs validates app event fires against
+#     this registry (enforcement added with network layer Phase 0).
+#
+# ROUTING: all events go to POST /v1/network/events on factory-core-api.
+# FIRE PATTERN: ctx.waitUntil(fireNetworkEvent(ctx, env, userId, event, props))
+# HELPER: each app's lib/network.ts (see docs/planning/factory-network-layer.md §7)
+
+version: 1
+updated: "2026-06-08"
+
+events:
+  # ── selfprime ───────────────────────────────────────────────────────────────
+  - name: reading_generated
+    app: selfprime
+    schema_version: 1
+    description: User received a complete HD synthesis reading
+    properties:
+      chart_type: string      # Generator | Projector | Manifestor | Reflector | ManifestingGenerator
+      authority: string       # Sacral | Emotional | Splenic | etc.
+      profile: string         # 1/3 | 2/4 | etc.
+    fire_location: "workers/src/handlers/profile.js — after synthesis completes"
+
+  - name: practitioner_matched
+    app: selfprime
+    schema_version: 1
+    description: Seeker was matched with a practitioner
+    properties:
+      practitioner_id_anon: string   # sha256(practitioner_id) — never the raw UUID
+    fire_location: "workers/src/handlers/practitioner.js — after match write"
+
+  - name: subscription_created
+    app: selfprime
+    schema_version: 1
+    description: User activated a paid subscription (Stripe invoice.paid)
+    properties:
+      tier: string            # pro | agency | etc.
+      interval: string        # month | year
+    fire_location: "workers/src/handlers/billing.js — after Stripe webhook invoice.paid"
+
+  - name: account_linked
+    app: selfprime
+    schema_version: 1
+    description: User completed OAuth account link to an external platform
+    properties:
+      provider: string        # capricast | discord
+    fire_location: "workers/src/handlers/account-link-oauth.js — after upsertVerifiedAccountLink"
+
+  - name: reading_shared
+    app: selfprime
+    schema_version: 1
+    description: User created a public share link for their reading
+    properties:
+      recipient_type: string  # public | practitioner | anonymous
+    fire_location: "workers/src/handlers/share.js — after share link created"
+
+  # ── capricast ───────────────────────────────────────────────────────────────
+  - name: video_published
+    app: capricast
+    schema_version: 1
+    description: Video became publicly available on Cloudflare Stream
+    properties:
+      duration_s: number
+    fire_location: "apps/worker/src/routes/admin.ts — POST /api/admin/videos/import handler"
+
+  - name: channel_created
+    app: capricast
+    schema_version: 1
+    description: Creator created a new channel
+    properties:
+      channel_type: string
+    fire_location: "apps/worker/src/routes/channels.ts — after channel insert"
+
+  - name: subscriber_added
+    app: capricast
+    schema_version: 1
+    description: New paid subscriber joined a channel
+    properties:
+      tier: string
+    fire_location: "apps/worker/src/routes/account.ts — after subscription webhook"
+
+  - name: conference_started
+    app: capricast
+    schema_version: 1
+    description: Conference session started with participants
+    properties:
+      participant_count: number
+    fire_location: "apps/worker/src/routes/conference.ts — after session start"
+
+  # ── coh ─────────────────────────────────────────────────────────────────────
+  - name: session_booked
+    app: coh
+    schema_version: 1
+    description: User booked a healing session appointment
+    properties:
+      service_name_anon: string   # sha256(serviceName) — no PII
+    fire_location: "src/routes/booking.ts — POST /appointments after insert"
+
+  # ── xico-city ────────────────────────────────────────────────────────────────
+  # xico-city is an audio marketplace (assets/licenses), not a course platform.
+  # "course_started" and "module_completed" were speculative — replaced with actual events.
+  - name: asset_purchased
+    app: xico-city
+    schema_version: 1
+    description: Buyer completed checkout and received a license for an audio asset
+    properties:
+      asset_id: string       # internal UUID — not PII
+      listing_id: string
+      creator_id: string
+      order_id: string
+      total_cents: number
+    fire_location: "src/routes/webhooks/stripe-checkout.ts — checkout.session.completed handler"

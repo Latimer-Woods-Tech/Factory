@@ -73,13 +73,13 @@ Five rules every implementer must respect. These came out of the 2026-05-25 revi
 
 ### 1.4.1 Side-effect boundary
 
-**The Admin UI never triggers side effects directly.** The UI is a query surface only.
+**The Admin UI never performs side effects directly.** It is an *intent-collection* surface, not a query-only surface: it gathers operator inputs, previews, and confirmations and submits a typed action request — but every authoritative outcome (authentication, policy re-evaluation, mutation, audit, receipt identity) is computed by the **Admin Studio API**, which is authoritative. The UI explains and collects intent; it does not calculate authoritative outcomes. (Boundary of record: [docs/decisions/2026-06-08-admin-studio-boundary.md](../decisions/2026-06-08-admin-studio-boundary.md).)
 
-When the UI surfaces "PR #298 is blocked on CI" and the operator clicks anything, the click goes through a separate Factory orchestrator endpoint that authenticates the request, validates the requested action against `capabilities.yml`, writes a `factory_audit_log` row, then performs the side effect against the source-of-truth. The UI never POSTs to `/v1/gates`, never writes to Neon directly, never invokes a Worker that mutates state.
+> Correction (2026-06-08): an earlier version of this section said "the UI is a query surface only." Admin Studio is now an operational mutation surface — the UI collects intent and confirmation for mutations. The invariant is not "no mutations" but **"no *direct* side effects from the UI; all mutations flow through governed orchestrator APIs."**
 
-**Concrete example.** When the operator clicks "view the failing workflow run," the UI follows the `evidence_url` link out to GitHub Actions — read-only navigation. The Admin UI does not yet have action-triggering buttons; orchestrator endpoints will be specced individually before any are exposed in the UI (out of Tier 0/1 scope).
+When the UI surfaces "PR #298 is blocked on CI" and the operator clicks an action, the click goes through a governed Admin Studio API / orchestrator endpoint that authenticates the request, re-evaluates policy, validates the requested action against `capabilities.yml`, writes a `factory_audit_log` row + receipt, then performs the side effect against the source-of-truth. The UI never POSTs directly to a domain mutation endpoint, never writes to Neon directly, never calls GitHub/Stripe/Cloudflare/provisioners, and never infers success from an HTTP 200.
 
-**Enforcement.** The Admin UI Worker has read-only DB credentials (Hyperdrive binding scoped to `SELECT` only). Any action-triggering endpoint, when introduced, lives on `factory-core-api` not on the UI Worker, authenticated with a write-scoped JWT.
+**Enforcement.** The Admin UI Worker has read-only DB credentials (Hyperdrive binding scoped to `SELECT` only). Action-triggering endpoints live on the Admin Studio API (and `factory-core-api`), authenticated with a write-scoped JWT — never on the UI Worker.
 
 ### 1.4.2 Append-first, derive-latest
 

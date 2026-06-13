@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -48,11 +48,13 @@ jobs:
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
-          fetch_to_env CLOUDFLARE_API_TOKEN   CF_API_TOKEN CLOUDFLARE_API_TOKEN
-          fetch_to_env CLOUDFLARE_ACCOUNT_ID  CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
-          fetch_to_env JWT_SIGNING_KEY        JWT_SIGNING_KEY
-          fetch_to_env SUPERVISOR_PUSH_KEY    SUPERVISOR_PUSH_KEY
-          fetch_to_env SENTRY_DSN             FACTORY_CORE_API_SENTRY_DSN SENTRY_DSN
+          fetch_to_env CLOUDFLARE_API_TOKEN        CF_API_TOKEN CLOUDFLARE_API_TOKEN
+          fetch_to_env CLOUDFLARE_ACCOUNT_ID       CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
+          fetch_to_env JWT_SIGNING_KEY             JWT_SIGNING_KEY
+          fetch_to_env SUPERVISOR_PUSH_KEY         SUPERVISOR_PUSH_KEY
+          fetch_to_env SENTRY_DSN                  FACTORY_CORE_API_SENTRY_DSN SENTRY_DSN
+          fetch_to_env FACTORY_NETWORK_CONNECTION_STRING  FACTORY_NETWORK_CONNECTION_STRING
+          fetch_to_env FACTORY_OUTBOUND_SIGNAL_KEY  FACTORY_SIGNAL_KEY
 
       - name: Build local package dependencies
         run: |
@@ -69,6 +71,12 @@ jobs:
         run: |
           cd apps/factory-core-api
           npm install
+
+      - name: Run network DB migrations
+        working-directory: apps/factory-core-api
+        env:
+          FACTORY_NETWORK_CONNECTION_STRING: ${{ env.FACTORY_NETWORK_CONNECTION_STRING }}
+        run: npm run migrate
 
       - name: Deploy to Cloudflare Workers
         working-directory: apps/factory-core-api
@@ -87,8 +95,9 @@ jobs:
             fi
             printf '%s' "$val" | npx wrangler secret put "$name" --env production
           }
-          put_secret JWT_SIGNING_KEY     "${JWT_SIGNING_KEY:-}"
-          put_secret SUPERVISOR_PUSH_KEY "${SUPERVISOR_PUSH_KEY:-}"
+          put_secret JWT_SIGNING_KEY              "${JWT_SIGNING_KEY:-}"
+          put_secret SUPERVISOR_PUSH_KEY          "${SUPERVISOR_PUSH_KEY:-}"
+          put_secret FACTORY_OUTBOUND_SIGNAL_KEY  "${FACTORY_OUTBOUND_SIGNAL_KEY:-}"
           [ -n "${SENTRY_DSN:-}" ] && put_secret SENTRY_DSN "${SENTRY_DSN}" || true
           npx wrangler deploy --env production --var BUILD_SHA:"${GITHUB_SHA}"
 

@@ -468,6 +468,30 @@ ai.post('/chat', async (c) => {
     });
 
     if (!upstream.ok) {
+      // On 402 (credits) or 401 (bad key) fall back to the llm package's
+      // provider chain (grok → groq) so chat stays functional.
+      if (upstream.status === 402 || upstream.status === 401) {
+        const fallbackMissing = getMissingStrategyConfig('drafting', c.env);
+        if (fallbackMissing.length === 0) {
+          const fallbackResult = await complete(messages, toLlmEnv(c.env), resolveLlmOptions('drafting', body.mode, system));
+          if (fallbackResult.data) {
+            const fd = fallbackResult.data;
+            const encoder = new TextEncoder();
+            return new Response(
+              new ReadableStream<Uint8Array>({
+                start(controller) {
+                  const token: AIChatEvent = { type: 'token', delta: fd.content };
+                  const done: AIChatEvent = { type: 'done', provider: fd.provider, tokens: { input: fd.tokens.input, output: fd.tokens.output } };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(done)}\n\n`));
+                  controller.close();
+                },
+              }),
+              { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' } },
+            );
+          }
+        }
+      }
       return c.json({ error: 'upstream failed', status: upstream.status }, 502);
     }
 
