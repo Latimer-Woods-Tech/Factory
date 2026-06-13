@@ -1,210 +1,190 @@
-# I1 — Energy Blueprint Video Engine: Final-State Design
+# I1 — Per-User Energy Blueprint Video: Final-State Design
 
 > **Seam I1** from [`../PORTFOLIO_CAPABILITY_RECONCILIATION.md`](../PORTFOLIO_CAPABILITY_RECONCILIATION.md).
-> Supersedes earlier "per-user personal film" drafts. Scope was deliberately expanded (see
-> Decisions) from a one-time film into a **personalized, credit-metered, scheduled, multi-source
-> video engine** with multi-channel delivery and an autopilot + exception-console operating model.
+> Goal: make "your chart rendered as a personal short film" true — a per-user Energy Blueprint film,
+> generated from a user's real reading, owned as a first-class private asset of their reading, and
+> (by explicit consent) shareable through Capricast + Discord.
 >
-> **Design stance:** specify the **complete final state**, then build in **production-final, additive
-> slices** — no MVP, no version-by-version reshaping, no "ship X then migrate to Y." Every decision is
-> made once. Slices are sequenced so the marketing-claim-satisfying private film lands early, and
-> every later slice is purely additive (no rework of earlier ones).
+> **Design stance:** this document specifies the **final state**, then defines build slices that are
+> each **production-final and additive** — no throwaway MVP, no version-by-version reshaping of the
+> same surface, no "ship Stream-only then migrate." Every decision below is made once, correctly.
 >
-> **Effort (honest):** ~10–14 focused weeks for the full engine. The render *logic* exists and is
-> reused; the build is the credit/billing meter, the scheduler, the modular multi-source composition,
-> multi-channel delivery, the dedicated render service, and the exception console. The private film
-> (the marketing claim) is satisfied by ~week 3–4; the rest is additive.
+> **Effort:** ~5–7 focused weeks to the full final state (private film + social publishing). The
+> render *logic* already exists and is reused; the work is correct orchestration, a proper render
+> service, clean domain boundaries, and the cross-product identity layer.
 
 ---
 
-## 1. What we're building (final state)
+## 1. Domain model (the thing we are building)
 
-A **personalized Energy Blueprint video engine**. A user composes **video objects** from selectable
-**sources** (their blueprint, current transits, dream-journal reflection, milestones, personality
-tests), on a **cadence they choose**, delivered through **channels they choose** (in-app, email, an
-SMS deep-link). Generation is **metered by credits** (a monthly per-tier grant; overage = a credit
-pack). Videos are **private by default**, with explicit, consented sharing to Capricast/Discord.
-
-It has **three faces**:
-1. **The product** — what the user configures, watches, and receives.
-2. **The autopilot** — the system self-governs at hundreds/day: auto-retry with backoff, auto-throttle
-   on a global spend ceiling, auto-screen + quarantine flagged shares, skip-and-notify on zero credits.
-3. **The exception console** — the operator is pulled in *only by alerts* (failures, spend, abuse,
-   moderation) into a triage queue. Not a control room; an alert-first cockpit.
-
-## 2. Domain model
+The **Energy Blueprint Film** is a first-class asset of a `Profile` (a user's reading), owned by
+selfprime. It is **private by default** and has an explicit lifecycle and a separate, explicit
+sharing state. It is never implicitly public.
 
 ```
-VideoObject            rendered asset; one per (subscription occurrence | on-demand request)
-  id, userId, status: requested|metered|rendering|ready|failed, failureReason
-  compositionSpecId, streamUid (private, signed playback), durationS, creditsSpent, createdAt, readyAt
-  share: { visibility: private|unlisted|public, capricastVideoId?, discordAnnouncedAt? }   // default private
-
-CompositionSpec        the recipe for a render
-  sources: [blueprint, transits, dreamJournal, milestones, personality]   // user-selected subset
-  format:  full_film | short_clip | narrated_stills                       // affects credit cost
-  segments: ordered; each marked cacheable (blueprint, personality) | fresh (transits, dreamJournal, milestones)
-
-VideoSubscription      a standing schedule (0..n per user)
-  id, userId, cadence (rrule/cron), compositionSpec, channels: [in_app, email, sms], active, nextRunAt
-
-CreditLedger           the meter (selfprime billing domain)
-  userId, balance, monthlyGrant (by tier), rolloverCap (~1 month), txns: [grant|debit|purchase|refund]
-  costFn(spec) -> credits   // base + per-source + format multiplier; operator-tunable config
-
-AccountLink            cross-product identity (Slice 5)
-  userId, provider: capricast|discord, externalId, verified, linkedAt
-
-ModerationRecord       for shared videos
-  videoObjectId, autoScreenResult, state: ok|flagged|removed, actor, reason
+BlueprintFilm
+  id, profile_id (1:1 with the reading version), user_id
+  status:        requested | rendering | ready | failed
+  failure_reason: text | null
+  stream_uid:     Cloudflare Stream UID (selfprime's Stream account)   // canonical, private
+  playback:       signed-URL policy (private; tokenized playback)
+  duration_s, created_at, ready_at
+  share:                                                               // social life (consented)
+    capricast_video_id | null
+    discord_announced_at | null
+    visibility: private | unlisted | public                           // user-chosen, default private
 ```
 
-## 3. Architecture & data flow
+**Domain boundaries (decided, final):**
+- The film **belongs to the private reading** → its canonical home is **selfprime + Cloudflare
+  Stream**, with **signed/tokenized playback**. It is not a Capricast object that selfprime borrows.
+- **Capricast is the social/creator surface**, reached only by an explicit, consented "share"
+  action that publishes the existing Stream asset under the user's **linked Capricast identity**.
+- **Discord** is a community surface that announces *shared* films (never private ones).
+
+This boundary is why there is no "migrate from Stream to Capricast later": Stream is the permanent
+private home; Capricast publishing is a permanently-distinct, additive capability.
+
+## 2. Component architecture & data flow
 
 ```
-selfprime (HumanDesign) ── product + meter + scheduler ──────────────┐
-  on-demand "Generate" OR scheduler fires a VideoSubscription          │
-   → resolve CompositionSpec, gather fresh source data                 │
-   → CreditLedger.debit(costFn(spec))  ── insufficient? skip + notify(top-up upsell)
-   → enqueue signed render request (idempotencyKey = videoObjectId)    │
-                                                                       ▼
-Factory ── Render Service (Cloud Run; Remotion + ffmpeg) ──────────────
-   build modular composition from segments (cacheable reused; fresh rendered)
-   author/attach narration (selfprime-supplied text; no Factory LLM)
-   → Cloudflare Stream (private)  → signed callback ─▶ selfprime: store streamUid, status=ready, creditsSpent
-                                                       │
-selfprime ── deliver + surface ◀───────────────────────┘
-   in-app film panel (signed playback) · Resend email · Telnyx SMS deep-link
-   autopilot: retry/backoff · spend auto-throttle · zero-credit skip+notify
+selfprime (HumanDesign)                Factory                         Cloudflare / Capricast
+─────────────────────────             ───────────────────────         ──────────────────────
+reading completes / "Generate
+  my film" (entitled, on-demand)
+  │ enforce tier + quota (atomic)
+  │ author narration from synthesis
+  │ map chart → scenes
+  ▼
+POST Render Service  ───signed──▶   Render Service (Cloud Run)
+  { filmId, profileId, props,        Remotion(EnergyBlueprintVideo, real props)
+    narration, callbackUrl }         → ffmpeg → upload → Cloudflare Stream (private)
+                                     → signed callback ──▶  selfprime: store stream_uid, status=ready
+  ▼                                                          │
+blueprint page: <Player> (signed)  ◀──────────────────────────┘
+  states: none|rendering|ready|failed+retry
+  notify: email (Resend) + in-app
 
-  ── explicit "Share" (consent + visibility) ─▶ Capricast import (visibility=chosen, creatorId=linked)
-                                              → optional Discord announce        [Slice 5]
-
-Cross-cutting: telemetry (Sentry + factory_events + cost/film) → autopilot alerts → Exception Console
+  ── explicit "Share my film" (consent + visibility) ─────────────────▶
+     publish Stream asset → Capricast import (visibility=chosen, creatorId=linked identity)
+     → optional Discord announce (linked member)                        [the I3 social bridge]
 ```
 
-The **on-demand and scheduled paths converge** on the same meter → render-request → render-service →
-deliver pipeline. Recurring per-user schedules live on Factory's **schedule-worker**; **Cloud Run** is
-the executor for *all* personal renders (CI `render-video.yml` stays only for scheduled *content*
-videos — a genuinely different workload).
+**Render execution is a dedicated service, not CI.** Per-user, on-demand rendering does **not**
+belong on GitHub Actions (`workflow_dispatch` has concurrency/throughput ceilings, is semantically
+CI, and is the classic "works until volume, then rework" trap). The final state is a **Remotion
+render service on Cloud Run** (the platform already runs Cloud Run for `browser-agent`; heavy compute
+is GCP per platform convention). The existing `render-video.yml` pipeline **remains** — for its
+correct workload, *scheduled content videos* — and the `EnergyBlueprintVideo` composition, the
+chart→scenes mapper, and the render scripts are a **shared library** reused by both. Clean separation
+of two genuinely different workloads (scheduled content vs on-demand personal).
 
-## 4. Mature engineering decisions (made once)
+## 3. Mature engineering decisions (made once)
 
 | # | Decision | Rationale |
 |---|---|---|
-| D1 | **Video objects are private first-class assets** on selfprime Cloudflare Stream, **signed playback**; never public by default | Personal readings are private; sharing is an explicit act. |
-| D2 | **Dedicated Cloud Run render service** for all personal renders; CI pipeline kept only for scheduled content; composition/scripts shared as a lib | Hundreds/day makes CI-as-render-farm untenable; correct workload placement, no rework. |
-| D3 | **Modular composition** — each source is a segment with a credit cost, marked cacheable vs. fresh-per-render | Enables source selection + recurring freshness without re-rendering static content. |
-| D4 | **Credit-metered** — per-tier monthly grant, `costFn(spec)` debit, overage = Stripe credit pack, zero-credit = skip+notify upsell | User-chosen flexibility (cadence × sources) with bounded, fair cost; clean upsell. |
-| D5 | **Recurring schedules on schedule-worker**; the scheduler resolves spec, gathers fresh data, meters, enqueues | Reuse the platform scheduling infra; on-demand and scheduled share one path. |
-| D6 | **selfprime authors narration** from real source data; Factory never LLM-generates personal narration | No-"AI"-wording governance at source; authentic; one fewer moving part. |
-| D7 | **Multi-channel delivery**: in-app + Resend email + **Telnyx SMS as a deep-link** (SMS can't carry video) | All stacks exist; SMS links to signed playback. |
-| D8 | **Autopilot + exception console** — system self-governs; humans triage alerts only | Matches "automated + exceptions only" operator model at scale. |
-| D9 | **Two-layer cost governance** — per-user credits (user meter) + global spend ceiling with auto-throttle (platform safety) | Protects unit economics and the platform independently. |
-| D10 | **Signed, idempotent async contract** end to end (HMAC, replay window, `idempotencyKey=videoObjectId`) | Mature service-to-service security; safe retries; exactly-once per occurrence. |
-| D11 | **Capricast `visibility` made explicit** (param; default unlisted; never auto-public) — source-level fix for all callers | Fixes the latent privacy bug properly, not a skip-hack. |
-| D12 | **First-class cross-product identity link** (selfprime ↔ Capricast ↔ Discord) | Real attribution for sharing/social; designed up front. |
-| D13 | **Operator-tunable policy in config** (credit grants, `costFn`, spend ceiling, cadence limits) — editable without redeploy | The autopilot's knobs live where the operator can turn them. |
+| D1 | **Film = private first-class Profile asset**, canonical on selfprime + **Cloudflare Stream with signed playback** | Domain-correct; a personal reading is private. No public-by-default ever. |
+| D2 | **Dedicated Cloud Run render service** for on-demand personal renders; CI pipeline kept only for scheduled content | Correct workload placement; no CI-as-render-farm rework. Reuses the composition/mapper/scripts as a shared lib. |
+| D3 | **selfprime authors the narration** from the real synthesis; Factory never LLM-generates personal narration | No-"AI"-wording governance at source; one fewer moving part; authentic to the reading. |
+| D4 | **Capricast `visibility` made explicit** (param; default `unlisted`; **never auto-public**) — a correctness fix to the import endpoint, applied for all callers | Fixes a latent privacy bug properly instead of skip-hacking it for personal jobs. |
+| D5 | **First-class cross-product identity link** (selfprime user ↔ Capricast creator ↔ Discord member) in the shared identity layer | The social slice needs real identity, not a system creator. Designed up front so nothing is reworked. |
+| D6 | **`blueprintVideo` tier feature + `blueprint_video_generation` quota**, enforced atomically at selfprime; render service accepts only signed, entitled requests | Cost/abuse control is part of the domain, not bolted on. |
+| D7 | **Signed, idempotent async contract** (HMAC, replay window, `idempotencyKey=filmId`) end to end | Mature service-to-service security; safe retries; exactly-once render per reading version. |
+| D8 | **Generation is on-demand & consented**, not automatic on every reading | Cost + user intent; the film is a deliberate artifact. |
 
-**Defaults set (flag to change):** credit **rollover** = monthly grant + capped carryover (~1 month);
-sources in the catalog = **blueprint, transits, dream journal, milestones, personality tests**.
+## 4. What is reused vs net-new
 
-## 5. Reused vs net-new
+**Reused (de-risk — proven to work):** the `EnergyBlueprintVideo` Remotion composition (per-user
+schema already present), the render scripts (`render.ts`, ElevenLabs narration, ffmpeg, Stream
+upload), the Capricast import endpoint, selfprime's chart engine + synthesis, Resend/in-app
+notifications, the atomic quota machinery (`enforceUsageQuota`).
 
-**Reused:** the `EnergyBlueprintVideo` Remotion composition + render scripts (as a shared lib);
-Cloudflare Stream; selfprime chart/synthesis/transits/dream-journal/psychometric data; Resend + Telnyx
-+ in-app notifications; Stripe (one-time + agentic) for credit packs; schedule-worker scheduling;
-atomic quota machinery; Sentry + factory_events.
+**Net-new (the build):** the Cloud Run render service wrapper (D2); `chartToScenes()` mapper;
+selfprime narration-authoring step (D3); `BlueprintFilm` domain + storage + state machine; the
+signed render-request + callback contract (D7); `blueprintVideo` entitlement + quota (D6); the
+blueprint-page film panel with signed playback; the explicit share action; the `visibility` fix on
+Capricast import (D4); the identity-link model + UI (D5); the Discord announce hook.
 
-**Net-new:** the Cloud Run render service; modular multi-source composition + per-source segment
-renderers + `chartToScenes()`; CreditLedger + `costFn` + overage; VideoSubscription + scheduler
-resolution; multi-channel delivery; signed render/callback contract; autopilot governance
-(retry/throttle/skip/quarantine); the exception console; the Capricast `visibility` fix; the identity
-link + sharing; the user configuration surface (sources × cadence × channels).
+## 5. Build slices (each production-final, additive — no rework between slices)
 
-## 6. Build slices (production-final, additive — sequenced for early value)
+Slices are vertical and shippable; **each is built to final-state quality**, and later slices add
+capability without reshaping earlier ones.
 
-Each slice is shippable and built to final quality; later slices add capability without reshaping
-earlier ones.
+- **Slice 0 — Foundations & contracts (design-complete artifacts).**
+  `BlueprintFilm` schema + migration; the signed render-request and callback schemas (D7); the
+  `blueprintVideo` feature in `getTierConfig` + `blueprint_video_generation` quota (D6); the
+  identity-link schema (D5, defined now, populated in Slice 3). Shared types in `packages/video`
+  extended with the personal render contract. *These are the source of truth; later slices implement
+  against them unchanged.*
 
-- **Slice 0 — Foundations & contracts.** Domain schemas + migrations (VideoObject, CompositionSpec,
-  CreditLedger, VideoSubscription, AccountLink, ModerationRecord); the signed render-request/callback
-  contract (D10); `costFn` + credit-policy config (D13); extend shared types in `packages/video`.
-  *Immutable source of truth for all later slices.*
-- **Slice 1 — Render service + composition.** Cloud Run Remotion service (signed in/out); modular
-  composition with the blueprint segment + `chartToScenes()`; private Stream upload; snapshot tests.
-  *Verify:* signed request (fixture) → private Stream asset + valid signed callback.
-- **Slice 2 — On-demand private film (satisfies the marketing claim).** selfprime narration authoring
-  (D6); credit debit (D4) for a single on-demand render; `POST /api/profile/:id/video`; VideoObject
-  state machine; signed-playback film panel (none/rendering/ready/failed+retry); in-app + email notify.
-  *Verify:* generate → debit → pending → email → plays privately.
-- **Slice 3 — Sources & composition catalog.** Add the remaining segment renderers (transits, dream
-  journal, milestones, personality), cacheable/fresh handling, per-source credit costs, and the
-  user's **source-selection** UI.
-- **Slice 4 — Subscriptions, scheduling & delivery.** VideoSubscription config (cadence × sources ×
-  channels); schedule-worker resolution → meter → enqueue; recurring freshness; Telnyx SMS deep-link
-  delivery; zero-credit skip+notify+upsell.
-- **Slice 5 — Credits & billing.** Per-tier grants, rollover, the credit-pack Stripe purchase + overage
-  flow, ledger surfacing in-app.
-- **Slice 6 — Autopilot & exception console.** Auto-retry/backoff, global spend ceiling + auto-throttle
-  (D9), alerting, the operator triage console (failures, spend, abuse) with retry/cancel + credit-policy
-  controls (D13).
-- **Slice 7 — Social & moderation.** Capricast `visibility` fix (D11); identity link (D12); consented
-  share → Capricast/Discord; auto-screen + moderation queue.
+- **Slice 1 — Render service (Factory, Cloud Run).**
+  Remotion render service: accepts a signed render request, renders `EnergyBlueprintVideo` with full
+  per-user props, ffmpeg-encodes, uploads to selfprime's Cloudflare Stream (private), emits the
+  signed callback. `chartToScenes()` mapper + snapshot tests. Reuses composition/scripts as a lib.
+  *Verify:* signed request with a fixture profile → private Stream asset + valid callback.
 
-## 7. Contracts (authored in Slice 0, immutable thereafter)
+- **Slice 2 — Generation & private viewing (selfprime, end-to-end private feature complete).**
+  Narration authoring from synthesis (D3, no-"AI"); entitlement + quota enforcement (D6); on-demand
+  `POST /api/profile/:id/film`; `BlueprintFilm` state machine + signed-playback surfacing on the
+  blueprint page (none/rendering/ready/failed+retry); Resend + in-app notify. *This slice fully
+  satisfies the marketing claim* — the private personal film exists and plays.
+
+- **Slice 3 — Social publishing (the I3 bridge, additive).**
+  Capricast `visibility` correctness fix (D4); cross-product identity link (D5); explicit, consented
+  "Share my film" → Capricast publish under the linked creator at chosen visibility; optional Discord
+  announce. Nothing in Slices 0–2 changes.
+
+## 6. Contracts (authored in Slice 0, immutable thereafter)
 
 **Render request** (selfprime → render service, signed):
 ```jsonc
 {
-  "videoObjectId": "<uuid>",          // == idempotency key
-  "userId": "<uuid>",
-  "callbackUrl": "https://api.selfprime.net/api/internal/video/callback",
-  "spec": { "sources": ["blueprint","transits"], "format": "full_film",
-            "segments": [ /* resolved: cacheable refs + fresh props + narration text */ ],
-            "brandColor": "#c9a84c", "logoUrl": "..." }
+  "filmId": "<uuid>",            // == idempotency key; one render per reading version
+  "profileId": "<uuid>", "userId": "<uuid>",
+  "callbackUrl": "https://api.selfprime.net/api/internal/film/callback",
+  "composition": "EnergyBlueprintVideo",
+  "props": { "hdType": "...", "forgeTheme": "...", "definedCenters": ["..."],
+             "scenes": [ /* chartToScenes() */ ], "narration": "<final text>",
+             "brandColor": "#c9a84c", "logoUrl": "..." }
 }
 ```
-Auth: `X-Signature` = HMAC-SHA256(rawBody, secret) + `X-Timestamp`; **±5-min replay window**; reject
-duplicate `videoObjectId` in a terminal state. **Callback** (same scheme): `{ videoObjectId,
-status: ready|failed, streamUid?, durationSeconds?, creditsSpent?, failureReason? }`.
+Auth: `X-Signature` = HMAC-SHA256(rawBody, secret); `X-Timestamp`; **±5-min replay window**; reject
+duplicate `filmId` in a terminal state.
 
-**Segment interface:** `renderSegment(source, ctx) -> { props, narrationText, cacheable }` — the
-contract every source implements; new sources are additive.
+**Callback** (render service → selfprime, signed, same scheme): `{ filmId, status: ready|failed,
+streamUid?, durationSeconds?, failureReason? }`.
 
-**Credit debit:** `costFn(spec) = base + Σ perSource(source) + formatMultiplier(format)` (config-driven);
-debited atomically at enqueue; refunded on `failed`.
+**Entitlement:** `blueprintVideo` feature on Individual/Practitioner tiers; `blueprint_video_generation`
+monthly quota via `enforceUsageQuota`; the render service rejects any request lacking a valid signature.
 
-## 8. Risks & guardrails
+**Identity link** (Slice 0 schema, Slice 3 use): `account_links(user_id, provider: capricast|discord,
+external_id, linked_at, verified)`.
 
-- **Unit economics (top):** credits bound user cost; the global spend ceiling + auto-throttle bound
-  platform cost; `costFn` is tuned from real cost-per-film telemetry. Refund credits on failed renders.
-- **Privacy:** private-by-default + signed playback; sharing is opt-in with explicit visibility; the
-  Capricast public default is removed at source (D11); SMS is a tokenized deep-link, not a public URL.
-- **Render fidelity:** per-segment snapshot tests + a human review gate; segments must read correctly
-  with real data.
-- **No "AI" in copy:** narration + all UI/notification strings.
-- **Security:** signed both directions (D10); render service least-privilege; secrets in GCP Secret
-  Manager via WIF.
-- **Abuse/moderation:** auto-screen shares; quarantine on flag; exception-queue takedown.
-- **Workers constraints:** selfprime/worker code within platform hard constraints; the render service
-  (Node + Chromium + ffmpeg) runs on Cloud Run, never in a Worker.
+## 7. Risks & guardrails
 
-## 9. Effort (by slice, final-quality)
+- **Cost/abuse:** on-demand + entitled + quota-capped + deduped by `filmId`; the render service is
+  the only renderer and only accepts signed requests. (No anonymous/free render path exists.)
+- **Privacy:** private-by-default, signed playback; Capricast publish is opt-in with explicit
+  visibility; the `visibility:"public"` default is removed at the source (D4).
+- **Render fidelity:** `chartToScenes()` snapshot tests + a human review gate; the generic composition
+  must read correctly with real chart data.
+- **No "AI" in copy:** narration + all UI strings — "your reading", "synthesis", "the Oracle".
+- **Security:** signed both directions (D7); render service runs least-privilege; secrets in GCP
+  Secret Manager via WIF.
+- **Observability:** Sentry + `factory_events`; track render success rate, latency, cost per film.
+- **Workers constraints:** selfprime/worker code stays within the platform hard constraints; the
+  render service (Node + Chromium + ffmpeg) runs on Cloud Run, never in a Worker.
+
+## 8. Effort (by slice, final-quality)
 
 | Slice | Scope | Est. |
 |---|---|---|
-| 0 | Foundations & contracts | ~1 wk |
-| 1 | Render service + composition (blueprint segment) | ~1.5–2 wk |
-| 2 | On-demand private film — **marketing claim satisfied** | ~1.5 wk |
-| 3 | Source catalog (transits, dream journal, milestones, personality) | ~1.5 wk |
-| 4 | Subscriptions, scheduling & multi-channel delivery | ~1.5–2 wk |
-| 5 | Credits & billing (grants, packs, overage) | ~1 wk |
-| 6 | Autopilot & exception console | ~1.5 wk |
-| 7 | Social & moderation (Capricast/Discord, identity) | ~1.5 wk |
-| **Total (final state)** | Slices 0–7 | **~10–14 wk** |
+| 0 | Foundations & contracts (schemas, entitlement, identity model, shared types) | ~1 wk |
+| 1 | Cloud Run render service + chart→scenes mapper | ~1.5–2 wk |
+| 2 | selfprime generation + private viewing + notify (claim satisfied) | ~1.5–2 wk |
+| 3 | Social publishing: Capricast visibility fix + identity link + share + Discord | ~1.5 wk |
+| **Total (final state)** | Slices 0–3 | **~5–7 wk** |
 
-**Bottom line:** medium-high effort, low technical risk (render logic proven). Designed as the
-complete engine and built in production-final slices — the private film (Slice 2) satisfies the
-marketing claim early, and subscriptions, credits, the console, and social are each additive with no
-rework.
+**Bottom line:** medium-high effort, low technical risk (render logic proven). Designed as a complete
+system and built in production-final slices, so there is no v1→v2 churn and no migration debt — the
+private film (Slice 2) satisfies the marketing claim, and social (Slice 3) is purely additive.
