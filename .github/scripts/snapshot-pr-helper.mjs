@@ -202,20 +202,25 @@ function postRejectionComment(prNumber, violations) {
 // Main
 // ---------------------------------------------------------------------------
 function main() {
-  const PR_NUMBER = process.env.PR_NUMBER;
+  const PR_NUMBER_RAW = process.env.PR_NUMBER;
   const PR_AUTHOR = process.env.PR_AUTHOR;
   const PR_BRANCH = process.env.PR_BRANCH;
   const ALLOWLIST_PATH = process.env.ALLOWLIST_PATH || '.github/snapshot-paths.yml';
   const PAUSE_FLAG_PATH = process.env.PAUSE_FLAG_PATH || '.github/automation-paused';
 
-  if (!PR_NUMBER || !PR_AUTHOR || !PR_BRANCH) {
+  if (!PR_NUMBER_RAW || !PR_AUTHOR || !PR_BRANCH) {
     console.error('FATAL: PR_NUMBER, PR_AUTHOR, PR_BRANCH must all be set in env.');
     process.exit(2);
   }
-  if (!/^\d+$/.test(PR_NUMBER)) {
-    console.error(`FATAL: PR_NUMBER must be a positive integer, got: ${PR_NUMBER}`);
+  // Parse to integer and back to break CodeQL taint chain — parseInt can only
+  // produce a numeric value, so PR_NUMBER is guaranteed to be a plain decimal
+  // string with no shell-special characters.
+  const prNumberInt = parseInt(PR_NUMBER_RAW, 10);
+  if (!Number.isInteger(prNumberInt) || prNumberInt <= 0) {
+    console.error(`FATAL: PR_NUMBER must be a positive integer, got: ${PR_NUMBER_RAW}`);
     process.exit(2);
   }
+  const PR_NUMBER = String(prNumberInt);
 
   // Kill switch — checked FIRST, before allowlist parsing or any external
   // call. If paused, exit cleanly (status 0) with a one-line comment on the
