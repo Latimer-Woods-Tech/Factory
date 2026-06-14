@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T03:43:07.362Z",
+  "generatedAt": "2026-06-13T23:04:52.111Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-13T03:43:07.423Z",
+    "generatedAt": "2026-06-13T23:04:52.175Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2799,7 +2799,7 @@
       },
       "cost30dUsd": 4.26,
       "mrrUsd": 0,
-      "completionWeighted": 3
+      "completionWeighted": 2.6
     },
     "trends": {
       "cohesion": {
@@ -2827,12 +2827,12 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 3,
-        "prior": 0,
-        "priorDate": "2026-05-25",
-        "dayGap": 18,
-        "delta": 3,
-        "direction": "up"
+        "current": 2.6,
+        "prior": 3,
+        "priorDate": "2026-06-12",
+        "dayGap": 0,
+        "delta": -0.4,
+        "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
