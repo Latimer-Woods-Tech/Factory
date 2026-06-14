@@ -50,8 +50,20 @@ paths:
   # KPI tracking
   - docs/kpis/**
 
-  # Generated docs artifacts created by docs health / snapshot PRs
+  # Generated docs artifacts created by docs health / snapshot PRs.
+  # The full set below is regenerated and committed by regenerate-docs-catalog.yml
+  # (stable branch chore/docs-catalog-refresh) and must match the GENERATED_PATHS
+  # guarded by scripts/docs/check-generated-current.mjs.
+  - docs/CATALOG.md
+  - docs/CANONICAL_DOCS.md
+  - docs/STALE_DOCS.md
+  - docs/OWNER_INDEX.md
   - docs/_catalog/docs-graph.json
+  - docs/_catalog/drift.json
+  - docs/_catalog/drift-report.md
+  - docs/_catalog/debt-index.md
+  - docs/_catalog/link-report.json
+  - docs/_catalog/link-report.md
   - docs/_generated/docs-trust-map.md
   - docs/_generated/service-map.md
   - docs/_generated/workflow-map.md
@@ -69,6 +81,7 @@ branch_prefixes:
   - chore/morning-digest-
   - completion-tracker/
   - chore/kpis-snapshot-
+  - chore/docs-catalog-
 
 # Author allowlist — PR author must be one of these identities. Closes the
 # attack vector where a human contributor opens a PR with a snapshot-style
