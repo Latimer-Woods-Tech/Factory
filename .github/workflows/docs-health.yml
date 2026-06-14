@@ -38,9 +38,19 @@ jobs:
     with:
       repo_profile: factory
       tools_ref: ${{ github.sha }}
-      # Generated catalogs describe the whole repository. Enforce them on
-      # mainline/scheduled runs so unrelated PRs are not blocked by global drift.
-      enforce_generated: ${{ github.event_name != 'pull_request' }}
+      # Generated catalogs describe the whole 459-doc repository and drift on
+      # essentially every docs/** or workflow change. They CANNOT be auto-
+      # repaired here: ruleset 15843812 blocks direct bot pushes to main (every
+      # commit is a reviewed PR), so no scheduled job can commit a refresh, and
+      # contributors do not regenerate per-PR. Enforcing freshness on main
+      # therefore produced only a permanent red badge that blocked nothing
+      # (this check is already exempt on PRs). Per the same decision that turned
+      # the broken-link check into a ratchet, generated-staleness is now
+      # advisory on Factory: health.mjs still regenerates and the drift is still
+      # surfaced in the job summary (docs-health-summary.md) — it just no longer
+      # fails the run. Downstream app repos keep enforce_generated=true (their
+      # default) since per-PR regen is feasible at their scale.
+      enforce_generated: false
 
   update-link-baseline:
     name: Auto-update broken-link baseline

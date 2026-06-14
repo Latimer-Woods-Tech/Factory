@@ -65,6 +65,18 @@ export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
 // Default scene layout for a 75-second (2250-frame) video
 // ---------------------------------------------------------------------------
 
+/**
+ * Flagship body-graph constellation for the brand hero render (no real person).
+ * Lights 7 of 9 centers gold so the chart reads as "blazing, certain" rather
+ * than the sparse all-open default. Heart and Solar Plexus stay open so it still
+ * looks like a real design, not an unnaturally complete one. Per-user renders
+ * pass their own `scenes` (from chartToScenes) and never reach this builder, so
+ * this constellation only ever applies to the default / hero film.
+ */
+const HERO_DEFINED_CENTERS = ['Head', 'Ajna', 'Throat', 'G', 'Sacral', 'Spleen', 'Root'];
+/** The self/identity centre — spotlit on the hero breath beat ("see who you are"). */
+const HERO_SPOTLIGHT_CENTER = 'G';
+
 function buildDefaultScenes(script: string): EnergyBlueprintProps['scenes'] {
   // Split script into roughly two halves for the two concept sections
   const sentences = script.split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -76,9 +88,9 @@ function buildDefaultScenes(script: string): EnergyBlueprintProps['scenes'] {
   return [
     { type: 'arrival',     durationFrames: 150,  text: undefined, showBodyGraph: false },
     { type: 'revelation',  durationFrames: 300,  text: sentences[0] ?? '', showBodyGraph: false },
-    { type: 'concept',     durationFrames: 480,  text: part1, showBodyGraph: true },
-    { type: 'breath',      durationFrames: 90,   text: undefined, showBodyGraph: true },
-    { type: 'concept',     durationFrames: 480,  text: part2, showBodyGraph: true },
+    { type: 'concept',     durationFrames: 480,  text: part1, showBodyGraph: true, definedCenters: HERO_DEFINED_CENTERS },
+    { type: 'breath',      durationFrames: 90,   text: undefined, showBodyGraph: true, definedCenters: HERO_DEFINED_CENTERS, spotlightCenter: HERO_SPOTLIGHT_CENTER },
+    { type: 'concept',     durationFrames: 480,  text: part2, showBodyGraph: true, definedCenters: HERO_DEFINED_CENTERS, spotlightCenter: HERO_SPOTLIGHT_CENTER },
     { type: 'triad',       durationFrames: 360,  triad: ['Shadow', 'Gift', 'Siddhi'], showBodyGraph: false },
     { type: 'invitation',  durationFrames: 390,  text: lastSentence, showBodyGraph: false },
   ];
