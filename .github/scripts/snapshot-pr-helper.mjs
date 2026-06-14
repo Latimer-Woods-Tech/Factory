@@ -126,11 +126,13 @@ export function evaluatePr({ author, branch, files, allowlist }) {
 }
 
 // ---------------------------------------------------------------------------
-// Wrappers around gh CLI. Errors propagate; the workflow surface them as
-// step failures.
+// Wrappers around gh CLI. Errors propagate; the workflow surfaces them as
+// step failures. `env` overrides specific env vars without replacing the
+// full environment (used to swap GH_TOKEN for REVIEW_TOKEN on approve).
 // ---------------------------------------------------------------------------
-function gh(args, opts = {}) {
-  return execSync(`gh ${args}`, { encoding: 'utf-8', ...opts }).trim();
+function gh(args, { env, ...opts } = {}) {
+  const resolvedEnv = env ? { ...process.env, ...env } : undefined;
+  return execSync(`gh ${args}`, { encoding: 'utf-8', ...(resolvedEnv ? { env: resolvedEnv } : {}), ...opts }).trim();
 }
 
 function fetchPrFiles(prNumber) {
@@ -155,10 +157,9 @@ function approveAndAutoMerge(prNumber, reason) {
   // Both are idempotent: re-running on an already-approved PR is safe.
   const reviewToken = process.env.REVIEW_TOKEN;
   try {
-    const approveEnv = reviewToken ? { ...process.env, GH_TOKEN: reviewToken } : process.env;
-    execSync(
-      `gh pr review ${prNumber} --approve --body ${JSON.stringify(`✅ Snapshot PR auto-approved per [workflow lifecycle Phase 2](../blob/main/docs/decisions/2026-05-23-workflow-lifecycle.md).\n\n${reason}`)}`,
-      { encoding: 'utf-8', env: approveEnv }
+    gh(
+      `pr review ${prNumber} --approve --body ${JSON.stringify(`✅ Snapshot PR auto-approved per [workflow lifecycle Phase 2](../blob/main/docs/decisions/2026-05-23-workflow-lifecycle.md).\n\n${reason}`)}`,
+      reviewToken ? { env: { GH_TOKEN: reviewToken } } : {}
     );
     console.log('Approve OK');
   } catch (err) {
@@ -209,6 +210,10 @@ function main() {
 
   if (!PR_NUMBER || !PR_AUTHOR || !PR_BRANCH) {
     console.error('FATAL: PR_NUMBER, PR_AUTHOR, PR_BRANCH must all be set in env.');
+    process.exit(2);
+  }
+  if (!/^\d+$/.test(PR_NUMBER)) {
+    console.error(`FATAL: PR_NUMBER must be a positive integer, got: ${PR_NUMBER}`);
     process.exit(2);
   }
 
