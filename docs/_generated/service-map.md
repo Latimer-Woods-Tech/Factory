@@ -7,14 +7,14 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Service Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-09
+last_generated: 2026-06-14
 source:
   - docs/service-registry.yml
 ---
 
 # Factory Service Map
 
-**Source hash:** `sha256:7ded8a483d47d0e45b5144d399c93765b3dba2252503be1bdbfa5bb9d61957aa`
+**Source hash:** `sha256:b73d56a0065c78913d102c2f9c7828aac8de2d14534e406dfd808136406ace4c`
 
 ```mermaid
 flowchart LR
@@ -26,6 +26,7 @@ flowchart LR
   workers --> worker_prime_self["prime-self\nhttps://api.selfprime.net"]
   workers --> worker_schedule_worker["schedule-worker\nhttps://schedule.latwoodtech.work"]
   workers --> worker_video_cron["video-cron\nhttps://video-cron.latwoodtech.work"]
+  workers --> worker_inbound_oracle["inbound-oracle\nhttps://inbound-oracle.latwoodtech.work"]
   workers --> worker_synthetic_monitor["synthetic-monitor\nhttps://monitor.latwoodtech.work"]
   workers --> worker_status_prober["status-prober\nhttps://status.latwoodtech.work"]
   workers --> worker_admin_studio_staging["admin-studio-staging\nhttps://api.admin.latimerwoods.dev"]
@@ -51,6 +52,7 @@ flowchart LR
   workers --> worker_marketing_supervisor_staging["marketing-supervisor-staging\nhttps://marketing-supervisor-staging.adrper79.workers.dev"]
   workers --> worker_referrals["referrals\nhttps://referrals.latwoodtech.work"]
   workers --> worker_llm_rank_worker["llm-rank-worker\nhttps://llm-rank.latwoodtech.work"]
+  workers --> worker_analytics_proxy["analytics-proxy\nhttps://analytics.latwoodtech.work"]
   pages --> page_prime_self_ui["prime-self-ui\nurl unknown"]
   pages --> page_admin_studio_ui["admin-studio-ui\nurl unknown"]
   pages --> page_admin_studio_ui_storybook["admin-studio-ui-storybook\nurl unknown"]
