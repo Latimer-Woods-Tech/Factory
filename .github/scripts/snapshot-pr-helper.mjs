@@ -145,9 +145,19 @@ function approveAndAutoMerge(prNumber, reason) {
     gh(`pr review ${prNumber} --approve --body ${JSON.stringify(`✅ Snapshot PR auto-approved per [workflow lifecycle Phase 2](../blob/main/docs/decisions/2026-05-23-workflow-lifecycle.md).\n\n${reason}`)}`);
     console.log('Approve OK');
   } catch (err) {
-    // If the bot has already reviewed, gh returns non-zero. Don't fail —
-    // the auto-merge step is what matters and it's idempotent too.
-    console.warn(`Approve step warning (likely already approved): ${err.message}`);
+    // Two known non-fatal cases:
+    //   1. Already approved (idempotent re-run) — safe to continue.
+    //   2. "Can not approve your own pull request" — PR was opened by the same
+    //      app identity that runs this helper. This means a snapshot workflow
+    //      opened the PR with the factory-cross-repo token instead of GITHUB_TOKEN.
+    //      Fix: set GH_TOKEN="$PR_TOKEN" (github.token) on the `gh pr create` call
+    //      in the snapshot workflow so the PR author is github-actions[bot], not
+    //      factory-cross-repo[bot]. See fix/snapshot-pr-self-approval.
+    if (err.message.includes('approve your own pull request')) {
+      console.error(`APPROVE FAILED: self-approval blocked. The PR was opened by the same identity that runs this helper (factory-cross-repo[bot]). The snapshot workflow must open PRs with GITHUB_TOKEN (github-actions[bot]) instead. Auto-merge will be enabled but NO REVIEW will be submitted — the PR will stay BLOCKED until fixed.`);
+    } else {
+      console.warn(`Approve step warning (likely already approved): ${err.message}`);
+    }
   }
   gh(`pr merge ${prNumber} --auto --squash`);
   console.log('Auto-merge enabled');
