@@ -133,7 +133,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
 | `generate-founder-stats.yml` | schedule, dispatch | Founder stats digest |
 
-### TR — Reusable (15)
+### TR — Reusable (14)
 
 | Workflow | Notes |
 |---|---|
@@ -148,12 +148,11 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `_app-capability-lint.yml` | Capability registry lint (called by app CIs) |
 | `_app-constraints-gate.yml` | Hard-constraints gate (called by app CIs) |
 | `_docs-health.yml` | Reusable documentation control-plane health workflow |
-| `_hello-reusable.yml` | Reusable example/template |
 | `_neon-pr-lifecycle.yml` | Neon ephemeral PR branch lifecycle (called by app CIs) |
 | `_migration-drift-guard.yml` | (caller-context) |
 | `_post-deploy-verify.yml` | (caller-context) |
 
-### TM — Manual (30)
+### TM — Manual (28)
 
 `workflow_dispatch`-only — no schedule, no auto-trigger. SLO is "works when invoked."
 
@@ -164,12 +163,10 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `capricast-rename.yml` | One-off rename helper |
 | `deploy.yml` | Manual deploy fallback |
 | `dispatch-capability-provision.yml` | Capability provisioning dispatch |
-| `generate-app-lockfiles.yml` | Lockfile generator (one of four — consider consolidating in Phase 4+) |
 | `mirror-org-secrets-to-dependabot.yml` | Secret mirroring helper |
 | `push-google-oauth.yml` | OAuth credential push |
 | `push-neon-selfprime.yml` | Neon connection push |
 | `regen-lockfile-on-branch.yml` | Lockfile regen on branch |
-| `regenerate-app-lockfiles.yml` | Lockfile regen (another duplicate candidate) |
 | `run-app-migrations.yml` | App migration runner |
 | `run-migrations.yml` | Migration runner |
 | `set-jwt-secrets.yml` | JWT secret bulk set |
@@ -196,9 +193,8 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 
 Pre-flagged for consolidation review — not deleted yet, but new additions in this space require a `retires:` reference:
 
-- **Lockfile generators** (4 workflows): `generate-app-lockfiles`, `regen-lockfile-on-branch`, `regenerate-app-lockfiles`, `update-app-lockfiles` — likely consolidatable to 1
+- **Lockfile generators** (2 workflows): `regen-lockfile-on-branch` (reliable), `update-app-lockfiles` (green) — likely consolidatable to 1. The two consistently-failing variants (`generate-app-lockfiles` 1/5, `regenerate-app-lockfiles` 0/3) were deleted 2026-06-13.
 - **Bootstrap helpers** (2 workflows): `bootstrap-completion-tracker-private`, `bootstrap-publish` — review post-Phase 4
-- `_hello-reusable.yml` — example file; retire if unused
 - **Consolidated advisory shells** (4 workflows): `pr-quality-check`, `pr-size-warning`, `reviewer-class-hints`, `secret-contract-preflight` — logic absorbed by `pr-advisory-sweep.yml`; delete shells after 30 days with no manual dispatch (flagged 2026-06-11)
 
 ---
