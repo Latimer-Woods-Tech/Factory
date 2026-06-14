@@ -1,7 +1,7 @@
 # Completion Tracker
-_Generated 2026-06-12T13:46:38+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-13T12:09:05+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: CH, XC
+## 🚨 CI red on main: XC
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
@@ -9,10 +9,10 @@ _Generated 2026-06-12T13:46:38+00:00 by `scripts/aggregate_completion.py`._
 | **HD** HumanDesign | 5 | 0 | 0 | 88 | 93 | 5.4% | 100.0% | **5.4%** (Δ+0.0) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **FA** factory-admin-studio | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **CH** cypher-healing 🚨 | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 2.6% (Δ-0.4)** · known: 7.1% · raw: 2.4%
+**Overall weighted pass: 2.6% (Δ+0.0)** · known: 7.1% · raw: 2.4%
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
