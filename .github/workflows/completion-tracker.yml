@@ -87,17 +87,11 @@ jobs:
         if: steps.drift.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          # PR_TOKEN is github-actions[bot] — used for gh pr create so the PR
-          # author is github-actions[bot], not factory-cross-repo[bot].
-          # snapshot-pr-auto-merge.yml then approves as factory-cross-repo[bot]
-          # (CODEOWNER + bypass actor). GitHub blocks self-approval, so the PR
-          # author must differ from the approver.
-          PR_TOKEN: ${{ github.token }}
         run: |
           set -e
           BRANCH="completion-tracker/${{ steps.digest.outputs.date }}"
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name  "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
 
           # Guard: if an open PR already exists for this branch, the workflow
           # was re-triggered today. Check if it's stale (>2h open without
@@ -136,7 +130,7 @@ jobs:
           git commit -m "chore(completion-tracker): drift update ${{ steps.digest.outputs.date }} (${{ steps.digest.outputs.pct }}%)"
           git push --force-with-lease --set-upstream origin "$BRANCH"
           printf '%s' "${{ steps.digest.outputs.body }}" > /tmp/body.md
-          GH_TOKEN="$PR_TOKEN" gh pr create \
+          gh pr create \
             --title "completion-tracker drift ${{ steps.digest.outputs.date }} — ${{ steps.digest.outputs.pct }}% weighted" \
             --body-file /tmp/body.md \
             --label automation \
