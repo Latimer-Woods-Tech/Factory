@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T03:43:07.362Z",
+  "generatedAt": "2026-06-14T11:30:55.424Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,41 +1793,6 @@
         "tier": "infra"
       },
       {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
-        "tier": "growth"
-      },
-      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -1916,6 +1881,41 @@
         "appId": "capricast",
         "label": "16-way video chat",
         "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
         "tier": "growth"
       },
       {
@@ -2026,34 +2026,6 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
-        "status": "queued",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
-        "label": "Mobile PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
         "id": "selfprime:sp-launch",
         "appId": "selfprime",
         "label": "Public Launch",
@@ -2105,6 +2077,34 @@
       {
         "id": "capricast:cc-mobile",
         "appId": "capricast",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-mobile",
+        "appId": "coh",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
@@ -2477,76 +2477,6 @@
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "coh:the-chair",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-vault",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-academy",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-stage",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:inner-circle",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-5streams",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:email",
-      "type": "uses_package"
-    },
-    {
       "from": "selfprime",
       "to": "selfprime:energy-blueprint",
       "type": "has_feature"
@@ -2712,6 +2642,76 @@
       "type": "uses_package"
     },
     {
+      "from": "coh",
+      "to": "coh:the-chair",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-vault",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-academy",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-stage",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
+      "type": "uses_package"
+    },
+    {
       "from": "xico-city",
       "to": "xico-city:artist-roles",
       "type": "has_feature"
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-13T03:43:07.423Z",
+    "generatedAt": "2026-06-14T11:30:55.484Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2799,7 +2799,7 @@
       },
       "cost30dUsd": 4.26,
       "mrrUsd": 0,
-      "completionWeighted": 3
+      "completionWeighted": 2.6
     },
     "trends": {
       "cohesion": {
@@ -2827,18 +2827,18 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 3,
-        "prior": 0,
-        "priorDate": "2026-05-25",
-        "dayGap": 18,
-        "delta": 3,
-        "direction": "up"
+        "current": 2.6,
+        "prior": 3,
+        "priorDate": "2026-06-12",
+        "dayGap": 0,
+        "delta": -0.4,
+        "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 6,
         "delta": -27.8,
         "direction": "down"
       },
@@ -2846,7 +2846,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 6,
         "delta": 0,
         "direction": "flat"
       }
@@ -2900,6 +2900,6 @@
         }
       ]
     },
-    "seriesPoints": 3
+    "seriesPoints": 4
   }
 }
