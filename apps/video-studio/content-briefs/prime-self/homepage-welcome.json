@@ -1,6 +1,16 @@
 {
   "briefKey": "homepage-welcome",
-  "composition": "MarketingVideo",
+  "composition": "EnergyBlueprintVideo",
+  "renderParams": {
+    "comment": "Dispatch render-video.yml with these inputs for the cinematic hero cut.",
+    "composition_id": "EnergyBlueprintVideo",
+    "forge_theme": "phoenix",
+    "hd_type": "",
+    "signature_gates": "[1,8,20,34]",
+    "brand_color": "#c9a84c",
+    "brand_accent": "#fff5d6",
+    "logo_url": "https://selfprime.net/icons/icon-72-v2.png"
+  },
   "topic": "See Your Pattern Clearly",
   "learningGoal": "A first-time visitor understands what Prime Self gives them immediately, why it feels different, and why starting now is easy.",
   "targetPersona": "homepage_visitor",
@@ -17,7 +27,7 @@
     "replace a practitioner",
     "instant transformation"
   ],
-  "script": "Before you learned to explain yourself, your pattern was already complete.\n\nThe exact moment of your birth \u2014 the alignment of planets, the angle of the sun \u2014 encoded something specific into you. Not a personality the world assigned. Not a role you were given. A frequency that was yours from the very beginning.\n\nHuman Design maps the architecture of that frequency.\n\nNine energy centers. Sixty-four gates. The channels that connect them \u2014 some consistent and defined, others open and receiving. Your type \u2014 the way your energy moves through the world. Your strategy \u2014 how life actually works for you when you stop forcing it. Your authority \u2014 the signal inside you that you can trust before the mind has a chance to complicate it.\n\nThis is not a horoscope. It is a map.\n\nWhen you see your chart \u2014 when you understand what it actually says about how you were built to decide, to give, to receive, to move \u2014 something settles.\n\nNot because you found an answer. Because you recognized something that was always already true.\n\nPrime Self generates your free Energy Blueprint in seconds.\n\nBegin.",
+  "script": "Long before your first word, the pattern was already singing.\n\nThe hour you arrived, the sky took a position it will never take again. A chord struck once. Yours alone. It has been playing under everything since.\n\nHuman Design is how you finally hear it.\n\nNine centers. Sixty four gates. Channels of light strung between them like a circuit lit from within. Some defined, blazing, certain. Some open, drinking in the whole room.\n\nYour Energy Type is the rhythm you move to. Your Strategy is how the doors swing open when you stop forcing them. Your Authority is the voice beneath the noise. It knew before you asked.\n\nThis is not a horoscope. This is your design, in full color.\n\nYou see it, and the room goes quiet. Not because you found an answer. Because you remembered the song you already were.\n\nPrime Self builds your Free Energy Blueprint in seconds. No account. No cost.\n\nTake the stage. Begin.",
   "renderPlan": {
     "durationSeconds": 75,
     "visualBeats": [
@@ -29,16 +39,15 @@
       "Start free in seconds"
     ]
   },
-  "toneNotes": "Homepage welcome video. The first sentence must hook with speed and clarity. Focus on what the viewer sees and understands, not abstract self-discovery language. End with a clean invitation to start free now.",
-  "brandColor": "#8B5CF6",
-  "brandAccent": "#10B981",
-  "status": "published",
-  "stream_uid": "553d70971657c9a96bab298b49f76222",
-  "stream_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/553d70971657c9a96bab298b49f76222/manifest/video.m3u8",
-  "thumbnail_url": "https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com/553d70971657c9a96bab298b49f76222/thumbnails/thumbnail.jpg",
+  "toneNotes": "High-style cinematic hero. Rendered via the EnergyBlueprintVideo composition with the phoenix forge atmosphere, gold theming, and a fully-lit flagship body-graph constellation (7 of 9 centers defined, G-center spotlit) so the chart blazes. Theatrical, anthemic, reverent — the register of a great stage performer mid-awakening — but fully inside brand law. Written for Eric: no em dashes, no ellipses, commas mark breath. Sentences stay under 18 words and vary for rhythm and crescendo. The revelation hook is the opening line in large gold kinetic type. The triad climax (Shadow / Gift / Siddhi) draws the gold underline. The final word, Begin, lands alone over the logo and selfprime.net.",
+  "brandColor": "#c9a84c",
+  "brandAccent": "#fff5d6",
+  "status": "pending-rerender",
+  "previous_stream_uid": "553d70971657c9a96bab298b49f76222",
+  "previous_render_notes": "v2.0 used the basic MarketingVideo composition, off-brand purple/green colors, and an em-dash-heavy script that degraded ElevenLabs narration. Superseded by the v3.0 high-style EnergyBlueprintVideo cut.",
   "duration_seconds": 75,
-  "rendered_at": "2026-05-28",
+  "rendered_at": null,
   "youtube_url": "https://youtu.be/eeKta0bJVnQ",
-  "script_version": "2.0-expanded",
-  "script_word_count": 189
+  "script_version": "3.0-high-style-hero",
+  "script_word_count": 165
 }
