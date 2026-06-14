@@ -55,6 +55,7 @@ jobs:
         startsWith(github.event.pull_request.head.ref, 'chore/scorecard-snapshot-') ||
         startsWith(github.event.pull_request.head.ref, 'chore/morning-digest-') ||
         startsWith(github.event.pull_request.head.ref, 'chore/kpis-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/docs-catalog-') ||
         startsWith(github.event.pull_request.head.ref, 'completion-tracker/')
       )
     name: Validate + auto-merge snapshot PR

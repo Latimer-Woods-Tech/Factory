@@ -41,44 +41,72 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Pull every open non-draft PR with auto-merge enabled.
-          # mergeStateStatus = BEHIND means "up to date on review/checks but
-          # branch is behind base"; gh pr update-branch is the exact fix.
+          # List every open non-draft PR with auto-merge enabled (number only).
+          #
+          # We deliberately do NOT filter on mergeStateStatus in this bulk call.
+          # GitHub computes mergeStateStatus LAZILY: `gh pr list` returns
+          # "UNKNOWN" for any PR whose mergeability hasn't been recently
+          # recomputed, so filtering on == "BEHIND" here silently skips behind
+          # PRs that nobody has viewed — the exact bug that let approved PRs sit
+          # BEHIND for days while this spotter reported "No BEHIND auto-merge
+          # PRs." We re-resolve state per-PR below, which forces computation.
           mapfile -t prs < <(
             gh pr list \
               --repo Latimer-Woods-Tech/Factory \
               --state open \
               --limit 50 \
-              --json number,isDraft,autoMergeRequest,mergeStateStatus \
+              --json number,isDraft,autoMergeRequest \
               --jq '.[]
                     | select(.isDraft == false
-                        and .autoMergeRequest != null
-                        and .mergeStateStatus == "BEHIND")
+                        and .autoMergeRequest != null)
                     | .number'
           )
 
           if [ ${#prs[@]} -eq 0 ]; then
-            echo "No BEHIND auto-merge PRs."
+            echo "No auto-merge PRs."
             exit 0
           fi
 
-          echo "Nudging ${#prs[@]} PR(s): ${prs[*]}"
+          echo "Resolving merge state for ${#prs[@]} auto-merge PR(s): ${prs[*]}"
+          behind=0
           fail=0
           for pr in "${prs[@]}"; do
+            # An individual `gh pr view` pokes GitHub's background mergeability
+            # job. Retry once if it's still UNKNOWN (computation in flight).
+            state=$(gh pr view "$pr" --repo Latimer-Woods-Tech/Factory \
+              --json mergeStateStatus --jq .mergeStateStatus)
+            if [ "$state" = "UNKNOWN" ]; then
+              sleep 3
+              state=$(gh pr view "$pr" --repo Latimer-Woods-Tech/Factory \
+                --json mergeStateStatus --jq .mergeStateStatus)
+            fi
+
+            # Only BEHIND is our job. DIRTY/CONFLICTING needs human attention;
+            # CLEAN/BLOCKED is already progressing on its own.
+            if [ "$state" != "BEHIND" ]; then
+              echo "  skip #$pr (state=$state)"
+              continue
+            fi
+
+            behind=$((behind + 1))
             if gh pr update-branch "$pr" --repo Latimer-Woods-Tech/Factory; then
-              echo "  ok  #$pr"
+              echo "  ok   #$pr (was BEHIND)"
             else
               # update-branch races against in-flight CI runs (the PR can flip
-              # away from BEHIND between our list call and the update). Treat
-              # any single failure as a skip — the next 10-min tick retries.
+              # away from BEHIND between our view and the update). Treat any
+              # single failure as a skip — the next tick retries.
               echo "  skip #$pr (likely race / conflict / merged)"
               fail=$((fail + 1))
             fi
           done
 
-          # Hard-cap pattern: if everything failed, surface it so a noisy
-          # broken loop is visible in the Actions UI.
-          if [ "$fail" -eq "${#prs[@]}" ] && [ "${#prs[@]}" -gt 1 ]; then
-            echo "::warning::All ${#prs[@]} nudges failed; spotter may be misconfigured."
+          if [ "$behind" -eq 0 ]; then
+            echo "No BEHIND auto-merge PRs after per-PR resolution."
+          fi
+
+          # Hard-cap pattern: if every BEHIND nudge failed, surface it so a
+          # noisy broken loop is visible in the Actions UI.
+          if [ "$behind" -gt 1 ] && [ "$fail" -eq "$behind" ]; then
+            echo "::warning::All $behind nudges failed; spotter may be misconfigured."
             exit 1
           fi
