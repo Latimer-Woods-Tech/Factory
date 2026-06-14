@@ -7,6 +7,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | Owner | Drift Warnings | Broken Links |
 |---|---:|---:|
 | admin-studio | 1 | 4 |
+| adrper79 | 1 | 0 |
 | architecture | 10 | 4 |
 | capricast | 24 | 31 |
 | marketing | 2 | 79 |

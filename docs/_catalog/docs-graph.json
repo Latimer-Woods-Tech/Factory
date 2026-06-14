@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 451,
+    "total_docs": 459,
     "canonical": 17,
-    "active": 386,
+    "active": 394,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -57,7 +57,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343",
+      "content_hash": "sha256:1e8ff62a1dce007309e97ec5fd35d5fecb4c732610f92cd1e8f97fbe67b5aff0",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -374,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:459fa81c4bd8e4ac0e7cecb3558815b77bdf710e58d8bbfd487dc9ba51276a87",
+      "content_hash": "sha256:29371c05e4ee3bc0e48e4e6503c3704eccb16437db45a442e98e0ef97ea048ba",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d6e97a356e59298b13b29d6b42066fde8a935df58ba09536aa70694feef789da",
+      "content_hash": "sha256:73a77bc757834fd15fa657fdff4aa3e626289d9863a30a163d92e389d96ba8dc",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:879c54e7dc37bc05e1c3358aa2d4b2964b1e089846afb673fd193d350fdd26f5",
+      "content_hash": "sha256:0f6dfa2cff6728528cfa43209981c71002d41db9bccfbeb998f884135987994f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:eeb907e0acd8fe94eef11adc80efda4605ebc75b2842682bbf7ea24ebf4ba5ed",
+      "content_hash": "sha256:e27ca1a42da73a7566204d3b0fa4c8f307a563bbcd321e5f39b9fb5999b2907c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -951,7 +951,7 @@
     },
     {
       "path": "docs/AGENTS.md",
-      "title": "Agent Configuration & Context Loading",
+      "title": "Agent Configuration & Repo-Local Rules",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -962,7 +962,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6175c5b5ae9ee3592b1776fe5e68874f61d4f823c62349e54e4e3c2ffc041353",
+      "content_hash": "sha256:daa2c43b03b998bd2227f8875eba0257cf1f85e80124694423fb97814c25a0ad",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1228,7 +1228,7 @@
     },
     {
       "path": "docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md",
-      "title": "I1 — Energy Blueprint Video Engine: Final-State Design",
+      "title": "I1 — Per-User Energy Blueprint Video: Final-State Design",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1239,7 +1239,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:98bc2dc30395a56118201e4c86dd1dad031438ad71cbb238120b94e5db56b972",
+      "content_hash": "sha256:71b5f6a8ad7b4c8418a962cafc2ec5c96329ab58791e512863451294bd1357df",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2733,7 +2733,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ef5b5de56a5b6df54421626137e2f9321ed365efaceb91f1acd39ce1599054c5",
+      "content_hash": "sha256:f93105853ff721fa46e9fb0e76e87717bdfdbd08adad21a092b89dffcb78bf2a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2796,7 +2796,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:7d2cd25fc1627513fb99cf4f41ab5638afaba261c30d0d1a6e125282f98a1996",
+      "content_hash": "sha256:67e35ea5acec33ceeddb9e443bf41211c4995d7b0a004c6158692b3b158bc533",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2817,7 +2817,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:17d42bb5394a733cde741bed39702bf89f32d18feecf4119fd5118b066eaae34",
+      "content_hash": "sha256:6aced2101625235408ba8d6f88c130a56fbd7e1a61cc7d36752f94bfb8ebdd11",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3164,6 +3164,48 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-06-10-sell-phase-action-plan.md",
+      "title": "2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:af980889035b33eb6faaffd2609f3f336d5b660bb3c8464cf764b57c21e78935",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/decisions/2026-06-11-rfc-006-operating-decisions.md",
+      "title": "2026-06-11 — RFC-006 Required Operating Decisions",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:85de2e586e67f1e16efde5bad443fac8ddca9482c38cc522c92bdb153a4a69c7",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/README.md",
       "title": "Decisions",
       "status": "active",
@@ -3176,7 +3218,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2155d6a7292a0174f7eaec3f837a34ae5c62cbf3c2c53ad3250f4ad8d06ba66e",
+      "content_hash": "sha256:0bca3410323e2178f31e15287485f74f4d28a29f2f8a0669f5726f3b4c80d215",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3667,6 +3709,27 @@
       "content_hash": "sha256:1a1c0115d39a775fafb6b78b978de2d91bf4f34fa2e1a59fcc16bf14e02ced77",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/handoffs/2026-06-11-stabilization-handoff.md",
+      "title": "Handoff: Stabilization-first work (worker collisions, UAT, sell-phase plan)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5ca16c0c543f7168c599e249f7e1ee323360ff2351fce73e0c46544256113e74",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/**"
       },
@@ -6200,6 +6263,27 @@
       "errors": []
     },
     {
+      "path": "docs/planning/2026-06-12-stabilization-sprint.md",
+      "title": "Stabilization Sprint — 2026-06-12 → 2026-06-26",
+      "status": "active",
+      "owner": "adrper79",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:de4fbb4d3ddc76dd861d4fe52cbebcb80a9142001e088fedc250ba98010fa1ab",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/planning/brief-2026-06-08.md",
       "title": "Platform Planning Brief — 2026-06-08",
       "status": "active",
@@ -6213,6 +6297,48 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:e269a259be4ad992770cb50ac60fa61096bef474711165d88c7aaf73e29b34bd",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-12.md",
+      "title": "Platform Planning Brief — 2026-06-12",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:6df15acdbbc44afd43dd51e3e18d28ee9ba1dbbcfb9090d6e39da80cb736e121",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-13.md",
+      "title": "Platform Planning Brief — 2026-06-13",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f682bf466bfdc701a29ad551e25fe2537b17909eacd418df94d40099372776bc",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6443,7 +6569,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a31c3700d092eba1042157880b171fe5c61bb8f7a280118cbc805e0a0205a453",
+      "content_hash": "sha256:303f9a0cfecb662a4854946b2d6cbb006443eadce9d1a15f54c0783d06be61bb",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6783,7 +6909,49 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9a072de0ae1bd6133eb1fcefa1b0777a2c8c15d29661c4030ead9a6d101d063a",
+      "content_hash": "sha256:bec738f7919adae14ce17205d26118293cd97e3afcec87ee326f917629537312",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-baseline-metrics.md",
+      "title": "RFC-006 Phase 0 Baseline Metrics",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:67979d1ada119b20ce981075de22dadb64f79c685691fba71a3dbead9863b876",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-duplicate-triage.md",
+      "title": "RFC-006 Duplicate Issue Triage",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:1b27549119080bd5a9241efd24c911e3c30358eb565590b67e3642ac6766571b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7245,7 +7413,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:3595a41a9de879adac41c59b1bbc624c4e951618361710b1e7b41df31c55cb76",
+      "content_hash": "sha256:d3ac69cd65ad9fed3a833c8f2ef6cef341f02dbe5808313111b3e458abcb9b96",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7350,7 +7518,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:3ca80a18d79116238e376dd0e82ecbc22aa411da8aab6222d54f81907ef7eb14",
+      "content_hash": "sha256:78c8f7c98e0bcdbc98361cca0757911127c49391c20b6bbcaa5865558d40db0a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7770,7 +7938,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0e0bad5b85cbf1e929c54c95e7554be7ed2a75608ea61cbfc68aa1592753b013",
+      "content_hash": "sha256:3450d35bdf93d7bb7ddfb22b8ab4731874c86b1c1879582bcd68fe69e8316313",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7864,7 +8032,7 @@
     },
     {
       "path": "docs/sauna-brain.md",
-      "title": "Sauna Brain — Factory Operating Snapshot",
+      "title": "Sauna Brain",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7875,7 +8043,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:45a2d0f8c383520bfe8c2862e4bef01da1e0b5b7e4fd276ccbb677ceb2708e98",
+      "content_hash": "sha256:695664ec5b47733bc0e3ccf685aca82dab00803153316f1bbc0cc3805bddce4f",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7962,7 +8130,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:7ded8a483d47d0e45b5144d399c93765b3dba2252503be1bdbfa5bb9d61957aa",
+      "content_hash": "sha256:b73d56a0065c78913d102c2f9c7828aac8de2d14534e406dfd808136406ace4c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -8077,7 +8245,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-05-30",
+      "title": "Factory State — 2026-06-12",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8088,7 +8256,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:7cf1a4cbf9d97eeae70d5df40571e35adbaa53cffe3f0ee029b2909ced503657",
+      "content_hash": "sha256:f9b1bb030f66aaf2482e81964ee7d61e983bbbaa8ad5a749c62fb1bfb9d83ece",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
