@@ -112,7 +112,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `workflow-concurrency-check.yml` | PR | Requires `concurrency:` on new/changed workflows |
 | `workflow-health-warden.yml` | schedule, dispatch | Tier-based workflow SLO enforcement (this registry's consumer) |
 
-### T3 — Informational (16)
+### T3 — Informational (17)
 
 | Workflow | Triggers | Notes |
 |---|---|---|
@@ -128,6 +128,7 @@ CODEOWNER for all workflows is `@adrper79-dot` unless otherwise noted.
 | `offsite-mirror.yml` | schedule (daily), dispatch | Repo mirror to off-site |
 | `platform-conformance.yml` | schedule (daily), dispatch | Conformance shadow scores → snapshot PR |
 | `pr-queue-digest.yml` | schedule (weekdays), dispatch | PR queue digest |
+| `regenerate-docs-catalog.yml` | schedule (daily), dispatch | Regenerates generated docs catalogs → snapshot auto-merge PR (keeps them fresh under the no-direct-push-to-main ruleset) |
 | `revenue-digest.yml` | schedule (daily), dispatch | Revenue + reliability digest |
 | `track-kpis.yml` | schedule (weekly), dispatch | KPI tracker |
 | `update-stack-manifest.yml` | schedule (daily), dispatch, workflow_run | STACK.md regeneration |
