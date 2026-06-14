@@ -7,6 +7,11 @@
     "url": "git+https://github.com/Latimer-Woods-Tech/Factory.git",
     "directory": "packages/logger"
   },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Latimer-Woods-Tech/Factory/issues"
+  },
+  "homepage": "https://github.com/Latimer-Woods-Tech/Factory/tree/main/packages/logger#readme",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
