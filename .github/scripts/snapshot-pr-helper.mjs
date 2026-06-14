@@ -126,11 +126,13 @@ export function evaluatePr({ author, branch, files, allowlist }) {
 }
 
 // ---------------------------------------------------------------------------
-// Wrappers around gh CLI. Errors propagate; the workflow surface them as
-// step failures.
+// Wrappers around gh CLI. Errors propagate; the workflow surfaces them as
+// step failures. `env` overrides specific env vars without replacing the
+// full environment (used to swap GH_TOKEN for REVIEW_TOKEN on approve).
 // ---------------------------------------------------------------------------
-function gh(args, opts = {}) {
-  return execSync(`gh ${args}`, { encoding: 'utf-8', ...opts }).trim();
+function gh(args, { env, ...opts } = {}) {
+  const resolvedEnv = env ? { ...process.env, ...env } : undefined;
+  return execSync(`gh ${args}`, { encoding: 'utf-8', ...(resolvedEnv ? { env: resolvedEnv } : {}), ...opts }).trim();
 }
 
 function fetchPrFiles(prNumber) {
@@ -139,23 +141,32 @@ function fetchPrFiles(prNumber) {
 }
 
 function approveAndAutoMerge(prNumber, reason) {
-  // Idempotent: gh review --approve is OK to call multiple times.
-  // gh pr merge --auto is also idempotent (no-op if already enabled).
+  // Two tokens, two different operations:
+  //
+  //   REVIEW_TOKEN = github.token (github-actions[bot])
+  //     Used for `gh pr review --approve`. github-actions[bot] is listed as a
+  //     CODEOWNER for the snapshot paths (.github/CODEOWNERS Green tier) so its
+  //     approval satisfies require_code_owner_review. It is NOT the PR author
+  //     (factory-cross-repo[bot] opens PRs), so self-approval is never an issue.
+  //
+  //   GH_TOKEN = factory-cross-repo App token
+  //     Used for `gh pr merge --auto`. factory-cross-repo[bot] is a bypass actor
+  //     on ruleset 15843812, so the auto-merge flag persists across
+  //     dismiss_stale_reviews_on_push synchronize events.
+  //
+  // Both are idempotent: re-running on an already-approved PR is safe.
+  const reviewToken = process.env.REVIEW_TOKEN;
   try {
-    gh(`pr review ${prNumber} --approve --body ${JSON.stringify(`✅ Snapshot PR auto-approved per [workflow lifecycle Phase 2](../blob/main/docs/decisions/2026-05-23-workflow-lifecycle.md).\n\n${reason}`)}`);
+    gh(
+      `pr review ${prNumber} --approve --body ${JSON.stringify(`✅ Snapshot PR auto-approved per [workflow lifecycle Phase 2](../blob/main/docs/decisions/2026-05-23-workflow-lifecycle.md).\n\n${reason}`)}`,
+      reviewToken ? { env: { GH_TOKEN: reviewToken } } : {}
+    );
     console.log('Approve OK');
   } catch (err) {
-    // Two known non-fatal cases:
-    //   1. Already approved (idempotent re-run) — safe to continue.
-    //   2. "Can not approve your own pull request" — PR was opened by the same
-    //      app identity that runs this helper. This means a snapshot workflow
-    //      opened the PR with the factory-cross-repo token instead of GITHUB_TOKEN.
-    //      Fix: set GH_TOKEN="$PR_TOKEN" (github.token) on the `gh pr create` call
-    //      in the snapshot workflow so the PR author is github-actions[bot], not
-    //      factory-cross-repo[bot]. See fix/snapshot-pr-self-approval.
     if (err.message.includes('approve your own pull request')) {
-      console.error(`APPROVE FAILED: self-approval blocked. The PR was opened by the same identity that runs this helper (factory-cross-repo[bot]). The snapshot workflow must open PRs with GITHUB_TOKEN (github-actions[bot]) instead. Auto-merge will be enabled but NO REVIEW will be submitted — the PR will stay BLOCKED until fixed.`);
+      console.error('APPROVE FAILED: self-approval blocked. REVIEW_TOKEN must be a different identity than the PR author. Check that REVIEW_TOKEN is set to github.token in the workflow step.');
     } else {
+      // Already approved on a prior synchronize run — safe to continue.
       console.warn(`Approve step warning (likely already approved): ${err.message}`);
     }
   }
@@ -199,6 +210,10 @@ function main() {
 
   if (!PR_NUMBER || !PR_AUTHOR || !PR_BRANCH) {
     console.error('FATAL: PR_NUMBER, PR_AUTHOR, PR_BRANCH must all be set in env.');
+    process.exit(2);
+  }
+  if (!/^\d+$/.test(PR_NUMBER)) {
+    console.error(`FATAL: PR_NUMBER must be a positive integer, got: ${PR_NUMBER}`);
     process.exit(2);
   }
 
