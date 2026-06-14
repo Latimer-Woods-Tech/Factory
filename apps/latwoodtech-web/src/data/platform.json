@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T03:43:06.623Z",
+  "generatedAt": "2026-06-14T11:30:54.806Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -1018,7 +1018,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-13T03:43:07.423Z",
+    "generatedAt": "2026-06-14T11:30:55.484Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1031,7 +1031,7 @@
       },
       "cost30dUsd": 4.26,
       "mrrUsd": 0,
-      "completionWeighted": 3
+      "completionWeighted": 2.6
     },
     "trends": {
       "cohesion": {
@@ -1059,18 +1059,18 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 3,
-        "prior": 0,
-        "priorDate": "2026-05-25",
-        "dayGap": 18,
-        "delta": 3,
-        "direction": "up"
+        "current": 2.6,
+        "prior": 3,
+        "priorDate": "2026-06-12",
+        "dayGap": 0,
+        "delta": -0.4,
+        "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 6,
         "delta": -27.8,
         "direction": "down"
       },
@@ -1078,7 +1078,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 6,
         "delta": 0,
         "direction": "flat"
       }
@@ -1132,6 +1132,6 @@
         }
       ]
     },
-    "seriesPoints": 3
+    "seriesPoints": 4
   }
 }
