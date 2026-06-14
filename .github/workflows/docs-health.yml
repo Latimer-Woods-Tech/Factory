@@ -41,3 +41,63 @@ jobs:
       # Generated catalogs describe the whole repository. Enforce them on
       # mainline/scheduled runs so unrelated PRs are not blocked by global drift.
       enforce_generated: ${{ github.event_name != 'pull_request' }}
+
+  update-link-baseline:
+    name: Auto-update broken-link baseline
+    needs: docs-health
+    # Only run on main branch pushes when health check passed; skip PRs and forks
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      github.repository == 'Latimer-Woods-Tech/factory'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --ignore-scripts
+
+      - name: Regen link report
+        run: node scripts/docs/health.mjs
+        env:
+          DOCS_REPO_PROFILE: factory
+        continue-on-error: true
+
+      - name: Lower baseline if count improved
+        run: |
+          BASELINE_FILE="docs/_catalog/link-baseline.json"
+          REPORT_FILE="docs/_catalog/link-report.json"
+          if [ ! -f "$REPORT_FILE" ] || [ ! -f "$BASELINE_FILE" ]; then
+            echo "Missing report or baseline — skipping"
+            exit 0
+          fi
+          CURRENT=$(node -e "const r=require('./$REPORT_FILE'); process.stdout.write(String(r.counts.broken))")
+          BASELINE=$(node -e "const b=require('./$BASELINE_FILE'); process.stdout.write(String(b.broken))")
+          echo "Current: $CURRENT  Baseline: $BASELINE"
+          if [ "$CURRENT" -lt "$BASELINE" ]; then
+            echo "Lowering baseline from $BASELINE to $CURRENT"
+            node -e "
+              const fs=require('fs');
+              const path='$BASELINE_FILE';
+              const b=JSON.parse(fs.readFileSync(path,'utf8'));
+              b.broken=$CURRENT;
+              b.updated_at=new Date().toISOString();
+              fs.writeFileSync(path, JSON.stringify(b,null,2)+'\n');
+            "
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$BASELINE_FILE"
+            git commit -m "chore(docs): lower broken-link baseline $BASELINE → $CURRENT [skip ci]"
+            git push
+          else
+            echo "No improvement — baseline unchanged"
+          fi
