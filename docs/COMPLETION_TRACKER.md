@@ -1,18 +1,18 @@
 # Completion Tracker
-_Generated 2026-06-12T00:36:59+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-12T13:46:38+00:00 by `scripts/aggregate_completion.py`._
 
 ## 🚨 CI red on main: CH, XC
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **HD** HumanDesign | 5 | 0 | 0 | 88 | 93 | 5.4% | 100.0% | **5.4%** (Δ+5.4) |
+| **HD** HumanDesign | 5 | 0 | 0 | 88 | 93 | 5.4% | 100.0% | **5.4%** (Δ+0.0) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **FA** factory-admin-studio | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **CH** cypher-healing 🚨 | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 3.0% (Δ+3.0)** · known: 10.9% · raw: 2.8%
+**Overall weighted pass: 2.6% (Δ-0.4)** · known: 7.1% · raw: 2.4%
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
@@ -322,34 +322,65 @@ _Generated 2026-06-12T00:36:59+00:00 by `scripts/aggregate_completion.py`._
 | `CH-PLAT-003` | Sitemap | ❌ | 1 | — | — |
 | `CH-PLAT-004` | Rate Limiting | 🔍 | 1 | — | — |
 
-## Malformed rows (skipped from aggregate)
-- `XC` docs/FUNCTIONS_MATRIX.md:17 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:18 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:19 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:24 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:25 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:26 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:27 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:28 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:29 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:30 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:35 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:36 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:37 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:42 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:43 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:44 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:49 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:50 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:55 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:56 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:57 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:58 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:59 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:64 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:65 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:70 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:71 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:72 — expected 12 cells, got 11
-- `XC` docs/FUNCTIONS_MATRIX.md:73 — expected 12 cells, got 11
+## XC — xico-city
+### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 2❌ 1🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-AUTH-001` | BetterAuth Session (Cookie) | 🔍 | 5 | — | smoke-red |
+| `XC-AUTH-002` | Processor JWT (Service-to-Service) | ❌ | 5 | — | smoke-red |
+| `XC-AUTH-003` | RLS Context Injection | ❌ | 5 | — | smoke-red |
+
+### Media Processing & Jobs — 0.0% weighted (0✅ 0⚠️ 7❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-JOBS-001` | Create Job | ❌ | 4 | — | — |
+| `XC-JOBS-002` | Get Job Status | ❌ | 4 | — | — |
+| `XC-JOBS-003` | Confirm Job (Client ACK) | ❌ | 3 | — | — |
+| `XC-JOBS-004` | Cut Points | ❌ | 3 | — | — |
+| `XC-JOBS-005` | Processor Dispatch | ❌ | 5 | — | — |
+| `XC-JOBS-006` | Internal Job Completion Callback | ❌ | 4 | — | — |
+| `XC-JOBS-007` | Jobs Watchdog (Cron) | ❌ | 3 | — | — |
+
+### Asset Management — 0.0% weighted (0✅ 0⚠️ 3❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-ASSET-001` | List/Get Asset | ❌ | 3 | — | — |
+| `XC-ASSET-002` | Stem Separation | ❌ | 4 | — | — |
+| `XC-ASSET-003` | Vocal Processing | ❌ | 4 | — | — |
+
+### Uploads — 0.0% weighted (0✅ 0⚠️ 3❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-UPLOAD-001` | Request Presigned URL | ❌ | 4 | — | — |
+| `XC-UPLOAD-002` | Initiate Upload | ❌ | 4 | — | — |
+| `XC-UPLOAD-003` | Confirm Upload | ❌ | 4 | — | — |
+
+### Marketplace / Listings — 0.0% weighted (0✅ 0⚠️ 2❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-LIST-001` | Browse Listings | ❌ | 4 | — | — |
+| `XC-LIST-002` | Search Listings | ❌ | 4 | — | — |
+
+### User Profile — 0.0% weighted (0✅ 0⚠️ 5❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-ME-001` | Onboarding | ❌ | 3 | — | — |
+| `XC-ME-002` | Connect Accounts | ❌ | 3 | — | — |
+| `XC-ME-003` | Download Asset | ❌ | 3 | — | — |
+| `XC-ME-004` | Notifications | ❌ | 3 | — | — |
+| `XC-ME-005` | Vocal Profile | ❌ | 4 | — | — |
+
+### Billing & Payments — 0.0% weighted (0✅ 0⚠️ 2❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-BILL-001` | Stripe Checkout Webhook | ❌ | 5 | — | — |
+| `XC-BILL-002` | Stripe Connect Webhook | ❌ | 5 | — | — |
+
+### Platform / Health — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `XC-PLAT-001` | Liveness | 🔍 | 1 | — | — |
+| `XC-PLAT-002` | Readiness | 🔍 | 1 | — | — |
+| `XC-PLAT-003` | Sentry Wiring | 🔍 | 1 | — | — |
+| `XC-PLAT-004` | Scheduled Cron Dispatch | 🔍 | 1 | — | — |
 
