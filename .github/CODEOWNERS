@@ -18,11 +18,14 @@
 # GREEN tier — supervisor (via factory-cross-repo bot) can merge on blessed template
 # @factory-cross-repo[bot] is co-owner so its 2-party-confirmed APPROVE satisfies
 # the code-owner gate without human intervention.
+# @github-actions[bot] is also co-owner so snapshot-pr-auto-merge.yml can approve
+# as github-actions[bot] (REVIEW_TOKEN = github.token) without self-approval
+# conflict — factory-cross-repo[bot] opens the PR; github-actions[bot] approves.
 # ===========================================================================
-docs/**                                 @adrper79-dot @factory-cross-repo[bot]
-*.md                                    @adrper79-dot @factory-cross-repo[bot]
-session/**                              @adrper79-dot @factory-cross-repo[bot]
-documents/**                            @adrper79-dot @factory-cross-repo[bot]
+docs/**                                 @adrper79-dot @factory-cross-repo[bot] @github-actions[bot]
+*.md                                    @adrper79-dot @factory-cross-repo[bot] @github-actions[bot]
+session/**                              @adrper79-dot @factory-cross-repo[bot] @github-actions[bot]
+documents/**                            @adrper79-dot @factory-cross-repo[bot] @github-actions[bot]
 # MA-8: memory single-writer — explicit ownership so the branch-protection review
 # gate fires on every memory/*.md edit, enforcing the single-writer invariant.
 memory/**                               @adrper79-dot
