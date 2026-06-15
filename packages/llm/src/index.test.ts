@@ -1591,6 +1591,27 @@ describe('tool-calling', () => {
     expect(res.data!.stopReason).toBe('end');
     expect(res.data!.toolCalls).toBeUndefined();
   });
+
+  it('maps Anthropic stop_reason max_tokens to stopReason max_tokens', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          content: [{ type: 'text', text: 'truncated' }],
+          stop_reason: 'max_tokens',
+          usage: { input_tokens: 10, output_tokens: 100 },
+          model: 'claude-sonnet-4-20250514',
+        }),
+        { status: 200 },
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'write a lot' }],
+      ENV,
+      { tier: 'balanced' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.data!.stopReason).toBe('max_tokens');
+  });
 });
 
 // ─── Tool-calling — OpenAI providers (Grok / DeepSeek) — PR 1b ────────────────
@@ -1732,6 +1753,54 @@ describe('tool-calling (OpenAI-style providers)', () => {
     );
     expect(res.error).toBeNull();
     expect(res.data!.toolCalls).toEqual([{ id: 'c1', name: 'lookup', arguments: {} }]);
+  });
+
+  it('grok: maps forced toolChoice {name} to OpenAI function tool_choice', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(openAiToolUse('grok-4.3'));
+    await complete(
+      [{ role: 'user', content: 'go' }],
+      GROK_ENV,
+      { tier: 'fast', tools: [lookupTool], toolChoice: { name: 'lookup' } },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(reqBody(fetchImpl).tool_choice).toEqual({ type: 'function', function: { name: 'lookup' } });
+  });
+
+  it('grok: converts structured text-only assistant message to plain content', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(openAiToolUse('grok-4.3'));
+    await complete(
+      [
+        { role: 'user', content: 'go' },
+        { role: 'assistant', content: [{ type: 'text', text: 'thinking...' }] },
+        { role: 'user', content: 'continue' },
+      ],
+      GROK_ENV,
+      { tier: 'fast', tools: [lookupTool] },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    const msgs = reqBody(fetchImpl).messages as Array<Record<string, unknown>>;
+    const asst = msgs.find((m) => m.role === 'assistant');
+    expect(asst).toMatchObject({ role: 'assistant', content: 'thinking...' });
+  });
+
+  it('grok: maps finish_reason length to stopReason max_tokens', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: 'truncated' }, finish_reason: 'length' }],
+          usage: { prompt_tokens: 5, completion_tokens: 100 },
+          model: 'grok-4.3',
+        }),
+        { status: 200 },
+      ),
+    );
+    const res = await complete(
+      [{ role: 'user', content: 'write a lot' }],
+      GROK_ENV,
+      { tier: 'fast' },
+      { fetch: fetchImpl as unknown as typeof fetch },
+    );
+    expect(res.data!.stopReason).toBe('max_tokens');
   });
 });
 
