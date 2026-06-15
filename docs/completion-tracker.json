@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-06-12T13:46:38.655847+00:00",
+  "generated_at": "2026-06-14T23:52:17.718953+00:00",
   "overall_weighted": 2.6,
-  "overall_known": 7.1,
+  "overall_known": 100.0,
   "overall_raw": 2.4,
   "repo_weighted": {
     "HD": 5.4,
@@ -11,7 +11,7 @@
     "XC": 0.0
   },
   "ci_red": [
-    "CH",
+    "HD",
     "XC"
   ],
   "smoke_red": [
@@ -36,7 +36,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated from legacy row",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -59,7 +61,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -82,7 +86,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -128,7 +134,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 7 tests inc. enumeration safety",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -151,7 +159,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 10 tests inc. atomic transaction",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -174,7 +184,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -197,7 +209,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -220,7 +234,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -243,7 +259,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -266,7 +284,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Marketing page redirect",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -289,7 +309,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -312,7 +334,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -335,7 +359,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -358,7 +384,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -427,7 +455,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "client-side component — no API route needed",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": []
     },
     {
@@ -448,7 +478,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Manifestor/Generator/MG/Projector/Reflector",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -471,7 +503,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -494,7 +528,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -540,7 +576,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -563,7 +601,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -586,7 +626,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -609,7 +651,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -632,7 +676,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -701,7 +747,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) i18n integration",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -724,7 +772,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Legal/static pages browser gate",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -747,7 +797,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -770,7 +822,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Auth gate + unit",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -793,7 +847,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -816,7 +872,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -839,7 +897,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -862,7 +922,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -885,7 +947,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -908,7 +972,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -931,7 +997,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Auth enforcement verified",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -954,7 +1022,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Portal auth gate",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -977,7 +1047,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1000,7 +1072,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1023,7 +1097,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1046,7 +1122,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1069,7 +1147,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1115,7 +1195,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1184,7 +1266,9 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) 10-step sequence",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1207,7 +1291,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Shows on `?start=1`",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1230,7 +1316,9 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) SPA navigation",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1253,7 +1341,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1299,7 +1389,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Birth data form",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1368,7 +1460,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Locale loading",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1414,7 +1508,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) axe-core scans",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1437,7 +1533,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Marketing redirect",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1460,7 +1558,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Via middleware",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1552,7 +1652,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Loads 200",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1575,7 +1677,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Loads 200",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1598,7 +1702,9 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Non-5xx for unknown paths",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1621,7 +1727,9 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Returns `{\"status\":\"ok\"}`",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1644,7 +1752,9 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Version in response",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1736,7 +1846,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) DB-backed atomic counter",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1759,7 +1871,9 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) OPTIONS preflight",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1782,7 +1896,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Zod + parameterized queries",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1805,7 +1921,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Zod blocks script injection",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1828,7 +1946,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) JSON-only API; SameSite cookies",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1851,7 +1971,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) PBKDF2 via Web Crypto",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1874,7 +1996,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1897,7 +2021,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 48 tests",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -1920,7 +2046,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) JSON-only responses",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": [
         "auto-decay"
       ]
@@ -2081,7 +2209,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": []
     },
     {
@@ -2102,7 +2232,9 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id]",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": []
     },
     {
@@ -2123,7 +2255,9 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": []
     },
     {
@@ -2144,7 +2278,9 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string",
-      "tags": [],
+      "tags": [
+        "CI-RED"
+      ],
       "overlays": []
     },
     {
@@ -3153,9 +3289,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "JWT in HttpOnly cookie",
+      "notes": "(auto-decay) JWT in HttpOnly cookie",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3174,9 +3312,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3190,14 +3330,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Deletes authToken cookie",
+      "notes": "(auto-decay) Deletes authToken cookie",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3211,14 +3353,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Sends reset email via utils/email",
+      "notes": "(auto-decay) Sends reset email via utils/email",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3232,14 +3376,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Passwordless auth",
+      "notes": "(auto-decay) Passwordless auth",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3253,14 +3399,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Cookie + Bearer fallback; adminOnly role check",
+      "notes": "(auto-decay) Cookie + Bearer fallback; adminOnly role check",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3274,14 +3422,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public; paginated",
+      "notes": "(auto-decay) Public; paginated",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3295,14 +3445,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3316,14 +3468,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Stripe checkout integration",
+      "notes": "(auto-decay) Stripe checkout integration",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3337,14 +3491,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Tracks completion per lesson",
+      "notes": "(auto-decay) Tracks completion per lesson",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3358,14 +3514,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3379,14 +3537,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public",
+      "notes": "(auto-decay) Public",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3400,14 +3560,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Stripe checkout for paid services",
+      "notes": "(auto-decay) Stripe checkout for paid services",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3421,14 +3583,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3442,14 +3606,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3463,14 +3629,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3484,14 +3652,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public; upcoming filter",
+      "notes": "(auto-decay) Public; upcoming filter",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3505,14 +3675,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3526,14 +3698,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Stripe for paid events; intake responses",
+      "notes": "(auto-decay) Stripe for paid events; intake responses",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3547,14 +3721,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3568,14 +3744,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public; category filter",
+      "notes": "(auto-decay) Public; category filter",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3589,14 +3767,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Stripe checkout; coupon support",
+      "notes": "(auto-decay) Stripe checkout; coupon support",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3610,14 +3790,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Auth required",
+      "notes": "(auto-decay) Auth required",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3631,14 +3813,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3652,14 +3836,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public",
+      "notes": "(auto-decay) Public",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3673,14 +3859,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Stripe subscription",
+      "notes": "(auto-decay) Stripe subscription",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3694,14 +3882,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Auth required",
+      "notes": "(auto-decay) Auth required",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3715,14 +3905,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3736,14 +3928,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public; paginated",
+      "notes": "(auto-decay) Public; paginated",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3757,14 +3951,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3778,14 +3974,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "adminOnly",
+      "notes": "(auto-decay) adminOnly",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3799,14 +3997,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Telnyx SMS; adminOnly",
+      "notes": "(auto-decay) Telnyx SMS; adminOnly",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3820,14 +4020,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Telnyx SMS; adminOnly",
+      "notes": "(auto-decay) Telnyx SMS; adminOnly",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3841,14 +4043,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3862,14 +4066,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "CRUD; adminOnly",
+      "notes": "(auto-decay) CRUD; adminOnly",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3883,14 +4089,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3904,14 +4112,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3925,14 +4135,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3946,14 +4158,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "Batch lesson narration",
+      "notes": "(auto-decay) Batch lesson narration",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3967,14 +4181,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "Idempotent; auth-gated after first user",
+      "notes": "(auto-decay) Idempotent; auth-gated after first user",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -3988,14 +4204,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "Dev-only; should be gated in prod",
+      "notes": "(auto-decay) Dev-only; should be gated in prod",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -4009,14 +4227,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Handles checkout, subscription, booking, event, enrollment, store events; idempotency via KV",
+      "notes": "(auto-decay) Handles checkout, subscription, booking, event, enrollment, store events; idempotency via KV",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -4035,9 +4255,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -4051,14 +4273,16 @@
       "sentry_project": "coh",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "Dynamic; queries courses, products, events",
+      "notes": "(auto-decay) Dynamic; queries courses, products, events",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "CH",
@@ -4077,9 +4301,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "CF KV-backed; per-namespace config",
+      "notes": "(auto-decay) CF KV-backed; per-namespace config",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4098,10 +4324,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — User routes",
+      "notes": "(auto-decay) ❌ smoke red — User routes",
       "tags": [],
       "overlays": [
-        "smoke-red"
+        "smoke-red",
+        "auto-decay"
       ]
     },
     {
@@ -4116,15 +4343,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Cloud Run → Worker callback; HS256 JWT via PROCESSOR_JWT_SECRET",
+      "notes": "(auto-decay) ❌ smoke red — Cloud Run → Worker callback; HS256 JWT via PROCESSOR_JWT_SECRET",
       "tags": [],
       "overlays": [
-        "smoke-red"
+        "smoke-red",
+        "auto-decay"
       ]
     },
     {
@@ -4139,15 +4367,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "❌ smoke red — Sets app.user_id + app.role session vars for Neon RLS policies",
+      "notes": "(auto-decay) ❌ smoke red — Sets app.user_id + app.role session vars for Neon RLS policies",
       "tags": [],
       "overlays": [
-        "smoke-red"
+        "smoke-red",
+        "auto-decay"
       ]
     },
     {
@@ -4162,14 +4391,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Enqueues slice/stem/vocal/image/video job",
+      "notes": "(auto-decay) Enqueues slice/stem/vocal/image/video job",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4183,14 +4414,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Returns status+progress",
+      "notes": "(auto-decay) Returns status+progress",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4204,14 +4437,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Client acknowledges delivery",
+      "notes": "(auto-decay) Client acknowledges delivery",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4225,14 +4460,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Returns detected cut points from stem separation",
+      "notes": "(auto-decay) Returns detected cut points from stem separation",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4246,14 +4483,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "HMAC-SHA256 signed; Cloud Run verifies signature",
+      "notes": "(auto-decay) HMAC-SHA256 signed; Cloud Run verifies signature",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4267,14 +4506,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Cloud Run calls back on job completion; requireProcessorJWT",
+      "notes": "(auto-decay) Cloud Run calls back on job completion; requireProcessorJWT",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4288,14 +4529,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Sweeps stuck jobs back to retry-eligible; timeouts by job kind",
+      "notes": "(auto-decay) Sweeps stuck jobs back to retry-eligible; timeouts by job kind",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4309,14 +4552,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4330,14 +4575,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Dispatches Demucs job via processor",
+      "notes": "(auto-decay) Dispatches Demucs job via processor",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4351,14 +4598,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4372,14 +4621,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "R2 presigned PUT",
+      "notes": "(auto-decay) R2 presigned PUT",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4393,14 +4644,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4414,14 +4667,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Marks upload complete; triggers job dispatch",
+      "notes": "(auto-decay) Marks upload complete; triggers job dispatch",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4435,14 +4690,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Public artist/track listings",
+      "notes": "(auto-decay) Public artist/track listings",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4456,14 +4713,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Full-text / faceted search",
+      "notes": "(auto-decay) Full-text / faceted search",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4477,14 +4736,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4498,14 +4759,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Social/platform OAuth connect",
+      "notes": "(auto-decay) Social/platform OAuth connect",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4519,14 +4782,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "Generates presigned download URL",
+      "notes": "(auto-decay) Generates presigned download URL",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4540,14 +4805,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4561,14 +4828,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "Stores vocal model params",
+      "notes": "(auto-decay) Stores vocal model params",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4582,14 +4851,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "",
+      "notes": "(auto-decay)",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4603,14 +4874,16 @@
       "sentry_project": "xico-city",
       "manual": "🔍 TODO",
       "automated": "—",
-      "status": "❌",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Artist payout events",
+      "notes": "(auto-decay) Artist payout events",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4629,9 +4902,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "Always 200 if Worker running",
+      "notes": "(auto-decay) Always 200 if Worker running",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4650,9 +4925,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "503 if required bindings missing",
+      "notes": "(auto-decay) 503 if required bindings missing",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4671,9 +4948,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "initMonitoring + sentryMiddleware",
+      "notes": "(auto-decay) initMonitoring + sentryMiddleware",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "XC",
@@ -4692,9 +4971,11 @@
       "last_verified": "2026-05-14",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "Routes cron events by pattern",
+      "notes": "(auto-decay) Routes cron events by pattern",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     }
   ],
   "malformed": []
