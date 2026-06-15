@@ -1001,6 +1001,9 @@ workers:
       - /v1/chart
       - /v1/synthesis
       - /v1/video
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
     notes: >
       Productized developer API surface (GTM roadmap Wave 3). mysticapi.com is the
       developer portal/docs; api.mysticapi.com serves the versioned API (synthesis +
@@ -1024,6 +1027,7 @@ workers:
     custom_domain: watch.selfprime.net
     custom_domain_status: planned                          # subdomain of selfprime.net zone; no live record until an origin exists
     health_endpoint: /health
+    telemetry_required: false
     notes: >
       Branded shareable-film playback (engine Slice 7 sharing). Serving mechanism:
       worker/Pages player page (signed Stream playback + OG tags) decided at build.
