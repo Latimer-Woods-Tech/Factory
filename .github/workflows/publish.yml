@@ -48,7 +48,7 @@ jobs:
       - name: Build local dependencies in order
         run: |
           set -euo pipefail
-          DEPS=(errors monitoring logger realtime bodygraph design-tokens ui auth neon stripe llm telephony analytics deploy testing email copy content social seo validation crm compliance admin video schedule llm-meter studio-core creator design-system entitlements protocol browser flags agent)
+          DEPS=(errors monitoring logger realtime bodygraph constellation design-tokens ui auth neon stripe llm telephony analytics deploy testing email copy content social seo validation crm compliance admin video schedule llm-meter studio-core creator design-system entitlements protocol browser flags agent)
           for pkg in "${DEPS[@]}"; do
             if [ "$pkg" = "$PACKAGE" ]; then
               break
