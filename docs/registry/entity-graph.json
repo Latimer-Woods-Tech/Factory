@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T11:30:55.424Z",
+  "generatedAt": "2026-06-15T00:09:28.907Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,53 +1793,32 @@
         "tier": "infra"
       },
       {
-        "id": "selfprime:energy-blueprint",
-        "appId": "selfprime",
-        "label": "Energy Blueprint synthesis",
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "selfprime:narration",
-        "appId": "selfprime",
-        "label": "AI voice narration",
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
         "status": "live",
-        "tier": "core"
+        "tier": "infra"
       },
       {
-        "id": "selfprime:video-engine",
-        "appId": "selfprime",
-        "label": "Energy Blueprint video engine",
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
         "status": "live",
-        "tier": "core"
+        "tier": "infra"
       },
       {
-        "id": "selfprime:notification-inbox",
-        "appId": "selfprime",
-        "label": "In-app notification inbox",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:practitioner-network",
-        "appId": "selfprime",
-        "label": "Practitioner referral network",
-        "status": "in-progress",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:group-readings",
-        "appId": "selfprime",
-        "label": "Group reading sessions",
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
         "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:rls-enforcement",
-        "appId": "selfprime",
-        "label": "Row-Level Security on all tables",
-        "status": "roadmap",
-        "tier": "compliance"
+        "tier": "core"
       },
       {
         "id": "capricast:video-playback",
@@ -1919,32 +1898,53 @@
         "tier": "growth"
       },
       {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
+        "id": "selfprime:energy-blueprint",
+        "appId": "selfprime",
+        "label": "Energy Blueprint synthesis",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
+        "id": "selfprime:narration",
+        "appId": "selfprime",
+        "label": "AI voice narration",
         "status": "live",
-        "tier": "infra"
+        "tier": "core"
       },
       {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
+        "id": "selfprime:video-engine",
+        "appId": "selfprime",
+        "label": "Energy Blueprint video engine",
         "status": "live",
-        "tier": "infra"
+        "tier": "core"
       },
       {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
+        "id": "selfprime:notification-inbox",
+        "appId": "selfprime",
+        "label": "In-app notification inbox",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:practitioner-network",
+        "appId": "selfprime",
+        "label": "Practitioner referral network",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:group-readings",
+        "appId": "selfprime",
+        "label": "Group reading sessions",
         "status": "roadmap",
-        "tier": "core"
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:rls-enforcement",
+        "appId": "selfprime",
+        "label": "Row-Level Security on all tables",
+        "status": "roadmap",
+        "tier": "compliance"
       }
     ],
     "roadmapItems": [
@@ -2026,32 +2026,25 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "selfprime:sp-launch",
-        "appId": "selfprime",
-        "label": "Public Launch",
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "selfprime:sp-rls",
-        "appId": "selfprime",
-        "label": "RLS enforced across all tables",
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
         "status": "queued",
         "quarter": "Q4-2026"
       },
       {
-        "id": "selfprime:sp-referrals",
-        "appId": "selfprime",
-        "label": "Practitioner referral engine GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "selfprime:sp-ios",
-        "appId": "selfprime",
-        "label": "iOS PWA",
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
         "status": "design",
-        "quarter": "Q2-2027"
+        "quarter": "Q1-2027"
       },
       {
         "id": "capricast:cc-monetize",
@@ -2110,25 +2103,32 @@
         "quarter": "Q2-2027"
       },
       {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced across all tables",
         "status": "queued",
         "quarter": "Q4-2026"
       },
       {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
         "status": "design",
-        "quarter": "Q1-2027"
+        "quarter": "Q2-2027"
       }
     ],
     "gaps": [
@@ -2477,93 +2477,58 @@
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:energy-blueprint",
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:narration",
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:video-engine",
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:notification-inbox",
+      "from": "xico-city",
+      "to": "xico-city:booking",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:practitioner-network",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:group-readings",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:rls-enforcement",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-launch",
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-rls",
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-referrals",
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-ios",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
+      "from": "xico-city",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
+      "from": "xico-city",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:llm",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
+      "from": "xico-city",
       "to": "pkg:analytics",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "pkg:bodygraph",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:telephony",
+      "from": "xico-city",
+      "to": "pkg:monitoring",
       "type": "uses_package"
     },
     {
@@ -2712,58 +2677,93 @@
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
+      "from": "selfprime",
+      "to": "selfprime:energy-blueprint",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
+      "from": "selfprime",
+      "to": "selfprime:narration",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
+      "from": "selfprime",
+      "to": "selfprime:video-engine",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:booking",
+      "from": "selfprime",
+      "to": "selfprime:notification-inbox",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
+      "from": "selfprime",
+      "to": "selfprime:practitioner-network",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:group-readings",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:rls-enforcement",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-launch",
       "type": "has_roadmap"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
+      "from": "selfprime",
+      "to": "selfprime:sp-rls",
       "type": "has_roadmap"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
+      "from": "selfprime",
+      "to": "selfprime:sp-referrals",
       "type": "has_roadmap"
     },
     {
-      "from": "xico-city",
+      "from": "selfprime",
+      "to": "selfprime:sp-ios",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
+      "from": "selfprime",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
+      "from": "selfprime",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:llm",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
       "to": "pkg:analytics",
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
+      "from": "selfprime",
+      "to": "pkg:bodygraph",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:telephony",
       "type": "uses_package"
     }
   ],
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-14T11:30:55.484Z",
+    "generatedAt": "2026-06-15T00:09:28.968Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2830,7 +2830,7 @@
         "current": 2.6,
         "prior": 3,
         "priorDate": "2026-06-12",
-        "dayGap": 0,
+        "dayGap": 2,
         "delta": -0.4,
         "direction": "down"
       },
@@ -2838,7 +2838,7 @@
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 6,
+        "dayGap": 7,
         "delta": -27.8,
         "direction": "down"
       },
@@ -2846,7 +2846,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 6,
+        "dayGap": 7,
         "delta": 0,
         "direction": "flat"
       }
@@ -2900,6 +2900,6 @@
         }
       ]
     },
-    "seriesPoints": 4
+    "seriesPoints": 5
   }
 }
