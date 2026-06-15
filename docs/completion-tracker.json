@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-14T23:52:17.718953+00:00",
+  "generated_at": "2026-06-15T16:07:50.629322+00:00",
   "overall_weighted": 2.6,
   "overall_known": 100.0,
   "overall_raw": 2.4,
@@ -11,7 +11,7 @@
     "XC": 0.0
   },
   "ci_red": [
-    "HD",
+    "CH",
     "XC"
   ],
   "smoke_red": [
@@ -36,9 +36,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated from legacy row",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -61,9 +59,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -86,9 +82,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -134,9 +128,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 7 tests inc. enumeration safety",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -159,9 +151,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 10 tests inc. atomic transaction",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -184,9 +174,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -209,9 +197,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -234,9 +220,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -259,9 +243,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -284,9 +266,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Marketing page redirect",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -309,9 +289,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -334,9 +312,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -359,9 +335,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -384,9 +358,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -455,9 +427,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "client-side component — no API route needed",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -478,9 +448,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Manifestor/Generator/MG/Projector/Reflector",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -503,9 +471,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -528,9 +494,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -576,9 +540,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -601,9 +563,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -626,9 +586,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -651,9 +609,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -676,9 +632,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -747,9 +701,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) i18n integration",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -772,9 +724,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Legal/static pages browser gate",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -797,9 +747,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -822,9 +770,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Auth gate + unit",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -847,9 +793,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -872,9 +816,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -897,9 +839,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -922,9 +862,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -947,9 +885,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -972,9 +908,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -997,9 +931,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Auth enforcement verified",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1022,9 +954,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Portal auth gate",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1047,9 +977,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1072,9 +1000,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1097,9 +1023,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1122,9 +1046,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1147,9 +1069,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1195,9 +1115,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1266,9 +1184,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) 10-step sequence",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1291,9 +1207,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Shows on `?start=1`",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1316,9 +1230,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) SPA navigation",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1341,9 +1253,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1389,9 +1299,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Birth data form",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1460,9 +1368,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Locale loading",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1508,9 +1414,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) axe-core scans",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1533,9 +1437,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Marketing redirect",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1558,9 +1460,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Via middleware",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1652,9 +1552,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Loads 200",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1677,9 +1575,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Loads 200",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1702,9 +1598,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Non-5xx for unknown paths",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1727,9 +1621,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Returns `{\"status\":\"ok\"}`",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1752,9 +1644,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Version in response",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1846,9 +1736,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) DB-backed atomic counter",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1871,9 +1759,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) OPTIONS preflight",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1896,9 +1782,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Zod + parameterized queries",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1921,9 +1805,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Zod blocks script injection",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1946,9 +1828,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) JSON-only API; SameSite cookies",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1971,9 +1851,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) PBKDF2 via Web Crypto",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1996,9 +1874,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2021,9 +1897,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 48 tests",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2046,9 +1920,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) JSON-only responses",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2209,9 +2081,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -2232,9 +2102,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id]",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -2255,9 +2123,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
@@ -2278,9 +2144,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": []
     },
     {
