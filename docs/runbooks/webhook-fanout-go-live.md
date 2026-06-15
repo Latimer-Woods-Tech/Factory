@@ -55,11 +55,11 @@ Notes on behaviour confirmed in the merged code:
 > **⚠️ BLOCKER — `FACTORY_CORE_API_URL` is a placeholder.** Both
 > `apps/webhook-fanout/wrangler.jsonc` (`vars`) and the merged code expect
 > `FACTORY_CORE_API_URL` to be factory-core-api's **branded custom domain**. The
-> config currently carries the placeholder `https://factory-core-api.latwoodtech.work`,
+> config currently carries the placeholder `https://core.latwoodtech.work`,
 > but as of this writing factory-core-api **is not deployed to a custom domain**:
 > it has no `routes`/`custom_domain` block in its own `wrangler.jsonc`, no entry
 > in [`docs/service-registry.yml`](../service-registry.yml), and no deploy
-> workflow. `curl https://factory-core-api.latwoodtech.work/health` returns `000`
+> workflow. `curl https://core.latwoodtech.work/health` returns `000`
 > (does not resolve). **Resolve this before go-live:** deploy factory-core-api,
 > attach a branded custom domain, add its service-registry entry, then set
 > `FACTORY_CORE_API_URL` to that domain (per CLAUDE.md, **never** a `*.workers.dev`
