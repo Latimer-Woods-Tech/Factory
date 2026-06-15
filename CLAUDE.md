@@ -108,6 +108,7 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
 24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
 25. `@latimer-woods-tech/bodygraph` (no deps) — canonical Energy Blueprint body-graph engine; runtime-agnostic SVG-string renderer (film/web/PDF share it)
+26. `@latimer-woods-tech/constellation` (no deps) — personal-sky renderer + data catalogs (fixed stars, celestial bodies, transit pulse, Feng Shui); runtime-agnostic SVG-string; consumed by web, video-studio (Wave 3), and PDF
 
 ## Video Production Pipeline
 
