@@ -212,6 +212,11 @@ Before writing any code:
   - How to rotate JWT_SECRET, DATABASE_URL, etc.
   - Downtime-free rotation procedures
 
+- **Webhook Fanout Go-Live (P1.6)**: See [docs/runbooks/webhook-fanout-go-live.md](./docs/runbooks/webhook-fanout-go-live.md)
+  - Wiring GitHub `check_run` + `pull_request_review` webhooks → factory gate ingest
+  - Secret matrix (`GH_WEBHOOK_SECRET`, shared `FACTORY_CORE_API_INGEST_KEY`/`WEBHOOK_FANOUT_INGEST_KEY`)
+  - GitHub webhook setup + curl-with-your-own-eyes verification
+
 - **App README Template**: See [docs/APP_README_TEMPLATE.md](./docs/APP_README_TEMPLATE.md)
   - Setup instructions for new developers
   - Local development (.dev.vars) vs. staging vs. production

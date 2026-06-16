@@ -155,7 +155,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (354)
+## platform (358)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -358,6 +358,9 @@
 | [docs/planning/brief-2026-06-08.md](planning/brief-2026-06-08.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-08 |
 | [docs/planning/brief-2026-06-12.md](planning/brief-2026-06-12.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-12 |
 | [docs/planning/brief-2026-06-13.md](planning/brief-2026-06-13.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-13 |
+| [docs/planning/brief-2026-06-14.md](planning/brief-2026-06-14.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-14 |
+| [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-15 |
+| [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-16 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | unknown | HumanDesign Language Guidance |
@@ -432,6 +435,7 @@
 | [docs/runbooks/transfer.md](runbooks/transfer.md) | active | unverified | unknown | Transfer Runbook |
 | [docs/runbooks/validate-service-registry.md](runbooks/validate-service-registry.md) | active | unverified | unknown | Validate Service Registry Runbook |
 | [docs/runbooks/video-pipeline.md](runbooks/video-pipeline.md) | active | unverified | unknown | Video Render Pipeline |
+| [docs/runbooks/webhook-fanout-go-live.md](runbooks/webhook-fanout-go-live.md) | active | unverified | unknown | Webhook Fanout Go-Live: GitHub → Factory Gate Ingest (P1.6) |
 | [docs/runbooks/workflow-budget-gate.md](runbooks/workflow-budget-gate.md) | active | unverified | unknown | Workflow Budget Gate |
 | [docs/runbooks/workflow-health-warden.md](runbooks/workflow-health-warden.md) | active | unverified | unknown | Workflow Health Warden |
 | [docs/SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md](SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md) | active | unverified | unknown | Sample Workflow Execution: Incident Response Drill |

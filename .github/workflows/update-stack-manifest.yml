@@ -16,12 +16,10 @@ on:
   schedule:
     - cron: '17 4 * * *' # daily 04:17 UTC
 
-# Need write access for branch+commit and pull-requests:write for PR creation.
-# Direct push to main is blocked by branch protection — must go through a PR
-# that hits the existing auto-merge path.
+# Permissions: only metadata:read needed at job level; the App token supplies
+# contents:write and pull-requests:write via its own installation grants.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: update-stack-manifest
@@ -36,12 +34,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
-          # Need full history for git diff + commit back.
           fetch-depth: 0
-          # Use a PAT or default token with contents:write.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
@@ -52,9 +57,11 @@ jobs:
       # RFC-006 §10 special case: STACK.md is a reference doc — keep the Git
       # commit, but use a stable branch (no daily timestamp) so only one PR
       # accumulates. Reruns update the existing PR rather than opening new ones.
+      # App token (factory-cross-repo[bot]) is required so pull_request_target
+      # fires on the created PR and snapshot-pr-auto-merge can approve + merge it.
       - name: Open or update auto-merge PR if STACK.md changed
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           git add docs/STACK.md
@@ -64,8 +71,8 @@ jobs:
           fi
           DATE=$(date -u +%F)
           BRANCH="chore/stack-manifest"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
 
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
             git fetch origin "$BRANCH"
