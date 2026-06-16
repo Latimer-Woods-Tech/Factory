@@ -1,0 +1,38 @@
+{
+  "_comment": "Declarative least-privilege Cloudflare token suite. Each entry mints one scoped token (via manage-tokens.mjs) stored in GCP Secret Manager under `secret`. `policies` map directly to Cloudflare token policies: scope 'account' → the whole account; scope 'zones' → all zones (com.cloudflare.api.account.zone.*). permission_groups are matched by exact name against /user/tokens/permission_groups — a name that doesn't resolve FAILS the run (never silently under-scopes). Run `--plan` to list the live group names if any don't resolve.",
+  "tokens": [
+    {
+      "secret": "cf-token-workers-deploy",
+      "name": "workers-deploy",
+      "purpose": "wrangler Worker deploys (scripts + routes)",
+      "policies": [
+        { "scope": "account", "permission_groups": ["Workers Scripts Write", "Account Settings Read"] },
+        { "scope": "zones", "permission_groups": ["Workers Routes Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-pages-deploy",
+      "name": "pages-deploy",
+      "purpose": "Cloudflare Pages deploys",
+      "policies": [
+        { "scope": "account", "permission_groups": ["Cloudflare Pages Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-cache-purge",
+      "name": "cache-purge",
+      "purpose": "Edge cache purge (the dedicated purge token the policy requires — deploy tokens lack this)",
+      "policies": [
+        { "scope": "zones", "permission_groups": ["Cache Purge"] }
+      ]
+    },
+    {
+      "secret": "cf-token-stream",
+      "name": "stream",
+      "purpose": "Cloudflare Stream (video pipeline copy + status)",
+      "policies": [
+        { "scope": "account", "permission_groups": ["Stream Write"] }
+      ]
+    }
+  ]
+}
