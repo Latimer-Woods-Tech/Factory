@@ -84,7 +84,17 @@ The GCP/GitHub copies are sometimes **BOM-prefixed or stale** — always `tr -d 
 4. Deploy a no-op or run the consuming workflow; confirm `/health` 200 (or the relevant probe).
 5. Revoke the old token in the dashboard only **after** the new one is confirmed live.
 
-## 7. References
+## 7. Automation — build + rotate the least-privilege suite
+
+The scoped suite is **minted and rotated by code**, not by hand:
+
+- [`scripts/cloudflare/token-suite.json`](../../scripts/cloudflare/token-suite.json) — declarative spec: one entry per job (`cf-token-workers-deploy`, `cf-token-pages-deploy`, `cf-token-cache-purge`, `cf-token-stream`), each with its permission groups + resource scope.
+- [`scripts/cloudflare/manage-tokens.mjs`](../../scripts/cloudflare/manage-tokens.mjs) — `--plan` / `--create` / `--rotate` / `--verify`. Resolves account, zones, and permission-group IDs live; creates/rolls each token via the CF API (`POST /user/tokens`, `PUT /user/tokens/{id}/value`); writes the value to GCP SM (`--data-file=-`, no newline trap); verifies. Fail-loud (an unresolved permission group or a token that fails post-write verify exits non-zero) and never logs a token value.
+- [`.github/workflows/cloudflare-token-rotation.yml`](../../.github/workflows/cloudflare-token-rotation.yml) — monthly `--rotate` + on-demand `--plan/--create/--verify`, authed to GCP via WIF (`factory-sa`).
+
+**Root of trust — the one irreducible manual step.** Creating tokens needs `User → API Tokens → Edit`, which Cloudflare will not grant to a token minted by a non-privileged token (verified: both deploy tokens 403/9109 on `/user/tokens`). So a single bootstrap token, **`CF_TOKEN_ADMIN`**, is created once by hand (API Tokens:Edit + Account Settings:Read + Zone:Read) and stored in GCP SM; the automation mints everything else from it. Setup steps: [`scripts/cloudflare/README.md`](../../scripts/cloudflare/README.md).
+
+## 8. References
 
 - [`CLAUDE.md`](../../CLAUDE.md) — secrets sourced from GCP SM via WIF; verification requirement.
 - [`docs/runbooks/github-secrets-and-tokens.md`](../runbooks/github-secrets-and-tokens.md) — `CF_API_TOKEN` vs `CLOUDFLARE_API_TOKEN` naming, full secret inventory, rotation schedule.
