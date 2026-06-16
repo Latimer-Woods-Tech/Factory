@@ -42,10 +42,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # App token (factory-cross-repo[bot]) is required so pull_request_target
+      # fires on the created PR and snapshot-pr-auto-merge can approve + merge it.
+      # GITHUB_TOKEN-opened PRs do not trigger pull_request_target.
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
@@ -64,7 +76,7 @@ jobs:
 
       - name: Open or update auto-merge PR if catalogs changed
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -95,8 +107,8 @@ jobs:
 
           DATE=$(date -u +%F)
           BRANCH="chore/docs-catalog-refresh"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
 
           # Reset the stable, bot-owned branch to current main + the regenerated
           # files (keeps the working-tree changes), so the PR diff is always
