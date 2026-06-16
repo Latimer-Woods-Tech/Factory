@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T15:54:00.919Z",
+  "generatedAt": "2026-06-16T19:36:11.335Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -68,25 +68,29 @@
           "id": "energy-blueprint",
           "label": "Energy Blueprint synthesis",
           "status": "live",
-          "tier": "core"
+          "tier": "core",
+          "tests": "tests/engine*.test.js, tests/profile*.test.js"
         },
         {
           "id": "narration",
           "label": "AI voice narration",
           "status": "live",
-          "tier": "core"
+          "tier": "core",
+          "tests": "tests/narration*.test.js, tests/video-narration*.test.js"
         },
         {
           "id": "video-engine",
           "label": "Energy Blueprint video engine",
           "status": "live",
-          "tier": "core"
+          "tier": "core",
+          "tests": "tests/video*.test.js"
         },
         {
           "id": "notification-inbox",
           "label": "In-app notification inbox",
           "status": "live",
-          "tier": "growth"
+          "tier": "growth",
+          "tests": "tests/notification*.test.js"
         },
         {
           "id": "practitioner-network",
@@ -104,7 +108,8 @@
           "id": "rls-enforcement",
           "label": "Row-Level Security on user-scoped tables",
           "status": "live",
-          "tier": "compliance"
+          "tier": "compliance",
+          "tests": "tests/rls*.test.js"
         }
       ]
     },
@@ -1018,7 +1023,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-16T15:54:01.968Z",
+    "generatedAt": "2026-06-16T19:36:12.221Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
