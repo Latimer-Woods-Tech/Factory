@@ -102,3 +102,10 @@ canonical_docs:
     scope: Discipline taxonomy and routing layer for W360 ownership/review gates.
     truth_sources:
       - manual-review
+  - path: docs/_governance/cloudflare-key-policy.md
+    owner: platform
+    scope: Cloudflare API token governance — scoped-tokens-only, inventory, least-privilege scopes, rotation, and verify-before-trust.
+    truth_sources:
+      - validation-output
+      - service-registry
+      - github-workflows
