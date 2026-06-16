@@ -7,14 +7,14 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Service Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-14
+last_generated: 2026-06-16
 source:
   - docs/service-registry.yml
 ---
 
 # Factory Service Map
 
-**Source hash:** `sha256:b73d56a0065c78913d102c2f9c7828aac8de2d14534e406dfd808136406ace4c`
+**Source hash:** `sha256:9e3bc3ad5acb9adec77d57b85664c45cfb9f2c50ee88ae33828604622b87ccec`
 
 ```mermaid
 flowchart LR
@@ -50,6 +50,8 @@ flowchart LR
   workers --> worker_qa_tools_worker["qa-tools-worker\nhttps://api.qa.latimerwoods.dev"]
   workers --> worker_marketing_supervisor["marketing-supervisor\nhttps://marketing.latwoodtech.work"]
   workers --> worker_marketing_supervisor_staging["marketing-supervisor-staging\nhttps://marketing-supervisor-staging.adrper79.workers.dev"]
+  workers --> worker_mysticapi["mysticapi\nhttps://api.mysticapi.com"]
+  workers --> worker_watch_selfprime["watch-selfprime\nhttps://watch.selfprime.net"]
   workers --> worker_referrals["referrals\nhttps://referrals.latwoodtech.work"]
   workers --> worker_llm_rank_worker["llm-rank-worker\nhttps://llm-rank.latwoodtech.work"]
   workers --> worker_analytics_proxy["analytics-proxy\nhttps://analytics.latwoodtech.work"]
