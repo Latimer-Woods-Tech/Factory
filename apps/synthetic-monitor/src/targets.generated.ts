@@ -25,6 +25,8 @@ export const GENERATED_TARGETS = [
   { id: "qa-tools-worker.health", url: "https://api.qa.latimerwoods.dev/health", contains: "ok" },
   { id: "marketing-supervisor.health", url: "https://marketing-supervisor.adrper79.workers.dev/health", contains: "ok" },
   { id: "marketing-supervisor-staging.health", url: "https://marketing-supervisor-staging.adrper79.workers.dev/health", contains: "ok" },
+  { id: "mysticapi.health", url: "https://api.mysticapi.com/health", contains: "ok" },
+  { id: "watch-selfprime.health", url: "https://watch.selfprime.net/health", contains: "ok" },
   { id: "referrals.health", url: "https://referrals.adrper79.workers.dev/health", contains: "ok" },
   { id: "llm-rank-worker.health", url: "https://llm-rank-worker.adrper79.workers.dev/health", contains: "ok" },
   { id: "analytics-proxy.health", url: "https://analytics.latwoodtech.work/health", contains: "ok" },

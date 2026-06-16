@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T13:14:28.169Z",
+  "generatedAt": "2026-06-16T10:07:17.941Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -44,10 +44,10 @@
         },
         {
           "id": "sp-rls",
-          "label": "RLS enforced across all tables",
-          "status": "queued",
-          "quarter": "Q4-2026",
-          "description": "Row-Level Security on the 35 user-scoped tables"
+          "label": "RLS enforced on user-scoped tables",
+          "status": "done",
+          "quarter": "Q2-2026",
+          "description": "Live in production — Row-Level Security active on the 35 user-scoped tables (35 policies). Kill-switch RLS_ENABLED."
         },
         {
           "id": "sp-referrals",
@@ -102,8 +102,8 @@
         },
         {
           "id": "rls-enforcement",
-          "label": "Row-Level Security on all tables",
-          "status": "roadmap",
+          "label": "Row-Level Security on user-scoped tables",
+          "status": "live",
           "tier": "compliance"
         }
       ]
@@ -784,10 +784,10 @@
       },
       {
         "id": "sp-rls",
-        "label": "RLS enforced across all tables",
-        "status": "queued",
-        "quarter": "Q4-2026",
-        "description": "Row-Level Security on the 35 user-scoped tables",
+        "label": "RLS enforced on user-scoped tables",
+        "status": "done",
+        "quarter": "Q2-2026",
+        "description": "Live in production — Row-Level Security active on the 35 user-scoped tables (35 policies). Kill-switch RLS_ENABLED.",
         "appId": "selfprime"
       },
       {
@@ -1018,7 +1018,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-15T13:14:29.022Z",
+    "generatedAt": "2026-06-16T10:07:18.711Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1062,7 +1062,7 @@
         "current": 2.6,
         "prior": 3,
         "priorDate": "2026-06-12",
-        "dayGap": 2,
+        "dayGap": 3,
         "delta": -0.4,
         "direction": "down"
       },
@@ -1070,7 +1070,7 @@
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 7,
+        "dayGap": 8,
         "delta": -27.8,
         "direction": "down"
       },
@@ -1078,7 +1078,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 7,
+        "dayGap": 8,
         "delta": 0,
         "direction": "flat"
       }
@@ -1132,6 +1132,6 @@
         }
       ]
     },
-    "seriesPoints": 5
+    "seriesPoints": 6
   }
 }
