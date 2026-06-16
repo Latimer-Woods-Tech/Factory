@@ -4,9 +4,9 @@
   "generated_at": "source-derived",
   "ok": true,
   "counts": {
-    "issues": 269,
+    "issues": 270,
     "errors": 0,
-    "warnings": 269
+    "warnings": 270
   },
   "issues": [
     {
@@ -49,7 +49,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 146,
+      "line": 147,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -61,7 +61,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 177,
+      "line": 178,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -73,7 +73,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 247,
+      "line": 253,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -85,7 +85,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "CLAUDE.md",
-      "line": 280,
+      "line": 286,
       "owner": "platform",
       "status": "canonical",
       "truth_source": "package.json",
@@ -1914,6 +1914,18 @@
       "status": "active",
       "truth_source": "package.json",
       "message": "References missing npm script \"performance:improve\".",
+      "fix": "Update the command, add the root script to package.json, or mark it as a package-local command.",
+      "blocks": []
+    },
+    {
+      "id": "docs.npm-script.missing",
+      "severity": "warning",
+      "doc": "docs/planning/2026-06-12-stabilization-sprint.md",
+      "line": 204,
+      "owner": "adrper79",
+      "status": "active",
+      "truth_source": "package.json",
+      "message": "References missing npm script \"build\".",
       "fix": "Update the command, add the root script to package.json, or mark it as a package-local command.",
       "blocks": []
     },

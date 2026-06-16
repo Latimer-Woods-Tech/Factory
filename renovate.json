@@ -8,6 +8,14 @@
   "schedule": [
     "every weekend"
   ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "automerge": true,
+    "platformAutomerge": true,
+    "schedule": ["at any time"]
+  },
+  "transitiveRemediation": true,
   "packageRules": [
     {
       "matchUpdateTypes": [
@@ -21,8 +29,8 @@
       "platformAutomerge": true
     },
     {
-      "matchPackagePatterns": [
-        "^@latimer-woods-tech/"
+      "matchPackageNames": [
+        "@latimer-woods-tech/**"
       ],
       "groupName": "factory packages",
       "schedule": [
@@ -38,9 +46,14 @@
       "automerge": false
     },
     {
-      "matchPackagePatterns": ["^@cloudflare/", "^wrangler$"],
+      "matchPackageNames": [
+        "@cloudflare/**",
+        "wrangler"
+      ],
       "groupName": "cloudflare workers runtime",
-      "schedule": ["every weekend"]
+      "schedule": [
+        "every weekend"
+      ]
     }
   ],
   "prHourlyLimit": 8,

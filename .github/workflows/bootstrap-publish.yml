@@ -76,7 +76,7 @@ jobs:
           # and topologically sort. Otherwise first-time publishes will 404
           # when npm tries to install an unpublished sibling dep (eg. crm
           # depends on validation; validation must be published first).
-          PACKAGES=(errors creator deploy design-system design-tokens entitlements protocol studio-core testing validation monitoring realtime seo video ui logger email social neon auth llm llm-meter analytics stripe compliance content copy telephony schedule crm admin)
+          PACKAGES=(errors constellation creator deploy design-system design-tokens entitlements protocol studio-core testing validation monitoring realtime seo video ui logger email social neon auth llm llm-meter analytics stripe compliance content copy telephony schedule crm admin)
 
           declare -a FAILED=()
           declare -a PUBLISHED=()

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T03:43:07.362Z",
+  "generatedAt": "2026-06-16T19:36:12.162Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,6 +1793,34 @@
         "tier": "infra"
       },
       {
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
+        "tier": "core"
+      },
+      {
         "id": "coh:the-chair",
         "appId": "coh",
         "label": "The Chair (bookings)",
@@ -1872,8 +1900,8 @@
       {
         "id": "selfprime:rls-enforcement",
         "appId": "selfprime",
-        "label": "Row-Level Security on all tables",
-        "status": "roadmap",
+        "label": "Row-Level Security on user-scoped tables",
+        "status": "live",
         "tier": "compliance"
       },
       {
@@ -1917,34 +1945,6 @@
         "label": "16-way video chat",
         "status": "roadmap",
         "tier": "growth"
-      },
-      {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
-        "status": "roadmap",
-        "tier": "core"
       }
     ],
     "roadmapItems": [
@@ -2026,6 +2026,27 @@
         "quarter": "Q1-2027"
       },
       {
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
+        "status": "design",
+        "quarter": "Q1-2027"
+      },
+      {
         "id": "coh:coh-5streams",
         "appId": "coh",
         "label": "All 5 Streams Live",
@@ -2063,9 +2084,9 @@
       {
         "id": "selfprime:sp-rls",
         "appId": "selfprime",
-        "label": "RLS enforced across all tables",
-        "status": "queued",
-        "quarter": "Q4-2026"
+        "label": "RLS enforced on user-scoped tables",
+        "status": "done",
+        "quarter": "Q2-2026"
       },
       {
         "id": "selfprime:sp-referrals",
@@ -2108,27 +2129,6 @@
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
-      },
-      {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
-        "status": "design",
-        "quarter": "Q1-2027"
       }
     ],
     "gaps": [
@@ -2477,6 +2477,61 @@
       "type": "uses_package"
     },
     {
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:booking",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:monitoring",
+      "type": "uses_package"
+    },
+    {
       "from": "coh",
       "to": "coh:the-chair",
       "type": "has_feature"
@@ -2710,61 +2765,6 @@
       "from": "capricast",
       "to": "pkg:video",
       "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:booking",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
-      "type": "uses_package"
     }
   ],
   "stats": {
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-13T03:43:07.423Z",
+    "generatedAt": "2026-06-16T19:36:12.221Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2797,9 +2797,9 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.26,
+      "cost30dUsd": 10.81,
       "mrrUsd": 0,
-      "completionWeighted": 3
+      "completionWeighted": 2.6
     },
     "trends": {
       "cohesion": {
@@ -2811,12 +2811,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.26,
+        "current": 10.81,
         "prior": 4.87,
         "priorDate": "2026-06-05",
-        "dayGap": 6,
-        "delta": -0.61,
-        "direction": "down"
+        "dayGap": 9,
+        "delta": 5.94,
+        "direction": "up"
       },
       "mrr": {
         "current": 0,
@@ -2827,18 +2827,18 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 3,
-        "prior": 0,
-        "priorDate": "2026-05-25",
-        "dayGap": 18,
-        "delta": 3,
-        "direction": "up"
+        "current": 2.6,
+        "prior": 3,
+        "priorDate": "2026-06-12",
+        "dayGap": 4,
+        "delta": -0.4,
+        "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 8,
         "delta": -27.8,
         "direction": "down"
       },
@@ -2846,7 +2846,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 8,
         "delta": 0,
         "direction": "flat"
       }
@@ -2900,6 +2900,6 @@
         }
       ]
     },
-    "seriesPoints": 3
+    "seriesPoints": 6
   }
 }
