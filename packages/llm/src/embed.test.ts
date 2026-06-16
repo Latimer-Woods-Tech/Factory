@@ -3,7 +3,7 @@ import { embed, DEFAULT_EMBEDDING_MODEL, type AiBinding } from './embed.js';
 
 function makeAi(vectors: number[][]): AiBinding {
   return {
-    run: vi.fn(async () => ({ data: vectors })),
+    run: vi.fn(() => Promise.resolve({ data: vectors })),
   };
 }
 
@@ -30,7 +30,7 @@ describe('embed', () => {
   it('calls ai.run with the correct model and text array', async () => {
     const ai = makeAi([FAKE_VEC_768]);
     await embed(ai, 'foo');
-    expect(ai.run).toHaveBeenCalledWith(DEFAULT_EMBEDDING_MODEL, { text: ['foo'] });
+    expect(vi.mocked(ai.run)).toHaveBeenCalledWith(DEFAULT_EMBEDDING_MODEL, { text: ['foo'] });
   });
 
   it('wraps a single string in an array before calling ai.run', async () => {
@@ -42,7 +42,7 @@ describe('embed', () => {
   });
 
   it('uses the supplied model override', async () => {
-    const customModel = '@cf/baai/bge-base-en-v1.5' as const;
+    const customModel = '@cf/baai/bge-base-en-v1.5';
     const ai = makeAi([FAKE_VEC_768]);
     const result = await embed(ai, 'x', { model: customModel });
     expect(result.model).toBe(customModel);
@@ -50,7 +50,7 @@ describe('embed', () => {
   });
 
   it('throws when ai.run returns empty data', async () => {
-    const ai: AiBinding = { run: vi.fn(async () => ({ data: [] })) };
+    const ai: AiBinding = { run: vi.fn(() => Promise.resolve({ data: [] })) };
     await expect(embed(ai, 'test')).rejects.toThrow(/no vectors/);
   });
 

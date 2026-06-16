@@ -8,7 +8,7 @@
  * Contract: inject the Workers AI binding (env.AI) — never import a vendor SDK.
  */
 
-export const DEFAULT_EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5' as const;
+export const DEFAULT_EMBEDDING_MODEL = '@cf/baai/bge-base-en-v1.5';
 
 export type EmbeddingModel = '@cf/baai/bge-base-en-v1.5';
 
