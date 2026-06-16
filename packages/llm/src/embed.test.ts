@@ -28,9 +28,9 @@ describe('embed', () => {
   });
 
   it('calls ai.run with the correct model and text array', async () => {
-    const ai = makeAi([FAKE_VEC_768]);
-    await embed(ai, 'foo');
-    expect(vi.mocked(ai.run)).toHaveBeenCalledWith(DEFAULT_EMBEDDING_MODEL, { text: ['foo'] });
+    const runMock = vi.fn(() => Promise.resolve({ data: [FAKE_VEC_768] }));
+    await embed({ run: runMock }, 'foo');
+    expect(runMock).toHaveBeenCalledWith(DEFAULT_EMBEDDING_MODEL, { text: ['foo'] });
   });
 
   it('wraps a single string in an array before calling ai.run', async () => {
