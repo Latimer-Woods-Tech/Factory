@@ -55,7 +55,7 @@ jobs:
             fi
             if [ -d "packages/${pkg}" ]; then
               echo "--- Building dependency: $pkg ---"
-              (cd "packages/${pkg}" && npm ci --ignore-scripts && npm run build)
+              (cd "packages/${pkg}" && if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts --no-save; fi && npm run build)
             fi
           done
       - name: Strip publishConfig.registry override
