@@ -21,6 +21,12 @@
 |---|---|---|---|---|
 | [apps/admin-studio-ui/README.md](../apps/admin-studio-ui/README.md) | active | unverified | unknown | Factory Admin Studio — UI |
 
+## adrper79 (1)
+
+| Path | Status | Fidelity | Last Updated | Title |
+|---|---|---|---|---|
+| [docs/planning/2026-06-12-stabilization-sprint.md](planning/2026-06-12-stabilization-sprint.md) | active | unverified | unknown | Stabilization Sprint — 2026-06-12 → 2026-06-26 |
+
 ## agent-gateway (1)
 
 | Path | Status | Fidelity | Last Updated | Title |
@@ -50,7 +56,7 @@
 | [docs/architecture/AGENT_RUNTIME.md](architecture/AGENT_RUNTIME.md) | active | unverified | unknown | Factory Agent Runtime — Architecture & Implementation Plan |
 | [docs/architecture/CAPABILITY_FACTORY_REGISTRY.md](architecture/CAPABILITY_FACTORY_REGISTRY.md) | active | unverified | unknown | Capability Factory Registry |
 | [docs/architecture/FACTORY_V1.md](architecture/FACTORY_V1.md) | canonical | owner-reviewed | unknown | The Factory — Architecture & Playbook, v1 |
-| [docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md](architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md) | active | unverified | unknown | I1 — Energy Blueprint Video Engine: Final-State Design |
+| [docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md](architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md) | active | unverified | unknown | I1 — Per-User Energy Blueprint Video: Final-State Design |
 | [docs/architecture/I1_PERSUASION_POLICY.md](architecture/I1_PERSUASION_POLICY.md) | active | unverified | unknown | I1 — Narration Persuasion Policy (DRAFT — for red-line) |
 | [docs/architecture/PATTERNS.md](architecture/PATTERNS.md) | active | unverified | unknown | Factory Operational Patterns |
 | [docs/architecture/QA_TOOLS_ARCHITECTURE.md](architecture/QA_TOOLS_ARCHITECTURE.md) | active | unverified | unknown | QA Tools Platform — Mature Design (v2.0) |
@@ -149,7 +155,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (347)
+## platform (358)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -167,7 +173,7 @@
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
 | [docs/ADMIN_UI_AGENT_PLAN.md](ADMIN_UI_AGENT_PLAN.md) | active | unverified | unknown | Admin UI Agent: Full Capability Plan |
-| [docs/AGENTS.md](AGENTS.md) | active | unverified | unknown | Agent Configuration & Context Loading |
+| [docs/AGENTS.md](AGENTS.md) | active | unverified | unknown | Agent Configuration & Repo-Local Rules |
 | [docs/aggregator-http-mocking-design.md](aggregator-http-mocking-design.md) | active | unverified | unknown | Aggregator Phase 2: HTTP Mocking Design — G2 Phase 2 |
 | [docs/aggregator-README.md](aggregator-README.md) | active | unverified | unknown | Completion Tracker — Operator Doc |
 | [docs/APP_PLANNING_PATTERN.md](APP_PLANNING_PATTERN.md) | active | unverified | unknown | Factory App World-Class Planning Pattern |
@@ -235,6 +241,8 @@
 | [docs/decisions/2026-05-25-marketing-external-api.md](decisions/2026-05-25-marketing-external-api.md) | active | unverified | unknown | ADR — Defer External Marketing API + Partner Self-Serve |
 | [docs/decisions/2026-05-28-media-room-control-plane.md](decisions/2026-05-28-media-room-control-plane.md) | active | unverified | unknown | Media Room Control Plane |
 | [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
+| [docs/decisions/2026-06-10-sell-phase-action-plan.md](decisions/2026-06-10-sell-phase-action-plan.md) | active | unverified | unknown | 2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers |
+| [docs/decisions/2026-06-11-rfc-006-operating-decisions.md](decisions/2026-06-11-rfc-006-operating-decisions.md) | active | unverified | unknown | 2026-06-11 — RFC-006 Required Operating Decisions |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -259,6 +267,7 @@
 | [docs/G2_PHASE_2_EXECUTION_PLAN.md](G2_PHASE_2_EXECUTION_PLAN.md) | active | unverified | unknown | G2 Phase 2 Execution Plan — Aggregator HTTP Mocking Tests |
 | [docs/G2_PHASE_2_SUMMARY.md](G2_PHASE_2_SUMMARY.md) | active | unverified | unknown | G2 Phase 2 Planning: Executive Summary |
 | [docs/GAP_REGISTER.md](GAP_REGISTER.md) | active | unverified | unknown | Platform Gap Register |
+| [docs/handoffs/2026-06-11-stabilization-handoff.md](handoffs/2026-06-11-stabilization-handoff.md) | active | unverified | unknown | Handoff: Stabilization-first work (worker collisions, UAT, sell-phase plan) |
 | [docs/IMPLEMENTATION_COMPLETE_SUMMARY.md](IMPLEMENTATION_COMPLETE_SUMMARY.md) | active | unverified | unknown | Implementation Complete Summary |
 | [docs/IMPLEMENTATION_LAUNCH_CHECKLIST.md](IMPLEMENTATION_LAUNCH_CHECKLIST.md) | active | unverified | unknown | Implementation Launch Checklist |
 | [docs/IMPLEMENTATION_MASTER_INDEX.md](IMPLEMENTATION_MASTER_INDEX.md) | active | unverified | unknown | Implementation Master Index |
@@ -347,6 +356,11 @@
 | [docs/PHASE_A_TEAM_ONBOARDING_PACK.md](PHASE_A_TEAM_ONBOARDING_PACK.md) | active | unverified | unknown | Phase A Team Onboarding Pack |
 | [docs/PII_INVENTORY.md](PII_INVENTORY.md) | active | unverified | unknown | PII Inventory — Factory / Admin Studio |
 | [docs/planning/brief-2026-06-08.md](planning/brief-2026-06-08.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-08 |
+| [docs/planning/brief-2026-06-12.md](planning/brief-2026-06-12.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-12 |
+| [docs/planning/brief-2026-06-13.md](planning/brief-2026-06-13.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-13 |
+| [docs/planning/brief-2026-06-14.md](planning/brief-2026-06-14.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-14 |
+| [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-15 |
+| [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-16 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | unknown | HumanDesign Language Guidance |
@@ -372,6 +386,8 @@
 | [docs/rfc/RFC-004-browser-automation.md](rfc/RFC-004-browser-automation.md) | active | unverified | unknown | RFC-004: Native Browser Automation Service |
 | [docs/rfc/RFC-005-anthropic-dreaming-pilot.md](rfc/RFC-005-anthropic-dreaming-pilot.md) | active | unverified | unknown | RFC-005: Anthropic Dreaming pilot on Factory autofix loop |
 | [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | unknown | RFC-006: Cohesive Automation Flow Operating Model |
+| [docs/rfc/RFC-006-baseline-metrics.md](rfc/RFC-006-baseline-metrics.md) | active | unverified | unknown | RFC-006 Phase 0 Baseline Metrics |
+| [docs/rfc/RFC-006-duplicate-triage.md](rfc/RFC-006-duplicate-triage.md) | active | unverified | unknown | RFC-006 Duplicate Issue Triage |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | unknown | Agent Ship Runbook |
@@ -419,11 +435,12 @@
 | [docs/runbooks/transfer.md](runbooks/transfer.md) | active | unverified | unknown | Transfer Runbook |
 | [docs/runbooks/validate-service-registry.md](runbooks/validate-service-registry.md) | active | unverified | unknown | Validate Service Registry Runbook |
 | [docs/runbooks/video-pipeline.md](runbooks/video-pipeline.md) | active | unverified | unknown | Video Render Pipeline |
+| [docs/runbooks/webhook-fanout-go-live.md](runbooks/webhook-fanout-go-live.md) | active | unverified | unknown | Webhook Fanout Go-Live: GitHub → Factory Gate Ingest (P1.6) |
 | [docs/runbooks/workflow-budget-gate.md](runbooks/workflow-budget-gate.md) | active | unverified | unknown | Workflow Budget Gate |
 | [docs/runbooks/workflow-health-warden.md](runbooks/workflow-health-warden.md) | active | unverified | unknown | Workflow Health Warden |
 | [docs/SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md](SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md) | active | unverified | unknown | Sample Workflow Execution: Incident Response Drill |
 | [docs/SAMPLE_WORKFLOW_PAYOUT_OPS.md](SAMPLE_WORKFLOW_PAYOUT_OPS.md) | active | unverified | unknown | Sample Workflow Execution: Payout Operations |
-| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | unknown | Sauna Brain — Factory Operating Snapshot |
+| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | unknown | Sauna Brain |
 | [docs/scorecard/summary.md](scorecard/summary.md) | active | unverified | unknown | Launch Readiness Scorecard |
 | [docs/SELFPRIME_GTM_ROADMAP.md](SELFPRIME_GTM_ROADMAP.md) | active | unverified | unknown | selfprime — GTM, Packaging & Dormant-Asset Roadmap |
 | [docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md](SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md) | active | unverified | unknown | SelfPrime × VideoKing Synergy Development Plan |
@@ -433,7 +450,7 @@
 | [docs/SLO.md](SLO.md) | active | unverified | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STACK.md](STACK.md) | active | unverified | 2026-06-05 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-05-30 |
+| [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-06-12 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-13T03:43:07.362Z",
+  "generatedAt": "2026-06-16T15:54:01.909Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1872,8 +1872,8 @@
       {
         "id": "selfprime:rls-enforcement",
         "appId": "selfprime",
-        "label": "Row-Level Security on all tables",
-        "status": "roadmap",
+        "label": "Row-Level Security on user-scoped tables",
+        "status": "live",
         "tier": "compliance"
       },
       {
@@ -2063,9 +2063,9 @@
       {
         "id": "selfprime:sp-rls",
         "appId": "selfprime",
-        "label": "RLS enforced across all tables",
-        "status": "queued",
-        "quarter": "Q4-2026"
+        "label": "RLS enforced on user-scoped tables",
+        "status": "done",
+        "quarter": "Q2-2026"
       },
       {
         "id": "selfprime:sp-referrals",
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-13T03:43:07.423Z",
+    "generatedAt": "2026-06-16T15:54:01.968Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2797,9 +2797,9 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.26,
+      "cost30dUsd": 10.81,
       "mrrUsd": 0,
-      "completionWeighted": 3
+      "completionWeighted": 2.6
     },
     "trends": {
       "cohesion": {
@@ -2811,12 +2811,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.26,
+        "current": 10.81,
         "prior": 4.87,
         "priorDate": "2026-06-05",
-        "dayGap": 6,
-        "delta": -0.61,
-        "direction": "down"
+        "dayGap": 9,
+        "delta": 5.94,
+        "direction": "up"
       },
       "mrr": {
         "current": 0,
@@ -2827,18 +2827,18 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 3,
-        "prior": 0,
-        "priorDate": "2026-05-25",
-        "dayGap": 18,
-        "delta": 3,
-        "direction": "up"
+        "current": 2.6,
+        "prior": 3,
+        "priorDate": "2026-06-12",
+        "dayGap": 4,
+        "delta": -0.4,
+        "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 45.45,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 8,
         "delta": -27.8,
         "direction": "down"
       },
@@ -2846,7 +2846,7 @@
         "current": 14,
         "prior": 14,
         "priorDate": "2026-06-08",
-        "dayGap": 5,
+        "dayGap": 8,
         "delta": 0,
         "direction": "flat"
       }
@@ -2900,6 +2900,6 @@
         }
       ]
     },
-    "seriesPoints": 3
+    "seriesPoints": 6
   }
 }

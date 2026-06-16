@@ -978,6 +978,63 @@ workers:
     notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
     consumers: []
 
+  # ─── mysticapi — productized developer API (GTM roadmap Wave 3) ──────────────
+  # Dedicated API brand; CF zone added 2026-05-31. mysticapi.com = developer
+  # portal/docs; api.mysticapi.com = the versioned API endpoints (synthesis +
+  # usage-metered video-gen) on top of the Energy Blueprint engine. Competes with
+  # humandesignhub.app on the value layer (interpretation + render), NOT raw chart
+  # data. Worker not yet built — when it ships, attach the CF custom domain, run
+  # the Worker Rename Protocol, and register consumers. Never expose a workers.dev
+  # URL in the SDK, docs, or client code.
+  - id: mysticapi
+    name: mysticapi                                        # worker name TBD; may be served by the selfprime engine or a dedicated worker
+    repo: Latimer-Woods-Tech/HumanDesign                   # likely reuses selfprime's chart/synthesis/video engine
+    url: https://api.mysticapi.com                         # canonical branded API domain
+    custom_domain: api.mysticapi.com
+    custom_domain_status: planned                          # CF zone added 2026-05-31; worker not yet built
+    health_endpoint: /health
+    verification_targets:
+      production: https://api.mysticapi.com/health
+    telemetry_required: true
+    critical_endpoints:
+      - /health
+      - /v1/chart
+      - /v1/synthesis
+      - /v1/video
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      Productized developer API surface (GTM roadmap Wave 3). mysticapi.com is the
+      developer portal/docs; api.mysticapi.com serves the versioned API (synthesis +
+      usage-metered video-gen) on top of the Energy Blueprint engine. Priced above
+      humandesignhub.app's commodity data floor. Planned — not yet deployed.
+    consumers: []
+
+  # ─── watch.selfprime.net — branded film playback (engine sharing slice) ──────
+  # Branded playback surface for the shareable cinematic film, vs. the raw
+  # customer-*.cloudflarestream.com Stream domain. Subdomain of the existing
+  # selfprime.net CF zone. Serving mechanism is decided at the engine sharing
+  # slice (Slice 7): a worker/Pages-rendered player page (signed Stream playback +
+  # OG tags for social sharing). DO NOT create the live DNS record until that
+  # origin exists — a subdomain pointing at no origin is a dangling-DNS /
+  # subdomain-takeover risk and breaks resolution. Provision DNS + route + origin
+  # together when the sharing slice ships.
+  - id: watch-selfprime
+    name: watch-selfprime                                  # serving worker/Pages name TBD (engine sharing slice)
+    repo: Latimer-Woods-Tech/HumanDesign                   # the engine surface that renders the branded player
+    url: https://watch.selfprime.net                       # canonical branded film-playback domain
+    custom_domain: watch.selfprime.net
+    custom_domain_status: planned                          # subdomain of selfprime.net zone; no live record until an origin exists
+    health_endpoint: /health
+    telemetry_required: false
+    notes: >
+      Branded shareable-film playback (engine Slice 7 sharing). Serving mechanism:
+      worker/Pages player page (signed Stream playback + OG tags) decided at build.
+      Do NOT create live DNS until the origin exists (dangling-DNS / subdomain-
+      takeover risk). Planned — not yet deployed.
+    consumers: []
+
   - id: referrals
     name: referrals
     health_state: planned

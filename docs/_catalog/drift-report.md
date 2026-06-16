@@ -3,13 +3,13 @@
 **Generated:** source-derived
 **Result:** PASS
 **Errors:** 0
-**Warnings:** 269
+**Warnings:** 270
 
 ## By Issue Type
 
 | Issue | Count |
 |---|---:|
-| docs.npm-script.missing | 212 |
+| docs.npm-script.missing | 213 |
 | docs.workflow-ref.missing | 57 |
 
 ## By Owner
@@ -22,6 +22,7 @@
 | marketing | 2 |
 | revenue | 2 |
 | admin-studio | 1 |
+| adrper79 | 1 |
 
 ## First 100 Issues
 
@@ -30,10 +31,10 @@
 | warning | platform | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md | 43 | References missing npm script "deploy:staging". |
 | warning | platform | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md | 156 | References missing npm script "deploy:production". |
 | warning | platform | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md | 182 | References missing npm script "deploy:production". |
-| warning | platform | CLAUDE.md | 146 | References missing npm script "typecheck". |
-| warning | platform | CLAUDE.md | 177 | References missing npm script "typecheck". |
-| warning | platform | CLAUDE.md | 247 | References missing npm script "dev". |
-| warning | platform | CLAUDE.md | 280 | References missing npm script "phase-7:scaffold". |
+| warning | platform | CLAUDE.md | 147 | References missing npm script "typecheck". |
+| warning | platform | CLAUDE.md | 178 | References missing npm script "typecheck". |
+| warning | platform | CLAUDE.md | 253 | References missing npm script "dev". |
+| warning | platform | CLAUDE.md | 286 | References missing npm script "phase-7:scaffold". |
 | warning | platform | docs/ACCESS.md | 37 | References missing workflow .github/workflows/deploy-admin-studio-worker.yml. |
 | warning | platform | docs/ACCESS.md | 41 | References missing workflow .github/workflows/deploy-developer-index.yml. |
 | warning | platform | docs/ACCESS.md | 42 | References missing workflow .github/workflows/deploy-status-page.yml. |
