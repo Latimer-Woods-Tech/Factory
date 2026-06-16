@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-12T01:12:54.637736+00:00",
+  "generated": "2026-06-15T13:49:41.527027+00:00",
   "total_weight": 100,
   "shadow_threshold": 70,
   "repos": [
@@ -7,7 +7,7 @@
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "repo_path": "Latimer-Woods-Tech/HumanDesign",
-      "timestamp": "2026-06-12T01:11:57.220506+00:00",
+      "timestamp": "2026-06-15T13:48:32.958338+00:00",
       "cohesion": 16,
       "dimensions": [
         {
@@ -302,7 +302,7 @@
       "repo_key": "CC",
       "repo_name": "capricast",
       "repo_path": "Latimer-Woods-Tech/capricast",
-      "timestamp": "2026-06-12T01:12:01.238540+00:00",
+      "timestamp": "2026-06-15T13:48:37.629510+00:00",
       "cohesion": 14,
       "dimensions": [
         {
@@ -597,7 +597,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "repo_path": "Latimer-Woods-Tech/Factory",
-      "timestamp": "2026-06-12T01:12:11.959572+00:00",
+      "timestamp": "2026-06-15T13:48:50.601194+00:00",
       "cohesion": 71,
       "dimensions": [
         {
@@ -892,7 +892,7 @@
       "repo_key": "CH",
       "repo_name": "cypher-healing",
       "repo_path": "Latimer-Woods-Tech/coh",
-      "timestamp": "2026-06-12T01:12:16.810806+00:00",
+      "timestamp": "2026-06-15T13:48:55.033592+00:00",
       "cohesion": 14,
       "dimensions": [
         {
@@ -1187,7 +1187,7 @@
       "repo_key": "XC",
       "repo_name": "xico-city",
       "repo_path": "Latimer-Woods-Tech/xico-city",
-      "timestamp": "2026-06-12T01:12:21.205257+00:00",
+      "timestamp": "2026-06-15T13:48:59.556672+00:00",
       "cohesion": 14,
       "dimensions": [
         {
@@ -1482,7 +1482,7 @@
       "repo_key": "FB",
       "repo_name": "focusbro",
       "repo_path": "Latimer-Woods-Tech/focusbro",
-      "timestamp": "2026-06-12T01:12:26.247092+00:00",
+      "timestamp": "2026-06-15T13:49:05.696528+00:00",
       "cohesion": 18,
       "dimensions": [
         {
@@ -1777,7 +1777,7 @@
       "repo_key": "IJ",
       "repo_name": "ijustus",
       "repo_path": "Latimer-Woods-Tech/ijustus",
-      "timestamp": "2026-06-12T01:12:31.036490+00:00",
+      "timestamp": "2026-06-15T13:49:11.776657+00:00",
       "cohesion": 44,
       "dimensions": [
         {
@@ -2072,7 +2072,7 @@
       "repo_key": "KC",
       "repo_name": "kairoscouncil",
       "repo_path": "Latimer-Woods-Tech/kairoscouncil",
-      "timestamp": "2026-06-12T01:12:36.017653+00:00",
+      "timestamp": "2026-06-15T13:49:18.289109+00:00",
       "cohesion": 27,
       "dimensions": [
         {
@@ -2367,7 +2367,7 @@
       "repo_key": "NA",
       "repo_name": "neighbor-aid",
       "repo_path": "Latimer-Woods-Tech/neighbor-aid",
-      "timestamp": "2026-06-12T01:12:40.156046+00:00",
+      "timestamp": "2026-06-15T13:49:22.983005+00:00",
       "cohesion": 14,
       "dimensions": [
         {
@@ -2662,7 +2662,7 @@
       "repo_key": "TC",
       "repo_name": "the-calling",
       "repo_path": "Latimer-Woods-Tech/the-calling",
-      "timestamp": "2026-06-12T01:12:44.172745+00:00",
+      "timestamp": "2026-06-15T13:49:30.288490+00:00",
       "cohesion": 14,
       "dimensions": [
         {
@@ -2957,7 +2957,7 @@
       "repo_key": "XP",
       "repo_name": "xpelevator",
       "repo_path": "Latimer-Woods-Tech/xpelevator",
-      "timestamp": "2026-06-12T01:12:48.805230+00:00",
+      "timestamp": "2026-06-15T13:49:36.608630+00:00",
       "cohesion": 45,
       "dimensions": [
         {
@@ -3252,7 +3252,7 @@
       "repo_key": "WB",
       "repo_name": "wordis-bond",
       "repo_path": "Latimer-Woods-Tech/wordis-bond",
-      "timestamp": "2026-06-12T01:12:54.636894+00:00",
+      "timestamp": "2026-06-15T13:49:41.526134+00:00",
       "cohesion": 14,
       "dimensions": [
         {

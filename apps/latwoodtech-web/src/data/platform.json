@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T04:07:00.255Z",
+  "generatedAt": "2026-06-16T19:36:11.335Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -17,7 +17,7 @@
       "name": "Self Prime",
       "domain": "selfprime.net",
       "maturity": "revenue",
-      "cohesion": 53,
+      "cohesion": 16,
       "healthState": "live",
       "packages": [
         "auth",
@@ -68,25 +68,29 @@
           "id": "energy-blueprint",
           "label": "Energy Blueprint synthesis",
           "status": "live",
-          "tier": "core"
+          "tier": "core",
+          "tests": "tests/engine*.test.js, tests/profile*.test.js"
         },
         {
           "id": "narration",
           "label": "AI voice narration",
           "status": "live",
-          "tier": "core"
+          "tier": "core",
+          "tests": "tests/narration*.test.js, tests/video-narration*.test.js"
         },
         {
           "id": "video-engine",
           "label": "Energy Blueprint video engine",
           "status": "live",
-          "tier": "core"
+          "tier": "core",
+          "tests": "tests/video*.test.js"
         },
         {
           "id": "notification-inbox",
           "label": "In-app notification inbox",
           "status": "live",
-          "tier": "growth"
+          "tier": "growth",
+          "tests": "tests/notification*.test.js"
         },
         {
           "id": "practitioner-network",
@@ -104,7 +108,8 @@
           "id": "rls-enforcement",
           "label": "Row-Level Security on user-scoped tables",
           "status": "live",
-          "tier": "compliance"
+          "tier": "compliance",
+          "tests": "tests/rls*.test.js"
         }
       ]
     },
@@ -113,7 +118,7 @@
       "name": "Capricast",
       "domain": "capricast.com",
       "maturity": "production",
-      "cohesion": 42,
+      "cohesion": 14,
       "healthState": "live",
       "packages": [
         "auth",
@@ -201,7 +206,7 @@
       "name": "AP Unlimited",
       "domain": "apunlimited.com",
       "maturity": "production",
-      "cohesion": 73,
+      "cohesion": 71,
       "healthState": "live",
       "packages": [
         "auth",
@@ -321,7 +326,7 @@
       "name": "Cypher of Healing",
       "domain": "cypherofhealing.com",
       "maturity": "production",
-      "cohesion": 47,
+      "cohesion": 14,
       "healthState": "live",
       "packages": [
         "auth",
@@ -401,7 +406,7 @@
       "name": "Xico City",
       "domain": "xicocity.com",
       "maturity": "beta",
-      "cohesion": 51,
+      "cohesion": 14,
       "healthState": "live",
       "packages": [
         "auth",
@@ -1018,7 +1023,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-16T04:07:01.055Z",
+    "generatedAt": "2026-06-16T19:36:12.221Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1029,7 +1034,7 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.26,
+      "cost30dUsd": 10.81,
       "mrrUsd": 0,
       "completionWeighted": 2.6
     },
@@ -1043,12 +1048,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.26,
+        "current": 10.81,
         "prior": 4.87,
         "priorDate": "2026-06-05",
-        "dayGap": 6,
-        "delta": -0.61,
-        "direction": "down"
+        "dayGap": 9,
+        "delta": 5.94,
+        "direction": "up"
       },
       "mrr": {
         "current": 0,
@@ -1062,7 +1067,7 @@
         "current": 2.6,
         "prior": 3,
         "priorDate": "2026-06-12",
-        "dayGap": 3,
+        "dayGap": 4,
         "delta": -0.4,
         "direction": "down"
       },

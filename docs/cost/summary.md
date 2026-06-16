@@ -1,14 +1,14 @@
 # Cost Digest — Rolling 30 days
 
-*Generated: 2026-06-12T01:11:51.140769+00:00*
+*Generated: 2026-06-15T13:48:25.468266+00:00*
 
 ## Provider totals (window)
 
 | Provider | $ |
 |----------|--:|
 | cloudflare | 0.00 |
-| anthropic | 19.49 |
-| sentry | 0.00 |
+| anthropic | 30.29 |
+| sentry | 0.01 |
 | stripe | 0.00 |
 | gcp | 0.00 |
 
@@ -24,3 +24,4 @@
 | 2026-05-29 | 1.25 |
 | 2026-06-05 | 4.87 |
 | 2026-06-11 | 4.26 |
+| 2026-06-14 | 10.81 |
