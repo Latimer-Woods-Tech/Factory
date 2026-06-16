@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 459,
+    "total_docs": 463,
     "canonical": 17,
-    "active": 394,
+    "active": 398,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -374,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:29371c05e4ee3bc0e48e4e6503c3704eccb16437db45a442e98e0ef97ea048ba",
+      "content_hash": "sha256:164f3da1df2d8d567570a9a209e41bbe852823baaec7ecf2e58b239c19c9ddd3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:73a77bc757834fd15fa657fdff4aa3e626289d9863a30a163d92e389d96ba8dc",
+      "content_hash": "sha256:916a175b84681ba7c8d1f260c75930048f622d3f3db5284c2bb7f3c3e86288f8",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0f6dfa2cff6728528cfa43209981c71002d41db9bccfbeb998f884135987994f",
+      "content_hash": "sha256:d33108fa63ababd59f4ff53f3d64bb5aaaadc0db56e4b0d8d204293f0b99798d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:e27ca1a42da73a7566204d3b0fa4c8f307a563bbcd321e5f39b9fb5999b2907c",
+      "content_hash": "sha256:68bfd82b34fef9d7d06c2434b28226782164c504662ade48e6012dd04e70c88b",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2733,7 +2733,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f93105853ff721fa46e9fb0e76e87717bdfdbd08adad21a092b89dffcb78bf2a",
+      "content_hash": "sha256:c82b097bd16aae35c4f02aef70b166991e10920a314b8e0f708b501e997c3b35",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6347,6 +6347,69 @@
       "errors": []
     },
     {
+      "path": "docs/planning/brief-2026-06-14.md",
+      "title": "Platform Planning Brief — 2026-06-14",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:ae6e7a586040d0fb48ac3e44d4bc15ed135ef2b4ff94c00ab203d93625178ea0",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-15.md",
+      "title": "Platform Planning Brief — 2026-06-15",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f3a943319fcff840d84de94edd6857c353fb46327f7795543c7a776648528847",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-16.md",
+      "title": "Platform Planning Brief — 2026-06-16",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:62847b48cb88e32acd282da4506d6d57e58042cdde1a22abc2a891203dd27059",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/planning/factory-network-layer.md",
       "title": "Factory Network Layer — Design & Build Plan",
       "status": "active",
@@ -7947,6 +8010,27 @@
       "errors": []
     },
     {
+      "path": "docs/runbooks/webhook-fanout-go-live.md",
+      "title": "Webhook Fanout Go-Live: GitHub → Factory Gate Ingest (P1.6)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "runbook",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:9ab39ebb93d49b774bd5884412b93824e38863fff8e10af30ffbb171727b30c4",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/runbooks/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/runbooks/workflow-budget-gate.md",
       "title": "Workflow Budget Gate",
       "status": "active",
@@ -8085,7 +8169,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:e93a7952d5c3320d06c955ac2463af5e6b85ec5d915756749ed69773b61f2774",
+      "content_hash": "sha256:43a1e835376fa975b9fc563b01e3c41786913617cd89df0309555c662d8674b5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8130,7 +8214,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:b73d56a0065c78913d102c2f9c7828aac8de2d14534e406dfd808136406ace4c",
+      "content_hash": "sha256:9e3bc3ad5acb9adec77d57b85664c45cfb9f2c50ee88ae33828604622b87ccec",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,

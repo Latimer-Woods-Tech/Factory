@@ -50,6 +50,21 @@ paths:
   # KPI tracking
   - docs/kpis/**
 
+  # Founder stats + platform data (generate-founder-stats.yml)
+  - apps/latwoodtech-web/src/data/founder-stats.json
+  - apps/latwoodtech-web/src/data/platform.json
+  - docs/planning/**
+  - docs/registry/**
+
+  # Weekly governance checkpoint (STATE.md + conformance + cost digests)
+  - docs/STATE.md
+
+  # Sauna-brain weekly sync
+  - docs/sauna-brain.md
+
+  # Stack manifest auto-update (update-stack-manifest.yml)
+  - docs/STACK.md
+
   # Generated docs artifacts created by docs health / snapshot PRs.
   # The full set below is regenerated and committed by regenerate-docs-catalog.yml
   # (stable branch chore/docs-catalog-refresh) and must match the GENERATED_PATHS
@@ -82,6 +97,10 @@ branch_prefixes:
   - completion-tracker/
   - chore/kpis-snapshot-
   - chore/docs-catalog-
+  - chore/founder-stats-
+  - chore/weekly-checkpoint-
+  - chore/sauna-brain-sync-
+  - chore/stack-manifest
 
 # Author allowlist — PR author must be one of these identities. Closes the
 # attack vector where a human contributor opens a PR with a snapshot-style

@@ -1,5 +1,5 @@
 # Completion Tracker
-_Generated 2026-06-12T13:46:38+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-15T16:07:50+00:00 by `scripts/aggregate_completion.py`._
 
 ## 🚨 CI red on main: CH, XC
 
@@ -9,10 +9,10 @@ _Generated 2026-06-12T13:46:38+00:00 by `scripts/aggregate_completion.py`._
 | **HD** HumanDesign | 5 | 0 | 0 | 88 | 93 | 5.4% | 100.0% | **5.4%** (Δ+0.0) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **FA** factory-admin-studio | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **CH** cypher-healing 🚨 | 0 | 0 | 41 | 4 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 24 | 5 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing 🚨 | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 2.6% (Δ-0.4)** · known: 7.1% · raw: 2.4%
+**Overall weighted pass: 2.6% (Δ+0.0)** · known: 100.0% · raw: 2.4%
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
@@ -237,150 +237,150 @@ _Generated 2026-06-12T13:46:38+00:00 by `scripts/aggregate_completion.py`._
 | `FA-FLG-007` | Digest send | 🔍 | 2 | — | auto-decay |
 
 ## CH — cypher-healing
-### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 4❌ 2🔍)
+### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 6🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-AUTH-001` | Sign Up | 🔍 | 5 | — | — |
-| `CH-AUTH-002` | Sign In | 🔍 | 5 | — | — |
-| `CH-AUTH-003` | Sign Out | ❌ | 5 | — | — |
-| `CH-AUTH-004` | Password Reset Request | ❌ | 5 | — | — |
-| `CH-AUTH-005` | Magic Link | ❌ | 5 | — | — |
-| `CH-AUTH-006` | Auth Middleware | ❌ | 5 | — | — |
+| `CH-AUTH-001` | Sign Up | 🔍 | 5 | — | auto-decay |
+| `CH-AUTH-002` | Sign In | 🔍 | 5 | — | auto-decay |
+| `CH-AUTH-003` | Sign Out | 🔍 | 5 | — | auto-decay |
+| `CH-AUTH-004` | Password Reset Request | 🔍 | 5 | — | auto-decay |
+| `CH-AUTH-005` | Magic Link | 🔍 | 5 | — | auto-decay |
+| `CH-AUTH-006` | Auth Middleware | 🔍 | 5 | — | auto-decay |
 
-### Academy (Courses & Learning) — 0.0% weighted (0✅ 0⚠️ 5❌ 0🔍)
+### Academy (Courses & Learning) — 0.0% weighted (0✅ 0⚠️ 0❌ 5🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-ACAD-001` | List Courses | ❌ | 4 | — | — |
-| `CH-ACAD-002` | Get Course | ❌ | 4 | — | — |
-| `CH-ACAD-003` | Enroll in Course | ❌ | 5 | — | — |
-| `CH-ACAD-004` | Lesson Progress | ❌ | 4 | — | — |
-| `CH-ACAD-005` | Course Modules / Lessons | ❌ | 4 | — | — |
+| `CH-ACAD-001` | List Courses | 🔍 | 4 | — | auto-decay |
+| `CH-ACAD-002` | Get Course | 🔍 | 4 | — | auto-decay |
+| `CH-ACAD-003` | Enroll in Course | 🔍 | 5 | — | auto-decay |
+| `CH-ACAD-004` | Lesson Progress | 🔍 | 4 | — | auto-decay |
+| `CH-ACAD-005` | Course Modules / Lessons | 🔍 | 4 | — | auto-decay |
 
-### Booking & Appointments — 0.0% weighted (0✅ 0⚠️ 5❌ 0🔍)
+### Booking & Appointments — 0.0% weighted (0✅ 0⚠️ 0❌ 5🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-BOOK-001` | List Services | ❌ | 4 | — | — |
-| `CH-BOOK-002` | Book Appointment | ❌ | 5 | — | — |
-| `CH-BOOK-003` | Availability Slots | ❌ | 4 | — | — |
-| `CH-BOOK-004` | Cancel Appointment | ❌ | 5 | — | — |
-| `CH-BOOK-005` | Appointment Reminder Email | ❌ | 3 | — | — |
+| `CH-BOOK-001` | List Services | 🔍 | 4 | — | auto-decay |
+| `CH-BOOK-002` | Book Appointment | 🔍 | 5 | — | auto-decay |
+| `CH-BOOK-003` | Availability Slots | 🔍 | 4 | — | auto-decay |
+| `CH-BOOK-004` | Cancel Appointment | 🔍 | 5 | — | auto-decay |
+| `CH-BOOK-005` | Appointment Reminder Email | 🔍 | 3 | — | auto-decay |
 
-### Events — 0.0% weighted (0✅ 0⚠️ 4❌ 0🔍)
+### Events — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-EVENT-001` | List Events | ❌ | 4 | — | — |
-| `CH-EVENT-002` | Get Event | ❌ | 4 | — | — |
-| `CH-EVENT-003` | Register for Event | ❌ | 5 | — | — |
-| `CH-EVENT-004` | Event Registration Email | ❌ | 3 | — | — |
+| `CH-EVENT-001` | List Events | 🔍 | 4 | — | auto-decay |
+| `CH-EVENT-002` | Get Event | 🔍 | 4 | — | auto-decay |
+| `CH-EVENT-003` | Register for Event | 🔍 | 5 | — | auto-decay |
+| `CH-EVENT-004` | Event Registration Email | 🔍 | 3 | — | auto-decay |
 
-### Store / E-commerce — 0.0% weighted (0✅ 0⚠️ 4❌ 0🔍)
+### Store / E-commerce — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-STORE-001` | List Products | ❌ | 4 | — | — |
-| `CH-STORE-002` | Buy Product | ❌ | 5 | — | — |
-| `CH-STORE-003` | Order History | ❌ | 4 | — | — |
-| `CH-STORE-004` | Order Confirmation Email | ❌ | 3 | — | — |
+| `CH-STORE-001` | List Products | 🔍 | 4 | — | auto-decay |
+| `CH-STORE-002` | Buy Product | 🔍 | 5 | — | auto-decay |
+| `CH-STORE-003` | Order History | 🔍 | 4 | — | auto-decay |
+| `CH-STORE-004` | Order Confirmation Email | 🔍 | 3 | — | auto-decay |
 
-### Subscriptions & Membership — 0.0% weighted (0✅ 0⚠️ 4❌ 0🔍)
+### Subscriptions & Membership — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-SUB-001` | List Plans | ❌ | 4 | — | — |
-| `CH-SUB-002` | Subscribe | ❌ | 5 | — | — |
-| `CH-SUB-003` | My Subscription | ❌ | 4 | — | — |
-| `CH-SUB-004` | Cancel Subscription | ❌ | 5 | — | — |
+| `CH-SUB-001` | List Plans | 🔍 | 4 | — | auto-decay |
+| `CH-SUB-002` | Subscribe | 🔍 | 5 | — | auto-decay |
+| `CH-SUB-003` | My Subscription | 🔍 | 4 | — | auto-decay |
+| `CH-SUB-004` | Cancel Subscription | 🔍 | 5 | — | auto-decay |
 
-### Show / Episodes — 0.0% weighted (0✅ 0⚠️ 3❌ 0🔍)
+### Show / Episodes — 0.0% weighted (0✅ 0⚠️ 0❌ 3🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-SHOW-001` | List Episodes | ❌ | 4 | — | — |
-| `CH-SHOW-002` | Get Episode | ❌ | 4 | — | — |
-| `CH-SHOW-003` | Admin: List/Create/Update Episode | ❌ | 2 | — | — |
+| `CH-SHOW-001` | List Episodes | 🔍 | 4 | — | auto-decay |
+| `CH-SHOW-002` | Get Episode | 🔍 | 4 | — | auto-decay |
+| `CH-SHOW-003` | Admin: List/Create/Update Episode | 🔍 | 2 | — | auto-decay |
 
-### Communications — 0.0% weighted (0✅ 0⚠️ 3❌ 0🔍)
+### Communications — 0.0% weighted (0✅ 0⚠️ 0❌ 3🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-COMM-001` | Send Appointment Reminders (SMS) | ❌ | 3 | — | — |
-| `CH-COMM-002` | Send Event Reminders (SMS) | ❌ | 3 | — | — |
-| `CH-COMM-003` | WebRTC Room Create | ❌ | 3 | — | — |
+| `CH-COMM-001` | Send Appointment Reminders (SMS) | 🔍 | 3 | — | auto-decay |
+| `CH-COMM-002` | Send Event Reminders (SMS) | 🔍 | 3 | — | auto-decay |
+| `CH-COMM-003` | WebRTC Room Create | 🔍 | 3 | — | auto-decay |
 
-### Admin — 0.0% weighted (0✅ 0⚠️ 7❌ 0🔍)
+### Admin — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-ADMIN-001` | Admin: Manage Courses | ❌ | 2 | — | — |
-| `CH-ADMIN-002` | Admin: Manage Bookings | ❌ | 2 | — | — |
-| `CH-ADMIN-003` | Admin: Manage Events | ❌ | 2 | — | — |
-| `CH-ADMIN-004` | Admin: Manage Store | ❌ | 2 | — | — |
-| `CH-ADMIN-005` | Admin: Audio Generation (ElevenLabs) | ❌ | 2 | — | — |
-| `CH-ADMIN-006` | Admin: DB Migrations | ❌ | 1 | — | — |
-| `CH-ADMIN-007` | Admin: Seed Data | ❌ | 1 | — | — |
+| `CH-ADMIN-001` | Admin: Manage Courses | 🔍 | 2 | — | auto-decay |
+| `CH-ADMIN-002` | Admin: Manage Bookings | 🔍 | 2 | — | auto-decay |
+| `CH-ADMIN-003` | Admin: Manage Events | 🔍 | 2 | — | auto-decay |
+| `CH-ADMIN-004` | Admin: Manage Store | 🔍 | 2 | — | auto-decay |
+| `CH-ADMIN-005` | Admin: Audio Generation (ElevenLabs) | 🔍 | 2 | — | auto-decay |
+| `CH-ADMIN-006` | Admin: DB Migrations | 🔍 | 1 | — | auto-decay |
+| `CH-ADMIN-007` | Admin: Seed Data | 🔍 | 1 | — | auto-decay |
 
-### Platform / Health & SEO — 0.0% weighted (0✅ 0⚠️ 2❌ 2🔍)
+### Platform / Health & SEO — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `CH-PLAT-001` | Stripe Webhook Handler | ❌ | 5 | — | — |
-| `CH-PLAT-002` | Robots.txt | 🔍 | 1 | — | — |
-| `CH-PLAT-003` | Sitemap | ❌ | 1 | — | — |
-| `CH-PLAT-004` | Rate Limiting | 🔍 | 1 | — | — |
+| `CH-PLAT-001` | Stripe Webhook Handler | 🔍 | 5 | — | auto-decay |
+| `CH-PLAT-002` | Robots.txt | 🔍 | 1 | — | auto-decay |
+| `CH-PLAT-003` | Sitemap | 🔍 | 1 | — | auto-decay |
+| `CH-PLAT-004` | Rate Limiting | 🔍 | 1 | — | auto-decay |
 
 ## XC — xico-city
-### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 2❌ 1🔍)
+### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 3🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-AUTH-001` | BetterAuth Session (Cookie) | 🔍 | 5 | — | smoke-red |
-| `XC-AUTH-002` | Processor JWT (Service-to-Service) | ❌ | 5 | — | smoke-red |
-| `XC-AUTH-003` | RLS Context Injection | ❌ | 5 | — | smoke-red |
+| `XC-AUTH-001` | BetterAuth Session (Cookie) | 🔍 | 5 | — | smoke-red,auto-decay |
+| `XC-AUTH-002` | Processor JWT (Service-to-Service) | 🔍 | 5 | — | smoke-red,auto-decay |
+| `XC-AUTH-003` | RLS Context Injection | 🔍 | 5 | — | smoke-red,auto-decay |
 
-### Media Processing & Jobs — 0.0% weighted (0✅ 0⚠️ 7❌ 0🔍)
+### Media Processing & Jobs — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-JOBS-001` | Create Job | ❌ | 4 | — | — |
-| `XC-JOBS-002` | Get Job Status | ❌ | 4 | — | — |
-| `XC-JOBS-003` | Confirm Job (Client ACK) | ❌ | 3 | — | — |
-| `XC-JOBS-004` | Cut Points | ❌ | 3 | — | — |
-| `XC-JOBS-005` | Processor Dispatch | ❌ | 5 | — | — |
-| `XC-JOBS-006` | Internal Job Completion Callback | ❌ | 4 | — | — |
-| `XC-JOBS-007` | Jobs Watchdog (Cron) | ❌ | 3 | — | — |
+| `XC-JOBS-001` | Create Job | 🔍 | 4 | — | auto-decay |
+| `XC-JOBS-002` | Get Job Status | 🔍 | 4 | — | auto-decay |
+| `XC-JOBS-003` | Confirm Job (Client ACK) | 🔍 | 3 | — | auto-decay |
+| `XC-JOBS-004` | Cut Points | 🔍 | 3 | — | auto-decay |
+| `XC-JOBS-005` | Processor Dispatch | 🔍 | 5 | — | auto-decay |
+| `XC-JOBS-006` | Internal Job Completion Callback | 🔍 | 4 | — | auto-decay |
+| `XC-JOBS-007` | Jobs Watchdog (Cron) | 🔍 | 3 | — | auto-decay |
 
-### Asset Management — 0.0% weighted (0✅ 0⚠️ 3❌ 0🔍)
+### Asset Management — 0.0% weighted (0✅ 0⚠️ 0❌ 3🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-ASSET-001` | List/Get Asset | ❌ | 3 | — | — |
-| `XC-ASSET-002` | Stem Separation | ❌ | 4 | — | — |
-| `XC-ASSET-003` | Vocal Processing | ❌ | 4 | — | — |
+| `XC-ASSET-001` | List/Get Asset | 🔍 | 3 | — | auto-decay |
+| `XC-ASSET-002` | Stem Separation | 🔍 | 4 | — | auto-decay |
+| `XC-ASSET-003` | Vocal Processing | 🔍 | 4 | — | auto-decay |
 
-### Uploads — 0.0% weighted (0✅ 0⚠️ 3❌ 0🔍)
+### Uploads — 0.0% weighted (0✅ 0⚠️ 0❌ 3🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-UPLOAD-001` | Request Presigned URL | ❌ | 4 | — | — |
-| `XC-UPLOAD-002` | Initiate Upload | ❌ | 4 | — | — |
-| `XC-UPLOAD-003` | Confirm Upload | ❌ | 4 | — | — |
+| `XC-UPLOAD-001` | Request Presigned URL | 🔍 | 4 | — | auto-decay |
+| `XC-UPLOAD-002` | Initiate Upload | 🔍 | 4 | — | auto-decay |
+| `XC-UPLOAD-003` | Confirm Upload | 🔍 | 4 | — | auto-decay |
 
-### Marketplace / Listings — 0.0% weighted (0✅ 0⚠️ 2❌ 0🔍)
+### Marketplace / Listings — 0.0% weighted (0✅ 0⚠️ 0❌ 2🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-LIST-001` | Browse Listings | ❌ | 4 | — | — |
-| `XC-LIST-002` | Search Listings | ❌ | 4 | — | — |
+| `XC-LIST-001` | Browse Listings | 🔍 | 4 | — | auto-decay |
+| `XC-LIST-002` | Search Listings | 🔍 | 4 | — | auto-decay |
 
-### User Profile — 0.0% weighted (0✅ 0⚠️ 5❌ 0🔍)
+### User Profile — 0.0% weighted (0✅ 0⚠️ 0❌ 5🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-ME-001` | Onboarding | ❌ | 3 | — | — |
-| `XC-ME-002` | Connect Accounts | ❌ | 3 | — | — |
-| `XC-ME-003` | Download Asset | ❌ | 3 | — | — |
-| `XC-ME-004` | Notifications | ❌ | 3 | — | — |
-| `XC-ME-005` | Vocal Profile | ❌ | 4 | — | — |
+| `XC-ME-001` | Onboarding | 🔍 | 3 | — | auto-decay |
+| `XC-ME-002` | Connect Accounts | 🔍 | 3 | — | auto-decay |
+| `XC-ME-003` | Download Asset | 🔍 | 3 | — | auto-decay |
+| `XC-ME-004` | Notifications | 🔍 | 3 | — | auto-decay |
+| `XC-ME-005` | Vocal Profile | 🔍 | 4 | — | auto-decay |
 
-### Billing & Payments — 0.0% weighted (0✅ 0⚠️ 2❌ 0🔍)
+### Billing & Payments — 0.0% weighted (0✅ 0⚠️ 0❌ 2🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-BILL-001` | Stripe Checkout Webhook | ❌ | 5 | — | — |
-| `XC-BILL-002` | Stripe Connect Webhook | ❌ | 5 | — | — |
+| `XC-BILL-001` | Stripe Checkout Webhook | 🔍 | 5 | — | auto-decay |
+| `XC-BILL-002` | Stripe Connect Webhook | 🔍 | 5 | — | auto-decay |
 
 ### Platform / Health — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `XC-PLAT-001` | Liveness | 🔍 | 1 | — | — |
-| `XC-PLAT-002` | Readiness | 🔍 | 1 | — | — |
-| `XC-PLAT-003` | Sentry Wiring | 🔍 | 1 | — | — |
-| `XC-PLAT-004` | Scheduled Cron Dispatch | 🔍 | 1 | — | — |
+| `XC-PLAT-001` | Liveness | 🔍 | 1 | — | auto-decay |
+| `XC-PLAT-002` | Readiness | 🔍 | 1 | — | auto-decay |
+| `XC-PLAT-003` | Sentry Wiring | 🔍 | 1 | — | auto-decay |
+| `XC-PLAT-004` | Scheduled Cron Dispatch | 🔍 | 1 | — | auto-decay |
 

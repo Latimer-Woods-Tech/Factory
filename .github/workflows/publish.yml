@@ -48,7 +48,7 @@ jobs:
       - name: Build local dependencies in order
         run: |
           set -euo pipefail
-          DEPS=(errors monitoring logger realtime bodygraph design-tokens ui auth neon stripe llm telephony analytics deploy testing email copy content social seo validation crm compliance admin video schedule llm-meter studio-core creator design-system entitlements protocol browser flags agent)
+          DEPS=(errors monitoring logger realtime bodygraph constellation design-tokens ui auth neon stripe llm telephony analytics deploy testing email copy content social seo validation crm compliance admin video schedule llm-meter studio-core creator design-system entitlements protocol browser flags agent)
           for pkg in "${DEPS[@]}"; do
             if [ "$pkg" = "$PACKAGE" ]; then
               break
@@ -70,6 +70,17 @@ jobs:
           else
             npm install --ignore-scripts --no-save
           fi
+      - name: Build the package
+        # The dep loop above stops BEFORE the target package, and `npm publish
+        # --ignore-scripts` skips the prepack build hook — so without this step the
+        # package's own dist/ is never built and an empty tarball (package.json
+        # only) gets published. Build explicitly; keep --ignore-scripts for safety.
+        run: cd "packages/${PACKAGE}" && npm run build
+      - name: Verify build output before publish
+        # Fail loud if dist is empty/missing rather than shipping a broken tarball.
+        run: |
+          cd "packages/${PACKAGE}"
+          node -e "const fs=require('fs');const p=require('./package.json');const m=(p.module||p.main||'').replace(/^\.\//,'');if(!m){console.error('::error::no main/module entry');process.exit(1)}if(!fs.existsSync(m)||fs.statSync(m).size<50){console.error('::error::build output missing/empty: '+m);process.exit(1)}console.log('build output ok: '+m+' ('+fs.statSync(m).size+' bytes)')"
       - name: Pre-publish checks
         run: cd "packages/${PACKAGE}" && (npm run prepublish --if-present || echo 'no prepublish')
       - name: Publish to npmjs.org
