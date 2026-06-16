@@ -1,50 +1,39 @@
-# Sauna Brain
-
-**Generated:** 2026-06-07T14:02:23.274Z
+# Sauna Brain Sync
+**Generated:** 2026-06-14T14:03:11.620Z
 
 ## Current priorities
-- **selfprime/HumanDesign canary is recovering, not done.** In 24h, 19 HumanDesign PRs merged, mostly P0 routing surgery (#420 SPA catch-all + API routing, #428 dynamic routes 404 fix, #427 staging DB isolation, #429 CI tests candidate build, #425 secret-sync fixes). Yesterday's 3 red canary probes are down to one red suite on main: `Practitioner Flows`. Verify live reading loads before Monday.
-- **Machine-vs-customer tension persists.** capricast (video) pulled 35 merges in 24h (editor pipeline, duet/stitch templates, live-room Durable Objects) — the video wave is back, contradicting last week's "videoking quiet." Revenue-adjacent selfprime got firefighting, not features.
-- **Marketing block at risk again.** Monday 8–10 Digital Marketing overlaps Factory Monday Review at 9 — same collision that's eaten the block two weeks running. Highest-leverage move: move the Factory Review.
-
-## Revenue state
-- **Revenue: $0.** Stripe: 0 active, 0 trialing, 3 canceled, 0 charges in 24h. May's $19 trialing reactivation (jg01@me.com) did NOT convert.
-
-## Open decisions
-- **cypher-healing (client site) main RED** — both `ci` and `deploy` failing. Paying client. Diagnose.
-- **Factory main**: `probe` failure; Playwright smokes cancelled (likely superseded, not true failures).
-- **Namecheap hosting failed to auto-renew** (blackkryptonians account, Jun 6) — could drop a site. Check card on file.
-- **Open PRs: 109 org-wide** (down from 145). 58 are dependabot bot bumps — real human-review pile is ~50.
-- **Cloudflare AI Gateway Spend Limits** (open beta, Jun 5) — native dollar caps + fallback routing replace `@lwt/llm-meter` $5/run cap and June 4 hand-rolled fallback. Migration candidate.
-- **GCP service-account key rotation** (`76bc15364b7d…`) — Red-tier, human-only, overdue.
-- **Cloudflare payment due ~June 18** (personal account) — confirm card on file.
+- **Restoring Namecheap Hosting for cypherofhealing.com:** Manually renewing/restoring the hosting package.
+- **Updating Vercel Billing details:** Updating card details to prevent impending project shutdown.
+- **Fixing selfprime.net Neon HTTP 530 Database Errors:** Swapping the serverless HTTP driver for postgres.js.
+- **Migrating Custom LLM Cost Controls:** Migrating custom LLM daily usage checks to Cloudflare's native AI Gateway Spend Limits.
+- **Time-sensitive follow-ups:** Merging HumanDesign PR #548, Fixing HumanDesign PR #546 Tests.
 
 ## Open agent-task issues
-- [#1462](https://github.com/Latimer-Woods-Tech/Factory/issues/1462) [Sentry/node-cloudflare-pages] DatabaseError: relation "analytics_events" does not exist
-- [#1461](https://github.com/Latimer-Woods-Tech/Factory/issues/1461) [Sentry/node-cloudflare-pages] DatabaseError: relation "practitioner_reviews" does not exist
-- [#1430](https://github.com/Latimer-Woods-Tech/Factory/issues/1430) [Sentry/node-cloudflare-pages] ErrorEvent: Uncaught TypeError: Failed to establish the WebSocket connection: expected server to reply with HTTP status code 101 (switching protocols), but received 530 instead.
-- [#1356](https://github.com/Latimer-Woods-Tech/Factory/issues/1356) [Sentry/node-cloudflare-pages] DOMException: The operation was aborted
-- [#1342](https://github.com/Latimer-Woods-Tech/Factory/issues/1342) [Sentry/prime-self-web] prime-self-web frontend Sentry wiring verification (2026-06-03)
-- [#1270](https://github.com/Latimer-Woods-Tech/Factory/issues/1270) [Sentry/node-cloudflare-pages] Error: Connection terminated unexpectedly
-- [#1269](https://github.com/Latimer-Woods-Tech/Factory/issues/1269) [Sentry/node-cloudflare-pages] ErrorEvent: Uncaught TypeError: Failed to establish the WebSocket connection: expected server to reply with HTTP status code 101 (switching protocols), but received 520 instead.
-- [#1258](https://github.com/Latimer-Woods-Tech/Factory/issues/1258) [Sentry/node-cloudflare-pages] ErrorEvent: Uncaught TypeError: Failed to establish the WebSocket connection: expected server to reply with HTTP status code 101 (switching protocols), but received 520 instead.
-- [#1242](https://github.com/Latimer-Woods-Tech/Factory/issues/1242) [Sentry/node-cloudflare-pages] TypeError: Cannot read properties of undefined (reading 'split')
-- [#1236](https://github.com/Latimer-Woods-Tech/Factory/issues/1236) [Sentry/node-cloudflare-pages] DatabaseError: relation "video_object" does not exist
+- [#1694] [Sentry/node-cloudflare-pages] Error: LLM synthesis exceeded 110s timeout (last provider: anthropic)
+- [#1659] [Sentry/cypher-healing-worker] Error: Failed query: select "id", "email", "password_hash", "name", "avatar_url", "role", "stripe_customer_id", "membership_tier", "phone", "sms_opt_in", "voice_opt_in", "telnyx_contact_id", "preferences", "referral_code", "referred_by", "last_active_at", "ema...
+- [#1033] Pass 1 (Phase A) — Admin read-layer walking skeleton
+- [#898] FUTURE: Capricast R2 bucket rename from videoking-r2 to capricast-r2
+- [#814] P1 — SUPERVISOR-002: Templates don't match Sprint 2 implementation issues
+- [#753] feat: Stage 3 — adopt shared @lwt/{eslint-config,biome-config,tsconfig-base} across portfolio
+- [#724] feat(types): add typed Env interface across portfolio (conformance fix)
+- [#657] feat(analytics): PostHog funnel definitions for monetization paths (G34)
+- [#647] docs(cross-repo): link every CLAUDE.md to factory canonical docs (Sauna ↔ Claude Code bridge)
+- [#646] Tier 1: Cypher of Healing — verify deployment + add health endpoint
 
 ## ADR index
-- **0000-template.md**: ** Proposed | Accepted | Superseded by ADR-NNNN | Deprecated
-- **0001-cohesion-architecture.md**: ** Accepted
-- **0002-operating-framework.md**: ** Accepted
-- **0003-claude-as-primary-reviewer.md**: ** Accepted
-- **0004-subagent-fanout-pattern.md**: ** Accepted
-- **0005-pr-size-budget.md**: ** Accepted
-- **0006-cascading-multi-agent-review.md**: ** Accepted
-- **0007-auto-fix-resolvable-ci-failures.md**: ** Accepted
-- **0008-ui-ux-foundations.md**: ** Accepted
-- **0009-cloudflare-workers-only.md**: ** Accepted
-- **0010-hono-router.md**: ** Accepted
-- **0011-llm-package-not-direct-calls.md**: ** Accepted
-- **0012-dependency-version-policy.md**: Unknown
+- **0000-template.md**: Status: Unknown
+- **0001-cohesion-architecture.md**: Status: Unknown
+- **0002-operating-framework.md**: Status: Unknown
+- **0003-claude-as-primary-reviewer.md**: Status: Unknown
+- **0004-subagent-fanout-pattern.md**: Status: Unknown
+- **0005-pr-size-budget.md**: Status: Unknown
+- **0006-cascading-multi-agent-review.md**: Status: Unknown
+- **0007-auto-fix-resolvable-ci-failures.md**: Status: Unknown
+- **0008-ui-ux-foundations.md**: Status: Unknown
+- **0009-cloudflare-workers-only.md**: Status: Unknown
+- **0010-hono-router.md**: Status: Unknown
+- **0011-llm-package-not-direct-calls.md**: Status: Unknown
+- **0012-dependency-version-policy.md**: Status: Unknown
 
 ## Packages that exist
 - admin
@@ -88,13 +77,25 @@
 - video
 
 ## Hard rules
-- **Router:** Hono only — never Express, Fastify, or Next.js
-- **Crypto:** Web Crypto API only — never `node:crypto`, `jsonwebtoken`
-- **Runtime:** Cloudflare Workers only — no Node servers, no `require`, no `Buffer`, no `fs`/`path`
-- **Env:** `c.env` / `env.*` — never `process.env`
-- **Modules:** ESM only — no CommonJS
-- **Database:** Drizzle ORM via Hyperdrive binding (`env.DB`) — never raw connection strings, never unparameterized queries
-- **Secrets:** Worker secrets / org secrets only — never in code, docs, issue bodies, or commits
-- **Packages:** Use `@latimer-woods-tech/*` for all cross-cutting concerns — never reinvent
-- **Env names:** `staging` or `production` only — never `prod`, `dev`, `preview`, `preprod`
-- **Secret names:** `CF_API_TOKEN` / `CF_ACCOUNT_ID` — never `CLOUDFLARE_API_TOKEN`
+- Router: Hono only — never Express, Fastify, or Next.js
+- Crypto: Web Crypto API only
+- Runtime: Cloudflare Workers only — no Node servers
+- Env: c.env / env.* — never process.env
+- Modules: ESM only — no CommonJS
+- Database: Drizzle ORM via Hyperdrive binding (env.DB)
+- Secrets: Worker secrets / org secrets only
+- Packages: Use @latimer-woods-tech/* for all cross-cutting concerns
+- Env names: staging or production only
+- Secret names: CF_API_TOKEN / CF_ACCOUNT_ID
+- Worker URLs: https://<name>.adrper79.workers.dev
+- Commits: Conventional Commits — feat(scope): subject
+- PR size: ≤50 lines (Green) / ≤200 lines (Yellow) / ≤500 lines (Red)
+- No new shared package or major version bump without ADR
+
+## Revenue state
+Pre-revenue early-stage. 1 historical paying customer ($12 MRR, churned). May 2026 = $0 active with $19 trialing reactivation pending. Product shell is still not ready enough to treat zero revenue as pure demand failure.
+
+## Open decisions
+- Weekly review cadence is currently under review (skipped 2026-05-11).
+- Street-hook experiments (QR-led curiosity flyers) for selfprime.net top-of-funnel are being considered.
+- Swapping serverless HTTP driver vs bypassing Hyperdrive for Neon 530 errors.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T15:54:01.909Z",
+  "generatedAt": "2026-06-16T19:36:12.162Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,6 +1793,34 @@
         "tier": "infra"
       },
       {
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
+        "tier": "core"
+      },
+      {
         "id": "coh:the-chair",
         "appId": "coh",
         "label": "The Chair (bookings)",
@@ -1917,34 +1945,6 @@
         "label": "16-way video chat",
         "status": "roadmap",
         "tier": "growth"
-      },
-      {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
-        "status": "roadmap",
-        "tier": "core"
       }
     ],
     "roadmapItems": [
@@ -2023,6 +2023,27 @@
         "appId": "agent-gateway",
         "label": "Platform tool library (neon, stripe, comms)",
         "status": "queued",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
+        "status": "design",
         "quarter": "Q1-2027"
       },
       {
@@ -2108,27 +2129,6 @@
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
-      },
-      {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
-        "status": "design",
-        "quarter": "Q1-2027"
       }
     ],
     "gaps": [
@@ -2477,6 +2477,61 @@
       "type": "uses_package"
     },
     {
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:booking",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:monitoring",
+      "type": "uses_package"
+    },
+    {
       "from": "coh",
       "to": "coh:the-chair",
       "type": "has_feature"
@@ -2710,61 +2765,6 @@
       "from": "capricast",
       "to": "pkg:video",
       "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:booking",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
-      "type": "uses_package"
     }
   ],
   "stats": {
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-16T15:54:01.968Z",
+    "generatedAt": "2026-06-16T19:36:12.221Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
