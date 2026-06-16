@@ -21,6 +21,17 @@ canonical_docs:
       - service-registry
       - github-workflows
       - source-code
+  - path: docs/_governance/cloudflare-key-policy.md
+    owner: platform
+    scope: Cloudflare credential classes, permission boundaries, storage rules, and rotation requirements.
+    truth_sources:
+      - manual-review
+  - path: docs/_governance/credential-hardening-backlog.md
+    owner: platform
+    scope: Credential families, blast-radius priorities, and key-hardening execution order.
+    truth_sources:
+      - github-workflows
+      - manual-review
   - path: docs/architecture/FACTORY_V1.md
     owner: architecture
     scope: Whole-system architecture baseline. Mutable counts must be verified against executable sources.
