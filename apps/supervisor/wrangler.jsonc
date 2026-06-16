@@ -46,22 +46,14 @@
     }
   ],
 
-  // RFC-007 Phase 0: Workers AI + Vectorize bindings for semantic memory.
-  // AI is a built-in binding (no provisioning needed).
-  // Vectorize indexes must be provisioned first:
-  //   wrangler vectorize create supervisor-templates --dimensions=768 --metric=cosine
-  //   wrangler vectorize create supervisor-incidents --dimensions=768 --metric=cosine
+  // RFC-007 Phase 0: Workers AI binding for semantic memory (built-in, no provisioning needed).
+  // Vectorize bindings are omitted until CF_API_TOKEN has vectorize:write scope — see issue #1750.
+  // Once the token is updated, restore:
+  //   "vectorize": [
+  //     { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
+  //     { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" }
+  //   ]
   "ai": { "binding": "AI" },
-  "vectorize": [
-    {
-      "binding": "VECTORIZE_TEMPLATES",
-      "index_name": "supervisor-templates"
-    },
-    {
-      "binding": "VECTORIZE_INCIDENTS",
-      "index_name": "supervisor-incidents"
-    }
-  ],
 
   "vars": {
     "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/prime-self",
@@ -117,17 +109,8 @@
           "database_id": "1033b6bf-d38f-4948-8f3b-0de787c87f6b"
         }
       ],
-      "ai": { "binding": "AI" },
-      "vectorize": [
-        {
-          "binding": "VECTORIZE_TEMPLATES",
-          "index_name": "supervisor-templates"
-        },
-        {
-          "binding": "VECTORIZE_INCIDENTS",
-          "index_name": "supervisor-incidents"
-        }
-      ]
+      "ai": { "binding": "AI" }
+      // Vectorize bindings restored here once CF_API_TOKEN has vectorize:write — see issue #1750.
     }
   }
 }
