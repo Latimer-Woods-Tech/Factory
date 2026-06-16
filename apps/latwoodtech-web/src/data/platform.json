@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T10:07:17.941Z",
+  "generatedAt": "2026-06-16T15:54:00.919Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -17,7 +17,7 @@
       "name": "Self Prime",
       "domain": "selfprime.net",
       "maturity": "revenue",
-      "cohesion": 53,
+      "cohesion": 16,
       "healthState": "live",
       "packages": [
         "auth",
@@ -113,7 +113,7 @@
       "name": "Capricast",
       "domain": "capricast.com",
       "maturity": "production",
-      "cohesion": 42,
+      "cohesion": 14,
       "healthState": "live",
       "packages": [
         "auth",
@@ -201,7 +201,7 @@
       "name": "AP Unlimited",
       "domain": "apunlimited.com",
       "maturity": "production",
-      "cohesion": 73,
+      "cohesion": 71,
       "healthState": "live",
       "packages": [
         "auth",
@@ -321,7 +321,7 @@
       "name": "Cypher of Healing",
       "domain": "cypherofhealing.com",
       "maturity": "production",
-      "cohesion": 47,
+      "cohesion": 14,
       "healthState": "live",
       "packages": [
         "auth",
@@ -401,7 +401,7 @@
       "name": "Xico City",
       "domain": "xicocity.com",
       "maturity": "beta",
-      "cohesion": 51,
+      "cohesion": 14,
       "healthState": "live",
       "packages": [
         "auth",
@@ -1018,7 +1018,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-16T10:07:18.711Z",
+    "generatedAt": "2026-06-16T15:54:01.968Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1029,7 +1029,7 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.26,
+      "cost30dUsd": 10.81,
       "mrrUsd": 0,
       "completionWeighted": 2.6
     },
@@ -1043,12 +1043,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.26,
+        "current": 10.81,
         "prior": 4.87,
         "priorDate": "2026-06-05",
-        "dayGap": 6,
-        "delta": -0.61,
-        "direction": "down"
+        "dayGap": 9,
+        "delta": 5.94,
+        "direction": "up"
       },
       "mrr": {
         "current": 0,
@@ -1062,7 +1062,7 @@
         "current": 2.6,
         "prior": 3,
         "priorDate": "2026-06-12",
-        "dayGap": 3,
+        "dayGap": 4,
         "delta": -0.4,
         "direction": "down"
       },
