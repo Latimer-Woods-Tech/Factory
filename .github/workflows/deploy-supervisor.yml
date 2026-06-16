@@ -108,7 +108,25 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: |
           test -n "${CF_API_TOKEN}" || \
-            (echo "::error::CF_API_TOKEN secret is not set. Create a token at https://dash.cloudflare.com/profile/api-tokens with Workers Scripts:Edit + D1:Edit permissions." && exit 1)
+            (echo "::error::CF_API_TOKEN secret is not set. Create a token at https://dash.cloudflare.com/profile/api-tokens with Workers Scripts:Edit + D1:Edit + Vectorize:Edit permissions." && exit 1)
+
+      - name: Provision Vectorize indexes (RFC-007, idempotent)
+        working-directory: apps/supervisor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          # Create-if-absent: ignore "already exists" exit codes (exit 2 from wrangler).
+          create_if_absent() {
+            local name="$1" dims="$2" metric="$3"
+            if npx wrangler vectorize create "$name" --dimensions="$dims" --metric="$metric" 2>&1; then
+              echo "Created $name"
+            else
+              echo "::notice::$name may already exist — continuing"
+            fi
+          }
+          create_if_absent supervisor-templates 768 cosine
+          create_if_absent supervisor-incidents 768 cosine
 
       - name: Provision secrets
         working-directory: apps/supervisor
