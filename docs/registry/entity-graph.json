@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-16T10:07:18.649Z",
+  "generatedAt": "2026-06-16T19:36:12.162Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1821,6 +1821,41 @@
         "tier": "core"
       },
       {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -1909,41 +1944,6 @@
         "appId": "capricast",
         "label": "16-way video chat",
         "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
         "tier": "growth"
       }
     ],
@@ -2047,6 +2047,34 @@
         "quarter": "Q1-2027"
       },
       {
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-mobile",
+        "appId": "coh",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
         "id": "selfprime:sp-launch",
         "appId": "selfprime",
         "label": "Public Launch",
@@ -2098,34 +2126,6 @@
       {
         "id": "capricast:cc-mobile",
         "appId": "capricast",
-        "label": "Mobile PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
-        "status": "queued",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
@@ -2532,6 +2532,76 @@
       "type": "uses_package"
     },
     {
+      "from": "coh",
+      "to": "coh:the-chair",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-vault",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-academy",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-stage",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
+      "type": "uses_package"
+    },
+    {
       "from": "selfprime",
       "to": "selfprime:energy-blueprint",
       "type": "has_feature"
@@ -2695,76 +2765,6 @@
       "from": "capricast",
       "to": "pkg:video",
       "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-chair",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-vault",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-academy",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-stage",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:inner-circle",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-5streams",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:email",
-      "type": "uses_package"
     }
   ],
   "stats": {
@@ -2786,7 +2786,7 @@
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-16T10:07:18.711Z",
+    "generatedAt": "2026-06-16T19:36:12.221Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2797,7 +2797,7 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 4.26,
+      "cost30dUsd": 10.81,
       "mrrUsd": 0,
       "completionWeighted": 2.6
     },
@@ -2811,12 +2811,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 4.26,
+        "current": 10.81,
         "prior": 4.87,
         "priorDate": "2026-06-05",
-        "dayGap": 6,
-        "delta": -0.61,
-        "direction": "down"
+        "dayGap": 9,
+        "delta": 5.94,
+        "direction": "up"
       },
       "mrr": {
         "current": 0,
@@ -2830,7 +2830,7 @@
         "current": 2.6,
         "prior": 3,
         "priorDate": "2026-06-12",
-        "dayGap": 3,
+        "dayGap": 4,
         "delta": -0.4,
         "direction": "down"
       },
