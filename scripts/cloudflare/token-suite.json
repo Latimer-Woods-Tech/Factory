@@ -15,7 +15,7 @@
       "name": "pages-deploy",
       "purpose": "Cloudflare Pages deploys",
       "policies": [
-        { "scope": "account", "permission_groups": ["Cloudflare Pages Write"] }
+        { "scope": "account", "permission_groups": ["Pages Write"] }
       ]
     },
     {

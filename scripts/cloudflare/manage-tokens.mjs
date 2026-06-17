@@ -72,8 +72,14 @@ async function cfAll(path) {
 }
 
 // ── GCP Secret Manager (shell out to gcloud; the established Factory pattern) ──
+// CI runs this on Linux (plain `gcloud`). For local Windows runs, `gcloud` is a `.cmd`
+// which execFileSync can't exec directly (EINVAL) — route through cmd.exe with args as a
+// real array (no shell:true, so no DEP0190 arg-concatenation risk; args are internal
+// constants anyway). cmd.exe resolves `gcloud` → `gcloud.cmd` via PATHEXT.
+const WIN = process.platform === 'win32';
 function gcloud(args, input) {
-  return execFileSync('gcloud', args, { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  const [cmd, cmdArgs] = WIN ? ['cmd.exe', ['/c', 'gcloud', ...args]] : ['gcloud', args];
+  return execFileSync(cmd, cmdArgs, { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
 }
 function secretExists(name) {
   try { gcloud(['secrets', 'describe', name, `--project=${GCP_PROJECT}`]); return true; } catch { return false; }
