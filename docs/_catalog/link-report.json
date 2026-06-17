@@ -4,21 +4,21 @@
   "generated_at": "source-derived",
   "ok": false,
   "counts": {
-    "broken": 395,
+    "broken": 400,
     "canonical": 0,
-    "active": 279,
+    "active": 284,
     "archive": 116,
     "generated": 0
   },
   "by_owner": {
-    "platform": 277,
+    "platform": 282,
     "admin-studio": 4,
     "architecture": 4,
     "capricast": 31,
     "marketing": 79
   },
   "by_status": {
-    "active": 279,
+    "active": 284,
     "archive": 116
   },
   "broken": [
@@ -3402,6 +3402,51 @@
       "line": 89,
       "target": "/packages/llm",
       "reason": "file not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "line": 16,
+      "target": "../../apps/supervisor/src/planner/match.ts#L15",
+      "reason": "anchor #L15 not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "line": 24,
+      "target": "../../apps/supervisor/src/supervisor.do.ts#L288",
+      "reason": "anchor #L288 not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "line": 28,
+      "target": "../../apps/supervisor/src/planner/match.ts#L31",
+      "reason": "anchor #L31 not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "line": 134,
+      "target": "../../apps/supervisor/src/supervisor.do.ts#L403",
+      "reason": "anchor #L403 not found",
+      "owner": "platform",
+      "status": "active",
+      "fidelity": "unverified"
+    },
+    {
+      "file": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "line": 217,
+      "target": "../../apps/supervisor/src/supervisor.do.ts#L658",
+      "reason": "anchor #L658 not found",
       "owner": "platform",
       "status": "active",
       "fidelity": "unverified"

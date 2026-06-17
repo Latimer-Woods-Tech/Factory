@@ -44,7 +44,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/adr/0010-hono-router.md](adr/0010-hono-router.md) | active | unverified | architecture | unknown | 0010: Hono as the HTTP router |
 | [docs/adr/0011-llm-package-not-direct-calls.md](adr/0011-llm-package-not-direct-calls.md) | active | unverified | architecture | unknown | 0011: LLM calls via @latimer-woods-tech/llm, not direct provider APIs |
 | [docs/adr/0012-dependency-version-policy.md](adr/0012-dependency-version-policy.md) | active | unverified | architecture | unknown | ADR-0012 — Dependency Version Policy |
-| [docs/AGENTS.md](AGENTS.md) | active | unverified | platform | unknown | Agent Configuration & Repo-Local Rules |
+| [docs/AGENTS.md](AGENTS.md) | active | unverified | platform | unknown | Agent Context & CLAUDE.md Convention |
 | [docs/aggregator-http-mocking-design.md](aggregator-http-mocking-design.md) | active | unverified | platform | unknown | Aggregator Phase 2: HTTP Mocking Design — G2 Phase 2 |
 | [docs/aggregator-README.md](aggregator-README.md) | active | unverified | platform | unknown | Completion Tracker — Operator Doc |
 | [docs/APP_PLANNING_PATTERN.md](APP_PLANNING_PATTERN.md) | active | unverified | platform | unknown | Factory App World-Class Planning Pattern |
@@ -260,6 +260,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/planning/brief-2026-06-14.md](planning/brief-2026-06-14.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-14 |
 | [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-15 |
 | [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-16 |
+| [docs/planning/brief-2026-06-17.md](planning/brief-2026-06-17.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-17 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
@@ -286,6 +287,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | platform | unknown | RFC-006: Cohesive Automation Flow Operating Model |
 | [docs/rfc/RFC-006-baseline-metrics.md](rfc/RFC-006-baseline-metrics.md) | active | unverified | platform | unknown | RFC-006 Phase 0 Baseline Metrics |
 | [docs/rfc/RFC-006-duplicate-triage.md](rfc/RFC-006-duplicate-triage.md) | active | unverified | platform | unknown | RFC-006 Duplicate Issue Triage |
+| [docs/rfc/RFC-007-supervisor-semantic-memory.md](rfc/RFC-007-supervisor-semantic-memory.md) | active | unverified | platform | unknown | RFC-007: Supervisor semantic memory (template recall + episodic learning) |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | platform | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | platform | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |
@@ -337,7 +339,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/runbooks/workflow-health-warden.md](runbooks/workflow-health-warden.md) | active | unverified | platform | unknown | Workflow Health Warden |
 | [docs/SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md](SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md) | active | unverified | platform | unknown | Sample Workflow Execution: Incident Response Drill |
 | [docs/SAMPLE_WORKFLOW_PAYOUT_OPS.md](SAMPLE_WORKFLOW_PAYOUT_OPS.md) | active | unverified | platform | unknown | Sample Workflow Execution: Payout Operations |
-| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | platform | unknown | Sauna Brain |
+| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | platform | unknown | Sauna Brain Sync |
 | [docs/scorecard/summary.md](scorecard/summary.md) | active | unverified | platform | unknown | Launch Readiness Scorecard |
 | [docs/SELFPRIME_GTM_ROADMAP.md](SELFPRIME_GTM_ROADMAP.md) | active | unverified | platform | unknown | selfprime — GTM, Packaging & Dormant-Asset Roadmap |
 | [docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md](SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md) | active | unverified | platform | unknown | SelfPrime × VideoKing Synergy Development Plan |
@@ -345,7 +347,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-12 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-15 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
