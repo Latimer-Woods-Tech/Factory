@@ -13,6 +13,9 @@
  * Modes:
  *   --plan    (default) resolve account/zones/permission-groups + show the intended suite. No writes.
  *   --create  create any MISSING token in the suite → write value to GCP SM → verify.
+ *   --sync    create missing tokens AND reconcile each EXISTING token's POLICY to match the spec
+ *             (PUT /user/tokens/{id} — keeps the value, so GCP SM/consumers are unaffected). Use
+ *             after editing token-suite.json scopes. Idempotent.
  *   --rotate  roll the value of each EXISTING suite token (PUT /value) → update GCP SM → verify.
  *   --verify  read each GCP-stored suite token and verify it against /user/tokens/verify.
  *
@@ -30,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SUITE = JSON.parse(readFileSync(join(HERE, 'token-suite.json'), 'utf8'));
-const MODE = process.argv.find((a) => ['--plan', '--create', '--rotate', '--verify'].includes(a)) || '--plan';
+const MODE = process.argv.find((a) => ['--plan', '--create', '--sync', '--rotate', '--verify'].includes(a)) || '--plan';
 const GCP_PROJECT = process.env.GCP_PROJECT || 'factory-495015';
 const PREFIX = process.env.CF_TOKEN_PREFIX || 'factory-';
 const ADMIN = (process.env.CF_TOKEN_ADMIN || '').replace(/[\r\n﻿]/g, '');
@@ -166,6 +169,29 @@ async function main() {
       changed += 1;
     }
 
+    if (MODE === '--sync') {
+      const policies = buildPolicies(spec, ctx); // validates group names exist
+      if (!found) {
+        // Missing → create fresh (same as --create).
+        const result = await cf('/user/tokens', { method: 'POST', body: { name: cfName, policies } });
+        writeSecret(spec.secret, result.value);
+        const ok = await verifyToken(result.value);
+        console.log(`${ok ? '✓' : '✗'} ${tag} created${ok ? ' + verified active' : ' but verify FAILED'} → GCP SM`);
+        if (!ok) process.exitCode = 1;
+        changed += 1;
+        continue;
+      }
+      // Exists → reconcile its policy to match the spec (PUT keeps the token VALUE, so the
+      // GCP SM copy stays valid — no rotation, no consumer breakage). Idempotent.
+      await cf(`/user/tokens/${found.id}`, { method: 'PUT', body: { name: cfName, policies } });
+      const stored = secretExists(spec.secret) ? readSecret(spec.secret) : null;
+      const ok = stored ? await verifyToken(stored) : false;
+      console.log(`${ok ? '✓' : '!'} ${tag} policy synced${stored ? (ok ? ' + stored token still active' : ' but stored token FAILED verify') : ' (WARNING: not in GCP SM — run --rotate to (re)store a value)'}`);
+      if (stored && !ok) process.exitCode = 1;
+      changed += 1;
+      continue;
+    }
+
     if (MODE === '--rotate') {
       if (!found) { console.log(`! ${tag} does not exist — run --create first`); process.exitCode = 1; continue; }
       const result = await cf(`/user/tokens/${found.id}/value`, { method: 'PUT', body: {} });
@@ -184,7 +210,8 @@ async function main() {
     }
   }
 
-  if (MODE === '--plan') console.log(`\nPlan only — no changes. Run --create to mint, --rotate to roll, --verify to check.`);
+  if (MODE === '--plan') console.log(`\nPlan only — no changes. Run --create to mint, --sync to reconcile policies, --rotate to roll, --verify to check.`);
+  else if (MODE === '--sync') console.log(`\n${changed} token(s) created or policy-synced.`);
   else if (['--create', '--rotate'].includes(MODE)) console.log(`\n${changed} token(s) ${MODE === '--create' ? 'created' : 'rotated'}.`);
 }
 
