@@ -11,7 +11,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | architecture | 10 | 4 |
 | capricast | 24 | 31 |
 | marketing | 2 | 79 |
-| platform | 230 | 277 |
+| platform | 230 | 282 |
 | revenue | 2 | 0 |
 
 ## Highest Link Debt Docs
@@ -35,6 +35,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 7 | docs/marketing/MARKETING_SUPERVISOR.md |
 | 6 | docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md |
 | 5 | docs/marketing/ESCALATION_TIERS.md |
+| 5 | docs/rfc/RFC-007-supervisor-semantic-memory.md |
 | 5 | docs/templates/POSTMORTEM_TEMPLATE.md |
 | 5 | MASTER_INDEX.md |
 | 4 | docs/admin-studio/00-MASTER-PLAN.md |
@@ -42,7 +43,6 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 4 | docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md |
 | 4 | docs/decisions/2026-05-18-attribution-model.md |
 | 4 | docs/kpis/humandesign.md |
-| 4 | docs/marketing/pr3-briefs/3d-surface-registry.md |
 
 ## Highest Drift Docs
 

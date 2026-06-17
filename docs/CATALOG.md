@@ -8,21 +8,23 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 463 |
-| canonical | 17 |
-| active | 398 |
+| total_docs | 468 |
+| canonical | 19 |
+| active | 401 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
 | scratch | 0 |
 | missing_canonical | 0 |
 
-## Canonical Docs (17)
+## Canonical Docs (19)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
 | [.github/workflows/REGISTRY.md](../.github/workflows/REGISTRY.md) | canonical | owner-reviewed | platform | unknown | Workflow Registry |
 | [CLAUDE.md](../CLAUDE.md) | canonical | owner-reviewed | platform | unknown | Factory Core — Standing Orders |
+| [docs/_governance/cloudflare-key-policy.md](_governance/cloudflare-key-policy.md) | canonical | owner-reviewed | platform | 2026-06-16 | Cloudflare Key Policy |
+| [docs/_governance/credential-hardening-backlog.md](_governance/credential-hardening-backlog.md) | canonical | owner-reviewed | platform | 2026-06-16 | Credential Hardening Backlog |
 | [docs/architecture/FACTORY_V1.md](architecture/FACTORY_V1.md) | canonical | owner-reviewed | architecture | unknown | The Factory — Architecture & Playbook, v1 |
 | [docs/architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md](architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md) | canonical | owner-reviewed | architecture | unknown | DJMEXXICO (xico-city) Low-Level Architecture |
 | [docs/decisions/2026-05-25-factory-alignment.md](decisions/2026-05-25-factory-alignment.md) | canonical | owner-reviewed | platform | unknown | 2026-05-25 — Factory alignment: what it IS, what it is NOT, what to build next |
@@ -39,7 +41,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (398)
+## Active Docs (401)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -58,6 +60,7 @@
 | [apps/video-render-service/README.md](../apps/video-render-service/README.md) | active | unverified | video-render-service | unknown | video-render-service |
 | [apps/video-studio/README.md](../apps/video-studio/README.md) | active | unverified | video-studio | unknown | Video Studio |
 | [apps/webhook-fanout/README.md](../apps/webhook-fanout/README.md) | active | unverified | webhook-fanout | unknown | webhook-fanout |
+| [docs/_governance/cloudflare-credential-inventory.template.md](_governance/cloudflare-credential-inventory.template.md) | active | unverified | platform | 2026-06-16 | Cloudflare Credential Inventory Template |
 | [docs/_governance/doc-policy.md](_governance/doc-policy.md) | active | unverified | platform | 2026-05-28 | Documentation Governance Policy |
 | [docs/_governance/evidence-policy.md](_governance/evidence-policy.md) | active | unverified | platform | 2026-05-28 | Documentation Evidence Policy |
 | [docs/ACCESS.md](ACCESS.md) | active | unverified | platform | unknown | Factory Access Map |
@@ -82,7 +85,7 @@
 | [docs/adr/0010-hono-router.md](adr/0010-hono-router.md) | active | unverified | architecture | unknown | 0010: Hono as the HTTP router |
 | [docs/adr/0011-llm-package-not-direct-calls.md](adr/0011-llm-package-not-direct-calls.md) | active | unverified | architecture | unknown | 0011: LLM calls via @latimer-woods-tech/llm, not direct provider APIs |
 | [docs/adr/0012-dependency-version-policy.md](adr/0012-dependency-version-policy.md) | active | unverified | architecture | unknown | ADR-0012 — Dependency Version Policy |
-| [docs/AGENTS.md](AGENTS.md) | active | unverified | platform | unknown | Agent Configuration & Repo-Local Rules |
+| [docs/AGENTS.md](AGENTS.md) | active | unverified | platform | unknown | Agent Context & CLAUDE.md Convention |
 | [docs/aggregator-http-mocking-design.md](aggregator-http-mocking-design.md) | active | unverified | platform | unknown | Aggregator Phase 2: HTTP Mocking Design — G2 Phase 2 |
 | [docs/aggregator-README.md](aggregator-README.md) | active | unverified | platform | unknown | Completion Tracker — Operator Doc |
 | [docs/APP_PLANNING_PATTERN.md](APP_PLANNING_PATTERN.md) | active | unverified | platform | unknown | Factory App World-Class Planning Pattern |
@@ -303,6 +306,7 @@
 | [docs/planning/brief-2026-06-14.md](planning/brief-2026-06-14.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-14 |
 | [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-15 |
 | [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-16 |
+| [docs/planning/brief-2026-06-17.md](planning/brief-2026-06-17.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-17 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
@@ -330,6 +334,7 @@
 | [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | platform | unknown | RFC-006: Cohesive Automation Flow Operating Model |
 | [docs/rfc/RFC-006-baseline-metrics.md](rfc/RFC-006-baseline-metrics.md) | active | unverified | platform | unknown | RFC-006 Phase 0 Baseline Metrics |
 | [docs/rfc/RFC-006-duplicate-triage.md](rfc/RFC-006-duplicate-triage.md) | active | unverified | platform | unknown | RFC-006 Duplicate Issue Triage |
+| [docs/rfc/RFC-007-supervisor-semantic-memory.md](rfc/RFC-007-supervisor-semantic-memory.md) | active | unverified | platform | unknown | RFC-007: Supervisor semantic memory (template recall + episodic learning) |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | platform | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | platform | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |
@@ -382,16 +387,16 @@
 | [docs/runbooks/workflow-health-warden.md](runbooks/workflow-health-warden.md) | active | unverified | platform | unknown | Workflow Health Warden |
 | [docs/SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md](SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md) | active | unverified | platform | unknown | Sample Workflow Execution: Incident Response Drill |
 | [docs/SAMPLE_WORKFLOW_PAYOUT_OPS.md](SAMPLE_WORKFLOW_PAYOUT_OPS.md) | active | unverified | platform | unknown | Sample Workflow Execution: Payout Operations |
-| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | platform | unknown | Sauna Brain |
+| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | platform | unknown | Sauna Brain Sync |
 | [docs/scorecard/summary.md](scorecard/summary.md) | active | unverified | platform | unknown | Launch Readiness Scorecard |
 | [docs/SELFPRIME_GTM_ROADMAP.md](SELFPRIME_GTM_ROADMAP.md) | active | unverified | platform | unknown | selfprime — GTM, Packaging & Dormant-Asset Roadmap |
 | [docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md](SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md) | active | unverified | platform | unknown | SelfPrime × VideoKing Synergy Development Plan |
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | platform | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
-| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-06-05 | Stack Manifest |
+| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-06-16 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-12 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-15 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
