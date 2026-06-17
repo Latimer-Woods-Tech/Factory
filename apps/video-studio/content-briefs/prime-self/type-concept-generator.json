@@ -1,0 +1,77 @@
+{
+  "briefKey": "type-concept-generator",
+  "key": "type-concept-generator",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "type-concept",
+  "title": "Welcome, Generator",
+  "description": "Your gut response IS your decision signal. When something lights you up, trust that. When it falls flat, that is your no — and it arrives before your mind does.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Welcome, Generator",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"Generator\" means for them and feels recognised, not labelled.",
+  "targetPersona": "type_generator",
+  "keyPoints": [
+    "Your gut response IS your decision signal.",
+    "When something lights you up, trust that.",
+    "When it falls flat, that is your no",
+    "and it arrives before your mind does."
+  ],
+  "forbiddenClaims": [
+    "any one type is better or more evolved than another",
+    "your type limits what you are allowed to do",
+    "type determines your worth or success"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "type-concept-generator-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Welcome, Generator — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "type-concept-generator-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Welcome, Generator — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "type-concept-generator-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Welcome, Generator — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "type-concept-generator-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Welcome, Generator — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Welcome, Generator — Your Energy Blueprint",
+    "description": "Your gut response IS your decision signal. When something lights you up, trust that. When it falls flat, that is your no — and it arrives before your mind does."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('type', 'Generator')",
+  "status": "planned"
+}

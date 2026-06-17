@@ -1,0 +1,77 @@
+{
+  "briefKey": "strategy-concept-to-inform",
+  "key": "strategy-concept-to-inform",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "strategy-concept",
+  "title": "Strategy: To Inform",
+  "description": "Before you act, tell the people in your orbit what you are about to do. Not to ask permission — to reduce resistance. A brief heads-up transforms friction into flow.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Strategy: To Inform",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"to inform\" means for them and feels recognised, not labelled.",
+  "targetPersona": "strategy_to-inform",
+  "keyPoints": [
+    "Before you act, tell the people in your orbit what you are about to do.",
+    "Not to ask permission",
+    "to reduce resistance.",
+    "A brief heads-up transforms friction into flow."
+  ],
+  "forbiddenClaims": [
+    "following your strategy guarantees a specific outcome",
+    "you will never feel resistance again",
+    "strategy is a rigid rule rather than a felt practice"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "strategy-concept-to-inform-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Strategy: To Inform — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "strategy-concept-to-inform-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Strategy: To Inform — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "strategy-concept-to-inform-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Strategy: To Inform — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "strategy-concept-to-inform-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Strategy: To Inform — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Strategy: To Inform — Your Energy Blueprint",
+    "description": "Before you act, tell the people in your orbit what you are about to do. Not to ask permission — to reduce resistance. A brief heads-up transforms friction into flow."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('strategy', 'to inform')",
+  "status": "planned"
+}
