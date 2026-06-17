@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-17T00:16:52.254Z",
+  "generatedAt": "2026-06-17T06:11:53.811Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,34 +1793,6 @@
         "tier": "infra"
       },
       {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
-        "status": "roadmap",
-        "tier": "core"
-      },
-      {
         "id": "capricast:video-playback",
         "appId": "capricast",
         "label": "CF Stream video playback",
@@ -1860,6 +1832,41 @@
         "appId": "capricast",
         "label": "16-way video chat",
         "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
         "tier": "growth"
       },
       {
@@ -1912,39 +1919,32 @@
         "tier": "compliance"
       },
       {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
         "status": "live",
-        "tier": "core"
+        "tier": "infra"
       },
       {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
         "status": "live",
-        "tier": "core"
+        "tier": "infra"
       },
       {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
         "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
-        "tier": "growth"
       }
     ],
     "roadmapItems": [
@@ -2026,27 +2026,6 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
-        "status": "design",
-        "quarter": "Q1-2027"
-      },
-      {
         "id": "capricast:cc-monetize",
         "appId": "capricast",
         "label": "Creator Monetization Live",
@@ -2070,6 +2049,34 @@
       {
         "id": "capricast:cc-mobile",
         "appId": "capricast",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-mobile",
+        "appId": "coh",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
@@ -2103,41 +2110,28 @@
         "quarter": "Q2-2027"
       },
       {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
         "status": "queued",
-        "quarter": "Q3-2026"
+        "quarter": "Q4-2026"
       },
       {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
-        "label": "Mobile PWA",
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
         "status": "design",
-        "quarter": "Q2-2027"
+        "quarter": "Q1-2027"
       }
     ],
     "gaps": [
-      {
-        "id": "G6",
-        "tier": "p0",
-        "title": "Bootstrap workflow on PR #622 hasn't run yet",
-        "status": "open (sequence dep)"
-      },
       {
         "id": "G14",
         "tier": "p2",
@@ -2477,61 +2471,6 @@
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:booking",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
-      "type": "uses_package"
-    },
-    {
       "from": "capricast",
       "to": "capricast:video-playback",
       "type": "has_feature"
@@ -2604,6 +2543,76 @@
     {
       "from": "capricast",
       "to": "pkg:video",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-chair",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-vault",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-academy",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-stage",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
       "type": "uses_package"
     },
     {
@@ -2697,73 +2706,58 @@
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "coh:the-chair",
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-vault",
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-academy",
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-stage",
+      "from": "xico-city",
+      "to": "xico-city:booking",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:inner-circle",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-5streams",
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
+      "from": "xico-city",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "coh",
+      "from": "xico-city",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "pkg:stripe",
+      "from": "xico-city",
+      "to": "pkg:analytics",
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:email",
+      "from": "xico-city",
+      "to": "pkg:monitoring",
       "type": "uses_package"
     }
   ],
@@ -2781,18 +2775,18 @@
     "featureCount": 42,
     "roadmapCount": 26,
     "packageCount": 24,
-    "gapCount": 14,
+    "gapCount": 13,
     "templateCount": 11,
     "edgeCount": 98
   },
   "kpis": {
-    "generatedAt": "2026-06-17T00:16:52.318Z",
+    "generatedAt": "2026-06-17T06:11:53.913Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
-      "openGaps": 14,
+      "openGaps": 13,
       "gaps": {
-        "p0": 1,
+        "p0": 0,
         "p1": 0,
         "p2": 4,
         "p3": 9
@@ -2843,12 +2837,12 @@
         "direction": "down"
       },
       "openGaps": {
-        "current": 14,
+        "current": 13,
         "prior": 14,
         "priorDate": "2026-06-08",
         "dayGap": 9,
-        "delta": 0,
-        "direction": "flat"
+        "delta": -1,
+        "direction": "down"
       }
     },
     "movers": {
