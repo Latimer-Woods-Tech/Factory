@@ -383,17 +383,22 @@ The Dreamstate schema is intentionally simple — intent + capabilities_required
 
 ### 4.6 Data plane
 
-**Neon projects** (Adrian org `org-withered-wave-19602339`, 14 projects):
+**Neon projects** (Adrian org `org-withered-wave-19602339`, 13 projects — reconciled against live `neonctl` activity 2026-06-17):
 
 | Project | Purpose | State |
 |---|---|---|
 | `HumanDesign` (`divine-grass-42421088`) | selfprime prod + staging | Production live; migration drift bug tracked as HD#65 |
 | `MEXXICO_CITY` (`lively-cake-48808698`) | xico-city / DJMEXXICO | Foundation live |
 | `THE_FACTORY` (`morning-dust-88304389`) | Factory core (cross-app CRM, compliance, `factory_events`) | Provisioned |
-| `prime-self-factory` (`withered-pine-66999393`) | Legacy prime-self pre-org-migration | Archive candidate |
-| `nichestream` (`dry-poetry-91897020`) | videoking | Live |
-| `WordIsBond` (`misty-sound-29419685`) | wordis-bond | Provisioned, **not supervisor-accessible** |
-| `COH`, `the-calling-factory`, `THECALLING`, `XPELEVATOR`, `gemini-staging`, `gemini-production`, `kairoscouncil`, `delicate-shadow-17989842` | Design-stage or legacy | Review + retire at SUP-5 cleanup |
+| `nichestream` (`dry-poetry-91897020`) | videoking / capricast | Live |
+| `factory-network` (`cool-grass-57951356`) | network layer (capricast IdP / factory-core-api) | Live (created 2026-06-09) |
+| `delicate-shadow` (`delicate-shadow-17989842`) | **wordis-bond-factory** | **Live** — compute observed 2026-06-17 (previously mislabeled "retire") |
+| `COH` (`curly-tree-61268761`) | cipherofhealing / `coh` worker | **Live** per service-registry (previously mislabeled "retire") |
+| `WordIsBond` (`misty-sound-29419685`) | wordis-bond (legacy `production` branch) | Semi-dormant; last probe 2026-06-10 — verify before retiring |
+| `prime-self-factory` (`withered-pine-66999393`) | Legacy prime-self pre-org-migration | Archive candidate — **but compute observed 2026-06-17 10:06; trace consumer before archiving** |
+| `the-calling-factory` (`icy-poetry-46600213`), `THECALLING` (`floral-rain-53649452`), `XPELEVATOR` (`aged-butterfly-52244878`), `kairoscouncil` (`divine-breeze-43656605`) | Design-stage or legacy | Review + retire at SUP-5 cleanup |
+
+> **Retired 2026-06-17:** `gemini-staging` (`fancy-mouse-91117889`) + `gemini-production` (`misty-bonus-64352779`) — deleted after confirming archived branches + only wind-down ops (`tenant_detach`/`timeline_archive` 2026-06-10), no live compute. Org dropped 15→13 projects.
 
 **Connection rule:** apps connect to Neon only via Hyperdrive binding (`env.DB` in Workers). Raw connection strings never appear in app code or `wrangler.jsonc`.
 
