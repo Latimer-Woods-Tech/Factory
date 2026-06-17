@@ -155,7 +155,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (358)
+## platform (363)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -166,6 +166,9 @@
 | [docs/_generated/docs-trust-map.md](_generated/docs-trust-map.md) | generated | generated | unknown | Factory Documentation Trust Map |
 | [docs/_generated/service-map.md](_generated/service-map.md) | generated | generated | unknown | Factory Service Map |
 | [docs/_generated/workflow-map.md](_generated/workflow-map.md) | generated | generated | unknown | Factory Workflow Map |
+| [docs/_governance/cloudflare-credential-inventory.template.md](_governance/cloudflare-credential-inventory.template.md) | active | unverified | 2026-06-16 | Cloudflare Credential Inventory Template |
+| [docs/_governance/cloudflare-key-policy.md](_governance/cloudflare-key-policy.md) | canonical | owner-reviewed | 2026-06-16 | Cloudflare Key Policy |
+| [docs/_governance/credential-hardening-backlog.md](_governance/credential-hardening-backlog.md) | canonical | owner-reviewed | 2026-06-16 | Credential Hardening Backlog |
 | [docs/_governance/doc-policy.md](_governance/doc-policy.md) | active | unverified | 2026-05-28 | Documentation Governance Policy |
 | [docs/_governance/evidence-policy.md](_governance/evidence-policy.md) | active | unverified | 2026-05-28 | Documentation Evidence Policy |
 | [docs/ACCESS.md](ACCESS.md) | active | unverified | unknown | Factory Access Map |
@@ -173,7 +176,7 @@
 | [docs/accessibility-testing-guide.md](accessibility-testing-guide.md) | active | unverified | unknown | Factory Accessibility Testing Guide |
 | [docs/ADMIN_STUDIO_SETUP.md](ADMIN_STUDIO_SETUP.md) | active | unverified | unknown | Admin Studio AI Agent — Setup & Deployment Guide |
 | [docs/ADMIN_UI_AGENT_PLAN.md](ADMIN_UI_AGENT_PLAN.md) | active | unverified | unknown | Admin UI Agent: Full Capability Plan |
-| [docs/AGENTS.md](AGENTS.md) | active | unverified | unknown | Agent Configuration & Repo-Local Rules |
+| [docs/AGENTS.md](AGENTS.md) | active | unverified | unknown | Agent Context & CLAUDE.md Convention |
 | [docs/aggregator-http-mocking-design.md](aggregator-http-mocking-design.md) | active | unverified | unknown | Aggregator Phase 2: HTTP Mocking Design — G2 Phase 2 |
 | [docs/aggregator-README.md](aggregator-README.md) | active | unverified | unknown | Completion Tracker — Operator Doc |
 | [docs/APP_PLANNING_PATTERN.md](APP_PLANNING_PATTERN.md) | active | unverified | unknown | Factory App World-Class Planning Pattern |
@@ -361,6 +364,7 @@
 | [docs/planning/brief-2026-06-14.md](planning/brief-2026-06-14.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-14 |
 | [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-15 |
 | [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-16 |
+| [docs/planning/brief-2026-06-17.md](planning/brief-2026-06-17.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-17 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | unknown | HumanDesign Language Guidance |
@@ -388,6 +392,7 @@
 | [docs/rfc/RFC-006-automation-flow-operating-model.md](rfc/RFC-006-automation-flow-operating-model.md) | active | unverified | unknown | RFC-006: Cohesive Automation Flow Operating Model |
 | [docs/rfc/RFC-006-baseline-metrics.md](rfc/RFC-006-baseline-metrics.md) | active | unverified | unknown | RFC-006 Phase 0 Baseline Metrics |
 | [docs/rfc/RFC-006-duplicate-triage.md](rfc/RFC-006-duplicate-triage.md) | active | unverified | unknown | RFC-006 Duplicate Issue Triage |
+| [docs/rfc/RFC-007-supervisor-semantic-memory.md](rfc/RFC-007-supervisor-semantic-memory.md) | active | unverified | unknown | RFC-007: Supervisor semantic memory (template recall + episodic learning) |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | unknown | Agent Ship Runbook |
@@ -440,7 +445,7 @@
 | [docs/runbooks/workflow-health-warden.md](runbooks/workflow-health-warden.md) | active | unverified | unknown | Workflow Health Warden |
 | [docs/SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md](SAMPLE_WORKFLOW_INCIDENT_RESPONSE.md) | active | unverified | unknown | Sample Workflow Execution: Incident Response Drill |
 | [docs/SAMPLE_WORKFLOW_PAYOUT_OPS.md](SAMPLE_WORKFLOW_PAYOUT_OPS.md) | active | unverified | unknown | Sample Workflow Execution: Payout Operations |
-| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | unknown | Sauna Brain |
+| [docs/sauna-brain.md](sauna-brain.md) | active | unverified | unknown | Sauna Brain Sync |
 | [docs/scorecard/summary.md](scorecard/summary.md) | active | unverified | unknown | Launch Readiness Scorecard |
 | [docs/SELFPRIME_GTM_ROADMAP.md](SELFPRIME_GTM_ROADMAP.md) | active | unverified | unknown | selfprime — GTM, Packaging & Dormant-Asset Roadmap |
 | [docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md](SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md) | active | unverified | unknown | SelfPrime × VideoKing Synergy Development Plan |
@@ -448,9 +453,9 @@
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | unknown | Service Level Objectives — Factory Admin Studio |
-| [docs/STACK.md](STACK.md) | active | unverified | 2026-06-05 | Stack Manifest |
+| [docs/STACK.md](STACK.md) | active | unverified | 2026-06-16 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-06-12 |
+| [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-06-15 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |

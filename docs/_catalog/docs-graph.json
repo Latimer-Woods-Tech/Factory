@@ -5,13 +5,13 @@
   "generated_at_commit": null,
   "git_status": "not-recorded",
   "source_hashes": {
-    "docs/_governance/canonical-docs.yml": "sha256:3aee7e69a9d9070ddd0879ee83d270e4b88eb200c4ee03ca8589ab9619f00cfc",
+    "docs/_governance/canonical-docs.yml": "sha256:a5a9a19036085947a59f7acad4edb9330cc64e4ebd622b3ae42d06d23ff365eb",
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 463,
-    "canonical": 17,
-    "active": 398,
+    "total_docs": 468,
+    "canonical": 19,
+    "active": 401,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:916a175b84681ba7c8d1f260c75930048f622d3f3db5284c2bb7f3c3e86288f8",
+      "content_hash": "sha256:3ff9c487da50cf6c054fe8358403b06e6c412372e768496970d1215b56287c49",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d33108fa63ababd59f4ff53f3d64bb5aaaadc0db56e4b0d8d204293f0b99798d",
+      "content_hash": "sha256:50e46e56cd46e8b64830dbb325bb53bb496d0921928cc0b891b7e1be8468ba62",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,11 +437,81 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:68bfd82b34fef9d7d06c2434b28226782164c504662ade48e6012dd04e70c88b",
+      "content_hash": "sha256:00be9dccbaaccc95063a86add520e33854d4f1e8fd6171c828c4ee9f061a5da2",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/_generated/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/_governance/cloudflare-credential-inventory.template.md",
+      "title": "Cloudflare Credential Inventory Template",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "policy",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": "2026-06-16",
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4bc443d62e768a943fb2c4b33210b94b29b259273939fdf65c00e8cfadd20dcd",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/_governance/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/_governance/cloudflare-key-policy.md",
+      "title": "Cloudflare Key Policy",
+      "status": "canonical",
+      "owner": "platform",
+      "doc_type": "policy",
+      "fidelity": "owner-reviewed",
+      "quality": "usable",
+      "last_updated": "2026-06-16",
+      "last_verified": null,
+      "scope": "Cloudflare API token governance — scoped-tokens-only, inventory, least-privilege scopes, rotation, and verify-before-trust.",
+      "truth_sources": [
+        "validation-output",
+        "service-registry",
+        "github-workflows"
+      ],
+      "verified_by": [],
+      "content_hash": "sha256:3f78cdd9941d990b5d6a3dddd80f2fbc2b8bbb4cddddb7ac6b4740d701480b05",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": true,
+        "override": "docs/_governance/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/_governance/credential-hardening-backlog.md",
+      "title": "Credential Hardening Backlog",
+      "status": "canonical",
+      "owner": "platform",
+      "doc_type": "policy",
+      "fidelity": "owner-reviewed",
+      "quality": "usable",
+      "last_updated": "2026-06-16",
+      "last_verified": null,
+      "scope": "Credential families, blast-radius priorities, and key-hardening execution order.",
+      "truth_sources": [
+        "github-workflows",
+        "manual-review"
+      ],
+      "verified_by": [],
+      "content_hash": "sha256:798fefb28de63687a4c73389cdb2ce480984941c6fc0e6f04cb3c5aafb4b1e20",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": true,
+        "override": "docs/_governance/**"
       },
       "errors": []
     },
@@ -951,7 +1021,7 @@
     },
     {
       "path": "docs/AGENTS.md",
-      "title": "Agent Configuration & Repo-Local Rules",
+      "title": "Agent Context & CLAUDE.md Convention",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -962,7 +1032,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:daa2c43b03b998bd2227f8875eba0257cf1f85e80124694423fb97814c25a0ad",
+      "content_hash": "sha256:a5063c4340a169b41dc083fe7dc1e7ca62c690e333235c9748dedb477f550134",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2733,7 +2803,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:c82b097bd16aae35c4f02aef70b166991e10920a314b8e0f708b501e997c3b35",
+      "content_hash": "sha256:f3bef058acbc8a761f14e704a3430014aca978d25fa3a7ee979f94ba79420661",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2796,7 +2866,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:67e35ea5acec33ceeddb9e443bf41211c4995d7b0a004c6158692b3b158bc533",
+      "content_hash": "sha256:88a8da7f0e0fc9895db657675d3499460e7dac2f554fd5539e8d11ae96036060",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2817,7 +2887,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6aced2101625235408ba8d6f88c130a56fbd7e1a61cc7d36752f94bfb8ebdd11",
+      "content_hash": "sha256:baa98d7c902f2b94f0d27f929b66a5c3787ae18a29aa2d639cc2a65b16f2b5a8",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3706,7 +3776,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1a1c0115d39a775fafb6b78b978de2d91bf4f34fa2e1a59fcc16bf14e02ced77",
+      "content_hash": "sha256:a19ec16cc98f03ab6d7c2a848c2fc2b1c03ead791f6581132837c0840ad1988c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6401,7 +6471,28 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:62847b48cb88e32acd282da4506d6d57e58042cdde1a22abc2a891203dd27059",
+      "content_hash": "sha256:0c5beba76f1fa39afe5d0c1f822cdb9dac4651e1968659adca192fe1b3229356",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-17.md",
+      "title": "Platform Planning Brief — 2026-06-17",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:fa79d7af50e63c1a314b0aa672c2ccee4157a271dc3bd64b6701785c489190e7",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6674,7 +6765,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f84aa73e4a55bfe07d2a6ea1142f10c85c5bfeb2ad7fe5396da5c01d4b239f3e",
+      "content_hash": "sha256:b61c486d4e499c265c6dab40180ceb1dcddcebc18718c9578e217f036e6b8d37",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7015,6 +7106,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:1b27549119080bd5a9241efd24c911e3c30358eb565590b67e3642ac6766571b",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "title": "RFC-007: Supervisor semantic memory (template recall + episodic learning)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:32f7b609dd45eac16238960051995603c1560678ba3d4296fcc9a1aa8a3550fe",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7581,7 +7693,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:78c8f7c98e0bcdbc98361cca0757911127c49391c20b6bbcaa5865558d40db0a",
+      "content_hash": "sha256:b0b51cdcf6132bd96dd98096fc5c741fad3f236bc2bb7d499ecea38dfc783580",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8116,7 +8228,7 @@
     },
     {
       "path": "docs/sauna-brain.md",
-      "title": "Sauna Brain",
+      "title": "Sauna Brain Sync",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8127,7 +8239,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:695664ec5b47733bc0e3ccf685aca82dab00803153316f1bbc0cc3805bddce4f",
+      "content_hash": "sha256:6269f9edc672676e52c279d46de88f879706ed8e1ba7edfebd5f42cc706265d6",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8293,12 +8405,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-06-05",
+      "last_updated": "2026-06-16",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:c577089f1a3a0ef49ca677c2366ebc1e62bdd65bc3ef3c0d20ca775fa4e83f5b",
+      "content_hash": "sha256:207a88963042a34c46afd5a78971785d0988fecc9eb2acab4bbf62ec45b6b7d5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8329,7 +8441,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-06-12",
+      "title": "Factory State — 2026-06-15",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8340,7 +8452,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f9b1bb030f66aaf2482e81964ee7d61e983bbbaa8ad5a749c62fb1bfb9d83ece",
+      "content_hash": "sha256:aee21df853eb5183cacf7795ba65d8ef10953d8af473c9bbfc7d64f27949502d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
