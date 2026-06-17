@@ -4,4 +4,4 @@
 {"date":"2026-06-14","overallCohesion":51.4,"registryCoverage":17.65,"registryCovered":6,"registryTotal":34,"openGaps":14,"gaps":{"p0":1,"p1":0,"p2":4,"p3":9},"cost30dUsd":4.26,"mrrUsd":0,"completionWeighted":2.6}
 {"date":"2026-06-15","overallCohesion":51.4,"registryCoverage":17.65,"registryCovered":6,"registryTotal":34,"openGaps":14,"gaps":{"p0":1,"p1":0,"p2":4,"p3":9},"cost30dUsd":4.26,"mrrUsd":0,"completionWeighted":2.6}
 {"date":"2026-06-16","overallCohesion":51.4,"registryCoverage":17.65,"registryCovered":6,"registryTotal":34,"openGaps":14,"gaps":{"p0":1,"p1":0,"p2":4,"p3":9},"cost30dUsd":10.81,"mrrUsd":0,"completionWeighted":2.6}
-{"date":"2026-06-17","overallCohesion":51.4,"registryCoverage":17.65,"registryCovered":6,"registryTotal":34,"openGaps":14,"gaps":{"p0":1,"p1":0,"p2":4,"p3":9},"cost30dUsd":10.81,"mrrUsd":0,"completionWeighted":2.6}
+{"date":"2026-06-17","overallCohesion":51.4,"registryCoverage":17.65,"registryCovered":6,"registryTotal":34,"openGaps":13,"gaps":{"p0":0,"p1":0,"p2":4,"p3":9},"cost30dUsd":10.81,"mrrUsd":0,"completionWeighted":2.6}

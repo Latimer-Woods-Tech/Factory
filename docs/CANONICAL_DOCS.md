@@ -10,6 +10,8 @@ These docs are allowlisted in `docs/_governance/canonical-docs.yml`. They are tr
 |---|---|---|---|---|
 | [.github/workflows/REGISTRY.md](../.github/workflows/REGISTRY.md) | owner-reviewed | platform | unknown | Workflow tiering and lifecycle registry. |
 | [CLAUDE.md](../CLAUDE.md) | owner-reviewed | platform | unknown | Standing orders, stack constraints, verification requirements, and package dependency order. |
+| [docs/_governance/cloudflare-key-policy.md](_governance/cloudflare-key-policy.md) | owner-reviewed | platform | 2026-06-16 | Cloudflare API token governance — scoped-tokens-only, inventory, least-privilege scopes, rotation, and verify-before-trust. |
+| [docs/_governance/credential-hardening-backlog.md](_governance/credential-hardening-backlog.md) | owner-reviewed | platform | 2026-06-16 | Credential families, blast-radius priorities, and key-hardening execution order. |
 | [docs/architecture/FACTORY_V1.md](architecture/FACTORY_V1.md) | owner-reviewed | architecture | unknown | Whole-system architecture baseline. Mutable counts must be verified against executable sources. |
 | [docs/architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md](architecture/XICO_CITY_LOW_LEVEL_ARCHITECTURE.md) | owner-reviewed | architecture | unknown | Xico City low-level requirements, architecture, and ecosystem integration map. |
 | [docs/decisions/2026-05-25-factory-alignment.md](decisions/2026-05-25-factory-alignment.md) | owner-reviewed | platform | unknown | Current strategic alignment, non-goals, cost posture, and Factory/app boundary. |

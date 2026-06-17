@@ -9,6 +9,7 @@ stores each in GCP Secret Manager. Implements [`docs/_governance/cloudflare-key-
 | Pages deploy | `cf-token-pages-deploy` | Cloudflare Pages:Write | account |
 | Cache purge | `cf-token-cache-purge` | Cache Purge | all zones |
 | Stream | `cf-token-stream` | Stream:Write | account |
+| Supervisor deploy | `cf-token-supervisor-deploy` | Workers Scripts:Write, Workers Routes:Write, Account Settings:Read, D1:Write, Vectorize:Write | account + all zones |
 
 The suite is data, in [`token-suite.json`](./token-suite.json) — add a job by adding an entry.
 

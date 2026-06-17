@@ -15,7 +15,7 @@
       "name": "pages-deploy",
       "purpose": "Cloudflare Pages deploys",
       "policies": [
-        { "scope": "account", "permission_groups": ["Cloudflare Pages Write"] }
+        { "scope": "account", "permission_groups": ["Pages Write"] }
       ]
     },
     {
@@ -32,6 +32,23 @@
       "purpose": "Cloudflare Stream (video pipeline copy + status)",
       "policies": [
         { "scope": "account", "permission_groups": ["Stream Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-supervisor-deploy",
+      "name": "supervisor-deploy",
+      "purpose": "factory-supervisor Worker deploy — includes D1 + Vectorize for RFC-007 semantic memory. Once created, update GitHub secret CF_API_TOKEN to this value. See issue #1750.",
+      "policies": [
+        {
+          "scope": "account",
+          "permission_groups": [
+            "Workers Scripts Write",
+            "Account Settings Read",
+            "D1 Write",
+            "Vectorize Write"
+          ]
+        },
+        { "scope": "zones", "permission_groups": ["Workers Routes Write"] }
       ]
     }
   ]

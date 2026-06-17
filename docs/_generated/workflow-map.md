@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-16
+last_generated: 2026-06-17
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -54,6 +54,7 @@ flowchart TB
   Other --> cf_domain_reconcile_yml["cf-domain-reconcile.yml"]
   Other --> ci_qa_tools_yml["ci-qa-tools.yml"]
   Other --> ci_yml["ci.yml"]
+  Other --> cloudflare_token_rotation_yml["cloudflare-token-rotation.yml"]
   Other --> codeql_yml["codeql.yml"]
   Other --> coherence_check_yml["coherence-check.yml"]
   Other --> cohesion_courtesy_check_yml["cohesion-courtesy-check.yml"]
