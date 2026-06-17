@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-06-17T00:16:51.585Z",
+  "generatedAt": "2026-06-17T06:11:52.974Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
     "cohesionThreshold": 70,
     "gaps": {
-      "p0": 1,
+      "p0": 0,
       "p1": 0,
       "p2": 4,
       "p3": 9
@@ -1023,13 +1023,13 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-17T00:16:52.318Z",
+    "generatedAt": "2026-06-17T06:11:53.913Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
-      "openGaps": 14,
+      "openGaps": 13,
       "gaps": {
-        "p0": 1,
+        "p0": 0,
         "p1": 0,
         "p2": 4,
         "p3": 9
@@ -1080,12 +1080,12 @@
         "direction": "down"
       },
       "openGaps": {
-        "current": 14,
+        "current": 13,
         "prior": 14,
         "priorDate": "2026-06-08",
         "dayGap": 9,
-        "delta": 0,
-        "direction": "flat"
+        "delta": -1,
+        "direction": "down"
       }
     },
     "movers": {
