@@ -1,0 +1,76 @@
+{
+  "briefKey": "authority-concept-sacral",
+  "key": "authority-concept-sacral",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "authority-concept",
+  "title": "Authority: The Sacral Compass",
+  "description": "Your gut sounds and physical sensations are your compass. \"Uh-huh\" (yes) and \"un-uh\" (no) arrive before language does. Learn to hear them and trust them completely.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Authority: The Sacral Compass",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"sacral\" means for them and feels recognised, not labelled.",
+  "targetPersona": "authority_sacral",
+  "keyPoints": [
+    "Your gut sounds and physical sensations are your compass.",
+    "\"Uh-huh\" (yes) and \"un-uh\" (no) arrive before language does.",
+    "Learn to hear them and trust them completely."
+  ],
+  "forbiddenClaims": [
+    "your authority makes you immune to mistakes",
+    "you should override your authority when others disagree",
+    "emotional authority means waiting forever"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "authority-concept-sacral-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Authority: The Sacral Compass — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "authority-concept-sacral-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Authority: The Sacral Compass — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "authority-concept-sacral-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Authority: The Sacral Compass — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "authority-concept-sacral-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Authority: The Sacral Compass — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Authority: The Sacral Compass — Your Energy Blueprint",
+    "description": "Your gut sounds and physical sensations are your compass. \"Uh-huh\" (yes) and \"un-uh\" (no) arrive before language does. Learn to hear them and trust them completely."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('authority', 'sacral')",
+  "status": "planned"
+}

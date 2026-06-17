@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-38",
+  "key": "gate-concept-38",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 38: Opposition",
+  "description": "You have a warrior energy that resists what feels purposeless. Opposition is your teacher — it helps you discover whether something is worth fighting for. When you find your cause, your determination is unbreakable.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 38: Opposition",
+  "learningGoal": "The viewer understands what Gate 38 (Opposition — Sacred Opposition) means in their daily life, in plain terms.",
+  "targetPersona": "gate_38",
+  "keyPoints": [
+    "You have a warrior energy that resists what feels purposeless.",
+    "Opposition is your teacher",
+    "it helps you discover whether something is worth fighting for.",
+    "When you find your cause, your determination is unbreakable."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-38-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 38: Opposition — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-38-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 38: Opposition — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-38-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 38: Opposition — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-38-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 38: Opposition — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 38: Opposition — Your Energy Blueprint",
+    "description": "You have a warrior energy that resists what feels purposeless. Opposition is your teacher — it helps you discover whether something is worth fighting for. When you find your cause, your determination is unbreakable."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[38]",
+  "status": "planned"
+}

@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-60",
+  "key": "gate-concept-60",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 60: Limitation",
+  "description": "You feel the pressure of limits acutely — and those limits are where your creativity is born. Working within constraints rather than fighting them is where your real power lives. Limitation is your creative ignition.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 60: Limitation",
+  "learningGoal": "The viewer understands what Gate 60 (Limitation — Mastering creative constraint) means in their daily life, in plain terms.",
+  "targetPersona": "gate_60",
+  "keyPoints": [
+    "You feel the pressure of limits acutely",
+    "and those limits are where your creativity is born.",
+    "Working within constraints rather than fighting them is where your real power lives.",
+    "Limitation is your creative ignition."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-60-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 60: Limitation — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-60-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 60: Limitation — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-60-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 60: Limitation — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-60-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 60: Limitation — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 60: Limitation — Your Energy Blueprint",
+    "description": "You feel the pressure of limits acutely — and those limits are where your creativity is born. Working within constraints rather than fighting them is where your real power lives. Limitation is your creative ignition."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[60]",
+  "status": "planned"
+}
