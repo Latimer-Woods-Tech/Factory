@@ -55,9 +55,12 @@ TOKEN="$(node "$ROOT/gcp-token.mjs" 2>&1)" || {
   exit 0
 }
 
+# Access a specific known secret version — requires only secretAccessor, not viewer.
+# secrets.list (pageSize=1) requires secretmanager.viewer and caused false 403s.
+PROBE_SECRET="CAPRICAST_STAGING_APP_URL"
 HTTP_STATUS="$(curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $TOKEN" \
-  "https://secretmanager.googleapis.com/v1/projects/${PROJECT}/secrets?pageSize=1")"
+  "https://secretmanager.googleapis.com/v1/projects/${PROJECT}/secrets/${PROBE_SECRET}/versions/latest:access")"
 
 echo ""
 if [ "$HTTP_STATUS" = "200" ]; then

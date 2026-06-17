@@ -47,12 +47,12 @@
   ],
 
   // RFC-007 Phase 0: Workers AI binding for semantic memory (built-in, no provisioning needed).
-  // Vectorize bindings are omitted until CF_API_TOKEN has vectorize:write scope — see issue #1750.
-  // Once the token is updated, restore:
-  //   "vectorize": [
-  //     { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
-  //     { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" }
-  //   ]
+  // CF_API_TOKEN ("FACTORY MAIN") now carries Vectorize Write (added 2026-06-16, verified via
+  // index create→201/delete→200); deploy-supervisor.yml auto-provisions these indexes. Re #1750.
+  "vectorize": [
+    { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
+    { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" }
+  ],
   "ai": { "binding": "AI" },
 
   "vars": {
@@ -109,8 +109,12 @@
           "database_id": "1033b6bf-d38f-4948-8f3b-0de787c87f6b"
         }
       ],
-      "ai": { "binding": "AI" }
-      // Vectorize bindings restored here once CF_API_TOKEN has vectorize:write — see issue #1750.
+      "ai": { "binding": "AI" },
+      // Repeated for the named env (vectorize is not inherited from top-level). Re #1750.
+      "vectorize": [
+        { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
+        { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" }
+      ]
     }
   }
 }
