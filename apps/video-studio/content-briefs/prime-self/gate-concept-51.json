@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-51",
+  "key": "gate-concept-51",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 51: The Arousing",
+  "description": "You carry the shock of initiation — the courage to leap into the unknown first. You are built to encounter life's sudden shocks and survive them transformed. Your competitive spirit pushes others to discover their own courage.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 51: The Arousing",
+  "learningGoal": "The viewer understands what Gate 51 (The Arousing — Thunderous awakening through shock) means in their daily life, in plain terms.",
+  "targetPersona": "gate_51",
+  "keyPoints": [
+    "You carry the shock of initiation",
+    "the courage to leap into the unknown first.",
+    "You are built to encounter life's sudden shocks and survive them transformed.",
+    "Your competitive spirit pushes others to discover their own courage."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-51-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 51: The Arousing — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-51-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 51: The Arousing — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-51-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 51: The Arousing — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-51-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 51: The Arousing — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 51: The Arousing — Your Energy Blueprint",
+    "description": "You carry the shock of initiation — the courage to leap into the unknown first. You are built to encounter life's sudden shocks and survive them transformed. Your competitive spirit pushes others to discover their own courage."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[51]",
+  "status": "planned"
+}

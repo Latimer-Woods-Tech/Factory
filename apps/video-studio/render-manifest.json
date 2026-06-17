@@ -1,0 +1,11 @@
+{
+  "_comment": "Single source of truth: briefKey -> rendered Cloudflare Stream video. Replaces hardcoded streamUids in the HumanDesign app (home.js/blueprint.js/today.js). The acceptance gate (check-video-briefs.mjs) enforces no dead pointers.",
+  "streamAccount": "customer-op4b8eq1uv0ciwqy",
+  "videos": {
+    "daily-transits-guide": {
+      "streamUid": "78406f1f1c075526114990c0586d3762",
+      "renderedAt": "2026-05-21",
+      "lastValidated": "2026-06-17"
+    }
+  }
+}

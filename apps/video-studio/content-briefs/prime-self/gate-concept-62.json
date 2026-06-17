@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-62",
+  "key": "gate-concept-62",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 62: Preponderance of the Small",
+  "description": "You perceive the world in precise detail and have a gift for naming things accurately. The right words, the exact specification, the correct categorization — these matter enormously to you. Your precision creates clarity for others.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 62: Preponderance of the Small",
+  "learningGoal": "The viewer understands what Gate 62 (Preponderance of the Small — Precision in Expression) means in their daily life, in plain terms.",
+  "targetPersona": "gate_62",
+  "keyPoints": [
+    "You perceive the world in precise detail and have a gift for naming things accurately.",
+    "The right words, the exact specification, the correct categorization",
+    "these matter enormously to you.",
+    "Your precision creates clarity for others."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-62-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 62: Preponderance of the Small — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-62-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 62: Preponderance of the Small — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-62-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 62: Preponderance of the Small — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-62-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 62: Preponderance of the Small — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 62: Preponderance of the Small — Your Energy Blueprint",
+    "description": "You perceive the world in precise detail and have a gift for naming things accurately. The right words, the exact specification, the correct categorization — these matter enormously to you. Your precision creates clarity for others."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[62]",
+  "status": "planned"
+}
