@@ -1,0 +1,78 @@
+{
+  "briefKey": "strategy-concept-to-respond",
+  "key": "strategy-concept-to-respond",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "strategy-concept",
+  "title": "Strategy: To Respond",
+  "description": "Do not initiate from your head. Wait for life to offer something, then check your gut. If something expands in your body, that is your yes. If not, it is a no — no explanation needed.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "phoenix",
+  "forgeTheme": "phoenix",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Strategy: To Respond",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"to respond\" means for them and feels recognised, not labelled.",
+  "targetPersona": "strategy_to-respond",
+  "keyPoints": [
+    "Do not initiate from your head.",
+    "Wait for life to offer something, then check your gut.",
+    "If something expands in your body, that is your yes.",
+    "If not, it is a no",
+    "no explanation needed."
+  ],
+  "forbiddenClaims": [
+    "following your strategy guarantees a specific outcome",
+    "you will never feel resistance again",
+    "strategy is a rigid rule rather than a felt practice"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "strategy-concept-to-respond-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Strategy: To Respond — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "strategy-concept-to-respond-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Strategy: To Respond — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "strategy-concept-to-respond-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Strategy: To Respond — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "strategy-concept-to-respond-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Strategy: To Respond — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Strategy: To Respond — Your Energy Blueprint",
+    "description": "Do not initiate from your head. Wait for life to offer something, then check your gut. If something expands in your body, that is your yes. If not, it is a no — no explanation needed."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('strategy', 'to respond')",
+  "status": "planned"
+}

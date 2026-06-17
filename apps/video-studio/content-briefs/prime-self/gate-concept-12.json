@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-12",
+  "key": "gate-concept-12",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 12: Standstill",
+  "description": "You carry a voice that can express truth in a way that transcends ordinary conversation. Your words carry weight — but only when the timing is aligned. Silence is power for you too; don't speak before it's right.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 12: Standstill",
+  "learningGoal": "The viewer understands what Gate 12 (Standstill — The voice of transcendent perspective) means in their daily life, in plain terms.",
+  "targetPersona": "gate_12",
+  "keyPoints": [
+    "You carry a voice that can express truth in a way that transcends ordinary conversation.",
+    "Your words carry weight",
+    "but only when the timing is aligned.",
+    "Silence is power for you too; don't speak before it's right."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-12-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 12: Standstill — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-12-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 12: Standstill — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-12-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 12: Standstill — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-12-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 12: Standstill — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 12: Standstill — Your Energy Blueprint",
+    "description": "You carry a voice that can express truth in a way that transcends ordinary conversation. Your words carry weight — but only when the timing is aligned. Silence is power for you too; don't speak before it's right."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[12]",
+  "status": "planned"
+}

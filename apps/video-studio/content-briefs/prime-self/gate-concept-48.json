@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-48",
+  "key": "gate-concept-48",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 48: The Well",
+  "description": "You carry deep, inexhaustible wells of wisdom and skill that deepen over a lifetime. Your greatest enemy is the fear that you're not ready enough. You are almost always more prepared than you feel. Share your depth.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 48: The Well",
+  "learningGoal": "The viewer understands what Gate 48 (The Well — Intuitive recognition of depth and substance) means in their daily life, in plain terms.",
+  "targetPersona": "gate_48",
+  "keyPoints": [
+    "You carry deep, inexhaustible wells of wisdom and skill that deepen over a lifetime.",
+    "Your greatest enemy is the fear that you're not ready enough.",
+    "You are almost always more prepared than you feel.",
+    "Share your depth."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-48-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 48: The Well — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-48-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 48: The Well — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-48-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 48: The Well — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-48-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 48: The Well — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 48: The Well — Your Energy Blueprint",
+    "description": "You carry deep, inexhaustible wells of wisdom and skill that deepen over a lifetime. Your greatest enemy is the fear that you're not ready enough. You are almost always more prepared than you feel. Share your depth."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[48]",
+  "status": "planned"
+}
