@@ -1,102 +1,215 @@
----
-status: canonical
-owner: platform
-doc_type: policy
-fidelity: verified
-quality: usable
-last_updated: 2026-06-16
-last_verified: 2026-06-16
-scope: Cloudflare API token governance — which tokens exist, where they live, least-privilege, rotation, and the verify-before-trust requirement.
-truth_source:
-  - validation-output
-  - service-registry
-  - github-workflows
-verified_by:
-  - "cloudflare /user/tokens/verify (2026-06-16)"
-  - "gcloud secrets list (factory-495015)"
----
-
 # Cloudflare Key Policy
 
-**Status:** Active / law. This is the standing policy for every Cloudflare credential the Factory and its apps use. It exists because Cloudflare is moving the industry off long-lived **Global API Keys** toward **scoped API tokens**, and because a credential you cannot verify is a credential you cannot trust.
+**Last Updated:** 2026-06-16
+**Status:** Active reference
 
-## 1. Principles (the law)
+This policy adapts the GCP credential values used by Factory to Cloudflare: least privilege, service-owned automation, environment isolation, explicit ownership, auditable access, and fast revocation.
 
-1. **Scoped API tokens only — never the Global API Key.** No workflow, script, or runbook may use the account-wide Global API Key (email + 37-char hex key). Every credential is a scoped token with the **least** privileges its job needs.
-2. **GCP Secret Manager (`factory-495015`) is the canonical store.** Cloudflare tokens are sourced from GCP SM via WIF, not GitHub repo secrets — per [`CLAUDE.md`](../../CLAUDE.md). Where a workflow needs a GitHub `secrets.*` mirror for `wrangler`, the GCP SM copy is the source of truth and the mirror must match it.
-3. **Verify before you trust.** After minting, rotating, or wiring any token, run the verify recipe (§5) and confirm `success:true status:active` **with your own eyes** before relying on it. CI green ≠ token valid.
-4. **Least privilege, named purpose.** Each token's scope is documented in §3. A deploy token does not get cache-purge; a Stream token does not get Workers edit. Over-scoped tokens are a finding.
-5. **No orphans.** A secret that no consumer references, or that fails verification, is either fixed or removed (§4). Dead credentials are attack surface and audit noise.
+## Scope
 
-## 2. Canonical secret inventory (GCP SM `factory-495015`)
+This policy applies to Cloudflare API tokens, account-owned API tokens, Wrangler OAuth sessions, Cloudflare Access service tokens, and any CI/CD secret that can call Cloudflare APIs.
 
-Verified 2026-06-16 against Cloudflare `/user/tokens/verify`:
+It does not authorize storing Cloudflare credentials in source control, generated artifacts, local test state, plaintext runbooks, issue comments, or chat transcripts.
 
-| Secret | Purpose | Status (2026-06-16) |
-|---|---|---|
-| `CF_API_TOKEN` | **Primary** deploy/admin token — Workers + Pages deploys, DNS/route ops. Used in ~59 workflow refs. | ✅ valid & active |
-| `CLOUDFLARE_API_TOKEN` | **Fallback** for `CF_API_TOKEN` (workflows use `CF_API_TOKEN \|\| CLOUDFLARE_API_TOKEN`). | ✅ valid & active |
-| `CF_ACCOUNT_ID` / `CLOUDFLARE_ACCOUNT_ID` | Account id (`adrper79` account). Fallback pair, not a credential. | n/a (not a token) |
-| `CF_STREAM_TOKEN` | Cloudflare Stream API (video pipeline `/copy` + status). Scoped to Stream. | scoped — Stream only |
-| `CF_STREAM_CUSTOMER_DOMAIN` | Stream customer subdomain. | n/a (not a token) |
-| `CLOUDFLARE_API` | Declared at `docs/service-registry.yml:492` for one service. **Fails `/tokens/verify`** and is referenced by no workflow. | ⚠️ **does not verify — cleanup (§4)** |
-| `CLOUDFLARE_API_TOKEN_NEW` | 53-char token, **zero consumers** anywhere. | ⚠️ **orphan — cleanup (§4)** |
+## Current Baseline
 
-> ✅ **No Global API Keys are in the store** — every Cloudflare credential is a scoped token (53-char `cf*`-format), confirming compliance with §1.1.
+As of 2026-06-16, the local Wrangler OAuth session found on this workstation had broad deploy-oriented scopes such as Workers, Pages, D1, Queues, and zone read access. It did not show token-management scopes such as `API Tokens Write`, `API Tokens Read`, `Account API Tokens Write`, or `Account API Tokens Read`.
 
-## 3. Scope requirements by job
+That means the local Wrangler login should be treated as a human developer session, not as a credential factory. It must not be used by CI or shared automation.
 
-| Job | Token | Required permissions |
-|---|---|---|
-| Worker deploy (`wrangler deploy`) | `CF_API_TOKEN` | Account · Workers Scripts: Edit; Account · Workers Routes: Edit; Zone · Workers Routes: Edit |
-| Pages deploy | `CF_API_TOKEN` | Account · Cloudflare Pages: Edit |
-| **Cache purge** | *dedicated purge token* | Zone · Cache Purge: Purge |
-| Stream | `CF_STREAM_TOKEN` | Account · Stream: Edit |
+## Policy Values
 
-> ⚠️ **Cache-purge caveat:** `cf*`-scoped deploy tokens do **not** carry `Cache Purge: Purge`. A purge needs a token that explicitly has that permission — minting a deploy token and expecting it to purge is a known failure (see the selfprime login-cache-poisoning incident). Provision a separate purge-scoped token; do not widen the deploy token.
+1. Prefer account-owned tokens for shared automation.
+2. Use user-owned tokens only for personal development or one-off investigation.
+3. Separate human credentials from service credentials.
+4. Separate production, staging, preview, and local development credentials.
+5. Grant only the exact Cloudflare permission groups needed by the workflow.
+6. Scope tokens to the smallest account, zone, project, bucket, database, queue, or script boundary Cloudflare supports.
+7. Keep token creation and token deployment separate.
+8. Give every credential an owner, purpose, environment, expiry, storage location, and rotation date.
+9. Store credentials only in approved secret stores.
+10. Rotate immediately after suspected exposure, personnel changes, scope changes, or automation ownership changes.
 
-## 4. Cleanup register (open)
+## Token Classes
 
-Neither item below breaks production today (deploys use `CF_API_TOKEN`), but both violate §1.5:
+| Class | Owner | Where used | May create tokens | Default lifetime | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `cf-human-dev` | Individual user | Local Wrangler and manual debugging | No | User session or 30 days | Personal development and inspection. |
+| `cf-ci-deploy-dev` | Platform/service owner | CI/CD for non-production | No | 90 days | Deploy and manage dev Cloudflare resources. |
+| `cf-ci-deploy-staging` | Platform/service owner | CI/CD for staging | No | 90 days | Deploy and manage staging Cloudflare resources. |
+| `cf-ci-deploy-prod` | Platform/service owner plus production approver | CI/CD for production | No | 60 days | Deploy and manage production Cloudflare resources. |
+| `cf-readonly-audit` | Platform/security owner | Inventory, drift checks, audits | No | 90 days | Read-only Cloudflare inventory and verification. |
+| `cf-token-admin` | Platform security admin group | Manual rotation workflow only | Yes | 24 hours preferred, 7 days maximum | Create, rotate, revoke, and inventory Cloudflare tokens. |
+| `cf-breakglass-admin` | Named executive/platform custodian | Emergency access only | Yes, if required | Disabled or sealed until use | Restore access when normal paths are unavailable. |
 
-- **`CLOUDFLARE_API`** — fails `/tokens/verify`, declared only at `docs/service-registry.yml:492`, used by no workflow. Confirm the owning service no longer needs it, then either replace with a valid scoped token or remove the declaration + secret.
-- **`CLOUDFLARE_API_TOKEN_NEW`** — orphan, no consumers. Remove after confirming nothing reads it.
+## Permission Boundaries
 
-> Secret deletion is destructive and not auto-performed — surface to the owner with this evidence and delete only after confirmation.
+Deploy tokens must never include token-management permissions.
 
-## 5. Verify recipe (run after every change)
+Allowed deploy permissions depend on the workload, but should usually be selected from the smallest compatible set:
 
-```bash
-export NEON_API_KEY=... # not needed here; CF tokens live in GCP SM
-TOK="$(gcloud secrets versions access latest --secret=CF_API_TOKEN --project=factory-495015 | tr -d '\r\n\357\273\277')"
-curl -s https://api.cloudflare.com/client/v4/user/tokens/verify \
-  -H "Authorization: Bearer $TOK" | python -c 'import sys,json;d=json.load(sys.stdin);print(d["success"], (d.get("result") or {}).get("status"))'
-# expect:  True active
+- Workers deployments: `Workers Scripts Write`, `Workers KV Storage Write` only when KV is required, `Workers R2 Storage Write` only when R2 is required, `Workers Tail Read` only for controlled debugging.
+- Pages deployments: `Pages Write`, plus only the account or project resources needed by the build.
+- D1 migrations: `D1 Write` for the target environment only.
+- Queues: `Queues Write` for the target environment only.
+- AI or Vectorize workloads: `Workers AI Write`, `AI Gateway Edit`, or `Vectorize Write` only when the workload directly requires them.
+- DNS automation: `DNS Write` only for the exact zone and only for workflows that change DNS.
+- Auditing: read-only permission groups only, with no write permissions.
+
+Token administration requires explicit approval and must be isolated:
+
+- User-owned token management: `API Tokens Read` and `API Tokens Write`.
+- Account-owned token management: `Account API Tokens Read` and `Account API Tokens Write`.
+- Dashboard creation of account-owned tokens also requires the appropriate Cloudflare account administrator role.
+
+## Storage Rules
+
+Approved storage locations:
+
+- GCP Secret Manager as the primary store for Factory automation credentials.
+- CI/CD secret store for automation tokens.
+- Local Wrangler OAuth storage for individual development sessions.
+- Password manager or approved secret manager for break-glass material.
+- Cloudflare dashboard for account-owned token inventory.
+
+Disallowed storage locations:
+
+- Repository files, including `.env`, `wrangler.toml`, `wrangler.jsonc`, generated docs, and examples.
+- Issue comments, pull request descriptions, pasted logs, screenshots, or chat transcripts.
+- Shared local files or shell history.
+- Long-lived local environment variables for production credentials.
+
+## Naming Standard
+
+Use this naming pattern:
+
+```text
+cf-<owner-or-service>-<environment>-<capability>-<yyyymmdd>
 ```
 
-The GCP/GitHub copies are sometimes **BOM-prefixed or stale** — always `tr -d '\r\n\357\273\277'` after fetching, and verify the result rather than debugging a stale copy.
+Examples:
 
-## 6. Rotation
+```text
+cf-platform-prod-workers-deploy-20260616
+cf-platform-staging-d1-migrate-20260616
+cf-security-all-readonly-audit-20260616
+cf-platform-admin-token-rotate-20260616
+```
 
-1. Mint a new scoped token in the Cloudflare dashboard with **only** the permissions from §3.
-2. Write it to GCP SM (`printf '%s'`, never `echo`, to avoid the trailing-newline trap) and update any GitHub mirror.
-3. **Verify** (§5) → `True active`.
-4. Deploy a no-op or run the consuming workflow; confirm `/health` 200 (or the relevant probe).
-5. Revoke the old token in the dashboard only **after** the new one is confirmed live.
+## Required Metadata
 
-## 7. Automation — build + rotate the least-privilege suite
+Every token must have an inventory record with:
 
-The scoped suite is **minted and rotated by code**, not by hand:
+- Token name.
+- Cloudflare account ID and zone/project/resource scope.
+- Token owner and backup owner.
+- System or repository using the token.
+- Environment.
+- Permission groups.
+- Secret storage location.
+- Created date.
+- Expiration date.
+- Rotation date.
+- Approval reference.
+- Last verified date.
 
-- [`scripts/cloudflare/token-suite.json`](../../scripts/cloudflare/token-suite.json) — declarative spec: one entry per job (`cf-token-workers-deploy`, `cf-token-pages-deploy`, `cf-token-cache-purge`, `cf-token-stream`), each with its permission groups + resource scope.
-- [`scripts/cloudflare/manage-tokens.mjs`](../../scripts/cloudflare/manage-tokens.mjs) — `--plan` / `--create` / `--rotate` / `--verify`. Resolves account, zones, and permission-group IDs live; creates/rolls each token via the CF API (`POST /user/tokens`, `PUT /user/tokens/{id}/value`); writes the value to GCP SM (`--data-file=-`, no newline trap); verifies. Fail-loud (an unresolved permission group or a token that fails post-write verify exits non-zero) and never logs a token value.
-- [`.github/workflows/cloudflare-token-rotation.yml`](../../.github/workflows/cloudflare-token-rotation.yml) — monthly `--rotate` + on-demand `--plan/--create/--verify`, authed to GCP via WIF (`factory-sa`).
+Use `docs/_governance/cloudflare-credential-inventory.template.md` as the starting inventory shape. Inventory records must never contain the credential value itself.
 
-**Root of trust — the one irreducible manual step.** Creating tokens needs `User → API Tokens → Edit`, which Cloudflare will not grant to a token minted by a non-privileged token (verified: both deploy tokens 403/9109 on `/user/tokens`). So a single bootstrap token, **`CF_TOKEN_ADMIN`**, is created once by hand (API Tokens:Edit + Account Settings:Read + Zone:Read) and stored in GCP SM; the automation mints everything else from it. Setup steps: [`scripts/cloudflare/README.md`](../../scripts/cloudflare/README.md).
+## Rotation And Revocation
 
-## 8. References
+Standard rotation:
 
-- [`CLAUDE.md`](../../CLAUDE.md) — secrets sourced from GCP SM via WIF; verification requirement.
-- [`docs/runbooks/github-secrets-and-tokens.md`](../runbooks/github-secrets-and-tokens.md) — `CF_API_TOKEN` vs `CLOUDFLARE_API_TOKEN` naming, full secret inventory, rotation schedule.
-- [`docs/service-registry.yml`](../service-registry.yml) — per-service `required_secrets` (where each token is consumed).
-- [`docs/adr/0009-cloudflare-workers-only.md`](../adr/0009-cloudflare-workers-only.md) — runtime decision.
+- Production deploy tokens rotate at least every 60 days.
+- Non-production deploy tokens rotate at least every 90 days.
+- Read-only audit tokens rotate at least every 90 days.
+- Token-admin credentials are created just in time whenever possible and expire within 24 hours.
+- Break-glass credentials are tested quarterly without exposing their secret value.
+
+Immediate revocation is required when:
+
+- A token appears in a repository, artifact, log, screenshot, shell history, issue, ticket, or chat.
+- A token owner changes roles or leaves the project.
+- A token has broader permissions than its current workflow needs.
+- A CI/CD system, developer workstation, or secret store is suspected of compromise.
+- Production deployment ownership changes.
+
+## No-Lockout Rollout Rules
+
+Least privilege is not enough by itself. Credential changes must preserve a known-good path to deploy, inspect, and recover service.
+
+1. Do not revoke or narrow an existing production credential until its replacement has completed at least one successful manual validation and two successful CI/CD runs.
+2. Introduce replacement credentials alongside the current credential first, using a new secret name during validation when the platform allows it.
+3. Change only one control plane at a time for a given workflow: GitHub auth, Cloudflare auth, database auth, or external API auth.
+4. Keep at least two human administrators able to reach the Cloudflare dashboard before changing token-admin or break-glass material.
+5. Validate break-glass access before high-risk rotations, and re-validate immediately after any emergency use.
+6. Keep one read-only audit credential working during the entire migration so inventory and drift checks never depend on the credential being rotated.
+7. Never rotate the token-admin credential and the primary deploy credential in the same change window.
+8. Never change both the secret value and the consuming workflow logic in the same production step unless a rollback path is already tested.
+
+Recommended production cutover order:
+
+1. Inventory the current credential and confirm current working deployments.
+2. Create the narrower replacement credential with expiry and owner metadata.
+3. Store the replacement in the approved secret store under a new validation name.
+4. Run a read-only or dry-run check where possible.
+5. Update one non-production workflow or environment to use the replacement.
+6. Promote the replacement to production and observe two successful runs.
+7. Remove the old credential from production workflows.
+8. Revoke the old credential and record the revocation date.
+
+## Creation Workflow
+
+1. Open a credential request with owner, environment, purpose, exact Cloudflare resources, requested permissions, expiration, storage location, and rotation owner.
+2. Confirm that no existing token can be narrowed or rotated to satisfy the request.
+3. Create account-owned tokens for shared automation whenever the endpoint supports them.
+4. Assign only the permission groups required for the workflow.
+5. Set the expiration before first use.
+6. Store the token directly in the approved secret store.
+7. Verify the token with the smallest safe read or dry-run operation.
+8. Record metadata in the credential inventory.
+9. Remove any temporary local copies after verification.
+
+## Break-Glass Rules
+
+Break-glass credentials exist only to restore service when normal access paths fail.
+
+- They must have named custodians.
+- They must require out-of-band approval before use.
+- They must be stored outside day-to-day CI/CD systems.
+- Their use must create an incident record.
+- They must be rotated immediately after use.
+- They must not be used for routine deploys, debugging, or convenience work.
+
+## Local Developer Rules
+
+Developers may use `wrangler login` for local work. Local Wrangler sessions are personal credentials and inherit the user's Cloudflare access.
+
+Developers must not:
+
+- Reuse local Wrangler OAuth tokens in automation.
+- Paste Wrangler config values into CI/CD.
+- Grant token-management permissions to local development tokens.
+- Use production-scoped Cloudflare tokens for local testing.
+
+When local testing needs Cloudflare access, prefer non-production resources and narrow user-owned tokens with short expirations.
+
+## Adoption Checklist
+
+1. Inventory all Cloudflare credentials used by CI, local machines, scripts, and external services.
+2. Classify each credential using the token classes in this policy.
+3. Revoke any deploy token that can create or manage other tokens.
+4. Replace shared user-owned automation tokens with account-owned tokens where Cloudflare supports the endpoint.
+5. Split production and non-production tokens.
+6. Add expirations and rotation owners to all remaining tokens.
+7. Move any plaintext token out of repo files, local scripts, or issue history.
+8. Create one read-only audit token for inventory and drift checks.
+9. Create a short-lived token-admin workflow for token rotation.
+10. Schedule the first rotation review within 30 days.
+
+## References
+
+- Cloudflare API token creation: https://developers.cloudflare.com/fundamentals/api/get-started/create-token/
+- Cloudflare account-owned tokens: https://developers.cloudflare.com/fundamentals/api/get-started/account-owned-tokens/
+- Cloudflare token creation through the API: https://developers.cloudflare.com/fundamentals/api/how-to/create-via-api/
+- Cloudflare API token permissions: https://developers.cloudflare.com/fundamentals/api/reference/permissions/
+- Cloudflare account token API: https://developers.cloudflare.com/api/resources/accounts/subresources/tokens/methods/create/
