@@ -16,7 +16,7 @@
  */
 
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -28,16 +28,34 @@ const BRIEFS_DIR    = resolve(import.meta.dirname, '../apps/video-studio/content
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    limit:  { type: 'string',  default: '80' },
-    repo:   { type: 'string',  default: 'Latimer-Woods-Tech/Factory' },
-    commit: { type: 'boolean', default: false },
+    limit:    { type: 'string',  default: '80' },
+    repo:     { type: 'string',  default: 'Latimer-Woods-Tech/Factory' },
+    commit:   { type: 'boolean', default: false },
+    'hd-path': { type: 'string', default: '' },
   },
   allowPositionals: false,
 });
 
-const LIMIT  = Math.min(parseInt(values['limit'], 10), 100);
-const REPO   = values['repo'];
-const COMMIT = values['commit'];
+const LIMIT   = Math.min(parseInt(values['limit'], 10), 100);
+const REPO    = values['repo'];
+const COMMIT  = values['commit'];
+
+// Locate HumanDesign: try sibling-of-Factory (main checkout) first,
+// then sibling-of-Factory-root for worktrees (.claude/worktrees/*/scripts).
+function findHdPath(explicitPath) {
+  if (explicitPath) return resolve(explicitPath);
+  // Walk up from scripts/ looking for a GitHub directory
+  const candidates = [
+    resolve(import.meta.dirname, '../../HumanDesign'),           // main checkout
+    resolve(import.meta.dirname, '../../../../../HumanDesign'),   // worktree
+  ];
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return candidates[0];
+}
+
+const HD_PATH = findHdPath(values['hd-path']);
 
 // ---------------------------------------------------------------------------
 // 1. Load manifest (skip already-known entries)
@@ -194,7 +212,51 @@ for (const [briefKey, entry] of gateEntries) {
 }
 
 // ---------------------------------------------------------------------------
-// 7. Optionally commit
+// 7. Write to HumanDesign video-manifest.js (if repo found)
+// ---------------------------------------------------------------------------
+
+const hdManifestPath = resolve(HD_PATH, 'client/data/video-manifest.js');
+if (existsSync(hdManifestPath)) {
+  const current = readFileSync(hdManifestPath, 'utf8');
+
+  // Insert new gate entries before the closing `};` of GATE_VIDEOS
+  const insertionPoint = current.lastIndexOf('};');
+  if (insertionPoint === -1) {
+    console.warn('\nCould not find closing `};` in video-manifest.js — skipping auto-update.');
+  } else {
+    let insertion = '';
+    for (const [briefKey, entry] of gateEntries) {
+      const gateNum = briefKey.replace('gate-concept-', '');
+      // Skip gates already in the file
+      if (current.includes(`  ${gateNum}: {`)) continue;
+      insertion +=
+        `  ${gateNum}: {\n` +
+        `    streamUid: '${entry.streamUid}',\n` +
+        `    forge: '${entry.forge}',\n` +
+        `    variants: [\n` +
+        `      { id: 'gift',     label: '✦ Gift',     streamUid: '${entry.streamUid}', prompt: 'Does this land? Drop a ✦ if this is you.',                active: true },\n` +
+        `      { id: 'shadow',   label: '◈ Shadow',   streamUid: null, prompt: 'Caught yourself here before? Tell me where.' },\n` +
+        `      { id: 'practice', label: '◉ Practice', streamUid: null, prompt: 'Try it today. Come back and tell me what shifted.' },\n` +
+        `      { id: 'mirror',   label: '◎ Mirror',   streamUid: null, prompt: 'Who in your life does this explain? Tag the feeling.' },\n` +
+        `    ],\n` +
+        `    participationPrompt: 'Does this land? Drop a ✦ if this is you.',\n` +
+        `  },\n`;
+    }
+    if (insertion) {
+      const updated = current.slice(0, insertionPoint) + insertion + current.slice(insertionPoint);
+      writeFileSync(hdManifestPath, updated, 'utf8');
+      console.log(`\n✅ Updated ${hdManifestPath}`);
+    } else {
+      console.log('\nAll new gates already in HumanDesign video-manifest.js.');
+    }
+  }
+} else {
+  console.log(`\nHumanDesign repo not found at ${HD_PATH} — skipping auto-update.`);
+  console.log('Pass --hd-path /path/to/HumanDesign to enable direct update.');
+}
+
+// ---------------------------------------------------------------------------
+// 8. Optionally commit
 // ---------------------------------------------------------------------------
 
 if (COMMIT) {
