@@ -89,12 +89,12 @@ for (const run of runs) {
 
   // Extract inputs from the job steps or trigger event
   const triggerRaw = execSync(
-    `gh api /repos/${REPO}/actions/runs/${run.databaseId} --jq '.inputs // {}'`,
+    `gh api /repos/${REPO}/actions/runs/${run.databaseId}`,
     { encoding: 'utf8' },
   ).trim();
 
   let inputs = {};
-  try { inputs = JSON.parse(triggerRaw); } catch { continue; }
+  try { inputs = JSON.parse(triggerRaw).inputs ?? {}; } catch { continue; }
 
   const briefKey = inputs.brief_key;
   const jobId    = inputs.job_id;
