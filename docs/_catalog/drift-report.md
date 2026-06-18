@@ -75,7 +75,7 @@
 | warning | platform | docs/APP_SCOPE_REGISTRY.md | 122 | References missing npm script "build". |
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 706 | References missing npm script "check". |
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 1397 | References missing npm script "migrate". |
-| warning | architecture | docs/architecture/FACTORY_V1.md | 647 | References missing npm script "migrate". |
+| warning | architecture | docs/architecture/FACTORY_V1.md | 652 | References missing npm script "migrate". |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1183 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1507 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1595 | References missing workflow .github/workflows/qa-audit.yml. |

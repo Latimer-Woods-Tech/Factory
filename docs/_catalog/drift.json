@@ -577,7 +577,7 @@
       "id": "docs.npm-script.missing",
       "severity": "warning",
       "doc": "docs/architecture/FACTORY_V1.md",
-      "line": 647,
+      "line": 652,
       "owner": "architecture",
       "status": "canonical",
       "truth_source": "package.json",
