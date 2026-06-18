@@ -117,7 +117,7 @@ if (dryRun) {
     },
     body: JSON.stringify({
       appId,
-      type:          'concept',
+      type:          composition === 'TrainingVideo' ? 'training' : composition === 'WalkthroughVideo' ? 'walkthrough' : 'marketing',
       topic,
       triggerSource: 'manual',
     }),
@@ -130,7 +130,7 @@ if (dryRun) {
   }
 
   const data = await res.json();
-  jobId = data.job?.id ?? data.id;
+  jobId = data.data?.id ?? data.job?.id ?? data.id;
   if (!jobId) {
     console.error('No job id in response:', JSON.stringify(data));
     process.exit(1);
