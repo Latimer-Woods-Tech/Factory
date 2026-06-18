@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-18T03:58:29.919Z",
+  "generatedAt": "2026-06-18T08:52:49.550Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,111 +1793,6 @@
         "tier": "infra"
       },
       {
-        "id": "capricast:video-playback",
-        "appId": "capricast",
-        "label": "CF Stream video playback",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:stripe-payments",
-        "appId": "capricast",
-        "label": "Stripe payments",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:conference",
-        "appId": "capricast",
-        "label": "Conference scheduling and hosting",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:chat-1to1",
-        "appId": "capricast",
-        "label": "1:1 text chat",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "capricast:live-stream",
-        "appId": "capricast",
-        "label": "Live streaming",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:group-video",
-        "appId": "capricast",
-        "label": "16-way video chat",
-        "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
-        "status": "roadmap",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
-        "tier": "growth"
-      },
-      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -1972,6 +1867,111 @@
         "appId": "selfprime",
         "label": "Guidance curriculum engine (cross-surface placement)",
         "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
+        "id": "capricast:video-playback",
+        "appId": "capricast",
+        "label": "CF Stream video playback",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:stripe-payments",
+        "appId": "capricast",
+        "label": "Stripe payments",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:conference",
+        "appId": "capricast",
+        "label": "Conference scheduling and hosting",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:chat-1to1",
+        "appId": "capricast",
+        "label": "1:1 text chat",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "capricast:live-stream",
+        "appId": "capricast",
+        "label": "Live streaming",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:group-video",
+        "appId": "capricast",
+        "label": "16-way video chat",
+        "status": "roadmap",
         "tier": "growth"
       }
     ],
@@ -2054,30 +2054,30 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "capricast:cc-monetize",
-        "appId": "capricast",
-        "label": "Creator Monetization Live",
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "capricast:cc-live-stream",
-        "appId": "capricast",
-        "label": "Live Streaming GA",
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced on user-scoped tables",
+        "status": "done",
+        "quarter": "Q2-2026"
+      },
+      {
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
         "status": "queued",
         "quarter": "Q4-2026"
       },
       {
-        "id": "capricast:cc-group-chat",
-        "appId": "capricast",
-        "label": "16-way Video Chat",
-        "status": "queued",
-        "quarter": "Q1-2027"
-      },
-      {
-        "id": "capricast:cc-mobile",
-        "appId": "capricast",
-        "label": "Mobile PWA",
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
         "status": "design",
         "quarter": "Q2-2027"
       },
@@ -2131,30 +2131,30 @@
         "quarter": "Q2-2027"
       },
       {
-        "id": "selfprime:sp-launch",
-        "appId": "selfprime",
-        "label": "Public Launch",
+        "id": "capricast:cc-monetize",
+        "appId": "capricast",
+        "label": "Creator Monetization Live",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "selfprime:sp-rls",
-        "appId": "selfprime",
-        "label": "RLS enforced on user-scoped tables",
-        "status": "done",
-        "quarter": "Q2-2026"
-      },
-      {
-        "id": "selfprime:sp-referrals",
-        "appId": "selfprime",
-        "label": "Practitioner referral engine GA",
+        "id": "capricast:cc-live-stream",
+        "appId": "capricast",
+        "label": "Live Streaming GA",
         "status": "queued",
         "quarter": "Q4-2026"
       },
       {
-        "id": "selfprime:sp-ios",
-        "appId": "selfprime",
-        "label": "iOS PWA",
+        "id": "capricast:cc-group-chat",
+        "appId": "capricast",
+        "label": "16-way Video Chat",
+        "status": "queued",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "capricast:cc-mobile",
+        "appId": "capricast",
+        "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
       }
@@ -2499,78 +2499,113 @@
       "type": "uses_package"
     },
     {
-      "from": "capricast",
-      "to": "capricast:video-playback",
+      "from": "selfprime",
+      "to": "selfprime:energy-blueprint",
       "type": "has_feature"
     },
     {
-      "from": "capricast",
-      "to": "capricast:stripe-payments",
+      "from": "selfprime",
+      "to": "selfprime:narration",
       "type": "has_feature"
     },
     {
-      "from": "capricast",
-      "to": "capricast:conference",
+      "from": "selfprime",
+      "to": "selfprime:video-engine",
       "type": "has_feature"
     },
     {
-      "from": "capricast",
-      "to": "capricast:chat-1to1",
+      "from": "selfprime",
+      "to": "selfprime:notification-inbox",
       "type": "has_feature"
     },
     {
-      "from": "capricast",
-      "to": "capricast:live-stream",
+      "from": "selfprime",
+      "to": "selfprime:practitioner-network",
       "type": "has_feature"
     },
     {
-      "from": "capricast",
-      "to": "capricast:group-video",
+      "from": "selfprime",
+      "to": "selfprime:group-readings",
       "type": "has_feature"
     },
     {
-      "from": "capricast",
-      "to": "capricast:cc-monetize",
+      "from": "selfprime",
+      "to": "selfprime:rls-enforcement",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:diary",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:dream-weaver",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:psychometric",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:curriculum",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-launch",
       "type": "has_roadmap"
     },
     {
-      "from": "capricast",
-      "to": "capricast:cc-live-stream",
+      "from": "selfprime",
+      "to": "selfprime:sp-rls",
       "type": "has_roadmap"
     },
     {
-      "from": "capricast",
-      "to": "capricast:cc-group-chat",
+      "from": "selfprime",
+      "to": "selfprime:sp-referrals",
       "type": "has_roadmap"
     },
     {
-      "from": "capricast",
-      "to": "capricast:cc-mobile",
+      "from": "selfprime",
+      "to": "selfprime:sp-ios",
       "type": "has_roadmap"
     },
     {
-      "from": "capricast",
+      "from": "selfprime",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "capricast",
+      "from": "selfprime",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "capricast",
+      "from": "selfprime",
       "to": "pkg:stripe",
       "type": "uses_package"
     },
     {
-      "from": "capricast",
+      "from": "selfprime",
+      "to": "pkg:llm",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
       "to": "pkg:analytics",
       "type": "uses_package"
     },
     {
-      "from": "capricast",
-      "to": "pkg:video",
+      "from": "selfprime",
+      "to": "pkg:bodygraph",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:telephony",
       "type": "uses_package"
     },
     {
@@ -2699,113 +2734,78 @@
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:energy-blueprint",
+      "from": "capricast",
+      "to": "capricast:video-playback",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:narration",
+      "from": "capricast",
+      "to": "capricast:stripe-payments",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:video-engine",
+      "from": "capricast",
+      "to": "capricast:conference",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:notification-inbox",
+      "from": "capricast",
+      "to": "capricast:chat-1to1",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:practitioner-network",
+      "from": "capricast",
+      "to": "capricast:live-stream",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:group-readings",
+      "from": "capricast",
+      "to": "capricast:group-video",
       "type": "has_feature"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:rls-enforcement",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:diary",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:dream-weaver",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:psychometric",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:curriculum",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-launch",
+      "from": "capricast",
+      "to": "capricast:cc-monetize",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-rls",
+      "from": "capricast",
+      "to": "capricast:cc-live-stream",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-referrals",
+      "from": "capricast",
+      "to": "capricast:cc-group-chat",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:sp-ios",
+      "from": "capricast",
+      "to": "capricast:cc-mobile",
       "type": "has_roadmap"
     },
     {
-      "from": "selfprime",
+      "from": "capricast",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
+      "from": "capricast",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
+      "from": "capricast",
       "to": "pkg:stripe",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "pkg:llm",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
+      "from": "capricast",
       "to": "pkg:analytics",
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "pkg:bodygraph",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:telephony",
+      "from": "capricast",
+      "to": "pkg:video",
       "type": "uses_package"
     }
   ],
@@ -2828,7 +2828,7 @@
     "edgeCount": 102
   },
   "kpis": {
-    "generatedAt": "2026-06-18T03:58:29.983Z",
+    "generatedAt": "2026-06-18T08:52:49.613Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
