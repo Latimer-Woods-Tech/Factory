@@ -14,6 +14,69 @@
       "lastValidated": "2026-06-17",
       "forge": "phoenix",
       "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-2": {
+      "streamUid": "9f016d41026be6be93e77e7f46040f00",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "lux",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-3": {
+      "streamUid": "fc0650933082a06ac3dfc96b0fdbad8f",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "aether",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-4": {
+      "streamUid": "52e90d079aa157d0141339d094940c76",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "eros",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-5": {
+      "streamUid": "a5ff1080ad23ef661e58ecd2a457c554",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "chronos",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-6": {
+      "streamUid": "98b68415ecbb7ae4ff0e949ccd80e599",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "self",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-7": {
+      "streamUid": "932a33906994cf83407a50faac5eae84",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "phoenix",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-8": {
+      "streamUid": "a9bc2fecf29f8e25b44300d5bcdaacd4",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "lux",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-9": {
+      "streamUid": "dee2c5f67009fe0e066a9ed08af2329a",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "aether",
+      "composition": "EnergyBlueprintVideo"
+    },
+    "gate-concept-10": {
+      "streamUid": "49425237bed6efe0942cf1d00e3f0e33",
+      "renderedAt": "2026-06-18",
+      "lastValidated": "2026-06-18",
+      "forge": "eros",
+      "composition": "EnergyBlueprintVideo"
     }
   }
 }
