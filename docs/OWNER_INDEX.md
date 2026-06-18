@@ -155,7 +155,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (363)
+## platform (365)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -365,6 +365,7 @@
 | [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-15 |
 | [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-16 |
 | [docs/planning/brief-2026-06-17.md](planning/brief-2026-06-17.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-17 |
+| [docs/planning/brief-2026-06-18.md](planning/brief-2026-06-18.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-18 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | unknown | HumanDesign Language Guidance |
@@ -398,6 +399,7 @@
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | unknown | Agent Ship Runbook |
 | [docs/runbooks/automation-audit.md](runbooks/automation-audit.md) | active | unverified | unknown | Factory Automation Audit — 2026-05-09 |
 | [docs/runbooks/branch-protection-hardening.md](runbooks/branch-protection-hardening.md) | active | unverified | unknown | Branch Protection Hardening Runbook |
+| [docs/runbooks/cloudflare-token-migration.md](runbooks/cloudflare-token-migration.md) | active | unverified | Wed Jun 17 2026 00:00:00 GMT+0000 (Coordinated Universal Time) | Cloudflare Token Migration Runbook |
 | [docs/runbooks/coh-world-class-sprint.md](runbooks/coh-world-class-sprint.md) | active | unverified | unknown | coh — World-class Polish Sprint |
 | [docs/runbooks/coherence-check.md](runbooks/coherence-check.md) | active | unverified | unknown | Coherence Check |
 | [docs/runbooks/CREDENTIALS_SETUP.md](runbooks/CREDENTIALS_SETUP.md) | active | unverified | unknown | Phase 6: Credentials Setup Guide |

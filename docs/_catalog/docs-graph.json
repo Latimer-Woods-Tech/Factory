@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 468,
+    "total_docs": 470,
     "canonical": 19,
-    "active": 401,
+    "active": 403,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:3ff9c487da50cf6c054fe8358403b06e6c412372e768496970d1215b56287c49",
+      "content_hash": "sha256:01559c774a4d6cd7cec17845b30ccf2eabe5add9c98683439855ff8e2a9b9f41",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:50e46e56cd46e8b64830dbb325bb53bb496d0921928cc0b891b7e1be8468ba62",
+      "content_hash": "sha256:90afb6c762613df7179c5116a552b66434aa44578d00cf7e3924f9002f06a3f4",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:00be9dccbaaccc95063a86add520e33854d4f1e8fd6171c828c4ee9f061a5da2",
+      "content_hash": "sha256:65f1085720c6610e2c60627dc99f89632ad06f8dc5403c85354daf68b3fbd6ce",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1288,7 +1288,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:37f06ff0d574c3cd509c99855895f31c25023c5d20bb516d9ff62461da5e6ecf",
+      "content_hash": "sha256:07c8f445cc7aa9146b6f4b2097e94ccad67e44178c114d5b55478060fd663da5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -2803,7 +2803,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f3bef058acbc8a761f14e704a3430014aca978d25fa3a7ee979f94ba79420661",
+      "content_hash": "sha256:ab478283e89c6a4b3c937d91a7354658c8207994d9d9f077472ca4f20bc47dc5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6492,7 +6492,28 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:fa79d7af50e63c1a314b0aa672c2ccee4157a271dc3bd64b6701785c489190e7",
+      "content_hash": "sha256:3fb71c7a9403900dc1881800c9e080af805af8949da23b0b1b0c85025d5f6251",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-18.md",
+      "title": "Platform Planning Brief — 2026-06-18",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:9130df85ea3386f8b7f74ad5fe34dcc6f0629e56692e6d2a8f35b4888c4d143d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7234,6 +7255,27 @@
       "content_hash": "sha256:962df47c17824d5707cac3f9df2e01ebf6193b3433687a66d37072b55e950500",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/runbooks/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/runbooks/cloudflare-token-migration.md",
+      "title": "Cloudflare Token Migration Runbook",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "runbook",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": "2026-06-17T00:00:00.000Z",
+      "last_verified": null,
+      "scope": "Migrating CI workflows from the near-admin CF_API_TOKEN onto the least-privilege cf-token-* suite.",
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:76d92e84fa5a6b49471eeaa9093a1bc3c040d2ba93aeae881dc75072206c9727",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/runbooks/**"
       },

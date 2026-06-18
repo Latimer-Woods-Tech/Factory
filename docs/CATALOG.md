@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 468 |
+| total_docs | 470 |
 | canonical | 19 |
-| active | 401 |
+| active | 403 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -41,7 +41,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (401)
+## Active Docs (403)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -307,6 +307,7 @@
 | [docs/planning/brief-2026-06-15.md](planning/brief-2026-06-15.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-15 |
 | [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-16 |
 | [docs/planning/brief-2026-06-17.md](planning/brief-2026-06-17.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-17 |
+| [docs/planning/brief-2026-06-18.md](planning/brief-2026-06-18.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-18 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
@@ -340,6 +341,7 @@
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |
 | [docs/runbooks/automation-audit.md](runbooks/automation-audit.md) | active | unverified | platform | unknown | Factory Automation Audit — 2026-05-09 |
 | [docs/runbooks/branch-protection-hardening.md](runbooks/branch-protection-hardening.md) | active | unverified | platform | unknown | Branch Protection Hardening Runbook |
+| [docs/runbooks/cloudflare-token-migration.md](runbooks/cloudflare-token-migration.md) | active | unverified | platform | Wed Jun 17 2026 00:00:00 GMT+0000 (Coordinated Universal Time) | Cloudflare Token Migration Runbook |
 | [docs/runbooks/coh-world-class-sprint.md](runbooks/coh-world-class-sprint.md) | active | unverified | platform | unknown | coh — World-class Polish Sprint |
 | [docs/runbooks/coherence-check.md](runbooks/coherence-check.md) | active | unverified | platform | unknown | Coherence Check |
 | [docs/runbooks/CREDENTIALS_SETUP.md](runbooks/CREDENTIALS_SETUP.md) | active | unverified | platform | unknown | Phase 6: Credentials Setup Guide |
