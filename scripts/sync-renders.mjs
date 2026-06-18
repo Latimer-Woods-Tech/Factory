@@ -3,17 +3,16 @@
  * sync-renders.mjs — pull completed render streamUids into both manifests.
  *
  * Usage:
- *   node scripts/sync-renders.mjs [--limit 20] [--repo Latimer-Woods-Tech/Factory]
+ *   node scripts/sync-renders.mjs [--limit 80] [--repo Latimer-Woods-Tech/Factory] [--commit]
  *
  * What it does:
  *   1. Lists recent successful render-video.yml workflow runs
- *   2. For each run, reads inputs.brief_key + inputs.job_id
- *   3. Fetches the schedule-worker job to get the streamUid
+ *   2. For each run, greps the logs for INPUT_BRIEF_KEY + STREAM_UID
+ *   3. Skips briefKeys already in render-manifest.json
  *   4. Updates apps/video-studio/render-manifest.json with new entries
- *   5. Prints a HumanDesign/client/data/video-manifest.js patch for copy/paste
- *      (HumanDesign lives in a sibling repo — script prints rather than mutates)
+ *   5. Prints a HumanDesign/client/data/video-manifest.js patch (copy/paste)
  *
- * Auth: reads WORKER_API_TOKEN from GCP SM. Requires gcloud CLI + gh CLI.
+ * Auth: requires gh CLI (already authed) + gcloud optional (not needed here).
  */
 
 import { execSync } from 'node:child_process';
@@ -21,45 +20,40 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
-const SCHEDULE_WORKER_URL = 'https://schedule.latwoodtech.work';
-const GCP_PROJECT = 'factory-495015';
+const GCP_PROJECT        = 'factory-495015';
+const CF_STREAM_CUSTOMER = 'customer-op4b8eq1uv0ciwqy';
 const MANIFEST_PATH = resolve(import.meta.dirname, '../apps/video-studio/render-manifest.json');
+const BRIEFS_DIR    = resolve(import.meta.dirname, '../apps/video-studio/content-briefs');
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    limit:  { type: 'string',  default: '20' },
+    limit:  { type: 'string',  default: '80' },
     repo:   { type: 'string',  default: 'Latimer-Woods-Tech/Factory' },
     commit: { type: 'boolean', default: false },
   },
   allowPositionals: false,
 });
 
-const LIMIT  = parseInt(values['limit'], 10);
+const LIMIT  = Math.min(parseInt(values['limit'], 10), 100);
 const REPO   = values['repo'];
 const COMMIT = values['commit'];
 
 // ---------------------------------------------------------------------------
-// 1. Auth
+// 1. Load manifest (skip already-known entries)
 // ---------------------------------------------------------------------------
 
-let workerApiToken;
-try {
-  workerApiToken = execSync(
-    `gcloud secrets versions access latest --secret=WORKER_API_TOKEN --project=${GCP_PROJECT}`,
-    { encoding: 'utf8' },
-  ).replace(/[\r\n﻿]/g, '');
-} catch {
-  console.error('Cannot read WORKER_API_TOKEN from GCP SM. Run: gcloud auth application-default login');
-  process.exit(1);
-}
+const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
+const alreadyKnown = new Set(Object.keys(manifest.videos));
 
 // ---------------------------------------------------------------------------
-// 2. Fetch recent successful render runs from GitHub
+// 2. List recent successful runs
 // ---------------------------------------------------------------------------
+
+console.log(`\nFetching up to ${LIMIT} recent successful render runs…`);
 
 const runsRaw = execSync(
-  `gh run list --workflow render-video.yml --status success --limit ${LIMIT} --repo ${REPO} --json databaseId,conclusion,updatedAt`,
+  `gh run list --workflow render-video.yml --status success --limit ${LIMIT} --repo ${REPO} --json databaseId,updatedAt`,
   { encoding: 'utf8' },
 );
 const runs = JSON.parse(runsRaw);
@@ -69,94 +63,75 @@ if (runs.length === 0) {
   process.exit(0);
 }
 
-console.log(`\nFound ${runs.length} successful render run(s). Fetching inputs...\n`);
+console.log(`Found ${runs.length} run(s). Scanning logs…\n`);
 
 // ---------------------------------------------------------------------------
-// 3. For each run, get inputs
+// 3. Grep logs for brief_key + stream_uid
 // ---------------------------------------------------------------------------
 
-const renders = [];
-
-for (const run of runs) {
-  let runDetails;
+function extractFromLogs(runId) {
+  // Uses a targeted grep on the log output to avoid encoding issues on Windows.
+  // The log step outputs are plain ASCII for the env-var echo lines we need.
   try {
-    runDetails = JSON.parse(
-      execSync(`gh run view ${run.databaseId} --repo ${REPO} --json databaseId,jobs`, { encoding: 'utf8' }),
+    const log = execSync(
+      `gh run view ${runId} --log --repo ${REPO}`,
+      { encoding: 'latin1' },        // latin1 avoids the charmap crash on Windows
     );
+    let briefKey = null;
+    let streamUid = null;
+
+    for (const line of log.split('\n')) {
+      if (!briefKey && line.includes('INPUT_BRIEF_KEY:') && line.includes('gate-concept')) {
+        const m = line.match(/INPUT_BRIEF_KEY:\s*(gate-concept-\d+)/);
+        if (m) briefKey = m[1];
+      }
+      if (!streamUid && line.includes('Publish to Capricast') && line.includes('STREAM_UID:')) {
+        const m = line.match(/STREAM_UID:\s*([a-f0-9]{32})/);
+        if (m) streamUid = m[1];
+      }
+      if (briefKey && streamUid) break;
+    }
+    return { briefKey, streamUid };
   } catch {
-    continue;
+    return { briefKey: null, streamUid: null };
   }
-
-  // Extract inputs from the job steps or trigger event
-  const triggerRaw = execSync(
-    `gh api /repos/${REPO}/actions/runs/${run.databaseId}`,
-    { encoding: 'utf8' },
-  ).trim();
-
-  let inputs = {};
-  try { inputs = JSON.parse(triggerRaw).inputs ?? {}; } catch { continue; }
-
-  const briefKey = inputs.brief_key;
-  const jobId    = inputs.job_id;
-  if (!briefKey || !jobId) continue;
-
-  renders.push({ databaseId: run.databaseId, briefKey, jobId, updatedAt: run.updatedAt });
 }
-
-if (renders.length === 0) {
-  console.log('No renders with brief_key found in recent runs.');
-  process.exit(0);
-}
-
-console.log(`Fetching streamUids for ${renders.length} render(s)...\n`);
 
 // ---------------------------------------------------------------------------
-// 4. Fetch streamUid from schedule-worker for each job
+// 4. Collect new entries (skip known briefKeys)
 // ---------------------------------------------------------------------------
 
 const now = new Date().toISOString().slice(0, 10);
-const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
-const streamAccount = manifest.streamAccount;
-
 const newEntries = {};
 
-for (const { briefKey, jobId, updatedAt } of renders) {
-  if (manifest.videos[briefKey]?.streamUid) {
-    console.log(`  ${briefKey}: already in manifest (${manifest.videos[briefKey].streamUid}) — skipping`);
+for (const run of runs) {
+  const { briefKey, streamUid } = extractFromLogs(run.databaseId);
+
+  if (!briefKey || !streamUid) continue;
+  if (alreadyKnown.has(briefKey)) {
+    console.log(`  skip   ${briefKey} (already in manifest)`);
     continue;
   }
+  if (newEntries[briefKey]) continue; // duplicate run
 
-  const res = await fetch(`${SCHEDULE_WORKER_URL}/jobs/${jobId}`, {
-    headers: { Authorization: `Bearer ${workerApiToken}` },
-  });
-
-  if (!res.ok) {
-    console.warn(`  ${briefKey}: schedule-worker returned ${res.status} — skipping`);
-    continue;
-  }
-
-  const data = await res.json();
-  const job = data.data ?? data;
-  const streamUid = job.streamUid;
-
-  if (!streamUid) {
-    console.log(`  ${briefKey}: no streamUid yet (status: ${job.status})`);
-    continue;
-  }
-
-  // Read brief to get forge + composition
+  // Read brief for forge/composition
   let forge = 'self';
   let composition = 'EnergyBlueprintVideo';
+  const appSlug = 'prime-self';
   try {
-    const briefPath = resolve(import.meta.dirname, `../apps/video-studio/content-briefs/prime-self/${briefKey}.json`);
-    const brief = JSON.parse(readFileSync(briefPath, 'utf8'));
-    forge = brief.forge ?? brief.forgeTheme ?? 'self';
+    const brief = JSON.parse(readFileSync(`${BRIEFS_DIR}/${appSlug}/${briefKey}.json`, 'utf8'));
+    forge       = brief.forge ?? brief.forgeTheme ?? 'self';
     composition = brief.composition ?? 'EnergyBlueprintVideo';
-  } catch { /* ignore missing brief */ }
+  } catch { /* ignore */ }
 
-  const renderedAt = updatedAt.slice(0, 10);
-  newEntries[briefKey] = { streamUid, renderedAt, lastValidated: now, forge, composition };
-  console.log(`  ✅ ${briefKey}: streamUid=${streamUid} forge=${forge}`);
+  newEntries[briefKey] = {
+    streamUid,
+    renderedAt:    run.updatedAt.slice(0, 10),
+    lastValidated: now,
+    forge,
+    composition,
+  };
+  console.log(`  ✅  ${briefKey}: ${streamUid}  forge=${forge}`);
 }
 
 if (Object.keys(newEntries).length === 0) {
@@ -178,24 +153,33 @@ for (const [key, entry] of Object.entries(newEntries)) {
   };
 }
 
+// Sort keys: daily-transits-guide first, then gate-concept-N numerically
+const sorted = Object.fromEntries(
+  Object.entries(manifest.videos).sort(([a], [b]) => {
+    const numA = parseInt(a.replace('gate-concept-', ''), 10) || -1;
+    const numB = parseInt(b.replace('gate-concept-', ''), 10) || -1;
+    return numA - numB;
+  }),
+);
+manifest.videos = sorted;
+
 writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-console.log(`\n✅ Updated render-manifest.json with ${Object.keys(newEntries).length} new entry(s).`);
+console.log(`\n✅ Updated render-manifest.json (+${Object.keys(newEntries).length} entries, ${Object.keys(manifest.videos).length} total).`);
 
 // ---------------------------------------------------------------------------
 // 6. Print HumanDesign video-manifest.js patch
 // ---------------------------------------------------------------------------
 
 console.log('\n─────────────────────────────────────────────────────');
-console.log('Add these entries to HumanDesign/client/data/video-manifest.js:');
+console.log('Paste into HumanDesign/client/data/video-manifest.js:');
 console.log('─────────────────────────────────────────────────────\n');
 
-const CF_STREAM = `https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com`;
+const gateEntries = Object.entries(newEntries)
+  .filter(([k]) => k.startsWith('gate-concept-'))
+  .sort(([a], [b]) => parseInt(a.split('-').pop(), 10) - parseInt(b.split('-').pop(), 10));
 
-for (const [briefKey, entry] of Object.entries(newEntries)) {
-  const gateNum = parseInt(briefKey.replace('gate-concept-', ''), 10);
-  if (!gateNum) continue;
-
-  console.log(`  // Gate ${gateNum} — ${entry.forge}`);
+for (const [briefKey, entry] of gateEntries) {
+  const gateNum = briefKey.replace('gate-concept-', '');
   console.log(`  ${gateNum}: {`);
   console.log(`    streamUid: '${entry.streamUid}',`);
   console.log(`    forge: '${entry.forge}',`);
@@ -210,16 +194,19 @@ for (const [briefKey, entry] of Object.entries(newEntries)) {
 }
 
 // ---------------------------------------------------------------------------
-// 7. Optionally commit render-manifest.json
+// 7. Optionally commit
 // ---------------------------------------------------------------------------
 
 if (COMMIT) {
   try {
     execSync('git add apps/video-studio/render-manifest.json', { stdio: 'inherit' });
-    const keys = Object.keys(newEntries).join(', ');
-    execSync(`git commit -m "chore(video): sync render-manifest — ${keys}"`, { stdio: 'inherit' });
-    console.log('\n✅ Committed render-manifest.json update.');
+    const keys = Object.keys(newEntries).sort().join(', ');
+    execSync(
+      `git commit -m "chore(video): sync render-manifest — ${keys}"`,
+      { stdio: 'inherit' },
+    );
+    console.log('\n✅ Committed render-manifest.json.');
   } catch (err) {
-    console.warn('\nCommit failed (maybe nothing staged?):', err.message);
+    console.warn('\nCommit step skipped:', err.message);
   }
 }
