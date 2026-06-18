@@ -6,6 +6,14 @@
       "streamUid": "78406f1f1c075526114990c0586d3762",
       "renderedAt": "2026-05-21",
       "lastValidated": "2026-06-17"
+    },
+    "gate-concept-1": {
+      "streamUid": "a82d77cf1283b91b86be9783c4774cb5",
+      "capricastUrl": "https://capricast.com/watch/c662d426-2c06-41b8-9780-54fb6add1ecd",
+      "renderedAt": "2026-06-17",
+      "lastValidated": "2026-06-17",
+      "forge": "phoenix",
+      "composition": "EnergyBlueprintVideo"
     }
   }
 }
