@@ -1,0 +1,70 @@
+name: capricast / visual-audit
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/capricast-worker/**'
+  workflow_dispatch:
+    inputs:
+      fail_on_critical:
+        description: 'Fail if critical findings are found'
+        type: boolean
+        default: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  audit:
+    name: Visual audit
+    runs-on: ubuntu-latest
+    env:
+      BROWSER_AGENT_URL: https://browser-agent-jynwmsqayq-uc.a.run.app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: projects/891842778224/locations/global/workloadIdentityPools/github-factory/providers/github
+          service_account: factory-sa@factory-495015.iam.gserviceaccount.com
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Mint ID token for Browser Agent
+        id: token
+        run: |
+          TOKEN=$(gcloud auth print-identity-token --audiences="${BROWSER_AGENT_URL}")
+          echo "::add-mask::$TOKEN"
+          echo "id_token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run visual-audit script
+        id: audit
+        env:
+          BROWSER_AGENT_TOKEN: ${{ steps.token.outputs.id_token }}
+          FAIL_ON_CRITICAL: ${{ github.event.inputs.fail_on_critical || 'true' }}
+        run: node scripts/visual-audit-capricast.mjs
+
+      - name: Upload audit artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capricast-visual-audit-${{ github.run_id }}
+          path: |
+            /tmp/capricast-audit-*.json
+          retention-days: 14
