@@ -5,13 +5,13 @@
   "generated_at_commit": null,
   "git_status": "not-recorded",
   "source_hashes": {
-    "docs/_governance/canonical-docs.yml": "sha256:3aee7e69a9d9070ddd0879ee83d270e4b88eb200c4ee03ca8589ab9619f00cfc",
+    "docs/_governance/canonical-docs.yml": "sha256:a5a9a19036085947a59f7acad4edb9330cc64e4ebd622b3ae42d06d23ff365eb",
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 445,
-    "canonical": 17,
-    "active": 380,
+    "total_docs": 470,
+    "canonical": 19,
+    "active": 403,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -57,7 +57,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343",
+      "content_hash": "sha256:1e8ff62a1dce007309e97ec5fd35d5fecb4c732610f92cd1e8f97fbe67b5aff0",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -374,7 +374,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:bcb3664dfe71c1bc59d43bd8acdff74ac949010fcb9c63ace541f8687b4410e5",
+      "content_hash": "sha256:164f3da1df2d8d567570a9a209e41bbe852823baaec7ecf2e58b239c19c9ddd3",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:c796ecb517904f69f620a3ad894ef15000d83ab7d7102e4ba3579fad2a3841a6",
+      "content_hash": "sha256:01559c774a4d6cd7cec17845b30ccf2eabe5add9c98683439855ff8e2a9b9f41",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:dd5951e5e661cec8131798ff8ddcc02ee693d475a90afaab5350c6b42c2e06f4",
+      "content_hash": "sha256:90afb6c762613df7179c5116a552b66434aa44578d00cf7e3924f9002f06a3f4",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,11 +437,81 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:bafce951511c1b12af799e03e02165d5ddedc8baed0dcaaff173ede962d72218",
+      "content_hash": "sha256:65f1085720c6610e2c60627dc99f89632ad06f8dc5403c85354daf68b3fbd6ce",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
         "override": "docs/_generated/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/_governance/cloudflare-credential-inventory.template.md",
+      "title": "Cloudflare Credential Inventory Template",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "policy",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": "2026-06-16",
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4bc443d62e768a943fb2c4b33210b94b29b259273939fdf65c00e8cfadd20dcd",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/_governance/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/_governance/cloudflare-key-policy.md",
+      "title": "Cloudflare Key Policy",
+      "status": "canonical",
+      "owner": "platform",
+      "doc_type": "policy",
+      "fidelity": "owner-reviewed",
+      "quality": "usable",
+      "last_updated": "2026-06-16",
+      "last_verified": null,
+      "scope": "Cloudflare API token governance — scoped-tokens-only, inventory, least-privilege scopes, rotation, and verify-before-trust.",
+      "truth_sources": [
+        "validation-output",
+        "service-registry",
+        "github-workflows"
+      ],
+      "verified_by": [],
+      "content_hash": "sha256:3f78cdd9941d990b5d6a3dddd80f2fbc2b8bbb4cddddb7ac6b4740d701480b05",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": true,
+        "override": "docs/_governance/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/_governance/credential-hardening-backlog.md",
+      "title": "Credential Hardening Backlog",
+      "status": "canonical",
+      "owner": "platform",
+      "doc_type": "policy",
+      "fidelity": "owner-reviewed",
+      "quality": "usable",
+      "last_updated": "2026-06-16",
+      "last_verified": null,
+      "scope": "Credential families, blast-radius priorities, and key-hardening execution order.",
+      "truth_sources": [
+        "github-workflows",
+        "manual-review"
+      ],
+      "verified_by": [],
+      "content_hash": "sha256:798fefb28de63687a4c73389cdb2ce480984941c6fc0e6f04cb3c5aafb4b1e20",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": true,
+        "override": "docs/_governance/**"
       },
       "errors": []
     },
@@ -951,7 +1021,7 @@
     },
     {
       "path": "docs/AGENTS.md",
-      "title": "Agent Configuration & Context Loading",
+      "title": "Agent Context & CLAUDE.md Convention",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -962,7 +1032,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6175c5b5ae9ee3592b1776fe5e68874f61d4f823c62349e54e4e3c2ffc041353",
+      "content_hash": "sha256:a5063c4340a169b41dc083fe7dc1e7ca62c690e333235c9748dedb477f550134",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1130,7 +1200,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9eca86c08e36a1cbc820469d5fc3243d5562da2e09c10d7bf5d49752498eb90a",
+      "content_hash": "sha256:ca15abcc92af56a43c2b126b7a5c5b0e7b6b2c3797eee5b636007754b4f4fcce",
       "source": {
         "frontmatter": true,
         "canonical_allowlist": false,
@@ -1218,7 +1288,7 @@
         "manual-review"
       ],
       "verified_by": [],
-      "content_hash": "sha256:37f06ff0d574c3cd509c99855895f31c25023c5d20bb516d9ff62461da5e6ecf",
+      "content_hash": "sha256:07c8f445cc7aa9146b6f4b2097e94ccad67e44178c114d5b55478060fd663da5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -1228,7 +1298,7 @@
     },
     {
       "path": "docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md",
-      "title": "I1 — Energy Blueprint Video Engine: Final-State Design",
+      "title": "I1 — Per-User Energy Blueprint Video: Final-State Design",
       "status": "active",
       "owner": "architecture",
       "doc_type": "architecture",
@@ -1239,7 +1309,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:98bc2dc30395a56118201e4c86dd1dad031438ad71cbb238120b94e5db56b972",
+      "content_hash": "sha256:71b5f6a8ad7b4c8418a962cafc2ec5c96329ab58791e512863451294bd1357df",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2733,7 +2803,28 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ef5b5de56a5b6df54421626137e2f9321ed365efaceb91f1acd39ce1599054c5",
+      "content_hash": "sha256:ab478283e89c6a4b3c937d91a7354658c8207994d9d9f077472ca4f20bc47dc5",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/COMPLIANCE_CHECKLIST.md",
+      "title": "New-Repo Compliance Checklist",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:4d2d5463aca33d5c8e9d128e259ac06d5f687c76c1046d0548ba12017bb76774",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2775,7 +2866,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0d5216a34490c249db85b1ddeb000492920a6a7fb7c618f8ddec0919f082866a",
+      "content_hash": "sha256:88a8da7f0e0fc9895db657675d3499460e7dac2f554fd5539e8d11ae96036060",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2796,7 +2887,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:dc123025842adc61622361cdb3ea5d2ae03eac5e25dbee9089469a36502603dd",
+      "content_hash": "sha256:baa98d7c902f2b94f0d27f929b66a5c3787ae18a29aa2d639cc2a65b16f2b5a8",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3122,6 +3213,69 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-06-08-admin-studio-boundary.md",
+      "title": "2026-06-08 — Admin Studio surface & responsibility boundary",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:21d6367475fb6a5d989d0ee1f815facbbab2a0d119b662a2ec42db13efd7d3d2",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/decisions/2026-06-10-sell-phase-action-plan.md",
+      "title": "2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:af980889035b33eb6faaffd2609f3f336d5b660bb3c8464cf764b57c21e78935",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/decisions/2026-06-11-rfc-006-operating-decisions.md",
+      "title": "2026-06-11 — RFC-006 Required Operating Decisions",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:85de2e586e67f1e16efde5bad443fac8ddca9482c38cc522c92bdb153a4a69c7",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/README.md",
       "title": "Decisions",
       "status": "active",
@@ -3134,7 +3288,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2155d6a7292a0174f7eaec3f837a34ae5c62cbf3c2c53ad3250f4ad8d06ba66e",
+      "content_hash": "sha256:0bca3410323e2178f31e15287485f74f4d28a29f2f8a0669f5726f3b4c80d215",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3345,6 +3499,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:217ba0bec1399f8411f47ac1aa563310a12f290cd4d78cdd907b7be12ce7a035",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/digest/2026-06-06.md",
+      "title": "Morning digest — 2026-06-06",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:a7b063f4f41462cb64965f7daabdb6fd0dfa28d08afcf9d785491e62e78d5632",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3601,9 +3776,30 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1a1c0115d39a775fafb6b78b978de2d91bf4f34fa2e1a59fcc16bf14e02ced77",
+      "content_hash": "sha256:a19ec16cc98f03ab6d7c2a848c2fc2b1c03ead791f6581132837c0840ad1988c",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/handoffs/2026-06-11-stabilization-handoff.md",
+      "title": "Handoff: Stabilization-first work (worker collisions, UAT, sell-phase plan)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "reference",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5ca16c0c543f7168c599e249f7e1ee323360ff2351fce73e0c46544256113e74",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/**"
       },
@@ -3664,7 +3860,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:1b6fce7b1e728053f97d47d2138470e31544acf7b9826ec540d55707a5cb2c2c",
+      "content_hash": "sha256:b4458738d8f6a51ae8186a7a8fcd19faea006ace2c3e18d75ab81cefb8ff4f76",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3685,7 +3881,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:d294f5c288cb37d2ee7913d35b8569e4d4d2c729002574418d82de15e41c6d7c",
+      "content_hash": "sha256:168ad1045cab4143ca1dec07ebf8824856a9eac9218af3b87a421d87d3728abe",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6137,6 +6333,216 @@
       "errors": []
     },
     {
+      "path": "docs/planning/2026-06-12-stabilization-sprint.md",
+      "title": "Stabilization Sprint — 2026-06-12 → 2026-06-26",
+      "status": "active",
+      "owner": "adrper79",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:de4fbb4d3ddc76dd861d4fe52cbebcb80a9142001e088fedc250ba98010fa1ab",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-08.md",
+      "title": "Platform Planning Brief — 2026-06-08",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:e269a259be4ad992770cb50ac60fa61096bef474711165d88c7aaf73e29b34bd",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-12.md",
+      "title": "Platform Planning Brief — 2026-06-12",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:6df15acdbbc44afd43dd51e3e18d28ee9ba1dbbcfb9090d6e39da80cb736e121",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-13.md",
+      "title": "Platform Planning Brief — 2026-06-13",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f682bf466bfdc701a29ad551e25fe2537b17909eacd418df94d40099372776bc",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-14.md",
+      "title": "Platform Planning Brief — 2026-06-14",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:ae6e7a586040d0fb48ac3e44d4bc15ed135ef2b4ff94c00ab203d93625178ea0",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-15.md",
+      "title": "Platform Planning Brief — 2026-06-15",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f3a943319fcff840d84de94edd6857c353fb46327f7795543c7a776648528847",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-16.md",
+      "title": "Platform Planning Brief — 2026-06-16",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:0c5beba76f1fa39afe5d0c1f822cdb9dac4651e1968659adca192fe1b3229356",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-17.md",
+      "title": "Platform Planning Brief — 2026-06-17",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:3fb71c7a9403900dc1881800c9e080af805af8949da23b0b1b0c85025d5f6251",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-18.md",
+      "title": "Platform Planning Brief — 2026-06-18",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:9130df85ea3386f8b7f74ad5fe34dcc6f0629e56692e6d2a8f35b4888c4d143d",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/factory-network-layer.md",
+      "title": "Factory Network Layer — Design & Build Plan",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5b4e4e9f30437379704803c96945a19577b5779ba63df509490c0709482d9ed3",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/PLATFORM_STANDARDS.md",
       "title": "Platform Standards — Latimer-Woods-Tech",
       "status": "active",
@@ -6149,7 +6555,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:f9573c7055dc5ba8475783722534a4235f07aa76d928935e377e0b46970fda36",
+      "content_hash": "sha256:7dfb13281737614cc025bb4215292b7ebdb7b0b5a12f859c8c3a4aa688100e9c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6338,7 +6744,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a31c3700d092eba1042157880b171fe5c61bb8f7a280118cbc805e0a0205a453",
+      "content_hash": "sha256:303f9a0cfecb662a4854946b2d6cbb006443eadce9d1a15f54c0783d06be61bb",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6380,7 +6786,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:da395dcc83dd504da9ea1cd1c2181f6d054aaf06eda472814cd7ad6b9ac48f41",
+      "content_hash": "sha256:b61c486d4e499c265c6dab40180ceb1dcddcebc18718c9578e217f036e6b8d37",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6666,6 +7072,90 @@
       "errors": []
     },
     {
+      "path": "docs/rfc/RFC-006-automation-flow-operating-model.md",
+      "title": "RFC-006: Cohesive Automation Flow Operating Model",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:bec738f7919adae14ce17205d26118293cd97e3afcec87ee326f917629537312",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-baseline-metrics.md",
+      "title": "RFC-006 Phase 0 Baseline Metrics",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:67979d1ada119b20ce981075de22dadb64f79c685691fba71a3dbead9863b876",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-006-duplicate-triage.md",
+      "title": "RFC-006 Duplicate Issue Triage",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:1b27549119080bd5a9241efd24c911e3c30358eb565590b67e3642ac6766571b",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/rfc/RFC-007-supervisor-semantic-memory.md",
+      "title": "RFC-007: Supervisor semantic memory (template recall + episodic learning)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:32f7b609dd45eac16238960051995603c1560678ba3d4296fcc9a1aa8a3550fe",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/ROADMAP.md",
       "title": "Platform Roadmap",
       "status": "active",
@@ -6765,6 +7255,27 @@
       "content_hash": "sha256:962df47c17824d5707cac3f9df2e01ebf6193b3433687a66d37072b55e950500",
       "source": {
         "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/runbooks/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/runbooks/cloudflare-token-migration.md",
+      "title": "Cloudflare Token Migration Runbook",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "runbook",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": "2026-06-17T00:00:00.000Z",
+      "last_verified": null,
+      "scope": "Migrating CI workflows from the near-admin CF_API_TOKEN onto the least-privilege cf-token-* suite.",
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:76d92e84fa5a6b49471eeaa9093a1bc3c040d2ba93aeae881dc75072206c9727",
+      "source": {
+        "frontmatter": true,
         "canonical_allowlist": false,
         "override": "docs/runbooks/**"
       },
@@ -7119,7 +7630,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:3595a41a9de879adac41c59b1bbc624c4e951618361710b1e7b41df31c55cb76",
+      "content_hash": "sha256:d3ac69cd65ad9fed3a833c8f2ef6cef341f02dbe5808313111b3e458abcb9b96",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7224,7 +7735,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:3ca80a18d79116238e376dd0e82ecbc22aa411da8aab6222d54f81907ef7eb14",
+      "content_hash": "sha256:b0b51cdcf6132bd96dd98096fc5c741fad3f236bc2bb7d499ecea38dfc783580",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7644,7 +8155,28 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0e0bad5b85cbf1e929c54c95e7554be7ed2a75608ea61cbfc68aa1592753b013",
+      "content_hash": "sha256:3450d35bdf93d7bb7ddfb22b8ab4731874c86b1c1879582bcd68fe69e8316313",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/runbooks/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/runbooks/webhook-fanout-go-live.md",
+      "title": "Webhook Fanout Go-Live: GitHub → Factory Gate Ingest (P1.6)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "runbook",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:9ab39ebb93d49b774bd5884412b93824e38863fff8e10af30ffbb171727b30c4",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7738,7 +8270,7 @@
     },
     {
       "path": "docs/sauna-brain.md",
-      "title": "Sauna Brain — Factory Operating Snapshot",
+      "title": "Sauna Brain Sync",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7749,7 +8281,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:45a2d0f8c383520bfe8c2862e4bef01da1e0b5b7e4fd276ccbb677ceb2708e98",
+      "content_hash": "sha256:6269f9edc672676e52c279d46de88f879706ed8e1ba7edfebd5f42cc706265d6",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7791,7 +8323,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:e93a7952d5c3320d06c955ac2463af5e6b85ec5d915756749ed69773b61f2774",
+      "content_hash": "sha256:43a1e835376fa975b9fc563b01e3c41786913617cd89df0309555c662d8674b5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7836,7 +8368,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:43a1e62c5bc98a207b66613e3f2ccfcdb415e9b5fc4d6474e322ee31c04598b2",
+      "content_hash": "sha256:9e3bc3ad5acb9adec77d57b85664c45cfb9f2c50ee88ae33828604622b87ccec",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -7915,12 +8447,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-06-05",
+      "last_updated": "2026-06-16",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:c577089f1a3a0ef49ca677c2366ebc1e62bdd65bc3ef3c0d20ca775fa4e83f5b",
+      "content_hash": "sha256:207a88963042a34c46afd5a78971785d0988fecc9eb2acab4bbf62ec45b6b7d5",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7951,7 +8483,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-05-30",
+      "title": "Factory State — 2026-06-15",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -7962,7 +8494,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:7cf1a4cbf9d97eeae70d5df40571e35adbaa53cffe3f0ee029b2909ced503657",
+      "content_hash": "sha256:aee21df853eb5183cacf7795ba65d8ef10953d8af473c9bbfc7d64f27949502d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8214,7 +8746,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6e43f40ee8f2fbe78f7db0cf5bd06ce4f0cfa8996f4595e7661563e784c0b4de",
+      "content_hash": "sha256:1b6cd335930cf9ffe1b8707ff6f6e708df46be34068b03aee5839b74a8ce5a8c",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,

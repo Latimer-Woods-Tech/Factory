@@ -393,10 +393,10 @@ def test_main_happy_path_returns_0(aggregate, tmp_path, stub_fetch):
     matrix_content = """\
 ## 1. Auth
 
-| ID | Feature | Endpoint | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
-|----|---------|----------|--------|-----------|--------|-------|---------------|----------|--------|-------|
-| HD-AUTH-001 | Login | POST /login | ✅ | ✅ | ✅ done | @alice | 2026-05-20 | #1 | 3 | ready |
-| HD-AUTH-002 | Logout | POST /logout | ✅ | ❌ | ⚠️ flaky | @bob | 2026-05-19 | #2 | 2 | needs |
+| ID | Feature | Endpoint | Sentry Project | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
+|----|---------|----------|----------------|--------|-----------|--------|-------|---------------|----------|--------|-------|
+| HD-AUTH-001 | Login | POST /login | hd-api | ✅ | ✅ | ✅ | @alice | 2026-05-20 | #1 | 3 | ready |
+| HD-AUTH-002 | Logout | POST /logout | hd-api | ✅ | ❌ | ⚠️ | @bob | 2026-05-19 | #2 | 2 | needs |
 """
 
     # Stub fetch returns matrix for all repos, empty runs/issues, etc.
@@ -444,9 +444,9 @@ def test_main_sentry_500_continues_gracefully(aggregate, tmp_path):
     matrix_content = """\
 ## 1. Auth
 
-| ID | Feature | Endpoint | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
-|----|---------|----------|--------|-----------|--------|-------|---------------|----------|--------|-------|
-| HD-AUTH-001 | Login | POST /login | ✅ | ✅ | ✅ done | @alice | 2026-05-20 | #1 | 3 | ready |
+| ID | Feature | Endpoint | Sentry Project | Manual | Automated | Status | Owner | Last Verified | Issue/PR | Weight | Notes |
+|----|---------|----------|----------------|--------|-----------|--------|-------|---------------|----------|--------|-------|
+| HD-AUTH-001 | Login | POST /login | hd-api | ✅ | ✅ | ✅ | @alice | 2026-05-20 | #1 | 3 | ready |
 """
 
     def sentry_500_stub(url: str) -> tuple[int, bytes, dict[str, str]]:

@@ -15,6 +15,8 @@ export interface Env {
   // ── Secrets (wrangler secret put) ───────────────────────────────────────────────────────────────────────
   /** Signing key for Studio-issued JWTs */
   JWT_SECRET: string;
+  /** Shared bearer token admin-studio uses when calling schedule-worker via service binding */
+  WORKER_API_TOKEN?: string;
   /** Bootstrap operator email allowed to obtain Studio JWTs. */
   STUDIO_ADMIN_EMAIL: string;
   /** Lowercase hex SHA-256 digest of the bootstrap operator password. */
@@ -76,8 +78,10 @@ export interface Env {
   // ── Self-improvement loop ─────────────────────────────────────────────────────────────────────────────────────────
   /** Shared KV for monitor snapshots. */
   MONITOR_KV?: KVNamespace;
-  /** Service binding to schedule-worker for /diagnostics calls. */
+  /** Service binding to schedule-worker for /diagnostics + training-library proxy calls. */
   SCHEDULE_WORKER?: Fetcher;
+  /** Shared service token for schedule-worker's authenticated routes (training-library, jobs). */
+  WORKER_API_TOKEN?: string;
   /** Flagship feature-flag binding. */
   FLAGS?: Fetcher;
   /** flag-meter D1 database for flag telemetry. */

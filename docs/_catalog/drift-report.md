@@ -3,25 +3,26 @@
 **Generated:** source-derived
 **Result:** PASS
 **Errors:** 0
-**Warnings:** 267
+**Warnings:** 270
 
 ## By Issue Type
 
 | Issue | Count |
 |---|---:|
-| docs.npm-script.missing | 210 |
+| docs.npm-script.missing | 213 |
 | docs.workflow-ref.missing | 57 |
 
 ## By Owner
 
 | Owner | Count |
 |---|---:|
-| platform | 228 |
+| platform | 230 |
 | capricast | 24 |
 | architecture | 10 |
 | marketing | 2 |
 | revenue | 2 |
 | admin-studio | 1 |
+| adrper79 | 1 |
 
 ## First 100 Issues
 
@@ -30,9 +31,10 @@
 | warning | platform | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md | 43 | References missing npm script "deploy:staging". |
 | warning | platform | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md | 156 | References missing npm script "deploy:production". |
 | warning | platform | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md | 182 | References missing npm script "deploy:production". |
-| warning | platform | CLAUDE.md | 168 | References missing npm script "typecheck". |
-| warning | platform | CLAUDE.md | 238 | References missing npm script "dev". |
-| warning | platform | CLAUDE.md | 271 | References missing npm script "phase-7:scaffold". |
+| warning | platform | CLAUDE.md | 147 | References missing npm script "typecheck". |
+| warning | platform | CLAUDE.md | 178 | References missing npm script "typecheck". |
+| warning | platform | CLAUDE.md | 253 | References missing npm script "dev". |
+| warning | platform | CLAUDE.md | 286 | References missing npm script "phase-7:scaffold". |
 | warning | platform | docs/ACCESS.md | 37 | References missing workflow .github/workflows/deploy-admin-studio-worker.yml. |
 | warning | platform | docs/ACCESS.md | 41 | References missing workflow .github/workflows/deploy-developer-index.yml. |
 | warning | platform | docs/ACCESS.md | 42 | References missing workflow .github/workflows/deploy-status-page.yml. |
@@ -73,7 +75,7 @@
 | warning | platform | docs/APP_SCOPE_REGISTRY.md | 122 | References missing npm script "build". |
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 706 | References missing npm script "check". |
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 1397 | References missing npm script "migrate". |
-| warning | architecture | docs/architecture/FACTORY_V1.md | 647 | References missing npm script "migrate". |
+| warning | architecture | docs/architecture/FACTORY_V1.md | 652 | References missing npm script "migrate". |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1183 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1507 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1595 | References missing workflow .github/workflows/qa-audit.yml. |
@@ -105,6 +107,7 @@
 | warning | platform | docs/CI_CD.md | 306 | References missing workflow .github/workflows/_my-thing.yml. |
 | warning | platform | docs/CLEAN_PASS_3_QUALITY_REPORT.md | 673 | References missing npm script "deploy:staging". |
 | warning | platform | docs/CLEAN_PASS_3_QUALITY_REPORT.md | 673 | References missing npm script "deploy:production". |
+| warning | platform | docs/COMPLIANCE_CHECKLIST.md | 165 | References missing npm script "typecheck". |
 | warning | platform | docs/CONFIG_NORMALIZATION_AUDIT.md | 343 | References missing npm script "build". |
 | warning | platform | docs/CONFIG_NORMALIZATION_AUDIT.md | 457 | References missing npm script "typecheck". |
 | warning | platform | docs/CONFIG_NORMALIZATION_AUDIT.md | 458 | References missing npm script "lint". |
@@ -125,5 +128,3 @@
 | warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 373 | References missing workflow .github/workflows/collect-kpis.yml. |
 | warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 391 | References missing npm script "collect:kpis". |
 | warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 398 | References missing npm script "publish:kpi-dashboard". |
-| warning | platform | docs/DOCUMENTATION_HIERARCHY.md | 86 | References missing npm script "dev". |
-| warning | platform | docs/DOCUMENTATION_HIERARCHY.md | 216 | References missing npm script "dev". |

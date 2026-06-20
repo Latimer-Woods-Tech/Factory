@@ -1,16 +1,16 @@
 # Documentation Broken Link Report
 
 **Generated:** source-derived
-**Broken links:** 392
+**Broken links:** 400
 **Canonical:** 0
-**Active:** 276
+**Active:** 284
 **Archive:** 116
 
 ## By Owner
 
 | Owner | Broken Links |
 |---|---:|
-| platform | 274 |
+| platform | 282 |
 | marketing | 79 |
 | capricast | 31 |
 | admin-studio | 4 |
@@ -78,58 +78,59 @@
 | active | platform | docs/ENVIRONMENT_VERIFICATION_SETUP.md | 250 | ../.dev.vars.example | file not found |
 | active | platform | docs/ENVIRONMENT_VERIFICATION_SETUP.md | 251 | ../runbooks/github-secrets-and-tokens.md | file not found |
 | active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 71 | videoking/slo-targets.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 110 | dashboards/incident-metrics-template.yaml | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 115 | videoking/security-audit-report.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 116 | videoking/privacy-audit-report.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 117 | videoking/security-fixes-roadmap.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 124 | templates/PRE_RELEASE_CHECKLIST.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 125 | templates/smoke-test-template.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 126 | runbooks/rollback-plan.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 127 | calendars/release-schedule.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 132 | scripts/track-delivery-metrics.mjs | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 133 | runbooks/delivery-kpi-targets.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 140 | ../apps/videoking/README.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 141 | ../apps/videoking/ENGINEERING.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 142 | ../docs/videoking/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 143 | videoking/VIDEO_TRANSCODING_RUNBOOK.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 144 | videoking/DURABLE_OBJECTS_RUNBOOK.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 145 | videoking/DATABASE_OPERATIONS.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 146 | videoking/API.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 147 | videoking/adr/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 148 | videoking/adr/ADR-001-durable-objects.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 149 | videoking/adr/ADR-002-stripe-connect.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 150 | videoking/adr/ADR-003-payout-batching.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 155 | scripts/generate-scorecard.mjs | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 156 | dashboards/implementation-scorecard-template.yaml | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 157 | STAKEHOLDER_REPORT_TEMPLATE.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 170 | videoking/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 170 | videoking/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 170 | videoking/slo-targets.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 174 | ../apps/videoking/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 196 | templates/PRE_RELEASE_CHECKLIST.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 196 | templates/smoke-test-template.md | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 206 | packages/errors/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 207 | packages/monitoring/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 208 | packages/logger/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 214 | packages/auth/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 215 | packages/neon/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 216 | packages/deploy/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 217 | packages/testing/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 223 | packages/stripe/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 224 | packages/llm/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 225 | packages/telephony/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 226 | packages/analytics/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 227 | packages/email/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 228 | packages/video/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 229 | packages/schedule/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 235 | packages/compliance/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 236 | packages/crm/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 237 | packages/admin/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 238 | packages/content/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 239 | packages/copy/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 240 | packages/social/ | file not found |
-| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 241 | packages/seo/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 111 | dashboards/incident-metrics-template.yaml | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 116 | videoking/security-audit-report.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 117 | videoking/privacy-audit-report.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 118 | videoking/security-fixes-roadmap.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 125 | templates/PRE_RELEASE_CHECKLIST.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 126 | templates/smoke-test-template.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 127 | runbooks/rollback-plan.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 128 | calendars/release-schedule.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 133 | scripts/track-delivery-metrics.mjs | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 134 | runbooks/delivery-kpi-targets.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 141 | ../apps/videoking/README.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 142 | ../apps/videoking/ENGINEERING.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 143 | ../docs/videoking/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 144 | videoking/VIDEO_TRANSCODING_RUNBOOK.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 145 | videoking/DURABLE_OBJECTS_RUNBOOK.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 146 | videoking/DATABASE_OPERATIONS.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 147 | videoking/API.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 148 | videoking/adr/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 149 | videoking/adr/ADR-001-durable-objects.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 150 | videoking/adr/ADR-002-stripe-connect.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 151 | videoking/adr/ADR-003-payout-batching.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 156 | scripts/generate-scorecard.mjs | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 157 | dashboards/implementation-scorecard-template.yaml | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 158 | STAKEHOLDER_REPORT_TEMPLATE.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 171 | videoking/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 171 | videoking/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 171 | videoking/slo-targets.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 175 | ../apps/videoking/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 197 | templates/PRE_RELEASE_CHECKLIST.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 197 | templates/smoke-test-template.md | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 207 | packages/errors/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 208 | packages/monitoring/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 209 | packages/logger/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 215 | packages/auth/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 216 | packages/neon/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 217 | packages/deploy/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 218 | packages/testing/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 224 | packages/stripe/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 225 | packages/llm/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 226 | packages/telephony/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 227 | packages/analytics/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 228 | packages/email/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 229 | packages/video/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 230 | packages/schedule/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 236 | packages/compliance/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 237 | packages/crm/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 238 | packages/admin/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 239 | packages/content/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 240 | packages/copy/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 241 | packages/social/ | file not found |
+| active | platform | docs/IMPLEMENTATION_MASTER_INDEX.md | 242 | packages/seo/ | file not found |
 | active | platform | docs/PHASE_A_TEAM_ONBOARDING_PACK.md | 182 | videoking/slo-targets.md | file not found |
+| active | platform | docs/PLATFORM_STANDARDS.md | 20 | ../STACK.md | file not found |
 | active | platform | docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md | 233 | ./videoking/SELFPRIME_MONETIZATION_CONTRACT.md | file not found |
 | active | platform | docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md | 387 | ./videoking/SELFPRIME_MONETIZATION_CONTRACT.md | file not found |
 | active | platform | docs/PRACTITIONER_VIDEO_STUDIO_SPEC.md | 388 | ./videoking/monetization-funnel-spec.md | file not found |
@@ -169,4 +170,3 @@
 | archive | platform | docs/archive/DELIVERY_SUMMARY.md | 336 | ./docs/runbooks/CREDENTIALS_SETUP.md | file not found |
 | archive | platform | docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md | 25 | ./docs/runbooks/definition-of-ready-done.md#definition-of-ready | file not found |
 | archive | platform | docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md | 26 | ./docs/runbooks/definition-of-ready-done.md#definition-of-done | file not found |
-| archive | platform | docs/archive/EXECUTION_COMPLETE_T6_1_AND_T7_1.md | 27 | ./.github/PULL_REQUEST_TEMPLATE.md | file not found |

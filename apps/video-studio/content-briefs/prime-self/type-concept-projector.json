@@ -1,0 +1,77 @@
+{
+  "briefKey": "type-concept-projector",
+  "key": "type-concept-projector",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "type-concept",
+  "title": "Welcome, Projector",
+  "description": "You read systems and people with precision most others cannot access. You are here to guide, not to push. Wait for genuine invitations before sharing your insight — then give it fully.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Welcome, Projector",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"Projector\" means for them and feels recognised, not labelled.",
+  "targetPersona": "type_projector",
+  "keyPoints": [
+    "You read systems and people with precision most others cannot access.",
+    "You are here to guide, not to push.",
+    "Wait for genuine invitations before sharing your insight",
+    "then give it fully."
+  ],
+  "forbiddenClaims": [
+    "any one type is better or more evolved than another",
+    "your type limits what you are allowed to do",
+    "type determines your worth or success"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "type-concept-projector-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Welcome, Projector — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "type-concept-projector-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Welcome, Projector — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "type-concept-projector-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Welcome, Projector — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "type-concept-projector-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Welcome, Projector — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Welcome, Projector — Your Energy Blueprint",
+    "description": "You read systems and people with precision most others cannot access. You are here to guide, not to push. Wait for genuine invitations before sharing your insight — then give it fully."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('type', 'Projector')",
+  "status": "planned"
+}

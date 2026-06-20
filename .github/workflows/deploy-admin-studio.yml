@@ -45,7 +45,7 @@ jobs:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 2
 
@@ -221,7 +221,7 @@ jobs:
           studio_admin_email="${STUDIO_ADMIN_EMAIL:-${FALLBACK_STUDIO_ADMIN_EMAIL}}"
           studio_admin_password="${STUDIO_ADMIN_PASSWORD:-${FALLBACK_STUDIO_ADMIN_PASSWORD}}"
           anthropic_api_key="${ANTHROPIC_API_KEY:-${FALLBACK_ANTHROPIC_API_KEY}}"
-          github_token="${STUDIO_GITHUB_TOKEN:-${FALLBACK_GITHUB_TOKEN}}"
+          github_token="${STUDIO_GITHUB_TOKEN:-${FALLBACK_GITHUB_TOKEN:-}}"
 
           password_hash=$(printf '%s' "$studio_admin_password" | sha256sum | cut -d' ' -f1)
 
@@ -231,6 +231,7 @@ jobs:
           put_required_secret ANTHROPIC_API_KEY "$anthropic_api_key"
           put_required_secret FACTORY_APP_ID "${{ secrets.FACTORY_APP_ID }}"
           put_required_secret FACTORY_APP_PRIVATE_KEY "${{ secrets.FACTORY_APP_PRIVATE_KEY }}"
+          put_required_secret FACTORY_APP_INSTALLATION_ID "${{ secrets.FACTORY_APP_INSTALLATION_ID }}"
 
           put_optional_secret DEEPSEEK_API_KEY "${DEEPSEEK_API_KEY:-}"
           put_optional_secret XAI_API_KEY "${XAI_API_KEY:-}"

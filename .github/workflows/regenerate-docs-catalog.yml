@@ -1,0 +1,135 @@
+name: Regenerate Docs Catalog
+
+# WHY THIS EXISTS
+#   The generated docs catalogs (CATALOG.md, OWNER_INDEX.md, docs-graph.json,
+#   the diagram maps, drift/debt/link reports) describe the whole repository and
+#   drift on essentially every docs/** or workflow change. `check-generated`
+#   used to hard-fail Docs Health on this drift, but it cannot be auto-repaired
+#   by a direct push: ruleset 15843812 has a pull_request rule and
+#   github-actions[bot] is not a bypass actor, so nothing can commit straight to
+#   main. (That left Docs Health permanently red until generated-staleness was
+#   made advisory.)
+#
+#   This job keeps the catalogs FRESH the only way the ruleset allows: it
+#   regenerates them and routes the result through the existing snapshot
+#   auto-merge path (snapshot-pr-auto-merge.yml + .github/snapshot-paths.yml).
+#   It uses a STABLE branch (chore/docs-catalog-refresh) so only one PR
+#   accumulates — reruns update that PR instead of opening new ones.
+#
+# CONTRACT (must stay in sync or the PR will not auto-merge):
+#   - Branch prefix `chore/docs-catalog-` is allowlisted in snapshot-paths.yml
+#     `branch_prefixes:` AND the snapshot-pr-auto-merge.yml pre-filter.
+#   - Every path committed below is allowlisted in snapshot-paths.yml `paths:`.
+#   - Author github-actions[bot] is in snapshot-paths.yml `authors:`.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '37 5 * * *' # daily 05:37 UTC (offset from other snapshot crons)
+
+# contents:write for branch+commit; pull-requests:write for PR create/update.
+# Direct push to main is blocked by ruleset 15843812 — must go through a PR
+# that hits the snapshot auto-merge path.
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: regenerate-docs-catalog
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # App token (factory-cross-repo[bot]) is required so pull_request_target
+      # fires on the created PR and snapshot-pr-auto-merge can approve + merge it.
+      # GITHUB_TOKEN-opened PRs do not trigger pull_request_target.
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund --ignore-scripts
+
+      - name: Regenerate docs catalog
+        run: node scripts/docs/health.mjs
+        env:
+          DOCS_REPO_PROFILE: factory
+        # health.mjs exits non-zero only on a BLOCKING check; non-blocking
+        # quality/freshness warnings must not stop the refresh.
+        continue-on-error: true
+
+      - name: Open or update auto-merge PR if catalogs changed
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          # The exact set of generated artifacts that check-generated-current.mjs
+          # guards. Keep this list in sync with that script and with the
+          # snapshot-paths.yml `paths:` allowlist.
+          PATHS=(
+            docs/CATALOG.md
+            docs/CANONICAL_DOCS.md
+            docs/STALE_DOCS.md
+            docs/OWNER_INDEX.md
+            docs/_catalog/docs-graph.json
+            docs/_catalog/drift.json
+            docs/_catalog/drift-report.md
+            docs/_catalog/debt-index.md
+            docs/_catalog/link-report.json
+            docs/_catalog/link-report.md
+            docs/_generated/docs-trust-map.md
+            docs/_generated/service-map.md
+            docs/_generated/workflow-map.md
+          )
+
+          # Did the regeneration change anything vs main?
+          if git diff --quiet -- "${PATHS[@]}"; then
+            echo "Generated docs catalogs already current — nothing to do."
+            exit 0
+          fi
+
+          DATE=$(date -u +%F)
+          BRANCH="chore/docs-catalog-refresh"
+          git config user.name "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+
+          # Reset the stable, bot-owned branch to current main + the regenerated
+          # files (keeps the working-tree changes), so the PR diff is always
+          # exactly "main vs main+regen" — no accumulation across reruns.
+          git switch -C "$BRANCH"
+          git add -- "${PATHS[@]}"
+          git commit -m "chore(docs): refresh generated catalog artifacts ($DATE)"
+          git push --force --set-upstream origin "$BRANCH"
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing docs-catalog PR #$EXISTING_PR."
+            gh pr edit "$EXISTING_PR" \
+              --title "chore(docs): refresh generated catalog artifacts ($DATE)" \
+              --body "Automated regeneration of the generated docs catalogs via \`scripts/docs/health.mjs\` (workflow \`regenerate-docs-catalog.yml\`). Stable branch — reruns update this PR. Auto-merges through the snapshot path (\`.github/snapshot-paths.yml\`)."
+            gh pr merge --auto --squash "$EXISTING_PR" || true
+          else
+            gh pr create \
+              --title "chore(docs): refresh generated catalog artifacts ($DATE)" \
+              --body "Automated regeneration of the generated docs catalogs via \`scripts/docs/health.mjs\` (workflow \`regenerate-docs-catalog.yml\`). Stable branch — reruns update this PR. Auto-merges through the snapshot path (\`.github/snapshot-paths.yml\`)." \
+              --label automation \
+              --label documentation \
+              --label auto-merge
+          fi

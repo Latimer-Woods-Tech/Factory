@@ -152,13 +152,13 @@ test.describe('API health', () => {
     expect(body.status).toBe('ok');
   });
 
-  test('Worker health returns ok with env field', async ({ request }) => {
-    const workerUrl = process.env.WORKER_URL ?? 'https://prime-self.adrper79.workers.dev';
+  test('Worker health returns ok with service field', async ({ request }) => {
+    const workerUrl = process.env.WORKER_URL ?? 'https://api.selfprime.net';
     const response = await request.get(`${workerUrl}/health`);
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body.status).toBe('ok');
-    expect(body.env).toBe('production');
+    expect(body.service).toBe('selfprime-api');
   });
 });
 

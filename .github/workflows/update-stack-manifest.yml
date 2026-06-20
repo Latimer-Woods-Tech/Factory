@@ -4,6 +4,10 @@ name: Update STACK Manifest
 # - Every successful publish (workflow_run of Publish Package)
 # - Manual dispatch
 # - Daily safety net (catches missed updates if workflow_run fires before main is updated)
+#
+# RFC-006 §10 special case: STACK.md is a human-readable reference doc, not
+# telemetry. The commit/PR is kept but uses a stable branch (chore/stack-manifest)
+# instead of daily-timestamped branches, so only one PR accumulates at a time.
 on:
   workflow_run:
     workflows: ['Publish Package']
@@ -12,12 +16,10 @@ on:
   schedule:
     - cron: '17 4 * * *' # daily 04:17 UTC
 
-# Need write access for branch+commit and pull-requests:write for PR creation.
-# Direct push to main is blocked by branch protection — must go through a PR
-# that hits the existing auto-merge path.
+# Permissions: only metadata:read needed at job level; the App token supplies
+# contents:write and pull-requests:write via its own installation grants.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 concurrency:
   group: update-stack-manifest
@@ -32,12 +34,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Mint factory-cross-repo App token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: app-token
         with:
-          # Need full history for git diff + commit back.
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
           fetch-depth: 0
-          # Use a PAT or default token with contents:write.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
@@ -45,9 +54,14 @@ jobs:
       - name: Run update-stack-manifest.js
         run: node scripts/update-stack-manifest.js
 
-      - name: Open auto-merge PR if STACK.md changed
+      # RFC-006 §10 special case: STACK.md is a reference doc — keep the Git
+      # commit, but use a stable branch (no daily timestamp) so only one PR
+      # accumulates. Reruns update the existing PR rather than opening new ones.
+      # App token (factory-cross-repo[bot]) is required so pull_request_target
+      # fires on the created PR and snapshot-pr-auto-merge can approve + merge it.
+      - name: Open or update auto-merge PR if STACK.md changed
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           git add docs/STACK.md
@@ -56,15 +70,37 @@ jobs:
             exit 0
           fi
           DATE=$(date -u +%F)
-          BRANCH="chore/stack-manifest-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(stack): auto-update STACK.md package versions ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(stack): auto-update STACK.md ($DATE)" \
-            --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`)." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+          BRANCH="chore/stack-manifest"
+          git config user.name "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+
+          git add docs/STACK.md
+          if git diff --cached --quiet docs/STACK.md; then
+            echo "Existing STACK.md branch already contains this content."
+          else
+            git commit -m "chore(stack): auto-update STACK.md package versions ($DATE)"
+            git push --force-with-lease --set-upstream origin "$BRANCH"
+          fi
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing STACK.md PR #$EXISTING_PR."
+            gh pr edit "$EXISTING_PR" \
+              --title "chore(stack): auto-update STACK.md ($DATE)" \
+              --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`). Stable branch — reruns update this PR instead of opening new ones."
+            gh pr merge --auto --squash "$EXISTING_PR" || true
+          else
+            gh pr create \
+              --title "chore(stack): auto-update STACK.md ($DATE)" \
+              --body "Automated STACK.md refresh from \`scripts/update-stack-manifest.js\` (see workflow \`update-stack-manifest.yml\`). Stable branch — reruns update this PR instead of opening new ones." \
+              --label automation \
+              --label documentation \
+              --label auto-merge
+          fi

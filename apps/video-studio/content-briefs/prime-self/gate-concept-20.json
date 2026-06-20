@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-20",
+  "key": "gate-concept-20",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 20: Contemplation",
+  "description": "You live in the present moment. Your words have power when they arise spontaneously from genuine presence. Pre-scripted communication feels hollow to you. Speak from NOW, not from a script.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 20: Contemplation",
+  "learningGoal": "The viewer understands what Gate 20 (Contemplation — Contemplative Expression) means in their daily life, in plain terms.",
+  "targetPersona": "gate_20",
+  "keyPoints": [
+    "You live in the present moment.",
+    "Your words have power when they arise spontaneously from genuine presence.",
+    "Pre-scripted communication feels hollow to you.",
+    "Speak from NOW, not from a script."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-20-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 20: Contemplation — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-20-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 20: Contemplation — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-20-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 20: Contemplation — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-20-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 20: Contemplation — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 20: Contemplation — Your Energy Blueprint",
+    "description": "You live in the present moment. Your words have power when they arise spontaneously from genuine presence. Pre-scripted communication feels hollow to you. Speak from NOW, not from a script."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[20]",
+  "status": "planned"
+}

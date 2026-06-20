@@ -1,0 +1,77 @@
+{
+  "briefKey": "authority-concept-splenic",
+  "key": "authority-concept-splenic",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "authority-concept",
+  "title": "Authority: The Splenic Now",
+  "description": "Your immune system speaks to you. It says \"now\" or \"not now\" once, quietly. If you miss it, it is gone. The more present in your body you are, the clearer its signal becomes.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Authority: The Splenic Now",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"splenic\" means for them and feels recognised, not labelled.",
+  "targetPersona": "authority_splenic",
+  "keyPoints": [
+    "Your immune system speaks to you.",
+    "It says \"now\" or \"not now\" once, quietly.",
+    "If you miss it, it is gone.",
+    "The more present in your body you are, the clearer its signal becomes."
+  ],
+  "forbiddenClaims": [
+    "your authority makes you immune to mistakes",
+    "you should override your authority when others disagree",
+    "emotional authority means waiting forever"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "authority-concept-splenic-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Authority: The Splenic Now — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "authority-concept-splenic-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Authority: The Splenic Now — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "authority-concept-splenic-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Authority: The Splenic Now — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "authority-concept-splenic-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Authority: The Splenic Now — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Authority: The Splenic Now — Your Energy Blueprint",
+    "description": "Your immune system speaks to you. It says \"now\" or \"not now\" once, quietly. If you miss it, it is gone. The more present in your body you are, the clearer its signal becomes."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('authority', 'splenic')",
+  "status": "planned"
+}

@@ -55,6 +55,11 @@ jobs:
         startsWith(github.event.pull_request.head.ref, 'chore/scorecard-snapshot-') ||
         startsWith(github.event.pull_request.head.ref, 'chore/morning-digest-') ||
         startsWith(github.event.pull_request.head.ref, 'chore/kpis-snapshot-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/docs-catalog-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/founder-stats-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/weekly-checkpoint-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/sauna-brain-sync-') ||
+        startsWith(github.event.pull_request.head.ref, 'chore/stack-manifest') ||
         startsWith(github.event.pull_request.head.ref, 'completion-tracker/')
       )
     name: Validate + auto-merge snapshot PR
@@ -68,7 +73,7 @@ jobs:
       # always sourced from main, never from PR-author-controlled content.
       # This is the same pattern that makes pull_request_target safe.
       - name: Checkout main (for allowlist + helper)
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           ref: main
           persist-credentials: false
@@ -90,7 +95,15 @@ jobs:
 
       - name: Validate + auto-merge
         env:
+          # GH_TOKEN (factory-cross-repo[bot]) is used for auto-merge enable only.
+          # It is a bypass actor on ruleset 15843812, so auto-merge persists across
+          # dismiss_stale_reviews_on_push events.
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # REVIEW_TOKEN (github-actions[bot]) is used for gh pr review --approve.
+          # factory-cross-repo[bot] cannot approve its own PRs; github-actions[bot]
+          # is added to CODEOWNERS for docs/** so its approval satisfies
+          # require_code_owner_review. See .github/CODEOWNERS Green tier.
+          REVIEW_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}

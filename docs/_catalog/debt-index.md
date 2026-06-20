@@ -7,10 +7,11 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | Owner | Drift Warnings | Broken Links |
 |---|---:|---:|
 | admin-studio | 1 | 4 |
+| adrper79 | 1 | 0 |
 | architecture | 10 | 4 |
 | capricast | 24 | 31 |
 | marketing | 2 | 79 |
-| platform | 228 | 274 |
+| platform | 230 | 282 |
 | revenue | 2 | 0 |
 
 ## Highest Link Debt Docs
@@ -34,6 +35,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 7 | docs/marketing/MARKETING_SUPERVISOR.md |
 | 6 | docs/capricast/IMPLEMENTATION_KICKOFF_APRIL_28.md |
 | 5 | docs/marketing/ESCALATION_TIERS.md |
+| 5 | docs/rfc/RFC-007-supervisor-semantic-memory.md |
 | 5 | docs/templates/POSTMORTEM_TEMPLATE.md |
 | 5 | MASTER_INDEX.md |
 | 4 | docs/admin-studio/00-MASTER-PLAN.md |
@@ -41,7 +43,6 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 4 | docs/archive/T6_4_T7_3_AUTOMATION_SCRIPTS.md |
 | 4 | docs/decisions/2026-05-18-attribution-model.md |
 | 4 | docs/kpis/humandesign.md |
-| 4 | docs/marketing/pr3-briefs/3d-surface-registry.md |
 
 ## Highest Drift Docs
 
@@ -63,12 +64,12 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 6 | docs/RELEASE_TRAIN_VERIFICATION.md |
 | 5 | docs/operations/CROSS_REPO_RELEASE_TRAIN.md |
 | 5 | docs/runbooks/release-procedure.md |
+| 4 | CLAUDE.md |
 | 4 | docs/ADMIN_STUDIO_SETUP.md |
 | 4 | docs/CONFIG_NORMALIZATION_AUDIT.md |
 | 4 | docs/DOCUMENTATION_HIERARCHY.md |
 | 4 | docs/runbooks/definition-of-ready-done.md |
 | 4 | PROJECT_STATUS.md |
 | 3 | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md |
-| 3 | CLAUDE.md |
 | 3 | docs/ACCESS.md |
 | 3 | docs/architecture/QA_TOOLS_ARCHITECTURE.md |

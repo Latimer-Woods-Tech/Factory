@@ -1,0 +1,76 @@
+{
+  "briefKey": "authority-concept-lunar",
+  "key": "authority-concept-lunar",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "authority-concept",
+  "title": "Authority: The Lunar Cycle",
+  "description": "Over a full lunar cycle you sample every possible way of processing a decision. Your wisdom is collective — gather input from many sources before committing.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Authority: The Lunar Cycle",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"lunar\" means for them and feels recognised, not labelled.",
+  "targetPersona": "authority_lunar",
+  "keyPoints": [
+    "Over a full lunar cycle you sample every possible way of processing a decision.",
+    "Your wisdom is collective",
+    "gather input from many sources before committing."
+  ],
+  "forbiddenClaims": [
+    "your authority makes you immune to mistakes",
+    "you should override your authority when others disagree",
+    "emotional authority means waiting forever"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "authority-concept-lunar-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Authority: The Lunar Cycle — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "authority-concept-lunar-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Authority: The Lunar Cycle — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "authority-concept-lunar-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Authority: The Lunar Cycle — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "authority-concept-lunar-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Authority: The Lunar Cycle — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Authority: The Lunar Cycle — Your Energy Blueprint",
+    "description": "Over a full lunar cycle you sample every possible way of processing a decision. Your wisdom is collective — gather input from many sources before committing."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('authority', 'lunar')",
+  "status": "planned"
+}

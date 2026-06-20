@@ -3,6 +3,9 @@ name: Morning Digest
 # Stage 2 M3 — Single morning Pushover that combines completion + cost +
 # revenue + scorecard + open-PR asks into one message. Runs after all
 # upstream digests have committed their snapshots.
+#
+# RFC-006 §10: daily runs upload digest as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10.
 on:
   schedule:
     - cron: '17 8 * * *' # daily 08:17 UTC
@@ -22,8 +25,7 @@ on:
         default: 'true'
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 concurrency:
   group: morning-digest
@@ -43,7 +45,7 @@ jobs:
           owner: Latimer-Woods-Tech
           repositories: Factory
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 1
           token: ${{ steps.app.outputs.token }}
@@ -70,9 +72,6 @@ jobs:
 
       - name: Run morning digest
         env:
-          # App-minted token so the snapshot PR's labels can trigger
-          # downstream workflows (auto-merge, project-sync). GITHUB_TOKEN
-          # would suppress those cascades.
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           set -euo pipefail
@@ -85,29 +84,11 @@ jobs:
           fi
           python scripts/morning_digest.py $args
 
-      - name: Open auto-merge PR for digest snapshot
-        env:
-          # App-minted token so the snapshot PR's labels can trigger
-          # downstream workflows (auto-merge, project-sync). GITHUB_TOKEN
-          # would suppress those cascades.
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-        run: |
-          set -euo pipefail
-          git add docs/digest/ 2>/dev/null || true
-          if git diff --quiet --cached docs/digest/; then
-            echo "No digest changes to commit."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/morning-digest-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(digest): morning digest ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(digest): morning digest ($DATE)" \
-            --body "Automated morning digest snapshot from \`morning-digest.yml\`. Single roll-up of conformance + cost + revenue + scorecard + open PRs." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-digest-${{ github.run_id }}
+          path: docs/digest/
+          retention-days: 30
+          if-no-files-found: warn

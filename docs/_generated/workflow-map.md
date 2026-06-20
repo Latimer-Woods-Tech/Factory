@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-06
+last_generated: 2026-06-18
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -15,7 +15,7 @@ source:
 
 # Factory Workflow Map
 
-**Registry hash:** `sha256:e3a4694c2778bcd4d0f3282e1dc376fb9551dcc3b3afbe37d89bf2c8727bd343`
+**Registry hash:** `sha256:1e8ff62a1dce007309e97ec5fd35d5fecb4c732610f92cd1e8f97fbe67b5aff0`
 
 ```mermaid
 flowchart TB
@@ -36,7 +36,6 @@ flowchart TB
   Reusable --> _app_reliability_gate_yml["_app-reliability-gate.yml"]
   Reusable --> _canary_watch_yml["_canary-watch.yml"]
   Reusable --> _docs_health_yml["_docs-health.yml"]
-  Reusable --> _hello_reusable_yml["_hello-reusable.yml"]
   Reusable --> _migration_drift_guard_yml["_migration-drift-guard.yml"]
   Reusable --> _neon_pr_lifecycle_yml["_neon-pr-lifecycle.yml"]
   Reusable --> _post_deploy_verify_yml["_post-deploy-verify.yml"]
@@ -55,6 +54,7 @@ flowchart TB
   Other --> cf_domain_reconcile_yml["cf-domain-reconcile.yml"]
   Other --> ci_qa_tools_yml["ci-qa-tools.yml"]
   Other --> ci_yml["ci.yml"]
+  Other --> cloudflare_token_rotation_yml["cloudflare-token-rotation.yml"]
   Other --> codeql_yml["codeql.yml"]
   Other --> coherence_check_yml["coherence-check.yml"]
   Other --> cohesion_courtesy_check_yml["cohesion-courtesy-check.yml"]
@@ -95,21 +95,23 @@ flowchart TB
   Other --> factory_status_dashboard_yml["factory-status-dashboard.yml"]
   Reporting --> flaky_check_report_yml["flaky-check-report.yml"]
   Other --> fridge_semantic_check_yml["fridge-semantic-check.yml"]
-  Other --> generate_app_lockfiles_yml["generate-app-lockfiles.yml"]
   Other --> generate_founder_stats_yml["generate-founder-stats.yml"]
   Reporting --> generate_scorecard_yml["generate-scorecard.yml"]
   Reporting --> generate_state_yml["generate-state.yml"]
   Other --> governance_audit_yml["governance-audit.yml"]
   Automation --> label_sync_yml["label-sync.yml"]
   Other --> launch_readiness_yml["launch-readiness.yml"]
+  Other --> lifecycle_controller_yml["lifecycle-controller.yml"]
   Other --> lighthouse_ci_admin_studio_yml["lighthouse-ci-admin-studio.yml"]
   Other --> memory_single_writer_yml["memory-single-writer.yml"]
   Other --> mirror_org_secrets_to_dependabot_yml["mirror-org-secrets-to-dependabot.yml"]
   Reporting --> morning_digest_yml["morning-digest.yml"]
   Other --> offsite_mirror_yml["offsite-mirror.yml"]
+  Other --> opportunity_scan_yml["opportunity-scan.yml"]
   Other --> package_integration_yml["package-integration.yml"]
   Other --> platform_conformance_yml["platform-conformance.yml"]
   Other --> policy_drift_guard_yml["policy-drift-guard.yml"]
+  Other --> pr_advisory_sweep_yml["pr-advisory-sweep.yml"]
   Quality --> pr_quality_check_yml["pr-quality-check.yml"]
   Reporting --> pr_queue_digest_yml["pr-queue-digest.yml"]
   Other --> pr_review_yml["pr-review.yml"]
@@ -122,12 +124,13 @@ flowchart TB
   Other --> push_neon_selfprime_yml["push-neon-selfprime.yml"]
   Other --> refresh_vertex_token_yml["refresh-vertex-token.yml"]
   Other --> regen_lockfile_on_branch_yml["regen-lockfile-on-branch.yml"]
-  Other --> regenerate_app_lockfiles_yml["regenerate-app-lockfiles.yml"]
+  Other --> regenerate_docs_catalog_yml["regenerate-docs-catalog.yml"]
   Other --> render_daily_brief_yml["render-daily-brief.yml"]
   Other --> render_video_yml["render-video.yml"]
   Reporting --> revenue_digest_yml["revenue-digest.yml"]
   Other --> reviewer_class_hints_yml["reviewer-class-hints.yml"]
   Other --> rfc_status_gate_yml["rfc-status-gate.yml"]
+  Other --> rfc006_baseline_capture_yml["rfc006-baseline-capture.yml"]
   Other --> rotate_admin_studio_tokens_yml["rotate-admin-studio-tokens.yml"]
   Other --> run_app_migrations_yml["run-app-migrations.yml"]
   Other --> run_migrations_yml["run-migrations.yml"]
@@ -138,6 +141,8 @@ flowchart TB
   Other --> set_jwt_secrets_yml["set-jwt-secrets.yml"]
   Other --> setup_app_secrets_yml["setup-app-secrets.yml"]
   Other --> setup_coh_observability_yml["setup-coh-observability.yml"]
+  Other --> setup_project_autoarchive_yml["setup-project-autoarchive.yml"]
+  Other --> setup_project_status_options_yml["setup-project-status-options.yml"]
   Other --> setup_sentry_alerts_yml["setup-sentry-alerts.yml"]
   Quality --> smoke_admin_studio_yml["smoke-admin-studio.yml"]
   Quality --> smoke_prime_self_yml["smoke-prime-self.yml"]
@@ -155,7 +160,9 @@ flowchart TB
   Other --> upload_sybil_music_yml["upload-sybil-music.yml"]
   Quality --> validate_sentry_auth_token_yml["validate-sentry-auth-token.yml"]
   Quality --> validate_service_registry_yml["validate-service-registry.yml"]
+  Other --> weekly_governance_checkpoint_yml["weekly-governance-checkpoint.yml"]
   Other --> workflow_budget_check_yml["workflow-budget-check.yml"]
   Other --> workflow_concurrency_check_yml["workflow-concurrency-check.yml"]
   Quality --> workflow_health_warden_yml["workflow-health-warden.yml"]
+  Other --> wrangler_name_collision_yml["wrangler-name-collision.yml"]
 ```

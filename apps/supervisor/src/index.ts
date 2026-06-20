@@ -40,6 +40,14 @@ export interface Env {
   SUPERVISOR_PUSH_KEY?: string;
   /** Service key guarding privileged HTTP routes (/run, /plan, /scheduled, /state, /aos/status, /capabilities). Set via `wrangler secret put SUPERVISOR_API_KEY`. */
   SUPERVISOR_API_KEY?: string;
+  /** RFC-007: Workers AI binding for embeddings. Declared in wrangler.jsonc `ai` block. */
+  AI?: Ai;
+  /** RFC-007: Vectorize index for template similarity recall. Provisioned: wrangler vectorize create supervisor-templates --dimensions=768 --metric=cosine */
+  VECTORIZE_TEMPLATES?: VectorizeIndex;
+  /** RFC-007: Vectorize index for episodic incident recall. Provisioned: wrangler vectorize create supervisor-incidents --dimensions=768 --metric=cosine */
+  VECTORIZE_INCIDENTS?: VectorizeIndex;
+  /** RFC-007: Semantic memory mode. off = disabled (default); shadow = log only; live = Signal 4 active. Set via wrangler.jsonc vars. */
+  SUPERVISOR_SEMANTIC_MODE?: 'off' | 'shadow' | 'live';
 }
 
 /** Constant-time string comparison — guards against timing side-channels. */

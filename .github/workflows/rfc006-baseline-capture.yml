@@ -1,0 +1,51 @@
+name: RFC-006 baseline capture
+
+on:
+  workflow_dispatch:
+
+# TM — Manual. Run once to capture Phase 0 baseline metrics.
+# RFC-006 Phase 0 §14 — "Baseline dashboard exists" exit criterion.
+
+concurrency:
+  group: rfc006-baseline-capture
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Mint Factory App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          owner: Latimer-Woods-Tech
+          repositories: Factory
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '20'
+
+      - name: Capture baseline
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: node .github/scripts/capture-rfc006-baseline.mjs
+
+      - name: Commit baseline
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          git config user.name "factory-cross-repo[bot]"
+          git config user.email "factory-cross-repo[bot]@users.noreply.github.com"
+          git add docs/rfc/
+          git diff --cached --quiet && exit 0
+          git commit -m "docs(rfc): capture RFC-006 Phase 0 baseline metrics"
+          git push

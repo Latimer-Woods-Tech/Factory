@@ -7,14 +7,15 @@
     "deploy": "wrangler deploy --env production",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --max-warnings 0",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "migrate": "node src/migrate.mjs"
   },
   "dependencies": {
     "@latimer-woods-tech/errors": "file:../../packages/errors",
     "@latimer-woods-tech/logger": "file:../../packages/logger",
     "@latimer-woods-tech/monitoring": "file:../../packages/monitoring",
     "@latimer-woods-tech/neon": "file:../../packages/neon",
-    "hono": "^4.12.14",
+    "hono": "^4.12.21",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -24,6 +25,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^1.6.1",
     "eslint": "^8.57.0",
+    "postgres": "^3.4.9",
     "typescript": "^5.4.0",
     "vitest": "^1.6.1",
     "wrangler": "^3.0.0"

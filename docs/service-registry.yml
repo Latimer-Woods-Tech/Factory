@@ -43,25 +43,21 @@
 # automation: forbidden  — The supervisor, Copilot, and any automated agent must
 #   never open a PR, touch a worker, or read data in this repo under any circumstances.
 #
-automation_denylist:
-  - id: wordis-bond-frontend
-    repo: Latimer-Woods-Tech/wordis-bond
-    scope: frontend-ui-only                              # ONLY the UI/frontend layer is restricted
-    automation: forbidden
-    reason: >
-      FRIDGE rule 1 — the wordis-bond frontend/UI carries TCPA regulatory risk.
-      Three-layer lockout (CODEOWNERS + this registry + supervisor denylist) applies
-      to the UI application layer only. The wordis-bond engine/worker backend does NOT
-      have a regulatory hold and may be worked on normally. Contact @adrper79-dot
-      before touching any file in the wordis-bond UI/client directory.
+automation_denylist: []
+# No repos are currently under an automation hold. The wordis-bond TCPA/regulatory
+# hold was lifted 2026-06-08 (regulation language removed); wordis-bond is now a
+# normal Factory repo, in-scope for the sense layer like any other. To place a future
+# legal/regulatory hold on a repo, add an entry here
+# ({ id, repo, scope, automation: forbidden, reason }) — gate.mjs and the entity-graph
+# enumerator both treat denylisted repos as never-automatable (FRIDGE rule 1).
 
 workers:
   - id: prime-self
-    name: prime-self                                       # legacy worker name retained in registry; live repo is HumanDesign
+    name: prime-self-api                                   # live Selfprime API worker (zone routes api.selfprime.net/* + selfprime.net/api/*); live repo is HumanDesign
     health_state: live
     repo: Latimer-Woods-Tech/HumanDesign
     url: https://api.selfprime.net                         # canonical public URL (branded custom domain)
-    workers_dev_url: https://prime-self.adrper79.workers.dev  # internal/CF fallback; never hardcode in frontend
+    workers_dev_url: null                                  # ⚠️ the legacy `prime-self` worker was hijacked by a misnamed inbound-oracle deploy (2026-06-10) and DELETED with operator approval 2026-06-11 (verified: prime-self.adrper79.workers.dev → 404, api.selfprime.net → 200). Never reuse the name "prime-self" for any worker.
     custom_domain: api.selfprime.net                       # CF custom domain — attach via CF API if missing
     custom_domain_status: attached                         # CF custom domain confirmed live 2026-05-08
     health_endpoint: /health
@@ -128,7 +124,7 @@ workers:
 
   - id: video-cron
     name: video-cron                                       # matches apps/video-cron/wrangler.jsonc `name`
-    health_state: broken   # reclassified 2026-06-05: /health probe returned 530
+    health_state: live   # 2026-06-10: root cause of the 2026-06-05 530 was a missing Workers custom domain; re-attached via API, curl /health verified 200
     repo: Latimer-Woods-Tech/factory
     url: https://video-cron.latwoodtech.work               # canonical branded custom domain
     custom_domain: video-cron.latwoodtech.work
@@ -158,6 +154,33 @@ workers:
         file: docs/SELFPRIME_VIDEOKING_SYNERGY_DEVELOPMENT_PLAN.md
         line: ~143
         pattern: "D[video-cron]"
+
+  - id: inbound-oracle
+    name: inbound-oracle-production                        # apps/inbound-oracle/wrangler.jsonc env.production name (renamed 2026-06-10 — was "prime-self", which clobbered the legacy Selfprime API worker)
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://inbound-oracle.latwoodtech.work
+    workers_dev_url: https://inbound-oracle-production.adrper79.workers.dev
+    custom_domain: inbound-oracle.latwoodtech.work
+    custom_domain_status: attached_2026-06-10              # moved from the hijacked `prime-self` worker to `inbound-oracle-production`; curl /health verified 200
+    health_endpoint: /health
+    telemetry_required: false                              # SMS webhook worker; Telnyx → HD reading → ElevenLabs TTS → MMS reply
+    deployment_status: deployed_verified_2026-06-10
+    critical_endpoints:
+      - /webhook/telnyx
+    required_secrets:
+      - TELNYX_API_KEY
+      - ELEVENLABS_API_KEY
+      - ANTHROPIC_API_KEY
+      - GROQ_API_KEY
+    optional_secrets:
+      - VERTEX_ACCESS_TOKEN                                # short-lived; empty = fast tier only
+    notes: >
+      NEVER set env.production.name to "prime-self" — that name belonged to the
+      legacy Selfprime API worker. A misnamed deploy before 2026-06-10 overwrote
+      that worker's code; the stale `prime-self` worker (which had been serving
+      inbound-oracle code while holding the old Selfprime secret set) was deleted
+      with operator approval on 2026-06-11.
 
   - id: synthetic-monitor
     name: synthetic-monitor                                # matches apps/synthetic-monitor/wrangler.jsonc `name`
@@ -336,7 +359,7 @@ workers:
     deployment_status: live
     neon_project_id: dry-poetry-91897020
     neon_staging_branch: staging                               # br-curly-rice-amw5jk6i — Neon PR preview branches fork from here
-    neon_hyperdrive_id: "43f49bb7de7a49edb290c66a7b9cab9e"    # staging Hyperdrive; sed-replaced per-PR by _neon-pr-lifecycle.yml
+    neon_hyperdrive_id: "caab7edc66a743f9b9856e7b074167b9"    # staging Hyperdrive (capricast-staging-db-20260601 → ep-sweet-union-am6jqo1u staging branch br-curly-rice-amw5jk6i); sed-replaced per-PR by _neon-pr-lifecycle.yml
     consumers: []
 
   - id: capricast-api
@@ -485,12 +508,12 @@ workers:
 
   - id: factory-cross-repo
     name: factory-cross-repo
-    health_state: broken   # reclassified 2026-06-05: /health probe returned 530
+    health_state: live
     repo: Latimer-Woods-Tech/factory
     url: https://factory-cross-repo.latwoodtech.work
     workers_dev_url: https://factory-cross-repo.adrper79.workers.dev
     custom_domain: factory-cross-repo.latwoodtech.work
-    custom_domain_status: pending
+    custom_domain_status: attached_2026-06-08   # AAAA 100:: proxied DNS record created; wrangler deploy confirmed 200
     health_endpoint: /health
     verification_targets:
       staging: https://factory-cross-repo.adrper79.workers.dev/health
@@ -634,13 +657,37 @@ workers:
     telemetry_required: false
     deployment_status: deployed_verified_2026-05-26
     notes: >
-      Read-layer ingestion + auth API (Admin Build Plan P1.1+). Hyperdrive `DB`
-      binds the THE_FACTORY Neon project (factory-core-db,
-      efe957f404bb457593e6bd08b733b7c4). Worker secrets JWT_SIGNING_KEY and
-      SUPERVISOR_PUSH_KEY are set on the worker (still need backfilling into GCP
-      Secret Manager for the CI deploy path). Read-layer migrations 0101-0105
-      were applied to THE_FACTORY on 2026-05-26. Verified: /health 200,
-      /v1/runs/mirror 200 with the push key (401 without).
+      Factory platform infrastructure API (expanded scope 2026-06-08 — was CI/CD
+      auth only). Surfaces: core.latwoodtech.work (CI/CD auth + ingestion) and
+      network.latwoodtech.work (Factory network layer — /v1/network/*). Hyperdrive
+      `DB` binds THE_FACTORY Neon project (factory-core-db,
+      efe957f404bb457593e6bd08b733b7c4). `NETWORK_DB` (pending) binds the factory_core
+      spare Neon project for cross-app factory_network_links + factory_network_events.
+      Worker secrets: JWT_SIGNING_KEY, SUPERVISOR_PUSH_KEY, WEBHOOK_FANOUT_INGEST_KEY,
+      AUDIT_INGEST_KEY (set). FACTORY_NETWORK_TOKEN per-app keys pending Phase 0.
+      Read-layer migrations 0101-0105 applied 2026-05-26. Verified: /health 200.
+
+  - id: factory-network
+    name: Factory Network Layer
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://network.latwoodtech.work
+    workers_dev_url: https://factory-core-api.adrper79.workers.dev
+    custom_domain: network.latwoodtech.work
+    custom_domain_status: attached_2026-06-08
+    health_endpoint: /health
+    verification_targets:
+      default: https://network.latwoodtech.work/v1/network/events
+    telemetry_required: false
+    deployment_status: live_2026-06-08
+    notes: >
+      Second custom domain alias on factory-core-api (same worker). Serves
+      /v1/network/links, /v1/network/events, /v1/network/resolve. Cross-app
+      identity link registry + event bus for selfprime, capricast, coh, xico-city.
+      Backed by NETWORK_DB Hyperdrive binding (factory_core spare Neon project).
+      Platform Standard §12 — see docs/registry/network-events.yml and
+      docs/planning/factory-network-layer.md. Phase 0 target: 2026-06 Week 1.
+
   - id: factory-events-replay
     name: factory-events-replay
     health_state: provisioned
@@ -931,6 +978,63 @@ workers:
     notes: Staging environment for marketing-supervisor. Planned — not yet deployed.
     consumers: []
 
+  # ─── mysticapi — productized developer API (GTM roadmap Wave 3) ──────────────
+  # Dedicated API brand; CF zone added 2026-05-31. mysticapi.com = developer
+  # portal/docs; api.mysticapi.com = the versioned API endpoints (synthesis +
+  # usage-metered video-gen) on top of the Energy Blueprint engine. Competes with
+  # humandesignhub.app on the value layer (interpretation + render), NOT raw chart
+  # data. Worker not yet built — when it ships, attach the CF custom domain, run
+  # the Worker Rename Protocol, and register consumers. Never expose a workers.dev
+  # URL in the SDK, docs, or client code.
+  - id: mysticapi
+    name: mysticapi                                        # worker name TBD; may be served by the selfprime engine or a dedicated worker
+    repo: Latimer-Woods-Tech/HumanDesign                   # likely reuses selfprime's chart/synthesis/video engine
+    url: https://api.mysticapi.com                         # canonical branded API domain
+    custom_domain: api.mysticapi.com
+    custom_domain_status: planned                          # CF zone added 2026-05-31; worker not yet built
+    health_endpoint: /health
+    verification_targets:
+      production: https://api.mysticapi.com/health
+    telemetry_required: true
+    critical_endpoints:
+      - /health
+      - /v1/chart
+      - /v1/synthesis
+      - /v1/video
+      - /api/admin/health
+      - /api/admin/metrics
+      - /api/admin/events
+    notes: >
+      Productized developer API surface (GTM roadmap Wave 3). mysticapi.com is the
+      developer portal/docs; api.mysticapi.com serves the versioned API (synthesis +
+      usage-metered video-gen) on top of the Energy Blueprint engine. Priced above
+      humandesignhub.app's commodity data floor. Planned — not yet deployed.
+    consumers: []
+
+  # ─── watch.selfprime.net — branded film playback (engine sharing slice) ──────
+  # Branded playback surface for the shareable cinematic film, vs. the raw
+  # customer-*.cloudflarestream.com Stream domain. Subdomain of the existing
+  # selfprime.net CF zone. Serving mechanism is decided at the engine sharing
+  # slice (Slice 7): a worker/Pages-rendered player page (signed Stream playback +
+  # OG tags for social sharing). DO NOT create the live DNS record until that
+  # origin exists — a subdomain pointing at no origin is a dangling-DNS /
+  # subdomain-takeover risk and breaks resolution. Provision DNS + route + origin
+  # together when the sharing slice ships.
+  - id: watch-selfprime
+    name: watch-selfprime                                  # serving worker/Pages name TBD (engine sharing slice)
+    repo: Latimer-Woods-Tech/HumanDesign                   # the engine surface that renders the branded player
+    url: https://watch.selfprime.net                       # canonical branded film-playback domain
+    custom_domain: watch.selfprime.net
+    custom_domain_status: planned                          # subdomain of selfprime.net zone; no live record until an origin exists
+    health_endpoint: /health
+    telemetry_required: false
+    notes: >
+      Branded shareable-film playback (engine Slice 7 sharing). Serving mechanism:
+      worker/Pages player page (signed Stream playback + OG tags) decided at build.
+      Do NOT create live DNS until the origin exists (dangling-DNS / subdomain-
+      takeover risk). Planned — not yet deployed.
+    consumers: []
+
   - id: referrals
     name: referrals
     health_state: planned
@@ -972,6 +1076,33 @@ workers:
       LLM ranking worker for surfacing the most relevant content (Stage 3 — PR brief 3l).
       Planned — not yet deployed.
     consumers: []
+
+  - id: analytics-proxy
+    name: analytics-proxy                                    # matches apps/analytics-proxy/wrangler.jsonc env.production.name
+    health_state: live
+    repo: Latimer-Woods-Tech/factory
+    url: https://analytics.latwoodtech.work
+    workers_dev_url: https://analytics-proxy.adrper79.workers.dev
+    custom_domain: analytics.latwoodtech.work
+    health_endpoint: /health
+    telemetry_required: false
+    deployment_status: live_health_verified_2026-06-08
+    critical_endpoints:
+      - /health
+      - /metrics
+    required_bindings:
+      - ANALYTICS_KV
+    required_secrets: []
+    required_vars:
+      - ENVIRONMENT
+    consumers:
+      - file: apps/latimerwoods-dev/src/
+        pattern: "analytics.latwoodtech.work"
+    notes: >
+      Thin CORS proxy that queries the Cloudflare Analytics GraphQL API for
+      per-Worker traffic metrics and caches responses in KV (60 s TTL).
+      Serves the /platform/ Flow mode on latwoodtech.com. CORS locked to
+      latwoodtech.com only. Deployed 2026-06-07.
 
 pages:
   - id: prime-self-ui

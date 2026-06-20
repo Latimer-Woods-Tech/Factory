@@ -1,0 +1,75 @@
+{
+  "briefKey": "profile-concept-5-2",
+  "key": "profile-concept-5-2",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "profile-concept",
+  "title": "Profile 5/2",
+  "description": "You are called out of your natural hermit tendencies by others who recognise your gifts. Your expertise is most powerful when you have had the space to develop it in private first.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Profile 5/2",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"5/2\" means for them and feels recognised, not labelled.",
+  "targetPersona": "profile_5-2",
+  "keyPoints": [
+    "You are called out of your natural hermit tendencies by others who recognise your gifts.",
+    "Your expertise is most powerful when you have had the space to develop it in private first."
+  ],
+  "forbiddenClaims": [
+    "your profile dictates your destiny",
+    "one profile is more gifted than another",
+    "the trial-and-error lines mean you are failing"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "profile-concept-5-2-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Profile 5/2 — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "profile-concept-5-2-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Profile 5/2 — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "profile-concept-5-2-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Profile 5/2 — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "profile-concept-5-2-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Profile 5/2 — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Profile 5/2 — Your Energy Blueprint",
+    "description": "You are called out of your natural hermit tendencies by others who recognise your gifts. Your expertise is most powerful when you have had the space to develop it in private first."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('profile', '5/2')",
+  "status": "planned"
+}

@@ -1,0 +1,75 @@
+{
+  "briefKey": "gate-concept-39",
+  "key": "gate-concept-39",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 39: Obstruction",
+  "description": "You have a provocateur energy that stirs people out of complacency and into their own spirit. Your provocations, when they come from a genuine love for others' growth, are powerful catalysts for awakening.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 39: Obstruction",
+  "learningGoal": "The viewer understands what Gate 39 (Obstruction — Catalytic provocation through strategic pressure) means in their daily life, in plain terms.",
+  "targetPersona": "gate_39",
+  "keyPoints": [
+    "You have a provocateur energy that stirs people out of complacency and into their own spirit.",
+    "Your provocations, when they come from a genuine love for others' growth, are powerful catalysts for awakening."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-39-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 39: Obstruction — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-39-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 39: Obstruction — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-39-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 39: Obstruction — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-39-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 39: Obstruction — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 39: Obstruction — Your Energy Blueprint",
+    "description": "You have a provocateur energy that stirs people out of complacency and into their own spirit. Your provocations, when they come from a genuine love for others' growth, are powerful catalysts for awakening."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[39]",
+  "status": "planned"
+}

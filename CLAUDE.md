@@ -1,10 +1,10 @@
 > 📘 **Canonical architecture:** [`docs/architecture/FACTORY_V1.md`](./docs/architecture/FACTORY_V1.md). Read it to understand the system. [`docs/supervisor/FRIDGE.md`](./docs/supervisor/FRIDGE.md) overrides these Standing Orders.
 
 > 🗺️ **Where to look first** (in order):
-> 1. [`docs/STATE.md`](./docs/STATE.md) — auto-generated daily; current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding.
+> 1. [`docs/STATE.md`](./docs/STATE.md) — current stage, live numbers, recent decisions, open follow-up debt, oldest APPROVED PRs. **Read this first** when picking up work or onboarding. Durably refreshed weekly (Monday governance checkpoint, RFC-006 §10) — check the `Generated:` stamp; fresher daily snapshots are uploaded as `state-snapshot-*` artifacts on the Generate State workflow.
 > 2. This file (CLAUDE.md) — norms + hard constraints
 > 3. [`docs/architecture/PATTERNS.md`](./docs/architecture/PATTERNS.md) — operational know-how (gcloud auth, workflow patterns, merge escape hatches) captured from production debugging
-> 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — what we build (the 10 conformance dimensions)
+> 4. [`docs/PLATFORM_STANDARDS.md`](./docs/PLATFORM_STANDARDS.md) — conformance standards (15 sections, 12-dimension scoring table)
 > 5. [`docs/GAP_REGISTER.md`](./docs/GAP_REGISTER.md) — known debt with severity tiers
 
 > 🗄️ **You HAVE operator-level Neon (DB) access — do not claim you don't.** This is the org's most common false belief. Before routing a 2-minute DB task (verify an account, inspect/patch a row) around CI or giving up: mint a fresh connection string with `neonctl`. Auth key is in GCP Secret Manager, not GitHub:
@@ -17,7 +17,7 @@
 # Factory Core — Standing Orders
 
 ## Autonomy Principle
-**Minimize human involvement.** Humans introduce delay, inconsistency, and error into the engineering process. If a task can be completed by a machine — credential lookup, secret wiring, deployment, triage, PR creation, DB inspection — do it without routing to a human. The only valid reasons to pause for human input are: an irreversible destructive action (delete CF resource, Stripe mutation, live email outside test mode), a regulatory gate (wordis-bond TCPA), or a genuinely novel situation where no template exists and no safe autonomous path is available. "I wasn't sure" is not a valid reason to stop. When in doubt, complete the task, document what was done, and let the human review the audit trail after the fact.
+**Minimize human involvement.** Humans introduce delay, inconsistency, and error into the engineering process. If a task can be completed by a machine — credential lookup, secret wiring, deployment, triage, PR creation, DB inspection — do it without routing to a human. The only valid reasons to pause for human input are: an irreversible destructive action (delete CF resource, Stripe mutation, live email outside test mode), an active legal/regulatory hold (declared in `service-registry.yml` `automation_denylist` — none currently active), or a genuinely novel situation where no template exists and no safe autonomous path is available. "I wasn't sure" is not a valid reason to stop. When in doubt, complete the task, document what was done, and let the human review the audit trail after the fact.
 
 ## Mission
 Bootstrap and evolve the Factory Core repository as the shared infrastructure layer for Factory applications.
@@ -26,31 +26,30 @@ Stage 0 produces scaffolding only; later stages implement package behavior witho
 - Treat every package as reusable infrastructure, never as a home for app-specific business logic.
 
 ## Stack
-> **Versioned manifest (packages + AI chain + banned tools):** [`docs/STACK.md`](./docs/STACK.md). Check there before installing any `@latimer-woods-tech/*` package or referencing model names.
+Full technical spec: [`docs/PLATFORM_STANDARDS.md` §1](./docs/PLATFORM_STANDARDS.md). Versioned package manifest + AI chain + banned tools: [`docs/STACK.md`](./docs/STACK.md). **Check `docs/STACK.md` before installing any `@latimer-woods-tech/*` package or referencing model names.**
 
-- Runtime: Cloudflare Workers only
-- Router: Hono (never Express, Fastify, Next.js)
-- Database: Neon Postgres via Hyperdrive binding (`env.DB`)
-- Auth: JWT self-managed with the Web Crypto API (never `jsonwebtoken`)
-- LLM chain: Anthropic → Grok → Groq — see [`docs/STACK.md`](./docs/STACK.md) for tier routing and current model names
+Monorepo-specific additions not covered by PLATFORM_STANDARDS.md §1:
+- Database access: Neon Postgres via Hyperdrive binding named `DB` (`env.DB` in Worker handlers; declared in `wrangler.jsonc` and the typed `Env` interface)
+- LLM chain: Anthropic → Grok → Groq (tier routing and current model IDs in `docs/STACK.md`); all LLM calls go through `@latimer-woods-tech/llm` — no direct vendor SDK imports in app code
 - Telephony: Telnyx + Deepgram + ElevenLabs
 - Email: Resend
-- Errors: Sentry via `@latimer-woods-tech/monitoring`
-- Analytics: PostHog plus the first-party `factory_events` table
 - Docs: Mintlify
-- Build: tsup (ESM only)
-- Test: Vitest + `@cloudflare/vitest-pool-workers`
-- Language: TypeScript strict with zero `any` in public APIs
+- Test runner: Vitest + `@cloudflare/vitest-pool-workers`
 
 ## Hard Constraints
-**These constraints apply to production code (Cloudflare Workers runtime only).** GitHub Actions scripts (`.github/scripts/**/*.mjs`) run on Node.js and are exempt from these Cloudflare constraints.
-- No `process.env` anywhere; use Hono or Worker bindings (`c.env.VAR` / `env.VAR`)
-- No Node.js built-ins such as `fs`, `path`, or `crypto`; use platform-safe APIs
-- No CommonJS `require()`; use ESM `import` / `export` only
-- No `Buffer`; use `Uint8Array`, `TextEncoder`, or `TextDecoder`
-- No raw `fetch` without explicit error handling
-- No secrets in source code or in `wrangler.jsonc` `vars`
-- No `*.workers.dev` URLs in any user-facing HTML, JS, or API client code — every user-facing worker endpoint must have a branded custom domain (e.g. `api.selfprime.net`, `api.itsjusus.com`). The `.workers.dev` URL is the CF infrastructure fallback and must never be exposed to end users or hardcoded in frontend assets. Check `docs/service-registry.yml` for the canonical `url` field; use that, never `workers_dev_url`.
+**Cloudflare Workers runtime only.** GitHub Actions scripts (`.github/scripts/**/*.mjs`) run on Node.js and are exempt.
+
+Six constraints violated most often — all are CI blockers:
+- No `process.env` → use `c.env.VAR` (Hono context) or `env.VAR` (Worker handler binding)
+- No Node.js built-ins (`fs`, `path`, `crypto`) → `crypto.subtle`, `TextEncoder`, `Uint8Array`
+- No `Buffer` → `Uint8Array`, `TextEncoder`, or `TextDecoder`
+- No CommonJS `require()` → ESM `import`/`export` only
+- No raw `fetch` without explicit error handling (`.catch()` or try/catch on every call)
+- No secrets in source code or in `wrangler.jsonc` `vars` → wrangler secret put or GCP Secret Manager
+
+**Domain rule:** no `*.workers.dev` URLs in any user-facing HTML, JS, API client, or env var shipped to end users. Use the branded domain from `docs/service-registry.yml`. Full rationale: [`docs/PLATFORM_STANDARDS.md` §15](./docs/PLATFORM_STANDARDS.md).
+
+Full constraints list with enforcement details: [`docs/COMPLIANCE_CHECKLIST.md` §B–D](./docs/COMPLIANCE_CHECKLIST.md).
 
 ## Sub-Agent Isolation (STOP — read before invoking the Agent tool)
 **Any sub-agent invoked via the `Agent` tool that does anything beyond pure read-only research MUST be spawned with `isolation: "worktree"`.** Without it, parallel agents share the same working tree — they will `git checkout` over each other's edits, `git reset --hard` will wipe another agent's in-flight uncommitted work, and background processes (wrangler deploys, builds) get killed mid-flight by another agent's branch operation.
@@ -77,7 +76,8 @@ For this account: `{name}.adrper79.workers.dev`. Never use the short form `{name
 ## Verification Requirement (STOP — read this before declaring anything "working")
 Never declare a fix "done" or "working" based on CI green alone.
 A fix is done when you have run `curl` and observed the expected HTTP status code with your own eyes.
-- After deploying a Worker: `curl https://{name}.adrper79.workers.dev/health` must return `200`
+- After deploying a Worker to **production**: `curl https://{branded-domain}/health` must return `200` (check `docs/service-registry.yml` for the canonical URL — never use the `.workers.dev` fallback for prod verification)
+- After deploying a Worker to **staging**: `curl https://{name}.adrper79.workers.dev/health` is acceptable
 - After deploying Pages: `curl https://{custom-domain}/` must return `200`
 - After fixing a login flow: `curl -X POST .../auth/login` with bad creds must return `401` (not `000` or `5xx`)
 CI green = code compiled. `curl` 200 = it actually works. These are not the same thing.
@@ -108,6 +108,7 @@ CI green = code compiled. `curl` 200 = it actually works. These are not the same
 23. `@latimer-woods-tech/validation` (no deps; deterministic output quality gates)
 24. `@latimer-woods-tech/browser` (deps: errors, logger) — Workers-compatible Browser Run package wrapper
 25. `@latimer-woods-tech/bodygraph` (no deps) — canonical Energy Blueprint body-graph engine; runtime-agnostic SVG-string renderer (film/web/PDF share it)
+26. `@latimer-woods-tech/constellation` (no deps) — personal-sky renderer + data catalogs (fixed stars, celestial bodies, transit pulse, Feng Shui); runtime-agnostic SVG-string; consumed by web, video-studio (Wave 3), and PDF
 
 ## Video Production Pipeline
 
@@ -141,11 +142,20 @@ Local package dependencies the render step builds (in order): `errors`, `monitor
 **Never** run Remotion or ffmpeg in a Cloudflare Worker — they require Node.js + real compute. The video-cron Worker only dispatches; the actual render runs on `ubuntu-latest` in GitHub Actions.
 
 ## Quality Gates
-- TypeScript strict: zero errors
-- ESLint: zero warnings with `--max-warnings 0`
-- Unit coverage: at least 90% lines and functions, at least 85% branches
-- Build: `tsup` produces `dist/` with no errors
-- JSDoc: at least 90% of exported symbols documented
+
+**Package publication gates** — apply to every `@latimer-woods-tech/*` package shipped to npm:
+- TypeScript: zero errors (`npm run typecheck`)
+- ESLint: zero warnings (`--max-warnings 0`); no `eslint-disable` without an ADR
+- Build: `tsup` produces clean `dist/` with zero errors
+- Unit coverage: ≥90% lines and functions, ≥85% branches
+- JSDoc: ≥90% of exported symbols carry a one-line doc comment
+
+**App deployment gates** — apply to every Cloudflare Worker deployed to production; see [`docs/PLATFORM_STANDARDS.md` §3–4](./docs/PLATFORM_STANDARDS.md):
+- Coverage floors start at 80% line / 85% branch / 70% function, ratcheting to 90/90/85 once stable
+- Vitest deterministic mode; every route has a test; Playwright `smoke` tier mandatory
+- Sentry initialized, sourcemap upload in deploy workflow, `docs/SLO.md` present
+
+Full checklist for new repos: [`docs/COMPLIANCE_CHECKLIST.md`](./docs/COMPLIANCE_CHECKLIST.md).
 
 ## Commit Format
 Use `<type>(<scope>): <description>`.
@@ -156,7 +166,7 @@ Example: `feat(errors): add ValidationError with field-level context`
 ## Error Recovery Protocol
 If a build fails:
 1. Read the full error instead of guessing.
-2. Check the Hard Constraints list first; most failures are constraint violations.
+2. Check the Hard Constraints section above (and [`docs/COMPLIANCE_CHECKLIST.md` §B–D](./docs/COMPLIANCE_CHECKLIST.md)) first; most failures are constraint violations.
 3. Fix the root cause; never suppress with `@ts-ignore` or `eslint-disable`.
 4. Re-run the full quality gate sequence before continuing.
 5. If blocked after two attempts, write `BLOCKED.md`, explain the blocker, and stop.
@@ -202,6 +212,11 @@ Before writing any code:
   - How to rotate JWT_SECRET, DATABASE_URL, etc.
   - Downtime-free rotation procedures
 
+- **Webhook Fanout Go-Live (P1.6)**: See [docs/runbooks/webhook-fanout-go-live.md](./docs/runbooks/webhook-fanout-go-live.md)
+  - Wiring GitHub `check_run` + `pull_request_review` webhooks → factory gate ingest
+  - Secret matrix (`GH_WEBHOOK_SECRET`, shared `FACTORY_CORE_API_INGEST_KEY`/`WEBHOOK_FANOUT_INGEST_KEY`)
+  - GitHub webhook setup + curl-with-your-own-eyes verification
+
 - **App README Template**: See [docs/APP_README_TEMPLATE.md](./docs/APP_README_TEMPLATE.md)
   - Setup instructions for new developers
   - Local development (.dev.vars) vs. staging vs. production
@@ -214,9 +229,9 @@ Before writing any code:
   - Verifying the health endpoint
 
 - **Add a New Standalone App**: See [docs/runbooks/add-new-app.md](./docs/runbooks/add-new-app.md)
-  - Rate limiter ID registry (1001–1008 currently allocated; next is 1009)
+  - Rate limiter ID registry — check the file for the current next-available ID (changes with each new app)
   - Step-by-step: scripts, workflows, Hyperdrive UUID extraction, secrets
-  - Checklist for the full onboarding flow
+  - Combined with [docs/COMPLIANCE_CHECKLIST.md](./docs/COMPLIANCE_CHECKLIST.md) for the full onboarding checklist
 
 - **Database & Migrations**: See [docs/runbooks/database.md](./docs/runbooks/database.md)
   - Neon branch strategy (main / staging / ephemeral PR branches)
