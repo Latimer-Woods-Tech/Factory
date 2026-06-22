@@ -35,11 +35,11 @@ apps/admin-studio/
     └── 0001_studio_audit_log.sql      # Append-only audit table
 ```
 
-## Phase A scope (this commit)
+## Status
 
-✅ **Foundation only** — every file is real, every safeguard wires through, but most routes return stub data. Phases B–H replace stubs with full implementations per the master plan.
+This Worker is **live in production** (`api.apunlimited.com`) with ~29 routes spanning auth, observability, the test runner, the repo/AI editor, deploy control, capability provisioning, governance, and privacy. The original Phase A–H plan (see Roadmap below) is **largely delivered** — this is no longer a stub. The machine-readable surface is [`src/routes/manifest.ts`](./src/routes/manifest.ts) (served at `GET /manifest`); a grouped reference lives in [`docs/admin-studio/03-API-SURFACE.md`](../../docs/admin-studio/03-API-SURFACE.md).
 
-What works end-to-end today:
+Core safeguards that gate every mutating route (all live):
 
 1. `POST /auth/login` — issues an env-locked HS256 JWT (Web Crypto, no `jsonwebtoken`)
 2. JWT middleware rejects cross-env tokens with `403 Environment mismatch`
@@ -108,13 +108,17 @@ npm run lint          # zero warnings (--max-warnings 0)
 
 | Phase | Scope                                                | Status         |
 |-------|------------------------------------------------------|----------------|
-| A     | Foundation: auth, env safety, audit middleware, UI shell | ✅ this commit |
-| B     | Real users + RLS via `@latimer-woods-tech/neon`            | next           |
-| C     | GitHub Actions test-runner + SSE streaming           |                |
-| D     | Deploy + rollback + secret rotation flows            |                |
-| E     | AI chat: Monaco diff editor + repo context + PR proposals |           |
-| F     | Multi-app dashboard (Wordis Bond, Cypher, Prime Self, Schedule) |     |
-| G     | Two-person approvals + Slack notifications + on-call rotation |       |
-| H     | Hidden-needs polish: keyboard shortcuts, command palette, themes |    |
+| A     | Foundation: auth (+ Google OAuth), env safety, audit middleware, UI shell | ✅ shipped |
+| B     | Observability: Sentry issues, PostHog tiles, app health, SLO, synthetic journeys | ✅ shipped |
+| C     | GitHub Actions test-runner + SSE streaming           | ✅ shipped     |
+| D     | Deploy control + version history (`/apps/versions`) + canary rollback | ✅ shipped (standalone secret-rotation cron) |
+| E     | AI chat + repo editor (Monaco) + tool use            | ✅ shipped; diff/PR `/ai/proposals` still stubbed |
+| F     | Multi-app dashboard + function catalog + smoke tests | ✅ shipped     |
+| G     | Confirmation tiers + Slack alerts; two-person (tier-3) approvals | 🚧 partial |
+| H     | Command center, themes, keyboard/a11y polish         | 🚧 partial     |
+| —     | **Capability Studio** — governed provisioning + graph composer (not in original plan; [golden design](../../docs/CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md)) | ✅ shipped |
+| —     | **Governance** — feature flags, blocking gates, command center | ✅ shipped |
+| —     | **Privacy/DSR**, daily digest, training-library proxy | ✅ wired (`/privacy` export/delete return stub payloads — see GAP) |
+| —     | ~~Creator-economy / Stripe Connect~~                 | ❌ removed (#1790) — duplicated Capricast & SelfPrime on the shared `acct_1SlCcFAW1229TZte` platform |
 
-See [`docs/admin-studio/00-MASTER-PLAN.md`](../../docs/admin-studio/00-MASTER-PLAN.md) for the full feature inventory across all 8 tiers.
+See [`docs/admin-studio/00-MASTER-PLAN.md`](../../docs/admin-studio/00-MASTER-PLAN.md) for the full feature inventory and [`03-API-SURFACE.md`](../../docs/admin-studio/03-API-SURFACE.md) for the live route reference.
