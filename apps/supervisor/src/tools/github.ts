@@ -199,12 +199,22 @@ export async function getPlanApproval(
  * The formatted output is deterministic given the same inputs, and never
  * interpolates untrusted data into executable positions — only display text.
  */
+/** A similar past run surfaced by RFC-007 Phase 1 semantic recall. */
+export interface SimilarRun {
+  run_id: string;
+  score: number;
+  outcome: string;
+  template_id?: string;
+  issue_ref?: string;
+}
+
 export function formatPlanComment(
   templateId: string,
   templateDescription: string,
   tier: 'green' | 'yellow' | 'red',
   steps: Array<{ tool: string; slots?: Record<string, unknown> }>,
   patternCheck?: number[],
+  similarRuns?: SimilarRun[],
 ): string {
   const tierEmoji = { green: '🟢', yellow: '🟡', red: '🔴' }[tier];
   const stepLines = steps
@@ -233,6 +243,17 @@ export function formatPlanComment(
           `- [\`docs/architecture/PATTERNS.md\` §${n}](https://github.com/Latimer-Woods-Tech/factory/blob/main/docs/architecture/PATTERNS.md)`,
       ),
     );
+  }
+
+  // RFC-007 Phase 1: surface similar past incidents when semantic recall is live.
+  if (similarRuns && similarRuns.length > 0) {
+    const runLines = similarRuns.map((r) => {
+      const outcome = r.outcome === 'succeeded' ? '✅' : '❌';
+      const ref = r.issue_ref ? ` [${r.issue_ref}]` : '';
+      const tmpl = r.template_id ? ` \`${r.template_id}\`` : '';
+      return `- ${outcome}${ref}${tmpl} (similarity: ${(r.score * 100).toFixed(0)}%)`;
+    });
+    sections.push('', '### Similar past runs', ...runLines);
   }
 
   sections.push(

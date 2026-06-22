@@ -112,4 +112,6 @@ export interface Env {
   DIGEST_R2?: R2Bucket;
   /** Optional factory-supervisor base URL for fetching last-run state. */
   SUPERVISOR_URL?: string;
+  /** Bearer token for authenticating requests to the factory-supervisor API. */
+  SUPERVISOR_API_KEY?: string;
 }

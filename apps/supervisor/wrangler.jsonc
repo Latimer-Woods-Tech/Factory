@@ -83,10 +83,10 @@
     "PER_RUN_CAP_CENTS": "500",
     "FACTORY_CORE_API_URL": "https://core.latwoodtech.work",
     "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work",
-    // RFC-007: semantic mode flag. off | shadow | live. Flipped to shadow 2026-06-22 (RFC-007 Phase 1 → active).
-    "SUPERVISOR_SEMANTIC_MODE": "shadow",
-    // RFC-008: reflection loop mode flag. off | shadow | live. Default off.
-    "REFLECTION_MODE": "off"
+    // RFC-007: Phase 2 live 2026-06-22 — recall active in plan comments.
+    "SUPERVISOR_SEMANTIC_MODE": "live",
+    // RFC-008: Phase 1+2 shadow 2026-06-22 — MEMORIZE + REFLECT active on cron.
+    "REFLECTION_MODE": "shadow"
   },
 
   "env": {
@@ -106,10 +106,10 @@
         "PER_RUN_CAP_CENTS": "500",
         "FACTORY_CORE_API_URL": "https://core.latwoodtech.work",
         "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work",
-        // RFC-007: flipped to shadow 2026-06-22 — incident queue consumer now active.
-        "SUPERVISOR_SEMANTIC_MODE": "shadow",
-        // RFC-008: reflection loop mode flag. off | shadow | live.
-        "REFLECTION_MODE": "off"
+        // RFC-007: Phase 2 live 2026-06-22 — recall active in plan comments.
+        "SUPERVISOR_SEMANTIC_MODE": "live",
+        // RFC-008: Phase 1+2 shadow 2026-06-22 — MEMORIZE + REFLECT active on cron.
+        "REFLECTION_MODE": "shadow"
       },
       "durable_objects": {
         "bindings": [
