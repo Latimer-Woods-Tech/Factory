@@ -6,7 +6,6 @@
  */
 
 import { fetchTree, fetchFile, listIssues, listPullRequests, listOrgRepos } from './github-api.js';
-import { gcpGetSecret } from './gcp-secrets.js';
 
 export interface ToolDefinition {
   name: string;
@@ -111,17 +110,6 @@ export const AGENT_TOOLS: ToolDefinition[] = [
         per_page: { type: 'number', description: 'Number of repos to return (max 100), default 30' },
       },
       required: [],
-    },
-  },
-  {
-    name: 'gcp_get_secret',
-    description: 'Fetch a secret from GCP Secret Manager by name (e.g. "NEON_FACTORY_DATABASE_URL")',
-    input_schema: {
-      type: 'object',
-      properties: {
-        secret_name: { type: 'string', description: 'Secret name in GCP Secret Manager' },
-      },
-      required: ['secret_name'],
     },
   },
 ];
@@ -233,22 +221,6 @@ export async function executeTool(
             pushedAt: r.pushedAt,
             private: r.private,
           })),
-        };
-      } catch (err) {
-        return { error: (err as Error).message };
-      }
-    }
-
-    case 'gcp_get_secret': {
-      const secretName = String(toolInput.secret_name ?? '');
-      if (!secretName) return { error: 'secret_name is required' };
-      if (!env?.GCP_SA_KEY) return { error: 'GCP_SA_KEY environment variable not set' };
-      try {
-        // env.GCP_SA_KEY is truthy here (checked above); assert non-optional for type narrowing.
-        const secret = await gcpGetSecret(secretName, { GCP_SA_KEY: env.GCP_SA_KEY });
-        return {
-          secret_name: secretName,
-          value: secret.slice(0, 100) + (secret.length > 100 ? '...' : ''),
         };
       } catch (err) {
         return { error: (err as Error).message };

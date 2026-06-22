@@ -12,10 +12,21 @@ beforeAll(async () => {
 });
 
 describe('admin-studio auth', () => {
-  it('rejects login when bootstrap credentials are not configured', async () => {
+  it('disables bootstrap login in production', async () => {
     const res = await postLogin(
       { email: 'operator@example.com', password, env: 'production' },
-      { STUDIO_ADMIN_PASSWORD_SHA256: '' },
+    );
+
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toEqual({
+      error: 'Studio bootstrap login is disabled in production',
+    });
+  });
+
+  it('rejects login when bootstrap credentials are not configured outside production', async () => {
+    const res = await postLogin(
+      { email: 'operator@example.com', password, env: 'staging' },
+      { STUDIO_ENV: 'staging', STUDIO_ADMIN_PASSWORD_SHA256: '' },
     );
 
     expect(res.status).toBe(503);
@@ -28,8 +39,8 @@ describe('admin-studio auth', () => {
     const res = await postLogin({
       email: 'operator@example.com',
       password: 'wrong-password',
-      env: 'production',
-    });
+      env: 'staging',
+    }, { STUDIO_ENV: 'staging' });
 
     expect(res.status).toBe(401);
     await expect(res.json()).resolves.toEqual({ error: 'Invalid credentials' });
@@ -39,9 +50,9 @@ describe('admin-studio auth', () => {
     const login = await postLogin({
       email: ' OPERATOR@example.com ',
       password,
-      env: 'production',
+      env: 'staging',
       app: 'factory',
-    });
+    }, { STUDIO_ENV: 'staging' });
 
     expect(login.status).toBe(200);
     const body = await login.json<LoginResponse>();
@@ -52,27 +63,30 @@ describe('admin-studio auth', () => {
       new Request('https://admin-studio.example/me', {
         headers: { Authorization: `Bearer ${body.token}` },
       }),
-      buildEnv(),
+      buildEnv({ STUDIO_ENV: 'staging' }),
       executionContext,
     );
     expect(me.status).toBe(200);
     await expect(me.json()).resolves.toMatchObject({
-      env: 'production',
+      env: 'staging',
       app: 'factory',
       user: { email: 'operator@example.com', role: 'owner' },
     });
   });
 
   it('refuses to issue tokens for a different worker environment', async () => {
-    const res = await postLogin({
-      email: 'operator@example.com',
-      password,
-      env: 'staging',
-    });
+    const res = await postLogin(
+      {
+        email: 'operator@example.com',
+        password,
+        env: 'production',
+      },
+      { STUDIO_ENV: 'staging' },
+    );
 
     expect(res.status).toBe(400);
     await expect(res.json()).resolves.toEqual({
-      error: "This studio worker only issues tokens for env 'production'",
+      error: "This studio worker only issues tokens for env 'staging'",
     });
   });
 });
@@ -107,7 +121,7 @@ function buildEnv(envOverride: EnvOverride = {}): Env {
     STUDIO_GOOGLE_WORKSPACE_DOMAIN: 'latwoodtech.com',
     GITHUB_TOKEN: 'github-token',
     ANTHROPIC_API_KEY: 'anthropic-key',
-...envOverride,
+    ...envOverride,
   };
 }
 

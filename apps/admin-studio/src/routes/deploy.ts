@@ -3,6 +3,7 @@ import type { AppEnv } from '../types.js';
 import { requireConfirmation } from '../middleware/require-confirmation.js';
 import { requireEnv } from '@latimer-woods-tech/studio-core';
 import { GitHubApiError, dispatchWorkflow, fetchDispatchedRunUrl } from '../lib/github-api.js';
+import { getGithubToken, hasGithubAuth } from '../lib/github-app.js';
 
 const deploy = new Hono<AppEnv>();
 
@@ -103,13 +104,14 @@ deploy.post(
       });
     }
 
-    if (!c.env.GITHUB_TOKEN) {
-      return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
+    if (!hasGithubAuth(c.env)) {
+      return c.json({ error: 'GitHub auth not configured' }, 503);
     }
 
     try {
+      const githubToken = await getGithubToken(c.env);
       const dispatchedAt = new Date();
-      await dispatchWorkflow(c.env.GITHUB_TOKEN, {
+      await dispatchWorkflow(githubToken, {
         workflowFile: plan.workflow,
         ref: plan.ref,
         inputs: plan.inputs,
@@ -117,7 +119,7 @@ deploy.post(
 
       // Poll once for the real run URL. GitHub queues runs asynchronously so
       // this may return null if the run hasn't appeared within ~3 s.
-      const runUrl = await fetchDispatchedRunUrl(c.env.GITHUB_TOKEN, plan.workflow, dispatchedAt);
+      const runUrl = await fetchDispatchedRunUrl(githubToken, plan.workflow, dispatchedAt);
 
       c.set('auditAction', 'deploy.dispatch');
       c.set('auditResource', body.app);
@@ -225,8 +227,8 @@ deploy.post(
 
     // Path 1: rollback workflow exists → dispatch via GitHub Actions.
     if (target.rollbackWorkflow) {
-      if (!c.env.GITHUB_TOKEN) {
-        return c.json({ error: 'GITHUB_TOKEN not configured' }, 503);
+      if (!hasGithubAuth(c.env)) {
+        return c.json({ error: 'GitHub auth not configured' }, 503);
       }
 
       const inputs: Record<string, string> = { env: ctx.env };
@@ -234,7 +236,7 @@ deploy.post(
       if (body.reason) inputs.reason = body.reason;
 
       try {
-        await dispatchWorkflow(c.env.GITHUB_TOKEN, {
+        await dispatchWorkflow(await getGithubToken(c.env), {
           workflowFile: target.rollbackWorkflow,
           ref: 'main',
           inputs,

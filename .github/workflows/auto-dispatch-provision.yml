@@ -6,14 +6,10 @@ name: Auto-dispatch capability provision
 # from admin-studio, then fires `dispatch-capability-provision.yml` for each
 # pending row. Eliminates the manual workflow_dispatch trigger from Stage C.
 #
-# Auth: fetches ADMIN_STUDIO_BOOTSTRAP_EMAIL + ADMIN_STUDIO_BOOTSTRAP_PASSWORD
-# from GCP Secret Manager via WIF and mints a fresh 4h JWT each run via
-# /auth/login. Workflow cadence is 15min so the token always has >=3h45m
-# headroom against the production envLockedAt session-age policy
+# Auth: fetches JWT_SECRET from GCP Secret Manager via WIF and mints a fresh
+# 4h owner JWT each run. Workflow cadence is 15min so the token always has
+# >=3h45m headroom against the production envLockedAt session-age policy
 # (packages/studio-core/src/env-context.ts:124 maxSessionAge).
-#
-# Replaces the previous static-STUDIO_DISPATCH_TOKEN approach which was
-# unmaintainable: production session policy expires the token every 4h.
 
 on:
   schedule:
@@ -46,30 +42,23 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
 
-      - name: Fetch bootstrap creds + STUDIO_API_BASE from GCP
+      - name: Fetch dispatch JWT secret + STUDIO_API_BASE from GCP
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
           fetch_to_env STUDIO_API_BASE              ADMIN_STUDIO_PROD_URL
-          fetch_to_env BOOTSTRAP_EMAIL              ADMIN_STUDIO_BOOTSTRAP_EMAIL
-          fetch_to_env BOOTSTRAP_PASSWORD           ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+          fetch_to_env JWT_SECRET                   JWT_SECRET jwt-secret
 
-      - name: Mint fresh dispatch JWT via /auth/login
+      - name: Mint fresh dispatch JWT
         run: |
           set -euo pipefail
-          if [ -z "${STUDIO_API_BASE:-}" ] || [ -z "${BOOTSTRAP_EMAIL:-}" ] || [ -z "${BOOTSTRAP_PASSWORD:-}" ]; then
-            echo "::error::GCP-sourced creds missing — cannot mint dispatch JWT"
+          if [ -z "${STUDIO_API_BASE:-}" ] || [ -z "${JWT_SECRET:-}" ]; then
+            echo "::error::GCP-sourced values missing — cannot mint dispatch JWT"
             exit 1
           fi
-          BODY=$(jq -n \
-            --arg e "$BOOTSTRAP_EMAIL" \
-            --arg p "$BOOTSTRAP_PASSWORD" \
-            '{email:$e,password:$p,env:"production"}')
-          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "$BODY" | jq -r .token)
+          TOKEN=$(node .github/scripts/mint-admin-studio-jwt.mjs)
           if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "::error::Login returned no token"
+            echo "::error::JWT mint returned no token"
             exit 1
           fi
           echo "::add-mask::$TOKEN"

@@ -10,6 +10,8 @@
  *   BASE_URL            UI origin (default: https://apunlimited.com)
  *   STUDIO_EMAIL        admin email
  *   STUDIO_PASSWORD     admin password
+ *   STUDIO_TOKEN        optional pre-minted Studio JWT
+ *   STUDIO_EXPIRES_AT   optional epoch-ms expiry for STUDIO_TOKEN
  *   STUDIO_ENV          environment card to select on login (default: production)
  *   STUDIO_CREDS_FILE   optional path to a "Email: ... / Password: ..." file
  *   OUT_DIR             where to write screenshots + report (default: ./probe-output)
@@ -17,7 +19,7 @@
  * Exit codes:
  *   0  no failures (or only allowlisted RUM/telemetry beacons)
  *   1  one or more endpoints returned 4xx/5xx or a navigation error
- *   2  login failed (UI/redirect/selector failure — investigate the product)
+ *   2  auth bootstrap failed (UI/redirect/token-seed failure — investigate the product)
  *   3  login credentials rejected (auth POST returned 401/403 — rotate the
  *      FACTORY_USER / FACTORY_PW secrets; not a product regression)
  */
@@ -28,10 +30,12 @@ import { join } from 'node:path';
 const BASE = process.env.BASE_URL ?? 'https://apunlimited.com';
 const OUT_DIR = process.env.OUT_DIR ?? 'probe-output';
 const STUDIO_ENV = process.env.STUDIO_ENV ?? 'production';
+const STUDIO_TOKEN = process.env.STUDIO_TOKEN ?? '';
+const STUDIO_EXPIRES_AT = Number.parseInt(process.env.STUDIO_EXPIRES_AT ?? '', 10);
 
 let email = process.env.STUDIO_EMAIL;
 let password = process.env.STUDIO_PASSWORD;
-if ((!email || !password) && process.env.STUDIO_CREDS_FILE) {
+if (!STUDIO_TOKEN && (!email || !password) && process.env.STUDIO_CREDS_FILE) {
   const text = await readFile(process.env.STUDIO_CREDS_FILE, 'utf8');
   for (const line of text.split(/\r?\n/)) {
     const m = line.match(/^\s*(email|password)\s*:\s*(.+?)\s*$/i);
@@ -40,8 +44,8 @@ if ((!email || !password) && process.env.STUDIO_CREDS_FILE) {
     if (m[1].toLowerCase() === 'password' && !password) password = m[2];
   }
 }
-if (!email || !password) {
-  console.error('STUDIO_EMAIL and STUDIO_PASSWORD required (or STUDIO_CREDS_FILE)');
+if (!STUDIO_TOKEN && (!email || !password)) {
+  console.error('Provide STUDIO_TOKEN or STUDIO_EMAIL/STUDIO_PASSWORD (or STUDIO_CREDS_FILE)');
   process.exit(2);
 }
 
@@ -150,6 +154,55 @@ async function visitByClick(label, linkText) {
   steps.push({ label, finalUrl: page.url(), title: await page.title(), ms: Date.now() - start });
 }
 
+async function exerciseAiChat() {
+  currentPhase = '06-ai-chat';
+  const start = Date.now();
+  const prompt = 'Reply with exactly SMOKE_OK and nothing else.';
+  try {
+    const composer = page.getByTestId('ai-composer');
+    await composer.fill(prompt);
+    const responsePromise = page.waitForResponse((resp) => {
+      const url = new URL(resp.url());
+      return url.pathname === '/ai/chat' && resp.request().method() === 'POST';
+    }, { timeout: 30_000 });
+    await page.getByRole('button', { name: 'Send' }).click();
+    const response = await responsePromise;
+    const status = response.status();
+    if (status !== 200) {
+      steps.push({ label: '06-ai-chat', error: `chat returned HTTP ${status}`, finalUrl: page.url(), ms: Date.now() - start });
+      return;
+    }
+
+    const assistant = page.locator('[data-chat-role="assistant"]').last();
+    await assistant.waitFor({ state: 'visible', timeout: 30_000 });
+    await page.waitForFunction(() => {
+      const send = document.querySelector('[data-testid="ai-send"]');
+      return send instanceof HTMLButtonElement && !send.disabled;
+    }, null, { timeout: 30_000 });
+    const assistantText = await assistant.textContent();
+    const logText = await page.getByTestId('ai-chat-log').textContent();
+    if (
+      !assistantText?.includes('SMOKE_OK')
+      || !logText
+      || /stream failed|llm configuration incomplete|not configured/i.test(logText)
+    ) {
+      steps.push({
+        label: '06-ai-chat',
+        error: 'chat response did not complete cleanly',
+        finalUrl: page.url(),
+        assistantText,
+        logText,
+        ms: Date.now() - start,
+      });
+      return;
+    }
+
+    steps.push({ label: '06-ai-chat', finalUrl: page.url(), status, ms: Date.now() - start });
+  } catch (err) {
+    steps.push({ label: '06-ai-chat', error: err.message, finalUrl: page.url(), ms: Date.now() - start });
+  }
+}
+
 // 01: unauthenticated landing
 await visit('01-landing', '/');
 
@@ -158,11 +211,29 @@ currentPhase = '02-login';
 const loginStart = Date.now();
 try {
   await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: new RegExp(STUDIO_ENV, 'i') }).first().click();
-  await page.fill('input[type="email"]', email);
-  await page.fill('input[type="password"]', password);
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL((u) => !u.toString().includes('/login'), { timeout: 15_000 });
+  if (STUDIO_TOKEN) {
+    const expiresAt = Number.isFinite(STUDIO_EXPIRES_AT) ? STUDIO_EXPIRES_AT : decodeExpiry(STUDIO_TOKEN);
+    const user = decodeUser(STUDIO_TOKEN);
+    if (!expiresAt || !user) {
+      throw new Error('STUDIO_TOKEN missing a usable expiry or user payload');
+    }
+    await page.evaluate(({ token, env, user, expiresAt: seededExpiry }) => {
+      sessionStorage.setItem('studio.session', JSON.stringify({
+        token,
+        env,
+        user,
+        expiresAt: seededExpiry,
+      }));
+    }, { token: STUDIO_TOKEN, env: STUDIO_ENV, user, expiresAt });
+    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+    await page.waitForURL((u) => !u.toString().includes('/login'), { timeout: 15_000 });
+  } else {
+    await page.getByRole('button', { name: new RegExp(STUDIO_ENV, 'i') }).first().click();
+    await page.fill('input[type="email"]', email);
+    await page.fill('input[type="password"]', password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.waitForURL((u) => !u.toString().includes('/login'), { timeout: 15_000 });
+  }
   await page.waitForTimeout(2000);
   await page.screenshot({ path: join(OUT_DIR, '02-post-login.png'), fullPage: true });
   steps.push({ label: '02-post-login', finalUrl: page.url(), title: await page.title(), ms: Date.now() - loginStart });
@@ -212,6 +283,9 @@ for (const [label, linkText] of [
   ['10-audit',     'Audit Log'],
 ]) {
   await visitByClick(label, linkText);
+  if (label === '06-ai') {
+    await exerciseAiChat();
+  }
 }
 
 await browser.close();
@@ -250,3 +324,33 @@ console.log();
 console.log(`report: ${OUT_DIR}/report.json`);
 console.log(`screenshots: ${OUT_DIR}/*.png`);
 process.exit(1);
+
+function decodeExpiry(token) {
+  const payload = decodePayload(token);
+  return typeof payload?.exp === 'number' ? payload.exp * 1000 : null;
+}
+
+function decodeUser(token) {
+  const payload = decodePayload(token);
+  if (!payload) return null;
+  if (typeof payload.userId !== 'string' || typeof payload.userEmail !== 'string' || typeof payload.role !== 'string') {
+    return null;
+  }
+  return {
+    id: payload.userId,
+    email: payload.userEmail,
+    role: payload.role,
+  };
+}
+
+function decodePayload(token) {
+  try {
+    const [, payloadB64] = token.split('.');
+    if (!payloadB64) return null;
+    const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+    const json = Buffer.from(padded, 'base64').toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}

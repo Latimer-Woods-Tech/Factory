@@ -21,8 +21,8 @@ export interface Env {
   STUDIO_ADMIN_EMAIL: string;
   /** Lowercase hex SHA-256 digest of the bootstrap operator password. */
   STUDIO_ADMIN_PASSWORD_SHA256: string;
-  /** Personal access token used to dispatch GH Actions workflows */
-  GITHUB_TOKEN: string;
+  /** Legacy PAT fallback used when GitHub App credentials are unavailable. */
+  GITHUB_TOKEN?: string;
   /** Anthropic API key for AI chat */
   ANTHROPIC_API_KEY: string;
   /** GCP service account key (base64-encoded JSON) for Secret Manager access */
@@ -45,7 +45,7 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string;
   /** Required Google Workspace hosted domain for /auth/google, e.g. "latwoodtech.com". */
   STUDIO_GOOGLE_WORKSPACE_DOMAIN?: string;
-  /** JSON map of allowlisted users for Google OAuth: {"email@example.com": {"role": "owner"}} */
+  /** JSON map of Google users. Non-Workspace accounts also require allowExternal: true. */
   STUDIO_ALLOWED_USERS_JSON?: string;
   /** Sentry DSN for error reporting */
   SENTRY_DSN?: string;

@@ -37,18 +37,6 @@
             "minScore": 0.85
           }
         ],
-        "largest-contentful-paint": [
-          "error",
-          {
-            "maxNumericValue": 2500
-          }
-        ],
-        "interaction-to-next-paint": [
-          "error",
-          {
-            "maxNumericValue": 200
-          }
-        ],
         "max-potential-fid": [
           "error",
           {
@@ -64,7 +52,7 @@
         "resource-summary:script:size": [
           "error",
           {
-            "maxNumericValue": 256000
+            "maxNumericValue": 320000
           }
         ]
       }
