@@ -52,6 +52,7 @@ import { flagship } from './routes/flagship.js';
 import blocking from './routes/blocking.js';
 import commandCenter from './routes/command-center.js';
 import scheduleProxy from './routes/schedule-proxy.js';
+import { insightsRouter } from './routes/insights.js';
 
 const app = new Hono<AppEnv>();
 
@@ -194,6 +195,8 @@ app.route('/v1/blocking', blocking);
 app.route('/v1/command-center', commandCenter);
 app.route('/training-library', scheduleProxy);
 app.route('/jobs', scheduleProxy);
+// RFC-008 Phase 3: Express — surface supervisor_insights to operator digest
+app.route('/api/insights', insightsRouter);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {
