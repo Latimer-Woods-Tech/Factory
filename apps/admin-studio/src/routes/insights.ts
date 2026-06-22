@@ -66,6 +66,47 @@ insightsRouter.get('/', async (c) => {
   }
 });
 
+// RFC-008 Phase 4 — LEARN: POST /api/insights/:id/feedback
+insightsRouter.post('/:id/feedback', async (c) => {
+  const { SUPERVISOR_URL, SUPERVISOR_API_KEY } = c.env;
+  if (!SUPERVISOR_URL || !SUPERVISOR_API_KEY) {
+    return c.json({ error: 'supervisor not configured' }, 503);
+  }
+
+  const id = c.req.param('id');
+  let body: { feedback?: string };
+  try {
+    body = await c.req.json<{ feedback?: string }>();
+  } catch {
+    return c.json({ error: 'invalid JSON' }, 400);
+  }
+
+  const VALID = new Set(['useful', 'noise', 'wrong']);
+  if (!body.feedback || !VALID.has(body.feedback)) {
+    return c.json({ error: 'feedback must be useful | noise | wrong' }, 422);
+  }
+
+  try {
+    const url = `${SUPERVISOR_URL.replace(/\/$/, '')}/insights?id=${encodeURIComponent(id)}`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${SUPERVISOR_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ feedback: body.feedback }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      return c.json({ error: `supervisor ${res.status}: ${text.slice(0, 200)}` }, res.status as 404 | 422 | 500);
+    }
+    return c.json(await res.json());
+  } catch (err) {
+    return c.json({ error: String(err) }, 502);
+  }
+});
+
 insightsRouter.get('/summary', async (c) => {
   const { SUPERVISOR_URL, SUPERVISOR_API_KEY } = c.env;
   if (!SUPERVISOR_URL || !SUPERVISOR_API_KEY) {
