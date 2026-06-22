@@ -20,6 +20,24 @@
     "crons": ["0 11 * * 1-5"]
   },
 
+  // RFC-007 Phase 3: queue-backed incident write lane.
+  // supervisor-incident-queue: provisioned 2026-06-22 (id 8b61b5922a3b4602b294a4b8b08e1689)
+  // supervisor-incident-dlq:   provisioned 2026-06-22 (id 3f89941a4495474582d1d077aced031b)
+  "queues": {
+    "producers": [
+      { "binding": "INCIDENT_QUEUE", "queue": "supervisor-incident-queue" }
+    ],
+    "consumers": [
+      {
+        "queue": "supervisor-incident-queue",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30,
+        "max_retries": 3,
+        "dead_letter_queue": "supervisor-incident-dlq"
+      }
+    ]
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "SUPERVISOR", "class_name": "SupervisorDO" },
@@ -123,7 +141,22 @@
         { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" },
         // RFC-008: unified memory substrate
         { "binding": "VECTORIZE_MEMORY", "index_name": "factory-memory" }
-      ]
+      ],
+      // RFC-007 Phase 3: queue bindings must be repeated in named env (not inherited).
+      "queues": {
+        "producers": [
+          { "binding": "INCIDENT_QUEUE", "queue": "supervisor-incident-queue" }
+        ],
+        "consumers": [
+          {
+            "queue": "supervisor-incident-queue",
+            "max_batch_size": 10,
+            "max_batch_timeout": 30,
+            "max_retries": 3,
+            "dead_letter_queue": "supervisor-incident-dlq"
+          }
+        ]
+      }
     }
   }
 }

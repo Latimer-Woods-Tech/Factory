@@ -9,7 +9,11 @@
  * Reads are time-budgeted (~200ms hard cap) so the slow lane never stalls the fast lane.
  */
 
-import { embed, type AiBinding } from '@latimer-woods-tech/llm';
+// embed() and AiBinding are not yet exported from the published @latimer-woods-tech/llm
+// package (RFC-007 Phase 0 debt). Using env.AI directly via `any` until the package
+// ships the embed export. All call sites already guard env.AI for undefined.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AiBinding = any;
 
 /** Metadata stored alongside each vector in Vectorize. */
 export interface VectorMetadata {
@@ -22,13 +26,15 @@ export interface NearestResult {
   metadata?: VectorMetadata;
 }
 
-/** Minimal Vectorize index binding shape needed here. */
+/** Minimal Vectorize index binding shape needed here.
+ * Uses Record<string, unknown> for metadata so the official CF VectorizeIndex
+ * type (which uses VectorizeVectorMetadata, a wider union) is structurally assignable. */
 interface VectorizeIndex {
-  upsert(vectors: Array<{ id: string; values: number[]; metadata?: Record<string, string | number | boolean> }>): Promise<unknown>;
+  upsert(vectors: Array<{ id: string; values: number[]; metadata?: Record<string, unknown> }>): Promise<unknown>;
   query(
     vector: number[],
     opts: { topK: number; returnMetadata?: 'all' | 'none' | 'indexed' },
-  ): Promise<{ matches: Array<{ id: string; score: number; metadata?: Record<string, string | number | boolean> }> }>;
+  ): Promise<{ matches: Array<{ id: string; score: number; metadata?: Record<string, unknown> }> }>;
 }
 
 const QUERY_TIMEOUT_MS = 200;
@@ -47,8 +53,10 @@ export async function embedAndUpsert(
   metadata?: VectorMetadata,
 ): Promise<boolean> {
   try {
-    const { vectors } = await embed(ai, text);
-    await index.upsert([{ id, values: vectors[0]!, metadata }]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI binding type is not exported from @latimer-woods-tech/llm yet (RFC-007 Phase 0 debt)
+    const result = await (ai as any).run('@cf/baai/bge-base-en-v1.5', { text: [text] }) as { data: number[][] };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same as above; VectorizeVectorMetadata incompatibility resolved once llm pkg ships typed embed()
+    await (index as any).upsert([{ id, values: result.data[0]!, metadata }]);
     return true;
   } catch {
     return false;
@@ -75,7 +83,9 @@ export async function queryNearest(
     });
 
     const queryPromise = (async (): Promise<NearestResult[]> => {
-      const { vectors } = await embed(ai, query);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI binding type not yet exported from @latimer-woods-tech/llm
+      const embedResult = await (ai as any).run('@cf/baai/bge-base-en-v1.5', { text: [query] }) as { data: number[][] };
+      const vectors = embedResult.data;
       const result = await index.query(vectors[0]!, { topK, returnMetadata: 'all' });
       return result.matches.map((m) => ({
         id: m.id,
