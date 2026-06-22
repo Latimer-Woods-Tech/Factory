@@ -48,6 +48,10 @@ export interface Env {
   VECTORIZE_INCIDENTS?: VectorizeIndex;
   /** RFC-007: Semantic memory mode. off = disabled (default); shadow = log only; live = Signal 4 active. Set via wrangler.jsonc vars. */
   SUPERVISOR_SEMANTIC_MODE?: 'off' | 'shadow' | 'live';
+  /** RFC-008 Phase 0: Unified memory substrate. Provisioned 2026-06-22: factory-memory, 768d cosine. */
+  VECTORIZE_MEMORY?: VectorizeIndex;
+  /** RFC-008: Reflection loop mode. off = disabled (default); shadow = compute but do not surface; live = full loop active. Set via wrangler.jsonc vars. */
+  REFLECTION_MODE?: 'off' | 'shadow' | 'live';
 }
 
 /** Constant-time string comparison — guards against timing side-channels. */
