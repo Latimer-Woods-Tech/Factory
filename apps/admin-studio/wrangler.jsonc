@@ -87,10 +87,12 @@
         "DIGEST_TO_EMAIL": "adrper79@gmail.com",
         "ELEVENLABS_VOICE_DEFAULT": "21m00Tcm4TlvDq8ikWAM",
         "SENTRY_ORG": "latwood-tech",
-        "R2_PUBLIC_DOMAIN": "https://assets.apunlimited.com"
+        "R2_PUBLIC_DOMAIN": "https://assets.apunlimited.com",
+        // RFC-008 Phase 3: EXPRESS — supervisor base URL for insights proxy
+        "SUPERVISOR_URL": "https://supervisor.latwoodtech.work"
         // Secrets (wrangler secret put --env production):
         //   FACTORY_APP_ID, FACTORY_APP_PRIVATE_KEY, FACTORY_APP_INSTALLATION_ID
-        //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_URL (optional)
+        //   ELEVENLABS_API_KEY, RESEND_API_KEY, SUPERVISOR_API_KEY
       },
       "hyperdrive": [
         {

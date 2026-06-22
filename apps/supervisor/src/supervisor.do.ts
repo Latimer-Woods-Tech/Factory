@@ -92,6 +92,8 @@ export class SupervisorDO {
           return await this.handleReadOnlySmoke();
         case 'GET /insights':
           return await this.handleInsights(request);
+        case 'PATCH /insights':
+          return await this.handleInsightFeedback(request);
         case 'POST /scheduled':
           return await this.handleScheduled();
         case 'POST /plan':
@@ -588,6 +590,41 @@ export class SupervisorDO {
       return Response.json({ ok: true, insights: rows.results, total: rows.results.length });
     } catch {
       return Response.json({ ok: true, insights: [], total: 0, note: 'table not yet migrated' });
+    }
+  }
+
+  /** RFC-008 Phase 4 — LEARN: record operator feedback on an insight. */
+  private async handleInsightFeedback(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+    if (!id) return Response.json({ error: 'id query param required' }, { status: 422 });
+
+    let body: { feedback?: string };
+    try {
+      body = (await request.json()) as { feedback?: string };
+    } catch {
+      return Response.json({ error: 'invalid JSON body' }, { status: 400 });
+    }
+
+    const VALID = new Set(['useful', 'noise', 'wrong']);
+    if (!body.feedback || !VALID.has(body.feedback)) {
+      return Response.json({ error: 'feedback must be useful | noise | wrong' }, { status: 422 });
+    }
+
+    try {
+      const result = await this.env.MEMORY
+        .prepare(
+          `UPDATE supervisor_insights SET feedback = ?, feedback_at = ? WHERE id = ?`,
+        )
+        .bind(body.feedback, Date.now(), id)
+        .run();
+
+      if (result.meta.changes === 0) {
+        return Response.json({ error: 'insight not found' }, { status: 404 });
+      }
+      return Response.json({ ok: true, id, feedback: body.feedback });
+    } catch {
+      return Response.json({ error: 'db error' }, { status: 500 });
     }
   }
 
