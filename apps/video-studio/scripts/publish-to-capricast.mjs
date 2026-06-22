@@ -41,6 +41,10 @@ import { appendFileSync } from 'fs';
 const {
   CAPRICAST_API_URL = 'https://api.capricast.com',
   CAPRICAST_PUBLISH_TOKEN = '',
+  // Dedicated headless render-pipeline service credential (partner-publish
+  // step 3). Preferred over the legacy shared CAPRICAST_PUBLISH_TOKEN, which is
+  // retired once this cutover is verified (step 4).
+  RENDER_SERVICE_TOKEN = '',
   CAPRICAST_CREATOR_ID = '',
   STREAM_UID = '',
   TITLE = '',
@@ -58,7 +62,8 @@ function die(msg) {
   process.exit(1);
 }
 
-if (!CAPRICAST_PUBLISH_TOKEN) die('CAPRICAST_PUBLISH_TOKEN is required');
+const publishToken = RENDER_SERVICE_TOKEN || CAPRICAST_PUBLISH_TOKEN;
+if (!publishToken)            die('RENDER_SERVICE_TOKEN or CAPRICAST_PUBLISH_TOKEN is required');
 if (!CAPRICAST_CREATOR_ID)    die('CAPRICAST_CREATOR_ID is required');
 if (!STREAM_UID)              die('STREAM_UID is required');
 if (!TITLE)                   die('TITLE is required');
@@ -87,7 +92,7 @@ console.error(`POST ${url} (streamUid=${STREAM_UID})`);
 const res = await fetch(url, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${CAPRICAST_PUBLISH_TOKEN}`,
+    'Authorization': `Bearer ${publishToken}`,
     'Content-Type': 'application/json',
     'User-Agent': 'factory-render-video/1.0',
   },
