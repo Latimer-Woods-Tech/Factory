@@ -510,7 +510,20 @@ export class SupervisorDO {
       };
       await writeMemory(this.env.MEMORY, 'last_run', summary);
 
-      return Response.json({ ok: true, ...summary });
+      // RFC-008 Phase 1 — MEMORIZE: widen factory-memory with recent PRs/issues/STATE.md.
+      // Runs after the main issue loop; best-effort (errors logged, never throws).
+      let memorizeResult: { embedded: number; skipped: number; errors: number } | undefined;
+      if ((this.env.REFLECTION_MODE ?? 'off') !== 'off') {
+        try {
+          const { runMemorize } = await import('./memory/memorize.js');
+          memorizeResult = await runMemorize(this.env);
+          console.log('[supervisor] MEMORIZE:', memorizeResult);
+        } catch (err) {
+          console.error('[supervisor] MEMORIZE failed (non-fatal):', err);
+        }
+      }
+
+      return Response.json({ ok: true, ...summary, memorize: memorizeResult });
     } finally {
       await this.releaseLock(runId);
       await sendDigest(this.env.PUSHOVER_TOKEN, this.env.PUSHOVER_USER_KEY, {
@@ -703,6 +716,19 @@ export class SupervisorDO {
         ).bind(prOpenError, runId);
         await updateStmt.all();
       }
+    }
+
+    // RFC-007 Phase 3: produce terminal run to the incident queue (best-effort).
+    // The queue consumer embeds the run into supervisor-incidents when
+    // SUPERVISOR_SEMANTIC_MODE=shadow|live. Fire-and-forget — never throws.
+    if (this.env.INCIDENT_QUEUE) {
+      const msg: import('./index.js').IncidentMessage = {
+        run_id: runId,
+        template_id: templateId,
+        outcome: allSucceeded ? 'succeeded' : 'failed',
+        occurred_at: now,
+      };
+      this.env.INCIDENT_QUEUE.send(msg).catch(() => { /* best-effort */ });
     }
 
     // Push-on-write: best-effort notify factory-core-api of the terminal state.
