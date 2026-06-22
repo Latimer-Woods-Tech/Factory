@@ -66,7 +66,7 @@ export async function gcpGetSecret(
     throw new Error(`GCP Secret Manager ${res.status}: ${text}`);
   }
 
-  const data = (await res.json()) as SecretPayload;
+  const data = await res.json<SecretPayload>();
   const secretBytes = atob(data.payload.data);
   return secretBytes;
 }
@@ -104,7 +104,7 @@ async function mintGcpToken(saKey: ServiceAccountKey): Promise<string> {
     throw new Error(`GCP OAuth2 ${res.status}: ${text}`);
   }
 
-  const data = (await res.json()) as OAuth2Response;
+  const data = await res.json<OAuth2Response>();
   return data.access_token;
 }
 

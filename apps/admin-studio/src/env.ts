@@ -80,8 +80,6 @@ export interface Env {
   MONITOR_KV?: KVNamespace;
   /** Service binding to schedule-worker for /diagnostics + training-library proxy calls. */
   SCHEDULE_WORKER?: Fetcher;
-  /** Shared service token for schedule-worker's authenticated routes (training-library, jobs). */
-  WORKER_API_TOKEN?: string;
   /** Flagship feature-flag binding. */
   FLAGS?: Fetcher;
   /** flag-meter D1 database for flag telemetry. */

@@ -5,7 +5,6 @@
  * This keeps Worker CPU time bounded (no streaming during tool calls).
  */
 
-import type { Env } from '../env.js';
 import { fetchTree, fetchFile, listIssues, listPullRequests, listOrgRepos } from './github-api.js';
 import { gcpGetSecret } from './gcp-secrets.js';
 
