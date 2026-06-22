@@ -44,10 +44,6 @@ import smoke from './routes/smoke.js';
 import slo from './routes/slo.js';
 import synthetic from './routes/synthetic.js';
 import ops from './routes/ops.js';
-import creatorOnboarding from './routes/creator-onboarding.js';
-import creators from './routes/creators.js';
-import payouts from './routes/payouts.js';
-import stripeConnectWebhooks from './routes/webhooks-stripe-connect.js';
 import studioTestsWebhook from './routes/webhooks-studio-tests.js';
 import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.js';
 import dsr from './routes/dsr.js';
@@ -141,7 +137,6 @@ app.route('/auth', auth);
 app.route('/manifest', manifest);
 
 // ── Webhooks (public, Stripe-signed) ────────────────────────────────────────────────────────────────────────
-app.route('/webhooks/stripe-connect', stripeConnectWebhooks);
 app.route('/webhooks/studio-tests', studioTestsWebhook);
 app.route('/webhooks/studio-subscriptions', studioSubscriptionsWebhook);
 
@@ -168,8 +163,6 @@ app.use('/slo/*', envContextMiddleware());
 app.use('/synthetic/*', envContextMiddleware(), auditMiddleware());
 // Ops panel � all writes are audited via requireConfirmation + auditMiddleware.
 app.use('/ops/*', envContextMiddleware(), auditMiddleware());
-app.use('/api/creator/*', envContextMiddleware());
-app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
 app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
@@ -194,9 +187,6 @@ app.route('/smoke', smoke);
 app.route('/slo', slo);
 app.route('/synthetic', synthetic);
 app.route('/ops', ops);
-app.route('/api/creator/onboarding', creatorOnboarding);
-app.route('/api/admin/creators', creators);
-app.route('/api/admin/payouts', payouts);
 app.route('/dsr', dsr);
 app.route('/privacy', privacy);
 app.route('/api/flags', flagship);
