@@ -142,18 +142,14 @@ jobs:
         run: npm test
         working-directory: apps/admin-studio
 
-      # Advisory CVE report — NOT a hard gate yet. A blocking `npm audit
-      # --audit-level=high` would fail today on transitive CVEs (js-yaml across
-      # shared packages) and block every deploy. Surface them as a warning until
-      # the org-wide transitive-dependency remediation lands; then flip this to a
-      # hard gate (or adopt _app-reliability-gate.yml at audit_level: high).
-      - name: CVE audit (advisory)
-        continue-on-error: true
+      # Hard production supply-chain gate. Fails on any high/critical CVE in a
+      # dependency that ships in the deployed Worker bundle (hono, drizzle-orm,
+      # stripe, neon driver, …). Tolerates dev-only tooling (vitest/vite) that
+      # leaks into the tree via file:-linked workspace devDeps and never ships —
+      # clearing that needs a monorepo vitest 3→4 migration tracked separately.
+      - name: Production CVE gate
         working-directory: apps/admin-studio
-        run: |
-          echo "::group::npm audit (advisory)"
-          npm audit --audit-level=high || echo "::warning::admin-studio has high/critical CVEs (mostly transitive). Tracked for org-wide remediation; not yet a hard gate."
-          echo "::endgroup::"
+        run: node scripts/prod-audit.mjs
 
       - name: Verify health pre-deploy (sanity)
         env:
