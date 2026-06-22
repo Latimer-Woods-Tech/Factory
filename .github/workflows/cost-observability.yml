@@ -95,7 +95,7 @@ jobs:
       # RFC-006 §10: write artifact instead of opening a snapshot PR.
       - name: Upload cost snapshot artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cost-snapshot-${{ github.run_id }}
           path: docs/cost/
