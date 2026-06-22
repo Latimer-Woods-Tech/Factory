@@ -85,17 +85,11 @@ export interface Env {
   /** flag-meter D1 database for flag telemetry. */
   FLAG_TELEMETRY?: D1Database;
 
-  // ── T3: Creator onboarding + payout operations ────────────────────────────────────────────────────────
-  /** Stripe secret key for Connect OAuth and transfer operations. */
+  // ── Stripe (read-only) ────────────────────────────────────────────────────────
+  /** Stripe secret key — read-only GET access for the 12h revenue digest (see digest/collect.ts). */
   STRIPE_SECRET_KEY?: string;
-  /** Stripe publishable key used in front-end OAuth redirect URLs. */
-  STRIPE_PUBLISHABLE_KEY?: string;
-  /** Stripe Connect webhook signing secret for account.updated events. */
-  STRIPE_CONNECT_WEBHOOK_SECRET?: string;
-  /** Stripe subscription webhook signing secret for customer.subscription.* events. */
+  /** Stripe subscription webhook signing secret — Studio's own SaaS billing → entitlements. */
   STRIPE_SUBSCRIPTION_WEBHOOK_SECRET?: string;
-  /** Public base URL of the app (e.g. "https://studio.adrper79.workers.dev"). */
-  APP_URL?: string;
 
   // ── Digest: 12-hour scheduled email + audio ─────────────────────────────────────────────────────────
   /** GitHub App ID for digest data collection. */

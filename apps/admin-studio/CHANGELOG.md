@@ -9,6 +9,9 @@ Versions align with the `version` field in each `package.json`.
 
 ## [Unreleased]
 
+### Removed
+- **Creator-economy / Stripe Connect surface** (2026-06-22): deleted `creator-onboarding`, `creators`, `payouts`, and the `webhooks-stripe-connect` routes, the `admin-db.ts` typed client, and the `creators`/`creator_connections`/`payout_batches`/`payouts`/`payout_dlq`/`payout_audit_log` tables (dropped in migration `0010`). This was an orphaned **third** Stripe Connect implementation (Standard OAuth, broken `client_id`, no UI consumer, no live webhook) duplicating the mature Connect flows in **Capricast** (Express + transfers) and **SelfPrime/HumanDesign** (Express + destination charges) — all three apps share the single platform account `acct_1SlCcFAW1229TZte`. All six tables were verified empty in production before removal. Retained: `STRIPE_SECRET_KEY` (read-only revenue digest), `STRIPE_SUBSCRIPTION_WEBHOOK_SECRET` + `/webhooks/studio-subscriptions` (Studio's own SaaS billing → entitlements). Also fixed a pre-existing duplicate `WORKER_API_TOKEN` declaration in `env.ts`.
+
 ### Added
 - `PII_INVENTORY.md` documenting all personal data fields, flows, retention schedules, and DSR procedures
 - `session.test.ts` — 9 unit tests covering login, logout, hydrate, isAuthed, and JWT decode edge cases
