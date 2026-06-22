@@ -2,7 +2,7 @@
 // DO NOT EDIT DIRECTLY — edit docs/capabilities/*.yml instead,
 // then run: node scripts/generate-supervisor-capabilities.mjs
 //
-// Generated: 2026-05-27T03:32:02.105Z
+// Generated: 2026-06-22T17:36:16.303Z
 // Source files: coh.yml, factory-admin.yml, humandesign.yml, videoking.yml, webhook-fanout.yml, xico-city.yml
 
 export type SideEffect = 'none' | 'read-external' | 'write-app' | 'write-external';
