@@ -11,7 +11,7 @@ name: Provision App to Staging
 #
 # Flow (Steps a → k):
 #   a. Authenticate to GCP (WIF) + pull all creds from Secret Manager
-#   b. Mint a fresh Studio JWT via /auth/login
+#   b. Mint a fresh Studio owner JWT
 #   c. Fetch handoff package from admin-studio
 #   d. Create GitHub repo: Latimer-Woods-Tech/{app_name}
 #   e. Create Hyperdrive for this app → capture UUID
@@ -88,10 +88,9 @@ jobs:
         run: |
           set -euo pipefail
           source scripts/fetch_gcp_secrets.sh
-          # Studio bootstrap (shared with dispatch-capability-provision.yml)
+          # Studio dispatch auth (shared with dispatch-capability-provision.yml)
           fetch_to_env STUDIO_API_BASE     ADMIN_STUDIO_PROD_URL
-          fetch_to_env BOOTSTRAP_EMAIL     ADMIN_STUDIO_BOOTSTRAP_EMAIL
-          fetch_to_env BOOTSTRAP_PASSWORD  ADMIN_STUDIO_BOOTSTRAP_PASSWORD
+          fetch_to_env JWT_SECRET          JWT_SECRET jwt-secret
           # Cloudflare — wrangler reads CF_API_TOKEN natively (not CLOUDFLARE_API_TOKEN)
           fetch_to_env CF_API_TOKEN        CF_API_TOKEN
           fetch_to_env CF_ACCOUNT_ID       CF_ACCOUNT_ID CLOUDFLARE_ACCOUNT_ID
@@ -104,8 +103,7 @@ jobs:
           set -euo pipefail
           missing=""
           [ -z "${STUDIO_API_BASE:-}" ]   && missing="$missing STUDIO_API_BASE"
-          [ -z "${BOOTSTRAP_EMAIL:-}" ]   && missing="$missing BOOTSTRAP_EMAIL"
-          [ -z "${BOOTSTRAP_PASSWORD:-}" ] && missing="$missing BOOTSTRAP_PASSWORD"
+          [ -z "${JWT_SECRET:-}" ]        && missing="$missing JWT_SECRET"
           [ -z "${CF_API_TOKEN:-}" ]       && missing="$missing CF_API_TOKEN"
           [ -z "${CF_ACCOUNT_ID:-}" ]      && missing="$missing CF_ACCOUNT_ID"
           if [ -n "$missing" ]; then
@@ -116,18 +114,12 @@ jobs:
           echo "✅ All required creds present"
 
       # ── Step b: Mint fresh Studio JWT ───────────────────────────────────────
-      - name: Mint dispatch JWT via /auth/login
+      - name: Mint dispatch JWT
         run: |
           set -euo pipefail
-          BODY=$(jq -n \
-            --arg e "$BOOTSTRAP_EMAIL" \
-            --arg p "$BOOTSTRAP_PASSWORD" \
-            '{email:$e,password:$p,env:"production"}')
-          TOKEN=$(curl -fsSL -X POST "${STUDIO_API_BASE}/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "$BODY" | jq -r .token)
+          TOKEN=$(node .github/scripts/mint-admin-studio-jwt.mjs)
           if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "::error::Login returned no token — check BOOTSTRAP_EMAIL/PASSWORD in GCP"
+            echo "::error::JWT mint returned no token — check JWT_SECRET in GCP"
             exit 1
           fi
           echo "::add-mask::$TOKEN"

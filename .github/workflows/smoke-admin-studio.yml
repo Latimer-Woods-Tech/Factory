@@ -25,12 +25,41 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          credentials_json: ${{ secrets.VERTEX_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - name: Fetch production smoke JWT secret
+        run: |
+          set -euo pipefail
+          source scripts/fetch_gcp_secrets.sh
+          fetch_to_env JWT_SECRET JWT_SECRET jwt-secret
+
+      - name: Mint production smoke JWT
+        run: |
+          set -euo pipefail
+          payload=$(node .github/scripts/mint-admin-studio-jwt.mjs --json)
+          token=$(printf '%s' "$payload" | jq -r .token)
+          expires_at=$(printf '%s' "$payload" | jq -r .expiresAt)
+          if [ -z "$token" ] || [ "$token" = "null" ] || [ -z "$expires_at" ] || [ "$expires_at" = "null" ]; then
+            echo "::error::Failed to mint production smoke JWT"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "STUDIO_TOKEN=$token" >> "$GITHUB_ENV"
+          echo "STUDIO_EXPIRES_AT=$expires_at" >> "$GITHUB_ENV"
 
       - name: Install
         run: npm install --legacy-peer-deps
@@ -43,31 +72,14 @@ jobs:
       - name: Probe
         id: probe
         env:
-          # NOTE: FACTORY_USER / FACTORY_PW must be populated as repo or
-          # org Actions secrets. Without them probe-factory-admin.mjs exits 2
-          # at startup (RC-2 in the 2026-05-23 scheduled-workflow triage).
           BASE_URL: ${{ github.event.inputs.base_url || 'https://apunlimited.com' }}
-          STUDIO_EMAIL: ${{ secrets.FACTORY_USER }}
-          STUDIO_PASSWORD: ${{ secrets.FACTORY_PW }}
           STUDIO_ENV: production
           OUT_DIR: probe-output
         # Exit-code policy:
         #   0  healthy           → pass
         #   1  endpoint 4xx/5xx  → fail (real product regression)
         #   2  login UI/redirect → fail (real product regression)
-        #   3  creds rejected (auth 401/403) → WARN, not fail. This is a
-        #      test-infra problem: FACTORY_USER/FACTORY_PW have drifted from the
-        #      worker's STUDIO_ADMIN creds. The auth surface is provably healthy
-        #      (the worker correctly rejected the creds), so this must not page.
-        run: |
-          set +e
-          node scripts/probe-factory-admin.mjs
-          code=$?
-          if [ "$code" -eq 3 ]; then
-            echo "::warning title=admin-studio smoke::Probe creds rejected (auth 401/403). Auth surface is healthy; FACTORY_USER/FACTORY_PW are stale vs the worker's STUDIO_ADMIN creds. Deep tab-walk skipped — NOT a product regression. Realign creds (ideally a dedicated smoke account) to restore full coverage."
-            exit 0
-          fi
-          exit "$code"
+        run: node scripts/probe-factory-admin.mjs
         working-directory: apps/prime-self-smoke
 
       - name: Upload artifacts

@@ -11,8 +11,11 @@
  * No third-party canvas/graph libraries — pure React + SVG + CSS positioning.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { requiredConfirmationTier } from '@latimer-woods-tech/studio-core';
 import { apiFetch } from '../../lib/api.js';
+import { ConfirmDialog } from '../../components/ConfirmDialog.js';
 import { Button } from '../../components/ui/button.js';
+import { useSession } from '../../stores/session.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -73,6 +76,13 @@ interface GraphDocument {
   id: string;
   name: string;
   description: string | null;
+  version: number;
+  currentRevisionId: string | null;
+  currentRevisionNumber: number | null;
+  currentRevisionHash: string | null;
+  publishedRevisionId: string | null;
+  publishedRevisionNumber: number | null;
+  publishedRevisionHash: string | null;
   nodes: GraphNode[];
   edges: GraphEdge[];
   compiledPlan: Record<string, unknown> | null;
@@ -89,6 +99,60 @@ interface GraphCompileResult {
   plan: Record<string, unknown> | null;
   recipeId: string | null;
   compiledAt: string | null;
+  sourceGraph?: {
+    graphId: string;
+    revisionId: string;
+    revisionNumber: number;
+    graphVersion: number;
+    contentHash: string;
+  };
+}
+
+interface GraphRevision {
+  id: string;
+  graphId: string;
+  revisionNumber: number;
+  graphVersion: number;
+  name: string;
+  description: string | null;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  contentHash: string;
+  createdBy: string;
+  createdAt: string;
+  approvalId: string | null;
+  approvedEnvironment: 'local' | 'staging' | 'production' | null;
+  approvedAt: string | null;
+  approvedBy: string | null;
+  approvalSummary: string | null;
+  publishedAt: string | null;
+  publishedBy: string | null;
+}
+
+interface GraphRevisionApproval {
+  id: string;
+  graphId: string;
+  revisionId: string;
+  targetEnvironment: 'local' | 'staging' | 'production';
+  mutationClass: 'graph-revision-publish';
+  summary: string;
+  approvedBy: string;
+  approvedAt: string;
+  expiresAt: string | null;
+}
+
+interface GraphRevisionsResponse {
+  graph: {
+    id: string;
+    name: string;
+    currentRevisionId: string | null;
+    currentRevisionNumber: number | null;
+    currentRevisionHash: string | null;
+    publishedRevisionId: string | null;
+    publishedRevisionNumber: number | null;
+    publishedRevisionHash: string | null;
+  };
+  revisions: GraphRevision[];
 }
 
 interface GraphHandoffResult {
@@ -99,7 +163,20 @@ interface GraphHandoffResult {
     recipeId: string | null;
     graphId: string;
     createdAt: string;
+    sourceGraph?: {
+      graphId: string;
+      revisionId: string;
+      revisionNumber: number;
+      graphVersion: number;
+      contentHash: string;
+    };
   };
+}
+
+interface ConflictApiBody {
+  error?: string;
+  currentVersion?: number;
+  graph?: GraphDocument;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -128,8 +205,76 @@ function extractErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
+async function buildConfirmToken(action: string, userId: string, env: string): Promise<string> {
+  const data = new TextEncoder().encode(`${action}:${userId}:${env}`);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hex = [...new Uint8Array(hash)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return hex.slice(0, 16);
+}
+
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+interface RevisionDiffSummary {
+  changed: boolean;
+  addedNodes: number;
+  removedNodes: number;
+  changedNodes: number;
+  addedEdges: number;
+  removedEdges: number;
+  changedEdges: number;
+}
+
+function summarizeRevisionDiff(
+  base: Pick<GraphRevision, 'nodes' | 'edges'>,
+  candidate: Pick<GraphRevision, 'nodes' | 'edges'>,
+): RevisionDiffSummary {
+  const summarizeCollection = <T extends { id: string }>(left: T[], right: T[]) => {
+    const leftMap = new Map(left.map((item) => [item.id, JSON.stringify(item)]));
+    const rightMap = new Map(right.map((item) => [item.id, JSON.stringify(item)]));
+    let added = 0;
+    let removed = 0;
+    let changed = 0;
+
+    for (const [id, value] of rightMap) {
+      const leftValue = leftMap.get(id);
+      if (leftValue === undefined) {
+        added += 1;
+      } else if (leftValue !== value) {
+        changed += 1;
+      }
+    }
+
+    for (const id of leftMap.keys()) {
+      if (!rightMap.has(id)) {
+        removed += 1;
+      }
+    }
+
+    return { added, removed, changed };
+  };
+
+  const nodes = summarizeCollection(base.nodes, candidate.nodes);
+  const edges = summarizeCollection(base.edges, candidate.edges);
+
+  return {
+    changed:
+      nodes.added > 0 ||
+      nodes.removed > 0 ||
+      nodes.changed > 0 ||
+      edges.added > 0 ||
+      edges.removed > 0 ||
+      edges.changed > 0,
+    addedNodes: nodes.added,
+    removedNodes: nodes.removed,
+    changedNodes: nodes.changed,
+    addedEdges: edges.added,
+    removedEdges: edges.removed,
+    changedEdges: edges.changed,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -255,6 +400,13 @@ export function GraphComposerTab() {
   const [graphs, setGraphs] = useState<GraphDocument[]>([]);
   const [graphsLoading, setGraphsLoading] = useState(false);
   const [selectedGraphId, setSelectedGraphId] = useState<string>('');
+  const [graphRevisions, setGraphRevisions] = useState<GraphRevision[]>([]);
+  const [revisionsLoading, setRevisionsLoading] = useState(false);
+  const [revisionsError, setRevisionsError] = useState<string | null>(null);
+  const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
+  const [revisionApprovals, setRevisionApprovals] = useState<GraphRevisionApproval[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
+  const [approvalSummaryDraft, setApprovalSummaryDraft] = useState('');
 
   // Current graph working state
   const [nodes, setNodes] = useState<GraphNode[]>([]);
@@ -271,6 +423,14 @@ export function GraphComposerTab() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [approveError, setApproveError] = useState<string | null>(null);
+  const [approveSuccess, setApproveSuccess] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState(false);
 
   // Compile
   const [compiling, setCompiling] = useState(false);
@@ -294,6 +454,8 @@ export function GraphComposerTab() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const sessionEnv = useSession((state) => state.env);
+  const sessionUserId = useSession((state) => state.user?.id ?? null);
 
   // ── Load catalog ──────────────────────────────────────────────────────────
 
@@ -329,6 +491,34 @@ export function GraphComposerTab() {
     }
   }, []);
 
+  const loadRevisions = useCallback(async (graphId: string) => {
+    setRevisionsLoading(true);
+    setRevisionsError(null);
+    try {
+      const data = await apiFetch<GraphRevisionsResponse>(`/capabilities/graphs/${graphId}/revisions?limit=20`);
+      setGraphRevisions(data.revisions ?? []);
+    } catch (err) {
+      setGraphRevisions([]);
+      setRevisionsError(extractErrorMessage(err));
+    } finally {
+      setRevisionsLoading(false);
+    }
+  }, []);
+
+  const loadRevisionApprovals = useCallback(async (graphId: string, revisionId: string) => {
+    setApprovalsLoading(true);
+    try {
+      const data = await apiFetch<{ approvals: GraphRevisionApproval[] }>(
+        `/capabilities/graphs/${graphId}/revisions/${revisionId}/approvals`,
+      );
+      setRevisionApprovals(data.approvals ?? []);
+    } catch {
+      setRevisionApprovals([]);
+    } finally {
+      setApprovalsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadGraphs();
   }, [loadGraphs]);
@@ -351,6 +541,51 @@ export function GraphComposerTab() {
       setHandoffResult(null);
     }
   }, [selectedGraphId, graphs]);
+
+  useEffect(() => {
+    if (!selectedGraphId) {
+      setGraphRevisions([]);
+      setSelectedRevisionId(null);
+      setRevisionsError(null);
+      return;
+    }
+    void loadRevisions(selectedGraphId);
+  }, [selectedGraphId, loadRevisions]);
+
+  useEffect(() => {
+    if (!selectedGraphId) return;
+    if (graphRevisions.length === 0) {
+      setSelectedRevisionId(null);
+      return;
+    }
+
+    setSelectedRevisionId((prev) => {
+      if (prev && graphRevisions.some((revision) => revision.id === prev)) {
+        return prev;
+      }
+      const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId);
+      return selectedGraph?.publishedRevisionId
+        ?? selectedGraph?.currentRevisionId
+        ?? graphRevisions[0]?.id
+        ?? null;
+    });
+  }, [graphRevisions, graphs, selectedGraphId]);
+
+  useEffect(() => {
+    const selectedRevision = graphRevisions.find((revision) => revision.id === selectedRevisionId);
+    const environmentApproval = revisionApprovals.find((approval) => approval.targetEnvironment === sessionEnv);
+    setApprovalSummaryDraft(environmentApproval?.summary ?? selectedRevision?.approvalSummary ?? '');
+    setApproveError(null);
+    setApproveSuccess(false);
+  }, [graphRevisions, revisionApprovals, selectedRevisionId, sessionEnv]);
+
+  useEffect(() => {
+    if (!selectedGraphId || !selectedRevisionId) {
+      setRevisionApprovals([]);
+      return;
+    }
+    void loadRevisionApprovals(selectedGraphId, selectedRevisionId);
+  }, [loadRevisionApprovals, selectedGraphId, selectedRevisionId]);
 
   // ── Create graph ──────────────────────────────────────────────────────────
 
@@ -379,6 +614,8 @@ export function GraphComposerTab() {
 
   async function saveGraph() {
     if (!selectedGraphId) return;
+    const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId);
+    if (!selectedGraph) return;
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
@@ -387,13 +624,28 @@ export function GraphComposerTab() {
         `/capabilities/graphs/${selectedGraphId}`,
         {
           method: 'PUT',
-          body: JSON.stringify({ nodes, edges }),
+          body: JSON.stringify({
+            nodes,
+            edges,
+            expectedVersion: selectedGraph.version,
+          }),
         },
       );
       setGraphs((prev) => prev.map((g) => (g.id === data.graph.id ? data.graph : g)));
+      await loadRevisions(data.graph.id);
       setSaveSuccess(true);
       window.setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
+      const body = (err as { body?: unknown }).body as ConflictApiBody | undefined;
+      if ((err as { status?: number }).status === 409 && body?.graph) {
+        setGraphs((prev) => prev.map((graph) => (
+          graph.id === body.graph?.id ? body.graph : graph
+        )));
+        setNodes(body.graph.nodes ?? []);
+        setEdges(body.graph.edges ?? []);
+        setCompileResult(null);
+        setHandoffResult(null);
+      }
       setSaveError(extractErrorMessage(err));
     } finally {
       setSaving(false);
@@ -419,6 +671,90 @@ export function GraphComposerTab() {
     } finally {
       setCompiling(false);
     }
+  }
+
+  async function approveRevision(revisionId: string, summary: string) {
+    if (!selectedGraphId) return;
+    setApproving(true);
+    setApproveError(null);
+    setApproveSuccess(false);
+    try {
+      await apiFetch<{ revision: GraphRevision }>(
+        `/capabilities/graphs/${selectedGraphId}/revisions/${revisionId}/approve`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ summary }),
+          confirmed: true,
+        },
+      );
+      await loadRevisions(selectedGraphId);
+      await loadRevisionApprovals(selectedGraphId, revisionId);
+      setApproveSuccess(true);
+      window.setTimeout(() => setApproveSuccess(false), 2000);
+    } catch (err) {
+      setApproveError(extractErrorMessage(err));
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function approveSelectedRevision() {
+    if (!selectedRevision) return;
+    const summary = approvalSummaryDraft.trim();
+    if (!summary) {
+      setApproveError('Approval summary is required.');
+      return;
+    }
+    setApproveDialogOpen(false);
+    await approveRevision(selectedRevision.id, summary);
+  }
+
+  async function publishGraph(revisionId: string | undefined, confirmToken?: string) {
+    if (!selectedGraphId) return;
+    setPublishing(true);
+    setPublishError(null);
+    setPublishSuccess(false);
+    try {
+      const result = await apiFetch<{ graph: GraphDocument }>(
+        `/capabilities/graphs/${selectedGraphId}/publish`,
+        {
+          method: 'POST',
+          body: JSON.stringify(revisionId ? { revisionId } : {}),
+          confirmed: true,
+          confirmToken,
+        },
+      );
+      setGraphs((prev) => prev.map((g) => (g.id === result.graph.id ? result.graph : g)));
+      await loadRevisions(result.graph.id);
+      setCompileResult(null);
+      setCompileError(null);
+      setHandoffResult(null);
+      setHandoffError(null);
+      setPublishSuccess(true);
+      window.setTimeout(() => setPublishSuccess(false), 2000);
+    } catch (err) {
+      setPublishError(extractErrorMessage(err));
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function confirmPublish() {
+    const env = sessionEnv ?? 'staging';
+    const tier = requiredConfirmationTier(env, 'reversible');
+    let confirmToken: string | undefined;
+    const revisionId = selectedRevisionId ?? selectedGraph?.currentRevisionId ?? undefined;
+
+    if (tier >= 2) {
+      if (!sessionUserId) {
+        setPublishError('Your session is missing user identity. Please sign in again.');
+        return;
+      }
+      confirmToken = await buildConfirmToken('capabilities.graph.publish', sessionUserId, env);
+    }
+
+    setPublishDialogOpen(false);
+    await publishGraph(revisionId, confirmToken);
   }
 
   // ── Generate handoff ──────────────────────────────────────────────────────
@@ -571,12 +907,35 @@ export function GraphComposerTab() {
   // ── Computed helpers ──────────────────────────────────────────────────────
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null;
+  const selectedGraph = graphs.find((graph) => graph.id === selectedGraphId) ?? null;
+  const selectedRevision = graphRevisions.find((revision) => revision.id === selectedRevisionId) ?? null;
+  const publishedRevision = selectedGraph?.publishedRevisionId
+    ? graphRevisions.find((revision) => revision.id === selectedGraph.publishedRevisionId) ?? null
+    : null;
   const selectedConcept =
     selectedNode?.nodeType === 'concept'
       ? catalogConcepts.find((c) => c.id === selectedNode.ref) ?? null
       : null;
 
   const canHandoff = compileResult?.success === true;
+  const approvalTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'trivial');
+  const publishTier = requiredConfirmationTier(sessionEnv ?? 'staging', 'reversible');
+  const isProductionSession = sessionEnv === 'production';
+  const sessionApproval = revisionApprovals.find((approval) => approval.targetEnvironment === sessionEnv) ?? null;
+  const selectedRevisionIsApproved = !!sessionApproval;
+  const approvalEnvironmentMismatch =
+    !selectedRevisionIsApproved && revisionApprovals.length > 0;
+  const selectedRevisionIsPublished = !!selectedRevision && selectedRevision.id === selectedGraph?.publishedRevisionId;
+  const selectedRevisionIsCurrent = !!selectedRevision && selectedRevision.id === selectedGraph?.currentRevisionId;
+  const productionSelfApprovalBlocked =
+    isProductionSession && !!selectedRevision && selectedRevision.createdBy === sessionUserId;
+  const productionSelfPublishBlocked =
+    isProductionSession && !!sessionApproval?.approvedBy && sessionApproval.approvedBy === sessionUserId;
+  const approveTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
+  const publishTargetLabel = selectedRevision ? `r${selectedRevision.revisionNumber}` : 'revision';
+  const publishDiff = selectedRevision && publishedRevision && selectedRevision.id !== publishedRevision.id
+    ? summarizeRevisionDiff(publishedRevision, selectedRevision)
+    : null;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render
@@ -584,6 +943,24 @@ export function GraphComposerTab() {
 
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={approveDialogOpen}
+        action="capabilities.graph.approve"
+        description={`Approve ${approveTargetLabel} for future execution and record review context.`}
+        reversibility="trivial"
+        tier={approvalTier}
+        onCancel={() => setApproveDialogOpen(false)}
+        onConfirm={() => void approveSelectedRevision()}
+      />
+      <ConfirmDialog
+        open={publishDialogOpen}
+        action="capabilities.graph.publish"
+        description={`Publish ${publishTargetLabel} so compile and handoff operate against a reviewed snapshot.`}
+        reversibility="reversible"
+        tier={publishTier}
+        onCancel={() => setPublishDialogOpen(false)}
+        onConfirm={() => void confirmPublish()}
+      />
       {/* ── Header ── */}
       <header className="flex items-start justify-between gap-4">
         <div>
@@ -599,6 +976,9 @@ export function GraphComposerTab() {
           onClick={() => {
             void loadCatalog();
             void loadGraphs();
+            if (selectedGraphId) {
+              void loadRevisions(selectedGraphId);
+            }
           }}
           disabled={catalogLoading || graphsLoading}
         >
@@ -674,6 +1054,12 @@ export function GraphComposerTab() {
           ))}
         </select>
 
+        {selectedGraph && (
+          <span className="text-xs text-slate-500">
+            draft v{selectedGraph.version} · rev {selectedGraph.currentRevisionNumber ?? '—'} · published r{selectedGraph.publishedRevisionNumber ?? '—'}
+          </span>
+        )}
+
         <div className="h-5 w-px bg-slate-700" />
 
         {/* Save */}
@@ -684,6 +1070,23 @@ export function GraphComposerTab() {
           disabled={!selectedGraphId || saving}
         >
           {saving ? 'Saving…' : saveSuccess ? '✓ Saved' : 'Save'}
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setPublishDialogOpen(true)}
+          disabled={
+            !selectedGraphId ||
+            publishing ||
+            !selectedRevision ||
+            selectedRevisionIsPublished ||
+            !selectedRevisionIsApproved ||
+            approvalEnvironmentMismatch ||
+            productionSelfPublishBlocked
+          }
+        >
+          {publishing ? 'Publishing…' : publishSuccess ? '✓ Published' : `Publish ${publishTargetLabel}`}
         </Button>
 
         {/* Compile */}
@@ -707,6 +1110,9 @@ export function GraphComposerTab() {
 
         {saveError && (
           <span className="text-xs text-red-400">{saveError}</span>
+        )}
+        {publishError && (
+          <span className="text-xs text-red-400">{publishError}</span>
         )}
       </div>
 
@@ -1016,6 +1422,287 @@ export function GraphComposerTab() {
         </aside>
       </div>
 
+      {selectedGraph && (
+        <section className="rounded border border-slate-800 bg-slate-900/70">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Revision History</h2>
+              <p className="text-xs text-slate-400">
+                Review immutable revisions and choose which one becomes the execution head.
+              </p>
+            </div>
+            <div className="text-xs text-slate-500">
+              {revisionsLoading ? 'Loading…' : `${graphRevisions.length} revision${graphRevisions.length === 1 ? '' : 's'}`}
+            </div>
+          </div>
+
+          {revisionsError && (
+            <div className="border-b border-slate-800 px-4 py-2 text-xs text-red-400">
+              {revisionsError}
+            </div>
+          )}
+
+          <div className="grid gap-0 md:grid-cols-[260px_1fr]">
+            <div className="border-r border-slate-800">
+              {graphRevisions.length === 0 ? (
+                <p className="px-4 py-4 text-xs text-slate-500">
+                  {revisionsLoading ? 'Loading revision history…' : 'No immutable revisions yet. Save the draft to create one.'}
+                </p>
+              ) : (
+                <div className="max-h-72 overflow-y-auto">
+                  {graphRevisions.map((revision) => {
+                    const isSelected = revision.id === selectedRevisionId;
+                    const isPublished = revision.id === selectedGraph.publishedRevisionId;
+                    const isCurrent = revision.id === selectedGraph.currentRevisionId;
+                    return (
+                      <button
+                        key={revision.id}
+                        type="button"
+                        onClick={() => setSelectedRevisionId(revision.id)}
+                        className={`flex w-full flex-col gap-1 border-b border-slate-800 px-4 py-3 text-left transition-colors ${
+                          isSelected ? 'bg-blue-950/30' : 'hover:bg-slate-800/60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm text-white">r{revision.revisionNumber}</span>
+                          {isPublished && (
+                            <span className="rounded border border-emerald-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                              published
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="rounded border border-amber-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+                              draft head
+                            </span>
+                          )}
+                        </div>
+                        <div className="font-mono text-[11px] text-slate-500">
+                          {revision.contentHash.slice(0, 12)}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          {new Date(revision.createdAt).toLocaleString()}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 px-4 py-4">
+              {!selectedRevision ? (
+                <p className="text-xs text-slate-500">Select a revision to review publish details.</p>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">
+                      Revision r{selectedRevision.revisionNumber}
+                    </h3>
+                    {selectedRevisionIsPublished && (
+                      <span className="rounded border border-emerald-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                        current execution head
+                      </span>
+                    )}
+                    {selectedRevisionIsCurrent && (
+                      <span className="rounded border border-amber-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-300">
+                        latest draft save
+                      </span>
+                    )}
+                  </div>
+
+                  <dl className="grid gap-x-6 gap-y-2 text-sm md:grid-cols-2">
+                    <div>
+                      <dt className="text-slate-500">Created</dt>
+                      <dd className="text-slate-200">{new Date(selectedRevision.createdAt).toLocaleString()}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Created by</dt>
+                      <dd className="text-slate-200">{selectedRevision.createdBy}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Graph version</dt>
+                      <dd className="font-mono text-slate-200">v{selectedRevision.graphVersion}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Content hash</dt>
+                      <dd className="font-mono text-slate-200">{selectedRevision.contentHash}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Nodes</dt>
+                      <dd className="text-slate-200">{selectedRevision.nodes.length}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Edges</dt>
+                      <dd className="text-slate-200">{selectedRevision.edges.length}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approved at</dt>
+                      <dd className="text-slate-200">
+                        {sessionApproval ? new Date(sessionApproval.approvedAt).toLocaleString() : 'Not approved for this environment'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approved by</dt>
+                      <dd className="text-slate-200">{sessionApproval?.approvedBy ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approval environment</dt>
+                      <dd className="font-mono text-slate-200">{sessionApproval?.targetEnvironment ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Approval record</dt>
+                      <dd className="font-mono text-slate-200 break-all">{sessionApproval?.id ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Published at</dt>
+                      <dd className="text-slate-200">
+                        {selectedRevision.publishedAt ? new Date(selectedRevision.publishedAt).toLocaleString() : 'Not published'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Published by</dt>
+                      <dd className="text-slate-200">{selectedRevision.publishedBy ?? '—'}</dd>
+                    </div>
+                  </dl>
+
+                  <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Approval Context
+                      </p>
+                      {selectedRevisionIsApproved && (
+                        <span className="rounded border border-emerald-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-emerald-300">
+                          approved
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Capture why this immutable revision is fit to become an execution head.
+                    </p>
+                    {productionSelfApprovalBlocked && (
+                      <p className="mt-2 text-xs text-amber-300">
+                        Production approval requires a reviewer other than the revision author.
+                      </p>
+                    )}
+                    <textarea
+                      value={approvalSummaryDraft}
+                      onChange={(e) => setApprovalSummaryDraft(e.target.value)}
+                      readOnly={selectedRevisionIsApproved}
+                      rows={3}
+                      className="mt-3 w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-base text-white read-only:cursor-not-allowed read-only:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 md:text-sm"
+                      placeholder="Reviewed graph topology, parameters, and staging intent."
+                    />
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          !selectedRevision ||
+                          approving ||
+                          approvalSummaryDraft.trim().length === 0 ||
+                          selectedRevisionIsApproved ||
+                          productionSelfApprovalBlocked
+                        }
+                        onClick={() => {
+                          if (approvalTier === 0) {
+                            void approveSelectedRevision();
+                            return;
+                          }
+                          setApproveDialogOpen(true);
+                        }}
+                      >
+                        {approving
+                          ? 'Approving…'
+                          : approveSuccess
+                            ? '✓ Approved'
+                            : selectedRevisionIsApproved
+                              ? `${approveTargetLabel} Approved`
+                              : `Approve ${approveTargetLabel}`}
+                      </Button>
+                      {approveError && (
+                        <span className="text-xs text-red-400">{approveError}</span>
+                      )}
+                    </div>
+                    {sessionApproval?.summary && (
+                      <p className="mt-3 text-xs text-slate-400">
+                        Current approval note: {sessionApproval.summary}
+                      </p>
+                    )}
+                    <div className="mt-3 border-t border-slate-800 pt-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                        Approval Ledger
+                      </p>
+                      {approvalsLoading ? (
+                        <p className="mt-2 text-xs text-slate-500">Loading approval history…</p>
+                      ) : revisionApprovals.length === 0 ? (
+                        <p className="mt-2 text-xs text-slate-500">No approval records.</p>
+                      ) : (
+                        <div className="mt-2 space-y-2">
+                          {revisionApprovals.map((approval) => (
+                            <div key={approval.id} className="border-l-2 border-emerald-700/60 pl-3 text-xs">
+                              <p className="text-slate-300">
+                                <span className="font-mono text-emerald-300">{approval.targetEnvironment}</span>
+                                {' · '}
+                                {approval.approvedBy}
+                              </p>
+                              <p className="mt-1 text-slate-500">{new Date(approval.approvedAt).toLocaleString()}</p>
+                              <p className="mt-1 text-slate-400">{approval.summary}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded border border-slate-800 bg-slate-950/70 px-3 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Publish Review
+                    </p>
+                    {selectedRevisionIsPublished ? (
+                      <p className="mt-2 text-sm text-emerald-300">
+                        This revision is already the published execution head.
+                      </p>
+                    ) : approvalEnvironmentMismatch ? (
+                      <p className="mt-2 text-sm text-amber-300">
+                        Existing approval records target another environment; approve this revision for {sessionEnv} before publishing here.
+                      </p>
+                    ) : productionSelfPublishBlocked ? (
+                      <p className="mt-2 text-sm text-amber-300">
+                        Production publish requires a principal other than the revision approver.
+                      </p>
+                    ) : !selectedRevisionIsApproved ? (
+                      <p className="mt-2 text-sm text-amber-300">
+                        Approve this revision before it can be published for compile and handoff.
+                      </p>
+                    ) : !publishedRevision ? (
+                      <p className="mt-2 text-sm text-slate-300">
+                        This will become the first published revision for this graph.
+                      </p>
+                    ) : publishDiff && !publishDiff.changed ? (
+                      <p className="mt-2 text-sm text-slate-300">
+                        This revision has the same graph payload as the current published head but a different immutable lineage record.
+                      </p>
+                    ) : publishDiff ? (
+                      <div className="mt-2 grid gap-2 text-sm md:grid-cols-2">
+                        <p className="text-slate-300">
+                          Nodes: <span className="font-mono text-white">+{publishDiff.addedNodes} / -{publishDiff.removedNodes} / ~{publishDiff.changedNodes}</span>
+                        </p>
+                        <p className="text-slate-300">
+                          Edges: <span className="font-mono text-white">+{publishDiff.addedEdges} / -{publishDiff.removedEdges} / ~{publishDiff.changedEdges}</span>
+                        </p>
+                        <p className="text-xs text-slate-500 md:col-span-2">
+                          Comparison baseline: published revision r{publishedRevision.revisionNumber}.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── Results panel ── */}
       {(compileResult || compileError || handoffResult || handoffError) && (
         <div className="space-y-3">
@@ -1053,6 +1740,13 @@ export function GraphComposerTab() {
               {compileResult.recipeId && (
                 <p className="mt-1 text-xs text-slate-300">
                   Recipe: <span className="font-mono">{compileResult.recipeId}</span>
+                </p>
+              )}
+              {compileResult.sourceGraph && (
+                <p className="mt-1 text-xs text-slate-400">
+                  Pinned revision: <span className="font-mono">r{compileResult.sourceGraph.revisionNumber}</span>
+                  {' · '}
+                  <span className="font-mono">{compileResult.sourceGraph.contentHash.slice(0, 12)}</span>
                 </p>
               )}
 
@@ -1141,6 +1835,14 @@ export function GraphComposerTab() {
                 )}
                 <dt className="text-slate-500">Graph</dt>
                 <dd className="font-mono">{handoffResult.handoff.graphId}</dd>
+                {handoffResult.handoff.sourceGraph && (
+                  <>
+                    <dt className="text-slate-500">Revision</dt>
+                    <dd className="font-mono">r{handoffResult.handoff.sourceGraph.revisionNumber}</dd>
+                    <dt className="text-slate-500">Revision hash</dt>
+                    <dd className="font-mono break-all">{handoffResult.handoff.sourceGraph.contentHash}</dd>
+                  </>
+                )}
                 <dt className="text-slate-500">Created</dt>
                 <dd>{new Date(handoffResult.handoff.createdAt).toLocaleString()}</dd>
               </dl>
