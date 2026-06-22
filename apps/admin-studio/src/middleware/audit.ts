@@ -93,7 +93,10 @@ export function auditMiddleware(): MiddlewareHandler<AppEnv> {
       // Best-effort DB insert. Use waitUntil when available so we don't
       // hold the response open. Hono exposes the executionCtx via c.executionCtx.
       const writePromise = insertAuditEntry(c.env.DB, entry);
-      const exec = c.executionCtx;
+      // c.executionCtx throws when no ExecutionContext is bound (e.g. Vitest).
+      // Guard with try-catch so test suites don't crash on audit writes.
+      let exec: ExecutionContext | undefined;
+      try { exec = c.executionCtx; } catch { /* no-op — not available in test */ }
       if (exec && typeof exec.waitUntil === 'function') {
         exec.waitUntil(writePromise);
       } else {
