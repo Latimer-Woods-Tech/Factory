@@ -125,6 +125,12 @@ jobs:
         run: npm run typecheck
         working-directory: apps/admin-studio
 
+      # Hard ESLint gate (--max-warnings 0). The worker's 23 pre-existing lint
+      # errors were fixed at root cause, so this now blocks a regressing deploy.
+      - name: Lint
+        run: npm run lint
+        working-directory: apps/admin-studio
+
       - name: Test studio-core
         run: npm test
         working-directory: packages/studio-core

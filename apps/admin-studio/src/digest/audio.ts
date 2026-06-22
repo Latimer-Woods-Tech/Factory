@@ -74,7 +74,7 @@ export async function generateAndUploadAudio(
   try {
     // Helper: one TTS attempt with AbortSignal.timeout for clean cancellation.
     // Returns null on timeout or network error; returns the Response otherwise.
-    async function attemptTts(): Promise<Response | null> {
+    const attemptTts = async (): Promise<Response | null> => {
       try {
         return await fetch(
           `${ELEVENLABS_API_BASE}/text-to-speech/${encodeURIComponent(narrowedVoiceId)}`,
@@ -105,7 +105,7 @@ export async function generateAndUploadAudio(
         }
         return null;
       }
-    }
+    };
 
     let ttsRes = await attemptTts();
 

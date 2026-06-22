@@ -113,7 +113,7 @@ apps.get('/health', async (c) => {
   const results = settled
     .map((outcome) => {
       if (outcome.status === 'fulfilled') return outcome.value;
-      console.warn(`[apps/health] check rejected: ${outcome.reason?.message ?? outcome.reason}`);
+      console.warn(`[apps/health] check rejected: ${(outcome.reason as { message?: string } | undefined)?.message ?? String(outcome.reason)}`);
       return null;
     })
     .filter((v): v is AppHealth => v !== null);
