@@ -49,9 +49,12 @@
   // RFC-007 Phase 0: Workers AI binding for semantic memory (built-in, no provisioning needed).
   // CF_API_TOKEN ("FACTORY MAIN") now carries Vectorize Write (added 2026-06-16, verified via
   // index create→201/delete→200); deploy-supervisor.yml auto-provisions these indexes. Re #1750.
+  // RFC-008 Phase 0: factory-memory index provisioned 2026-06-22 (768d cosine, via CF API).
   "vectorize": [
     { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
-    { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" }
+    { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" },
+    // RFC-008: unified memory substrate — runs, PRs, incidents, decisions, insights
+    { "binding": "VECTORIZE_MEMORY", "index_name": "factory-memory" }
   ],
   "ai": { "binding": "AI" },
 
@@ -63,7 +66,9 @@
     "FACTORY_CORE_API_URL": "https://core.latwoodtech.work",
     "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work",
     // RFC-007: semantic mode flag. off | shadow | live. Default off.
-    "SUPERVISOR_SEMANTIC_MODE": "off"
+    "SUPERVISOR_SEMANTIC_MODE": "off",
+    // RFC-008: reflection loop mode flag. off | shadow | live. Default off.
+    "REFLECTION_MODE": "off"
   },
 
   "env": {
@@ -83,7 +88,9 @@
         "PER_RUN_CAP_CENTS": "500",
         "FACTORY_CORE_API_URL": "https://core.latwoodtech.work",
         "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work",
-        "SUPERVISOR_SEMANTIC_MODE": "off"
+        "SUPERVISOR_SEMANTIC_MODE": "off",
+        // RFC-008: reflection loop mode flag. off | shadow | live.
+        "REFLECTION_MODE": "off"
       },
       "durable_objects": {
         "bindings": [
@@ -113,7 +120,9 @@
       // Repeated for the named env (vectorize is not inherited from top-level). Re #1750.
       "vectorize": [
         { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
-        { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" }
+        { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" },
+        // RFC-008: unified memory substrate
+        { "binding": "VECTORIZE_MEMORY", "index_name": "factory-memory" }
       ]
     }
   }

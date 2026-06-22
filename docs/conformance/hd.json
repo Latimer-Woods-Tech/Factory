@@ -2,8 +2,8 @@
   "repo_key": "HD",
   "repo_name": "HumanDesign",
   "repo_path": "Latimer-Woods-Tech/HumanDesign",
-  "timestamp": "2026-06-15T13:48:32.958338+00:00",
-  "cohesion": 16,
+  "timestamp": "2026-06-22T19:10:06.096524+00:00",
+  "cohesion": 56,
   "dimensions": [
     {
       "key": "stack",
@@ -18,7 +18,7 @@
         },
         {
           "name": "ESM ('type': 'module')",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -28,7 +28,7 @@
         },
         {
           "name": "No node:crypto imports",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -75,31 +75,31 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 0,
+      "score": 100,
       "checks": [
         {
           "name": "vitest.config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "playwright.config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Smoke tier present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Coverage thresholds set",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 0,
+      "score": 40,
       "checks": [
         {
           "name": "Sentry import",
@@ -122,12 +122,12 @@
         },
         {
           "name": "Sourcemap upload step",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "SLO doc present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -141,16 +141,16 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 20,
+      "score": 80,
       "checks": [
         {
           "name": "CodeQL workflow present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "npm audit step in CI",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -174,17 +174,17 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 33,
+      "score": 67,
       "checks": [
         {
           "name": "Migrations directory present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": ""
+          "detail": "WARN: 14 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql, migrations/20260603_rls_app_role.sql, migrations/20260603_rls_defn_lookups.sql, migrations/20260603_rls_policies.sql, migrations/20260603_rls_policies_crossuser.sql, migrations/20260603_rls_policies_writes.sql, migrations/20260604_add_comped_tier.sql, migrations/20260604_notifications_inbox.sql, migrations/20260610_directory_waitlist.sql, migrations/20260610_light_up_features.sql, migrations/20260610_share_token.sql, migrations/20260617_backfill_diary_dreams.sql, migrations/20260617_curriculum_progress.sql"
         },
         {
           "name": "Numbered file naming",
@@ -201,7 +201,7 @@
       "checks": [
         {
           "name": "\u22645 workflow files",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -211,7 +211,7 @@
         },
         {
           "name": "CODEOWNERS present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -220,16 +220,16 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 0,
+      "score": 67,
       "checks": [
         {
           "name": "CHANGELOG.md present",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
           "name": "Semver version (n.n.n)",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -243,11 +243,11 @@
       "key": "performance",
       "title": "Performance",
       "weight": 10,
-      "score": 0,
+      "score": 67,
       "checks": [
         {
           "name": "p95 budgets declared",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -257,7 +257,7 @@
         },
         {
           "name": "Synthetic / smoke workflow",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]
@@ -286,7 +286,7 @@
         {
           "name": "Migration PII columns documented",
           "passed": true,
-          "detail": ""
+          "detail": "WARN: 1 existing migration PII column(s) not documented in PII_INVENTORY.md (debt \u2014 not blocking): migrations/20260610_directory_waitlist.sql: email"
         }
       ]
     }
