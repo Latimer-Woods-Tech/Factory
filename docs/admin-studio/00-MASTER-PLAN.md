@@ -1,9 +1,14 @@
 # Factory Admin Studio — Master Plan
 
-**Date:** 2026-04-28  
-**Status:** Design Approved → Execution In Progress; staging surfaces live-verified, production Worker not yet live-verified  
+**Date:** 2026-04-28 (plan) · **Status refreshed:** 2026-06-22  
+**Status:** **Live in production** at `https://api.apunlimited.com` (`/health` 200-verified). Tiers 1–4 + much of 5–8 are delivered; see the admin-studio [README Roadmap](../../apps/admin-studio/README.md#roadmap) and [03-API-SURFACE.md](./03-API-SURFACE.md) for the per-phase reality.  
 **Codename:** `factory-admin-studio`  
-**URL:** `https://studio.thefactory.dev` (production target; custom domain documented, not yet treated as live-verified in the service registry)
+**API:** `https://api.apunlimited.com` (prod) · `https://api.admin.latimerwoods.dev` (staging)
+
+> **Scope deltas since this plan was written (read before trusting the tiers below):**
+> - ➕ **Capability Studio** — a governed provisioning + visual-graph subsystem that appears in no tier here. It shipped and is council-approved ([golden design](../CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md)). Treat it as a first-class tier.
+> - ➕ **Governance** (feature flags, blocking gates, command center) and **daily digest** shipped beyond the Tier-7 sketch.
+> - ➖ **Creator-economy / Stripe Connect** (Tier-7 "Subscription Manager" adjacent) was built then **removed (#1790)**: it duplicated Capricast & SelfPrime on the single shared Stripe platform `acct_1SlCcFAW1229TZte`. Connect now lives in the shared `@latimer-woods-tech/stripe` package (#1791).
 
 ---
 
