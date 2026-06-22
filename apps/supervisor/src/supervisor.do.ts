@@ -90,6 +90,8 @@ export class SupervisorDO {
           return await this.handleCapabilities();
         case 'GET /tools/read-only-smoke':
           return await this.handleReadOnlySmoke();
+        case 'GET /insights':
+          return await this.handleInsights(request);
         case 'POST /scheduled':
           return await this.handleScheduled();
         case 'POST /plan':
@@ -511,8 +513,10 @@ export class SupervisorDO {
       await writeMemory(this.env.MEMORY, 'last_run', summary);
 
       // RFC-008 Phase 1 — MEMORIZE: widen factory-memory with recent PRs/issues/STATE.md.
-      // Runs after the main issue loop; best-effort (errors logged, never throws).
+      // RFC-008 Phase 2 — REFLECT: synthesize insights from factory-memory into D1.
+      // Both run after the main issue loop; best-effort (errors logged, never throw).
       let memorizeResult: { embedded: number; skipped: number; errors: number } | undefined;
+      let reflectResult: { run_id: string; insights_written: number; insights_dropped: number; errors: number } | undefined;
       if ((this.env.REFLECTION_MODE ?? 'off') !== 'off') {
         try {
           const { runMemorize } = await import('./memory/memorize.js');
@@ -521,9 +525,16 @@ export class SupervisorDO {
         } catch (err) {
           console.error('[supervisor] MEMORIZE failed (non-fatal):', err);
         }
+        try {
+          const { runReflect } = await import('./memory/reflect.js');
+          reflectResult = await runReflect(this.env);
+          console.log('[supervisor] REFLECT:', reflectResult);
+        } catch (err) {
+          console.error('[supervisor] REFLECT failed (non-fatal):', err);
+        }
       }
 
-      return Response.json({ ok: true, ...summary, memorize: memorizeResult });
+      return Response.json({ ok: true, ...summary, memorize: memorizeResult, reflect: reflectResult });
     } finally {
       await this.releaseLock(runId);
       await sendDigest(this.env.PUSHOVER_TOKEN, this.env.PUSHOVER_USER_KEY, {
@@ -532,6 +543,28 @@ export class SupervisorDO {
         approved,
         errors,
       });
+    }
+  }
+
+  /** RFC-008 Phase 2: return recent supervisor_insights rows. */
+  private async handleInsights(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '20', 10), 100);
+    const kind = url.searchParams.get('kind');
+
+    try {
+      const stmt = kind
+        ? this.env.MEMORY.prepare(
+            `SELECT * FROM supervisor_insights WHERE kind = ? ORDER BY created_at DESC LIMIT ?`,
+          ).bind(kind, limit)
+        : this.env.MEMORY.prepare(
+            `SELECT * FROM supervisor_insights ORDER BY created_at DESC LIMIT ?`,
+          ).bind(limit);
+
+      const rows = await stmt.all<Record<string, unknown>>();
+      return Response.json({ ok: true, insights: rows.results, total: rows.results.length });
+    } catch {
+      return Response.json({ ok: true, insights: [], total: 0, note: 'table not yet migrated' });
     }
   }
 
