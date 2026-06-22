@@ -129,6 +129,26 @@ jobs:
         run: npm test
         working-directory: packages/studio-core
 
+      # Gate the deploy on admin-studio's OWN test suite, not just studio-core.
+      # The app-local vitest.config.ts runs the co-located src/**/*.test.ts unit
+      # tests that the monorepo-root config (include: tests/**) silently skipped.
+      - name: Test admin-studio (worker)
+        run: npm test
+        working-directory: apps/admin-studio
+
+      # Advisory CVE report — NOT a hard gate yet. A blocking `npm audit
+      # --audit-level=high` would fail today on transitive CVEs (js-yaml across
+      # shared packages) and block every deploy. Surface them as a warning until
+      # the org-wide transitive-dependency remediation lands; then flip this to a
+      # hard gate (or adopt _app-reliability-gate.yml at audit_level: high).
+      - name: CVE audit (advisory)
+        continue-on-error: true
+        working-directory: apps/admin-studio
+        run: |
+          echo "::group::npm audit (advisory)"
+          npm audit --audit-level=high || echo "::warning::admin-studio has high/critical CVEs (mostly transitive). Tracked for org-wide remediation; not yet a hard gate."
+          echo "::endgroup::"
+
       - name: Verify health pre-deploy (sanity)
         env:
           FALLBACK_CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
