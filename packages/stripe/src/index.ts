@@ -684,5 +684,283 @@ export async function transferOrIdempotent(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Stripe Connect — Express onboarding + account status (shared across apps)
+// ---------------------------------------------------------------------------
+//
+// Both Capricast (creator payouts) and SelfPrime/HumanDesign (practitioner
+// payouts) onboard connected accounts as Stripe **Express** accounts via
+// `accounts.create` + `accountLinks.create`, gate readiness on
+// `charges_enabled && payouts_enabled && details_submitted`, and sync status
+// from the `account.updated` webhook. These helpers are the single source of
+// truth for that flow. Direct money movement uses destination charges in both
+// apps; per-batch transfer payouts (Capricast-only) are intentionally NOT
+// abstracted here — they build on `transferOrIdempotent` above.
+
+/** Normalized lifecycle status for a Connect (Express) connected account. */
+export type ConnectOnboardingStatus = 'pending' | 'restricted' | 'active' | 'inactive';
+
+/** Normalized, app-agnostic snapshot of a connected account's readiness. */
+export interface ConnectAccountStatus {
+  /** Stripe connected-account ID (`acct_…`). */
+  accountId: string;
+  /** Whether the account can accept charges. */
+  chargesEnabled: boolean;
+  /** Whether the account can receive payouts. */
+  payoutsEnabled: boolean;
+  /** Whether the account finished the hosted onboarding form. */
+  detailsSubmitted: boolean;
+  /** Derived lifecycle status. */
+  status: ConnectOnboardingStatus;
+  /** True iff `chargesEnabled && payoutsEnabled && detailsSubmitted`. */
+  ready: boolean;
+  /** Requirement IDs currently blocking the account (`currently_due` ∪ `past_due`). */
+  requirementsDue: string[];
+}
+
+/** @internal Resolve a Stripe client from a secret key or a pre-built client. */
+function resolveStripeClient(opts: { stripeSecretKey?: string; stripeClient?: Stripe }): Stripe {
+  if (opts.stripeClient) return opts.stripeClient;
+  if (opts.stripeSecretKey) return createStripeClient(opts.stripeSecretKey);
+  throw new ValidationError('Provide stripeSecretKey or stripeClient', {
+    code: ErrorCodes.VALIDATION_ERROR,
+  });
+}
+
+/**
+ * Pure mapper from a Stripe Account to the normalized {@link ConnectAccountStatus}.
+ * No network calls, so it is fully unit-testable.
+ *
+ * Status derivation:
+ * - `inactive`   — account was deauthorized (pass `{ deauthorized: true }`)
+ * - `active`     — charges + payouts enabled and details submitted (`ready`)
+ * - `restricted` — details submitted but charges or payouts still disabled
+ * - `pending`    — onboarding not yet completed
+ *
+ * @param account - Stripe Account object (or minimal subset).
+ * @param opts - Set `deauthorized` when handling `account.application.deauthorized`.
+ * @returns Normalized account status.
+ */
+export function mapConnectAccount(
+  account: Pick<Stripe.Account, 'id' | 'charges_enabled' | 'payouts_enabled' | 'details_submitted' | 'requirements'>,
+  opts: { deauthorized?: boolean } = {},
+): ConnectAccountStatus {
+  const chargesEnabled = Boolean(account.charges_enabled);
+  const payoutsEnabled = Boolean(account.payouts_enabled);
+  const detailsSubmitted = Boolean(account.details_submitted);
+  const ready = chargesEnabled && payoutsEnabled && detailsSubmitted;
+
+  const currentlyDue = account.requirements?.currently_due ?? [];
+  const pastDue = account.requirements?.past_due ?? [];
+  const requirementsDue = Array.from(new Set([...currentlyDue, ...pastDue]));
+
+  let status: ConnectOnboardingStatus;
+  if (opts.deauthorized) {
+    status = 'inactive';
+  } else if (ready) {
+    status = 'active';
+  } else if (detailsSubmitted) {
+    status = 'restricted';
+  } else {
+    status = 'pending';
+  }
+
+  return {
+    accountId: account.id,
+    chargesEnabled,
+    payoutsEnabled,
+    detailsSubmitted,
+    status,
+    ready: opts.deauthorized ? false : ready,
+    requirementsDue,
+  };
+}
+
+/**
+ * Extracts a normalized {@link ConnectAccountStatus} from an `account.updated`
+ * webhook event. Returns `null` for any other event type.
+ *
+ * `account.application.deauthorized` is intentionally not handled here: its
+ * event payload carries the application, not the account, so callers should map
+ * it from the `Stripe-Account` header to `{ status: 'inactive' }` directly.
+ *
+ * @param event - A verified Stripe event.
+ * @returns Normalized status, or `null` if the event is not `account.updated`.
+ */
+export function connectAccountFromEvent(event: Stripe.Event): ConnectAccountStatus | null {
+  if (event.type !== 'account.updated') return null;
+  return mapConnectAccount(event.data.object);
+}
+
+/** Options for {@link createConnectAccount}. */
+export interface CreateConnectAccountOptions {
+  /** Stripe secret key. Required when `stripeClient` is not provided. */
+  stripeSecretKey?: string;
+  /** Optional pre-built Stripe client (for testing). */
+  stripeClient?: Stripe;
+  /** Email for the connected account. */
+  email: string;
+  /** Stable reference (e.g. userId) used for the account-create idempotency key. */
+  idempotencyRef: string;
+  /** URL Stripe returns to after onboarding completes. */
+  returnUrl: string;
+  /** URL Stripe returns to if the onboarding link expires. */
+  refreshUrl: string;
+  /** Extra account params merged into the Express account (e.g. `business_profile`). */
+  accountParams?: Partial<Stripe.AccountCreateParams>;
+}
+
+/** Result of {@link createConnectAccount}. */
+export interface CreateConnectAccountResult {
+  /** Newly created Stripe connected-account ID. */
+  accountId: string;
+  /** Hosted onboarding URL to redirect the user to. */
+  onboardingUrl: string;
+}
+
+/**
+ * Creates a Stripe **Express** connected account (card_payments + transfers)
+ * and a hosted `account_onboarding` link. The account-create call is keyed by
+ * `connect-account-${idempotencyRef}` so retries never create duplicates.
+ *
+ * @param opts - Account + link options.
+ * @returns The new account ID and the hosted onboarding URL.
+ * @throws {InternalError} If Stripe rejects the account or link creation.
+ */
+export async function createConnectAccount(
+  opts: CreateConnectAccountOptions,
+): Promise<CreateConnectAccountResult> {
+  const stripe = resolveStripeClient(opts);
+  try {
+    const account = await stripe.accounts.create(
+      {
+        type: 'express',
+        email: opts.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        ...opts.accountParams,
+      },
+      { idempotencyKey: `connect-account-${opts.idempotencyRef}` },
+    );
+
+    const link = await stripe.accountLinks.create(
+      {
+        account: account.id,
+        type: 'account_onboarding',
+        return_url: opts.returnUrl,
+        refresh_url: opts.refreshUrl,
+      },
+      { idempotencyKey: `account-link-${account.id}` },
+    );
+
+    return { accountId: account.id, onboardingUrl: link.url };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new InternalError(`Stripe Connect account creation failed: ${msg}`);
+  }
+}
+
+/** Options for {@link createConnectOnboardingLink}. */
+export interface ConnectOnboardingLinkOptions {
+  /** Stripe secret key. Required when `stripeClient` is not provided. */
+  stripeSecretKey?: string;
+  /** Optional pre-built Stripe client (for testing). */
+  stripeClient?: Stripe;
+  /** Existing connected-account ID to generate a fresh onboarding link for. */
+  accountId: string;
+  /** URL Stripe returns to after onboarding completes. */
+  returnUrl: string;
+  /** URL Stripe returns to if the onboarding link expires. */
+  refreshUrl: string;
+}
+
+/**
+ * Generates a fresh hosted onboarding link for an existing connected account —
+ * used to resume an incomplete onboarding. Account links are single-use and
+ * short-lived, so no idempotency key is applied.
+ *
+ * @param opts - Link options.
+ * @returns The hosted onboarding URL.
+ * @throws {InternalError} If Stripe rejects the link creation.
+ */
+export async function createConnectOnboardingLink(
+  opts: ConnectOnboardingLinkOptions,
+): Promise<{ onboardingUrl: string }> {
+  const stripe = resolveStripeClient(opts);
+  try {
+    const link = await stripe.accountLinks.create({
+      account: opts.accountId,
+      type: 'account_onboarding',
+      return_url: opts.returnUrl,
+      refresh_url: opts.refreshUrl,
+    });
+    return { onboardingUrl: link.url };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new InternalError(`Stripe Connect onboarding link failed: ${msg}`);
+  }
+}
+
+/**
+ * Retrieves a connected account from Stripe and returns its normalized
+ * {@link ConnectAccountStatus}. Use this to sync DB state after onboarding or
+ * on a status-poll endpoint.
+ *
+ * @param opts - Stripe client/key + the account ID to retrieve.
+ * @returns Normalized account status.
+ * @throws {InternalError} If Stripe rejects the retrieval.
+ */
+export async function getConnectAccountStatus(opts: {
+  stripeSecretKey?: string;
+  stripeClient?: Stripe;
+  accountId: string;
+}): Promise<ConnectAccountStatus> {
+  const stripe = resolveStripeClient(opts);
+  try {
+    const account = await stripe.accounts.retrieve(opts.accountId);
+    return mapConnectAccount(account);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new InternalError(`Stripe Connect account retrieval failed: ${msg}`);
+  }
+}
+
+/** Result of {@link calculatePlatformFee}. */
+export interface PlatformFeeResult {
+  /** Full charge amount in cents. */
+  grossCents: number;
+  /** Platform application fee in cents. */
+  feeCents: number;
+  /** Amount the connected account nets after the platform fee, in cents. */
+  netCents: number;
+}
+
+/**
+ * Computes the platform application fee for a destination charge using basis
+ * points (e.g. `1500` = 15%). Matches the SelfPrime `PLATFORM_FEE_BPS`
+ * convention; Capricast's percent value maps as `percent * 100`.
+ *
+ * @param grossCents - Full charge amount in cents (non-negative integer).
+ * @param feeBps - Platform fee in basis points, in the range `[0, 10000)`.
+ * @returns Gross, fee, and net amounts in cents.
+ * @throws {ValidationError} If inputs are out of range.
+ */
+export function calculatePlatformFee(grossCents: number, feeBps: number): PlatformFeeResult {
+  if (!Number.isInteger(grossCents) || grossCents < 0) {
+    throw new ValidationError('grossCents must be a non-negative integer', {
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
+  }
+  if (!Number.isFinite(feeBps) || feeBps < 0 || feeBps >= 10000) {
+    throw new ValidationError('feeBps must be in the range [0, 10000)', {
+      code: ErrorCodes.VALIDATION_ERROR,
+    });
+  }
+  const feeCents = Math.round((grossCents * feeBps) / 10000);
+  return { grossCents, feeCents, netCents: grossCents - feeCents };
+}
+
 export type { Stripe };
 export type { MiddlewareHandler };
