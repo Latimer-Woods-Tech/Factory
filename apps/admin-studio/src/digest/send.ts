@@ -73,7 +73,7 @@ export async function sendDigestEmail(
       return { ok: false, reason: `Resend API returned ${res.status}: ${body.slice(0, 200)}` };
     }
 
-    const json = await res.json() as { id?: string };
+    const json = await res.json<{ id?: string }>();
     return { ok: true, messageId: json.id ?? 'unknown' };
   } catch (err) {
     const msg = (err as Error).message;

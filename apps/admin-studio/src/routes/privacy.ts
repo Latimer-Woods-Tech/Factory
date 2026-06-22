@@ -19,7 +19,7 @@ const privacy = new Hono<AppEnv>();
  * Returns a JSON package of all personal data held for the authenticated user.
  * Satisfies GDPR Art. 20 (data portability) requirements.
  */
-privacy.get('/export', async (c) => {
+privacy.get('/export', (c) => {
   const ctx = c.var.envContext;
   const userId = ctx.userId;
 
@@ -44,7 +44,7 @@ privacy.get('/export', async (c) => {
  * Initiates a data deletion request for the authenticated user.
  * Soft-deletes the user record; hard purge occurs after 30 days per RETENTION.md §2.
  */
-privacy.delete('/delete', async (c) => {
+privacy.delete('/delete', (c) => {
   const ctx = c.var.envContext;
   const userId = ctx.userId;
 

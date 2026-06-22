@@ -119,7 +119,7 @@ function healthJourney(appId: string, appLabel: string): JourneyDef {
       return probeGet(`${baseUrl}/health`, `${appId}:health`, `${appLabel} /health`, (status, body) => {
         if (!status.toString().startsWith('2')) return false;
         try {
-          const j: { status?: string } = JSON.parse(body);
+          const j = JSON.parse(body) as { status?: string };
           return j.status === 'ok';
         } catch {
           return false;
