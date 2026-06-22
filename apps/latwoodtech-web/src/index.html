@@ -97,6 +97,7 @@
     }
     </script>
     <script type="module" src="app.js"></script>
+    <script type="module" src="platform-charts.js"></script>
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to main content</a>
@@ -377,6 +378,25 @@
                 </p>
               </section>
             </div>
+
+            <section class="pulse-panel pulse-panel-wide pulse-panel-charts" aria-labelledby="charts-label">
+              <div class="pulse-panel-header">
+                <p class="card-label" id="charts-label">Cohesion trajectory</p>
+                <h3>Apps converging toward the 70-point production threshold.</h3>
+              </div>
+              <div class="charts-grid">
+                <div class="chart-unit">
+                  <p class="chart-unit-label">Platform cohesion</p>
+                  <canvas data-chart="cohesion-gauge" role="img" aria-label="Platform cohesion gauge"></canvas>
+                  <p class="chart-unit-note">Overall <strong data-live="overall-cohesion">51.4</strong>% · target: 70 · <span data-live="cohesion-trend">+1.8 pts since May 30</span></p>
+                </div>
+                <div class="chart-unit">
+                  <p class="chart-unit-label">Per-app scores</p>
+                  <canvas data-chart="app-bars" role="img" aria-label="Per-app cohesion bar chart"></canvas>
+                  <p class="chart-unit-note">Dashed line = GA threshold (70). All apps running in production.</p>
+                </div>
+              </div>
+            </section>
 
             <section class="pulse-panel pulse-panel-wide">
               <div class="pulse-panel-header">

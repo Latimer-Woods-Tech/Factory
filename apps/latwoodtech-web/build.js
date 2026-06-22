@@ -279,6 +279,7 @@ const cssMin = minifyCSS(cssRaw);
 await writeFile(join(distDir, 'styles.css'), cssMin, 'utf8');
 await copyFile(join(srcDir, 'app.js'), join(distDir, 'app.js'));
 await copyFile(join(srcDir, 'hero-circuitry.js'), join(distDir, 'hero-circuitry.js'));
+await copyFile(join(srcDir, 'platform-charts.js'), join(distDir, 'platform-charts.js'));
 await cp(join(srcDir, 'assets'), join(distDir, 'assets'), { recursive: true });
 // /work/ — engagement model and delivery process.
 await mkdir(join(distDir, 'work'), { recursive: true });

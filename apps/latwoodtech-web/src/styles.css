@@ -832,6 +832,64 @@ canvas[data-circuitry] {
   margin-bottom: 12px;
 }
 
+/* ——— Cohesion charts panel ——————————————————————————————————— */
+
+.pulse-panel-charts {
+  margin-top: 20px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem 3rem;
+  align-items: start;
+}
+
+.chart-unit-label {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 0.6rem;
+}
+
+canvas[data-chart] {
+  display: block;
+  width: 100%;
+}
+
+canvas[data-chart="cohesion-gauge"] {
+  height: 56px;
+}
+
+canvas[data-chart="app-bars"] {
+  height: 210px;
+}
+
+.chart-unit-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+}
+
+.chart-unit-note strong {
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  canvas[data-chart="app-bars"] {
+    height: 200px;
+  }
+}
+
+/* ——————————————————————————————————————————————————————————— */
+
 .pulse-list {
   margin: 0;
   padding-left: 20px;
