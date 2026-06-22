@@ -52,6 +52,22 @@ export interface Env {
   VECTORIZE_MEMORY?: VectorizeIndex;
   /** RFC-008: Reflection loop mode. off = disabled (default); shadow = compute but do not surface; live = full loop active. Set via wrangler.jsonc vars. */
   REFLECTION_MODE?: 'off' | 'shadow' | 'live';
+  /** RFC-007 Phase 3: producer binding for the incident write lane. */
+  INCIDENT_QUEUE?: Queue<IncidentMessage>;
+}
+
+/** Message shape produced by handleRun on every terminal supervisor run. */
+export interface IncidentMessage {
+  /** Supervisor run ID — FK to supervisor_runs.run_id. */
+  run_id: string;
+  /** GitHub issue reference, e.g. "Latimer-Woods-Tech/Factory#1234". */
+  issue_ref?: string;
+  /** Template ID matched during planning (undefined if no template matched). */
+  template_id?: string;
+  /** Terminal outcome of the run. */
+  outcome: 'succeeded' | 'failed' | 'canceled';
+  /** Unix epoch ms when the run reached terminal state. */
+  occurred_at: number;
 }
 
 /** Constant-time string comparison — guards against timing side-channels. */
@@ -111,4 +127,87 @@ export default {
       stub.fetch(new Request('https://supervisor/scheduled', { method: 'POST' })).then(() => undefined),
     );
   },
-} satisfies ExportedHandler<Env>;
+
+  // RFC-007 Phase 3: queue consumer — embed terminal runs into supervisor-incidents.
+  // Guarded by SUPERVISOR_SEMANTIC_MODE; skips silently when 'off' so the consumer
+  // can be deployed before the mode is flipped to 'shadow'/'live'.
+  async queue(batch: MessageBatch<IncidentMessage>, env: Env): Promise<void> {
+    const mode = env.SUPERVISOR_SEMANTIC_MODE ?? 'off';
+    if (mode === 'off') {
+      // Acknowledge all messages — do not let them expire into the DLQ while mode is off.
+      batch.ackAll();
+      return;
+    }
+
+    if (!env.AI || !env.VECTORIZE_INCIDENTS) {
+      // Bindings absent in local dev — ack and skip rather than retrying forever.
+      batch.ackAll();
+      return;
+    }
+
+    const { embedAndUpsert } = await import('./memory/vector.js');
+
+    for (const msg of batch.messages) {
+      const m = msg.body;
+
+      // Idempotency check: skip if already embedded.
+      try {
+        const existing = await env.MEMORY
+          .prepare('SELECT 1 FROM incident_embeddings WHERE run_id = ?')
+          .bind(m.run_id)
+          .first();
+        if (existing) { msg.ack(); continue; }
+      } catch {
+        // Table may not exist in staging yet — let retry handle it.
+        msg.retry();
+        continue;
+      }
+
+      // Fetch run summary from MEMORY D1 for embedding text.
+      let runRow: { description: string; status: string; error_message: string | null } | null = null;
+      try {
+        runRow = await env.MEMORY
+          .prepare('SELECT description, status, error_message FROM runs WHERE run_id = ?')
+          .bind(m.run_id)
+          .first<{ description: string; status: string; error_message: string | null }>();
+      } catch { /* best-effort */ }
+
+      const text = [
+        `outcome:${m.outcome}`,
+        m.issue_ref ? `issue:${m.issue_ref}` : '',
+        m.template_id ? `template:${m.template_id}` : '',
+        runRow?.description ?? '',
+        runRow?.error_message ?? '',
+      ].filter(Boolean).join(' ');
+
+      const ok = await embedAndUpsert(
+        env.AI,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- VectorizeVectorMetadata vs Record<string,unknown> mismatch; resolved once @latimer-woods-tech/llm exports typed embed()
+        env.VECTORIZE_INCIDENTS as any,
+        m.run_id,
+        text,
+        {
+          type: 'incident',
+          outcome: m.outcome,
+          issue_ref: m.issue_ref ?? '',
+          template_id: m.template_id ?? '',
+          occurred_at: m.occurred_at,
+        },
+      );
+
+      if (!ok) { msg.retry(); continue; }
+
+      // Write provenance row — idempotent on conflict.
+      try {
+        await env.MEMORY
+          .prepare(
+            'INSERT OR IGNORE INTO incident_embeddings (run_id, model_version, dims, embedded_at) VALUES (?, ?, ?, ?)',
+          )
+          .bind(m.run_id, '@cf/baai/bge-base-en-v1.5', 768, Date.now())
+          .run();
+      } catch { /* non-fatal — vector is already upserted */ }
+
+      msg.ack();
+    }
+  },
+} satisfies ExportedHandler<Env, IncidentMessage>;
