@@ -2,8 +2,8 @@
   "repo_key": "FA",
   "repo_name": "factory-admin-studio",
   "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-06-06T08:05:49.062724+00:00",
-  "cohesion": 73,
+  "timestamp": "2026-06-22T19:10:43.685491+00:00",
+  "cohesion": 77,
   "dimensions": [
     {
       "key": "stack",
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 40,
+      "score": 80,
       "checks": [
         {
           "name": "Sentry import",
@@ -117,7 +117,7 @@
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -132,7 +132,7 @@
         },
         {
           "name": "Structured log fields",
-          "passed": false,
+          "passed": true,
           "detail": ""
         }
       ]

@@ -16,18 +16,16 @@ jobs:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      # Check out main, NOT the status-dashboard data-branch. status-dashboard
+      # holds only the generated STATUS.md and is recreated by the force-push
+      # below, so it must not be a checkout dependency — when the branch prune
+      # deleted it (2026-06), checkout `ref: status-dashboard` hard-failed every
+      # hourly run. Starting from main makes this workflow self-healing.
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           token: ${{ steps.app-token.outputs.token }}
-          ref: status-dashboard
+          ref: main
           fetch-depth: 0
-      - name: Ensure status-dashboard branch tracks main
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          git fetch origin main
-          # If status-dashboard diverged, reset to main (we only store STATUS.md here)
-          git reset --hard origin/main || true
       - name: Generate status
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

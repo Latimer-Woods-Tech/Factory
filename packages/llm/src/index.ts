@@ -1645,3 +1645,8 @@ export function assertGrounding(response: string, sources: string[]): boolean {
 
 export { MODELS, isProviderCoolingDown, markProviderCoolingDown, clearProviderCooldown, PROVIDER_COOLDOWN_MS };
 export { BASE_BACKOFF_MS };
+
+// ─── Embeddings ────────────────────────────────────────────────────────────
+
+export { embed, DEFAULT_EMBEDDING_MODEL } from './embed.js';
+export type { AiBinding, EmbedResult, EmbeddingModel } from './embed.js';

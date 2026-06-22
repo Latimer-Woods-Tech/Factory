@@ -1,5 +1,8 @@
 name: Track Delivery KPIs
 
+# RFC-006 §10: weekly runs upload KPI snapshot as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10.
+
 on:
   schedule:
     - cron: '0 10 * * 1'
@@ -7,17 +10,18 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-permissions: {}
+
+permissions:
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 jobs:
   report:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read # RFC-006 §10: artifact upload does not need write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Run delivery KPI reporter
         run: node scripts/track-delivery-metrics.mjs
         env:
@@ -27,29 +31,12 @@ jobs:
           INCIDENT_TRACKER_TOKEN: ${{ secrets.INCIDENT_TRACKER_TOKEN }}
           KPI_REPO_OWNER: adrper79-dot
           KPI_REPO_NAME: factory
-      - name: Open auto-merge PR for KPI snapshot
-        # Direct push to main is rejected by branch protection (GH013).
-        # Match the cost-observability.yml + platform-conformance.yml pattern:
-        # commit to a fresh branch, open a labelled PR, let auto-merge land it.
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          git add kpi-history.csv 2>/dev/null || true
-          if git diff --quiet --cached kpi-history.csv; then
-            echo "No KPI changes to commit."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/kpi-snapshot-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(kpi): weekly delivery KPI snapshot ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(kpi): weekly delivery KPI snapshot ($DATE)" \
-            --body "Automated KPI snapshot from \`track-kpis.yml\`. Source: \`scripts/track-delivery-metrics.mjs\`." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload KPI snapshot artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: kpi-snapshot-${{ github.run_id }}
+          path: kpi-history.csv
+          retention-days: 30
+          if-no-files-found: warn

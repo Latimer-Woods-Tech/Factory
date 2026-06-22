@@ -1,0 +1,77 @@
+{
+  "briefKey": "gate-concept-46",
+  "key": "gate-concept-46",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 46: Pushing Upward",
+  "description": "When you are fully embodied and in the right place at the right time, life seems to conspire in your favor. You succeed not through force but through showing up completely. Love your physical body — it's your compass.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "eros",
+  "forgeTheme": "eros",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 46: Pushing Upward",
+  "learningGoal": "The viewer understands what Gate 46 (Pushing Upward — Ascending through dedicated effort) means in their daily life, in plain terms.",
+  "targetPersona": "gate_46",
+  "keyPoints": [
+    "When you are fully embodied and in the right place at the right time, life seems to conspire in your favor.",
+    "You succeed not through force but through showing up completely.",
+    "Love your physical body",
+    "it's your compass."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-46-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 46: Pushing Upward — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-46-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 46: Pushing Upward — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-46-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 46: Pushing Upward — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-46-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 46: Pushing Upward — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 46: Pushing Upward — Your Energy Blueprint",
+    "description": "When you are fully embodied and in the right place at the right time, life seems to conspire in your favor. You succeed not through force but through showing up completely. Love your physical body — it's your compass."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[46]",
+  "status": "planned"
+}

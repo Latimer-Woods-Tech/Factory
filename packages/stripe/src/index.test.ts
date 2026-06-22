@@ -4,10 +4,16 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createDb } from '@latimer-woods-tech/neon';
 
 import {
+  calculatePlatformFee,
+  connectAccountFromEvent,
   createCheckoutSession,
+  createConnectAccount,
+  createConnectOnboardingLink,
   createPortalSession,
   createStripeClient,
+  getConnectAccountStatus,
   getSubscription,
+  mapConnectAccount,
   priceToTier,
   stripeWebhookHandler,
   transferOrIdempotent,
@@ -911,5 +917,214 @@ describe('transferOrIdempotent', () => {
     await expect(
       transferOrIdempotent({ neonDb: { connectionString: 'x' }, idempotencyKey: 'k', destination: 'd', amountCents: 1 }),
     ).rejects.toThrow('provide stripeSecretKey or stripeClient');
+  });
+});
+
+// ── Stripe Connect (Express onboarding + status) ──────────────────────────────
+
+function buildConnectMock(overrides: Record<string, unknown> = {}) {
+  const accountsCreate = vi.fn();
+  const accountsRetrieve = vi.fn();
+  const accountLinksCreate = vi.fn();
+  const client = {
+    accounts: { create: accountsCreate, retrieve: accountsRetrieve },
+    accountLinks: { create: accountLinksCreate },
+    ...overrides,
+  } as unknown as Stripe;
+  return { client, accountsCreate, accountsRetrieve, accountLinksCreate };
+}
+
+const acct = (over: Record<string, unknown> = {}) =>
+  ({
+    id: 'acct_1',
+    charges_enabled: false,
+    payouts_enabled: false,
+    details_submitted: false,
+    requirements: { currently_due: [], past_due: [] },
+    ...over,
+  }) as unknown as Stripe.Account;
+
+describe('mapConnectAccount', () => {
+  it('maps a fully-enabled account to active + ready', () => {
+    const s = mapConnectAccount(
+      acct({ charges_enabled: true, payouts_enabled: true, details_submitted: true }),
+    );
+    expect(s).toMatchObject({ accountId: 'acct_1', status: 'active', ready: true });
+  });
+
+  it('maps details-submitted-but-not-enabled to restricted (not ready)', () => {
+    const s = mapConnectAccount(acct({ details_submitted: true, charges_enabled: true }));
+    expect(s.status).toBe('restricted');
+    expect(s.ready).toBe(false);
+  });
+
+  it('maps an unstarted account to pending', () => {
+    expect(mapConnectAccount(acct()).status).toBe('pending');
+  });
+
+  it('maps deauthorized to inactive and forces ready=false', () => {
+    const s = mapConnectAccount(
+      acct({ charges_enabled: true, payouts_enabled: true, details_submitted: true }),
+      { deauthorized: true },
+    );
+    expect(s.status).toBe('inactive');
+    expect(s.ready).toBe(false);
+  });
+
+  it('dedupes requirementsDue across currently_due and past_due', () => {
+    const s = mapConnectAccount(
+      acct({ requirements: { currently_due: ['a', 'b'], past_due: ['b', 'c'] } }),
+    );
+    expect(s.requirementsDue.sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('tolerates a missing requirements object', () => {
+    const s = mapConnectAccount({ id: 'acct_x' } as unknown as Stripe.Account);
+    expect(s.requirementsDue).toEqual([]);
+    expect(s.status).toBe('pending');
+  });
+});
+
+describe('connectAccountFromEvent', () => {
+  it('returns mapped status for account.updated', () => {
+    const event = {
+      type: 'account.updated',
+      data: { object: acct({ charges_enabled: true, payouts_enabled: true, details_submitted: true }) },
+    } as unknown as Stripe.Event;
+    expect(connectAccountFromEvent(event)?.status).toBe('active');
+  });
+
+  it('returns null for unrelated events', () => {
+    const event = { type: 'customer.subscription.created', data: { object: {} } } as unknown as Stripe.Event;
+    expect(connectAccountFromEvent(event)).toBeNull();
+  });
+});
+
+describe('createConnectAccount', () => {
+  it('creates an Express account + onboarding link and returns both', async () => {
+    const { client, accountsCreate, accountLinksCreate } = buildConnectMock();
+    accountsCreate.mockResolvedValue({ id: 'acct_new' });
+    accountLinksCreate.mockResolvedValue({ url: 'https://connect.stripe.com/setup/x' });
+
+    const res = await createConnectAccount({
+      stripeClient: client,
+      email: 'a@b.com',
+      idempotencyRef: 'user_7',
+      returnUrl: 'https://app/return',
+      refreshUrl: 'https://app/refresh',
+    });
+
+    expect(res).toEqual({ accountId: 'acct_new', onboardingUrl: 'https://connect.stripe.com/setup/x' });
+    expect(accountsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'express',
+        email: 'a@b.com',
+        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+      }),
+      { idempotencyKey: 'connect-account-user_7' },
+    );
+    expect(accountLinksCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ account: 'acct_new', type: 'account_onboarding' }),
+      { idempotencyKey: 'account-link-acct_new' },
+    );
+  });
+
+  it('merges extra accountParams', async () => {
+    const { client, accountsCreate, accountLinksCreate } = buildConnectMock();
+    accountsCreate.mockResolvedValue({ id: 'acct_2' });
+    accountLinksCreate.mockResolvedValue({ url: 'https://x' });
+    await createConnectAccount({
+      stripeClient: client,
+      email: 'a@b.com',
+      idempotencyRef: 'u',
+      returnUrl: 'r',
+      refreshUrl: 'f',
+      accountParams: { business_profile: { name: 'Acme' } },
+    });
+    expect(accountsCreate.mock.calls[0]?.[0]).toMatchObject({ business_profile: { name: 'Acme' } });
+  });
+
+  it('wraps Stripe failures in InternalError', async () => {
+    const { client, accountsCreate } = buildConnectMock();
+    accountsCreate.mockRejectedValue(new Error('stripe down'));
+    await expect(
+      createConnectAccount({ stripeClient: client, email: 'a@b.com', idempotencyRef: 'u', returnUrl: 'r', refreshUrl: 'f' }),
+    ).rejects.toThrow('Stripe Connect account creation failed: stripe down');
+  });
+
+  it('throws when neither key nor client provided', async () => {
+    await expect(
+      createConnectAccount({ email: 'a@b.com', idempotencyRef: 'u', returnUrl: 'r', refreshUrl: 'f' }),
+    ).rejects.toThrow('Provide stripeSecretKey or stripeClient');
+  });
+});
+
+describe('createConnectOnboardingLink', () => {
+  it('returns a fresh onboarding URL for an existing account', async () => {
+    const { client, accountLinksCreate } = buildConnectMock();
+    accountLinksCreate.mockResolvedValue({ url: 'https://resume' });
+    const res = await createConnectOnboardingLink({
+      stripeClient: client,
+      accountId: 'acct_9',
+      returnUrl: 'r',
+      refreshUrl: 'f',
+    });
+    expect(res).toEqual({ onboardingUrl: 'https://resume' });
+    expect(accountLinksCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ account: 'acct_9', type: 'account_onboarding' }),
+    );
+  });
+
+  it('wraps Stripe failures in InternalError', async () => {
+    const { client, accountLinksCreate } = buildConnectMock();
+    accountLinksCreate.mockRejectedValue(new Error('boom'));
+    await expect(
+      createConnectOnboardingLink({ stripeClient: client, accountId: 'a', returnUrl: 'r', refreshUrl: 'f' }),
+    ).rejects.toThrow('Stripe Connect onboarding link failed: boom');
+  });
+});
+
+describe('getConnectAccountStatus', () => {
+  it('retrieves and normalizes the account', async () => {
+    const { client, accountsRetrieve } = buildConnectMock();
+    accountsRetrieve.mockResolvedValue(
+      acct({ charges_enabled: true, payouts_enabled: true, details_submitted: true }),
+    );
+    const s = await getConnectAccountStatus({ stripeClient: client, accountId: 'acct_1' });
+    expect(s.ready).toBe(true);
+    expect(accountsRetrieve).toHaveBeenCalledWith('acct_1');
+  });
+
+  it('wraps Stripe failures in InternalError', async () => {
+    const { client, accountsRetrieve } = buildConnectMock();
+    accountsRetrieve.mockRejectedValue(new Error('no such account'));
+    await expect(
+      getConnectAccountStatus({ stripeClient: client, accountId: 'acct_1' }),
+    ).rejects.toThrow('Stripe Connect account retrieval failed: no such account');
+  });
+});
+
+describe('calculatePlatformFee', () => {
+  it('computes 15% (1500 bps) correctly', () => {
+    expect(calculatePlatformFee(10000, 1500)).toEqual({ grossCents: 10000, feeCents: 1500, netCents: 8500 });
+  });
+
+  it('rounds to the nearest cent', () => {
+    // 999 * 1500 / 10000 = 149.85 → 150
+    expect(calculatePlatformFee(999, 1500).feeCents).toBe(150);
+  });
+
+  it('allows a 0% fee', () => {
+    expect(calculatePlatformFee(5000, 0)).toEqual({ grossCents: 5000, feeCents: 0, netCents: 5000 });
+  });
+
+  it('rejects negative or non-integer gross', () => {
+    expect(() => calculatePlatformFee(-1, 1500)).toThrow('non-negative integer');
+    expect(() => calculatePlatformFee(10.5, 1500)).toThrow('non-negative integer');
+  });
+
+  it('rejects out-of-range fee basis points', () => {
+    expect(() => calculatePlatformFee(100, -1)).toThrow('[0, 10000)');
+    expect(() => calculatePlatformFee(100, 10000)).toThrow('[0, 10000)');
   });
 });

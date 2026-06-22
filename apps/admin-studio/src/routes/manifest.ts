@@ -65,14 +65,6 @@ const ENTRIES: ReadonlyArray<ManifestEntry> = [
   // ── Webhooks (public, signed) ─────────────────────────────────────────
   {
     method: 'POST',
-    path: '/webhooks/stripe-connect',
-    auth: 'webhook',
-    summary: 'Stripe Connect events (signed)',
-    reversibility: 'irreversible',
-    tags: ['webhooks', 'billing'],
-  },
-  {
-    method: 'POST',
     path: '/webhooks/studio-tests',
     auth: 'webhook',
     summary: 'GitHub Actions test-run callback',

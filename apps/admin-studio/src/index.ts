@@ -44,10 +44,6 @@ import smoke from './routes/smoke.js';
 import slo from './routes/slo.js';
 import synthetic from './routes/synthetic.js';
 import ops from './routes/ops.js';
-import creatorOnboarding from './routes/creator-onboarding.js';
-import creators from './routes/creators.js';
-import payouts from './routes/payouts.js';
-import stripeConnectWebhooks from './routes/webhooks-stripe-connect.js';
 import studioTestsWebhook from './routes/webhooks-studio-tests.js';
 import studioSubscriptionsWebhook from './routes/webhooks-studio-subscriptions.js';
 import dsr from './routes/dsr.js';
@@ -55,6 +51,7 @@ import privacy from './routes/privacy.js';
 import { flagship } from './routes/flagship.js';
 import blocking from './routes/blocking.js';
 import commandCenter from './routes/command-center.js';
+import scheduleProxy from './routes/schedule-proxy.js';
 
 const app = new Hono<AppEnv>();
 
@@ -140,7 +137,6 @@ app.route('/auth', auth);
 app.route('/manifest', manifest);
 
 // ── Webhooks (public, Stripe-signed) ────────────────────────────────────────────────────────────────────────
-app.route('/webhooks/stripe-connect', stripeConnectWebhooks);
 app.route('/webhooks/studio-tests', studioTestsWebhook);
 app.route('/webhooks/studio-subscriptions', studioSubscriptionsWebhook);
 
@@ -167,13 +163,14 @@ app.use('/slo/*', envContextMiddleware());
 app.use('/synthetic/*', envContextMiddleware(), auditMiddleware());
 // Ops panel � all writes are audited via requireConfirmation + auditMiddleware.
 app.use('/ops/*', envContextMiddleware(), auditMiddleware());
-app.use('/api/creator/*', envContextMiddleware());
-app.use('/api/admin/*', envContextMiddleware(), auditMiddleware());
 app.use('/dsr/*', envContextMiddleware(), auditMiddleware());
 app.use('/privacy/*', envContextMiddleware());
 app.use('/api/flags/*', envContextMiddleware(), auditMiddleware());
 app.use('/v1/blocking/*', envContextMiddleware());
 app.use('/v1/command-center/*', envContextMiddleware());
+// Training Library proxy → schedule-worker. GET is a read; /jobs dispatch is audited.
+app.use('/training-library', envContextMiddleware());
+app.use('/jobs/*', envContextMiddleware(), auditMiddleware());
 
 app.route('/me', me);
 app.route('/tests', tests);
@@ -190,14 +187,13 @@ app.route('/smoke', smoke);
 app.route('/slo', slo);
 app.route('/synthetic', synthetic);
 app.route('/ops', ops);
-app.route('/api/creator/onboarding', creatorOnboarding);
-app.route('/api/admin/creators', creators);
-app.route('/api/admin/payouts', payouts);
 app.route('/dsr', dsr);
 app.route('/privacy', privacy);
 app.route('/api/flags', flagship);
 app.route('/v1/blocking', blocking);
 app.route('/v1/command-center', commandCenter);
+app.route('/training-library', scheduleProxy);
+app.route('/jobs', scheduleProxy);
 
 // ── Error handler ─────────────────────────────────────────────────────────────────────────────────────
 app.onError((err, c) => {

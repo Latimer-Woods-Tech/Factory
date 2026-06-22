@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// projection-only: reads issue labels → writes Project Status. Labels are written only by lifecycle-controller.mjs.
 // project-sync.mjs — unified GitHub Project board sync
 //
 // Replaces:
@@ -12,7 +13,7 @@
 //
 // EVENT_KIND values:
 //   issue.opened, issue.reopened, issue.assigned, issue.closed,
-//   issue.labeled.status, issue.labeled.agent,
+//   issue.status.changed, issue.labeled.agent,
 //   issue_comment.status,
 //   pr.opened, pr.reopened, pr.ready_for_review, pr.synchronize, pr.closed,
 //   reconcile
@@ -128,18 +129,12 @@ async function getFieldId(name) {
 // HARD CONSTRAINT: must use projectItems(first: 10) per node, never the
 // full-board items(first: 100) scan.
 async function getOrCreateItemForContent(contentNodeId) {
-  const data = await ghGraphql(`
-    query($id: ID!) {
-      node(id: $id) {
-        ... on Issue { projectItems(first: 10) { nodes { id project { id } } } }
-        ... on PullRequest { projectItems(first: 10) { nodes { id project { id } } } }
-      }
-    }
-  `, { id: contentNodeId });
-  const items = data.node?.projectItems?.nodes ?? [];
-  const existing = items.find(i => i.project?.id === PROJECT_ID);
+  const existing = await getProjectItemForContent(contentNodeId);
   if (existing) return existing.id;
+  return addProjectItem(contentNodeId);
+}
 
+async function addProjectItem(contentNodeId) {
   const add = await ghGraphql(`
     mutation($projectId: ID!, $contentId: ID!) {
       addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
@@ -148,6 +143,42 @@ async function getOrCreateItemForContent(contentNodeId) {
     }
   `, { projectId: PROJECT_ID, contentId: contentNodeId });
   return add.addProjectV2ItemById.item.id;
+}
+
+async function getProjectItemForContent(contentNodeId) {
+  const data = await ghGraphql(`
+    query($id: ID!) {
+      node(id: $id) {
+        ... on Issue {
+          projectItems(first: 10) {
+            nodes {
+              id
+              project { id }
+              fieldValueByName(name: "Status") {
+                ... on ProjectV2ItemFieldSingleSelectValue { name }
+              }
+            }
+          }
+        }
+        ... on PullRequest {
+          projectItems(first: 10) {
+            nodes {
+              id
+              project { id }
+              fieldValueByName(name: "Status") {
+                ... on ProjectV2ItemFieldSingleSelectValue { name }
+              }
+            }
+          }
+        }
+      }
+    }
+  `, { id: contentNodeId });
+  const items = data.node?.projectItems?.nodes ?? [];
+  const existing = items.find(i => i.project?.id === PROJECT_ID);
+  return existing
+    ? { id: existing.id, status: existing.fieldValueByName?.name ?? null }
+    : null;
 }
 
 async function setSingleSelect(itemId, fieldId, optionId) {
@@ -233,19 +264,25 @@ function statusFromComment(body) {
   return statusFromLabel(`status:${m[1]}`);
 }
 
-async function tryAssignCopilot(repo, issueNumber) {
-  const issue = await ghRest('GET', `/repos/${repo}/issues/${issueNumber}`);
-  if ((issue.assignees ?? []).length > 0) {
-    console.log(`[skip] #${issueNumber} already assigned`);
-    return;
-  }
-  try {
-    await ghRest('POST', `/repos/${repo}/issues/${issueNumber}/assignees`, {
-      assignees: ['copilot-swe-agent'],
-    });
-    console.log(`[ok] #${issueNumber} auto-assigned to copilot-swe-agent`);
-  } catch (e) {
-    console.log(`[warn] could not assign copilot-swe-agent to #${issueNumber}: ${e.message}`);
+function desiredIssueStatus(issue) {
+  if (issue.state === 'closed') return 'Done';
+  const labels = (issue.labels ?? []).map(label => typeof label === 'string' ? label : label.name);
+  if (labels.includes('status:blocked')) return 'Blocked';
+  if (labels.includes('status:done') || labels.includes('status:abandoned')) return 'Done';
+  if (labels.some(label => /^status:(wip|in_progress)$/.test(label))) return 'In Progress';
+  if ((issue.assignees ?? []).length > 0) return 'In Progress';
+  return 'Todo';
+}
+
+async function listOpenIssues(repo) {
+  const issues = [];
+  for (let page = 1; ; page++) {
+    const batch = await ghRest(
+      'GET',
+      `/repos/${repo}/issues?state=open&per_page=100&page=${page}`,
+    );
+    issues.push(...batch.filter(issue => !issue.pull_request));
+    if (batch.length < 100) return issues;
   }
 }
 
@@ -256,15 +293,11 @@ async function main() {
   switch (EVENT_KIND) {
     case 'issue.opened':
     case 'issue.reopened': {
-      // Add to board (factor of auto-add-to-project) + auto-assign Copilot
-      // (factor of project-board-sync). Status is set by issue.assigned/labeled
-      // events that follow.
-      await getOrCreateItemForContent(ISSUE_NODE_ID);
-      console.log(`[ok] #${ISSUE_NUMBER} added to project board`);
+      // Intake only: add the card, then let triage/supervisor decide whether
+      // the issue is eligible for execution and who should own it.
       if (EVENT_KIND === 'issue.opened') {
-        await tryAssignCopilot(REPO, ISSUE_NUMBER);
-      }
-      if (EVENT_KIND === 'issue.reopened') {
+        await setStatus(ISSUE_NODE_ID, 'Issue', 'Todo');
+      } else {
         const issue = await ghRest('GET', `/repos/${REPO}/issues/${ISSUE_NUMBER}`);
         const status = (issue.assignees ?? []).length > 0 ? 'In Progress' : 'Todo';
         await setStatus(ISSUE_NODE_ID, 'Issue', status);
@@ -282,17 +315,10 @@ async function main() {
       break;
     }
 
-    case 'issue.labeled.status': {
-      const [primary, fallback] = statusFromLabel(LABEL_NAME);
-      if (!primary) { console.log(`[skip] unknown status label ${LABEL_NAME}`); break; }
-      let optionId = await getOptionId(primary);
-      let used = primary;
-      if (!optionId && fallback) { optionId = await getOptionId(fallback); used = fallback; }
-      if (!optionId) { console.log(`[skip] no matching status option`); break; }
-      const itemId = await getOrCreateItemForContent(ISSUE_NODE_ID);
-      const status = await getStatusField();
-      await setSingleSelect(itemId, status.id, optionId);
-      console.log(`[ok] #${ISSUE_NUMBER} status="${used}" (from label ${LABEL_NAME})`);
+    case 'issue.status.changed': {
+      const issue = await ghRest('GET', `/repos/${REPO}/issues/${ISSUE_NUMBER}`);
+      const desired = desiredIssueStatus(issue);
+      await setStatus(ISSUE_NODE_ID, 'Issue', desired);
       break;
     }
 
@@ -348,7 +374,6 @@ async function main() {
           try {
             const issue = await ghRest('GET', `/repos/${REPO}/issues/${n}`);
             await setDeploySha(issue.node_id, MERGE_SHA);
-            await setStatus(issue.node_id, 'Issue', 'Done');
           } catch (e) {
             console.log(`[warn] linked issue #${n}: ${e.message}`);
           }
@@ -368,84 +393,34 @@ async function main() {
 }
 
 async function reconcile() {
-  const { execSync } = await import('node:child_process');
-  const exec = (cmd) => execSync(cmd, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
-
   const repo = REPO;
   const status = await getStatusField();
   if (!status) { console.log('[skip] no Status field'); return; }
-  const todoOpt = await getOptionId('Todo');
-  const inProgressOpt = await getOptionId('In Progress');
-  const doneOpt = await getOptionId('Done');
-
-  const boardJson = exec(
-    `gh project item-list ${PROJECT_NUMBER} --owner ${PROJECT_OWNER} --limit 1000 --format json`
-  );
-  const boardItems = JSON.parse(boardJson).items ?? [];
-  const boardNumbers = new Set(
-    boardItems
-      .filter(i => i.content?.type === 'Issue' && i.content?.repository === repo)
-      .map(i => i.content.number)
-  );
-
-  const openJson = exec(
-    `gh issue list --repo ${repo} --state open --limit 500 --json number,id`
-  );
-  const open = JSON.parse(openJson);
+  const options = new Map(status.options.map(option => [option.name, option.id]));
+  const open = await listOpenIssues(repo);
 
   let added = 0;
-  for (const issue of open) {
-    if (boardNumbers.has(issue.number)) continue;
-    try {
-      await getOrCreateItemForContent(issue.id);
-      added++;
-      console.log(`[ok] added missing card #${issue.number}`);
-    } catch (e) {
-      console.log(`[warn] add #${issue.number}: ${e.message}`);
-    }
-  }
-
   let reconciled = 0;
-  for (const item of boardItems) {
-    if (item.content?.type !== 'Issue') continue;
-    const issueRepo = item.content.repository;
-    const num = item.content.number;
-    const boardStatus = item.status;
-
-    let issueState, assigneeCount, labels = [];
+  for (const issue of open) {
     try {
-      const j = exec(
-        `gh issue view ${num} --repo ${issueRepo} --json state,assignees,labels`
-      );
-      const data = JSON.parse(j);
-      issueState = data.state;
-      assigneeCount = (data.assignees ?? []).length;
-      labels = (data.labels ?? []).map(l => l.name);
-    } catch {
-      continue;
-    }
-
-    let target = null;
-    let targetOpt = null;
-    if (issueState === 'CLOSED' && boardStatus !== 'Done') {
-      target = 'Done'; targetOpt = doneOpt;
-    } else if (issueState === 'OPEN' && boardStatus === 'Done') {
-      if (labels.some(l => /^status:(wip|in_progress)$/.test(l))) {
-        target = 'In Progress'; targetOpt = inProgressOpt;
-      } else if (assigneeCount > 0) {
-        target = 'In Progress'; targetOpt = inProgressOpt;
-      } else {
-        target = 'Todo'; targetOpt = todoOpt;
+      const desired = desiredIssueStatus(issue);
+      const optionId = options.get(desired);
+      if (!optionId) {
+        console.log(`[warn] #${issue.number}: Status option "${desired}" not found`);
+        continue;
       }
-    }
-    if (!target || !targetOpt) continue;
-
-    try {
-      await setSingleSelect(item.id, status.id, targetOpt);
+      const existing = await getProjectItemForContent(issue.node_id);
+      const itemId = existing?.id ?? await addProjectItem(issue.node_id);
+      if (!existing) {
+        added++;
+        console.log(`[ok] added missing card #${issue.number}`);
+      }
+      if (existing?.status === desired) continue;
+      await setSingleSelect(itemId, status.id, optionId);
       reconciled++;
-      console.log(`[ok] ${issueRepo}#${num}: ${boardStatus} → ${target}`);
+      console.log(`[ok] ${repo}#${issue.number}: ${existing?.status ?? '(unset)'} → ${desired}`);
     } catch (e) {
-      console.log(`[warn] reconcile ${issueRepo}#${num}: ${e.message}`);
+      console.log(`[warn] reconcile ${repo}#${issue.number}: ${e.message}`);
     }
   }
 

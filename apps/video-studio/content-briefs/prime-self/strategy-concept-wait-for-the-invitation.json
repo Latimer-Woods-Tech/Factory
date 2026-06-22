@@ -1,0 +1,77 @@
+{
+  "briefKey": "strategy-concept-wait-for-the-invitation",
+  "key": "strategy-concept-wait-for-the-invitation",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "strategy-concept",
+  "title": "Strategy: Wait for the Invitation",
+  "description": "You do not need to push your way into rooms. The right invitations arrive when you are visible and available. Unsolicited advice is not the same as a genuine invitation — learn the difference.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Strategy: Wait for the Invitation",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"wait for the invitation\" means for them and feels recognised, not labelled.",
+  "targetPersona": "strategy_wait-for-the-invitation",
+  "keyPoints": [
+    "You do not need to push your way into rooms.",
+    "The right invitations arrive when you are visible and available.",
+    "Unsolicited advice is not the same as a genuine invitation",
+    "learn the difference."
+  ],
+  "forbiddenClaims": [
+    "following your strategy guarantees a specific outcome",
+    "you will never feel resistance again",
+    "strategy is a rigid rule rather than a felt practice"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "strategy-concept-wait-for-the-invitation-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Strategy: Wait for the Invitation — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "strategy-concept-wait-for-the-invitation-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Strategy: Wait for the Invitation — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "strategy-concept-wait-for-the-invitation-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Strategy: Wait for the Invitation — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "strategy-concept-wait-for-the-invitation-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Strategy: Wait for the Invitation — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Strategy: Wait for the Invitation — Your Energy Blueprint",
+    "description": "You do not need to push your way into rooms. The right invitations arrive when you are visible and available. Unsolicited advice is not the same as a genuine invitation — learn the difference."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('strategy', 'wait for the invitation')",
+  "status": "planned"
+}

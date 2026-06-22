@@ -1,0 +1,295 @@
+{
+  "repo_key": "KC",
+  "repo_name": "kairoscouncil",
+  "repo_path": "Latimer-Woods-Tech/kairoscouncil",
+  "timestamp": "2026-06-22T19:11:51.087059+00:00",
+  "cohesion": 27,
+  "dimensions": [
+    {
+      "key": "stack",
+      "title": "Stack",
+      "weight": 10,
+      "score": 20,
+      "checks": [
+        {
+          "name": "wrangler.jsonc present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "ESM ('type': 'module')",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Hono in deps",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "No node:crypto imports",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "No Express",
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "code_patterns",
+      "title": "Code patterns",
+      "weight": 15,
+      "score": 20,
+      "checks": [
+        {
+          "name": "@latimer-woods-tech/logger in deps",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "@latimer-woods-tech/errors in deps",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "@latimer-woods-tech/monitoring in deps",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "No console.log in src/",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "Typed Env bindings",
+          "passed": false,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "tests",
+      "title": "Tests",
+      "weight": 15,
+      "score": 40,
+      "checks": [
+        {
+          "name": "vitest.config present",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "playwright.config present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "tests/ or test/ dir present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Smoke tier present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Coverage thresholds set",
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "observability",
+      "title": "Observability",
+      "weight": 10,
+      "score": 0,
+      "checks": [
+        {
+          "name": "Sentry import",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "@lwt/monitoring consumed",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Sourcemap upload step",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "SLO doc present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Structured log fields",
+          "passed": false,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "security",
+      "title": "Security",
+      "weight": 15,
+      "score": 20,
+      "checks": [
+        {
+          "name": "CodeQL workflow present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "npm audit step in CI",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "No NPM_TOKEN in workflows",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "Trusted Publishers (OIDC)",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Renovate config present",
+          "passed": false,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "schema",
+      "title": "Schema",
+      "weight": 5,
+      "score": 33,
+      "checks": [
+        {
+          "name": "Migrations directory present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "ROLLBACK block enforced",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "Numbered file naming",
+          "passed": false,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "workflows",
+      "title": "Workflows",
+      "weight": 10,
+      "score": 67,
+      "checks": [
+        {
+          "name": "\u22645 workflow files",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "Uses _app-ci reusable",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "CODEOWNERS present",
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "release",
+      "title": "Release",
+      "weight": 5,
+      "score": 67,
+      "checks": [
+        {
+          "name": "CHANGELOG.md present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Semver version (n.n.n)",
+          "passed": true,
+          "detail": ""
+        },
+        {
+          "name": "ADR directory present",
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "performance",
+      "title": "Performance",
+      "weight": 10,
+      "score": 0,
+      "checks": [
+        {
+          "name": "p95 budgets declared",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Canary or post-deploy verify",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Synthetic / smoke workflow",
+          "passed": false,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "key": "privacy",
+      "title": "Privacy",
+      "weight": 5,
+      "score": 25,
+      "checks": [
+        {
+          "name": "PII_INVENTORY.md present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Retention policy doc present",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "DSR endpoint hints (export + delete)",
+          "passed": false,
+          "detail": ""
+        },
+        {
+          "name": "Migration PII columns documented",
+          "passed": true,
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "notes": []
+}

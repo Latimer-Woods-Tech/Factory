@@ -1,0 +1,76 @@
+{
+  "briefKey": "gate-concept-2",
+  "key": "gate-concept-2",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "gate-concept",
+  "title": "Gate 2: The Receptive",
+  "description": "You have a deep inner compass that always knows your true direction, even when your mind can't explain it. Trust that pull. Your body knows where you need to go before your logic catches up.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Gate 2: The Receptive",
+  "learningGoal": "The viewer understands what Gate 2 (The Receptive — Devoted receptivity as the foundation of authentic direction) means in their daily life, in plain terms.",
+  "targetPersona": "gate_2",
+  "keyPoints": [
+    "You have a deep inner compass that always knows your true direction, even when your mind can't explain it.",
+    "Trust that pull.",
+    "Your body knows where you need to go before your logic catches up."
+  ],
+  "forbiddenClaims": [
+    "a gate guarantees a talent you do not have to develop",
+    "gates rank people as better or worse",
+    "an activated gate forces a fixed behaviour"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "gate-concept-2-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Gate 2: The Receptive — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "gate-concept-2-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Gate 2: The Receptive — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "gate-concept-2-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Gate 2: The Receptive — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "gate-concept-2-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Gate 2: The Receptive — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Gate 2: The Receptive — Your Energy Blueprint",
+    "description": "You have a deep inner compass that always knows your true direction, even when your mind can't explain it. Trust that pull. Your body knows where you need to go before your logic catches up."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "GATE_EXPLANATIONS[2]",
+  "status": "planned"
+}

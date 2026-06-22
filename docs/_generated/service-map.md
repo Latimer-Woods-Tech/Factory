@@ -7,14 +7,14 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Service Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-07
+last_generated: 2026-06-18
 source:
   - docs/service-registry.yml
 ---
 
 # Factory Service Map
 
-**Source hash:** `sha256:a89745921251c0bb277acba1526a535b6430771de14cdf697ce0566ab9e0bb34`
+**Source hash:** `sha256:9e3bc3ad5acb9adec77d57b85664c45cfb9f2c50ee88ae33828604622b87ccec`
 
 ```mermaid
 flowchart LR
@@ -26,6 +26,7 @@ flowchart LR
   workers --> worker_prime_self["prime-self\nhttps://api.selfprime.net"]
   workers --> worker_schedule_worker["schedule-worker\nhttps://schedule.latwoodtech.work"]
   workers --> worker_video_cron["video-cron\nhttps://video-cron.latwoodtech.work"]
+  workers --> worker_inbound_oracle["inbound-oracle\nhttps://inbound-oracle.latwoodtech.work"]
   workers --> worker_synthetic_monitor["synthetic-monitor\nhttps://monitor.latwoodtech.work"]
   workers --> worker_status_prober["status-prober\nhttps://status.latwoodtech.work"]
   workers --> worker_admin_studio_staging["admin-studio-staging\nhttps://api.admin.latimerwoods.dev"]
@@ -39,6 +40,7 @@ flowchart LR
   workers --> worker_factory_supervisor["factory-supervisor\nhttps://supervisor.latwoodtech.work"]
   workers --> worker_lead_gen["lead-gen\nhttps://lead-gen.adrper79.workers.dev"]
   workers --> worker_factory_core_api["factory-core-api\nhttps://core.latwoodtech.work"]
+  workers --> worker_factory_network["factory-network\nhttps://network.latwoodtech.work"]
   workers --> worker_factory_events_replay["factory-events-replay\nurl unknown"]
   workers --> worker_webhook_fanout["webhook-fanout\nhttps://webhooks.latwoodtech.work/stripe"]
   workers --> worker_daily_brief["daily-brief\nhttps://dbrief.latwoodtech.work"]
@@ -48,8 +50,11 @@ flowchart LR
   workers --> worker_qa_tools_worker["qa-tools-worker\nhttps://api.qa.latimerwoods.dev"]
   workers --> worker_marketing_supervisor["marketing-supervisor\nhttps://marketing.latwoodtech.work"]
   workers --> worker_marketing_supervisor_staging["marketing-supervisor-staging\nhttps://marketing-supervisor-staging.adrper79.workers.dev"]
+  workers --> worker_mysticapi["mysticapi\nhttps://api.mysticapi.com"]
+  workers --> worker_watch_selfprime["watch-selfprime\nhttps://watch.selfprime.net"]
   workers --> worker_referrals["referrals\nhttps://referrals.latwoodtech.work"]
   workers --> worker_llm_rank_worker["llm-rank-worker\nhttps://llm-rank.latwoodtech.work"]
+  workers --> worker_analytics_proxy["analytics-proxy\nhttps://analytics.latwoodtech.work"]
   pages --> page_prime_self_ui["prime-self-ui\nurl unknown"]
   pages --> page_admin_studio_ui["admin-studio-ui\nurl unknown"]
   pages --> page_admin_studio_ui_storybook["admin-studio-ui-storybook\nurl unknown"]

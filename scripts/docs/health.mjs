@@ -199,6 +199,33 @@ function topCounts(items, key, limit) {
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]))).slice(0, limit);
 }
 
+function checkLinkRatchet() {
+  const baselinePath = join(ROOT, 'docs', '_catalog', 'link-baseline.json');
+  const reportPath = join(ROOT, 'docs', '_catalog', 'link-report.json');
+  if (!existsSync(baselinePath) || !existsSync(reportPath)) return false;
+
+  const baseline = readJsonIfExists(baselinePath);
+  const report = readJsonIfExists(reportPath);
+  if (!baseline || !report) return false;
+
+  const baselineCount = baseline.broken ?? Infinity;
+  const currentCount = report.counts?.broken ?? 0;
+  const isNewlyIntroduced = currentCount > baselineCount;
+
+  if (isNewlyIntroduced) {
+    const delta = currentCount - baselineCount;
+    console.error(`[docs:link-ratchet] FAIL: ${currentCount} broken links exceeds baseline of ${baselineCount} (+${delta} new). Fix the new broken links or update docs/_catalog/link-baseline.json if they are pre-existing.`);
+    return true;
+  }
+
+  if (currentCount < baselineCount) {
+    console.log(`[docs:link-ratchet] improved: ${currentCount} broken links (baseline: ${baselineCount}, -${baselineCount - currentCount}). Consider lowering link-baseline.json to lock in the improvement.`);
+  } else {
+    console.log(`[docs:link-ratchet] OK: ${currentCount} broken links (at baseline)`);
+  }
+  return false;
+}
+
 function main() {
   mkdirSync(CATALOG_DIR, { recursive: true });
 
@@ -212,8 +239,10 @@ function main() {
   });
 
   writeLinkReport();
+  const linkRatchetFailed = checkLinkRatchet();
 
   const blockingFailures = checks.filter((check) => check.blocking && check.exit_code !== 0);
+  if (linkRatchetFailed) blockingFailures.push({ id: 'docs.link-ratchet', blocking: true, exit_code: 1, severity: 'error' });
   const report = {
     version: 1,
     generated_by: 'scripts/docs/health.mjs',

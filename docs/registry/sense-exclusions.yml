@@ -1,0 +1,23 @@
+# Sense-layer exclusions — repos deliberately kept OUT of the Platform Brain.
+#
+# PURPOSE:
+#   build-entity-graph.mjs enumerates every active org repo and turns each into a
+#   graph node. A repo listed here (or carrying the GitHub topic `platform-exclude`)
+#   becomes a node with scope=excluded and is NEVER ticketed by opportunity-scan.
+#   This makes "out of scope" an explicit, auditable decision rather than a silent
+#   omission — the whole point of the sense layer being *evenly* applied.
+#
+#   Repos on docs/service-registry.yml `automation_denylist` are excluded
+#   STRUCTURALLY (scope=denylisted) without needing an entry here — FRIDGE rule 1.
+#
+# TWO WAYS TO EXCLUDE A REPO:
+#   1. Add it here (canonical, versioned, with a reason + date).
+#   2. Add the GitHub topic `platform-exclude` to the repo (operator-facing, no PR).
+#
+# FIELDS: repo (bare org repo name), reason, since (ISO date).
+
+exclusions: []
+# No repos are currently excluded — every active org repo is in-scope for the sense
+# layer (operator decision, 2026-06-08). factory-admin is now tracked as its own app
+# (its admin-studio alias was removed). To exclude a repo later, add an entry here
+# ({ repo, reason, since }) or apply the `platform-exclude` GitHub topic.

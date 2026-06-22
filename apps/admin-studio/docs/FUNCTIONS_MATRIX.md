@@ -62,14 +62,12 @@
 |FA-OBS-005|Synthetic checks|`/synthetic/*` → `src/routes/synthetic.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|2|Audit-gated|
 |FA-OBS-006|Ops runbooks|`/ops/*` → `src/routes/ops.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|2|Audit-gated|
 
-## 6. Creators, Payouts & Stripe Connect
+## 6. Studio Billing (own SaaS subscriptions)
+> The creator-economy / Stripe Connect surface (creator onboarding, admin creators, payouts, Connect webhooks) was **removed 2026-06-22** — it was an orphaned third Connect implementation duplicating Capricast and SelfPrime on the shared `acct_1SlCcFAW1229TZte` platform. Tables dropped in migration `0010`. Only Studio's own subscription billing remains.
+
 |ID|Feature|Endpoint/Component|Sentry Project|Manual Test|Automated Test|Status|Owner|Last Verified|Issue/PR|Weight|Notes|
 |---|---|---|---|---|---|---|---|---|---|---|---|
-|FA-PAY-001|Creator onboarding|`/api/creator/onboarding/*` → `src/routes/creator-onboarding.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Migration 0002|
-|FA-PAY-002|Admin creators|`/api/admin/creators/*` → `src/routes/creators.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|2||
-|FA-PAY-003|Admin payouts|`/api/admin/payouts/*` → `src/routes/payouts.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Migration 0003|
-|FA-PAY-004|Stripe Connect webhooks|`POST /webhooks/stripe-connect` → `src/routes/webhooks-stripe-connect.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Public, signed|
-|FA-PAY-005|Studio subscriptions webhook|`POST /webhooks/studio-subscriptions` → `src/routes/webhooks-studio-subscriptions.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Public, signed|
+|FA-BILL-001|Studio subscriptions webhook|`POST /webhooks/studio-subscriptions` → `src/routes/webhooks-studio-subscriptions.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-06-22|—|5|Public, signed; drives entitlements|
 
 ## 7. Feature Flags, DSR & Digest
 |ID|Feature|Endpoint/Component|Sentry Project|Manual Test|Automated Test|Status|Owner|Last Verified|Issue/PR|Weight|Notes|

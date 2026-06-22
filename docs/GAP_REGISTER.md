@@ -22,7 +22,7 @@ Source synthesis: `documents/factory/2026-05-11_HOLISTIC_GAP_REVIEW.md` (Sauna-s
 | G3 | Aggregator has no heartbeat (silent cron failure goes unnoticed) | **closed** | @sauna | stage-1 | `.github/workflows/dead-mans-switch.yml` shipped via PR [#684](https://github.com/Latimer-Woods-Tech/Factory/pull/684) + schedule + cold-start tolerance via [#687](https://github.com/Latimer-Woods-Tech/Factory/pull/687). Fires 11:11 UTC daily; alerts Pushover if `docs/completion-tracker.json` is >26h stale. Cold-start tolerance prevents false-positive on first-ever run. |
 | G4 | "Clean run" was undefined for trust ladder | **closed** | @adrper79-dot | stage-0 | PR #624 (merged) added `docs/supervisor/TRUST_LADDER.md` with 6-criteria definition |
 | G5 | Claude reviewer not calibrated | **closed** (tuning complete) | @sauna | stage-1 | Shadow run on last 50 PRs across org; FN < 5%, FP < 10%; per ADR-0003. CLAUDE.md Hard Constraints scope clarification added: constraints apply to Workers production code only; `.github/scripts/**/*.mjs` (Node.js) are exempt. |
-| G6 | Bootstrap workflow on PR #622 hasn't run yet | open (sequence dep) | @adrper79-dot | stage-0 | After PR #622 merges, dispatch `bootstrap-completion-tracker-private` from Factory Actions |
+| G6 | Bootstrap workflow on PR #622 hasn't run yet | **closed** | @adrper79-dot | stage-0 | `bootstrap-completion-tracker-private` dispatched and succeeded 2026-05-22 (run 26312104460). |
 | G7 | Memory hygiene — session decisions not all in `memory/` | **closed** | @sauna | stage-0 | `RECENT_ACTIVITY.md` updated 2026-05-11 with 8 durable decisions |
 
 ## P1 — Stage 1-2 must-fix

@@ -45,7 +45,7 @@ jobs:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 2
 
@@ -130,9 +130,31 @@ jobs:
         run: npm run typecheck
         working-directory: apps/admin-studio
 
+      # Hard ESLint gate (--max-warnings 0). The worker's 23 pre-existing lint
+      # errors were fixed at root cause, so this now blocks a regressing deploy.
+      - name: Lint
+        run: npm run lint
+        working-directory: apps/admin-studio
+
       - name: Test studio-core
         run: npm test
         working-directory: packages/studio-core
+
+      # Gate the deploy on admin-studio's OWN test suite, not just studio-core.
+      # The app-local vitest.config.ts runs the co-located src/**/*.test.ts unit
+      # tests that the monorepo-root config (include: tests/**) silently skipped.
+      - name: Test admin-studio (worker)
+        run: npm test
+        working-directory: apps/admin-studio
+
+      # Hard production supply-chain gate. Fails on any high/critical CVE in a
+      # dependency that ships in the deployed Worker bundle (hono, drizzle-orm,
+      # stripe, neon driver, …). Tolerates dev-only tooling (vitest/vite) that
+      # leaks into the tree via file:-linked workspace devDeps and never ships —
+      # clearing that needs a monorepo vitest 3→4 migration tracked separately.
+      - name: Production CVE gate
+        working-directory: apps/admin-studio
+        run: node scripts/prod-audit.mjs
 
       - name: Verify health pre-deploy (sanity)
         env:
@@ -231,6 +253,7 @@ jobs:
           studio_admin_email="${STUDIO_ADMIN_EMAIL:-${FALLBACK_STUDIO_ADMIN_EMAIL}}"
           studio_admin_password="${STUDIO_ADMIN_PASSWORD:-${FALLBACK_STUDIO_ADMIN_PASSWORD}}"
           anthropic_api_key="${ANTHROPIC_API_KEY:-${FALLBACK_ANTHROPIC_API_KEY}}"
+          github_token="${STUDIO_GITHUB_TOKEN:-${FALLBACK_GITHUB_TOKEN:-}}"
 
           password_hash=$(printf '%s' "$studio_admin_password" | sha256sum | cut -d' ' -f1)
 
@@ -245,7 +268,7 @@ jobs:
           put_required_secret ANTHROPIC_API_KEY "$anthropic_api_key"
           put_required_secret FACTORY_APP_ID "${{ secrets.FACTORY_APP_ID }}"
           put_required_secret FACTORY_APP_PRIVATE_KEY "${{ secrets.FACTORY_APP_PRIVATE_KEY }}"
-          put_required_secret FACTORY_APP_INSTALLATION_ID "${FACTORY_APP_INSTALLATION_ID:-${FALLBACK_FACTORY_APP_INSTALLATION_ID}}"
+          put_required_secret FACTORY_APP_INSTALLATION_ID "${{ secrets.FACTORY_APP_INSTALLATION_ID }}"
 
           put_optional_secret DEEPSEEK_API_KEY "${DEEPSEEK_API_KEY:-}"
           put_optional_secret XAI_API_KEY "${XAI_API_KEY:-}"

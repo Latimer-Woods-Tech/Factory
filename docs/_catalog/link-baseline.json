@@ -1,0 +1,5 @@
+{
+  "broken": 400,
+  "updated_at": "2026-06-16T00:00:00.000Z",
+  "note": "Pre-existing broken links snapshot. CI blocks on count > this baseline. Reduce by fixing links and lowering this number."
+}

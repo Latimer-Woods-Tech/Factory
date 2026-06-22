@@ -142,7 +142,7 @@ jobs:
     name: Dry-run pipeline (fixtures)
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -331,7 +331,7 @@ jobs:
           skip-token-revoke: true
 
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -388,6 +388,9 @@ jobs:
           fetch_to_env SCHEDULE_WORKER_URL             SCHEDULE_WORKER_URL schedule-worker-url
           fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
           fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
+          # Dedicated headless service credential (partner-publish step 3); the
+          # publish script prefers it over the legacy CAPRICAST_PUBLISH_TOKEN.
+          fetch_to_env RENDER_SERVICE_TOKEN            RENDER_SERVICE_TOKEN render-service-token || true
           fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
           # YouTube upload (optional — pipeline continues if not configured)
           fetch_to_env YOUTUBE_CLIENT_ID               YOUTUBE_CLIENT_ID youtube-client-id || true
@@ -422,9 +425,15 @@ jobs:
         # file:../bodygraph. apps/video-studio resolves video-studio's deps
         # transitively, so the engine's dist/ must exist before the install
         # below. bodygraph has zero deps, so it builds first.
+        # `video-studio` added last: apps/video-studio imports
+        # @latimer-woods-tech/video-studio (file:../../packages/video-studio),
+        # whose exports point at dist/ — without building it here the Remotion
+        # render dies with "Package path . is not exported … no valid target
+        # file" (first live cadence dispatch, run 27389394134). It depends on
+        # bodygraph, which builds first.
         run: |
           set -euo pipefail
-          for package in bodygraph errors monitoring logger neon llm video schedule; do
+          for package in bodygraph errors monitoring logger neon llm video schedule video-studio; do
             echo "=== ${package} ==="
             cd "packages/${package}"
             npm ci --ignore-scripts

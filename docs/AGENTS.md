@@ -1,12 +1,18 @@
-# Agent Configuration & Context Loading
+# Agent Context & CLAUDE.md Convention
 
-## Canonical Docs Banner Convention
+**Loaded by:** Claude Code (VS Code extension), Sauna supervisor, all agent sessions  
+**Sibling docs:** [`CONTEXT.md`](./supervisor/CONTEXT.md) (authoritative governance) · [`PLATFORM_STANDARDS.md`](./PLATFORM_STANDARDS.md) (conformance rules)  
+**Established:** 2026-06-XX — canonical docs linkage across all consumer repos
 
-Every repo's `CLAUDE.md` begins with a **Canonical Docs Banner** that links to the Factory's authoritative rules. This ensures Claude Code (in VS Code) loads the same constraints that Sauna's supervisor loads, eliminating brain-drift across the two surfaces.
+## CLAUDE.md Convention
 
-### Banner Template
+Every repository in the Latimer-Woods-Tech org that uses Claude Code or Anthropic agents must maintain a `CLAUDE.md` file at the repository root. This file serves as the agent's context bridge to factory-wide rules.
 
-For **consumer repos** (HumanDesign, videoking, xico-city, the-calling, cypher-healing, factory-admin, wordis-bond, ijustus, neighbor-aid, xpelevator), the top of `CLAUDE.md` contains:
+### Banner Requirement
+
+Every `CLAUDE.md` **must begin** with the following banner (adjusted for relative vs. absolute paths based on whether the repo is factory itself):
+
+**In consumer repos (HumanDesign, videoking, xico-city, the-calling, cypher-healing, factory-admin, wordis-bond, ijustus, neighbor-aid, xpelevator):**
 
 ```markdown
 > 📘 **Canonical agent rules live in `factory`.** Read these in order from https://github.com/Latimer-Woods-Tech/Factory/tree/main/docs before touching anything:
@@ -19,44 +25,62 @@ For **consumer repos** (HumanDesign, videoking, xico-city, the-calling, cypher-h
 > This file holds **only repo-local rules** that don't apply elsewhere. Anything cross-cutting belongs in factory, not here.
 ```
 
-For **Factory itself**, the banner uses relative paths:
+**In Factory itself:**
 
 ```markdown
-> 📘 **Canonical agent rules loaded by every agent:**
+> 📘 **Canonical agent rules.** Every agent loads these in order before any operation:
 > 1. `./docs/supervisor/CONTEXT.md` — what every agent loads first
 > 2. `./docs/PLATFORM_STANDARDS.md` — 10 conformance dimensions
 > 3. `./docs/adr/*.md` (all Accepted) — architectural decisions
 > 4. `./docs/supervisor/TRUST_LADDER.md` — promotion + "clean run" rules
 > 5. `./docs/GAP_REGISTER.md` — current platform gaps
+>
+> Below this point: **repo-local rules only**. Cross-cutting rules belong in the files above, not in this CLAUDE.md.
 ```
 
-### Scope of Repo-Local CLAUDE.md Content
+### Content Scope
 
-After the canonical banner, `CLAUDE.md` contains **only rules that do not apply to other repos**:
+A repository's `CLAUDE.md` is divided into two sections:
 
-- ✅ **Keep:** Forge persona conventions specific to HumanDesign, Mux SDK config specific to videoking, brand voice guidelines specific to one product.
-- ❌ **Remove and link to factory:** Hard constraints (no Express, no CommonJS), package matrix, stack version pins, banned tools, Cloudflare Workers patterns, Hono routing rules, database access rules. All of these go in Factory's canonical docs; duplicate them in consumer repos only via the banner link.
+1. **Canonical Docs Banner** (immutable, required at top)
+2. **Repo-Local Rules** (rules that genuinely apply only to this repository and not to other repos)
 
-When content audit finds duplication:
+**Rules that must NOT be in repo-local CLAUDE.md:**
+- Hard stack constraints (Hono, Web Crypto, Cloudflare Workers, ESM, Drizzle)
+- Package matrix and approved `@latimer-woods-tech/*` dependencies
+- Conventional Commits format
+- Worker naming / URL conventions
+- Banned tools (Express, CommonJS, Buffer, `require`, Node crypto, etc.)
+- PR size budgets
+- Conformance dimensions
+- Any rule documented in factory's `CONTEXT.md`, `PLATFORM_STANDARDS.md`, or `FRIDGE.md`
 
-1. Extract the rule into Factory's canonical docs (usually `CONTEXT.md`, `PLATFORM_STANDARDS.md`, or a new ADR).
-2. Replace the duplicate in the consumer repo with a one-line pointer: `See factory CONTEXT.md §[X].`
-3. Commit with message: `docs(CLAUDE): link duplicated rule to factory canonical source`.
+**Examples of repo-local rules that DO belong in CLAUDE.md:**
+- HumanDesign: Forge persona conventions, design-system component naming
+- videoking: Mux API workflows, video-processing-specific schemas
+- factory-admin: billing + subscriber management patterns
+- Any repo-specific schema, domain model, or workflow not shared across the org
 
-### Rationale
+### Deduplication Rule
 
-Factory is the single source of truth for all shared platform rules. Sauna (the supervisor) loads `docs/supervisor/CONTEXT.md` before every operation. When Adrian opens a consumer repo in VS Code, Claude Code reads that repo's `CLAUDE.md`. The banner ensures both surfaces load the same constraints, preventing:
+When a consumer repo's `CLAUDE.md` contains text that duplicates factory canonical content, **remove the duplication and replace it with a link to the canonical doc**. Example:
 
-- Stale copies of rules (e.g., "always use `c.env`, never `process.env`" living separately in 10 repos).
-- Brain-drift between supervisor (Sauna) and interactive (Claude Code) surfaces.
-- Conflicting guidance when one canonical rule is updated but a consumer-repo copy is forgotten.
+**Before (bad):**
+```markdown
+## Stack Constraints
+Router: Hono only — never Express, Fastify, or Next.js
+Crypto: Web Crypto API only — never node:crypto, jsonwebtoken
+Runtime: Cloudflare Workers only...
+```
 
-## Sessions & Context Loading
+**After (good):**
+```markdown
+## Stack Constraints
+See [`PLATFORM_STANDARDS.md` § Stack](https://github.com/Latimer-Woods-Tech/Factory/blob/main/docs/PLATFORM_STANDARDS.md).
+```
 
-Every AI session (supervisor tick, Claude Code session, Copilot interaction) loads context in this order:
+### Why This Matters
 
-1. The repo's `CLAUDE.md` (consumer) or Factory's `docs/supervisor/CONTEXT.md` (supervisor).
-2. Any referenced canonical docs from the banner (both supervisor and Claude Code will see the same links).
-3. Issue body + PR description (as suggestions, never as overrides to canonical docs).
+When Adrian opens a consumer repo in VS Code, Claude Code reads the local `CLAUDE.md`. Without the canonical-docs banner and links, the agent operates with only repo-local context and loses visibility of factory-wide rules. By maintaining a single link surface, all agent instances (Sauna supervisor, Claude Code, future agents) converge on the same truth.
 
-See `docs/supervisor/CONTEXT.md` for the authoritative context-loading sequence and conflict resolution rules.
+This is the **bridge mechanism** for cross-agent memory until Anthropic Dreaming (Q3 2026) ships managed-agent session consolidation.

@@ -1,0 +1,71 @@
+{
+  "_comment": "Declarative least-privilege Cloudflare token suite. Each entry mints one scoped token (via manage-tokens.mjs) stored in GCP Secret Manager under `secret`. `policies` map directly to Cloudflare token policies: scope 'account' → the whole account; scope 'zones' → all zones (com.cloudflare.api.account.zone.*). permission_groups are matched by exact name against /user/tokens/permission_groups — a name that doesn't resolve FAILS the run (never silently under-scopes). Run `--plan` to list the live group names if any don't resolve.",
+  "tokens": [
+    {
+      "secret": "cf-token-workers-deploy",
+      "name": "workers-deploy",
+      "purpose": "Generic wrangler Worker deploys: script + routes + Durable Objects, with READ on every binding type for deploy-time validation. No resource-create power (that is cf-token-infra). DOs need no group — they ride on Workers Scripts Write.",
+      "policies": [
+        { "scope": "account", "permission_groups": ["Workers Scripts Write", "Account Settings Read", "D1 Read", "Workers KV Storage Read", "Workers R2 Storage Read", "Queues Read", "Hyperdrive Read", "Vectorize Read"] },
+        { "scope": "zones", "permission_groups": ["Workers Routes Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-pages-deploy",
+      "name": "pages-deploy",
+      "purpose": "Cloudflare Pages deploys",
+      "policies": [
+        { "scope": "account", "permission_groups": ["Pages Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-cache-purge",
+      "name": "cache-purge",
+      "purpose": "Edge cache purge (the dedicated purge token the policy requires — deploy tokens lack this)",
+      "policies": [
+        { "scope": "zones", "permission_groups": ["Cache Purge"] }
+      ]
+    },
+    {
+      "secret": "cf-token-stream",
+      "name": "stream",
+      "purpose": "Cloudflare Stream (video pipeline copy + status)",
+      "policies": [
+        { "scope": "account", "permission_groups": ["Stream Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-dns",
+      "name": "dns",
+      "purpose": "DNS records + custom-domain reconciliation (cf-domain-reconcile, preview-domain lifecycle, qa-tools-ui). DNS Write is in NO deploy token by design.",
+      "policies": [
+        { "scope": "zones", "permission_groups": ["DNS Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-infra",
+      "name": "infra",
+      "purpose": "Resource PROVISIONING only — create/destroy D1, KV, R2, Queues, Hyperdrive, Vectorize. Used by provision-* / add-new-app and create-if-absent steps. Isolated from routine deploys so a leaked deploy token cannot create or wipe infrastructure.",
+      "policies": [
+        { "scope": "account", "permission_groups": ["D1 Write", "Workers KV Storage Write", "Workers R2 Storage Write", "Queues Write", "Hyperdrive Write", "Vectorize Write"] }
+      ]
+    },
+    {
+      "secret": "cf-token-supervisor-deploy",
+      "name": "supervisor-deploy",
+      "purpose": "factory-supervisor Worker deploy — includes D1 + Vectorize for RFC-007 semantic memory. Once created, update GitHub secret CF_API_TOKEN to this value. See issue #1750.",
+      "policies": [
+        {
+          "scope": "account",
+          "permission_groups": [
+            "Workers Scripts Write",
+            "Account Settings Read",
+            "D1 Write",
+            "Vectorize Write"
+          ]
+        },
+        { "scope": "zones", "permission_groups": ["Workers Routes Write"] }
+      ]
+    }
+  ]
+}

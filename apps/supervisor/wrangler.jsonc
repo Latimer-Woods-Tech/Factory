@@ -20,6 +20,24 @@
     "crons": ["0 11 * * 1-5"]
   },
 
+  // RFC-007 Phase 3: queue-backed incident write lane.
+  // supervisor-incident-queue: provisioned 2026-06-22 (id 8b61b5922a3b4602b294a4b8b08e1689)
+  // supervisor-incident-dlq:   provisioned 2026-06-22 (id 3f89941a4495474582d1d077aced031b)
+  "queues": {
+    "producers": [
+      { "binding": "INCIDENT_QUEUE", "queue": "supervisor-incident-queue" }
+    ],
+    "consumers": [
+      {
+        "queue": "supervisor-incident-queue",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30,
+        "max_retries": 3,
+        "dead_letter_queue": "supervisor-incident-dlq"
+      }
+    ]
+  },
+
   "durable_objects": {
     "bindings": [
       { "name": "SUPERVISOR", "class_name": "SupervisorDO" },
@@ -46,13 +64,29 @@
     }
   ],
 
+  // RFC-007 Phase 0: Workers AI binding for semantic memory (built-in, no provisioning needed).
+  // CF_API_TOKEN ("FACTORY MAIN") now carries Vectorize Write (added 2026-06-16, verified via
+  // index create→201/delete→200); deploy-supervisor.yml auto-provisions these indexes. Re #1750.
+  // RFC-008 Phase 0: factory-memory index provisioned 2026-06-22 (768d cosine, via CF API).
+  "vectorize": [
+    { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
+    { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" },
+    // RFC-008: unified memory substrate — runs, PRs, incidents, decisions, insights
+    { "binding": "VECTORIZE_MEMORY", "index_name": "factory-memory" }
+  ],
+  "ai": { "binding": "AI" },
+
   "vars": {
     "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/a1c8a33cbe8a3c9e260480433a0dbb06/prime-self",
     "VERTEX_PROJECT": "factory-495015",
     "VERTEX_LOCATION": "us-central1",
     "PER_RUN_CAP_CENTS": "500",
     "FACTORY_CORE_API_URL": "https://core.latwoodtech.work",
-    "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work"
+    "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work",
+    // RFC-007: semantic mode flag. off | shadow | live. Flipped to shadow 2026-06-22 (RFC-007 Phase 1 → active).
+    "SUPERVISOR_SEMANTIC_MODE": "shadow",
+    // RFC-008: reflection loop mode flag. off | shadow | live. Default off.
+    "REFLECTION_MODE": "off"
   },
 
   "env": {
@@ -61,7 +95,7 @@
       "routes": [
         { "pattern": "supervisor.latwoodtech.work/*", "zone_name": "latwoodtech.work" }
       ],
-      // vars, durable_objects, d1_databases, and migrations are NOT inherited by
+      // vars, durable_objects, d1_databases, migrations, ai, and vectorize are NOT inherited by
       // named environments — they must be repeated here or the production worker
       // deploys without them (this is why FACTORY_CORE_API_URL never reached the
       // prod worker, leaving P1.9 push-on-write dormant).
@@ -71,7 +105,11 @@
         "VERTEX_LOCATION": "us-central1",
         "PER_RUN_CAP_CENTS": "500",
         "FACTORY_CORE_API_URL": "https://core.latwoodtech.work",
-        "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work"
+        "FACTORY_CROSS_REPO_URL": "https://factory-cross-repo.latwoodtech.work",
+        // RFC-007: flipped to shadow 2026-06-22 — incident queue consumer now active.
+        "SUPERVISOR_SEMANTIC_MODE": "shadow",
+        // RFC-008: reflection loop mode flag. off | shadow | live.
+        "REFLECTION_MODE": "off"
       },
       "durable_objects": {
         "bindings": [
@@ -96,8 +134,30 @@
           "database_name": "factory-supervisor-ledger",
           "database_id": "1033b6bf-d38f-4948-8f3b-0de787c87f6b"
         }
-      ]
+      ],
+      "ai": { "binding": "AI" },
+      // Repeated for the named env (vectorize is not inherited from top-level). Re #1750.
+      "vectorize": [
+        { "binding": "VECTORIZE_TEMPLATES", "index_name": "supervisor-templates" },
+        { "binding": "VECTORIZE_INCIDENTS", "index_name": "supervisor-incidents" },
+        // RFC-008: unified memory substrate
+        { "binding": "VECTORIZE_MEMORY", "index_name": "factory-memory" }
+      ],
+      // RFC-007 Phase 3: queue bindings must be repeated in named env (not inherited).
+      "queues": {
+        "producers": [
+          { "binding": "INCIDENT_QUEUE", "queue": "supervisor-incident-queue" }
+        ],
+        "consumers": [
+          {
+            "queue": "supervisor-incident-queue",
+            "max_batch_size": 10,
+            "max_batch_timeout": 30,
+            "max_retries": 3,
+            "dead_letter_queue": "supervisor-incident-dlq"
+          }
+        ]
+      }
     }
   }
 }
-

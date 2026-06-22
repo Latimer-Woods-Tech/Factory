@@ -1,0 +1,61 @@
+name: Cloudflare Token Rotation
+
+# Builds + rotates the least-privilege Cloudflare token suite and stores each token in
+# GCP Secret Manager. Implements docs/_governance/cloudflare-key-policy.md via
+# scripts/cloudflare/manage-tokens.mjs. Root of trust: the CF_TOKEN_ADMIN bootstrap
+# secret (one-time manual create — see scripts/cloudflare/README.md).
+on:
+  schedule:
+    - cron: '0 5 1 * *' # monthly, 1st at 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'plan | create | rotate | verify'
+        required: true
+        default: 'plan'
+        type: choice
+        options: [plan, create, rotate, verify]
+
+permissions:
+  contents: read
+  id-token: write # WIF
+
+concurrency:
+  group: cloudflare-token-rotation
+  cancel-in-progress: false
+
+jobs:
+  manage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Authenticate to GCP (WIF)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          service_account: factory-sa@factory-495015.iam.gserviceaccount.com
+          workload_identity_provider: projects/891842778224/locations/global/workloadIdentityPools/github-factory/providers/github
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Manage Cloudflare token suite
+        env:
+          GCP_PROJECT: factory-495015
+          # On schedule → rotate; on manual dispatch → the chosen mode.
+          MODE: ${{ github.event_name == 'schedule' && 'rotate' || inputs.mode }}
+        run: |
+          set -euo pipefail
+          # Bootstrap token (root of trust) sourced from GCP Secret Manager, never a repo secret.
+          CF_TOKEN_ADMIN="$(gcloud secrets versions access latest --secret=CF_TOKEN_ADMIN --project=factory-495015 | tr -d '\r\n')"
+          export CF_TOKEN_ADMIN
+          node scripts/cloudflare/manage-tokens.mjs --"$MODE"
+          # Always confirm the stored suite is healthy after a create/rotate.
+          if [ "$MODE" = "create" ] || [ "$MODE" = "rotate" ]; then
+            node scripts/cloudflare/manage-tokens.mjs --verify
+          fi

@@ -24,6 +24,10 @@
     {
       "binding": "DB",
       "id": "efe957f404bb457593e6bd08b733b7c4"
+    },
+    {
+      "binding": "NETWORK_DB",
+      "id": "0492b962f88647899c72ce368f740218"
     }
   ],
 
@@ -54,11 +58,13 @@
       // Branded custom domain (zone latwoodtech.work). Reached server-to-server by
       // the supervisor push-on-write (P1.9) and by GitHub Actions OIDC token exchange.
       "routes": [
-        { "pattern": "core.latwoodtech.work", "custom_domain": true }
+        { "pattern": "core.latwoodtech.work", "custom_domain": true },
+        { "pattern": "network.latwoodtech.work", "custom_domain": true }
       ],
       // Hyperdrive is a non-inheritable binding — must be repeated per environment.
       "hyperdrive": [
-        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" }
+        { "binding": "DB", "id": "efe957f404bb457593e6bd08b733b7c4" },
+        { "binding": "NETWORK_DB", "id": "0492b962f88647899c72ce368f740218" }
       ],
       "vars": {
         "ENVIRONMENT": "production",

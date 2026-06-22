@@ -1,0 +1,76 @@
+{
+  "briefKey": "profile-concept-1-3",
+  "key": "profile-concept-1-3",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "profile-concept",
+  "title": "Profile 1/3",
+  "description": "You build your foundation through research and learn deepest by trial and error. Mistakes are your curriculum, not your failures — each one adds to your expertise.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "chronos",
+  "forgeTheme": "chronos",
+  "length_seconds": 60,
+  "duration_seconds": 60,
+  "topic": "Profile 1/3",
+  "learningGoal": "The viewer understands, in plain daily-life terms, what \"1/3\" means for them and feels recognised, not labelled.",
+  "targetPersona": "profile_1-3",
+  "keyPoints": [
+    "You build your foundation through research and learn deepest by trial and error.",
+    "Mistakes are your curriculum, not your failures",
+    "each one adds to your expertise."
+  ],
+  "forbiddenClaims": [
+    "your profile dictates your destiny",
+    "one profile is more gifted than another",
+    "the trial-and-error lines mean you are failing"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "profile-concept-1-3-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "Profile 1/3 — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "profile-concept-1-3-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "Profile 1/3 — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "profile-concept-1-3-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "Profile 1/3 — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "profile-concept-1-3-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "Profile 1/3 — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "Profile 1/3 — Your Energy Blueprint",
+    "description": "You build your foundation through research and learn deepest by trial and error. Mistakes are your curriculum, not your failures — each one adds to your expertise."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "getMeaning('profile', '1/3')",
+  "status": "planned"
+}

@@ -7,12 +7,15 @@
 declare module 'hono' {
   interface ContextVariableMap {
     requestId: string;
+    networkAppId: string;
   }
 }
 
 export interface Env extends Record<string, unknown> {
-  /** Hyperdrive binding for THE_FACTORY Neon project. wrangler.jsonc [[hyperdrive]]. */
+  /** Hyperdrive binding for THE_FACTORY Neon project (CI/CD data). wrangler.jsonc [[hyperdrive]]. */
   DB: { readonly connectionString: string };
+  /** Hyperdrive binding for the factory-network Neon project (cross-app identity graph). wrangler.jsonc [[hyperdrive]]. */
+  NETWORK_DB: { readonly connectionString: string };
   /** Root HS256 signing key used to mint scoped JWTs. wrangler secret JWT_SIGNING_KEY. */
   JWT_SIGNING_KEY: string;
   /**
@@ -46,4 +49,18 @@ export interface Env extends Record<string, unknown> {
    * Unset causes the route to return 401.
    */
   AUDIT_INGEST_KEY?: string;
+  /**
+   * Per-app bearer token for factory network layer M2M auth.
+   * Apps include this in `Authorization: Bearer <token>` when posting links/events.
+   * The SHA-256 hex hash is stored in factory_app_keys; plaintext never persisted.
+   * Not used by factory-core-api itself — injected into consumer apps (selfprime, capricast).
+   * Declared here for completeness; only NETWORK_DB and this comment document the M2M contract.
+   */
+  FACTORY_NETWORK_TOKEN?: string;
+  /**
+   * Shared outbound signal delivery key. Sent as `X-Factory-Signal-Key` when calling
+   * target app /api/internal/signal endpoints. Must match FACTORY_SIGNAL_KEY on
+   * each registered target app. wrangler secret FACTORY_OUTBOUND_SIGNAL_KEY.
+   */
+  FACTORY_OUTBOUND_SIGNAL_KEY?: string;
 }

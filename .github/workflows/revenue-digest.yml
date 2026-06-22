@@ -7,6 +7,9 @@ name: Revenue + Reliability Digest
 #   • buying durably (funnel conversion via PostHog)
 # Runs ~30 min after cost-observability so the daily Pushover sequence is:
 # completion → cost → revenue.
+#
+# RFC-006 §10: daily runs upload revenue snapshot as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10.
 on:
   schedule:
     - cron: '7 7 * * *' # daily 07:07 UTC (after cost digest at 06:37)
@@ -24,8 +27,7 @@ on:
         default: 'true'
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 concurrency:
   group: revenue-digest
@@ -45,7 +47,7 @@ jobs:
           owner: Latimer-Woods-Tech
           repositories: Factory
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
@@ -92,29 +94,11 @@ jobs:
           fi
           python scripts/revenue_digest.py $args
 
-      - name: Open auto-merge PR for revenue snapshots
-        env:
-          # App-minted token so the snapshot PR's labels can trigger downstream
-          # workflows (auto-merge, project-sync). The default GITHUB_TOKEN
-          # suppresses workflow_run/labeled cascades.
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-        run: |
-          set -euo pipefail
-          git add docs/revenue/ 2>/dev/null || true
-          if git diff --quiet --cached docs/revenue/; then
-            echo "No revenue changes to commit."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/revenue-snapshot-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(revenue): daily digest snapshot ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(revenue): daily revenue + reliability digest ($DATE)" \
-            --body "Automated daily revenue snapshot from \`revenue-digest.yml\`. Sources: Stripe MRR, Sentry user-facing errors, PostHog funnel." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload revenue snapshot artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: revenue-snapshot-${{ github.run_id }}
+          path: docs/revenue/
+          retention-days: 30
+          if-no-files-found: warn

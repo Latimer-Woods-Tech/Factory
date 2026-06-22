@@ -8,6 +8,9 @@ name: Launch Readiness Scorecard
 #   • docs/revenue/summary.json (when revenue digest #727 lands)
 # No external API calls; reads files only. Runs after revenue digest so
 # the inputs are fresh.
+#
+# RFC-006 §10: daily runs upload scorecard as a 30-day artifact.
+# Snapshot PRs retired per RFC-006 §10.
 on:
   schedule:
     - cron: '37 7 * * *' # daily 07:37 UTC (after revenue digest at 07:07)
@@ -18,8 +21,7 @@ on:
         required: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read # RFC-006 §10: artifact upload does not need write
 
 concurrency:
   group: launch-readiness
@@ -37,12 +39,9 @@ jobs:
           app-id: ${{ secrets.FACTORY_APP_ID }}
           private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
           owner: Latimer-Woods-Tech
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
-          # Use a long-lived PAT instead of GITHUB_TOKEN so the auto-merge PR
-          # the workflow opens triggers required-status workflows on PRs.
-          # Events authored by GITHUB_TOKEN do not retrigger workflow runs.
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Set up Python
@@ -59,32 +58,11 @@ jobs:
           fi
           python scripts/launch_readiness.py $args
 
-      - name: Open auto-merge PR for scorecard snapshot
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          git add docs/scorecard/ 2>/dev/null || true
-          if git diff --quiet --cached docs/scorecard/; then
-            echo "No scorecard changes to commit."
-            exit 0
-          fi
-          DATE=$(date -u +%F)
-          BRANCH="chore/scorecard-snapshot-$DATE-$(date -u +%H%M)"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Belt-and-braces: even though actions/checkout persisted credentials
-          # for GH_PAT above, force the remote URL to embed the token so a
-          # fresh `git push` from a new branch cannot fall back to interactive
-          # prompts (RC-3 in the 2026-05-23 scheduled-workflow triage).
-          git remote set-url origin \
-            "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${GITHUB_REPOSITORY}.git"
-          git checkout -b "$BRANCH"
-          git commit -m "chore(scorecard): daily launch readiness ($DATE)"
-          git push --set-upstream origin "$BRANCH"
-          gh pr create \
-            --title "chore(scorecard): daily launch readiness ($DATE)" \
-            --body "Automated daily Stage 2 Launch Readiness Scorecard from \`launch-readiness.yml\`. Pure aggregator over conformance, completion, cost, revenue snapshots already on main." \
-            --label automation \
-            --label documentation \
-            --label auto-merge
+      # RFC-006 §10: upload artifact instead of opening a snapshot PR.
+      - name: Upload scorecard artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: launch-readiness-${{ github.run_id }}
+          path: docs/scorecard/
+          retention-days: 30
+          if-no-files-found: warn

@@ -1,111 +1,86 @@
 # Admin Studio — API Surface
 
-Versioned reference for the `admin-studio` Worker. All routes are JSON unless noted.
+Grouped reference for the `admin-studio` Worker. All routes are JSON unless noted.
 
-> Phase A ships routes marked **✅** with full enforcement; **🔧** routes return stubs but their middleware (auth, audit, confirmation) is fully wired.
+> **Canonical, machine-readable surface:** [`apps/admin-studio/src/routes/manifest.ts`](../../apps/admin-studio/src/routes/manifest.ts), served at `GET /manifest` for catalog crawlers. This doc is the human-readable companion; if the two diverge, the manifest + the route mounts in [`src/index.ts`](../../apps/admin-studio/src/index.ts) win.
 
-| Method | Path              | Auth | Confirmation | Phase A      |
-| ------ | ----------------- | :--: | ------------ | ------------ |
-| GET    | `/health`         |  ❌  | —            | ✅           |
-| POST   | `/auth/login`     |  ❌  | —            | ✅ (stub user) |
-| POST   | `/auth/logout`    |  ✅  | —            | ✅           |
-| GET    | `/me/`            |  ✅  | —            | ✅           |
-| GET    | `/tests/`         |  ✅  | —            | 🔧 (static list) |
-| POST   | `/tests/runs`     |  ✅  | tier 1 (rev) | 🔧           |
-| GET    | `/tests/runs/:id` |  ✅  | —            | 🔧           |
-| GET    | `/deploys/`       |  ✅  | —            | 🔧           |
-| POST   | `/deploys/`       |  ✅  | tier 2+ (mr) | 🔧           |
-| POST   | `/ai/chat`        |  ✅  | —            | 🔧           |
-| POST   | `/ai/proposals`   |  ✅  | tier 2 (rev) | ❌ (501)     |
+> **Status (2026-06):** Live in production at `api.apunlimited.com`. ~29 route groups across auth, observability, test-running, the repo/AI editor, deploy control, capability provisioning, governance, and privacy. This is no longer the Phase-A stub the earlier version of this doc described.
+
+## Auth model
+
+Every authenticated route runs `envContextMiddleware`, which verifies an env-locked HS256 JWT and rejects tokens whose `env` claim ≠ the worker's `STUDIO_ENV` (`403`). Mutating routes additionally run `auditMiddleware` (append-only `studio_audit_log`) and, where destructive, `requireConfirmation` (tiered per env × reversibility — see [02-OPERATOR-QUICK-REF.md](./02-OPERATOR-QUICK-REF.md)).
+
+## Route groups
+
+### Public (no JWT)
+| Method | Path | Notes |
+| ------ | ---- | ----- |
+| GET | `/health` | Liveness + bound `STUDIO_ENV` (curl-verify target) |
+| POST | `/auth/login` | Env-locked JWT (email/password); also `POST /auth/google` (OAuth) |
+| GET | `/manifest` | Crawlable function manifest |
+| POST | `/webhooks/studio-tests` | GitHub Actions test-run callback (HMAC-signed) |
+| POST | `/webhooks/studio-subscriptions` | Studio's **own** SaaS billing → entitlements (Stripe-signed) |
+
+### Observability & ops (read-mostly)
+| Path | Purpose |
+| ---- | ------- |
+| `/me` | Current session → profile |
+| `/apps` | Cross-app `/health` fan-out (`/apps/health`) + CF deploy versions (`/apps/versions`) |
+| `/observability` | Sentry issues, PostHog tiles, telemetry-coverage matrix |
+| `/slo` | Availability + error-budget burn per app |
+| `/synthetic` | Synthetic user-journey probes with pass/fail trend |
+| `/audit` | Paginated audit-log viewer |
+| `/timeline` | Merged audit + Sentry + deploy stream |
+| `/smoke` | Smoke-probe runner (specs from the function catalog) |
+| `/catalog` | Crawled per-app `/manifest` inventory |
+
+### Build / ship
+| Path | Purpose |
+| ---- | ------- |
+| `/tests` | Dispatch test workflows; live SSE results |
+| `/deploys` | Trigger deploys (tiered confirmation); history via `/apps/versions` |
+| `/ai` | Streaming AI chat + tool use. `POST /ai/proposals` (diff/PR) is **still stubbed** |
+| `/repo` | GitHub branches/tree/file reads + commit + PR (feature branches only) |
+
+### Capability Studio
+| Path | Purpose |
+| ---- | ------- |
+| `/capabilities` | Browse governed concepts; resolve → preview → handoff → provision-staging; graph CRUD/compile. See [golden design](../CAPABILITY_DESIGN_STUDIO_GOLDEN_DESIGN.md). |
+
+### Governance
+| Path | Purpose |
+| ---- | ------- |
+| `/api/flags` | Flagship feature-flag panel (list / activity / toggle / rollout) |
+| `/v1/blocking` | Gates currently blocking deploys (reads `FACTORY_DB`) |
+| `/v1/command-center` | Factory runs / gates / artifacts view |
+| `/training-library`, `/jobs` | Proxy to schedule-worker |
+
+### Privacy / compliance
+| Path | Purpose |
+| ---- | ------- |
+| `/dsr` | Data-subject-request listing (`@latimer-woods-tech/compliance`) |
+| `/privacy` | `GET /export` + `DELETE /delete` — **stub payloads today** (GDPR contract reachable; full implementation tracked in GAP register) |
+
+> **Removed 2026-06 (#1790):** the creator-economy surface (`/api/creator/onboarding`, `/api/admin/creators`, `/api/admin/payouts`, `/webhooks/stripe-connect`). It was an orphaned third Stripe Connect implementation duplicating Capricast and SelfPrime on the shared `acct_1SlCcFAW1229TZte` platform. Connect onboarding now lives in the shared [`@latimer-woods-tech/stripe`](../../packages/stripe/) package (#1791).
 
 ## Error envelope
 
-All errors share this shape:
-
 ```json
-{
-  "error": "human-readable message",
-  "requestId": "uuid",
-  "detail": "extra info (non-prod only)"
-}
+{ "error": "human-readable message", "requestId": "uuid", "detail": "extra info (non-prod only)" }
 ```
 
 ## Status codes
 
-| Code | Meaning                                                    |
-| ---- | ---------------------------------------------------------- |
-| 200  | OK                                                         |
-| 204  | No Content (CORS preflight)                                |
-| 400  | Validation failure                                         |
-| 401  | Missing/invalid/expired JWT — UI auto-logs-out             |
-| 403  | Token env != worker env, or insufficient role              |
-| 412  | **Confirmation required** — see `tier` and `action` fields |
-| 500  | Server error — `requestId` for log correlation             |
+| Code | Meaning |
+| ---- | ------- |
+| 200 | OK |
+| 204 | No Content (CORS preflight) |
+| 400 | Validation failure |
+| 401 | Missing/invalid/expired JWT — UI auto-logs-out |
+| 403 | Token env ≠ worker env, or insufficient role |
+| 412 | **Confirmation required** — see `tier` and `action` fields |
+| 500 | Server error — `requestId` for log correlation |
 
 ## 412 Confirmation flow
 
-When a route requires confirmation, the first call returns `412` with:
-
-```json
-{
-  "error": "Confirmation required",
-  "tier": 2,
-  "reversibility": "manual-rollback",
-  "action": "deploy.trigger",
-  "expectedTokenHint": "Type the action name \"deploy.trigger\" to confirm"
-}
-```
-
-UI shows the modal, computes the confirm token, and retries with appropriate headers (`X-Confirmed: true` for tier 1; `X-Confirm-Token: <hex>` for tier 2+).
-
-## Per-route specs
-
-### `POST /auth/login`
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{ "email": "...", "password": "...", "env": "staging", "app": "wordis-bond" }
-```
-
-Returns:
-
-```json
-{ "token": "eyJ...", "expiresAt": 1700014400000 }
-```
-
-- `env` must match the worker's `STUDIO_ENV` binding (a staging worker will not issue prod tokens).
-- Token TTL = 4h prod / 24h other.
-- Phase B replaces the bootstrap stub with real password verification (Argon2 via Workers-safe lib).
-
-### `POST /tests/runs`
-
-```http
-POST /tests/runs
-Authorization: Bearer ...
-X-Confirmed: true
-Content-Type: application/json
-
-{ "suites": ["studio-core", "auth"], "filter": "describe-name" }
-```
-
-Add `?dryRun=true` (or `X-Dry-Run: true`) to receive the plan instead of dispatching.
-
-### `POST /deploys/`
-
-```http
-POST /deploys/
-Authorization: Bearer ...
-X-Confirm-Token: a1b2c3d4e5f60718
-
-{ "app": "wordis-bond", "ref": "main" }
-```
-
-- Production: requires `role=owner` (not just `admin`).
-- Local env: 400 (you can't deploy from a local-bound session).
-- Always supports dry-run for plan inspection.
-
-## OpenAPI / Hono RPC
-
-A typed client is auto-generated from Hono's `hc()` helper in Phase B and shipped as `@latimer-woods-tech/admin-studio-client` for use by other Factory apps that need to call Studio APIs (e.g. CI gating).
+A confirmation-gated route first returns `412` with `{ tier, reversibility, action, expectedTokenHint }`. The UI shows the modal, computes the confirm token, and retries with `X-Confirmed: true` (tier 1) or `X-Confirm-Token: <hex>` (tier ≥ 2). Full header contract: [02-OPERATOR-QUICK-REF.md](./02-OPERATOR-QUICK-REF.md).

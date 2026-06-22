@@ -2,8 +2,8 @@
   "repo_key": "HD",
   "repo_name": "HumanDesign",
   "repo_path": "Latimer-Woods-Tech/HumanDesign",
-  "timestamp": "2026-06-06T08:05:06.263138+00:00",
-  "cohesion": 53,
+  "timestamp": "2026-06-22T19:10:06.096524+00:00",
+  "cohesion": 56,
   "dimensions": [
     {
       "key": "stack",
@@ -42,7 +42,7 @@
       "key": "code_patterns",
       "title": "Code patterns",
       "weight": 15,
-      "score": 0,
+      "score": 20,
       "checks": [
         {
           "name": "@latimer-woods-tech/logger in deps",
@@ -61,7 +61,7 @@
         },
         {
           "name": "No console.log in src/",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -184,7 +184,7 @@
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 9 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql, migrations/20260603_rls_app_role.sql, migrations/20260603_rls_defn_lookups.sql, migrations/20260603_rls_policies.sql, migrations/20260603_rls_policies_crossuser.sql, migrations/20260603_rls_policies_writes.sql, migrations/20260604_add_comped_tier.sql, migrations/20260604_notifications_inbox.sql"
+          "detail": "WARN: 14 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/20260401_create_tier_schema.sql, migrations/20260401_insert_tier_data.sql, migrations/20260603_rls_app_role.sql, migrations/20260603_rls_defn_lookups.sql, migrations/20260603_rls_policies.sql, migrations/20260603_rls_policies_crossuser.sql, migrations/20260603_rls_policies_writes.sql, migrations/20260604_add_comped_tier.sql, migrations/20260604_notifications_inbox.sql, migrations/20260610_directory_waitlist.sql, migrations/20260610_light_up_features.sql, migrations/20260610_share_token.sql, migrations/20260617_backfill_diary_dreams.sql, migrations/20260617_curriculum_progress.sql"
         },
         {
           "name": "Numbered file naming",
@@ -286,7 +286,7 @@
         {
           "name": "Migration PII columns documented",
           "passed": true,
-          "detail": ""
+          "detail": "WARN: 1 existing migration PII column(s) not documented in PII_INVENTORY.md (debt \u2014 not blocking): migrations/20260610_directory_waitlist.sql: email"
         }
       ]
     }

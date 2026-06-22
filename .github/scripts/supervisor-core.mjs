@@ -35,11 +35,17 @@ async function gh(method, path, body) {
 }
 
 async function addLabels(repo, issue, labels) {
-  for (const label of labels) {
-    try {
-      await gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/labels`, { labels: [label] });
-    } catch (e) {
-      console.warn(`[WARN] label "${label}" on ${repo}#${issue}: ${e.message}`);
+  if (labels.length === 0) return;
+  try {
+    await gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/labels`, { labels });
+  } catch (e) {
+    console.warn(`[WARN] batch labels on ${repo}#${issue} failed; retrying individually: ${e.message}`);
+    for (const label of labels) {
+      try {
+        await gh('POST', `/repos/${ORG}/${repo}/issues/${issue}/labels`, { labels: [label] });
+      } catch (labelError) {
+        console.warn(`[WARN] label "${label}" on ${repo}#${issue}: ${labelError.message}`);
+      }
     }
   }
 }
@@ -53,6 +59,17 @@ async function removeLabel(repo, issueNumber, label) {
     await gh('DELETE', `/repos/${ORG}/${repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`);
   } catch (e) {
     console.warn(`[WARN] remove label "${label}" on ${repo}#${issueNumber}: ${e.message}`);
+  }
+}
+
+async function setStatusLabel(repo, issueNumber, desired) {
+  const issue = await gh('GET', `/repos/${ORG}/${repo}/issues/${issueNumber}`);
+  const current = issue.labels.map((label) => label.name).filter((label) => label.startsWith('status:'));
+  for (const label of current) {
+    if (label !== desired) await removeLabel(repo, issueNumber, label);
+  }
+  if (desired && !current.includes(desired)) {
+    await addLabels(repo, issueNumber, [desired]);
   }
 }
 
@@ -983,6 +1000,7 @@ async function releaseStaleClaimedIssues(outcomes) {
           console.warn(`[StaleClaim] could not remove ${label}: ${e.message.slice(0, 80)}`);
         }
       }
+      await setStatusLabel(repo, issue.number, null);
       await postComment(
         repo,
         issue.number,
@@ -1152,8 +1170,9 @@ async function main() {
           // we then mark it needs-human/blocked instead of pretending Copilot owns it.
           const copilotOk = await assignCopilot(repo, issue.number);
           await addLabels(repo, issue.number, copilotOk
-            ? ['supervisor:no-template', 'agent:claimed:copilot', 'status:in_progress']
-            : ['supervisor:no-template', 'needs-human', 'status:blocked']);
+            ? ['supervisor:no-template', 'agent:claimed:copilot']
+            : ['supervisor:no-template', 'needs-human']);
+          await setStatusLabel(repo, issue.number, copilotOk ? 'status:in_progress' : 'status:blocked');
           await removeLabel(repo, issue.number, 'agent:claimed:supervisor');
           await postComment(
             repo,
@@ -1178,7 +1197,8 @@ async function main() {
         }
 
         console.log(`[SKIP] ${repo}#${issue.number} "${issue.title}" — no template match`);
-        await addLabels(repo, issue.number, ['supervisor:no-template']);
+        await addLabels(repo, issue.number, ['supervisor:no-template', 'needs-human']);
+        await setStatusLabel(repo, issue.number, 'status:blocked');
         await postComment(
           repo,
           issue.number,
@@ -1210,7 +1230,8 @@ async function main() {
           issue.number,
           planComment(ctx, template, 'red', '\n\n@adrper79-dot — Red-tier: human review required before any execution.'),
         );
-        await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
+        await addLabels(repo, issue.number, ['agent:claimed:supervisor']);
+        await setStatusLabel(repo, issue.number, 'status:blocked');
         outcomes.push(
           `🔴 ${repo}#${issue.number}: ${template.id} — awaiting review. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
@@ -1219,7 +1240,8 @@ async function main() {
 
       if (tier === 'yellow') {
         await postComment(repo, issue.number, planComment(ctx, template, 'yellow'));
-        await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
+        await addLabels(repo, issue.number, ['agent:claimed:supervisor']);
+        await setStatusLabel(repo, issue.number, 'status:blocked');
         outcomes.push(
           `🟡 ${repo}#${issue.number}: ${template.id} — waiting ✅. https://github.com/${ORG}/${repo}/issues/${issue.number}`,
         );
@@ -1251,7 +1273,8 @@ async function main() {
       }
 
       await postComment(repo, issue.number, planComment(ctx, template, 'green', execNote));
-      await addLabels(repo, issue.number, ['agent:claimed:supervisor', 'status:in_progress']);
+      await addLabels(repo, issue.number, ['agent:claimed:supervisor']);
+      await setStatusLabel(repo, issue.number, 'status:in_progress');
 
       const landedPr = prInfo && !prInfo.skipped ? prInfo : null;
       const url = landedPr?.prUrl ?? `https://github.com/${ORG}/${repo}/issues/${issue.number}`;

@@ -21,7 +21,6 @@ import type { Env } from '../env.js';
 import { fetchFile } from '../lib/github-api.js';
 import type { LLMEnv } from '@latimer-woods-tech/llm';
 import { AGENT_TOOLS, executeTool, extractToolUse } from '../lib/ai-tools.js';
-import type { ToolUseBlock } from '../lib/ai-tools.js';
 import { getGithubToken, hasGithubAuth } from '../lib/github-app.js';
 
 // ---------------------------------------------------------------------------
@@ -214,14 +213,6 @@ const SYSTEM_PROMPTS: Record<AIChatRequest['mode'], string> = {
   ].join('\n'),
 };
 
-interface AnthropicStreamPayload {
-  type?: string;
-  delta?: { type?: string; text?: string };
-  usage?: { input_tokens?: number; output_tokens?: number };
-  message?: { usage?: { input_tokens?: number } };
-  error?: { message?: string };
-}
-
 interface AnalysisFinding {
   severity: string;
   summary: string;
@@ -247,99 +238,6 @@ function buildSystem(body: AIChatRequest): string {
 
 function truncate(s: string, max: number): string {
   return s.length <= max ? s : s.slice(0, max) + '\n…[truncated]';
-}
-
-/**
- * Translate Anthropic's native SSE into our normalised `AIChatEvent` stream.
- *
- * Anthropic frames look like:
- *   event: content_block_delta
- *   data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"…"}}
- *   event: message_delta
- *   data: {"type":"message_delta","usage":{"output_tokens":42}}
- *   event: message_stop
- *   data: {"type":"message_stop"}
- */
-function transformAnthropicSse(input: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let buffer = '';
-  let inputTokens = 0;
-  let outputTokens = 0;
-
-  return new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const reader = input.getReader();
-      const emit = (evt: AIChatEvent) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`));
-      };
-
-      try {
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const frames = buffer.split('\n\n');
-          buffer = frames.pop() ?? '';
-
-          for (const frame of frames) {
-            const dataLine = frame.split('\n').find((l) => l.startsWith('data:'));
-            if (!dataLine) continue;
-            const json = dataLine.slice(5).trim();
-            if (!json) continue;
-            let payload: AnthropicStreamPayload;
-            try {
-              const parsed: unknown = JSON.parse(json);
-              if (!isAnthropicStreamPayload(parsed)) continue;
-              payload = parsed;
-            } catch {
-              continue;
-            }
-            switch (payload.type) {
-              case 'message_start': {
-                if (typeof payload.message?.usage?.input_tokens === 'number') {
-                  inputTokens = payload.message.usage.input_tokens;
-                }
-                break;
-              }
-              case 'content_block_delta': {
-                if (payload.delta?.type === 'text_delta' && typeof payload.delta.text === 'string') {
-                  emit({ type: 'token', delta: payload.delta.text });
-                }
-                break;
-              }
-              case 'message_delta': {
-                if (typeof payload.usage?.output_tokens === 'number') {
-                  outputTokens = payload.usage.output_tokens;
-                }
-                break;
-              }
-              case 'message_stop': {
-                emit({ type: 'done', provider: 'anthropic', tokens: { input: inputTokens, output: outputTokens } });
-                break;
-              }
-              case 'error': {
-                emit({ type: 'error', message: payload.error?.message ?? 'anthropic error' });
-                break;
-              }
-              default:
-                // ignore content_block_start, ping, etc.
-                break;
-            }
-          }
-        }
-      } catch (err) {
-        emit({ type: 'error', message: (err as Error).message });
-      } finally {
-        controller.close();
-      }
-    },
-  });
-}
-
-function isAnthropicStreamPayload(value: unknown): value is AnthropicStreamPayload {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function isAnalysisFinding(value: unknown): value is AnalysisFinding {
@@ -470,10 +368,34 @@ ai.post('/chat', async (c) => {
     });
 
     if (!upstream.ok) {
+      // On 402 (credits) or 401 (bad key) fall back to the llm package's
+      // provider chain (grok → groq) so chat stays functional.
+      if (upstream.status === 402 || upstream.status === 401) {
+        const fallbackMissing = getMissingStrategyConfig('drafting', c.env);
+        if (fallbackMissing.length === 0) {
+          const fallbackResult = await complete(messages, toLlmEnv(c.env), resolveLlmOptions('drafting', body.mode, system));
+          if (fallbackResult.data) {
+            const fd = fallbackResult.data;
+            const encoder = new TextEncoder();
+            return new Response(
+              new ReadableStream<Uint8Array>({
+                start(controller) {
+                  const token: AIChatEvent = { type: 'token', delta: fd.content };
+                  const done: AIChatEvent = { type: 'done', provider: fd.provider, tokens: { input: fd.tokens.input, output: fd.tokens.output } };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(done)}\n\n`));
+                  controller.close();
+                },
+              }),
+              { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' } },
+            );
+          }
+        }
+      }
       return c.json({ error: 'upstream failed', status: upstream.status }, 502);
     }
 
-    const response = await upstream.json<any>();
+    const response = await upstream.json<{ error?: unknown; content?: unknown[] }>();
     if (response.error || !response.content) {
       return c.json({ error: 'upstream error', detail: response.error }, 502);
     }
@@ -489,7 +411,7 @@ ai.post('/chat', async (c) => {
         } else {
           toolResult = await executeTool(
             toolUse.name,
-            toolUse.input as Record<string, unknown>,
+            toolUse.input,
             await getGithubToken(c.env),
             { GCP_SA_KEY: c.env.GCP_SA_KEY },
           );
@@ -501,7 +423,7 @@ ai.post('/chat', async (c) => {
       // Append assistant response and tool result to messages
       agentMessages.push({
         role: 'assistant',
-        content: response.content,
+        content: response.content as Record<string, unknown>[],
       });
       agentMessages.push({
         role: 'user',
