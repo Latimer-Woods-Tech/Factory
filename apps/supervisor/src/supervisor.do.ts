@@ -430,12 +430,35 @@ export class SupervisorDO {
             source: `github:issue:${issue.number}`,
           });
 
+          // RFC-007 Phase 1: semantic recall — surface similar past runs in plan comment.
+          let similarRuns: import('./tools/github.js').SimilarRun[] | undefined;
+          const semanticMode = this.env.SUPERVISOR_SEMANTIC_MODE ?? 'off';
+          if (semanticMode === 'live' && this.env.AI && this.env.VECTORIZE_INCIDENTS) {
+            try {
+              const { queryNearest } = await import('./memory/vector.js');
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any -- VectorizeIndex cast
+              const matches = await queryNearest(this.env.AI, this.env.VECTORIZE_INCIDENTS as any, issue.title, 3);
+              if (matches.length > 0) {
+                similarRuns = matches
+                  .filter((m) => m.score > 0.75)
+                  .map((m) => ({
+                    run_id: m.id,
+                    score: m.score,
+                    outcome: String(m.metadata?.['outcome'] ?? 'unknown'),
+                    template_id: m.metadata?.['template_id'] ? String(m.metadata['template_id']) : undefined,
+                    issue_ref: m.metadata?.['issue_ref'] ? String(m.metadata['issue_ref']) : undefined,
+                  }));
+              }
+            } catch { /* best-effort — never block plan posting */ }
+          }
+
           const planMarkdown = formatPlanComment(
             template.id,
             template.description,
             template.tier,
             plan.steps,
             template.pattern_check,
+            similarRuns,
           );
 
           try {
