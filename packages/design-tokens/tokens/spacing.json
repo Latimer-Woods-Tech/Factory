@@ -1,0 +1,32 @@
+{
+  "spacing": {
+    "$type": "dimension",
+    "none": { "$value": "0px" },
+    "xs": { "$value": "4px" },
+    "sm": { "$value": "8px" },
+    "md": { "$value": "16px" },
+    "lg": { "$value": "24px" },
+    "xl": { "$value": "32px" },
+    "xxl": { "$value": "48px" },
+    "scale": {
+      "0": { "$value": "0px" },
+      "1": { "$value": "4px" },
+      "2": { "$value": "8px" },
+      "3": { "$value": "12px" },
+      "4": { "$value": "16px" },
+      "5": { "$value": "20px" },
+      "6": { "$value": "24px" },
+      "7": { "$value": "28px" },
+      "8": { "$value": "32px" },
+      "9": { "$value": "36px" },
+      "10": { "$value": "40px" },
+      "12": { "$value": "48px" },
+      "14": { "$value": "56px" },
+      "16": { "$value": "64px" },
+      "20": { "$value": "80px" },
+      "24": { "$value": "96px" },
+      "28": { "$value": "112px" },
+      "32": { "$value": "128px" }
+    }
+  }
+}

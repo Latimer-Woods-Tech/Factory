@@ -1,0 +1,50 @@
+{
+  "color": {
+    "$type": "color",
+    "primary": { "$value": "#0052CC", "$description": "Primary brand color — main CTAs, links, focus states" },
+    "primary-light": { "$value": "#E3F2FD" },
+    "primary-dark": { "$value": "#00309E" },
+    "success": { "$value": "#10B981" },
+    "success-light": { "$value": "#D1FAE5" },
+    "danger": { "$value": "#EF4444" },
+    "danger-light": { "$value": "#FEE2E2" },
+    "warning": { "$value": "#F59E0B" },
+    "warning-light": { "$value": "#FEF3C7" },
+    "info": { "$value": "#3B82F6" },
+    "info-light": { "$value": "#DBEAFE" },
+    "white": { "$value": "#FFFFFF" },
+    "black": { "$value": "#000000" },
+    "surface": {
+      "base": { "$value": "#FFFFFF" },
+      "elevated": { "$value": "#F9FAFB" },
+      "overlay": { "$value": "#F3F4F6" },
+      "base-dark": { "$value": "#1F2937" },
+      "elevated-dark": { "$value": "#374151" },
+      "overlay-dark": { "$value": "#4B5563" }
+    },
+    "text": {
+      "primary": { "$value": "#1F2937" },
+      "secondary": { "$value": "#6B7280" },
+      "tertiary": { "$value": "#9CA3AF" },
+      "disabled": { "$value": "#D1D5DB" },
+      "inverse": { "$value": "#FFFFFF" }
+    },
+    "border": {
+      "light": { "$value": "#E5E7EB" },
+      "default": { "$value": "#D1D5DB" },
+      "dark": { "$value": "#9CA3AF" }
+    },
+    "gray": {
+      "50": { "$value": "#F9FAFB" },
+      "100": { "$value": "#F3F4F6" },
+      "200": { "$value": "#E5E7EB" },
+      "300": { "$value": "#D1D5DB" },
+      "400": { "$value": "#9CA3AF" },
+      "500": { "$value": "#6B7280" },
+      "600": { "$value": "#4B5563" },
+      "700": { "$value": "#374151" },
+      "800": { "$value": "#1F2937" },
+      "900": { "$value": "#111827" }
+    }
+  }
+}
