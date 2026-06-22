@@ -388,6 +388,9 @@ jobs:
           fetch_to_env SCHEDULE_WORKER_URL             SCHEDULE_WORKER_URL schedule-worker-url
           fetch_to_env WORKER_API_TOKEN                WORKER_API_TOKEN worker-api-token
           fetch_to_env CAPRICAST_PUBLISH_TOKEN         CAPRICAST_PUBLISH_TOKEN capricast-publish-token
+          # Dedicated headless service credential (partner-publish step 3); the
+          # publish script prefers it over the legacy CAPRICAST_PUBLISH_TOKEN.
+          fetch_to_env RENDER_SERVICE_TOKEN            RENDER_SERVICE_TOKEN render-service-token || true
           fetch_to_env CAPRICAST_SYSTEM_CREATOR_ID     CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
           # YouTube upload (optional — pipeline continues if not configured)
           fetch_to_env YOUTUBE_CLIENT_ID               YOUTUBE_CLIENT_ID youtube-client-id || true
