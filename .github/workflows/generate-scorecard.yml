@@ -32,7 +32,7 @@ jobs:
 
       # RFC-006 §10: upload artifact instead of opening a snapshot PR.
       - name: Upload scorecard artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: implementation-scorecard-${{ github.run_id }}
           path: docs/IMPLEMENTATION_SCORECARD_AUTO.md
