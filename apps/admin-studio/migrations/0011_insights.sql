@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS insights (
   created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
 
   -- Time window the reflection swept over: '24h' (nightly) | '7d' (weekly)
-  window          TEXT          NOT NULL CHECK (window IN ('24h', '7d')),
+  -- Named time_window because `window` is a Postgres reserved word (window functions).
+  time_window     TEXT          NOT NULL CHECK (time_window IN ('24h', '7d')),
 
   -- Semantic kind of the insight
   kind            TEXT          NOT NULL CHECK (kind IN (
@@ -48,7 +49,7 @@ CREATE TABLE IF NOT EXISTS insights (
 
 CREATE INDEX IF NOT EXISTS ix_insights_created   ON insights (created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_insights_kind      ON insights (kind);
-CREATE INDEX IF NOT EXISTS ix_insights_window    ON insights (window);
+CREATE INDEX IF NOT EXISTS ix_insights_window    ON insights (time_window);
 CREATE INDEX IF NOT EXISTS ix_insights_surfaced  ON insights (surfaced_at DESC NULLS LAST)
   WHERE surfaced_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_insights_feedback  ON insights (feedback)
