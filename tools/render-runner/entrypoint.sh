@@ -86,6 +86,16 @@ render_one() {
   local FORGE_THEME="${9:-self}" HD_TYPE="${10:-}" SIGNATURE_GATES="${11:-[]}"
   log "── render job=$JOB_ID composition=$COMPOSITION_ID app=$APP_ID topic='$TOPIC'"
 
+  # Route the flat content compositions through the cinematic hero composition
+  # (forge atmosphere + body graph + kinetic arc). The MarketingVideo/TrainingVideo
+  # compositions are static text-on-gradient and not worth shipping. Walkthrough
+  # keeps its own composition (it shows real product screenshots).
+  case "$COMPOSITION_ID" in
+    MarketingVideo|TrainingVideo)
+      log "  routing $COMPOSITION_ID → EnergyBlueprintVideo (cinematic)"
+      COMPOSITION_ID=EnergyBlueprintVideo ;;
+  esac
+
   cd "$REPO_ROOT"
 
   # Step 1 — resolve ElevenLabs voice id

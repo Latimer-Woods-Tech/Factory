@@ -14,8 +14,25 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
       libnss3 libdbus-1-3 libatk1.0-0 libgbm1 libasound2 libxrandr2 \
       libxkbcommon0 libxfixes3 libxcomposite1 libxdamage1 libxext6 \
       libatk-bridge2.0-0 libpango-1.0-0 libcairo2 libcups2 libxshmfence1 \
-      fonts-liberation fonts-noto-color-emoji \
+      fonts-liberation fonts-noto-color-emoji fontconfig \
     && rm -rf /var/lib/apt/lists/*
+
+# Brand font (Inter) — without it the compositions request 'Inter' but the
+# headless Chromium has no match and falls back to an ugly monospace face, which
+# made every video look amateur. Try the Debian package, fall back to upstream
+# TTFs, then refresh the font cache so 'Inter' resolves at render time.
+RUN set -eux; \
+    apt-get update -qq; \
+    if apt-get install -y --no-install-recommends fonts-inter; then :; \
+    else \
+      apt-get install -y --no-install-recommends unzip; \
+      mkdir -p /usr/share/fonts/truetype/inter; \
+      curl -fsSL -o /tmp/inter.zip https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip; \
+      unzip -qo /tmp/inter.zip -d /tmp/inter; \
+      find /tmp/inter -name '*.ttf' -exec cp {} /usr/share/fonts/truetype/inter/ \; ; \
+    fi; \
+    fc-cache -f; \
+    rm -rf /var/lib/apt/lists/* /tmp/inter*
 
 WORKDIR /app
 # NOTE: deliberately NOT setting NODE_ENV=production — npm omits devDependencies
