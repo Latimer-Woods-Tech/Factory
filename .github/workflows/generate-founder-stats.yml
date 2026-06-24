@@ -12,7 +12,7 @@ name: Generate Founder Stats
 
 on:
   schedule:
-    - cron: '0 * * * *'   # every hour
+    - cron: '0 10 * * *'   # every hour
   workflow_dispatch:
 
 concurrency:
