@@ -3,7 +3,7 @@ name: Smoke — Telnyx Path
 on:
   schedule:
     # Free path smoke every 15 minutes. This does not send SMS or MMS.
-    - cron: '*/15 * * * *'
+    - cron: '*/30 * * * *'
     # Live carrier smoke twice daily. This sends one billable SMS per run.
     # 02:00 + 14:00 UTC ≈ evening + morning in US Eastern, with DST drift.
     - cron: '0 2,14 * * *'
