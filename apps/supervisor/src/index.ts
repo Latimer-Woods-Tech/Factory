@@ -54,6 +54,10 @@ export interface Env {
   REFLECTION_MODE?: 'off' | 'shadow' | 'live';
   /** RFC-007 Phase 3: producer binding for the incident write lane. */
   INCIDENT_QUEUE?: Queue<IncidentMessage>;
+  /** RFC-008 app-signals: selfprime prod API base (default https://api.selfprime.net). Override via wrangler.jsonc vars. */
+  SELFPRIME_API_URL?: string;
+  /** RFC-008 app-signals: selfprime X-Audit-Token for GET /api/analytics/audit (demand). Set via `wrangler secret put SELFPRIME_AUDIT_TOKEN`. Demand is skipped if absent. */
+  SELFPRIME_AUDIT_TOKEN?: string;
 }
 
 /** Message shape produced by handleRun on every terminal supervisor run. */
@@ -120,11 +124,14 @@ export default {
     return stub.fetch(request);
   },
 
-  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     const id = env.SUPERVISOR.idFromName('singleton');
     const stub = env.SUPERVISOR.get(id);
+    // The dedicated daily cron (0 12 * * *) runs cross-app signals + REFLECT only — it does
+    // NOT run the weekday issue-processing loop. The weekday cron (0 11 * * 1-5) is unchanged.
+    const path = controller.cron === '0 12 * * *' ? '/signals' : '/scheduled';
     ctx.waitUntil(
-      stub.fetch(new Request('https://supervisor/scheduled', { method: 'POST' })).then(() => undefined),
+      stub.fetch(new Request(`https://supervisor${path}`, { method: 'POST' })).then(() => undefined),
     );
   },
 

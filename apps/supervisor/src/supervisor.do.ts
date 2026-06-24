@@ -96,6 +96,8 @@ export class SupervisorDO {
           return await this.handleInsightFeedback(request);
         case 'POST /scheduled':
           return await this.handleScheduled();
+        case 'POST /signals':
+          return await this.handleSignals();
         case 'POST /plan':
           return await this.handlePlan(request);
         case 'POST /run':
@@ -569,6 +571,35 @@ export class SupervisorDO {
         errors,
       });
     }
+  }
+
+  /**
+   * RFC-008 app-signals — the dedicated daily cron path (0 12 * * *). Pulls cross-app
+   * daily signals (conformance + demand) into factory-memory, then runs REFLECT. Does NOT
+   * run the weekday issue-processing loop. Best-effort; gated by REFLECTION_MODE (stays
+   * 'shadow' until insights are validated). Also reachable via POST /signals (Bearer) for
+   * manual verification.
+   */
+  private async handleSignals(): Promise<Response> {
+    let appSignals: { embedded: number; skipped: number; errors: number } | undefined;
+    let reflectResult: { run_id: string; insights_written: number; insights_dropped: number; errors: number } | undefined;
+    if ((this.env.REFLECTION_MODE ?? 'off') !== 'off') {
+      try {
+        const { runAppSignals } = await import('./memory/app-signals.js');
+        appSignals = await runAppSignals(this.env);
+        console.log('[supervisor] APP_SIGNALS:', appSignals);
+      } catch (err) {
+        console.error('[supervisor] APP_SIGNALS failed (non-fatal):', err);
+      }
+      try {
+        const { runReflect } = await import('./memory/reflect.js');
+        reflectResult = await runReflect(this.env);
+        console.log('[supervisor] REFLECT (signals cron):', reflectResult);
+      } catch (err) {
+        console.error('[supervisor] REFLECT failed (non-fatal):', err);
+      }
+    }
+    return Response.json({ ok: true, appSignals, reflect: reflectResult });
   }
 
   /** RFC-008 Phase 2: return recent supervisor_insights rows. */
