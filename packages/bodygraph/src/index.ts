@@ -66,6 +66,7 @@ export type {
 // The Atom Registry — per-gate data spine (hexagram, mode, forge, color).
 export {
   ATOM_REGISTRY,
+  GATE_KB_KEYS,
   CENTER_TO_MUSICAL_MODE,
   CENTER_TO_FORGE,
   CENTER_COLOR,

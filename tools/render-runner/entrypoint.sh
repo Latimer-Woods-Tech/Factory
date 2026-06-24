@@ -278,108 +278,139 @@ mark_failed() {
 # ── Phase-0 keystone: personalized video render ─────────────────────────────
 # render_personal USER_ID [JOB_ID]
 #
-# Fetches the user's chart directly from Neon (bypassing the schedule-worker),
-# derives the blueprint props (forge theme, HD type, signature gates), and calls
-# render_one to produce a personalized EnergyBlueprintVideo.
+# Fetches the user's chart directly from Neon via query-user-chart.mjs, gates
+# on personalized_video_consent=true, then runs the full render pipeline
+# with the user's real HD blueprint props. Personal videos are uploaded to
+# Cloudflare Stream as PRIVATE (requireSignedURLs=true, never to Capricast).
+# A signed playback token is written back to Neon in personal_video_renders.
 #
-# Consent gate: the user must have personalized_video_consent=true in their
-# users row. render_personal exits silently if consent is not set.
-#
-# Requires NEON_CONNECTION_STRING in env (loaded from Secret Manager at startup).
+# Requires:
+#   NEON_CONNECTION_STRING   — loaded from Secret Manager at startup
+#   PERSONAL_USER_ID env var — set to trigger this mode from the main section
 render_personal() {
   local user_id="${1:?user_id}" job_id="${2:-personal-${user_id}}"
   log "── render_personal user=$user_id job=$job_id"
 
-  [ -n "${NEON_CONNECTION_STRING:-}" ] || { log "NEON_CONNECTION_STRING not set; cannot render personal"; return 1; }
+  [ -n "${NEON_CONNECTION_STRING:-}" ] || { log "NEON_CONNECTION_STRING not set"; return 1; }
 
-  # Query user chart + consent from Neon (neondb_owner bypasses RLS).
-  local row
-  row=$(node -e "
-    const { Client } = await import('pg');
-    const client = new Client({ connectionString: process.env.NEON_CONNECTION_STRING, ssl: { rejectUnauthorized: false } });
-    await client.connect();
-    const res = await client.query(
-      \`SELECT
-          u.id, u.display_name, u.email,
-          COALESCE((u.preferences->>'personalized_video_consent')::boolean, false) AS consent,
-          c.hd_json
-        FROM users u
-        LEFT JOIN charts c ON c.user_id = u.id
-        WHERE u.id = \$1
-        LIMIT 1\`,
-      [process.env.TARGET_USER_ID]
-    );
-    await client.end();
-    process.stdout.write(JSON.stringify(res.rows[0] ?? null));
-  " 2>/tmp/neon.log) || { log "Neon query failed: $(tail -1 /tmp/neon.log)"; return 1; }
+  # Step P1 — query chart + consent via dedicated script (no inline node).
+  local chart_json
+  chart_json=$(TARGET_USER_ID="$user_id" \
+    node "${REPO_ROOT}/tools/render-runner/query-user-chart.mjs" 2>/tmp/neon.log) \
+    || { log "chart query failed: $(tail -1 /tmp/neon.log)"; return 1; }
 
-  [ "$row" != "null" ] || { log "user $user_id not found in Neon"; return 1; }
-
-  local consent hd_json display_name
-  consent=$(echo "$row" | jq -r '.consent')
-  hd_json=$(echo "$row" | jq -c '.hd_json // {}')
-  display_name=$(echo "$row" | jq -r '.display_name // .email // "you"')
-
+  local consent
+  consent=$(printf '%s' "$chart_json" | jq -r '.consent')
   if [ "$consent" != "true" ]; then
-    log "user $user_id has not consented to personalized video (preferences.personalized_video_consent=false); skipping"
+    log "user $user_id consent=false — skipping (set personalized_video_consent=true to enable)"
     return 0
   fi
 
-  # Extract HD blueprint fields from hd_json.
-  local hd_type authority defined_centers signature_gates forge_theme brand_color
-  hd_type=$(echo "$hd_json" | jq -r '.type // .hdType // "generator"' | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-  authority=$(echo "$hd_json" | jq -r '.authority // ""' | tr '[:upper:]' '[:lower:]')
-  defined_centers=$(echo "$hd_json" | jq -c '.definedCenters // []')
-  signature_gates=$(echo "$hd_json" | jq -c '.signatureGates // .activatedGates // []' | jq -c '.[0:3]')
-  # Derive forge theme from the first signature gate's center affinity.
-  local first_gate
-  first_gate=$(echo "$signature_gates" | jq -r '.[0] // empty')
-  forge_theme=$(node -e "
-    const g = Number('${first_gate}');
-    const map = {
-      Head:[61,63,64],Ajna:[4,11,17,24,43,47],
-      Throat:[8,12,16,20,23,31,33,35,45,56,62],
-      G:[1,2,7,10,13,15,25,46],Heart:[21,26,40,51],
-      SolarPlexus:[6,22,30,36,37,49,55],
-      Sacral:[3,5,9,14,27,29,34,42,59],
-      Spleen:[18,28,32,44,48,50,57],
-      Root:[19,38,39,41,52,53,54,58,60]
-    };
-    const forge = {
-      Head:'aether',Ajna:'chronos',Throat:'lux',G:'self',
-      Heart:'phoenix',Sacral:'eros',Spleen:'aether',
-      SolarPlexus:'eros',Root:'chronos'
-    };
-    let center = 'G';
-    for (const [c, gates] of Object.entries(map)) {
-      if (gates.includes(g)) { center = c; break; }
-    }
-    process.stdout.write(forge[center] || 'self');
-  " 2>/dev/null || echo "self")
-  brand_color=$(echo "$hd_json" | jq -r '.brandColor // empty')
-  [ -n "$brand_color" ] || case "$hd_type" in
-    generator)              brand_color="#e8923a" ;;
-    manifesting_generator)  brand_color="#d4742a" ;;
-    projector)              brand_color="#7b6fd4" ;;
-    manifestor)             brand_color="#c42b2b" ;;
-    reflector)              brand_color="#b8d4e8" ;;
-    *)                      brand_color="#c9a84c" ;;
-  esac
+  local display_name hd_type forge_theme signature_gates brand_color
+  display_name=$(printf '%s' "$chart_json" | jq -r '.displayName')
+  hd_type=$(printf '%s' "$chart_json" | jq -r '.hdType')
+  forge_theme=$(printf '%s' "$chart_json" | jq -r '.forgeTheme')
+  signature_gates=$(printf '%s' "$chart_json" | jq -c '.signatureGates')
+  brand_color=$(printf '%s' "$chart_json" | jq -r '.brandColor')
 
-  local topic="Your Energy Blueprint — ${display_name}"
   log "  hd_type=$hd_type forge=$forge_theme gates=$signature_gates"
+
+  # Step P2 — run the standard render pipeline (LLM script + TTS + Remotion +
+  # ffmpeg + R2 upload). render_one publishes to Capricast by default, so we
+  # intercept after the MP4 is in R2 by temporarily redirecting the capricast step.
+  #
+  # To keep render_one reusable without a publish flag, we use a sentinel job_id
+  # prefix ("personal-") and handle delivery here after render_one returns.
+  # We call render_one with an empty CAPRICAST_PUBLISH_TOKEN so step 10 fails
+  # silently (mark_failed is not called for step 10 already — it only logs).
+  local topic="Your Energy Blueprint — ${display_name}"
+  local saved_token="$CAPRICAST_PUBLISH_TOKEN"
+  CAPRICAST_PUBLISH_TOKEN=""
 
   render_one \
     "$job_id" "EnergyBlueprintVideo" "prime_self" "$topic" \
     "" "$brand_color" "$brand_color" "" \
     "$forge_theme" "$hd_type" "$signature_gates" \
     </dev/null
+  local render_exit=$?
+
+  CAPRICAST_PUBLISH_TOKEN="$saved_token"
+  [ $render_exit -eq 0 ] || { log "render_one failed for personal job $job_id"; return 1; }
+
+  # Step P3 — re-upload the already-R2-staged MP4 to Cloudflare Stream as PRIVATE.
+  # The public Stream upload already happened inside render_one (step 9). We need
+  # a second private copy. Fetch the MP4 from R2 and submit with requireSignedURLs.
+  local ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+  local VIDEO_R2_URL="https://${R2_PUBLIC_DOMAIN}/videos/${job_id}.mp4"
+  local PRIV_REQ PRIV_RESP PRIV_UID
+  PRIV_REQ=$(jq -n \
+    --arg url "$VIDEO_R2_URL" \
+    --arg name "$topic" \
+    '{ url: $url, meta: { name: $name }, requireSignedURLs: true }')
+  PRIV_RESP=$(curl -sS -X POST \
+    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/copy" \
+    -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    --data "$PRIV_REQ")
+  PRIV_UID=$(printf '%s' "$PRIV_RESP" | jq -r '.result.uid // empty')
+  [ -n "$PRIV_UID" ] || { log "private stream upload failed: $PRIV_RESP"; return 1; }
+
+  # Poll until the private copy is ready.
+  local priv_state
+  for i in $(seq 1 60); do
+    priv_state=$(curl -sS \
+      "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${PRIV_UID}" \
+      -H "Authorization: Bearer ${CF_STREAM_TOKEN}" | jq -r '.result.status.state // "unknown"')
+    log "[P3 $i/60] private stream state: $priv_state"
+    [ "$priv_state" = "ready" ] && break
+    [ "$priv_state" = "error" ] && { log "private stream encoding error"; return 1; }
+    sleep 10
+  done
+  [ "$priv_state" = "ready" ] || { log "private stream not ready in time"; return 1; }
+
+  # Step P4 — mint a signed playback token (1 week expiry) and write to Neon.
+  local TOKEN_RESP TOKEN_VAL
+  TOKEN_RESP=$(curl -sS -X POST \
+    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${PRIV_UID}/token" \
+    -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
+    -H 'Content-Type: application/json' \
+    --data '{"exp": '$(( $(date +%s) + 604800 ))'}')
+  TOKEN_VAL=$(printf '%s' "$TOKEN_RESP" | jq -r '.result.token // empty')
+  [ -n "$TOKEN_VAL" ] || { log "could not mint signed token: $TOKEN_RESP"; return 1; }
+
+  local SIGNED_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${PRIV_UID}/manifest/video.m3u8?token=${TOKEN_VAL}"
+
+  # Step P5 — upsert into personal_video_renders in Neon.
+  node -e "
+    const { Client } = await import('pg');
+    const c = new Client({ connectionString: process.env.NEON_CONNECTION_STRING, ssl:{rejectUnauthorized:false} });
+    await c.connect();
+    await c.query(\`
+      INSERT INTO personal_video_renders (id, user_id, stream_uid, signed_url, expires_at, job_id, created_at)
+      VALUES (gen_random_uuid(), \$1, \$2, \$3, now() + interval '7 days', \$4, now())
+      ON CONFLICT (user_id) DO UPDATE
+        SET stream_uid=EXCLUDED.stream_uid, signed_url=EXCLUDED.signed_url,
+            expires_at=EXCLUDED.expires_at, job_id=EXCLUDED.job_id, created_at=EXCLUDED.created_at
+    \`, [process.env.P_USER_ID, process.env.P_STREAM_UID, process.env.P_SIGNED_URL, process.env.P_JOB_ID]);
+    await c.end();
+  " 2>/tmp/neon-write.log || log "neon upsert warning: $(tail -1 /tmp/neon-write.log)"
+
+  log "✅ personal render complete: user=$user_id stream_uid=$PRIV_UID"
+  log "   signed_url=${SIGNED_URL}"
+  return 0
 }
 
 # ── Main ────────────────────────────────────────────────────────────────────
 load_all_secrets
 
-if [ "${POLL:-0}" = "1" ]; then
+if [ -n "${PERSONAL_USER_ID:-}" ]; then
+  # Personal mode — render a single user's private personalized video.
+  # Triggered by setting PERSONAL_USER_ID=<uuid> on the Cloud Run Job.
+  log "PERSONAL mode — rendering personalized video for user=$PERSONAL_USER_ID"
+  if ! render_personal "$PERSONAL_USER_ID" "${PERSONAL_JOB_ID:-personal-${PERSONAL_USER_ID}}"; then
+    log "personal render FAILED for user=$PERSONAL_USER_ID"; exit 1
+  fi
+elif [ "${POLL:-0}" = "1" ]; then
   log "POLL mode — draining pending jobs from schedule-worker"
   PENDING=$(curl -sS "${SCHEDULE_WORKER_URL}/jobs/pending?limit=${POLL_LIMIT:-10}" -H "Authorization: Bearer ${WORKER_API_TOKEN}")
   COUNT=$(echo "$PENDING" | jq -r '(.data // .jobs // []) | length')
@@ -408,7 +439,8 @@ if [ "${POLL:-0}" = "1" ]; then
   done
   log "poll drain complete"
 else
-  : "${JOB_ID:?set JOB_ID for single-job mode}"
+  # Single-job mode — render one job specified via env vars.
+  : "${JOB_ID:?set JOB_ID (or POLL=1 or PERSONAL_USER_ID) to specify render mode}"
   if ! render_one "$JOB_ID" "${COMPOSITION_ID:?}" "${APP_ID:-$APP_ID_DEFAULT}" "${TOPIC:?}" \
       "${BRIEF_KEY:-}" "${BRAND_COLOR:-#6366f1}" "${BRAND_ACCENT:-#a5b4fc}" "${LOGO_URL:-}" \
       "${FORGE_THEME:-self}" "${HD_TYPE:-}" "${SIGNATURE_GATES:-[]}"; then

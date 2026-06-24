@@ -40,6 +40,12 @@ export interface AtomEntry {
   forgeTheme: ForgeTheme;
   /** Hex accent color derived from the gate's center. */
   color: string;
+  /**
+   * Knowledge-base keyword seeds: [signal, frequency, shadow, archetype].
+   * Sourced from gates.json (Gene Keys triad) in the HumanDesign KB.
+   * Used as seeded randomizers for LLM script generation and SEO metadata.
+   */
+  kbKeys: [string, string, string, string];
 }
 
 // ── Center → derivative maps ───────────────────────────────────────────────
@@ -109,6 +115,77 @@ export const MODE_DESCRIPTORS: Readonly<Record<MusicalMode, string>> = {
   Aeolian:    'natural minor scale, melancholic and introspective, emotional depth, wave-like and yearning',
   Locrian:    'Locrian mode, dissonant and pressured, tense grounding force, primal urgency, earthbound drive',
   Pentatonic: 'pentatonic scale, universal and open, timeless and unadorned, clean resonance, pure will',
+};
+
+// ── Gate KB keys [signal, frequency, shadow, archetype] ───────────────────
+// Sourced from HumanDesign/src/knowledgebase/genekeys/keys.json.
+// Tuple order: Gift · Siddhi · Shadow · Archetype (without "The ").
+
+export const GATE_KB_KEYS: Readonly<Record<number, [string, string, string, string]>> = {
+  1:  ['Origination',   'Radiance',      'Stagnation',     'Creator'],
+  2:  ['Navigation',    'Communion',     'Drift',          'Driver'],
+  3:  ['Emergence',     'Renewal',       'Turbulence',     'Innovator'],
+  4:  ['Translation',   'Grace',         'Rigidity',       'Universal Mind'],
+  5:  ['Attunement',    'Presence',      'Friction',       'Timekeeper'],
+  6:  ['Attunement',    'Serenity',      'Friction',       'Peacemaker'],
+  7:  ['Direction',     'Emanation',     'Manipulation',   'Guide'],
+  8:  ['Origination',   'Radiance',      'Conformity',     'Diamond'],
+  9:  ['Momentum',      'Sovereignty',   'Paralysis',      'Gatherer'],
+  10: ['Authenticity',  'Presence',      'Fixation',       'Natural'],
+  11: ['Vision',        'Radiance',      'Fog',            'Idealist'],
+  12: ['Articulation',  'Transmission',  'Performance',    'Speaker'],
+  13: ['Attunement',    'Communion',     'Deafness',       'Listener'],
+  14: ['Mastery',       'Emanation',     'Depletion',      'Master'],
+  15: ['Rhythm',        'Radiance',      'Stagnation',     'Magnet'],
+  16: ['Cultivation',   'Embodiment',    'Drift',          'Enthusiast'],
+  17: ['Navigation',    'Omnipresence',  'Fixation',       'Seer'],
+  18: ['Refinement',    'Wholeness',     'Corrosion',      'Healer'],
+  19: ['Attunement',    'Communion',     'Enmeshment',     'Sensitive'],
+  20: ['Grounding',     'Omnipresence',  'Scatter',        'Present One'],
+  21: ['Stewardship',   'Sovereignty',   'Grip',           'Leader'],
+  22: ['Transparency',  'Radiance',      'Contamination',  'Graceful'],
+  23: ['Translation',   'Distillation',  'Fragmentation',  'Simplifier'],
+  24: ['Crystallization','Stillness',    'Fixation',       'Inventor'],
+  25: ['Presence',      'Radiance',      'Armor',          'Mystic'],
+  26: ['Precision',     'Transparency',  'Inflation',      'Trickster'],
+  27: ['Nourishment',   'Abundance',     'Depletion',      'Nurturer'],
+  28: ['Commitment',    'Presence',      'Drift',          'Player'],
+  29: ['Perseverance',  'Surrender',     'Scatter',        'Devotee'],
+  30: ['Buoyancy',      'Radiance',      'Friction',       'Burning'],
+  31: ['Guidance',      'Grace',         'Rigidity',       'Alpha'],
+  32: ['Continuity',    'Reverence',     'Paralysis',      'Ancestor'],
+  33: ['Presence',      'Illumination',  'Drift',          'Witness'],
+  34: ['Vitality',      'Sovereignty',   'Strain',         'Natural'],
+  35: ['Vitality',      'Omnipresence',  'Depletion',      'Explorer'],
+  36: ['Vulnerability', 'Grace',         'Turbulence',     'Humanitarian'],
+  37: ['Reciprocity',   'Communion',     'Bargaining',     'Family'],
+  38: ['Resilience',    'Grace',         'Friction',       'Warrior'],
+  39: ['Momentum',      'Emanation',     'Turbulence',     'Provocateur'],
+  40: ['Restoration',   'Surrender',     'Depletion',      'Solitary'],
+  41: ['Incubation',    'Radiance',      'Drift',          'Mystic'],
+  42: ['Release',       'Reverence',     'Projection',     'Completer'],
+  43: ['Attunement',    'Revelation',    'Static',         'Breakthrough'],
+  44: ['Weaving',       'Communion',     'Friction',       'Alchemist'],
+  45: ['Distribution',  'Abundance',     'Hoarding',       'Gatherer'],
+  46: ['Savoring',      'Ascension',     'Burden',         'Ascender'],
+  47: ['Alchemy',       'Illumination',  'Compression',    'Alchemist'],
+  48: ['Wellspring',    'Omnipresence',  'Depletion',      'Well'],
+  49: ['Catalysis',     'Renewal',       'Isolation',      'Alchemist'],
+  50: ['Calibration',   'Resonance',     'Distortion',     'Guardian'],
+  51: ['Momentum',      'Revelation',    'Turbulence',     'Thunderbolt'],
+  52: ['Focus',         'Equanimity',    'Pressure',       'Mountain'],
+  53: ['Renewal',       'Regeneration',  'Stagnation',     'Evolver'],
+  54: ['Drive',         'Liberation',    'Hunger',         'Serpent Path'],
+  55: ['Liberation',    'Omnipresence',  'Paralysis',      'Dragonfly'],
+  56: ['Weaving',       'Emanation',     'Scatter',        'Storyteller'],
+  57: ['Attunement',    'Transparency',  'Hypervigilance', 'Oracle'],
+  58: ['Aliveness',     'Radiance',      'Depletion',      'Vitalizer'],
+  59: ['Vulnerability', 'Dissolution',   'Armor',          'Intimate'],
+  60: ['Resourcefulness','Equilibrium',  'Constriction',   'Master'],
+  61: ['Emergence',     'Reverence',     'Fracture',       'Holy Fool'],
+  62: ['Articulation',  'Omnipresence',  'Fragmentation',  'Wordsmith'],
+  63: ['Penetration',   'Stillness',     'Turbulence',     'Questioner'],
+  64: ['Weaving',       'Coherence',     'Scatter',        'Visionary'],
 };
 
 // ── Gate names (I-Ching hexagram titles in Human Design usage) ─────────────
@@ -189,7 +266,8 @@ const GATE_NAMES: Readonly<Record<number, string>> = {
 export const ATOM_REGISTRY: Readonly<Record<number, AtomEntry>> = Object.fromEntries(
   Array.from({ length: 64 }, (_, i) => {
     const gate = i + 1;
-    const center = GATE_TO_CENTER[gate];
+    // Every gate 1-64 is present in GATE_TO_CENTER — the ! is safe.
+    const center = GATE_TO_CENTER[gate]!;
     return [
       gate,
       {
@@ -200,6 +278,8 @@ export const ATOM_REGISTRY: Readonly<Record<number, AtomEntry>> = Object.fromEnt
         musicalMode: CENTER_TO_MUSICAL_MODE[center],
         forgeTheme:  CENTER_TO_FORGE[center],
         color:       CENTER_COLOR[center],
+        // GATE_KB_KEYS covers all 64 gates — the ! is safe.
+        kbKeys:      GATE_KB_KEYS[gate]!,
       } satisfies AtomEntry,
     ];
   }),
@@ -220,7 +300,7 @@ export function getAtom(gate: number): AtomEntry {
  * Falls back to 'Ionian' (G center default) when no gate or center is known.
  */
 export function modeForGates(signatureGates: number[]): MusicalMode {
-  if (signatureGates.length === 0) return 'Ionian';
-  // Use the first signature gate's mode as the primary color.
-  return getAtom(signatureGates[0]).musicalMode;
+  const first = signatureGates[0];
+  if (first === undefined) return 'Ionian';
+  return getAtom(first).musicalMode;
 }
