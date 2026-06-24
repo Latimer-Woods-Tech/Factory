@@ -207,11 +207,18 @@ render_one() {
   export STREAM_UID DURATION_SECONDS="$DURATION" THUMBNAIL_URL="$THUMB_URL" TITLE="$HEADLINE" \
     DESCRIPTION="$TOPIC" TRANSCRIPT="$NARRATION" TRANSCRIPT_LANGUAGE="en" \
     CAPRICAST_API_URL="https://api.capricast.com" CAPRICAST_CREATOR_ID="$CAPRICAST_SYSTEM_CREATOR_ID"
-  node apps/video-studio/scripts/publish-to-capricast.mjs || { log "capricast publish failed"; return 1; }
+  local PUB_OUT
+  PUB_OUT=$(node apps/video-studio/scripts/publish-to-capricast.mjs 2>&1) || { log "capricast publish failed: $PUB_OUT"; return 1; }
+  printf '%s\n' "$PUB_OUT"
+  # The real watch URL uses Capricast's own video id (from the publish output),
+  # not the Stream uid. Fall back to the stream-based URL only if not found.
+  local CAPRI_URL
+  CAPRI_URL=$(printf '%s' "$PUB_OUT" | grep -oE 'https://capricast\.com/watch/[A-Za-z0-9-]+' | head -1)
+  [ -n "$CAPRI_URL" ] || CAPRI_URL="https://capricast.com/watch/${STREAM_UID}"
 
   # Step 11 — PATCH schedule-worker job → done
   local BODY
-  BODY=$(jq -n --arg s "$STREAM_UID" --arg v "https://capricast.com/watch/$STREAM_UID" '{status:"done", streamUid:$s, videoUrl:$v}')
+  BODY=$(jq -n --arg s "$STREAM_UID" --arg v "$CAPRI_URL" '{status:"done", streamUid:$s, videoUrl:$v}')
   curl -sS -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${JOB_ID}" -H "Authorization: Bearer ${WORKER_API_TOKEN}" -H 'Content-Type: application/json' --data "$BODY" >/dev/null || true
   log "✅ job $JOB_ID done — stream_uid=$STREAM_UID"
   return 0
@@ -245,7 +252,10 @@ if [ "${POLL:-0}" = "1" ]; then
   COUNT=$(echo "$PENDING" | jq -r '(.data // .jobs // []) | length')
   log "pending jobs: ${COUNT:-0}"
   [ "${COUNT:-0}" -eq 0 ] && { log "nothing to render"; exit 0; }
-  echo "$PENDING" | jq -c '(.data // .jobs // [])[]' | while read -r job; do
+  # Read jobs into an array (NOT a `while read` pipe): render_one runs node/curl
+  # which consume the loop's piped stdin and would end it after one iteration.
+  mapfile -t JOBS < <(echo "$PENDING" | jq -c '(.data // .jobs // [])[]')
+  for job in "${JOBS[@]}"; do
     jid=$(echo "$job" | jq -r '.id // .jobId')
     comp=$(echo "$job" | jq -r '.compositionId // .composition // "MarketingVideo"')
     app=$(echo "$job" | jq -r '.appId // .app // "prime_self"')
@@ -259,7 +269,7 @@ if [ "${POLL:-0}" = "1" ]; then
     sg=$(echo "$job" | jq -c '.signatureGates // []')
     # mark rendering (best-effort, mirrors video-cron)
     curl -sS -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${jid}" -H "Authorization: Bearer ${WORKER_API_TOKEN}" -H 'Content-Type: application/json' --data '{"status":"rendering"}' >/dev/null || true
-    if ! render_one "$jid" "$comp" "$app" "$topic" "$bk" "$bc" "$ba" "$lu" "$ft" "$ht" "$sg"; then
+    if ! render_one "$jid" "$comp" "$app" "$topic" "$bk" "$bc" "$ba" "$lu" "$ft" "$ht" "$sg" </dev/null; then
       log "job $jid FAILED"; mark_failed "$jid" "render-runner pipeline error"
     fi
   done
