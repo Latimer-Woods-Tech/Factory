@@ -75,6 +75,7 @@ load_all_secrets() {
   load_secret RENDER_SERVICE_TOKEN         RENDER_SERVICE_TOKEN render-service-token
   load_secret CAPRICAST_SYSTEM_CREATOR_ID  CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
   load_secret AI_GATEWAY_BASE_URL          AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
+  load_secret NEON_CONNECTION_STRING       NEON_CONNECTION_STRING neon-connection-string NEON_DB_URL
 }
 
 # ── Render a single job ─────────────────────────────────────────────────────
@@ -164,28 +165,49 @@ render_one() {
   aws s3 cp /tmp/narration.mp3 "s3://${R2_BUCKET_NAME}/narrations/${JOB_ID}.mp3" --endpoint-url "$ENDPOINT" --content-type audio/mpeg || return 1
   local NARRATION_URL="https://${R2_PUBLIC_DOMAIN}/narrations/${JOB_ID}.mp3"
 
-  # Step 6 — render MP4 with Remotion
+  # Step 5.5 — ElevenLabs Music (modal bed, R2-cached by musical mode)
+  # generate-music.mjs derives the mode from SIGNATURE_GATES via the Atom Registry
+  # center→mode map, then checks R2 before calling ElevenLabs. Falls back to the
+  # pre-recorded sybil forge bed if generation fails.
+  local MUSIC_URL
+  MUSIC_URL=$(SIGNATURE_GATES="${SIGNATURE_GATES:-[]}" FORGE_THEME="${FORGE_THEME:-self}" \
+    node apps/video-studio/scripts/generate-music.mjs 2>/tmp/music.log) \
+    || { log "generate-music failed: $(tail -1 /tmp/music.log 2>/dev/null)"; \
+         MUSIC_URL="https://${R2_PUBLIC_DOMAIN}/sybil-music/forge/${FORGE_THEME:-self}.mp3"; }
+  log "music_url=$MUSIC_URL"
+
+  # Step 6 — build Remotion props + render MP4
+  # For EnergyBlueprintVideo: derive-blueprint-props.mjs builds a thematic scene
+  # arc from BRIEF_KEY (gate-concept-N, authority-concept-X, type-welcome-T, etc.)
+  # so the body graph lights up the specific element the video is about.
+  # Other compositions use the inline jq schema.
   printf '%s' "${screenshot_urls:-[]}" > /tmp/screenshot-urls.json
   printf '%s' "${steps:-[]}" > /tmp/render-steps.json
   printf '%s' "${visual_beats:-[]}" > /tmp/visual-beats.json
   printf '%s' "${SIGNATURE_GATES:-[]}" > /tmp/signature-gates.json
-  # Music bed — reuse the existing sybil-music forge tracks (one per theme,
-  # already in R2). Non-blueprint compositions default to the 'self' bed.
-  local MUSIC_URL="https://${R2_PUBLIC_DOMAIN}/sybil-music/forge/${FORGE_THEME:-self}.mp3"
   local PROPS
-  PROPS=$(jq -n \
-    --arg composition "$COMPOSITION_ID" --arg appId "$APP_ID" --arg topic "$TOPIC" \
-    --arg script "$NARRATION" --arg narrationUrl "$NARRATION_URL" \
-    --arg brandColor "$BRAND_COLOR" --arg brandAccent "$BRAND_ACCENT" --arg logoUrl "$LOGO_URL" \
-    --slurpfile screenshotUrls /tmp/screenshot-urls.json --slurpfile steps /tmp/render-steps.json \
-    --slurpfile visualBeats /tmp/visual-beats.json --arg durationSeconds "${duration_seconds:-}" \
-    --arg forgeTheme "$FORGE_THEME" --arg hdType "$HD_TYPE" --slurpfile signatureGates /tmp/signature-gates.json \
-    --arg musicUrl "$MUSIC_URL" \
-    'if $composition=="WalkthroughVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls[0]}
-     elif $composition=="TrainingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps[0],durationSeconds:($durationSeconds|if .=="" then 30 else tonumber end)}
-     elif $composition=="MarketingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats[0],durationSeconds:($durationSeconds|if .=="" then 15 else tonumber end)}
-     elif $composition=="EnergyBlueprintVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,forgeTheme:$forgeTheme,hdType:(if $hdType=="" then null else $hdType end),signatureGates:$signatureGates[0]}
-     else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl} end')
+  if [ "$COMPOSITION_ID" = "EnergyBlueprintVideo" ]; then
+    PROPS=$(BRIEF_KEY="${BRIEF_KEY:-}" TOPIC="$TOPIC" SCRIPT="$NARRATION" \
+      NARRATION_URL="$NARRATION_URL" BRAND_COLOR="$BRAND_COLOR" \
+      BRAND_ACCENT="$BRAND_ACCENT" LOGO_URL="${LOGO_URL:-}" \
+      FORGE_THEME="${FORGE_THEME:-self}" HD_TYPE="${HD_TYPE:-}" \
+      MUSIC_URL="$MUSIC_URL" MUSIC_VOLUME="${MUSIC_VOLUME:-0.16}" APP_ID="$APP_ID" \
+      node apps/video-studio/scripts/derive-blueprint-props.mjs) \
+      || { log "derive-blueprint-props failed"; return 1; }
+  else
+    PROPS=$(jq -n \
+      --arg composition "$COMPOSITION_ID" --arg appId "$APP_ID" --arg topic "$TOPIC" \
+      --arg script "$NARRATION" --arg narrationUrl "$NARRATION_URL" \
+      --arg brandColor "$BRAND_COLOR" --arg brandAccent "$BRAND_ACCENT" --arg logoUrl "$LOGO_URL" \
+      --slurpfile screenshotUrls /tmp/screenshot-urls.json --slurpfile steps /tmp/render-steps.json \
+      --slurpfile visualBeats /tmp/visual-beats.json --arg durationSeconds "${duration_seconds:-}" \
+      --arg forgeTheme "$FORGE_THEME" --arg hdType "$HD_TYPE" --slurpfile signatureGates /tmp/signature-gates.json \
+      --arg musicUrl "$MUSIC_URL" \
+      'if $composition=="WalkthroughVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls[0]}
+       elif $composition=="TrainingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps[0],durationSeconds:($durationSeconds|if .=="" then 30 else tonumber end)}
+       elif $composition=="MarketingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats[0],durationSeconds:($durationSeconds|if .=="" then 15 else tonumber end)}
+       else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl} end')
+  fi
   ( cd apps/video-studio && node -r ts-node/register src/render.ts --composition "$COMPOSITION_ID" --props "$PROPS" --output /tmp/output.mp4 ) || { log "Remotion render failed"; return 1; }
 
   # Step 7 — ffmpeg re-encode (H.264 baseline + AAC)
@@ -251,6 +273,107 @@ mark_failed() {
   curl -sS -X PATCH "${SCHEDULE_WORKER_URL}/jobs/${job_id}" \
     -H "Authorization: Bearer ${WORKER_API_TOKEN}" -H 'Content-Type: application/json' \
     --data "$(jq -n --arg e "$reason" '{status:"failed", script:$e}')" >/dev/null || true
+}
+
+# ── Phase-0 keystone: personalized video render ─────────────────────────────
+# render_personal USER_ID [JOB_ID]
+#
+# Fetches the user's chart directly from Neon (bypassing the schedule-worker),
+# derives the blueprint props (forge theme, HD type, signature gates), and calls
+# render_one to produce a personalized EnergyBlueprintVideo.
+#
+# Consent gate: the user must have personalized_video_consent=true in their
+# users row. render_personal exits silently if consent is not set.
+#
+# Requires NEON_CONNECTION_STRING in env (loaded from Secret Manager at startup).
+render_personal() {
+  local user_id="${1:?user_id}" job_id="${2:-personal-${user_id}}"
+  log "── render_personal user=$user_id job=$job_id"
+
+  [ -n "${NEON_CONNECTION_STRING:-}" ] || { log "NEON_CONNECTION_STRING not set; cannot render personal"; return 1; }
+
+  # Query user chart + consent from Neon (neondb_owner bypasses RLS).
+  local row
+  row=$(node -e "
+    const { Client } = await import('pg');
+    const client = new Client({ connectionString: process.env.NEON_CONNECTION_STRING, ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    const res = await client.query(
+      \`SELECT
+          u.id, u.display_name, u.email,
+          COALESCE((u.preferences->>'personalized_video_consent')::boolean, false) AS consent,
+          c.hd_json
+        FROM users u
+        LEFT JOIN charts c ON c.user_id = u.id
+        WHERE u.id = \$1
+        LIMIT 1\`,
+      [process.env.TARGET_USER_ID]
+    );
+    await client.end();
+    process.stdout.write(JSON.stringify(res.rows[0] ?? null));
+  " 2>/tmp/neon.log) || { log "Neon query failed: $(tail -1 /tmp/neon.log)"; return 1; }
+
+  [ "$row" != "null" ] || { log "user $user_id not found in Neon"; return 1; }
+
+  local consent hd_json display_name
+  consent=$(echo "$row" | jq -r '.consent')
+  hd_json=$(echo "$row" | jq -c '.hd_json // {}')
+  display_name=$(echo "$row" | jq -r '.display_name // .email // "you"')
+
+  if [ "$consent" != "true" ]; then
+    log "user $user_id has not consented to personalized video (preferences.personalized_video_consent=false); skipping"
+    return 0
+  fi
+
+  # Extract HD blueprint fields from hd_json.
+  local hd_type authority defined_centers signature_gates forge_theme brand_color
+  hd_type=$(echo "$hd_json" | jq -r '.type // .hdType // "generator"' | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+  authority=$(echo "$hd_json" | jq -r '.authority // ""' | tr '[:upper:]' '[:lower:]')
+  defined_centers=$(echo "$hd_json" | jq -c '.definedCenters // []')
+  signature_gates=$(echo "$hd_json" | jq -c '.signatureGates // .activatedGates // []' | jq -c '.[0:3]')
+  # Derive forge theme from the first signature gate's center affinity.
+  local first_gate
+  first_gate=$(echo "$signature_gates" | jq -r '.[0] // empty')
+  forge_theme=$(node -e "
+    const g = Number('${first_gate}');
+    const map = {
+      Head:[61,63,64],Ajna:[4,11,17,24,43,47],
+      Throat:[8,12,16,20,23,31,33,35,45,56,62],
+      G:[1,2,7,10,13,15,25,46],Heart:[21,26,40,51],
+      SolarPlexus:[6,22,30,36,37,49,55],
+      Sacral:[3,5,9,14,27,29,34,42,59],
+      Spleen:[18,28,32,44,48,50,57],
+      Root:[19,38,39,41,52,53,54,58,60]
+    };
+    const forge = {
+      Head:'aether',Ajna:'chronos',Throat:'lux',G:'self',
+      Heart:'phoenix',Sacral:'eros',Spleen:'aether',
+      SolarPlexus:'eros',Root:'chronos'
+    };
+    let center = 'G';
+    for (const [c, gates] of Object.entries(map)) {
+      if (gates.includes(g)) { center = c; break; }
+    }
+    process.stdout.write(forge[center] || 'self');
+  " 2>/dev/null || echo "self")
+  brand_color=$(echo "$hd_json" | jq -r '.brandColor // empty')
+  [ -n "$brand_color" ] || case "$hd_type" in
+    generator)              brand_color="#e8923a" ;;
+    manifesting_generator)  brand_color="#d4742a" ;;
+    projector)              brand_color="#7b6fd4" ;;
+    manifestor)             brand_color="#c42b2b" ;;
+    reflector)              brand_color="#b8d4e8" ;;
+    *)                      brand_color="#c9a84c" ;;
+  esac
+
+  local topic="Your Energy Blueprint — ${display_name}"
+  log "  hd_type=$hd_type forge=$forge_theme gates=$signature_gates"
+
+  render_one \
+    "$job_id" "EnergyBlueprintVideo" "prime_self" "$topic" \
+    "" "$brand_color" "$brand_color" "" \
+    "$forge_theme" "$hd_type" "$signature_gates" \
+    </dev/null
 }
 
 # ── Main ────────────────────────────────────────────────────────────────────
