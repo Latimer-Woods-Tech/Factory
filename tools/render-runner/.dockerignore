@@ -1,0 +1,10 @@
+# Build context is the repo root; keep it lean and force fresh installs.
+**/node_modules
+**/dist
+**/.git
+**/coverage
+**/.next
+**/out
+**/test-results
+**/playwright-report
+**/*.log
