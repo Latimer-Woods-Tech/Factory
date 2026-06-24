@@ -27,6 +27,10 @@ export const trainingSchema = z.object({
   brandAccent: z.string(),
   /** Logo image URL. */
   logoUrl: z.string(),
+  /** Optional instrumental music bed (R2 URL). Empty/absent = no music. */
+  musicUrl: z.string().optional(),
+  /** Music bed volume (0-1), kept low so it sits under the narration. */
+  musicVolume: z.number().optional(),
   /** Ordered list of training steps (max 8 for readability). */
   steps: z.array(z.string()).max(8),
   /** Target duration in seconds. Media Room validates content fit before dispatch. */
@@ -262,6 +266,8 @@ export const TrainingVideo: React.FC<TrainingVideoProps> = ({
   narrationUrl,
   brandColor,
   brandAccent,
+  musicUrl = '',
+  musicVolume = 0.16,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -297,6 +303,7 @@ export const TrainingVideo: React.FC<TrainingVideoProps> = ({
         {script}
       </div>
       {narrationUrl && <Audio src={narrationUrl} />}
+      {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
     </AbsoluteFill>
   );
 };
