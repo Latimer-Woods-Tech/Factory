@@ -16,8 +16,11 @@
   //   GROQ_API_KEY                — Groq API key for LLM fallback
   //   FACTORY_CORE_API_URL        — factory-core-api base URL for run push-on-write (P1.9; optional)
   //   SUPERVISOR_PUSH_KEY         — service key for POST /v1/runs/mirror (P1.9; optional)
+  // 0 11 * * 1-5 — weekday issue-processing + MEMORIZE/REFLECT.
+  // 0 12 * * *   — RFC-008 app-signals: daily cross-app conformance+demand → factory-memory, then REFLECT
+  //                (routed to the DO /signals path in index.ts scheduled(); does NOT run the issue loop).
   "triggers": {
-    "crons": ["0 11 * * 1-5"]
+    "crons": ["0 11 * * 1-5", "0 12 * * *"]
   },
 
   // RFC-007 Phase 3: queue-backed incident write lane.
