@@ -159,6 +159,9 @@ render_one() {
   printf '%s' "${steps:-[]}" > /tmp/render-steps.json
   printf '%s' "${visual_beats:-[]}" > /tmp/visual-beats.json
   printf '%s' "${SIGNATURE_GATES:-[]}" > /tmp/signature-gates.json
+  # Music bed — reuse the existing sybil-music forge tracks (one per theme,
+  # already in R2). Non-blueprint compositions default to the 'self' bed.
+  local MUSIC_URL="https://${R2_PUBLIC_DOMAIN}/sybil-music/forge/${FORGE_THEME:-self}.mp3"
   local PROPS
   PROPS=$(jq -n \
     --arg composition "$COMPOSITION_ID" --arg appId "$APP_ID" --arg topic "$TOPIC" \
@@ -167,11 +170,12 @@ render_one() {
     --slurpfile screenshotUrls /tmp/screenshot-urls.json --slurpfile steps /tmp/render-steps.json \
     --slurpfile visualBeats /tmp/visual-beats.json --arg durationSeconds "${duration_seconds:-}" \
     --arg forgeTheme "$FORGE_THEME" --arg hdType "$HD_TYPE" --slurpfile signatureGates /tmp/signature-gates.json \
-    'if $composition=="WalkthroughVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls[0]}
-     elif $composition=="TrainingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps[0],durationSeconds:($durationSeconds|if .=="" then 30 else tonumber end)}
-     elif $composition=="MarketingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats[0],durationSeconds:($durationSeconds|if .=="" then 15 else tonumber end)}
-     elif $composition=="EnergyBlueprintVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,forgeTheme:$forgeTheme,hdType:(if $hdType=="" then null else $hdType end),signatureGates:$signatureGates[0]}
-     else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl} end')
+    --arg musicUrl "$MUSIC_URL" \
+    'if $composition=="WalkthroughVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,screenshotUrls:$screenshotUrls[0]}
+     elif $composition=="TrainingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,steps:$steps[0],durationSeconds:($durationSeconds|if .=="" then 30 else tonumber end)}
+     elif $composition=="MarketingVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,visualBeats:$visualBeats[0],durationSeconds:($durationSeconds|if .=="" then 15 else tonumber end)}
+     elif $composition=="EnergyBlueprintVideo" then {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl,forgeTheme:$forgeTheme,hdType:(if $hdType=="" then null else $hdType end),signatureGates:$signatureGates[0]}
+     else {appId:$appId,topic:$topic,script:$script,narrationUrl:$narrationUrl,musicUrl:$musicUrl,brandColor:$brandColor,brandAccent:$brandAccent,logoUrl:$logoUrl} end')
   ( cd apps/video-studio && node -r ts-node/register src/render.ts --composition "$COMPOSITION_ID" --props "$PROPS" --output /tmp/output.mp4 ) || { log "Remotion render failed"; return 1; }
 
   # Step 7 — ffmpeg re-encode (H.264 baseline + AAC)
