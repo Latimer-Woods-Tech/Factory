@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-19T00:27:00.093Z",
+  "generatedAt": "2026-06-24T17:04:42.066Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -70,7 +70,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 71,
+        "cohesion": 77,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -107,7 +107,7 @@
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 80,
             "weight": 10
           },
           {
@@ -137,7 +137,7 @@
           },
           {
             "key": "privacy",
-            "score": 75,
+            "score": 100,
             "weight": 5
           }
         ],
@@ -213,7 +213,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 14,
+        "cohesion": 42,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -234,7 +234,7 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 40,
             "weight": 10
           },
           {
@@ -244,17 +244,17 @@
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 40,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 0,
+            "score": 40,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 60,
             "weight": 15
           },
           {
@@ -269,17 +269,17 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 25,
+            "score": 50,
             "weight": 5
           }
         ],
@@ -313,7 +313,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "production",
-        "cohesion": 14,
+        "cohesion": 40,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -335,17 +335,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 60,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 60,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 60,
             "weight": 15
           },
           {
@@ -355,12 +355,12 @@
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 40,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 67,
             "weight": 5
           },
           {
@@ -370,7 +370,7 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
@@ -857,7 +857,7 @@
         "lifecycleStage": "provisioned",
         "mode": "hands-off",
         "maturity": null,
-        "cohesion": 14,
+        "cohesion": 44,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -868,17 +868,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 40,
             "weight": 15
           },
           {
@@ -893,17 +893,17 @@
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 33,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
@@ -998,7 +998,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "revenue",
-        "cohesion": 16,
+        "cohesion": 56,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1034,22 +1034,22 @@
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 100,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 0,
+            "score": 40,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 67,
             "weight": 5
           },
           {
@@ -1059,12 +1059,12 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 67,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 67,
             "weight": 10
           },
           {
@@ -1154,7 +1154,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": null,
-        "cohesion": 14,
+        "cohesion": 44,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1165,17 +1165,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 40,
             "weight": 15
           },
           {
@@ -1190,17 +1190,17 @@
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 33,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
@@ -1295,7 +1295,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": null,
-        "cohesion": 14,
+        "cohesion": 59,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1306,17 +1306,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 100,
             "weight": 15
           },
           {
@@ -1326,27 +1326,27 @@
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 40,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 33,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 33,
             "weight": 10
           },
           {
@@ -1368,7 +1368,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": "beta",
-        "cohesion": 14,
+        "cohesion": 51,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1387,17 +1387,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 60,
             "weight": 15
           },
           {
@@ -1412,7 +1412,7 @@
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
@@ -1422,17 +1422,17 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 25,
+            "score": 50,
             "weight": 5
           }
         ],
@@ -1793,83 +1793,6 @@
         "tier": "infra"
       },
       {
-        "id": "selfprime:energy-blueprint",
-        "appId": "selfprime",
-        "label": "Energy Blueprint synthesis",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "selfprime:narration",
-        "appId": "selfprime",
-        "label": "AI voice narration",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "selfprime:video-engine",
-        "appId": "selfprime",
-        "label": "Energy Blueprint video engine",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "selfprime:notification-inbox",
-        "appId": "selfprime",
-        "label": "In-app notification inbox",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:practitioner-network",
-        "appId": "selfprime",
-        "label": "Practitioner referral network",
-        "status": "in-progress",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:group-readings",
-        "appId": "selfprime",
-        "label": "Group reading sessions",
-        "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:rls-enforcement",
-        "appId": "selfprime",
-        "label": "Row-Level Security on user-scoped tables",
-        "status": "live",
-        "tier": "compliance"
-      },
-      {
-        "id": "selfprime:diary",
-        "appId": "selfprime",
-        "label": "Diary + AI insights",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:dream-weaver",
-        "appId": "selfprime",
-        "label": "Dream Weaver — chart-grounded dream journal + interpretation",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:psychometric",
-        "appId": "selfprime",
-        "label": "Psychometric assessments (Big Five + VIA)",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "selfprime:curriculum",
-        "appId": "selfprime",
-        "label": "Guidance curriculum engine (cross-surface placement)",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
         "id": "xico-city:artist-roles",
         "appId": "xico-city",
         "label": "11 artist role types",
@@ -1973,6 +1896,83 @@
         "label": "Inner Circle (membership)",
         "status": "in-progress",
         "tier": "growth"
+      },
+      {
+        "id": "selfprime:energy-blueprint",
+        "appId": "selfprime",
+        "label": "Energy Blueprint synthesis",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "selfprime:narration",
+        "appId": "selfprime",
+        "label": "AI voice narration",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "selfprime:video-engine",
+        "appId": "selfprime",
+        "label": "Energy Blueprint video engine",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "selfprime:notification-inbox",
+        "appId": "selfprime",
+        "label": "In-app notification inbox",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:practitioner-network",
+        "appId": "selfprime",
+        "label": "Practitioner referral network",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:group-readings",
+        "appId": "selfprime",
+        "label": "Group reading sessions",
+        "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:rls-enforcement",
+        "appId": "selfprime",
+        "label": "Row-Level Security on user-scoped tables",
+        "status": "live",
+        "tier": "compliance"
+      },
+      {
+        "id": "selfprime:diary",
+        "appId": "selfprime",
+        "label": "Diary + AI insights",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:dream-weaver",
+        "appId": "selfprime",
+        "label": "Dream Weaver — chart-grounded dream journal + interpretation",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:psychometric",
+        "appId": "selfprime",
+        "label": "Psychometric assessments (Big Five + VIA)",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "selfprime:curriculum",
+        "appId": "selfprime",
+        "label": "Guidance curriculum engine (cross-surface placement)",
+        "status": "live",
+        "tier": "growth"
       }
     ],
     "roadmapItems": [
@@ -2054,34 +2054,6 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "selfprime:sp-launch",
-        "appId": "selfprime",
-        "label": "Public Launch",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "selfprime:sp-rls",
-        "appId": "selfprime",
-        "label": "RLS enforced on user-scoped tables",
-        "status": "done",
-        "quarter": "Q2-2026"
-      },
-      {
-        "id": "selfprime:sp-referrals",
-        "appId": "selfprime",
-        "label": "Practitioner referral engine GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "selfprime:sp-ios",
-        "appId": "selfprime",
-        "label": "iOS PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
         "id": "xico-city:xc-media-processor",
         "appId": "xico-city",
         "label": "Media Processor Live",
@@ -2155,6 +2127,34 @@
         "id": "coh:coh-mobile",
         "appId": "coh",
         "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced on user-scoped tables",
+        "status": "done",
+        "quarter": "Q2-2026"
+      },
+      {
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
         "status": "design",
         "quarter": "Q2-2027"
       }
@@ -2499,116 +2499,6 @@
       "type": "uses_package"
     },
     {
-      "from": "selfprime",
-      "to": "selfprime:energy-blueprint",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:narration",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:video-engine",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:notification-inbox",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:practitioner-network",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:group-readings",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:rls-enforcement",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:diary",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:dream-weaver",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:psychometric",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:curriculum",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-launch",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-rls",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-referrals",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-ios",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:llm",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:bodygraph",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
       "from": "xico-city",
       "to": "xico-city:artist-roles",
       "type": "has_feature"
@@ -2807,6 +2697,116 @@
       "from": "coh",
       "to": "pkg:email",
       "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:energy-blueprint",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:narration",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:video-engine",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:notification-inbox",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:practitioner-network",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:group-readings",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:rls-enforcement",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:diary",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:dream-weaver",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:psychometric",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:curriculum",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-launch",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-rls",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-referrals",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-ios",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:llm",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:bodygraph",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:telephony",
+      "type": "uses_package"
     }
   ],
   "stats": {
@@ -2828,7 +2828,7 @@
     "edgeCount": 102
   },
   "kpis": {
-    "generatedAt": "2026-06-19T00:27:00.152Z",
+    "generatedAt": "2026-06-24T17:04:42.128Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2841,7 +2841,7 @@
       },
       "cost30dUsd": 10.81,
       "mrrUsd": 0,
-      "completionWeighted": 2.6
+      "completionWeighted": 0
     },
     "trends": {
       "cohesion": {
@@ -2869,28 +2869,28 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 2.6,
-        "prior": 3,
-        "priorDate": "2026-06-12",
-        "dayGap": 6,
-        "delta": -0.4,
+        "current": 0,
+        "prior": 2.6,
+        "priorDate": "2026-06-17",
+        "dayGap": 7,
+        "delta": -2.6,
         "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 17.65,
-        "priorDate": "2026-06-12",
+        "priorDate": "2026-06-17",
         "dayGap": 7,
         "delta": 0,
         "direction": "flat"
       },
       "openGaps": {
         "current": 13,
-        "prior": 14,
-        "priorDate": "2026-06-12",
+        "prior": 13,
+        "priorDate": "2026-06-17",
         "dayGap": 7,
-        "delta": -1,
-        "direction": "down"
+        "delta": 0,
+        "direction": "flat"
       }
     },
     "movers": {
@@ -2942,6 +2942,6 @@
         }
       ]
     },
-    "seriesPoints": 9
+    "seriesPoints": 10
   }
 }

@@ -1,18 +1,25 @@
 # Completion Tracker
-_Generated 2026-06-18T13:48:01+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-24T12:33:56+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: CH, XC
+## 🚨 CI red on main: FA
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **HD** HumanDesign | 5 | 0 | 0 | 88 | 93 | 5.4% | 100.0% | **5.4%** (Δ+0.0) |
+| **HD** HumanDesign | 0 | 0 | 0 | 93 | 93 | 0.0% | 0.0% | **0.0%** (Δ-5.4) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **FA** factory-admin-studio | 0 | 0 | 0 | 43 | 43 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **CH** cypher-healing 🚨 | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **FA** factory-admin-studio 🚨 🟧smoke | 0 | 0 | 0 | 39 | 39 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **XC** xico-city 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 2.6% (Δ+0.0)** · known: 100.0% · raw: 2.4%
+**Overall weighted pass: 0.0% (Δ-2.6)** · known: 0.0% · raw: 0.0%
+
+### ↓ Top regressions
+- `HD-EXPORT-001` (HD) — Data Export (weight 5) → 🔍
+- `HD-TRANS-001` (HD) — Transit Forecast (weight 4) → 🔍
+- `HD-LLM-001` (HD) — LLM Profile Generate (weight 4) → 🔍
+- `HD-CHART-006` (HD) — Today's Hint (weight 3) → 🔍
+- `HD-REF-001` (HD) — Get Referrals (weight 3) → 🔍
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
@@ -31,7 +38,7 @@ _Generated 2026-06-18T13:48:01+00:00 by `scripts/aggregate_completion.py`._
 | `HD-AUTH-011` | Middleware Redirect | 🔍 | 4 | — | auto-decay |
 | `HD-AUTH-012` | JWT Validation | 🔍 | 5 | — | auto-decay |
 
-### Chart Generation — 7.5% weighted (1✅ 0⚠️ 0❌ 9🔍)
+### Chart Generation — 0.0% weighted (0✅ 0⚠️ 0❌ 10🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
 | `HD-CHART-001` | Birth Data Input | 🔍 | 4 | — | auto-decay |
@@ -39,7 +46,7 @@ _Generated 2026-06-18T13:48:01+00:00 by `scripts/aggregate_completion.py`._
 | `HD-CHART-003` | Chart Retrieval | 🔍 | 4 | — | auto-decay |
 | `HD-CHART-004` | Chart Update | 🔍 | 4 | — | auto-decay |
 | `HD-CHART-005` | Chart Delete | 🔍 | 5 | — | auto-decay |
-| `HD-CHART-006` | Today's Hint | ✅ | 3 | — | — |
+| `HD-CHART-006` | Today's Hint | 🔍 | 3 | — | auto-decay |
 | `HD-CHART-007` | Human Design Types | 🔍 | 4 | — | auto-decay |
 | `HD-CHART-008` | Gene Keys | 🔍 | 4 | — | auto-decay |
 | `HD-CHART-009` | Astrology Natal Chart | 🔍 | 4 | — | auto-decay |
@@ -144,39 +151,39 @@ _Generated 2026-06-18T13:48:01+00:00 by `scripts/aggregate_completion.py`._
 | `HD-PERF-005` | Time to Interactive | 🔍 | 3 | — | auto-decay |
 | `HD-PERF-006` | Database Query Time | 🔍 | 3 | — | auto-decay |
 
-### Transits & Daily Features — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+### Transits & Daily Features — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-TRANS-001` | Transit Forecast | ✅ | 4 | — | — |
+| `HD-TRANS-001` | Transit Forecast | 🔍 | 4 | — | auto-decay |
 
-### Referrals — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+### Referrals — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-REF-001` | Get Referrals | ✅ | 3 | — | — |
+| `HD-REF-001` | Get Referrals | 🔍 | 3 | — | auto-decay |
 
-### Data Export — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+### Data Export — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-EXPORT-001` | Data Export | ✅ | 5 | — | — |
+| `HD-EXPORT-001` | Data Export | 🔍 | 5 | — | auto-decay |
 
-### LLM Profile Generation — 100.0% weighted (1✅ 0⚠️ 0❌ 0🔍)
+### LLM Profile Generation — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-LLM-001` | LLM Profile Generate | ✅ | 4 | — | — |
+| `HD-LLM-001` | LLM Profile Generate | 🔍 | 4 | — | auto-decay |
 
 ## FA — factory-admin-studio
 ### Health, Auth & Session — 0.0% weighted (0✅ 0⚠️ 0❌ 9🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | auto-decay |
-| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | auto-decay |
-| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | auto-decay |
-| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | auto-decay |
-| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | auto-decay |
-| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | auto-decay |
-| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | auto-decay |
-| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | auto-decay |
-| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | auto-decay |
+| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | smoke-red,auto-decay |
+| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | smoke-red,auto-decay |
+| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | smoke-red,auto-decay |
+| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | smoke-red,auto-decay |
+| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | smoke-red,auto-decay |
+| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | smoke-red,auto-decay |
+| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | smoke-red,auto-decay |
+| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | smoke-red,auto-decay |
+| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | smoke-red,auto-decay |
 
 ### Public Manifest & Function Catalog — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
@@ -216,14 +223,10 @@ _Generated 2026-06-18T13:48:01+00:00 by `scripts/aggregate_completion.py`._
 | `FA-OBS-005` | Synthetic checks | 🔍 | 2 | — | auto-decay |
 | `FA-OBS-006` | Ops runbooks | 🔍 | 2 | — | auto-decay |
 
-### Creators, Payouts & Stripe Connect — 0.0% weighted (0✅ 0⚠️ 0❌ 5🔍)
+### Studio Billing (own SaaS subscriptions) — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `FA-PAY-001` | Creator onboarding | 🔍 | 5 | — | auto-decay |
-| `FA-PAY-002` | Admin creators | 🔍 | 2 | — | auto-decay |
-| `FA-PAY-003` | Admin payouts | 🔍 | 5 | — | auto-decay |
-| `FA-PAY-004` | Stripe Connect webhooks | 🔍 | 5 | — | auto-decay |
-| `FA-PAY-005` | Studio subscriptions webhook | 🔍 | 5 | — | auto-decay |
+| `FA-BILL-001` | Studio subscriptions webhook | 🔍 | 5 | — | — |
 
 ### Feature Flags, DSR & Digest — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
