@@ -4,7 +4,7 @@
 > External tooling versions are hand-maintained here.
 > Downstream repos: pointer to this file in `CLAUDE.md` — do NOT copy-paste; copies drift.
 
-*Last updated: 2026-06-16 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
+*Last updated: 2026-06-25 (auto-update: see `.github/workflows/update-stack-manifest.yml`)*
 
 ---
 
@@ -44,7 +44,7 @@
 | `@latimer-woods-tech/schedule` | `0.2.3` | stable |
 | `@latimer-woods-tech/seo` | `0.2.0` | stable |
 | `@latimer-woods-tech/social` | `0.2.0` | stable |
-| `@latimer-woods-tech/stripe` | `0.2.0` | stable |
+| `@latimer-woods-tech/stripe` | `0.3.0` | stable |
 | `@latimer-woods-tech/studio-core` | `0.1.0` | stable |
 | `@latimer-woods-tech/telephony` | `0.3.0` | stable |
 | `@latimer-woods-tech/testing` | `0.3.0` | stable |
