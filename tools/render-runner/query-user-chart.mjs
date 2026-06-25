@@ -55,23 +55,37 @@ function normalizeType(raw = '') {
   return t || 'generator';
 }
 
-/** Derive the 1-3 most prominent gates from hd_json. */
+// Planetary order for HD activations — sun is the most conscious/prominent.
+const PLANET_ORDER = ['sun','earth','northNode','southNode','moon','mercury','venus','mars','jupiter','saturn','uranus','neptune','pluto'];
+
+/** Derive the 1-3 most prominent gates from hd_json.
+ *  Handles both array format ([{gate,line,...},...]) and the object format
+ *  ({sun:{gate,line,...}, mars:{...}, ...}) used by the SELF:PRIME chart engine. */
 function extractSignatureGates(hdJson) {
-  // personalityGates[0] = Personality Sun — the most conscious gate.
-  // Each element is {gate, line, ...} or just a gate number.
-  const pg = hdJson?.personalityGates ?? hdJson?.variables?.conscious ?? [];
-  const dg = hdJson?.designGates ?? hdJson?.variables?.unconscious ?? [];
+  const toEntries = (raw) => {
+    if (!raw) return [];
+    // Array format: [{gate, line, ...}, ...]
+    if (Array.isArray(raw)) return raw;
+    // Object format: {sun: {gate, line, ...}, mars: {gate, line, ...}, ...}
+    if (typeof raw === 'object') {
+      return PLANET_ORDER.map((p) => raw[p]).filter(Boolean);
+    }
+    return [];
+  };
 
   const toGate = (entry) => {
     if (typeof entry === 'number') return entry;
     return entry?.gate ?? entry?.gateNumber ?? null;
   };
 
-  const gates = [...pg, ...dg]
+  const pgEntries = toEntries(hdJson?.personalityGates ?? hdJson?.variables?.conscious);
+  const dgEntries = toEntries(hdJson?.designGates     ?? hdJson?.variables?.unconscious);
+
+  const gates = [...pgEntries, ...dgEntries]
     .map(toGate)
     .filter((g) => typeof g === 'number' && g >= 1 && g <= 64);
 
-  // Deduplicate while preserving order (Personality Sun first).
+  // Deduplicate, Personality Sun first.
   const seen = new Set();
   const unique = [];
   for (const g of gates) {
