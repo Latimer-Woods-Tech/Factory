@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T12:33:56.735877+00:00",
+  "generated_at": "2026-06-25T12:37:52.019000+00:00",
   "overall_weighted": 0.0,
   "overall_known": 0.0,
   "overall_raw": 0.0,
@@ -11,10 +11,10 @@
     "XC": 0.0
   },
   "ci_red": [
-    "FA"
+    "CH",
+    "XC"
   ],
   "smoke_red": [
-    "FA",
     "XC"
   ],
   "rows": [
@@ -2174,10 +2174,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "(auto-decay) ❌ smoke red — Returns env/service/timestamp",
+      "notes": "(auto-decay) Returns env/service/timestamp",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2198,10 +2197,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) ❌ smoke red — Has tests",
+      "notes": "(auto-decay) Has tests",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2222,10 +2220,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) ❌ smoke red — Requires env context",
+      "notes": "(auto-decay) Requires env context",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2246,10 +2243,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) ❌ smoke red — Gates most routes",
+      "notes": "(auto-decay) Gates most routes",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2270,10 +2266,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 2,
-      "notes": "(auto-decay) ❌ smoke red — Applied to mutating routes",
+      "notes": "(auto-decay) Applied to mutating routes",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2294,10 +2289,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) ❌ smoke red — Data-loss guard",
+      "notes": "(auto-decay) Data-loss guard",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2318,10 +2312,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "(auto-decay) ❌ smoke red",
+      "notes": "(auto-decay)",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2342,10 +2335,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 1,
-      "notes": "(auto-decay) ❌ smoke red",
+      "notes": "(auto-decay)",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
@@ -2366,10 +2358,9 @@
       "last_verified": "2026-05-11",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) ❌ smoke red — Webhook signing",
+      "notes": "(auto-decay) Webhook signing",
       "tags": [],
       "overlays": [
-        "smoke-red",
         "auto-decay"
       ]
     },
