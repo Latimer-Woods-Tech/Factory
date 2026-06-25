@@ -368,13 +368,14 @@ render_personal() {
   done
   [ "$priv_state" = "ready" ] || { log "private stream not ready in time"; return 1; }
 
-  # Step P4 — mint a signed playback token (1 week expiry) and write to Neon.
+  # Step P4 — mint a signed playback token (23h; CF Stream max = 1440 min = 24h)
+  # and write to Neon. Token is refreshed on each view request.
   local TOKEN_RESP TOKEN_VAL
   TOKEN_RESP=$(curl -sS -X POST \
     "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${PRIV_UID}/token" \
     -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
     -H 'Content-Type: application/json' \
-    --data '{"exp": '$(( $(date +%s) + 604800 ))'}')
+    --data '{"exp": '$(( $(date +%s) + 82800 ))'}')
   TOKEN_VAL=$(printf '%s' "$TOKEN_RESP" | jq -r '.result.token // empty')
   [ -n "$TOKEN_VAL" ] || { log "could not mint signed token: $TOKEN_RESP"; return 1; }
 
