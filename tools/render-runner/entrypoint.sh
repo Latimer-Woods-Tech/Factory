@@ -75,7 +75,6 @@ load_all_secrets() {
   load_secret RENDER_SERVICE_TOKEN         RENDER_SERVICE_TOKEN render-service-token
   load_secret CAPRICAST_SYSTEM_CREATOR_ID  CAPRICAST_SYSTEM_CREATOR_ID capricast-system-creator-id
   load_secret AI_GATEWAY_BASE_URL          AI_GATEWAY_URL AI_GATEWAY_BASE_URL ai-gateway-base-url ai-gateway-url
-  load_secret NEON_CONNECTION_STRING       NEON_CONNECTION_STRING neon-connection-string NEON_DB_URL
 }
 
 # ── Render a single job ─────────────────────────────────────────────────────
@@ -275,146 +274,10 @@ mark_failed() {
     --data "$(jq -n --arg e "$reason" '{status:"failed", script:$e}')" >/dev/null || true
 }
 
-# ── Phase-0 keystone: personalized video render ─────────────────────────────
-# render_personal USER_ID [JOB_ID]
-#
-# Fetches the user's chart directly from Neon via query-user-chart.mjs, gates
-# on personalized_video_consent=true, then runs the full render pipeline
-# with the user's real HD blueprint props. Personal videos are uploaded to
-# Cloudflare Stream as PRIVATE (requireSignedURLs=true, never to Capricast).
-# A signed playback token is written back to Neon in personal_video_renders.
-#
-# Requires:
-#   NEON_CONNECTION_STRING   — loaded from Secret Manager at startup
-#   PERSONAL_USER_ID env var — set to trigger this mode from the main section
-render_personal() {
-  local user_id="${1:?user_id}" job_id="${2:-personal-${user_id}}"
-  log "── render_personal user=$user_id job=$job_id"
-
-  [ -n "${NEON_CONNECTION_STRING:-}" ] || { log "NEON_CONNECTION_STRING not set"; return 1; }
-
-  # Step P1 — query chart + consent via dedicated script (no inline node).
-  local chart_json
-  chart_json=$(TARGET_USER_ID="$user_id" \
-    node "${REPO_ROOT}/tools/render-runner/query-user-chart.mjs" 2>/tmp/neon.log) \
-    || { log "chart query failed: $(tail -1 /tmp/neon.log)"; return 1; }
-
-  local consent
-  consent=$(printf '%s' "$chart_json" | jq -r '.consent')
-  if [ "$consent" != "true" ]; then
-    log "user $user_id consent=false — skipping (set personalized_video_consent=true to enable)"
-    return 0
-  fi
-
-  local display_name hd_type forge_theme signature_gates brand_color
-  display_name=$(printf '%s' "$chart_json" | jq -r '.displayName')
-  hd_type=$(printf '%s' "$chart_json" | jq -r '.hdType')
-  forge_theme=$(printf '%s' "$chart_json" | jq -r '.forgeTheme')
-  signature_gates=$(printf '%s' "$chart_json" | jq -c '.signatureGates')
-  brand_color=$(printf '%s' "$chart_json" | jq -r '.brandColor')
-
-  log "  hd_type=$hd_type forge=$forge_theme gates=$signature_gates"
-
-  # Step P2 — run the standard render pipeline (LLM script + TTS + Remotion +
-  # ffmpeg + R2 upload). render_one publishes to Capricast by default, so we
-  # intercept after the MP4 is in R2 by temporarily redirecting the capricast step.
-  #
-  # To keep render_one reusable without a publish flag, we use a sentinel job_id
-  # prefix ("personal-") and handle delivery here after render_one returns.
-  # We call render_one with an empty CAPRICAST_PUBLISH_TOKEN so step 10 fails
-  # silently (mark_failed is not called for step 10 already — it only logs).
-  local topic="Your Energy Blueprint — ${display_name}"
-  local saved_token="$CAPRICAST_PUBLISH_TOKEN"
-  CAPRICAST_PUBLISH_TOKEN=""
-
-  render_one \
-    "$job_id" "EnergyBlueprintVideo" "prime_self" "$topic" \
-    "" "$brand_color" "$brand_color" "" \
-    "$forge_theme" "$hd_type" "$signature_gates" \
-    </dev/null
-  local render_exit=$?
-
-  CAPRICAST_PUBLISH_TOKEN="$saved_token"
-  [ $render_exit -eq 0 ] || { log "render_one failed for personal job $job_id"; return 1; }
-
-  # Step P3 — re-upload the already-R2-staged MP4 to Cloudflare Stream as PRIVATE.
-  # The public Stream upload already happened inside render_one (step 9). We need
-  # a second private copy. Fetch the MP4 from R2 and submit with requireSignedURLs.
-  local ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
-  local VIDEO_R2_URL="https://${R2_PUBLIC_DOMAIN}/videos/${job_id}.mp4"
-  local PRIV_REQ PRIV_RESP PRIV_UID
-  PRIV_REQ=$(jq -n \
-    --arg url "$VIDEO_R2_URL" \
-    --arg name "$topic" \
-    '{ url: $url, meta: { name: $name }, requireSignedURLs: true }')
-  PRIV_RESP=$(curl -sS -X POST \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/copy" \
-    -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
-    -H 'Content-Type: application/json' \
-    --data "$PRIV_REQ")
-  PRIV_UID=$(printf '%s' "$PRIV_RESP" | jq -r '.result.uid // empty')
-  [ -n "$PRIV_UID" ] || { log "private stream upload failed: $PRIV_RESP"; return 1; }
-
-  # Poll until the private copy is ready.
-  local priv_state
-  for i in $(seq 1 60); do
-    priv_state=$(curl -sS \
-      "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${PRIV_UID}" \
-      -H "Authorization: Bearer ${CF_STREAM_TOKEN}" | jq -r '.result.status.state // "unknown"')
-    log "[P3 $i/60] private stream state: $priv_state"
-    [ "$priv_state" = "ready" ] && break
-    [ "$priv_state" = "error" ] && { log "private stream encoding error"; return 1; }
-    sleep 10
-  done
-  [ "$priv_state" = "ready" ] || { log "private stream not ready in time"; return 1; }
-
-  # Step P4 — mint a signed playback token (23h; CF Stream max = 1440 min = 24h)
-  # and write to Neon. Token is refreshed on each view request.
-  local TOKEN_RESP TOKEN_VAL
-  TOKEN_RESP=$(curl -sS -X POST \
-    "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${PRIV_UID}/token" \
-    -H "Authorization: Bearer ${CF_STREAM_TOKEN}" \
-    -H 'Content-Type: application/json' \
-    --data '{"exp": '$(( $(date +%s) + 82800 ))'}')
-  TOKEN_VAL=$(printf '%s' "$TOKEN_RESP" | jq -r '.result.token // empty')
-  [ -n "$TOKEN_VAL" ] || { log "could not mint signed token: $TOKEN_RESP"; return 1; }
-
-  local SIGNED_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${PRIV_UID}/manifest/video.m3u8?token=${TOKEN_VAL}"
-
-  # Step P5 — upsert into personal_video_renders in Neon.
-  # node -e runs in CJS mode; use require() not await import(), wrap in async IIFE.
-  node -e "
-    const { Client } = require('pg');
-    (async () => {
-      const c = new Client({ connectionString: process.env.NEON_CONNECTION_STRING, ssl:{rejectUnauthorized:false} });
-      await c.connect();
-      await c.query(\`
-        INSERT INTO personal_video_renders (id, user_id, stream_uid, signed_url, expires_at, job_id, created_at)
-        VALUES (gen_random_uuid(), \$1, \$2, \$3, now() + interval '23 hours', \$4, now())
-        ON CONFLICT (user_id) DO UPDATE
-          SET stream_uid=EXCLUDED.stream_uid, signed_url=EXCLUDED.signed_url,
-              expires_at=EXCLUDED.expires_at, job_id=EXCLUDED.job_id, created_at=EXCLUDED.created_at
-      \`, [process.env.P_USER_ID, process.env.P_STREAM_UID, process.env.P_SIGNED_URL, process.env.P_JOB_ID]);
-      await c.end();
-    })().catch(e => { process.stderr.write(e.message + '\n'); process.exit(1); });
-  " 2>/tmp/neon-write.log || log "neon upsert warning: $(tail -1 /tmp/neon-write.log)"
-
-  log "✅ personal render complete: user=$user_id stream_uid=$PRIV_UID"
-  log "   signed_url=${SIGNED_URL}"
-  return 0
-}
-
 # ── Main ────────────────────────────────────────────────────────────────────
 load_all_secrets
 
-if [ -n "${PERSONAL_USER_ID:-}" ]; then
-  # Personal mode — render a single user's private personalized video.
-  # Triggered by setting PERSONAL_USER_ID=<uuid> on the Cloud Run Job.
-  log "PERSONAL mode — rendering personalized video for user=$PERSONAL_USER_ID"
-  if ! render_personal "$PERSONAL_USER_ID" "${PERSONAL_JOB_ID:-personal-${PERSONAL_USER_ID}}"; then
-    log "personal render FAILED for user=$PERSONAL_USER_ID"; exit 1
-  fi
-elif [ "${POLL:-0}" = "1" ]; then
+if [ "${POLL:-0}" = "1" ]; then
   log "POLL mode — draining pending jobs from schedule-worker"
   PENDING=$(curl -sS "${SCHEDULE_WORKER_URL}/jobs/pending?limit=${POLL_LIMIT:-10}" -H "Authorization: Bearer ${WORKER_API_TOKEN}")
   COUNT=$(echo "$PENDING" | jq -r '(.data // .jobs // []) | length')
@@ -444,7 +307,7 @@ elif [ "${POLL:-0}" = "1" ]; then
   log "poll drain complete"
 else
   # Single-job mode — render one job specified via env vars.
-  : "${JOB_ID:?set JOB_ID (or POLL=1 or PERSONAL_USER_ID) to specify render mode}"
+  : "${JOB_ID:?set JOB_ID (or POLL=1) to specify render mode}"
   if ! render_one "$JOB_ID" "${COMPOSITION_ID:?}" "${APP_ID:-$APP_ID_DEFAULT}" "${TOPIC:?}" \
       "${BRIEF_KEY:-}" "${BRAND_COLOR:-#6366f1}" "${BRAND_ACCENT:-#a5b4fc}" "${LOGO_URL:-}" \
       "${FORGE_THEME:-self}" "${HD_TYPE:-}" "${SIGNATURE_GATES:-[]}"; then

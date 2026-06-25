@@ -47,7 +47,6 @@ COPY packages/ packages/
 COPY apps/video-studio/ apps/video-studio/
 COPY scripts/ scripts/
 COPY tools/render-runner/entrypoint.sh tools/render-runner/entrypoint.sh
-COPY tools/render-runner/query-user-chart.mjs tools/render-runner/query-user-chart.mjs
 
 # Build the local package dependency chain in order (mirrors render-video.yml).
 # `npm install` (not `npm ci`) installs each package's devDeps (tsup/typescript)
@@ -76,11 +75,6 @@ RUN set -eux; \
       ln -sf /app/packages/$pkg \
              /app/apps/video-studio/node_modules/@latimer-woods-tech/$pkg; \
     done
-
-# Make pg resolvable from tools/render-runner scripts (query-user-chart.mjs uses
-# `import pg from 'pg'`; pg lives in packages/neon/node_modules after the build
-# above but Node.js won't find it from tools/render-runner/ without this).
-RUN npm install pg --no-save --no-audit --no-fund --prefix /app
 
 RUN chmod +x tools/render-runner/entrypoint.sh
 ENTRYPOINT ["bash", "/app/tools/render-runner/entrypoint.sh"]
