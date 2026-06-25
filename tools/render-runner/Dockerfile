@@ -47,6 +47,7 @@ COPY packages/ packages/
 COPY apps/video-studio/ apps/video-studio/
 COPY scripts/ scripts/
 COPY tools/render-runner/entrypoint.sh tools/render-runner/entrypoint.sh
+COPY tools/render-runner/query-user-chart.mjs tools/render-runner/query-user-chart.mjs
 
 # Build the local package dependency chain in order (mirrors render-video.yml).
 # `npm install` (not `npm ci`) installs each package's devDeps (tsup/typescript)
