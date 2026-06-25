@@ -3,22 +3,22 @@
 **Generated:** source-derived
 **Result:** PASS
 **Errors:** 0
-**Warnings:** 270
+**Warnings:** 286
 
 ## By Issue Type
 
 | Issue | Count |
 |---|---:|
-| docs.npm-script.missing | 213 |
-| docs.workflow-ref.missing | 57 |
+| docs.npm-script.missing | 228 |
+| docs.workflow-ref.missing | 58 |
 
 ## By Owner
 
 | Owner | Count |
 |---|---:|
 | platform | 230 |
+| architecture | 26 |
 | capricast | 24 |
-| architecture | 10 |
 | marketing | 2 |
 | revenue | 2 |
 | admin-studio | 1 |
@@ -51,7 +51,7 @@
 | warning | platform | docs/ADMIN_STUDIO_SETUP.md | 237 | References missing npm script "deploy:staging". |
 | warning | platform | docs/ADMIN_STUDIO_SETUP.md | 303 | References missing npm script "deploy:staging". |
 | warning | platform | docs/ADMIN_UI_AGENT_PLAN.md | 50 | References missing npm script "typecheck". |
-| warning | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 567 | References missing workflow .github/workflows/test-on-demand.yml. |
+| warning | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 572 | References missing workflow .github/workflows/test-on-demand.yml. |
 | warning | architecture | docs/adr/0003-claude-as-primary-reviewer.md | 75 | References missing workflow .github/workflows/claude-review.yml. |
 | warning | architecture | docs/adr/0006-cascading-multi-agent-review.md | 92 | References missing workflow .github/workflows/peer-review-cascade.yml. |
 | warning | architecture | docs/adr/0007-auto-fix-resolvable-ci-failures.md | 103 | References missing workflow .github/workflows/auto-fix-on-failure.yml. |
@@ -76,6 +76,22 @@
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 706 | References missing npm script "check". |
 | warning | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 1397 | References missing npm script "migrate". |
 | warning | architecture | docs/architecture/FACTORY_V1.md | 652 | References missing npm script "migrate". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 159 | References missing workflow .github/workflows/deploy-primusui.yml. |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 22 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 29 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 36 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 54 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 72 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 90 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 138 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 139 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 140 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 155 | References missing npm script "build-storybook". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 160 | References missing npm script "build-storybook". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 206 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 207 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 208 | References missing npm script "build". |
+| warning | architecture | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md | 214 | References missing npm script "build-storybook". |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1183 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1507 | References missing workflow .github/workflows/qa-audit.yml. |
 | warning | architecture | docs/architecture/QA_TOOLS_ARCHITECTURE.md | 1595 | References missing workflow .github/workflows/qa-audit.yml. |
@@ -112,19 +128,3 @@
 | warning | platform | docs/CONFIG_NORMALIZATION_AUDIT.md | 457 | References missing npm script "typecheck". |
 | warning | platform | docs/CONFIG_NORMALIZATION_AUDIT.md | 458 | References missing npm script "lint". |
 | warning | platform | docs/CONFIG_NORMALIZATION_AUDIT.md | 460 | References missing npm script "build". |
-| warning | platform | docs/decisions/2026-05-23-workflow-lifecycle.md | 131 | References missing workflow .github/workflows/_workflow-concurrency-check.yml. |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 326 | References missing workflow .github/workflows/quality-gates.yml. |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 119 | References missing npm script "typecheck". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 125 | References missing npm script "lint". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 303 | References missing npm script "typecheck". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 307 | References missing npm script "lint". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 315 | References missing npm script "build". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 329 | References missing npm script "typecheck". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 330 | References missing npm script "lint". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 332 | References missing npm script "build". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 376 | References missing npm script "typecheck". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 377 | References missing npm script "lint". |
-| warning | platform | docs/DEFINITION_OF_READY_DONE.md | 379 | References missing npm script "build". |
-| warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 373 | References missing workflow .github/workflows/collect-kpis.yml. |
-| warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 391 | References missing npm script "collect:kpis". |
-| warning | platform | docs/DELIVERY_KPI_DASHBOARD.md | 398 | References missing npm script "publish:kpi-dashboard". |

@@ -8,7 +8,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 |---|---:|---:|
 | admin-studio | 1 | 4 |
 | adrper79 | 1 | 0 |
-| architecture | 10 | 4 |
+| architecture | 26 | 4 |
 | capricast | 24 | 31 |
 | marketing | 2 | 79 |
 | platform | 230 | 282 |
@@ -49,6 +49,7 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | Drift Warnings | Doc |
 |---:|---|
 | 17 | docs/capricast/MONEY_FLOW_TEST_STRATEGY.md |
+| 16 | docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md |
 | 16 | docs/ENVIRONMENT_VERIFICATION_SETUP.md |
 | 12 | docs/DEFINITION_OF_READY_DONE.md |
 | 12 | docs/supervisor/SUP-4-EXEC-PLAN.md |
@@ -72,4 +73,3 @@ This generated index combines drift and broken-link debt into an owner-routed cl
 | 4 | PROJECT_STATUS.md |
 | 3 | ADMIN_AGENT_DEPLOYMENT_CHECKLIST.md |
 | 3 | docs/ACCESS.md |
-| 3 | docs/architecture/QA_TOOLS_ARCHITECTURE.md |

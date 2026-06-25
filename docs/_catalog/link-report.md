@@ -144,10 +144,10 @@
 | archive | platform | docs/T1_T2_DELIVERY_SUMMARY.md | 222 | ./docs/runbooks/product-quality-review.md | file not found |
 | archive | platform | docs/T1_T2_DELIVERY_SUMMARY.md | 223 | ./CLAUDE.md | file not found |
 | archive | platform | docs/T1_T2_DELIVERY_SUMMARY.md | 224 | ./docs/runbooks/getting-started.md | file not found |
-| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 776 | ./02-API-SPEC.md | file not found |
-| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 777 | ./03-UI-COMPONENTS.md | file not found |
-| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 778 | ./04-DEPLOYMENT.md | file not found |
-| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 779 | ./05-OPERATIONS.md | file not found |
+| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 781 | ./02-API-SPEC.md | file not found |
+| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 782 | ./03-UI-COMPONENTS.md | file not found |
+| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 783 | ./04-DEPLOYMENT.md | file not found |
+| active | admin-studio | docs/admin-studio/00-MASTER-PLAN.md | 784 | ./05-OPERATIONS.md | file not found |
 | active | architecture | docs/architecture/ADMIN_TECHNICAL_GUIDE.md | 288 | ../PRODUCT_PRINCIPLES.md | file not found |
 | active | architecture | docs/architecture/AGENT_RUNTIME.md | 159 | ../../apps/supervisor/src/tools/registry.ts | file not found |
 | active | architecture | docs/architecture/SURFACES.md | 79 | ../PRODUCT_PRINCIPLES.md | file not found |
