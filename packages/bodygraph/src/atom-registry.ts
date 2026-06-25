@@ -189,7 +189,7 @@ const GATE_NAMES: Readonly<Record<number, string>> = {
 export const ATOM_REGISTRY: Readonly<Record<number, AtomEntry>> = Object.fromEntries(
   Array.from({ length: 64 }, (_, i) => {
     const gate = i + 1;
-    const center = GATE_TO_CENTER[gate];
+    const center = GATE_TO_CENTER[gate]!;
     return [
       gate,
       {
