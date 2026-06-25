@@ -6,6 +6,7 @@ import {
   CENTER_TO_FORGE,
   CENTER_COLOR,
   MODE_DESCRIPTORS,
+  FORGE_DESCRIPTORS,
   getAtom,
   modeForGates,
 } from './atom-registry.js';
@@ -158,6 +159,43 @@ describe('MODE_DESCRIPTORS', () => {
       const desc = MODE_DESCRIPTORS[mode].toLowerCase();
       const keyword = ALIAS[mode] ?? mode.toLowerCase();
       expect(desc, `${mode} descriptor missing "${keyword}"`).toContain(keyword);
+    }
+  });
+});
+
+describe('FORGE_DESCRIPTORS', () => {
+  it('has a descriptor for each ForgeTheme', () => {
+    for (const forge of ALL_FORGES) {
+      expect(FORGE_DESCRIPTORS[forge], `${forge} missing descriptor`).toBeDefined();
+      expect(FORGE_DESCRIPTORS[forge].length).toBeGreaterThan(20);
+    }
+  });
+
+  it('descriptors are distinct (no two forges share fill text)', () => {
+    const texts = new Set(ALL_FORGES.map((f) => FORGE_DESCRIPTORS[f]));
+    expect(texts.size).toBe(ALL_FORGES.length);
+  });
+});
+
+describe('ATOM_REGISTRY descriptors (mode + fill, denormalized)', () => {
+  it('every atom carries modeDescriptor matching its musicalMode', () => {
+    for (let g = 1; g <= 64; g++) {
+      const atom = ATOM_REGISTRY[g];
+      expect(atom.modeDescriptor).toBe(MODE_DESCRIPTORS[atom.musicalMode]);
+    }
+  });
+
+  it('every atom carries forgeDescriptor matching its forgeTheme (the "fill" description)', () => {
+    for (let g = 1; g <= 64; g++) {
+      const atom = ATOM_REGISTRY[g];
+      expect(atom.forgeDescriptor).toBe(FORGE_DESCRIPTORS[atom.forgeTheme]);
+    }
+  });
+
+  it('both descriptors are present and non-empty on every atom', () => {
+    for (let g = 1; g <= 64; g++) {
+      expect(ATOM_REGISTRY[g].modeDescriptor.length).toBeGreaterThan(0);
+      expect(ATOM_REGISTRY[g].forgeDescriptor.length).toBeGreaterThan(0);
     }
   });
 });

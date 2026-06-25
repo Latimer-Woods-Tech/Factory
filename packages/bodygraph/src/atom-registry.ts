@@ -36,8 +36,19 @@ export interface AtomEntry {
   /** Unicode I-Ching hexagram character (U+4DC0 + gate − 1). */
   hexagram: string;
   center: CenterKey;
+  /** Western modal scale for music generation (the "mode", center-derived). */
   musicalMode: MusicalMode;
+  /**
+   * Prose descriptor for {@link musicalMode} (see {@link MODE_DESCRIPTORS}).
+   * Denormalized onto the atom so the mode carries its own description.
+   */
+  modeDescriptor: string;
   forgeTheme: ForgeTheme;
+  /**
+   * Prose descriptor for {@link forgeTheme} (see {@link FORGE_DESCRIPTORS}) —
+   * the visual/sonic "fill" atmosphere, the sibling of {@link modeDescriptor}.
+   */
+  forgeDescriptor: string;
   /** Hex accent color derived from the gate's center. */
   color: string;
   /**
@@ -115,6 +126,26 @@ export const MODE_DESCRIPTORS: Readonly<Record<MusicalMode, string>> = {
   Aeolian:    'natural minor scale, melancholic and introspective, emotional depth, wave-like and yearning',
   Locrian:    'Locrian mode, dissonant and pressured, tense grounding force, primal urgency, earthbound drive',
   Pentatonic: 'pentatonic scale, universal and open, timeless and unadorned, clean resonance, pure will',
+};
+
+// ── Forge → "fill" atmosphere descriptor ───────────────────────────────────
+
+/**
+ * Short forge-atmosphere descriptor for the visual/sonic "fill" of each forge
+ * theme — the sibling of {@link MODE_DESCRIPTORS}. Where the mode is induced by
+ * the reading's gates (via center → {@link CENTER_TO_MUSICAL_MODE}), the fill is
+ * induced by the same HD elements via center → {@link CENTER_TO_FORGE}. Injected
+ * into the music-generation prompt alongside the mode descriptor (kept in sync
+ * with FORGE_ATMOSPHERE in apps/video-studio/scripts/generate-music.mjs, which
+ * runs in Node and cannot import the built package).
+ */
+export const FORGE_DESCRIPTORS: Readonly<Record<ForgeTheme, string>> = {
+  chronos: 'minimalist neoclassical, contemplative piano and strings, slow clockwork pulse, restrained and spacious',
+  eros:    'warm romantic ambient, solo cello and soft strings, tender and intimate, lush reverb',
+  aether:  'ethereal ambient, airy shimmering pads, glassy bell textures, floating drone with subtle movement',
+  lux:     'luminous cinematic ambient, slowly rising warm strings, soft glockenspiel, hopeful and radiant',
+  phoenix: 'epic cinematic underscore, swelling strings and low brass, slow crescendo, sense of rebirth',
+  self:    'ambient cinematic underscore, warm analog synth pad, intimate and grounded, gentle felt piano',
 };
 
 // ── Gate KB keys [signal, frequency, shadow, archetype] ───────────────────
@@ -275,9 +306,11 @@ export const ATOM_REGISTRY: Readonly<Record<number, AtomEntry>> = Object.fromEnt
         gateName:    GATE_NAMES[gate] ?? `Gate ${gate}`,
         hexagram:    String.fromCodePoint(0x4DC0 + gate - 1),
         center,
-        musicalMode: CENTER_TO_MUSICAL_MODE[center],
-        forgeTheme:  CENTER_TO_FORGE[center],
-        color:       CENTER_COLOR[center],
+        musicalMode:     CENTER_TO_MUSICAL_MODE[center],
+        modeDescriptor:  MODE_DESCRIPTORS[CENTER_TO_MUSICAL_MODE[center]],
+        forgeTheme:      CENTER_TO_FORGE[center],
+        forgeDescriptor: FORGE_DESCRIPTORS[CENTER_TO_FORGE[center]],
+        color:           CENTER_COLOR[center],
         // GATE_KB_KEYS covers all 64 gates — the ! is safe.
         kbKeys:      GATE_KB_KEYS[gate]!,
       } satisfies AtomEntry,

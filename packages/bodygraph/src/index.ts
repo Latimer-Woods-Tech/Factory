@@ -71,6 +71,7 @@ export {
   CENTER_TO_FORGE,
   CENTER_COLOR,
   MODE_DESCRIPTORS,
+  FORGE_DESCRIPTORS,
   getAtom,
   modeForGates,
 } from './atom-registry.js';

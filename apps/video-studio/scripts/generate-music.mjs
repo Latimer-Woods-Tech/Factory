@@ -47,7 +47,9 @@ const MODE_DESCRIPTORS = {
   Pentatonic: 'pentatonic scale, universal and open, timeless and unadorned, clean resonance, pure will',
 };
 
-// Forge → atmospheric color for the music prompt
+// Forge → "fill" atmosphere descriptor for the music prompt.
+// Mirrors FORGE_DESCRIPTORS in atom-registry.ts (kept in sync manually —
+// this script runs in Node.js, the package is built separately).
 const FORGE_ATMOSPHERE = {
   chronos: 'minimalist neoclassical, contemplative piano and strings, slow clockwork pulse, restrained and spacious',
   eros:    'warm romantic ambient, solo cello and soft strings, tender and intimate, lush reverb',
