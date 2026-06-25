@@ -382,18 +382,21 @@ render_personal() {
   local SIGNED_URL="https://customer-${CF_STREAM_CUSTOMER_DOMAIN}.cloudflarestream.com/${PRIV_UID}/manifest/video.m3u8?token=${TOKEN_VAL}"
 
   # Step P5 — upsert into personal_video_renders in Neon.
+  # node -e runs in CJS mode; use require() not await import(), wrap in async IIFE.
   node -e "
-    const { Client } = await import('pg');
-    const c = new Client({ connectionString: process.env.NEON_CONNECTION_STRING, ssl:{rejectUnauthorized:false} });
-    await c.connect();
-    await c.query(\`
-      INSERT INTO personal_video_renders (id, user_id, stream_uid, signed_url, expires_at, job_id, created_at)
-      VALUES (gen_random_uuid(), \$1, \$2, \$3, now() + interval '7 days', \$4, now())
-      ON CONFLICT (user_id) DO UPDATE
-        SET stream_uid=EXCLUDED.stream_uid, signed_url=EXCLUDED.signed_url,
-            expires_at=EXCLUDED.expires_at, job_id=EXCLUDED.job_id, created_at=EXCLUDED.created_at
-    \`, [process.env.P_USER_ID, process.env.P_STREAM_UID, process.env.P_SIGNED_URL, process.env.P_JOB_ID]);
-    await c.end();
+    const { Client } = require('pg');
+    (async () => {
+      const c = new Client({ connectionString: process.env.NEON_CONNECTION_STRING, ssl:{rejectUnauthorized:false} });
+      await c.connect();
+      await c.query(\`
+        INSERT INTO personal_video_renders (id, user_id, stream_uid, signed_url, expires_at, job_id, created_at)
+        VALUES (gen_random_uuid(), \$1, \$2, \$3, now() + interval '23 hours', \$4, now())
+        ON CONFLICT (user_id) DO UPDATE
+          SET stream_uid=EXCLUDED.stream_uid, signed_url=EXCLUDED.signed_url,
+              expires_at=EXCLUDED.expires_at, job_id=EXCLUDED.job_id, created_at=EXCLUDED.created_at
+      \`, [process.env.P_USER_ID, process.env.P_STREAM_UID, process.env.P_SIGNED_URL, process.env.P_JOB_ID]);
+      await c.end();
+    })().catch(e => { process.stderr.write(e.message + '\n'); process.exit(1); });
   " 2>/tmp/neon-write.log || log "neon upsert warning: $(tail -1 /tmp/neon-write.log)"
 
   log "✅ personal render complete: user=$user_id stream_uid=$PRIV_UID"
