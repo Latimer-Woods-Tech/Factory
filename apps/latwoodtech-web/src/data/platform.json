@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-24T17:04:41.351Z",
+  "generatedAt": "2026-06-25T12:18:21.861Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -1051,7 +1051,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-24T17:04:42.128Z",
+    "generatedAt": "2026-06-25T12:18:22.663Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1102,7 +1102,7 @@
       "registryCoverage": {
         "current": 17.65,
         "prior": 17.65,
-        "priorDate": "2026-06-17",
+        "priorDate": "2026-06-18",
         "dayGap": 7,
         "delta": 0,
         "direction": "flat"
@@ -1110,7 +1110,7 @@
       "openGaps": {
         "current": 13,
         "prior": 13,
-        "priorDate": "2026-06-17",
+        "priorDate": "2026-06-18",
         "dayGap": 7,
         "delta": 0,
         "direction": "flat"
@@ -1165,6 +1165,6 @@
         }
       ]
     },
-    "seriesPoints": 10
+    "seriesPoints": 11
   }
 }
