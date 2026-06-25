@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-19T00:27:00.093Z",
+  "generatedAt": "2026-06-25T12:18:22.603Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -70,7 +70,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 71,
+        "cohesion": 77,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -107,7 +107,7 @@
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 80,
             "weight": 10
           },
           {
@@ -137,7 +137,7 @@
           },
           {
             "key": "privacy",
-            "score": 75,
+            "score": 100,
             "weight": 5
           }
         ],
@@ -213,7 +213,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 14,
+        "cohesion": 42,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -234,7 +234,7 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 40,
             "weight": 10
           },
           {
@@ -244,17 +244,17 @@
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 40,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 0,
+            "score": 40,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 60,
             "weight": 15
           },
           {
@@ -269,17 +269,17 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 25,
+            "score": 50,
             "weight": 5
           }
         ],
@@ -313,7 +313,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "production",
-        "cohesion": 14,
+        "cohesion": 40,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -335,17 +335,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 60,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 60,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 60,
             "weight": 15
           },
           {
@@ -355,12 +355,12 @@
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 40,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 67,
             "weight": 5
           },
           {
@@ -370,7 +370,7 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
@@ -857,7 +857,7 @@
         "lifecycleStage": "provisioned",
         "mode": "hands-off",
         "maturity": null,
-        "cohesion": 14,
+        "cohesion": 44,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -868,17 +868,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 40,
             "weight": 15
           },
           {
@@ -893,17 +893,17 @@
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 33,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
@@ -998,7 +998,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "revenue",
-        "cohesion": 16,
+        "cohesion": 56,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1034,22 +1034,22 @@
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 100,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 0,
+            "score": 40,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 67,
             "weight": 5
           },
           {
@@ -1059,12 +1059,12 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 67,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 67,
             "weight": 10
           },
           {
@@ -1154,7 +1154,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": null,
-        "cohesion": 14,
+        "cohesion": 44,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1165,17 +1165,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 40,
             "weight": 15
           },
           {
@@ -1190,17 +1190,17 @@
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 33,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
@@ -1295,7 +1295,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": null,
-        "cohesion": 14,
+        "cohesion": 59,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1306,17 +1306,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 100,
             "weight": 15
           },
           {
@@ -1326,27 +1326,27 @@
           },
           {
             "key": "security",
-            "score": 20,
+            "score": 40,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 33,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 33,
             "weight": 10
           },
           {
@@ -1368,7 +1368,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": "beta",
-        "cohesion": 14,
+        "cohesion": 51,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1387,17 +1387,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 20,
+            "score": 80,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 20,
+            "score": 80,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 0,
+            "score": 60,
             "weight": 15
           },
           {
@@ -1412,7 +1412,7 @@
           },
           {
             "key": "schema",
-            "score": 33,
+            "score": 100,
             "weight": 5
           },
           {
@@ -1422,17 +1422,17 @@
           },
           {
             "key": "release",
-            "score": 0,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 0,
+            "score": 67,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 25,
+            "score": 50,
             "weight": 5
           }
         ],
@@ -1793,6 +1793,69 @@
         "tier": "infra"
       },
       {
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
+        "tier": "growth"
+      },
+      {
         "id": "selfprime:energy-blueprint",
         "appId": "selfprime",
         "label": "Energy Blueprint synthesis",
@@ -1870,34 +1933,6 @@
         "tier": "growth"
       },
       {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
-        "status": "roadmap",
-        "tier": "core"
-      },
-      {
         "id": "capricast:video-playback",
         "appId": "capricast",
         "label": "CF Stream video playback",
@@ -1937,41 +1972,6 @@
         "appId": "capricast",
         "label": "16-way video chat",
         "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
         "tier": "growth"
       }
     ],
@@ -2054,6 +2054,55 @@
         "quarter": "Q1-2027"
       },
       {
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
+        "status": "design",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
+        "status": "queued",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "coh:coh-mobile",
+        "appId": "coh",
+        "label": "Mobile PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
         "id": "selfprime:sp-launch",
         "appId": "selfprime",
         "label": "Public Launch",
@@ -2082,27 +2131,6 @@
         "quarter": "Q2-2027"
       },
       {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
-        "status": "design",
-        "quarter": "Q1-2027"
-      },
-      {
         "id": "capricast:cc-monetize",
         "appId": "capricast",
         "label": "Creator Monetization Live",
@@ -2126,34 +2154,6 @@
       {
         "id": "capricast:cc-mobile",
         "appId": "capricast",
-        "label": "Mobile PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
-        "status": "queued",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
@@ -2499,6 +2499,131 @@
       "type": "uses_package"
     },
     {
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:booking",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:monitoring",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-chair",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-vault",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-academy",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:the-stage",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
+      "from": "coh",
+      "to": "pkg:email",
+      "type": "uses_package"
+    },
+    {
       "from": "selfprime",
       "to": "selfprime:energy-blueprint",
       "type": "has_feature"
@@ -2609,61 +2734,6 @@
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:booking",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
-      "type": "uses_package"
-    },
-    {
       "from": "capricast",
       "to": "capricast:video-playback",
       "type": "has_feature"
@@ -2737,76 +2807,6 @@
       "from": "capricast",
       "to": "pkg:video",
       "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-chair",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-vault",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-academy",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:the-stage",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:inner-circle",
-      "type": "has_feature"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-5streams",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "coh:coh-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
-      "from": "coh",
-      "to": "pkg:email",
-      "type": "uses_package"
     }
   ],
   "stats": {
@@ -2828,7 +2828,7 @@
     "edgeCount": 102
   },
   "kpis": {
-    "generatedAt": "2026-06-19T00:27:00.152Z",
+    "generatedAt": "2026-06-25T12:18:22.663Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2841,7 +2841,7 @@
       },
       "cost30dUsd": 10.81,
       "mrrUsd": 0,
-      "completionWeighted": 2.6
+      "completionWeighted": 0
     },
     "trends": {
       "cohesion": {
@@ -2869,28 +2869,28 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 2.6,
-        "prior": 3,
-        "priorDate": "2026-06-12",
-        "dayGap": 6,
-        "delta": -0.4,
+        "current": 0,
+        "prior": 2.6,
+        "priorDate": "2026-06-17",
+        "dayGap": 7,
+        "delta": -2.6,
         "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 17.65,
-        "priorDate": "2026-06-12",
+        "priorDate": "2026-06-18",
         "dayGap": 7,
         "delta": 0,
         "direction": "flat"
       },
       "openGaps": {
         "current": 13,
-        "prior": 14,
-        "priorDate": "2026-06-12",
+        "prior": 13,
+        "priorDate": "2026-06-18",
         "dayGap": 7,
-        "delta": -1,
-        "direction": "down"
+        "delta": 0,
+        "direction": "flat"
       }
     },
     "movers": {
@@ -2942,6 +2942,6 @@
         }
       ]
     },
-    "seriesPoints": 9
+    "seriesPoints": 11
   }
 }

@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-06-18T13:48:01.736178+00:00",
-  "overall_weighted": 2.6,
-  "overall_known": 100.0,
-  "overall_raw": 2.4,
+  "generated_at": "2026-06-25T12:37:52.019000+00:00",
+  "overall_weighted": 0.0,
+  "overall_known": 0.0,
+  "overall_raw": 0.0,
   "repo_weighted": {
-    "HD": 5.4,
+    "HD": 0.0,
     "CC": 0.0,
     "FA": 0.0,
     "CH": 0.0,
@@ -421,14 +421,16 @@
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "`chart-today-hint.test.js`",
-      "status": "✅",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-21",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "client-side component — no API route needed",
+      "notes": "(auto-decay) client-side component — no API route needed",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "HD",
@@ -2075,14 +2077,16 @@
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "—",
-      "status": "✅",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-21",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES",
+      "notes": "(auto-decay) BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "HD",
@@ -2096,14 +2100,16 @@
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "—",
-      "status": "✅",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-21",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id]",
+      "notes": "(auto-decay) BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id]",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "HD",
@@ -2117,14 +2123,16 @@
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "—",
-      "status": "✅",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-21",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user",
+      "notes": "(auto-decay) Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "HD",
@@ -2138,14 +2146,16 @@
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "—",
-      "status": "✅",
+      "status": "🔍",
       "owner": "@adrper79-dot",
       "last_verified": "2026-05-21",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string",
+      "notes": "(auto-decay) BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string",
       "tags": [],
-      "overlays": []
+      "overlays": [
+        "auto-decay"
+      ]
     },
     {
       "repo_key": "FA",
@@ -2863,102 +2873,10 @@
     {
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
-      "section": "Creators, Payouts & Stripe Connect",
-      "line_no": 68,
-      "raw": "|FA-PAY-001|Creator onboarding|`/api/creator/onboarding/*` → `src/routes/creator-onboarding.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Migration 0002|",
-      "id": "FA-PAY-001",
-      "feature": "Creator onboarding",
-      "endpoint": "`/api/creator/onboarding/*` → `src/routes/creator-onboarding.ts`",
-      "sentry_project": "factory-admin-studio",
-      "manual": "🔍 TODO",
-      "automated": "—",
-      "status": "🔍",
-      "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
-      "issue_pr": "—",
-      "weight": 5,
-      "notes": "(auto-decay) Migration 0002",
-      "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
-    },
-    {
-      "repo_key": "FA",
-      "repo_name": "factory-admin-studio",
-      "section": "Creators, Payouts & Stripe Connect",
-      "line_no": 69,
-      "raw": "|FA-PAY-002|Admin creators|`/api/admin/creators/*` → `src/routes/creators.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|2||",
-      "id": "FA-PAY-002",
-      "feature": "Admin creators",
-      "endpoint": "`/api/admin/creators/*` → `src/routes/creators.ts`",
-      "sentry_project": "factory-admin-studio",
-      "manual": "🔍 TODO",
-      "automated": "—",
-      "status": "🔍",
-      "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
-      "issue_pr": "—",
-      "weight": 2,
-      "notes": "(auto-decay)",
-      "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
-    },
-    {
-      "repo_key": "FA",
-      "repo_name": "factory-admin-studio",
-      "section": "Creators, Payouts & Stripe Connect",
+      "section": "Studio Billing (own SaaS subscriptions)",
       "line_no": 70,
-      "raw": "|FA-PAY-003|Admin payouts|`/api/admin/payouts/*` → `src/routes/payouts.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Migration 0003|",
-      "id": "FA-PAY-003",
-      "feature": "Admin payouts",
-      "endpoint": "`/api/admin/payouts/*` → `src/routes/payouts.ts`",
-      "sentry_project": "factory-admin-studio",
-      "manual": "🔍 TODO",
-      "automated": "—",
-      "status": "🔍",
-      "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
-      "issue_pr": "—",
-      "weight": 5,
-      "notes": "(auto-decay) Migration 0003",
-      "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
-    },
-    {
-      "repo_key": "FA",
-      "repo_name": "factory-admin-studio",
-      "section": "Creators, Payouts & Stripe Connect",
-      "line_no": 71,
-      "raw": "|FA-PAY-004|Stripe Connect webhooks|`POST /webhooks/stripe-connect` → `src/routes/webhooks-stripe-connect.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Public, signed|",
-      "id": "FA-PAY-004",
-      "feature": "Stripe Connect webhooks",
-      "endpoint": "`POST /webhooks/stripe-connect` → `src/routes/webhooks-stripe-connect.ts`",
-      "sentry_project": "factory-admin-studio",
-      "manual": "🔍 TODO",
-      "automated": "—",
-      "status": "🔍",
-      "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
-      "issue_pr": "—",
-      "weight": 5,
-      "notes": "(auto-decay) Public, signed",
-      "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
-    },
-    {
-      "repo_key": "FA",
-      "repo_name": "factory-admin-studio",
-      "section": "Creators, Payouts & Stripe Connect",
-      "line_no": 72,
-      "raw": "|FA-PAY-005|Studio subscriptions webhook|`POST /webhooks/studio-subscriptions` → `src/routes/webhooks-studio-subscriptions.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Public, signed|",
-      "id": "FA-PAY-005",
+      "raw": "|FA-BILL-001|Studio subscriptions webhook|`POST /webhooks/studio-subscriptions` → `src/routes/webhooks-studio-subscriptions.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-06-22|—|5|Public, signed; drives entitlements|",
+      "id": "FA-BILL-001",
       "feature": "Studio subscriptions webhook",
       "endpoint": "`POST /webhooks/studio-subscriptions` → `src/routes/webhooks-studio-subscriptions.ts`",
       "sentry_project": "factory-admin-studio",
@@ -2966,20 +2884,18 @@
       "automated": "—",
       "status": "🔍",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-06-22",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) Public, signed",
+      "notes": "Public, signed; drives entitlements",
       "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 77,
+      "line_no": 75,
       "raw": "|FA-FLG-001|Flagship / feature flags|`/api/flags/*` → `src/routes/flagship.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|2|Audit-gated|",
       "id": "FA-FLG-001",
       "feature": "Flagship / feature flags",
@@ -3002,7 +2918,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 78,
+      "line_no": 76,
       "raw": "|FA-FLG-002|Data Subject Requests|`/dsr/*` → `src/routes/dsr.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|5|Compliance + data-loss|",
       "id": "FA-FLG-002",
       "feature": "Data Subject Requests",
@@ -3025,7 +2941,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 79,
+      "line_no": 77,
       "raw": "|FA-FLG-003|Digest orchestrator|`runDigest()` — `src/digest/index.ts`|factory-admin-studio|🔍 TODO|—|🔍|@adrper79-dot|2026-05-11|—|2|Cron|",
       "id": "FA-FLG-003",
       "feature": "Digest orchestrator",
@@ -3048,7 +2964,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 80,
+      "line_no": 78,
       "raw": "|FA-FLG-004|Digest collect|`src/digest/collect.ts`|factory-admin-studio|—|—|🔍|@adrper79-dot|2026-05-11|—|2||",
       "id": "FA-FLG-004",
       "feature": "Digest collect",
@@ -3071,7 +2987,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 81,
+      "line_no": 79,
       "raw": "|FA-FLG-005|Digest render|`src/digest/render.ts`|factory-admin-studio|—|—|🔍|@adrper79-dot|2026-05-11|—|2||",
       "id": "FA-FLG-005",
       "feature": "Digest render",
@@ -3094,7 +3010,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 82,
+      "line_no": 80,
       "raw": "|FA-FLG-006|Digest audio (TTS)|`src/digest/audio.ts`|factory-admin-studio|—|—|🔍|@adrper79-dot|2026-05-11|—|2||",
       "id": "FA-FLG-006",
       "feature": "Digest audio (TTS)",
@@ -3117,7 +3033,7 @@
       "repo_key": "FA",
       "repo_name": "factory-admin-studio",
       "section": "Feature Flags, DSR & Digest",
-      "line_no": 83,
+      "line_no": 81,
       "raw": "|FA-FLG-007|Digest send|`src/digest/send.ts`|factory-admin-studio|—|—|🔍|@adrper79-dot|2026-05-11|—|2||",
       "id": "FA-FLG-007",
       "feature": "Digest send",
