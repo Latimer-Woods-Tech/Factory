@@ -67,6 +67,16 @@ RUN set -eux; \
     cd apps/video-studio && npm install --no-audit --no-fund && \
     npx remotion browser ensure
 
+# Symlink all built @latimer-woods-tech workspace packages into
+# apps/video-studio/node_modules so scripts like derive-blueprint-props.mjs
+# can import them. Must run AFTER npm install (which may wipe the dir).
+RUN set -eux; \
+    mkdir -p /app/apps/video-studio/node_modules/@latimer-woods-tech; \
+    for pkg in bodygraph errors monitoring logger neon llm video schedule; do \
+      ln -sf /app/packages/$pkg \
+             /app/apps/video-studio/node_modules/@latimer-woods-tech/$pkg; \
+    done
+
 # Make pg resolvable from tools/render-runner scripts (query-user-chart.mjs uses
 # `import pg from 'pg'`; pg lives in packages/neon/node_modules after the build
 # above but Node.js won't find it from tools/render-runner/ without this).
