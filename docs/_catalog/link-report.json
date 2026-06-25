@@ -1140,7 +1140,7 @@
     },
     {
       "file": "docs/admin-studio/00-MASTER-PLAN.md",
-      "line": 776,
+      "line": 781,
       "target": "./02-API-SPEC.md",
       "reason": "file not found",
       "owner": "admin-studio",
@@ -1149,7 +1149,7 @@
     },
     {
       "file": "docs/admin-studio/00-MASTER-PLAN.md",
-      "line": 777,
+      "line": 782,
       "target": "./03-UI-COMPONENTS.md",
       "reason": "file not found",
       "owner": "admin-studio",
@@ -1158,7 +1158,7 @@
     },
     {
       "file": "docs/admin-studio/00-MASTER-PLAN.md",
-      "line": 778,
+      "line": 783,
       "target": "./04-DEPLOYMENT.md",
       "reason": "file not found",
       "owner": "admin-studio",
@@ -1167,7 +1167,7 @@
     },
     {
       "file": "docs/admin-studio/00-MASTER-PLAN.md",
-      "line": 779,
+      "line": 784,
       "target": "./05-OPERATIONS.md",
       "reason": "file not found",
       "owner": "admin-studio",

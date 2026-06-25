@@ -7,7 +7,7 @@ doc_type: diagram
 fidelity: generated
 title: "Factory Workflow Map"
 generator: npm run docs:diagrams
-last_generated: 2026-06-18
+last_generated: 2026-06-25
 source:
   - .github/workflows/*.yml
   - .github/workflows/REGISTRY.md
@@ -160,6 +160,7 @@ flowchart TB
   Other --> upload_sybil_music_yml["upload-sybil-music.yml"]
   Quality --> validate_sentry_auth_token_yml["validate-sentry-auth-token.yml"]
   Quality --> validate_service_registry_yml["validate-service-registry.yml"]
+  Other --> visual_audit_capricast_yml["visual-audit-capricast.yml"]
   Other --> weekly_governance_checkpoint_yml["weekly-governance-checkpoint.yml"]
   Other --> workflow_budget_check_yml["workflow-budget-check.yml"]
   Other --> workflow_concurrency_check_yml["workflow-concurrency-check.yml"]
