@@ -12,6 +12,7 @@ import { StarField } from '../components/StarField.js';
 import { BodyGraph } from '../components/BodyGraph.js';
 import { KineticReveal } from '../components/KineticReveal.js';
 import { ForgeAtmosphere, type ForgeKey } from '../components/ForgeAtmosphere.js';
+import { HeroBlueprint } from '../components/HeroBlueprint.js';
 import { TYPE_COLORS, DEFAULT_BRAND_COLOR } from '../blueprint-types.js';
 
 // ---------------------------------------------------------------------------
@@ -58,6 +59,34 @@ export const blueprintSchema = z.object({
   musicUrl: z.string().optional(),
   /** Music bed volume (0-1), kept low so it sits under the narration. */
   musicVolume: z.number().optional(),
+
+  // ── Production-quality hero design (the personal pipeline) ────────────────
+  // When `backgroundUrl` + `identity` are supplied, the composition renders the
+  // bespoke hero design (cinematic background + identity card + labelled chart +
+  // Shadow→Gift→Siddhi gate band) instead of the legacy scene arc.
+  /** Bespoke FLUX background image URL (per forge), from generate-background.mjs. */
+  backgroundUrl: z.string().optional(),
+  /** Personal identity for the hero card. */
+  identity: z.object({
+    type: z.string(),
+    authority: z.string(),
+    strategy: z.string(),
+  }).optional(),
+  /** Defined-centre engine keys for the hero graph (top-level, not per-scene). */
+  heroDefinedCenters: z.array(z.string()).optional(),
+  /** Human-readable defined-centre labels for the hero callout. */
+  definedCenterLabels: z.array(z.string()).optional(),
+  /** Signature-gate metadata cards (from the Atom Registry) for the hero band. */
+  signatureGateData: z.array(z.object({
+    gate: z.number(),
+    name: z.string(),
+    hex: z.string(),
+    center: z.string(),
+    archetype: z.string(),
+    shadow: z.string(),
+    gift: z.string(),
+    siddhi: z.string(),
+  })).optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -420,11 +449,38 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   signatureGates = [],
   musicUrl = '',
   musicVolume = 0.16,
+  backgroundUrl,
+  identity,
+  heroDefinedCenters,
+  definedCenterLabels,
+  signatureGateData,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
+
+  // Production-quality hero design — the per-user pipeline supplies a bespoke
+  // background + identity + gate metadata. Legacy scene arc is the fallback for
+  // content videos that don't supply them.
+  if (backgroundUrl && identity) {
+    return (
+      <AbsoluteFill>
+        <HeroBlueprint
+          backgroundUrl={backgroundUrl}
+          identity={identity}
+          definedCenters={heroDefinedCenters ?? []}
+          definedCenterLabels={definedCenterLabels ?? []}
+          signatureGates={signatureGateData ?? []}
+          typeColor={typeColor}
+          logoUrl={logoUrl}
+        />
+        {narrationUrl && <Audio src={narrationUrl} />}
+        {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
+      </AbsoluteFill>
+    );
+  }
+
   const resolvedScenes = sceneProp ?? buildDefaultScenes(script) ?? [];
 
   // Determine which scene is current and the local frame within it
