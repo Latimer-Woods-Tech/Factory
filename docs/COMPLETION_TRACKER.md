@@ -1,25 +1,18 @@
 # Completion Tracker
-_Generated 2026-06-24T12:33:56+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-25T12:37:52+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: FA
+## 🚨 CI red on main: CH, XC
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **HD** HumanDesign | 0 | 0 | 0 | 93 | 93 | 0.0% | 0.0% | **0.0%** (Δ-5.4) |
+| **HD** HumanDesign | 0 | 0 | 0 | 93 | 93 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **FA** factory-admin-studio 🚨 🟧smoke | 0 | 0 | 0 | 39 | 39 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **CH** cypher-healing | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **XC** xico-city 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **FA** factory-admin-studio | 0 | 0 | 0 | 39 | 39 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing 🚨 | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 0.0% (Δ-2.6)** · known: 0.0% · raw: 0.0%
-
-### ↓ Top regressions
-- `HD-EXPORT-001` (HD) — Data Export (weight 5) → 🔍
-- `HD-TRANS-001` (HD) — Transit Forecast (weight 4) → 🔍
-- `HD-LLM-001` (HD) — LLM Profile Generate (weight 4) → 🔍
-- `HD-CHART-006` (HD) — Today's Hint (weight 3) → 🔍
-- `HD-REF-001` (HD) — Get Referrals (weight 3) → 🔍
+**Overall weighted pass: 0.0% (Δ+0.0)** · known: 0.0% · raw: 0.0%
 
 ## HD — HumanDesign
 ### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
@@ -175,15 +168,15 @@ _Generated 2026-06-24T12:33:56+00:00 by `scripts/aggregate_completion.py`._
 ### Health, Auth & Session — 0.0% weighted (0✅ 0⚠️ 0❌ 9🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | smoke-red,auto-decay |
-| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | smoke-red,auto-decay |
-| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | smoke-red,auto-decay |
-| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | smoke-red,auto-decay |
-| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | smoke-red,auto-decay |
-| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | smoke-red,auto-decay |
-| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | smoke-red,auto-decay |
-| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | smoke-red,auto-decay |
-| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | smoke-red,auto-decay |
+| `FA-HEALTH-001` | Health check | 🔍 | 1 | — | auto-decay |
+| `FA-AUTH-001` | Auth routes | 🔍 | 5 | — | auto-decay |
+| `FA-AUTH-002` | `/me` profile | 🔍 | 5 | — | auto-decay |
+| `FA-AUTH-003` | Env context middleware | 🔍 | 5 | — | auto-decay |
+| `FA-AUTH-004` | Audit middleware | 🔍 | 2 | — | auto-decay |
+| `FA-AUTH-005` | Require-confirmation middleware | 🔍 | 5 | — | auto-decay |
+| `FA-AUTH-006` | CORS middleware | 🔍 | 1 | — | auto-decay |
+| `FA-AUTH-007` | Request ID middleware | 🔍 | 1 | — | auto-decay |
+| `FA-AUTH-008` | HMAC utility | 🔍 | 5 | — | auto-decay |
 
 ### Public Manifest & Function Catalog — 0.0% weighted (0✅ 0⚠️ 0❌ 4🔍)
 | ID | Feature | Status | W | Tags | Overlays |
