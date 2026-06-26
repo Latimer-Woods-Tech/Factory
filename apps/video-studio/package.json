@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@latimer-woods-tech/bodygraph": "file:../../packages/bodygraph",
     "@latimer-woods-tech/llm": "file:../../packages/llm",
     "@latimer-woods-tech/video-studio": "file:../../packages/video-studio",
     "@remotion/bundler": "^4.0.464",

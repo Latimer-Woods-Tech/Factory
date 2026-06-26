@@ -29,35 +29,13 @@ import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import {
+  FORGE_DESCRIPTORS,
+  MODE_DESCRIPTORS,
+  modeForGates,
+} from '@latimer-woods-tech/bodygraph';
 
 const execFileP = promisify(execFile);
-
-// ── Mode → prompt descriptor ───────────────────────────────────────────────
-// Matches MODE_DESCRIPTORS in atom-registry.ts (kept in sync manually —
-// this script runs in Node.js, the package is built separately).
-
-const MODE_DESCRIPTORS = {
-  Lydian:     'Lydian mode, dreamy and otherworldly, raised fourth gives a floating quality, airy and celestial, wonder and inspiration',
-  Ionian:     'major scale, bright and clear, uplifting confidence, radiant and manifesting, directional warmth',
-  Mixolydian: 'Mixolydian mode, bluesy and powerful, major with a flattened seventh, soulful and driving willpower',
-  Dorian:     'Dorian mode, earthy and soulful, minor with a raised sixth, rolling and grounded, sustaining life-force',
-  Phrygian:   'Phrygian mode, dark and instinctual, ancient and primal, tense but alive, visceral immunity',
-  Aeolian:    'natural minor scale, melancholic and introspective, emotional depth, wave-like and yearning',
-  Locrian:    'Locrian mode, dissonant and pressured, tense grounding force, primal urgency, earthbound drive',
-  Pentatonic: 'pentatonic scale, universal and open, timeless and unadorned, clean resonance, pure will',
-};
-
-// Forge → "fill" atmosphere descriptor for the music prompt.
-// Mirrors FORGE_DESCRIPTORS in atom-registry.ts (kept in sync manually —
-// this script runs in Node.js, the package is built separately).
-const FORGE_ATMOSPHERE = {
-  chronos: 'minimalist neoclassical, contemplative piano and strings, slow clockwork pulse, restrained and spacious',
-  eros:    'warm romantic ambient, solo cello and soft strings, tender and intimate, lush reverb',
-  aether:  'ethereal ambient, airy shimmering pads, glassy bell textures, floating drone with subtle movement',
-  lux:     'luminous cinematic ambient, slowly rising warm strings, soft glockenspiel, hopeful and radiant',
-  phoenix: 'epic cinematic underscore, swelling strings and low brass, slow crescendo, sense of rebirth',
-  self:    'ambient cinematic underscore, warm analog synth pad, intimate and grounded, gentle felt piano',
-};
 
 const UNDERSCORE_CONSTRAINTS =
   'instrumental only, no vocals, no lead melody, no four-on-the-floor drums, ' +
@@ -103,43 +81,18 @@ async function r2Upload(localPath, key, endpoint) {
   ], { env: { ...process.env } });
 }
 
-// ── Gate → center → mode (mirrors GATE_TO_CENTER + CENTER_TO_MUSICAL_MODE) ─
-// Kept in sync with atom-registry.ts; duplicated here so this script runs in
-// Node.js without building the bodygraph package first.
-
-const CENTER_GATES = {
-  Head:        [61, 63, 64],
-  Ajna:        [4, 11, 17, 24, 43, 47],
-  Throat:      [8, 12, 16, 20, 23, 31, 33, 35, 45, 56, 62],
-  G:           [1, 2, 7, 10, 13, 15, 25, 46],
-  Heart:       [21, 26, 40, 51],
-  SolarPlexus: [6, 22, 30, 36, 37, 49, 55],
-  Sacral:      [3, 5, 9, 14, 27, 29, 34, 42, 59],
-  Spleen:      [18, 28, 32, 44, 48, 50, 57],
-  Root:        [19, 38, 39, 41, 52, 53, 54, 58, 60],
-};
-
-const CENTER_TO_MODE = {
-  Head: 'Lydian', Ajna: 'Lydian', Throat: 'Ionian', G: 'Ionian',
-  Heart: 'Mixolydian', Sacral: 'Dorian', Spleen: 'Phrygian',
-  SolarPlexus: 'Aeolian', Root: 'Locrian',
-};
-
-function modeFromGates(gatesJson) {
+function signatureGatesFromJson(gatesJson) {
   let gates = [];
-  try { gates = JSON.parse(gatesJson || '[]'); } catch { return 'Ionian'; }
-  if (!Array.isArray(gates) || gates.length === 0) return 'Ionian';
-  for (const [center, list] of Object.entries(CENTER_GATES)) {
-    if (list.includes(Number(gates[0]))) return CENTER_TO_MODE[center] ?? 'Ionian';
-  }
-  return 'Ionian';
+  try { gates = JSON.parse(gatesJson || '[]'); } catch { return []; }
+  if (!Array.isArray(gates)) return [];
+  return gates.map((gate) => Number(gate)).filter((gate) => Number.isInteger(gate));
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
 const ELEVENLABS_API_KEY = env('ELEVENLABS_API_KEY');
 // MUSICAL_MODE can be set explicitly, or derived from SIGNATURE_GATES.
-const MUSICAL_MODE = env('MUSICAL_MODE') || modeFromGates(env('SIGNATURE_GATES', '[]'));
+const MUSICAL_MODE = env('MUSICAL_MODE') || modeForGates(signatureGatesFromJson(env('SIGNATURE_GATES', '[]')));
 const FORGE_THEME  = env('FORGE_THEME', 'self');
 const DURATION_S         = Math.max(30, Math.min(600, Number(env('MUSIC_DURATION_S', '90'))));
 const FORCE              = env('FORCE_REGENERATE') === '1';
@@ -174,7 +127,7 @@ if (!FORCE) {
 
 // Build the prompt: modal character + forge atmosphere + underscore constraints
 const modeDesc  = MODE_DESCRIPTORS[MUSICAL_MODE] ?? MODE_DESCRIPTORS.Ionian;
-const atmoDesc  = FORGE_ATMOSPHERE[FORGE_THEME]  ?? FORGE_ATMOSPHERE.self;
+const atmoDesc  = FORGE_DESCRIPTORS[FORGE_THEME] ?? FORGE_DESCRIPTORS.self;
 const prompt    = `${atmoDesc}, ${modeDesc}, ${UNDERSCORE_CONSTRAINTS}`;
 
 log(`mode=${MUSICAL_MODE} forge=${FORGE_THEME} duration=${DURATION_S}s`);

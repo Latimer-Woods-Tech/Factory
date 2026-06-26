@@ -3,7 +3,8 @@
 //
 // Maps each of the 64 Human Design gates to its I-Ching hexagram glyph,
 // energy center, musical mode (for ElevenLabs Music prompt generation),
-// forge-atmosphere theme (visual affinity), accent color, and gate name.
+// forge-atmosphere theme (visual affinity), accent color, symbology glyphs,
+// character keyword, and gate name.
 //
 // All center-derived properties (musicalMode, forgeTheme, color) flow from
 // CENTER_TO_MUSICAL_MODE / CENTER_TO_FORGE / CENTER_COLOR — the gate level
@@ -12,6 +13,8 @@
 
 import type { CenterKey } from './geometry.js';
 import { GATE_TO_CENTER } from './geometry.js';
+
+export type { CenterKey } from './geometry.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -52,6 +55,14 @@ export interface AtomEntry {
   /** Hex accent color derived from the gate's center. */
   color: string;
   /**
+   * Universal/symbolic glyph stack for this atom. The first glyph is always the
+   * gate's I-Ching hexagram; the remaining glyphs are center-level symbolic
+   * marks used by video overlays and future mood-ring/symbology consumers.
+   */
+  glyphs: readonly string[];
+  /** Center-level character tone used by script, music, and visual prompts. */
+  characterKeyword: string;
+  /**
    * Knowledge-base keyword seeds: [signal, frequency, shadow, archetype].
    * Sourced from gates.json (Gene Keys triad) in the HumanDesign KB.
    * Used as seeded randomizers for LLM script generation and SEO metadata.
@@ -65,24 +76,25 @@ export interface AtomEntry {
  * Center → Western modal scale.
  *
  * Assignments reflect each center's core quality:
- * - Head/Ajna: Lydian — floating, inspired, otherworldly
- * - Throat/G:  Ionian — bright, manifesting, directed
- * - Heart:     Mixolydian — soulful, powerful, willful
+ * - Head:      Lydian — floating, inspired, otherworldly
+ * - Ajna:      Dorian — contemplative, grounded mental pattern
+ * - Throat:    Mixolydian — expressive, soulful transmission
+ * - G/Heart:   Ionian — bright, directional; Heart carries the bold will facet
  * - Sacral:    Dorian — earthy, sustaining, rolling life-force
  * - Spleen:    Phrygian — dark, instinctual, ancient immunity
  * - SP:        Aeolian — melancholic, wave-like emotion
- * - Root:      Locrian — pressured, tense grounding drive
+ * - Root:      Phrygian — driving, pressured, primal momentum
  */
 export const CENTER_TO_MUSICAL_MODE: Readonly<Record<CenterKey, MusicalMode>> = {
   Head:        'Lydian',
-  Ajna:        'Lydian',
-  Throat:      'Ionian',
+  Ajna:        'Dorian',
+  Throat:      'Mixolydian',
   G:           'Ionian',
-  Heart:       'Mixolydian',
+  Heart:       'Ionian',
   Sacral:      'Dorian',
   Spleen:      'Phrygian',
   SolarPlexus: 'Aeolian',
-  Root:        'Locrian',
+  Root:        'Phrygian',
 };
 
 /** Center → forge atmosphere affinity. */
@@ -93,22 +105,48 @@ export const CENTER_TO_FORGE: Readonly<Record<CenterKey, ForgeTheme>> = {
   G:           'self',
   Heart:       'phoenix',
   Sacral:      'eros',
-  Spleen:      'aether',
+  Spleen:      'chronos',
   SolarPlexus: 'eros',
-  Root:        'chronos',
+  Root:        'phoenix',
 };
 
 /** Center → accent hex color. */
 export const CENTER_COLOR: Readonly<Record<CenterKey, string>> = {
-  Head:        '#c8c8dc',  // pale silver — mental pressure
-  Ajna:        '#7b6fd4',  // indigo — conceptualization
+  Head:        '#8f7cff',  // violet — wonder / inspiration
+  Ajna:        '#5f5bc4',  // indigo — contemplation
   Throat:      '#4a90d9',  // blue — expression
-  G:           '#c9a84c',  // gold — identity / love / self
+  G:           '#b7b75a',  // green-gold — identity / direction
   Heart:       '#d94a6a',  // rose-red — will / ego
   Sacral:      '#e8923a',  // amber-orange — life force
-  Spleen:      '#5db87a',  // green — immunity / instinct
+  Spleen:      '#33b6a6',  // teal — immunity / instinct
   SolarPlexus: '#d4a832',  // amber-yellow — emotion / solar
-  Root:        '#96714a',  // earth brown — grounding pressure
+  Root:        '#b33549',  // crimson — grounding pressure / drive
+};
+
+/** Center → character tone keyword from the video-engine spec v2 essence table. */
+export const CENTER_CHARACTER_KEYWORD: Readonly<Record<CenterKey, string>> = {
+  Head:        'wonder',
+  Ajna:        'contemplation',
+  Throat:      'expression',
+  G:           'direction',
+  Heart:       'will',
+  SolarPlexus: 'the wave',
+  Sacral:      'life-force',
+  Spleen:      'instinct',
+  Root:        'drive',
+};
+
+/** Center → universal symbology marks paired with the gate hexagram. */
+export const CENTER_GLYPHS: Readonly<Record<CenterKey, readonly string[]>> = {
+  Head:        ['☉', '△'],
+  Ajna:        ['☿', '◇'],
+  Throat:      ['☿', '♊'],
+  G:           ['☉', '⊙'],
+  Heart:       ['♂', '◆'],
+  SolarPlexus: ['☽', '▽'],
+  Sacral:      ['♁', '△'],
+  Spleen:      ['♄', '◇'],
+  Root:        ['♇', '■'],
 };
 
 // ── Mode → ElevenLabs Music prompt descriptor ──────────────────────────────
@@ -311,6 +349,8 @@ export const ATOM_REGISTRY: Readonly<Record<number, AtomEntry>> = Object.fromEnt
         forgeTheme:      CENTER_TO_FORGE[center],
         forgeDescriptor: FORGE_DESCRIPTORS[CENTER_TO_FORGE[center]],
         color:           CENTER_COLOR[center],
+        glyphs:          [String.fromCodePoint(0x4DC0 + gate - 1), ...CENTER_GLYPHS[center]],
+        characterKeyword: CENTER_CHARACTER_KEYWORD[center],
         // GATE_KB_KEYS covers all 64 gates — the ! is safe.
         kbKeys:      GATE_KB_KEYS[gate]!,
       } satisfies AtomEntry,

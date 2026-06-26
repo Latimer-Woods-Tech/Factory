@@ -5,6 +5,8 @@ import {
   CENTER_TO_MUSICAL_MODE,
   CENTER_TO_FORGE,
   CENTER_COLOR,
+  CENTER_CHARACTER_KEYWORD,
+  CENTER_GLYPHS,
   MODE_DESCRIPTORS,
   FORGE_DESCRIPTORS,
   getAtom,
@@ -21,6 +23,8 @@ const ALL_MODES: MusicalMode[] = [
   'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian', 'Pentatonic',
 ];
 const ALL_FORGES: ForgeTheme[] = ['chronos', 'eros', 'aether', 'lux', 'phoenix', 'self'];
+const atomEntry = (gate: number) => ATOM_REGISTRY[gate]!;
+const gateKbKeys = (gate: number) => GATE_KB_KEYS[gate]!;
 
 describe('ATOM_REGISTRY completeness', () => {
   it('has exactly 64 entries', () => {
@@ -35,7 +39,7 @@ describe('ATOM_REGISTRY completeness', () => {
 
   it('gate numbers in entries match their keys', () => {
     for (let g = 1; g <= 64; g++) {
-      expect(ATOM_REGISTRY[g].gate).toBe(g);
+      expect(atomEntry(g).gate).toBe(g);
     }
   });
 });
@@ -47,16 +51,16 @@ describe('ATOM_REGISTRY hexagram glyphs', () => {
   });
 
   it('hexagram for gate 1 is U+4DC0 (䷀)', () => {
-    expect(ATOM_REGISTRY[1].hexagram).toBe('䷀');
+    expect(atomEntry(1).hexagram).toBe('䷀');
   });
 
   it('hexagram for gate 64 is U+4DFF (䷿)', () => {
-    expect(ATOM_REGISTRY[64].hexagram).toBe('䷿');
+    expect(atomEntry(64).hexagram).toBe('䷿');
   });
 
   it('hexagram codepoints are in the I-Ching block U+4DC0–U+4DFF', () => {
     for (let g = 1; g <= 64; g++) {
-      const cp = ATOM_REGISTRY[g].hexagram.codePointAt(0)!;
+      const cp = atomEntry(g).hexagram.codePointAt(0)!;
       expect(cp).toBeGreaterThanOrEqual(0x4dc0);
       expect(cp).toBeLessThanOrEqual(0x4dff);
     }
@@ -66,19 +70,19 @@ describe('ATOM_REGISTRY hexagram glyphs', () => {
 describe('ATOM_REGISTRY center mappings', () => {
   it('every gate center matches GATE_TO_CENTER from geometry', () => {
     for (let g = 1; g <= 64; g++) {
-      expect(ATOM_REGISTRY[g].center).toBe(GATE_TO_CENTER[g]);
+      expect(atomEntry(g).center).toBe(GATE_TO_CENTER[g]);
     }
   });
 
   it('all gates in CENTER_GATES.Sacral resolve to Sacral center', () => {
     for (const gate of CENTER_GATES.Sacral) {
-      expect(ATOM_REGISTRY[gate].center).toBe('Sacral');
+      expect(atomEntry(gate).center).toBe('Sacral');
     }
   });
 
   it('all gates in CENTER_GATES.Root resolve to Root center', () => {
     for (const gate of CENTER_GATES.Root) {
-      expect(ATOM_REGISTRY[gate].center).toBe('Root');
+      expect(atomEntry(gate).center).toBe('Root');
     }
   });
 });
@@ -96,9 +100,20 @@ describe('CENTER_TO_MUSICAL_MODE', () => {
     }
   });
 
-  it('Head and Ajna both use Lydian (inspiration centers)', () => {
+  it('Head uses Lydian (inspiration center)', () => {
     expect(CENTER_TO_MUSICAL_MODE.Head).toBe('Lydian');
-    expect(CENTER_TO_MUSICAL_MODE.Ajna).toBe('Lydian');
+  });
+
+  it('Ajna uses Dorian (contemplation center)', () => {
+    expect(CENTER_TO_MUSICAL_MODE.Ajna).toBe('Dorian');
+  });
+
+  it('Throat uses Mixolydian (expression center)', () => {
+    expect(CENTER_TO_MUSICAL_MODE.Throat).toBe('Mixolydian');
+  });
+
+  it('Heart uses Ionian (will facet)', () => {
+    expect(CENTER_TO_MUSICAL_MODE.Heart).toBe('Ionian');
   });
 
   it('Sacral uses Dorian (earthy life-force)', () => {
@@ -130,12 +145,40 @@ describe('CENTER_TO_FORGE', () => {
   it('Throat center resolves to lux (expression = illumination)', () => {
     expect(CENTER_TO_FORGE.Throat).toBe('lux');
   });
+
+  it('Root center resolves to phoenix (drive = rebirth pressure)', () => {
+    expect(CENTER_TO_FORGE.Root).toBe('phoenix');
+  });
 });
 
 describe('CENTER_COLOR', () => {
   it('every center has a hex color', () => {
     for (const center of ALL_CENTERS) {
       expect(CENTER_COLOR[center]).toMatch(/^#[0-9a-f]{6}$/i);
+    }
+  });
+});
+
+describe('CENTER_CHARACTER_KEYWORD', () => {
+  it('every center has a character keyword', () => {
+    for (const center of ALL_CENTERS) {
+      expect(CENTER_CHARACTER_KEYWORD[center], `${center} missing character`).toBeDefined();
+      expect(CENTER_CHARACTER_KEYWORD[center].length).toBeGreaterThan(2);
+    }
+  });
+
+  it('captures spec-v2 essence keywords for key centers', () => {
+    expect(CENTER_CHARACTER_KEYWORD.Head).toBe('wonder');
+    expect(CENTER_CHARACTER_KEYWORD.SolarPlexus).toBe('the wave');
+    expect(CENTER_CHARACTER_KEYWORD.Root).toBe('drive');
+  });
+});
+
+describe('CENTER_GLYPHS', () => {
+  it('every center has symbolic glyph marks', () => {
+    for (const center of ALL_CENTERS) {
+      expect(CENTER_GLYPHS[center], `${center} missing glyphs`).toBeDefined();
+      expect(CENTER_GLYPHS[center].length).toBeGreaterThanOrEqual(2);
     }
   });
 });
@@ -180,22 +223,39 @@ describe('FORGE_DESCRIPTORS', () => {
 describe('ATOM_REGISTRY descriptors (mode + fill, denormalized)', () => {
   it('every atom carries modeDescriptor matching its musicalMode', () => {
     for (let g = 1; g <= 64; g++) {
-      const atom = ATOM_REGISTRY[g];
+      const atom = atomEntry(g);
       expect(atom.modeDescriptor).toBe(MODE_DESCRIPTORS[atom.musicalMode]);
     }
   });
 
   it('every atom carries forgeDescriptor matching its forgeTheme (the "fill" description)', () => {
     for (let g = 1; g <= 64; g++) {
-      const atom = ATOM_REGISTRY[g];
+      const atom = atomEntry(g);
       expect(atom.forgeDescriptor).toBe(FORGE_DESCRIPTORS[atom.forgeTheme]);
     }
   });
 
   it('both descriptors are present and non-empty on every atom', () => {
     for (let g = 1; g <= 64; g++) {
-      expect(ATOM_REGISTRY[g].modeDescriptor.length).toBeGreaterThan(0);
-      expect(ATOM_REGISTRY[g].forgeDescriptor.length).toBeGreaterThan(0);
+      expect(atomEntry(g).modeDescriptor.length).toBeGreaterThan(0);
+      expect(atomEntry(g).forgeDescriptor.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('ATOM_REGISTRY symbology and character facets', () => {
+  it('every atom starts glyphs with its own hexagram', () => {
+    for (let g = 1; g <= 64; g++) {
+      const atom = atomEntry(g);
+      expect(atom.glyphs[0]).toBe(atom.hexagram);
+    }
+  });
+
+  it('every atom carries center-level glyphs and character keyword', () => {
+    for (let g = 1; g <= 64; g++) {
+      const atom = atomEntry(g);
+      expect(atom.glyphs).toEqual([atom.hexagram, ...CENTER_GLYPHS[atom.center]]);
+      expect(atom.characterKeyword).toBe(CENTER_CHARACTER_KEYWORD[atom.center]);
     }
   });
 });
@@ -209,7 +269,7 @@ describe('GATE_KB_KEYS', () => {
 
   it('each entry is a tuple of 4 non-empty strings', () => {
     for (let g = 1; g <= 64; g++) {
-      const keys = GATE_KB_KEYS[g];
+      const keys = gateKbKeys(g);
       expect(Array.isArray(keys)).toBe(true);
       expect(keys.length).toBe(4);
       for (const k of keys) {
@@ -224,15 +284,15 @@ describe('GATE_KB_KEYS', () => {
   });
 
   it('gate 34 keys include Vitality (gift) and Sovereignty (siddhi)', () => {
-    expect(GATE_KB_KEYS[34][0]).toBe('Vitality');
-    expect(GATE_KB_KEYS[34][1]).toBe('Sovereignty');
+    expect(gateKbKeys(34)[0]).toBe('Vitality');
+    expect(gateKbKeys(34)[1]).toBe('Sovereignty');
   });
 });
 
 describe('ATOM_REGISTRY kbKeys', () => {
   it('every atom carries its kbKeys from GATE_KB_KEYS', () => {
     for (let g = 1; g <= 64; g++) {
-      expect(ATOM_REGISTRY[g].kbKeys).toEqual(GATE_KB_KEYS[g]);
+      expect(atomEntry(g).kbKeys).toEqual(GATE_KB_KEYS[g]);
     }
   });
 });
@@ -253,6 +313,7 @@ describe('getAtom()', () => {
     expect(atom.center).toBe('Head');
     expect(atom.musicalMode).toBe('Lydian');
     expect(atom.forgeTheme).toBe('aether');
+    expect(atom.characterKeyword).toBe('wonder');
   });
 
   it('throws RangeError for gate 0', () => {
@@ -277,8 +338,8 @@ describe('modeForGates()', () => {
     expect(modeForGates([34])).toBe('Dorian');
   });
 
-  it('returns Lydian for gate 64 (Head)', () => {
-    expect(modeForGates([64])).toBe('Lydian');
+  it('returns Dorian for gate 4 (Ajna)', () => {
+    expect(modeForGates([4])).toBe('Dorian');
   });
 
   it('uses only the first gate when multiple provided', () => {

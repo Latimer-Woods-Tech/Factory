@@ -18,7 +18,7 @@
 //   LOGO_URL FORGE_THEME MUSIC_URL [MUSIC_VOLUME] [APP_ID]
 // Output: EnergyBlueprintVideo props JSON on stdout.
 // ---------------------------------------------------------------------------
-import { GATE_TO_CENTER } from '@latimer-woods-tech/bodygraph';
+import { GATE_TO_CENTER, gatePosition, getAtom } from '@latimer-woods-tech/bodygraph';
 
 const env = (k, d = '') => (process.env[k] ?? d);
 
@@ -26,10 +26,10 @@ const BRIEF_KEY = env('BRIEF_KEY');
 const TOPIC = env('TOPIC', 'Your Energy Blueprint');
 const SCRIPT = env('SCRIPT');
 const NARRATION_URL = env('NARRATION_URL');
-const BRAND_COLOR = env('BRAND_COLOR', '#c9a84c');
-const BRAND_ACCENT = env('BRAND_ACCENT', '#c9a84c');
+const BRAND_COLOR_OVERRIDE = env('BRAND_COLOR');
+const BRAND_ACCENT_OVERRIDE = env('BRAND_ACCENT');
 const LOGO_URL = env('LOGO_URL');
-const FORGE_THEME = env('FORGE_THEME', 'self');
+const FORGE_THEME_OVERRIDE = env('FORGE_THEME');
 const MUSIC_URL = env('MUSIC_URL');
 const MUSIC_VOLUME = Number(env('MUSIC_VOLUME', '0.16'));
 const APP_ID = env('APP_ID', 'prime_self');
@@ -60,23 +60,48 @@ function deriveFocus(key) {
   let m;
   if ((m = /^gate-concept-(\d+)/.exec(key))) {
     const gate = Number(m[1]);
-    const center = GATE_TO_CENTER[gate];
-    if (center) return { definedCenters: [center], spotlightCenter: center, signatureGates: [gate], hdType: null };
+    const atom = getAtom(gate);
+    const center = atom.center;
+    if (center) return { definedCenters: [center], spotlightCenter: center, signatureGates: [gate], hdType: null, atom };
   }
   if ((m = /^authority-concept-(.+)$/.exec(key))) {
     const center = AUTHORITY_CENTER[m[1]] ?? AUTHORITY_CENTER[m[1].replace(/-concept.*/, '')];
-    if (center) return { definedCenters: [center], spotlightCenter: center, signatureGates: [], hdType: null };
-    return { definedCenters: HERO_CENTERS, spotlightCenter: null, signatureGates: [], hdType: 'reflector' };
+    if (center) return { definedCenters: [center], spotlightCenter: center, signatureGates: [], hdType: null, atom: null };
+    return { definedCenters: HERO_CENTERS, spotlightCenter: null, signatureGates: [], hdType: 'reflector', atom: null };
   }
   if ((m = /^type-(?:welcome-)?(.+)$/.exec(key))) {
     const t = m[1].replace(/-/g, '_');
-    if (HD_TYPES.has(t)) return { definedCenters: HERO_CENTERS, spotlightCenter: 'G', signatureGates: [], hdType: t };
+    if (HD_TYPES.has(t)) return { definedCenters: HERO_CENTERS, spotlightCenter: 'G', signatureGates: [], hdType: t, atom: null };
   }
   // definition / philosophy / synthesis / user-guide / temporal / utility → hero
-  return { definedCenters: HERO_CENTERS, spotlightCenter: 'G', signatureGates: [], hdType: null };
+  return { definedCenters: HERO_CENTERS, spotlightCenter: 'G', signatureGates: [], hdType: null, atom: null };
 }
 
 const focus = deriveFocus(BRIEF_KEY);
+const BRAND_COLOR = BRAND_COLOR_OVERRIDE || focus.atom?.color || '#c9a84c';
+const BRAND_ACCENT = BRAND_ACCENT_OVERRIDE || focus.atom?.color || '#c9a84c';
+const FORGE_THEME = FORGE_THEME_OVERRIDE || focus.atom?.forgeTheme || 'self';
+
+function buildSignatureGateData(gates) {
+  return gates.flatMap((gate) => {
+    const atom = getAtom(gate);
+    const position = gatePosition(gate);
+    if (!position) return [];
+    const [gift, siddhi, shadow, archetype] = atom.kbKeys;
+    return [{
+      gate: atom.gate,
+      name: atom.gateName,
+      hex: atom.hexagram,
+      center: atom.center,
+      archetype,
+      shadow,
+      gift,
+      siddhi,
+      x: position.x,
+      y: position.y,
+    }];
+  });
+}
 
 // Split the narration into a two-part concept arc.
 const sentences = (SCRIPT || '').split(/(?<=[.!?])\s+/).filter(Boolean);
@@ -86,7 +111,14 @@ const part2 = sentences.slice(mid).join(' ') || '';
 const first = sentences[0] ?? TOPIC;
 const last = sentences[sentences.length - 1] ?? '';
 
-const bg = { showBodyGraph: true, definedCenters: focus.definedCenters, signatureGates: focus.signatureGates };
+const sceneTone = focus.atom ? { typeColor: focus.atom.color } : {};
+const bg = {
+  showBodyGraph: true,
+  definedCenters: focus.definedCenters,
+  signatureGates: focus.signatureGates,
+  ...sceneTone,
+};
+const signatureGateData = buildSignatureGateData(focus.signatureGates);
 const scenes = [
   { type: 'arrival', durationFrames: 150, showBodyGraph: false },
   { type: 'revelation', durationFrames: 300, text: first, showBodyGraph: false },
@@ -107,6 +139,7 @@ const props = {
   forgeTheme: FORGE_THEME,
   ...(focus.hdType ? { hdType: focus.hdType } : {}),
   signatureGates: focus.signatureGates,
+  ...(signatureGateData.length > 0 ? { signatureGateData } : {}),
   scenes,
   ...(MUSIC_URL ? { musicUrl: MUSIC_URL, musicVolume: MUSIC_VOLUME } : {}),
 };
