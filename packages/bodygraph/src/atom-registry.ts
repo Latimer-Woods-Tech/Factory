@@ -222,5 +222,5 @@ export function getAtom(gate: number): AtomEntry {
 export function modeForGates(signatureGates: number[]): MusicalMode {
   if (signatureGates.length === 0) return 'Ionian';
   // Use the first signature gate's mode as the primary color.
-  return getAtom(signatureGates[0]).musicalMode;
+  return getAtom(signatureGates[0]!).musicalMode;
 }
