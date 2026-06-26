@@ -5,13 +5,13 @@
   "generated_at_commit": null,
   "git_status": "not-recorded",
   "source_hashes": {
-    "docs/_governance/canonical-docs.yml": "sha256:a5a9a19036085947a59f7acad4edb9330cc64e4ebd622b3ae42d06d23ff365eb",
+    "docs/_governance/canonical-docs.yml": "sha256:1bea08411063105a59ed1d686e4eedfb8fa90180654359905505c2b71ca589cb",
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 476,
+    "total_docs": 477,
     "canonical": 19,
-    "active": 409,
+    "active": 410,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:50825b43ed1cfc57560cdcffdb53cb3473f2c206fbf99426dbd02112d1f3e165",
+      "content_hash": "sha256:dab8c910e0eedf34b8ceb7084e7d6dec9da8692aa55de3756d3a4556b7a806be",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2845,7 +2845,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:639b970b1c886af05a8e5ce871ca094bc9c8e137f7583d938c019d242cabde25",
+      "content_hash": "sha256:0cc97d841a01dd97424a22ca33e355550bea7d5f25bbe5c79b1c033c90a77439",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6619,6 +6619,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:f6c062a3e3f50b74d58cefb5855400ea2d29c68dcf5e9defa721ce825b6e146b",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-25.md",
+      "title": "Platform Planning Brief — 2026-06-25",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:534509c11cb415fb7ce0eb5df8b1e273e98355e110db9b5f0e609dea3efb7019",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
