@@ -157,7 +157,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (369)
+## platform (370)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -371,6 +371,7 @@
 | [docs/planning/brief-2026-06-18.md](planning/brief-2026-06-18.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-18 |
 | [docs/planning/brief-2026-06-19.md](planning/brief-2026-06-19.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-19 |
 | [docs/planning/brief-2026-06-24.md](planning/brief-2026-06-24.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-24 |
+| [docs/planning/brief-2026-06-25.md](planning/brief-2026-06-25.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-25 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | unknown | HumanDesign Language Guidance |
