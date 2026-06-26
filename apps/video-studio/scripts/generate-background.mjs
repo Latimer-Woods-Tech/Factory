@@ -17,7 +17,7 @@
 // ---------------------------------------------------------------------------
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -94,9 +94,15 @@ const json = await res.json();
 const b64 = json?.result?.image;
 if (typeof b64 !== 'string') die(`FLUX response had no image: ${JSON.stringify(json).slice(0, 200)}`);
 
-const tmp = join(tmpdir(), `bg-${FORGE_THEME}.jpg`);
-await writeFile(tmp, Buffer.from(b64, 'base64'));
-log(`generated ${Math.round(Buffer.from(b64, 'base64').length / 1024)}KB → uploading to R2`);
-await r2Upload(tmp, CACHE_KEY);
+const imageBytes = Buffer.from(b64, 'base64');
+const tmpRoot = await mkdtemp(join(tmpdir(), 'video-studio-bg-'));
+const tmp = join(tmpRoot, 'background.jpg');
+await writeFile(tmp, imageBytes);
+log(`generated ${Math.round(imageBytes.length / 1024)}KB → uploading to R2`);
+try {
+  await r2Upload(tmp, CACHE_KEY);
+} finally {
+  await rm(tmpRoot, { recursive: true, force: true });
+}
 log(`uploaded → ${CACHE_URL}`);
 process.stdout.write(CACHE_URL);
