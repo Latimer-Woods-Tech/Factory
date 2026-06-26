@@ -86,7 +86,16 @@ export const blueprintSchema = z.object({
     shadow: z.string(),
     gift: z.string(),
     siddhi: z.string(),
+    /** gatePosition() viewBox coords (300x420) for the on-graph flare. */
+    x: z.number(),
+    y: z.number(),
   })).optional(),
+  /** Display name for the identity eyebrow (optional). */
+  name: z.string().optional(),
+  /** HD profile, e.g. "5/1 Heretic-Investigator" (optional). */
+  profile: z.string().optional(),
+  /** Character-level narration cue frames driving every reveal (word-perfect sync). */
+  cues: z.record(z.string(), z.number()).optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -454,6 +463,9 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   heroDefinedCenters,
   definedCenterLabels,
   signatureGateData,
+  name,
+  profile,
+  cues,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -461,17 +473,20 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
 
   // Production-quality hero design — the per-user pipeline supplies a bespoke
-  // background + identity + gate metadata. Legacy scene arc is the fallback for
-  // content videos that don't supply them.
-  if (backgroundUrl && identity) {
+  // background + identity + gate metadata + narration cues. Legacy scene arc is
+  // the fallback for content videos that don't supply them.
+  if (backgroundUrl && identity && cues) {
     return (
       <AbsoluteFill>
         <HeroBlueprint
           backgroundUrl={backgroundUrl}
           identity={identity}
+          name={name}
+          profile={profile}
           definedCenters={heroDefinedCenters ?? []}
           definedCenterLabels={definedCenterLabels ?? []}
-          signatureGates={signatureGateData ?? []}
+          signatureGates={(signatureGateData ?? []) as never}
+          cues={cues as never}
           typeColor={typeColor}
           logoUrl={logoUrl}
         />
