@@ -130,6 +130,8 @@ export const VOICE_POOL: ReadonlyArray<{ name: string; id: string }> = [
   { name: 'Karolina',     id: 'Wuv1s5YTNCjL9mFJTqo4' }, // Latina — warm, deep
   { name: 'Mona',         id: 'mKn4iVyn09DrJ8cFw5Rn' }, // Desi (Indian) — deep, sophisticated
   { name: 'Seeta',        id: 'QKyvRuehpb8zB3cRkzIn' }, // Desi (Telugu) — rich narrator
+  { name: 'Eunha',        id: 'cBOtnpVZNlQ5VJygXGB8' }, // Korean (Seoul) — elegant
+  { name: 'Colleen',      id: '1OYA2kgM85gF2eGN8HEp' }, // Celtic (Irish) — warm narrator
 ];
 
 /**
