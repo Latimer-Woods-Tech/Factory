@@ -112,8 +112,9 @@ export interface TypeRegister {
   pace: number;
 }
 
-/** Current STANDARD narrator (operator-chosen): Brian — deep, resonant. */
-export const STANDARD_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
+/** Current STANDARD narrator (operator-chosen): Vivie — powerful, commanding
+ *  (the Angela Bassett register). Brian remains in the rotation pool. */
+export const STANDARD_VOICE_ID = 'z7U1SjrEq4fDDDriOQEN';
 
 /**
  * Rotation pool — the narrator is randomised/rotated across these per render so
