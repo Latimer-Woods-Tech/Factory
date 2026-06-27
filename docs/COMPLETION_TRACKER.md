@@ -1,7 +1,7 @@
 # Completion Tracker
-_Generated 2026-06-26T12:31:42+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-27T11:56:01+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: CH, XC
+## 🚨 CI red on main: XC
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
@@ -9,7 +9,7 @@ _Generated 2026-06-26T12:31:42+00:00 by `scripts/aggregate_completion.py`._
 | **HD** HumanDesign | 0 | 0 | 0 | 93 | 93 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **FA** factory-admin-studio | 0 | 0 | 0 | 39 | 39 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **CH** cypher-healing 🚨 | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **XC** xico-city 🚨 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
 **Overall weighted pass: 0.0% (Δ+0.0)** · known: 0.0% · raw: 0.0%
