@@ -180,10 +180,11 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
       {/* ── Cinematic overlays (outside the camera world) ─────────────────── */}
       {/* Warm/cool grade */}
       <AbsoluteFill style={{ background: 'radial-gradient(ellipse 70% 70% at 38% 40%, rgba(232,200,122,0.06) 0%, rgba(0,0,0,0) 55%), linear-gradient(180deg, rgba(20,26,48,0.10) 0%, rgba(0,0,0,0.18) 100%)', mixBlendMode: 'screen' }} />
-      {/* Film grain */}
-      <AbsoluteFill style={{ opacity: 0.05 }}>
+      {/* Film grain — subtle (dialed down from 0.05; finer grain compresses far
+          better, shrinking the H.264 file while keeping the cinematic texture). */}
+      <AbsoluteFill style={{ opacity: 0.028 }}>
         <svg width="100%" height="100%">
-          <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed={frame % 64} stitchTiles="stitch" /></filter>
+          <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed={frame % 64} stitchTiles="stitch" /></filter>
           <rect width="100%" height="100%" filter="url(#grain)" />
         </svg>
       </AbsoluteFill>

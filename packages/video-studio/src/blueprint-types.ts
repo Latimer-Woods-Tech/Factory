@@ -91,3 +91,35 @@ export const TYPE_COLORS: Record<HdType, string> = {
 
 /** Default brand accent colour (selfprime gold). */
 export const DEFAULT_BRAND_COLOR = '#c9a84c';
+
+/**
+ * Per-type visual/sonic register for the hero film. Each HD type gets its own
+ * "feel" so a Manifestor film reads differently from a Reflector's — the forge
+ * background mood, a default theatrical narrator voice, and a pacing multiplier
+ * applied to reveal timing. Music *mode* stays gate-derived (more personal);
+ * this governs the film-level register. Consumed by `chartToScenes` /
+ * `derive-blueprint-props` when assembling the hero props.
+ *
+ * voiceId defaults to a deep narrator ("George" — captivating storyteller),
+ * replacing the prior generic voice; override per operator preference.
+ */
+export interface TypeRegister {
+  /** Background forge theme that sets the film's overall mood. */
+  forge: ForgeTheme;
+  /** Default ElevenLabs narrator voice id for this type. */
+  voiceId: string;
+  /** Reveal-timing pace multiplier (>1 = quicker, <1 = more spacious). */
+  pace: number;
+}
+
+const VOICE_STORYTELLER = 'JBFqnCBsd6RMkjVDRZzb'; // George — warm captivating storyteller
+const VOICE_DEEP = 'nPczCjzI2devNBz1zQrb';        // Brian — deep, resonant
+const VOICE_ORACLE = 'pqHfZKP75CvOlQylNhV4';      // Bill — wise, mature
+
+export const TYPE_REGISTRY: Record<HdType, TypeRegister> = {
+  projector:             { forge: 'lux',     voiceId: VOICE_STORYTELLER, pace: 1.0 },
+  manifestor:            { forge: 'phoenix', voiceId: VOICE_DEEP,        pace: 1.08 },
+  generator:             { forge: 'eros',    voiceId: VOICE_STORYTELLER, pace: 1.0 },
+  manifesting_generator: { forge: 'eros',    voiceId: VOICE_DEEP,        pace: 1.05 },
+  reflector:             { forge: 'aether',  voiceId: VOICE_ORACLE,      pace: 0.92 },
+};
