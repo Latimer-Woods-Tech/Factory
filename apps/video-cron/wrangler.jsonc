@@ -8,8 +8,13 @@
       "id": "78e47571fffb4a81ba12ee454507e006"
     }
   ],
+  // Cron disabled: video production now runs on the billing-proof Cloud Run Job
+  // `render-runner` (driven by GCP Cloud Scheduler) instead of dispatching to
+  // the billing-locked GitHub Actions. Having both drain schedule-worker's queue
+  // races/double-renders, so this dispatcher is paused. Re-add ["0 * * * *"] to
+  // revert once GitHub billing is restored. See tools/render-runner/README.md.
   "triggers": {
-    "crons": ["0 * * * *"]
+    "crons": []
   },
   "flagship": { "binding": "FLAGS" },
   "d1_databases": [
@@ -37,8 +42,9 @@
           "id": "78e47571fffb4a81ba12ee454507e006"
         }
       ],
+      // Disabled — superseded by the Cloud Run `render-runner` job (see above).
       "triggers": {
-        "crons": ["0 * * * *"]
+        "crons": []
       },
       "services": [
         {
