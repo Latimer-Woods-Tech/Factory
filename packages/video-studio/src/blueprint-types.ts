@@ -112,14 +112,40 @@ export interface TypeRegister {
   pace: number;
 }
 
-const VOICE_STORYTELLER = 'JBFqnCBsd6RMkjVDRZzb'; // George — warm captivating storyteller
-const VOICE_DEEP = 'nPczCjzI2devNBz1zQrb';        // Brian — deep, resonant
-const VOICE_ORACLE = 'pqHfZKP75CvOlQylNhV4';      // Bill — wise, mature
+/** Current STANDARD narrator (operator-chosen): Brian — deep, resonant. */
+export const STANDARD_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
 
+/**
+ * Rotation pool — the narrator is randomised/rotated across these per render so
+ * the films don't all sound identical. Brian is the standard/default; Michelle
+ * (soulful, in the Maya Angelou register) and Vivie (commanding, Angela Bassett
+ * register) add range. Operator can reweight or pin via {@link pickVoice}.
+ */
+export const VOICE_POOL: ReadonlyArray<{ name: string; id: string }> = [
+  { name: 'Brian',    id: 'nPczCjzI2devNBz1zQrb' }, // deep, resonant (standard)
+  { name: 'Michelle', id: 'BeKZH03brdNaVyYtd97H' },  // soulful, African American (Maya Angelou)
+  { name: 'Vivie',    id: 'z7U1SjrEq4fDDDriOQEN' },  // powerful, commanding (Angela Bassett)
+  { name: 'George',   id: 'JBFqnCBsd6RMkjVDRZzb' }, // warm captivating storyteller
+  { name: 'Edward',   id: 'goT3UYdM9bhm0n2lmKQx' }, // British, dark, low
+];
+
+/**
+ * Pick the narrator voice for a render. Pass a numeric `seed` (e.g. a hash of
+ * the videoObjectId) to rotate deterministically across {@link VOICE_POOL};
+ * omit it to use the standard voice (Brian). The narration generator calls this
+ * so each render can vary while staying reproducible.
+ */
+export function pickVoice(seed?: number): string {
+  if (seed == null || !Number.isFinite(seed)) return STANDARD_VOICE_ID;
+  // Modulo keeps the index in range; the `!` reflects that to the compiler.
+  return VOICE_POOL[Math.abs(Math.trunc(seed)) % VOICE_POOL.length]!.id;
+}
+
+// Per-type forge/pace; voice defaults to the standard (rotation via pickVoice).
 export const TYPE_REGISTRY: Record<HdType, TypeRegister> = {
-  projector:             { forge: 'lux',     voiceId: VOICE_STORYTELLER, pace: 1.0 },
-  manifestor:            { forge: 'phoenix', voiceId: VOICE_DEEP,        pace: 1.08 },
-  generator:             { forge: 'eros',    voiceId: VOICE_STORYTELLER, pace: 1.0 },
-  manifesting_generator: { forge: 'eros',    voiceId: VOICE_DEEP,        pace: 1.05 },
-  reflector:             { forge: 'aether',  voiceId: VOICE_ORACLE,      pace: 0.92 },
+  projector:             { forge: 'lux',     voiceId: STANDARD_VOICE_ID, pace: 1.0 },
+  manifestor:            { forge: 'phoenix', voiceId: STANDARD_VOICE_ID, pace: 1.08 },
+  generator:             { forge: 'eros',    voiceId: STANDARD_VOICE_ID, pace: 1.0 },
+  manifesting_generator: { forge: 'eros',    voiceId: STANDARD_VOICE_ID, pace: 1.05 },
+  reflector:             { forge: 'aether',  voiceId: STANDARD_VOICE_ID, pace: 0.92 },
 };
