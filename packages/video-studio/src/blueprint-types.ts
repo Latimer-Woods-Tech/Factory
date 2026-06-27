@@ -122,11 +122,14 @@ export const STANDARD_VOICE_ID = 'nPczCjzI2devNBz1zQrb';
  * register) add range. Operator can reweight or pin via {@link pickVoice}.
  */
 export const VOICE_POOL: ReadonlyArray<{ name: string; id: string }> = [
-  { name: 'Brian',    id: 'nPczCjzI2devNBz1zQrb' }, // deep, resonant (standard)
-  { name: 'Michelle', id: 'BeKZH03brdNaVyYtd97H' },  // soulful, African American (Maya Angelou)
-  { name: 'Vivie',    id: 'z7U1SjrEq4fDDDriOQEN' },  // powerful, commanding (Angela Bassett)
-  { name: 'George',   id: 'JBFqnCBsd6RMkjVDRZzb' }, // warm captivating storyteller
-  { name: 'Edward',   id: 'goT3UYdM9bhm0n2lmKQx' }, // British, dark, low
+  { name: 'Brian',        id: 'nPczCjzI2devNBz1zQrb' }, // deep, resonant (standard, male)
+  { name: 'Michelle',     id: 'BeKZH03brdNaVyYtd97H' }, // soulful, African American (Maya Angelou)
+  { name: 'Vivie',        id: 'z7U1SjrEq4fDDDriOQEN' }, // powerful, commanding (Angela Bassett)
+  { name: 'Cate',         id: 'J64VNrjLE6uKFBKlxfSJ' }, // resonant, deep, elegant (Jessica Lange)
+  { name: 'EtherealHusk', id: 'jpUA5miJyO2ygonZPVsO' }, // gravely, atmospheric (Frances Conroy)
+  { name: 'Karolina',     id: 'Wuv1s5YTNCjL9mFJTqo4' }, // Latina — warm, deep
+  { name: 'Mona',         id: 'mKn4iVyn09DrJ8cFw5Rn' }, // Desi (Indian) — deep, sophisticated
+  { name: 'Seeta',        id: 'QKyvRuehpb8zB3cRkzIn' }, // Desi (Telugu) — rich narrator
 ];
 
 /**
