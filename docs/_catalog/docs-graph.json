@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 477,
+    "total_docs": 478,
     "canonical": 19,
-    "active": 410,
+    "active": 411,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:dab8c910e0eedf34b8ceb7084e7d6dec9da8692aa55de3756d3a4556b7a806be",
+      "content_hash": "sha256:87bd0d8a2abcaba42dc120860792744f978380bdf31b27890d4a8072a8c04a1d",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6aa0e2e5d3d604373c5a0641e98cf1d87d5727bf470cd1daafda13e7d04e7334",
+      "content_hash": "sha256:afd4fbd9815ffba1af506b0fc602fbe62cc71a7be7f8a21ef70c08717046e011",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:32dd3ab9807f9019c560f4687bb9a0a9fd1d962615e36f38f996f7047e38e34b",
+      "content_hash": "sha256:a353ff4458d32449b7efeafcb1ff413fda0343b159023173c84dcf4ad80a64da",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2845,7 +2845,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0cc97d841a01dd97424a22ca33e355550bea7d5f25bbe5c79b1c033c90a77439",
+      "content_hash": "sha256:08331907e9af4701bd43971b2fdd45d5778c53d80e0f67a7495c7cefceaf5372",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6640,6 +6640,27 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:534509c11cb415fb7ce0eb5df8b1e273e98355e110db9b5f0e609dea3efb7019",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-26.md",
+      "title": "Platform Planning Brief — 2026-06-26",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:29af902a0d6ac7c2d8cb620ef0fee6ae470cd65df96d58df7f32d1a3a4574d42",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
