@@ -61,6 +61,13 @@ function rev(frame: number, a: number, span = 36): number {
   return interpolate(frame, [a, a + span], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 }
 
+// Cardiac lub-dub envelope — two gaussian thumps per beat, returns 0..1.
+function heartbeat(frame: number, period: number): number {
+  const ph = ((((frame % period) + period) % period)) / period;
+  const g = (c: number, w: number) => Math.exp(-(((ph - c) / w) ** 2));
+  return Math.min(1, g(0, 0.05) + g(0.17, 0.07) * 0.55);
+}
+
 export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   identity, name, profile, definedCenters, definedCenterLabels,
   signatureGates, cues, typeColor, logoUrl, mood, skySeed, logoVideoUrl,
@@ -85,8 +92,18 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
     [0.12, 0.7, 0.15, 0.04],
     { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
   );
-  // Logo open runs over the first ~5s, then dissolves into the film.
-  const logoIn = rev(frame, 6, 22) * (1 - rev(frame, 122, 156));
+  // ── Portal open ──────────────────────────────────────────────────────────
+  // A point of energy ignites on a heartbeat, swirls open into a Rick-&-Morty /
+  // Dr-Who portal (spinning vortex + splattered glowing rim); the hand-and-stars
+  // logo steps out of it, then we push THROUGH the portal into the film.
+  const logoIn = rev(frame, 4, 18) * (1 - rev(frame, 128, 162));
+  const hb = heartbeat(frame, 31);
+  const portalScale = spring({ frame: frame - 10, fps, config: { damping: 11, stiffness: 95, mass: 0.8 }, durationInFrames: 46 });
+  const portalSpin = frame * 3.0;
+  const logoEmerge = spring({ frame: frame - 46, fps, config: { damping: 15, stiffness: 65 }, durationInFrames: 62 });
+  const stepThrough = rev(frame, 120, 42); // push through the portal at the end
+  // Close funnel — route the seeker to a practitioner for the deeper synthesis.
+  const ctaIn = rev(frame, durationInFrames - 150, 44);
 
   // ── #3 Living chart ───────────────────────────────────────────────────────
   const bloom = spring({ frame: frame - cues.centersIntro, fps, config: { damping: 22, stiffness: 42 }, from: 0, to: 1 });
@@ -104,7 +121,9 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   return (
     <AbsoluteFill style={{ opacity: globalOpacity, backgroundColor: '#04050b' }}>
       {/* ── World (camera target) ─────────────────────────────────────────── */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, transform: camTransform, transformOrigin: '0 0' }}>
+      {/* The film recedes as the practitioner CTA arrives, so the close reads
+          on a clean stage instead of over the still-lit chart + gate band. */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, transform: camTransform, transformOrigin: '0 0', opacity: 1 - ctaIn * 0.94 }}>
         {/* Living procedural sky — replaces the static beam. Mutates per render
             (skySeed) and swells with emotional intensity (storm on the shadow
             beat, clearing to radiance by the siddhi). */}
@@ -195,16 +214,59 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
         </div>
       </div>
 
-      {/* Brand open — hand & stars logo + wordmark, dissolving into the film */}
-      {logoVideoUrl && frame < 165 ? (
-        <AbsoluteFill style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, opacity: logoIn }}>
-          <OffthreadVideo src={logoVideoUrl} muted style={{ width: 680, height: 'auto', mixBlendMode: 'screen', filter: 'drop-shadow(0 0 46px rgba(201,168,76,0.32))' }} />
-          <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 34, fontWeight: 700, letterSpacing: '0.34em', color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 30px rgba(0,0,0,0.7)' }}>{brandWordmark}</div>
+      {/* Brand open — portal swirls open, the hand & stars logo steps out */}
+      {logoVideoUrl && frame < 172 ? (
+        <AbsoluteFill style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: logoIn, transform: `scale(${1 + stepThrough * 1.6})` }}>
+          {/* Outer energy bloom */}
+          <div style={{ position: 'absolute', width: 900, height: 900, borderRadius: '50%', background: `radial-gradient(circle, rgba(232,200,122,${0.18 + 0.12 * hb}) 0%, rgba(123,111,212,0.10) 40%, transparent 66%)`, transform: `scale(${portalScale})`, filter: 'blur(12px)' }} />
+          {/* Spinning vortex interior */}
+          <div style={{ position: 'absolute', width: 660, height: 660, borderRadius: '50%', overflow: 'hidden', transform: `scale(${portalScale}) rotate(${portalSpin}deg)` }}>
+            <div style={{ position: 'absolute', inset: -40, background: `conic-gradient(from 0deg at 50% 50%, ${GOLD}dd, #7b6fd4bb, transparent 26%, ${GOLD}99, #4a90d9bb, transparent 60%, #7b6fd4bb, ${GOLD}dd)`, filter: 'blur(7px)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle, transparent 30%, rgba(4,5,11,0.55) 72%)' }} />
+          </div>
+          {/* Shimmer over the vortex */}
+          <svg width={680} height={680} style={{ position: 'absolute', transform: `scale(${portalScale})`, mixBlendMode: 'screen', opacity: 0.5 }}>
+            <filter id="portalShimmer"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed={frame % 40} result="n" /><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.91  0 0 0 0 0.78  0 0 0 0 0.48  0 0 0 0.5 0" result="c" /><feComposite in="c" in2="SourceGraphic" operator="in" /></filter>
+            <circle cx={340} cy={340} r={324} filter="url(#portalShimmer)" />
+          </svg>
+          {/* Splattered glowing rim — the Rick & Morty energy edge */}
+          <svg width={760} height={760} style={{ position: 'absolute', transform: `scale(${portalScale})` }}>
+            <filter id="portalEdge"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed={frame % 50} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="36" /></filter>
+            <circle cx={380} cy={380} r={330} fill="none" stroke={GOLD} strokeWidth={12} filter="url(#portalEdge)" opacity={0.85 + 0.15 * hb} />
+            <circle cx={380} cy={380} r={330} fill="none" stroke="#fff3cf" strokeWidth={4} filter="url(#portalEdge)" opacity={0.7} />
+          </svg>
+          {/* The hand & stars logo stepping out of the portal (renders only once
+              it begins to emerge — avoids OffthreadVideo bleeding during ignition) */}
+          {frame >= 44 ? (
+            <OffthreadVideo src={logoVideoUrl} muted style={{ width: 600, height: 'auto', mixBlendMode: 'screen', transform: `scale(${0.12 + logoEmerge * 0.88})`, opacity: logoEmerge, clipPath: 'circle(44% at 50% 42%)', filter: `drop-shadow(0 0 48px rgba(201,168,76,${0.3 + 0.25 * hb}))` }} />
+          ) : null}
+          {/* Wordmark settles after the step-out */}
+          <div style={{ position: 'absolute', top: 'calc(50% + 300px)', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 34, fontWeight: 700, letterSpacing: '0.34em', color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 30px rgba(0,0,0,0.7)', opacity: rev(frame, 104, 26) * (1 - stepThrough) }}>{brandWordmark}</div>
         </AbsoluteFill>
       ) : null}
 
       {/* Persistent brand wordmark — up in the mix (fades in after the logo open) */}
       <div style={{ position: 'absolute', top: 74, left: 0, right: 0, textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 22, fontWeight: 700, letterSpacing: '0.42em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.74)', textShadow: '0 2px 16px rgba(0,0,0,0.85)', opacity: Math.min(rev(frame, 150, 40), globalOpacity) }}>{brandWordmark}</div>
+
+      {/* ── Close — practitioner funnel CTA (deeper reading) ──────────────── */}
+      {ctaIn > 0 ? (
+        <AbsoluteFill style={{ opacity: ctaIn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+          {/* Full near-opaque base so the receding film never bleeds through,
+              with a soft gold breath at center to keep it from going dead flat. */}
+          <AbsoluteFill style={{ background: '#04050b' }} />
+          <AbsoluteFill style={{ background: `radial-gradient(ellipse 70% 64% at 50% 48%, ${GOLD}14 0%, transparent 60%)` }} />
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, maxWidth: 1120, padding: '0 80px' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.42em', textTransform: 'uppercase', color: GOLD, opacity: 0.85 }}>This is only the surface</div>
+            <div style={{ fontSize: 72, fontWeight: 300, lineHeight: 1.1, color: '#fff' }}>Go deeper with a <span style={{ color: GOLD }}>practitioner</span></div>
+            <div style={{ fontSize: 27, fontWeight: 300, lineHeight: 1.5, color: 'rgba(255,255,255,0.78)', maxWidth: 780 }}>A certified guide reads your full Energy Blueprint — the synthesis these few minutes only began.</div>
+            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 16, padding: '18px 44px', borderRadius: 999, border: `1.5px solid ${GOLD}`, background: 'rgba(232,200,122,0.08)', boxShadow: '0 0 40px rgba(232,200,122,0.18)' }}>
+              <span style={{ fontSize: 26, fontWeight: 600, letterSpacing: '0.04em', color: '#fff' }}>Book your reading</span>
+              <span style={{ fontSize: 26, color: GOLD }}>→</span>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 22, fontWeight: 700, letterSpacing: '0.34em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)' }}>{brandWordmark}</div>
+          </div>
+        </AbsoluteFill>
+      ) : null}
 
       {/* ── Cinematic overlays (outside the camera world) ─────────────────── */}
       {/* Warm/cool grade */}
