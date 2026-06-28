@@ -480,6 +480,15 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
 
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
 
+  // Music envelope — swell the bed in over the open (no hard attack at frame 0,
+  // which read as an abrupt/odd start) and ease it out under the close.
+  const musicEnv = (f: number) =>
+    musicVolume *
+    Math.min(
+      interpolate(f, [0, 60], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+      interpolate(f, [durationInFrames - 90, durationInFrames - 12], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+    );
+
   // Production-quality hero design — the per-user pipeline supplies identity +
   // gate metadata + narration cues (the living CosmicSky replaces any static
   // background). Legacy scene arc is the fallback for content videos.
@@ -502,7 +511,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
           brandWordmark={brandWordmark}
         />
         {narrationUrl && <Audio src={narrationUrl} />}
-        {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
+        {musicUrl && <Audio src={musicUrl} volume={musicEnv} loop />}
       </AbsoluteFill>
     );
   }

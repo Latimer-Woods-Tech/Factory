@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Img, OffthreadVideo, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, OffthreadVideo, interpolate, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BodyGraph } from './BodyGraph.js';
 import { CosmicSky, type SkyMood } from './CosmicSky.js';
 
@@ -80,9 +80,12 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   // ── #2 Camera ──────────────────────────────────────────────────────────
   const last = cues.totalFrames + 230;
   const kfF = [0, cues.type, cues.centersIntro, cues.cThroat, cues.cSolar, cues.gatesIntro, cues.g33, cues.g19, cues.g40, cues.close, last];
-  const camX = interpolate(frame, kfF, [840, 600, 900, 1430, 1430, 1240, 720, 980, 1180, 820, 880], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const camY = interpolate(frame, kfF, [500, 450, 470, 430, 470, 500, 880, 900, 900, 500, 520], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const camZ = interpolate(frame, kfF, [1.04, 1.08, 1.05, 1.30, 1.27, 1.13, 1.12, 1.07, 1.06, 1.02, 1.07], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  // Gate beats (g33→g40): hold the camera CENTRED on the gate band so all three
+  // cards stay fully in frame — the on-chart gate flares (not a camera pan) mark
+  // which gate is spoken. A gentle push-in keeps it alive without cropping cards.
+  const camX = interpolate(frame, kfF, [840, 600, 900, 1430, 1430, 1080, 960, 960, 960, 820, 880], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const camY = interpolate(frame, kfF, [500, 450, 470, 430, 470, 660, 804, 812, 820, 500, 520], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const camZ = interpolate(frame, kfF, [1.04, 1.08, 1.05, 1.30, 1.27, 1.10, 1.05, 1.05, 1.05, 1.02, 1.07], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const camTransform = `translate(${960 - camX * camZ}px, ${540 - camY * camZ}px) scale(${camZ})`;
 
   // ── Emotional weather: storm swells through the "shadow" beat, clears by siddhi ──
@@ -188,12 +191,14 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
               const cue = i === 0 ? cues.g33 : i === 1 ? cues.g19 : cues.g40;
               const o = rev(frame, cue - 6, 38);
               const y = interpolate(rev(frame, cue - 6, 44), [0, 1], [40, 0]);
+              // Active pulse — the card for the gate being spoken lifts + glows.
+              const active = interpolate(frame, [cue - 4, cue + 10, cue + 64], [0, 1, 0.22], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
               // Gene-key arc: for gate 33 use the spoken cues; others reveal with the card.
               const arc = i === 0
                 ? { sh: rev(frame, cues.g33shadow, 18), gi: rev(frame, cues.g33gift, 18), si: rev(frame, cues.g33siddhi, 18) }
                 : { sh: rev(frame, cue + 30, 16), gi: rev(frame, cue + 48, 16), si: rev(frame, cue + 66, 16) };
               return (
-                <div key={c.gate} style={{ flex: 1, padding: '24px 28px', borderLeft: `3px solid ${GOLD}`, background: 'rgba(8,9,17,0.5)', borderRadius: 4, opacity: o, transform: `translateY(${y}px)` }}>
+                <div key={c.gate} style={{ flex: 1, padding: '24px 28px', borderLeft: `${3 + active * 3}px solid ${GOLD}`, background: `rgba(8,9,17,${0.5 + active * 0.32})`, borderRadius: 4, opacity: o, transform: `translateY(${y - active * 8}px) scale(${1 + active * 0.03})`, boxShadow: active > 0.01 ? `0 18px 60px rgba(0,0,0,0.5), 0 0 ${active * 46}px rgba(232,200,122,${active * 0.4})` : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
                     <span style={{ fontSize: 40, color: GOLD, lineHeight: 1 }}>{c.hex}</span>
                     <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.55)' }}>GATE {c.gate}</span>
@@ -217,23 +222,46 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
       {/* Brand open — portal swirls open, the hand & stars logo steps out */}
       {logoVideoUrl && frame < 172 ? (
         <AbsoluteFill style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: logoIn, transform: `scale(${1 + stepThrough * 1.6})` }}>
-          {/* Outer energy bloom */}
-          <div style={{ position: 'absolute', width: 900, height: 900, borderRadius: '50%', background: `radial-gradient(circle, rgba(232,200,122,${0.18 + 0.12 * hb}) 0%, rgba(123,111,212,0.10) 40%, transparent 66%)`, transform: `scale(${portalScale})`, filter: 'blur(12px)' }} />
-          {/* Spinning vortex interior */}
-          <div style={{ position: 'absolute', width: 660, height: 660, borderRadius: '50%', overflow: 'hidden', transform: `scale(${portalScale}) rotate(${portalSpin}deg)` }}>
-            <div style={{ position: 'absolute', inset: -40, background: `conic-gradient(from 0deg at 50% 50%, ${GOLD}dd, #7b6fd4bb, transparent 26%, ${GOLD}99, #4a90d9bb, transparent 60%, #7b6fd4bb, ${GOLD}dd)`, filter: 'blur(7px)' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle, transparent 30%, rgba(4,5,11,0.55) 72%)' }} />
+          {/* ── A realistic 3D wormhole (not a flat cartoon swirl) ──────────── */}
+          {/* Gravitational lensing halo — starlight refracted around the rim. */}
+          <div style={{ position: 'absolute', width: 820, height: 820, borderRadius: '50%', background: 'radial-gradient(circle, transparent 58%, rgba(190,210,236,0.12) 64%, rgba(190,210,236,0.04) 70%, transparent 76%)', transform: `scale(${portalScale})`, filter: 'blur(3px)' }} />
+          {/* Outer atmospheric bloom — subtle, volumetric. */}
+          <div style={{ position: 'absolute', width: 880, height: 880, borderRadius: '50%', background: `radial-gradient(circle, rgba(232,200,122,${0.12 + 0.07 * hb}) 0%, rgba(106,92,192,0.07) 42%, transparent 64%)`, transform: `scale(${portalScale})`, filter: 'blur(20px)' }} />
+
+          {/* Receding tunnel — concentric depth rings fade + blur toward the core. */}
+          <div style={{ position: 'absolute', width: 640, height: 640, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${portalScale})` }}>
+            {Array.from({ length: 7 }, (_, i) => {
+              const t = (i + 1) / 8;
+              const d = 600 * (1 - t * 0.78);
+              return <div key={i} style={{ position: 'absolute', width: d, height: d, borderRadius: '50%', border: `1px solid ${i % 2 ? GOLD : '#6a5cc0'}`, opacity: 0.07 + 0.13 * (1 - t), filter: `blur(${0.5 + t * 1.7}px)` }} />;
+            })}
           </div>
-          {/* Shimmer over the vortex */}
-          <svg width={680} height={680} style={{ position: 'absolute', transform: `scale(${portalScale})`, mixBlendMode: 'screen', opacity: 0.5 }}>
-            <filter id="portalShimmer"><feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed={frame % 40} result="n" /><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.91  0 0 0 0 0.78  0 0 0 0 0.48  0 0 0 0.5 0" result="c" /><feComposite in="c" in2="SourceGraphic" operator="in" /></filter>
-            <circle cx={340} cy={340} r={324} filter="url(#portalShimmer)" />
-          </svg>
-          {/* Splattered glowing rim — the Rick & Morty energy edge */}
-          <svg width={760} height={760} style={{ position: 'absolute', transform: `scale(${portalScale})` }}>
-            <filter id="portalEdge"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed={frame % 50} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="36" /></filter>
-            <circle cx={380} cy={380} r={330} fill="none" stroke={GOLD} strokeWidth={12} filter="url(#portalEdge)" opacity={0.85 + 0.15 * hb} />
-            <circle cx={380} cy={380} r={330} fill="none" stroke="#fff3cf" strokeWidth={4} filter="url(#portalEdge)" opacity={0.7} />
+
+          {/* Accretion disk — matter spiralling in. A conic confined to a ring band
+              by a radial mask; rotation via the conic's from-angle (smooth, no
+              flat wheel look). Low-contrast + blurred so it reads as light, not paint. */}
+          <div style={{
+            position: 'absolute', width: 600, height: 600, borderRadius: '50%',
+            background: `conic-gradient(from ${portalSpin}deg at 50% 50%, transparent 0%, ${GOLD}99 9%, transparent 24%, #6a5cc0aa 38%, transparent 52%, ${GOLD}77 64%, transparent 80%, #6a5cc099 92%, transparent 100%)`,
+            WebkitMaskImage: 'radial-gradient(circle at 50% 50%, transparent 26%, #000 46%, #000 64%, transparent 88%)',
+            maskImage: 'radial-gradient(circle at 50% 50%, transparent 26%, #000 46%, #000 64%, transparent 88%)',
+            transform: `scale(${portalScale})`, filter: 'blur(6px)', mixBlendMode: 'screen',
+          }} />
+
+          {/* Event horizon — a deep dark core so the centre reads as a hole. */}
+          <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, #02030a 0%, #03040c 30%, rgba(4,5,12,0.7) 50%, transparent 66%)', transform: `scale(${portalScale})` }} />
+
+          {/* Hot accretion rim — a thin bright ring of light at the boundary. */}
+          <div style={{ position: 'absolute', width: 562, height: 562, borderRadius: '50%', border: `2px solid ${GOLD}`, boxShadow: `0 0 26px 3px ${GOLD}aa, 0 0 60px 8px ${GOLD}44, inset 0 0 44px 6px ${GOLD}55, inset 0 0 110px 22px rgba(106,92,192,0.34)`, opacity: 0.85 + 0.15 * hb, transform: `scale(${portalScale})` }} />
+
+          {/* Rim-light crescent — an off-axis highlight gives the orb its 3D read. */}
+          <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle at 38% 30%, rgba(255,246,216,0.42) 0%, rgba(255,246,216,0.08) 16%, transparent 32%)', transform: `scale(${portalScale})`, mixBlendMode: 'screen' }} />
+
+          {/* Plasma filaments — thin organic arcs on the rim, blurred (subtle, not splattered). */}
+          <svg width={700} height={700} style={{ position: 'absolute', transform: `scale(${portalScale})`, mixBlendMode: 'screen', filter: 'blur(1.2px)', opacity: 0.5 }}>
+            <filter id="portalEdge"><feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="2" seed={frame % 50} result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="16" /></filter>
+            <circle cx={350} cy={350} r={284} fill="none" stroke={GOLD} strokeWidth={2.5} filter="url(#portalEdge)" opacity={0.7} />
+            <circle cx={350} cy={350} r={284} fill="none" stroke="#fff3cf" strokeWidth={1} filter="url(#portalEdge)" opacity={0.6} />
           </svg>
           {/* The hand & stars logo stepping out of the portal (renders only once
               it begins to emerge — avoids OffthreadVideo bleeding during ignition) */}
@@ -269,6 +297,22 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
       ) : null}
 
       {/* ── Cinematic overlays (outside the camera world) ─────────────────── */}
+      {/* Floating embers — slow motes of light drifting up, for atmospheric life. */}
+      <AbsoluteFill style={{ mixBlendMode: 'screen', opacity: 0.5 * globalOpacity }}>
+        <svg width="100%" height="100%" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+          {Array.from({ length: 30 }, (_, i) => {
+            const s = (n: number) => random(`ember${i}:${n}`);
+            const speed = 0.16 + s(1) * 0.42;
+            const y = 1140 - (((frame * speed + s(3) * 1200) % 1200));
+            const x = s(0) * 1920 + Math.sin(frame / (60 + s(4) * 90) + s(2) * 7) * 34;
+            const rr = 0.8 + s(5) * 2.3;
+            const tw = 0.5 + 0.5 * Math.sin(frame / 22 + s(6) * 9);
+            return <circle key={i} cx={x} cy={y} r={rr} fill={s(7) < 0.5 ? GOLD : '#fff'} opacity={(0.18 + 0.42 * tw) * 0.5} />;
+          })}
+        </svg>
+      </AbsoluteFill>
+      {/* Light-leak sweep — a soft warm band drifts across slowly (anamorphic feel). */}
+      <div style={{ position: 'absolute', top: -220, bottom: -220, width: 360, left: 0, transform: `translateX(${interpolate(frame % 620, [0, 620], [-560, 2480])}px) rotate(8deg)`, background: 'linear-gradient(90deg, transparent, rgba(232,200,122,0.16), rgba(255,245,214,0.10), transparent)', filter: 'blur(42px)', mixBlendMode: 'screen', opacity: globalOpacity }} />
       {/* Warm/cool grade */}
       <AbsoluteFill style={{ background: 'radial-gradient(ellipse 70% 70% at 38% 40%, rgba(232,200,122,0.06) 0%, rgba(0,0,0,0) 55%), linear-gradient(180deg, rgba(20,26,48,0.10) 0%, rgba(0,0,0,0.18) 100%)', mixBlendMode: 'screen' }} />
       {/* Film grain — subtle (dialed down from 0.05; finer grain compresses far
