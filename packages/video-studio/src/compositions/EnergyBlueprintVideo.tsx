@@ -96,6 +96,12 @@ export const blueprintSchema = z.object({
   profile: z.string().optional(),
   /** Character-level narration cue frames driving every reveal (word-perfect sync). */
   cues: z.record(z.string(), z.number()).optional(),
+  /** Procedural-sky seed (randomises the living background per render). */
+  skySeed: z.number().optional(),
+  /** Hand-and-stars brand logo video URL for the open. */
+  logoVideoUrl: z.string().optional(),
+  /** Brand wordmark shown in the open + as a persistent header (e.g. "SelfPrime.com"). */
+  brandWordmark: z.string().optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -458,7 +464,6 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   signatureGates = [],
   musicUrl = '',
   musicVolume = 0.16,
-  backgroundUrl,
   identity,
   heroDefinedCenters,
   definedCenterLabels,
@@ -466,20 +471,22 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   name,
   profile,
   cues,
+  skySeed,
+  logoVideoUrl,
+  brandWordmark,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
 
-  // Production-quality hero design — the per-user pipeline supplies a bespoke
-  // background + identity + gate metadata + narration cues. Legacy scene arc is
-  // the fallback for content videos that don't supply them.
-  if (backgroundUrl && identity && cues) {
+  // Production-quality hero design — the per-user pipeline supplies identity +
+  // gate metadata + narration cues (the living CosmicSky replaces any static
+  // background). Legacy scene arc is the fallback for content videos.
+  if (identity && cues) {
     return (
       <AbsoluteFill>
         <HeroBlueprint
-          backgroundUrl={backgroundUrl}
           identity={identity}
           name={name}
           profile={profile}
@@ -489,6 +496,10 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
           cues={cues as never}
           typeColor={typeColor}
           logoUrl={logoUrl}
+          mood={forgeTheme}
+          skySeed={skySeed}
+          logoVideoUrl={logoVideoUrl}
+          brandWordmark={brandWordmark}
         />
         {narrationUrl && <Audio src={narrationUrl} />}
         {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}

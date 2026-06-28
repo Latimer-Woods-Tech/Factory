@@ -1,6 +1,7 @@
 import React from 'react';
-import { AbsoluteFill, Img, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, OffthreadVideo, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BodyGraph } from './BodyGraph.js';
+import { CosmicSky, type SkyMood } from './CosmicSky.js';
 
 // ---------------------------------------------------------------------------
 // HeroBlueprint v2 — the directed personal Energy Blueprint film.
@@ -31,7 +32,7 @@ export interface HeroCues {
   g19: number; g40: number; close: number; flow: number; totalFrames: number;
 }
 export interface HeroBlueprintProps {
-  backgroundUrl: string;
+  backgroundUrl?: string;
   identity: HeroIdentity;
   name?: string;
   profile?: string;
@@ -41,6 +42,14 @@ export interface HeroBlueprintProps {
   cues: HeroCues;
   typeColor: string;
   logoUrl?: string;
+  /** Emotional-register sky mood (from the forge theme). */
+  mood?: SkyMood;
+  /** Randomises the procedural sky — different seed = different sky. */
+  skySeed?: number;
+  /** Hand-and-stars brand logo video for the open. */
+  logoVideoUrl?: string;
+  /** Brand wordmark shown in the open + close (e.g. "SelfPrime.com"). */
+  brandWordmark?: string;
 }
 
 const GOLD = '#e8c87a';
@@ -53,8 +62,9 @@ function rev(frame: number, a: number, span = 36): number {
 }
 
 export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
-  backgroundUrl, identity, name, profile, definedCenters, definedCenterLabels,
-  signatureGates, cues, typeColor, logoUrl,
+  identity, name, profile, definedCenters, definedCenterLabels,
+  signatureGates, cues, typeColor, logoUrl, mood, skySeed, logoVideoUrl,
+  brandWordmark = 'SelfPrime.com',
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -68,9 +78,15 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   const camZ = interpolate(frame, kfF, [1.04, 1.08, 1.05, 1.30, 1.27, 1.13, 1.12, 1.07, 1.06, 1.02, 1.07], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const camTransform = `translate(${960 - camX * camZ}px, ${540 - camY * camZ}px) scale(${camZ})`;
 
-  // ── Background Ken Burns (independent of camera, for parallax depth) ──────
-  const bgScale = interpolate(frame, [0, durationInFrames], [1.08, 1.2]);
-  const bgX = interpolate(frame, [0, durationInFrames], [0, -28]);
+  // ── Emotional weather: storm swells through the "shadow" beat, clears by siddhi ──
+  const emotionalIntensity = interpolate(
+    frame,
+    [cues.gatesIntro, cues.g33shadow, cues.g33siddhi, cues.close],
+    [0.12, 0.7, 0.15, 0.04],
+    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
+  );
+  // Logo open runs over the first ~5s, then dissolves into the film.
+  const logoIn = rev(frame, 6, 22) * (1 - rev(frame, 122, 156));
 
   // ── #3 Living chart ───────────────────────────────────────────────────────
   const bloom = spring({ frame: frame - cues.centersIntro, fps, config: { damping: 22, stiffness: 42 }, from: 0, to: 1 });
@@ -89,11 +105,13 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
     <AbsoluteFill style={{ opacity: globalOpacity, backgroundColor: '#04050b' }}>
       {/* ── World (camera target) ─────────────────────────────────────────── */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, transform: camTransform, transformOrigin: '0 0' }}>
-        {/* Background */}
-        <Img src={backgroundUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${bgScale}) translateX(${bgX}px)`, opacity: rev(frame, 0, 50) }} />
-        <AbsoluteFill style={{ background: 'linear-gradient(100deg, rgba(4,5,11,0.9) 0%, rgba(4,5,11,0.55) 30%, rgba(4,5,11,0.08) 56%, rgba(4,5,11,0.5) 100%)' }} />
-        <AbsoluteFill style={{ background: 'radial-gradient(ellipse 82% 88% at 52% 42%, rgba(0,0,0,0) 40%, rgba(4,5,11,0.8) 100%)' }} />
-        <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(4,5,11,0) 46%, rgba(4,5,11,0.4) 74%, rgba(4,5,11,0.64) 100%)' }} />
+        {/* Living procedural sky — replaces the static beam. Mutates per render
+            (skySeed) and swells with emotional intensity (storm on the shadow
+            beat, clearing to radiance by the siddhi). */}
+        <CosmicSky frame={frame} mood={mood ?? 'self'} seed={skySeed ?? 1} intensity={emotionalIntensity} />
+        {/* Legibility scrims — left for the text column, right for the chart. */}
+        <AbsoluteFill style={{ background: 'linear-gradient(100deg, rgba(4,5,11,0.82) 0%, rgba(4,5,11,0.42) 30%, rgba(4,5,11,0.04) 56%, rgba(4,5,11,0.32) 100%)' }} />
+        <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(4,5,11,0) 48%, rgba(4,5,11,0.32) 74%, rgba(4,5,11,0.52) 100%)' }} />
 
         {/* Identity */}
         <div style={{ position: 'absolute', left: 140, top: 300, maxWidth: 720, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -176,6 +194,17 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Brand open — hand & stars logo + wordmark, dissolving into the film */}
+      {logoVideoUrl && frame < 165 ? (
+        <AbsoluteFill style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, opacity: logoIn }}>
+          <OffthreadVideo src={logoVideoUrl} muted style={{ width: 680, height: 'auto', mixBlendMode: 'screen', filter: 'drop-shadow(0 0 46px rgba(201,168,76,0.32))' }} />
+          <div style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: 34, fontWeight: 700, letterSpacing: '0.34em', color: '#fff', textTransform: 'uppercase', textShadow: '0 2px 30px rgba(0,0,0,0.7)' }}>{brandWordmark}</div>
+        </AbsoluteFill>
+      ) : null}
+
+      {/* Persistent brand wordmark — up in the mix (fades in after the logo open) */}
+      <div style={{ position: 'absolute', top: 74, left: 0, right: 0, textAlign: 'center', fontFamily: 'Inter, system-ui, sans-serif', fontSize: 22, fontWeight: 700, letterSpacing: '0.42em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.74)', textShadow: '0 2px 16px rgba(0,0,0,0.85)', opacity: Math.min(rev(frame, 150, 40), globalOpacity) }}>{brandWordmark}</div>
 
       {/* ── Cinematic overlays (outside the camera world) ─────────────────── */}
       {/* Warm/cool grade */}
