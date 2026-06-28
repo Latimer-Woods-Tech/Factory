@@ -26,7 +26,7 @@ interface MoodSpec {
 }
 
 const MOODS: Record<SkyMood, MoodSpec> = {
-  lux:     { top: '#0c1126', bottom: '#04050b', glow: '#e8c87a', aurora: ['#e8c87a', '#7b6fd4'], storm: 0.05, shooting: true,  spin: 0.0011 },
+  lux:     { top: '#1a1438', bottom: '#0c0a1c', glow: '#cdbcef', aurora: ['#cdbcef', '#e8c4de'], storm: 0.03, shooting: true,  spin: 0.0009 },
   phoenix: { top: '#1c0a07', bottom: '#05040a', glow: '#ff7a42', aurora: ['#ff7a42', '#c42b2b'], storm: 0.62, shooting: false, spin: 0.0016 },
   aether:  { top: '#0a1320', bottom: '#04060d', glow: '#bcd2ec', aurora: ['#bcd2ec', '#9a8fd0'], storm: 0.12, shooting: true,  spin: 0.0008 },
   chronos: { top: '#080d18', bottom: '#04050b', glow: '#9aa6c8', aurora: ['#9aa6c8', '#5f6486'], storm: 0.04, shooting: false, spin: 0.0006 },
