@@ -12,6 +12,7 @@ import { StarField } from '../components/StarField.js';
 import { BodyGraph } from '../components/BodyGraph.js';
 import { KineticReveal } from '../components/KineticReveal.js';
 import { ForgeAtmosphere, type ForgeKey } from '../components/ForgeAtmosphere.js';
+import { HeroBlueprint } from '../components/HeroBlueprint.js';
 import { TYPE_COLORS, DEFAULT_BRAND_COLOR } from '../blueprint-types.js';
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,53 @@ export const blueprintSchema = z.object({
    * available.
    */
   signatureGates: z.array(z.number()).optional(),
+  /** Optional instrumental music bed (R2 URL). Empty/absent = no music. */
+  musicUrl: z.string().optional(),
+  /** Music bed volume (0-1), kept low so it sits under the narration. */
+  musicVolume: z.number().optional(),
+
+  // ── Production-quality hero design (the personal pipeline) ────────────────
+  // When `backgroundUrl` + `identity` are supplied, the composition renders the
+  // bespoke hero design (cinematic background + identity card + labelled chart +
+  // Shadow→Gift→Siddhi gate band) instead of the legacy scene arc.
+  /** Bespoke FLUX background image URL (per forge), from generate-background.mjs. */
+  backgroundUrl: z.string().optional(),
+  /** Personal identity for the hero card. */
+  identity: z.object({
+    type: z.string(),
+    authority: z.string(),
+    strategy: z.string(),
+  }).optional(),
+  /** Defined-centre engine keys for the hero graph (top-level, not per-scene). */
+  heroDefinedCenters: z.array(z.string()).optional(),
+  /** Human-readable defined-centre labels for the hero callout. */
+  definedCenterLabels: z.array(z.string()).optional(),
+  /** Signature-gate metadata cards (from the Atom Registry) for the hero band. */
+  signatureGateData: z.array(z.object({
+    gate: z.number(),
+    name: z.string(),
+    hex: z.string(),
+    center: z.string(),
+    archetype: z.string(),
+    shadow: z.string(),
+    gift: z.string(),
+    siddhi: z.string(),
+    /** gatePosition() viewBox coords (300x420) for the on-graph flare. */
+    x: z.number(),
+    y: z.number(),
+  })).optional(),
+  /** Display name for the identity eyebrow (optional). */
+  name: z.string().optional(),
+  /** HD profile, e.g. "5/1 Heretic-Investigator" (optional). */
+  profile: z.string().optional(),
+  /** Character-level narration cue frames driving every reveal (word-perfect sync). */
+  cues: z.record(z.string(), z.number()).optional(),
+  /** Procedural-sky seed (randomises the living background per render). */
+  skySeed: z.number().optional(),
+  /** Hand-and-stars brand logo video URL for the open. */
+  logoVideoUrl: z.string().optional(),
+  /** Brand wordmark shown in the open + as a persistent header (e.g. "SelfPrime.com"). */
+  brandWordmark: z.string().optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -414,11 +462,60 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   brandColor = DEFAULT_BRAND_COLOR,
   logoUrl,
   signatureGates = [],
+  musicUrl = '',
+  musicVolume = 0.16,
+  identity,
+  heroDefinedCenters,
+  definedCenterLabels,
+  signatureGateData,
+  name,
+  profile,
+  cues,
+  skySeed,
+  logoVideoUrl,
+  brandWordmark,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
+
+  // Music envelope — swell the bed in over the open (no hard attack at frame 0,
+  // which read as an abrupt/odd start) and ease it out under the close.
+  const musicEnv = (f: number) =>
+    musicVolume *
+    Math.min(
+      interpolate(f, [0, 60], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+      interpolate(f, [durationInFrames - 90, durationInFrames - 12], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+    );
+
+  // Production-quality hero design — the per-user pipeline supplies identity +
+  // gate metadata + narration cues (the living CosmicSky replaces any static
+  // background). Legacy scene arc is the fallback for content videos.
+  if (identity && cues) {
+    return (
+      <AbsoluteFill>
+        <HeroBlueprint
+          identity={identity}
+          name={name}
+          profile={profile}
+          definedCenters={heroDefinedCenters ?? []}
+          definedCenterLabels={definedCenterLabels ?? []}
+          signatureGates={(signatureGateData ?? []) as never}
+          cues={cues as never}
+          typeColor={typeColor}
+          logoUrl={logoUrl}
+          mood={forgeTheme}
+          skySeed={skySeed}
+          logoVideoUrl={logoVideoUrl}
+          brandWordmark={brandWordmark}
+        />
+        {narrationUrl && <Audio src={narrationUrl} />}
+        {musicUrl && <Audio src={musicUrl} volume={musicEnv} loop />}
+      </AbsoluteFill>
+    );
+  }
+
   const resolvedScenes = sceneProp ?? buildDefaultScenes(script) ?? [];
 
   // Determine which scene is current and the local frame within it
@@ -486,6 +583,8 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
 
       {/* Narration audio */}
       {narrationUrl && <Audio src={narrationUrl} />}
+      {/* Instrumental music bed, looped + ducked under the narration */}
+      {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
     </AbsoluteFill>
   );
 };

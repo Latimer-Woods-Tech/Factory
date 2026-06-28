@@ -100,6 +100,12 @@ export const RemotionRoot: React.FC = () => {
         id="EnergyBlueprintVideo"
         component={EnergyBlueprintVideo}
         durationInFrames={2250}
+        calculateMetadata={({ props }) => {
+          // Hero film fits the narration (cues.totalFrames + a close tail);
+          // legacy content videos keep the fixed 75s (2250) arc.
+          const total = (props.cues as Record<string, number> | undefined)?.totalFrames;
+          return { durationInFrames: total ? Math.ceil(total) + 130 : 2250 };
+        }}
         fps={VIDEO_FPS}
         width={VIDEO_WIDTH}
         height={VIDEO_HEIGHT}
