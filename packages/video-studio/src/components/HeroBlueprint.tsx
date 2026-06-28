@@ -28,8 +28,11 @@ export interface HeroIdentity { type: string; authority: string; strategy: strin
 export interface HeroCues {
   design: number; type: number; authority: number; centersIntro: number;
   cThroat: number; cG: number; cHeart: number; cSolar: number;
-  gatesIntro: number; g33: number; g33shadow: number; g33gift: number; g33siddhi: number;
-  g19: number; g40: number; close: number; flow: number; totalFrames: number;
+  gatesIntro: number;
+  g33: number; g33shadow: number; g33gift: number; g33siddhi: number;
+  g19: number; g19shadow: number; g19gift: number; g19siddhi: number;
+  g40: number; g40shadow: number; g40gift: number; g40siddhi: number;
+  synthesis: number; close: number; flow: number; totalFrames: number;
 }
 export interface HeroBlueprintProps {
   backgroundUrl?: string;
@@ -79,20 +82,22 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
 
   // ── #2 Camera ──────────────────────────────────────────────────────────
   const last = cues.totalFrames + 230;
-  const kfF = [0, cues.type, cues.centersIntro, cues.cThroat, cues.cSolar, cues.gatesIntro, cues.g33, cues.g19, cues.g40, cues.close, last];
+  const kfF = [0, cues.type, cues.centersIntro, cues.cThroat, cues.cSolar, cues.gatesIntro, cues.g33, cues.g19, cues.g40, cues.synthesis, cues.close, last];
   // Gate beats (g33→g40): hold the camera CENTRED on the gate band so all three
   // cards stay fully in frame — the on-chart gate flares (not a camera pan) mark
-  // which gate is spoken. A gentle push-in keeps it alive without cropping cards.
-  const camX = interpolate(frame, kfF, [840, 600, 900, 1430, 1430, 1080, 960, 960, 960, 820, 880], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const camY = interpolate(frame, kfF, [500, 450, 470, 430, 470, 660, 804, 812, 820, 500, 520], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const camZ = interpolate(frame, kfF, [1.04, 1.08, 1.05, 1.30, 1.27, 1.10, 1.05, 1.05, 1.05, 1.02, 1.07], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  // which gate is spoken. Then at SYNTHESIS pull back to a wide shot that frames
+  // the whole world at once — the chart (with the gate-circuit drawn between the
+  // three gates), the thesis, and all three cards — so they read "as one".
+  const camX = interpolate(frame, kfF, [840, 600, 900, 1430, 1430, 1080, 960, 960, 960, 980, 820, 880], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const camY = interpolate(frame, kfF, [500, 450, 470, 430, 470, 660, 804, 812, 820, 470, 500, 520], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const camZ = interpolate(frame, kfF, [1.04, 1.08, 1.05, 1.30, 1.27, 1.10, 1.05, 1.05, 1.05, 1.00, 1.02, 1.07], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const camTransform = `translate(${960 - camX * camZ}px, ${540 - camY * camZ}px) scale(${camZ})`;
 
   // ── Emotional weather: storm swells through the "shadow" beat, clears by siddhi ──
   const emotionalIntensity = interpolate(
     frame,
-    [cues.gatesIntro, cues.g33shadow, cues.g33siddhi, cues.close],
-    [0.12, 0.7, 0.15, 0.04],
+    [cues.gatesIntro, cues.g33shadow, cues.g33siddhi, cues.synthesis, cues.close],
+    [0.12, 0.7, 0.15, 0.06, 0.04],
     { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
   );
   // ── Portal open ──────────────────────────────────────────────────────────
@@ -121,6 +126,10 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   // Flare for a gate at its cue: a bright bloom at the gate's exact position.
   const gateFlare = (cue: number) => interpolate(frame, [cue - 4, cue + 6, cue + 46], [0, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
 
+  // ── Synthesis beat: draw the circuit between the three gates ───────────────
+  const synth = rev(frame, cues.synthesis, 70);          // stroke draws on
+  const synthFill = rev(frame, cues.synthesis + 55, 60); // interior glows after
+
   return (
     <AbsoluteFill style={{ opacity: globalOpacity, backgroundColor: '#04050b' }}>
       {/* ── World (camera target) ─────────────────────────────────────────── */}
@@ -135,8 +144,9 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
         <AbsoluteFill style={{ background: 'linear-gradient(100deg, rgba(4,5,11,0.82) 0%, rgba(4,5,11,0.42) 30%, rgba(4,5,11,0.04) 56%, rgba(4,5,11,0.32) 100%)' }} />
         <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(4,5,11,0) 48%, rgba(4,5,11,0.32) 74%, rgba(4,5,11,0.52) 100%)' }} />
 
-        {/* Identity */}
-        <div style={{ position: 'absolute', left: 140, top: 300, maxWidth: 720, fontFamily: 'Inter, system-ui, sans-serif' }}>
+        {/* Identity — recedes once we move past it into the gates, clearing the
+            stage for the synthesis thesis that lands in this same column. */}
+        <div style={{ position: 'absolute', left: 140, top: 300, maxWidth: 720, fontFamily: 'Inter, system-ui, sans-serif', opacity: 1 - rev(frame, cues.gatesIntro + 40, 80) }}>
           <div style={{ fontSize: 23, fontWeight: 600, letterSpacing: '0.46em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: 20, opacity: rev(frame, cues.type - 16, 30), textShadow: '0 2px 14px rgba(0,0,0,0.8)' }}>
             {name ? `${name} · ` : ''}Your Energy Blueprint
           </div>
@@ -152,8 +162,8 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
           </div>
         </div>
 
-        {/* Defined-centres callout */}
-        <div style={{ position: 'absolute', left: 690, top: 300, transform: 'translateY(-50%)', fontFamily: 'Inter, system-ui, sans-serif', opacity: rev(frame, cues.centersIntro, 40) }}>
+        {/* Defined-centres callout — fades with the identity before synthesis. */}
+        <div style={{ position: 'absolute', left: 690, top: 300, transform: 'translateY(-50%)', fontFamily: 'Inter, system-ui, sans-serif', opacity: Math.min(rev(frame, cues.centersIntro, 40), 1 - rev(frame, cues.gatesIntro + 40, 80)) }}>
           <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: '0.34em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', textShadow: '0 2px 16px rgba(0,0,0,0.85)' }}>Defined Centers</div>
           <div style={{ fontSize: 30, fontWeight: 600, color: 'rgba(255,255,255,0.95)', marginTop: 10, lineHeight: 1.5, textShadow: '0 2px 16px rgba(0,0,0,0.85)' }}>
             {definedCenterLabels.map((l, i) => (
@@ -179,6 +189,33 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
               </div>
             );
           })}
+          {/* Synthesis circuit — at the synthesis beat, a gold triangle draws
+              between the three signature gates, lighting them as one closed loop
+              ("three gates, one circuit"), with pulsing nodes at each vertex. */}
+          {synth > 0.001 && signatureGates.length >= 3 ? (() => {
+            const pt = (g: HeroGate) => `${GX + g.x * GS} ${GY + g.y * GS}`;
+            const [a, b, c] = signatureGates as [HeroGate, HeroGate, HeroGate];
+            return (
+            <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0, overflow: 'visible', mixBlendMode: 'screen', pointerEvents: 'none' }}>
+              <path
+                d={`M ${pt(a)} L ${pt(b)} L ${pt(c)} Z`}
+                fill={`rgba(232,200,122,${0.07 * synthFill})`}
+                stroke={GOLD}
+                strokeWidth={2.5}
+                strokeLinejoin="round"
+                pathLength={1}
+                strokeDasharray={1}
+                strokeDashoffset={1 - synth}
+                opacity={0.9}
+                style={{ filter: 'drop-shadow(0 0 9px rgba(232,200,122,0.7))' }}
+              />
+              {signatureGates.map((g, i) => {
+                const pulse = 0.6 + 0.4 * Math.sin(frame / 9 + i * 2.1);
+                return <circle key={g.gate} cx={GX + g.x * GS} cy={GY + g.y * GS} r={5 + 3.5 * pulse} fill="#fff5d6" opacity={synth * (0.45 + 0.55 * pulse)} style={{ filter: 'drop-shadow(0 0 11px rgba(232,200,122,0.9))' }} />;
+              })}
+            </svg>
+            );
+          })() : null}
         </div>
 
         {/* Signature-gate band */}
@@ -193,10 +230,13 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
               const y = interpolate(rev(frame, cue - 6, 44), [0, 1], [40, 0]);
               // Active pulse — the card for the gate being spoken lifts + glows.
               const active = interpolate(frame, [cue - 4, cue + 10, cue + 64], [0, 1, 0.22], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-              // Gene-key arc: for gate 33 use the spoken cues; others reveal with the card.
+              // Gene-key arc: every gate now reveals Shadow → Gift → Siddhi on the
+              // exact words it is spoken (each gate gets its own narrated arc).
               const arc = i === 0
                 ? { sh: rev(frame, cues.g33shadow, 18), gi: rev(frame, cues.g33gift, 18), si: rev(frame, cues.g33siddhi, 18) }
-                : { sh: rev(frame, cue + 30, 16), gi: rev(frame, cue + 48, 16), si: rev(frame, cue + 66, 16) };
+                : i === 1
+                  ? { sh: rev(frame, cues.g19shadow, 18), gi: rev(frame, cues.g19gift, 18), si: rev(frame, cues.g19siddhi, 18) }
+                  : { sh: rev(frame, cues.g40shadow, 18), gi: rev(frame, cues.g40gift, 18), si: rev(frame, cues.g40siddhi, 18) };
               return (
                 <div key={c.gate} style={{ flex: 1, padding: '24px 28px', borderLeft: `${3 + active * 3}px solid ${GOLD}`, background: `rgba(8,9,17,${0.5 + active * 0.32})`, borderRadius: 4, opacity: o, transform: `translateY(${y - active * 8}px) scale(${1 + active * 0.03})`, boxShadow: active > 0.01 ? `0 18px 60px rgba(0,0,0,0.5), 0 0 ${active * 46}px rgba(232,200,122,${active * 0.4})` : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
@@ -216,6 +256,15 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
               );
             })}
           </div>
+        </div>
+
+        {/* Synthesis thesis — lands in the (now-cleared) identity column on the
+            wide synthesis shot, naming the through-line of the three gates. */}
+        <div style={{ position: 'absolute', left: 140, top: 410, maxWidth: 600, fontFamily: 'Inter, system-ui, sans-serif', opacity: rev(frame, cues.synthesis, 44) }}>
+          <div style={{ fontSize: 21, fontWeight: 700, letterSpacing: '0.42em', textTransform: 'uppercase', color: GOLD, marginBottom: 18, textShadow: '0 2px 16px rgba(0,0,0,0.85)' }}>The Synthesis</div>
+          <div style={{ fontSize: 60, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.04, color: '#fff', textShadow: '0 4px 30px rgba(0,0,0,0.7)' }}>Perceive<span style={{ color: GOLD }}> · </span>Serve<span style={{ color: GOLD }}> · </span>Restore</div>
+          <div style={{ width: interpolate(rev(frame, cues.synthesis + 26, 50), [0, 1], [0, 150]), height: 3, background: GOLD, margin: '26px 0', boxShadow: `0 0 18px ${GOLD}aa` }} />
+          <div style={{ fontSize: 26, fontWeight: 500, lineHeight: 1.5, color: 'rgba(255,255,255,0.82)', textShadow: '0 2px 16px rgba(0,0,0,0.85)', opacity: rev(frame, cues.synthesis + 20, 50) }}>Three gates, one current. Your retreat is not avoidance — it is how you refill the well.</div>
         </div>
       </div>
 
