@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 478 |
+| total_docs | 479 |
 | canonical | 19 |
-| active | 411 |
+| active | 412 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -41,7 +41,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (411)
+## Active Docs (412)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -315,6 +315,7 @@
 | [docs/planning/brief-2026-06-24.md](planning/brief-2026-06-24.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-24 |
 | [docs/planning/brief-2026-06-25.md](planning/brief-2026-06-25.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-25 |
 | [docs/planning/brief-2026-06-26.md](planning/brief-2026-06-26.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-26 |
+| [docs/planning/brief-2026-06-27.md](planning/brief-2026-06-27.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-27 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
