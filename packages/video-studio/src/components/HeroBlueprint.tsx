@@ -154,7 +154,15 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   // ── Look-driven cinema ────────────────────────────────────────────────────
   // Rack-focus: the chart is sharp while it's the subject; the identity text is
   // sharp while IT is the subject. DOF blur (look.dof) defocuses the other.
-  const focusOnChart = interpolate(frame, [cues.type + 20, cues.centersIntro, cues.synthesis - 60, cues.synthesis + 10], [0, 1, 1, 0.5], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  // The rack must HOLD on the identity for its whole read (so the type name stays
+  // legible the entire time it's spoken), then snap focus to the chart in a quick
+  // ~70f pull right at the handoff — never a slow creep across the read window.
+  const focusOnChart = interpolate(
+    frame,
+    [cues.type + 20, cues.centersIntro - 70, cues.centersIntro, cues.synthesis - 60, cues.synthesis + 10],
+    [0, 0, 1, 1, 0.5],
+    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
+  );
   const chartBlur = look.dof * (1 - focusOnChart);
   const identityBlur = look.dof * 0.7 * focusOnChart;
   // Halation — a soft film-print glow on the brightest type, scaled per look.
