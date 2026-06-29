@@ -15,7 +15,9 @@ import { AbsoluteFill, interpolate, random } from 'remotion';
 // but every seed yields a different sky. "When in doubt, give a living sky."
 // ---------------------------------------------------------------------------
 
-export type SkyMood = 'lux' | 'phoenix' | 'aether' | 'chronos' | 'eros' | 'self';
+export type SkyMood =
+  | 'lux' | 'phoenix' | 'aether' | 'chronos' | 'eros' | 'self'
+  | 'tide' | 'petal' | 'dawn' | 'ink';
 
 interface MoodSpec {
   top: string; bottom: string;        // sky gradient
@@ -32,6 +34,11 @@ const MOODS: Record<SkyMood, MoodSpec> = {
   chronos: { top: '#080d18', bottom: '#04050b', glow: '#9aa6c8', aurora: ['#9aa6c8', '#5f6486'], storm: 0.04, shooting: false, spin: 0.0006 },
   eros:    { top: '#190a12', bottom: '#05040a', glow: '#e87a9a', aurora: ['#e87a9a', '#d4742a'], storm: 0.06, shooting: true,  spin: 0.0011 },
   self:    { top: '#06080f', bottom: '#03040a', glow: '#c9a84c', aurora: ['#c9a84c', '#4a90d9'], storm: 0.03, shooting: true,  spin: 0.0009 },
+  // ── Wave 2 moods (divine-feminine family, distinct registers) ──────────────
+  tide:    { top: '#0a1a24', bottom: '#04080e', glow: '#8fd0d8', aurora: ['#8fd0d8', '#7fa8d4'], storm: 0.18, shooting: false, spin: 0.0007 }, // oceanic teal-indigo
+  petal:   { top: '#1d1538', bottom: '#0d0a1e', glow: '#e8c4de', aurora: ['#e8c4de', '#cdbcef'], storm: 0.02, shooting: true,  spin: 0.0008 }, // soft lilac bloom
+  dawn:    { top: '#241326', bottom: '#0c0712', glow: '#f0c69a', aurora: ['#f0c69a', '#e8a0b8'], storm: 0.05, shooting: true,  spin: 0.0010 }, // rose-gold horizon
+  ink:     { top: '#12131a', bottom: '#070809', glow: '#c8ccd8', aurora: ['#c8ccd8', '#8a8fa0'], storm: 0.08, shooting: false, spin: 0.0006 }, // monochrome ink-wash
 };
 
 export interface CosmicSkyProps {

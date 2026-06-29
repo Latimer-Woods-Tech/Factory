@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, Img, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BodyGraph } from './BodyGraph.js';
 import { CosmicSky, type SkyMood } from './CosmicSky.js';
-import { cameraFloat, Constellation, GodRays, Particles } from './effects.js';
+import { AuroraRibbon, cameraFloat, Caustics, Constellation, GodRays, Particles } from './effects.js';
 import { LOOK_POOL, type LookSpec } from '../looks.js';
 
 // ---------------------------------------------------------------------------
@@ -177,6 +177,14 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
     : interpolate(frame, [0, cues.type, cues.gatesIntro, cues.synthesis], [0.8, 0.5, 0.3, 0.5], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
   const godRayX = interpolate(frame, [0, cues.centersIntro], [960, 1160], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const constellationP = look.hero === 'constellation' ? rev(frame, cues.synthesis + 6, 96) : 0;
+  // Aurora ribbons build through the reading and crest at the synthesis.
+  const auroraRibbonP = look.hero === 'auroraRibbon'
+    ? interpolate(frame, [cues.type, cues.centersIntro, cues.synthesis, cues.close], [0.2, 0.55, 1, 0.7], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    : 0;
+  // The tide rises across the reading — the well fills, stilled by the close.
+  const tideRise = look.hero === 'tideRise'
+    ? interpolate(frame, [cues.type, cues.synthesis, cues.close], [0.08, 0.85, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    : 0;
 
   return (
     <AbsoluteFill style={{ opacity: globalOpacity, backgroundColor: VEIL }}>
@@ -354,6 +362,10 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
       <Particles frame={frame} mode={look.particles} color1={look.accent} color2={look.accent2} opacity={0.5 * globalOpacity} converge={converge} cx={1404} cy={470} />
       {/* Constellation draw-on — the celestial-cartography hero at the synthesis. */}
       <Constellation frame={frame} progress={constellationP * globalOpacity} color={look.accent} seed={skySeed ?? 1} cx={1404} cy={470} />
+      {/* Aurora ribbons — the emotional/oceanic hero, flowing behind the reading. */}
+      <AuroraRibbon frame={frame} progress={auroraRibbonP * globalOpacity} color1={look.accent} color2={look.accent2} cy={470} />
+      {/* Caustics — the rising-tide hero; the well fills as the reading deepens. */}
+      <Caustics frame={frame} rise={tideRise * globalOpacity} color={look.accent} />
       {/* Light-leak sweep — a soft lavender/rose band drifts across slowly. */}
       <div style={{ position: 'absolute', top: -220, bottom: -220, width: 360, left: 0, transform: `translateX(${interpolate(frame % 620, [0, 620], [-560, 2480])}px) rotate(8deg)`, background: 'linear-gradient(90deg, transparent, rgba(205,188,239,0.16), rgba(232,196,222,0.10), transparent)', filter: 'blur(46px)', mixBlendMode: 'screen', opacity: globalOpacity }} />
       {/* Colour grade — look-driven bloom tint + base wash (the "film stock"). */}
