@@ -270,6 +270,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/planning/brief-2026-06-25.md](planning/brief-2026-06-25.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-25 |
 | [docs/planning/brief-2026-06-26.md](planning/brief-2026-06-26.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-26 |
 | [docs/planning/brief-2026-06-27.md](planning/brief-2026-06-27.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-27 |
+| [docs/planning/brief-2026-06-28.md](planning/brief-2026-06-28.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-28 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
