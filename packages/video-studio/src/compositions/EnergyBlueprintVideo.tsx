@@ -481,12 +481,14 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
 
   // Music envelope — swell the bed in over the open (no hard attack at frame 0,
-  // which read as an abrupt/odd start) and ease it out under the close.
+  // which read as an abrupt/odd start) and ease it out gently under the close so
+  // the film fades to silence rather than cutting. The bed is a long (~9 min)
+  // forge track, so over a ~4-min film it never loops — no loop-seam artifact.
   const musicEnv = (f: number) =>
     musicVolume *
     Math.min(
-      interpolate(f, [0, 60], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
-      interpolate(f, [durationInFrames - 90, durationInFrames - 12], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+      interpolate(f, [0, 70], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+      interpolate(f, [durationInFrames - 140, durationInFrames - 16], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
     );
 
   // Production-quality hero design — the per-user pipeline supplies identity +
@@ -494,7 +496,9 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   // background). Legacy scene arc is the fallback for content videos.
   if (identity && cues) {
     return (
-      <AbsoluteFill>
+      // Opaque black base so the close fades to true black (not the canvas
+      // default) as globalOpacity ramps the film out over the last ~70 frames.
+      <AbsoluteFill style={{ backgroundColor: '#000' }}>
         <HeroBlueprint
           identity={identity}
           name={name}
@@ -511,7 +515,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
           brandWordmark={brandWordmark}
         />
         {narrationUrl && <Audio src={narrationUrl} />}
-        {musicUrl && <Audio src={musicUrl} volume={musicEnv} loop />}
+        {musicUrl && <Audio src={musicUrl} volume={musicEnv} startFrom={8} />}
       </AbsoluteFill>
     );
   }

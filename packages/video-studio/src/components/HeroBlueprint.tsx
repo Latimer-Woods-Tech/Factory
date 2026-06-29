@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Img, OffthreadVideo, interpolate, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, interpolate, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BodyGraph } from './BodyGraph.js';
 import { CosmicSky, type SkyMood } from './CosmicSky.js';
 
@@ -75,13 +75,15 @@ function rev(frame: number, a: number, span = 36): number {
 }
 
 export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
-  identity, name, profile, definedCenters, definedCenterLabels,
-  signatureGates, cues, typeColor, logoUrl, mood, skySeed, logoVideoUrl,
+  identity, name, profile, definedCenters,
+  signatureGates, cues, typeColor, logoUrl, mood, skySeed,
   brandWordmark = 'SelfPrime.com',
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
-  const globalOpacity = Math.min(rev(frame, 0, 26), interpolate(frame, [durationInFrames - 34, durationInFrames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
+  // Fade up from black on the open; long, graceful fade to black on the close
+  // (the music fades to silence in the same window — see EnergyBlueprintVideo).
+  const globalOpacity = Math.min(rev(frame, 0, 26), interpolate(frame, [durationInFrames - 70, durationInFrames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
 
   // ── #2 Camera ──────────────────────────────────────────────────────────
   const last = cues.totalFrames + 230;
@@ -105,13 +107,13 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
     { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
   );
 
-  // ── Brand open — a luminous MOON blooms; the hand-and-stars logo emerges
-  // from its glow; then we drift gently THROUGH it into the film. ───────────
-  const logoIn = rev(frame, 4, 18) * (1 - rev(frame, 128, 162));
-  const moonBreathe = 0.5 + 0.5 * Math.sin(frame / 16);       // gentle luminosity pulse
-  const portalScale = spring({ frame: frame - 8, fps, config: { damping: 16, stiffness: 70, mass: 0.9 }, durationInFrames: 52 });
-  const logoEmerge = spring({ frame: frame - 46, fps, config: { damping: 15, stiffness: 65 }, durationInFrames: 62 });
-  const stepThrough = rev(frame, 120, 42);                     // drift through the moon at the end
+  // ── Cinematic open — a title card over the living moonlit cosmos: a soft
+  // pearl light gathers and an editorial serif title rises, then dissolves into
+  // the reading. (No illustrated moon, no logo animation — filmic, not cartoony.)
+  const titleIn = rev(frame, 14, 34);
+  const titleOut = rev(frame, cues.type - 60, 46);
+  const titleOpacity = titleIn * (1 - titleOut);
+  const titleBloom = 0.5 + 0.5 * Math.sin(frame / 18);        // gentle luminosity pulse
   // Close funnel — route the seeker to a practitioner for the deeper synthesis.
   const ctaIn = rev(frame, durationInFrames - 150, 44);
 
@@ -124,6 +126,16 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   // to the engine (so channels render) but ramp the whole graph's glow with the
   // ignite progress for a "lighting up" feel.
   const igniteProg = interpolate(frame, [cues.cThroat, cues.cSolar + 40], [0.35, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  // Per-center spotlight: the named centre glows brighter on its cue, carrying
+  // the "four defined centres" beat on the chart itself (with the chart's own
+  // labels) — so there's no separate floating text block to collide with the
+  // identity column. Clears once we move on to the gates.
+  const activeCenter = frame >= cues.gatesIntro ? undefined
+    : frame >= cues.cSolar ? 'SolarPlexus'
+      : frame >= cues.cHeart ? 'Heart'
+        : frame >= cues.cG ? 'G'
+          : frame >= cues.cThroat ? 'Throat'
+            : undefined;
 
   // Flare for a gate at its cue: a bright bloom at the gate's exact position.
   const gateFlare = (cue: number) => interpolate(frame, [cue - 4, cue + 6, cue + 46], [0, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -162,22 +174,10 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
           </div>
         </div>
 
-        {/* Defined-centres callout — fades with the identity before synthesis. */}
-        <div style={{ position: 'absolute', left: 690, top: 300, transform: 'translateY(-50%)', fontFamily: SANS, opacity: Math.min(rev(frame, cues.centersIntro, 40), 1 - rev(frame, cues.gatesIntro + 40, 80)) }}>
-          <div style={{ fontSize: 20, fontWeight: 500, letterSpacing: '0.34em', textTransform: 'uppercase', color: 'rgba(245,238,251,0.6)', textShadow: '0 2px 16px rgba(10,6,24,0.85)' }}>Defined Centers</div>
-          <div style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 400, color: 'rgba(245,238,251,0.95)', marginTop: 12, lineHeight: 1.5, textShadow: '0 2px 16px rgba(10,6,24,0.85)' }}>
-            {definedCenterLabels.map((l, i) => (
-              <React.Fragment key={l}>
-                <span style={{ color: LAV }}>{l}</span>{i < definedCenterLabels.length - 1 && <span style={{ color: 'rgba(245,238,251,0.4)' }}> · </span>}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
         {/* Living body graph: scrim + bloom + tilt + breathe + gate flares */}
         <div style={{ position: 'absolute', right: 30, top: 300, transform: 'translateY(-50%)', width: 840, height: 980, background: 'radial-gradient(ellipse 46% 52% at 50% 48%, rgba(14,10,28,0.88) 0%, rgba(14,10,28,0.56) 44%, rgba(14,10,28,0) 74%)', opacity: graphOpacity }} />
         <div style={{ position: 'absolute', inset: 0, opacity: graphOpacity, transform: `perspective(1600px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) scale(${interpolate(bloom, [0, 1], [0.8, 1])})`, transformOrigin: `${GX + 150 * GS}px ${GY + 210 * GS}px`, filter: `drop-shadow(0 0 ${interpolate(igniteProg, [0, 1], [16, 46])}px rgba(205,188,239,${interpolate(igniteProg, [0, 1], [0.22, 0.55])}))` }}>
-          <BodyGraph frame={frame} fps={fps} definedCenters={definedCenters} signatureGates={signatureGates.map((g) => g.gate)} typeColor={typeColor} scale={GS} x={GX} y={GY} breathe />
+          <BodyGraph frame={frame} fps={fps} definedCenters={definedCenters} signatureGates={signatureGates.map((g) => g.gate)} typeColor={typeColor} scale={GS} x={GX} y={GY} spotlightCenter={activeCenter} breathe />
           {/* Gate flares — soft moonlit bloom exactly on the named gate */}
           {signatureGates.map((g, i) => {
             const cue = i === 0 ? cues.g33 : i === 1 ? cues.g19 : cues.g40;
@@ -268,48 +268,29 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
         </div>
       </div>
 
-      {/* Brand open — a luminous moon blooms; the hand & stars logo emerges from it */}
-      {logoVideoUrl && frame < 172 ? (
-        <AbsoluteFill style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: logoIn, transform: `scale(${1 + stepThrough * 1.5})` }}>
-          {/* Soft outer aura — lavender + rose bloom, dreamy and volumetric. */}
-          <div style={{ position: 'absolute', width: 1120, height: 1120, borderRadius: '50%', background: `radial-gradient(circle, rgba(205,188,239,${0.16 + 0.06 * moonBreathe}) 0%, rgba(232,196,222,0.08) 38%, transparent 66%)`, transform: `scale(${portalScale})`, filter: 'blur(42px)' }} />
-          {/* Dreamy halo rings — concentric soft circles of light. */}
-          <div style={{ position: 'absolute', width: 780, height: 780, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${portalScale})` }}>
-            {Array.from({ length: 3 }, (_, i) => {
-              const d = 560 + i * 96;
-              return <div key={i} style={{ position: 'absolute', width: d, height: d, borderRadius: '50%', border: `1px solid ${i % 2 ? LAV : ROSE}`, opacity: 0.12 * (1 - i * 0.25), filter: `blur(${1 + i * 1.2}px)` }} />;
-            })}
+      {/* Cinematic open — a title card over the living moonlit cosmos. A soft
+          pearl light gathers and an editorial serif title rises, then dissolves
+          into the reading. No illustrated moon, no logo animation. */}
+      {frame < cues.type ? (
+        <AbsoluteFill style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: titleOpacity }}>
+          {/* Gentle darkening behind the title so it reads over the live sky. */}
+          <AbsoluteFill style={{ background: 'radial-gradient(ellipse 72% 62% at 50% 50%, rgba(10,6,24,0.58) 0%, rgba(10,6,24,0) 70%)' }} />
+          {/* A soft pearl light gathering at center — not a sphere, just a bloom. */}
+          <div style={{ position: 'absolute', width: 1180, height: 1180, borderRadius: '50%', background: `radial-gradient(circle, rgba(205,188,239,${0.1 + 0.05 * titleBloom}) 0%, rgba(232,196,222,0.05) 38%, transparent 66%)`, filter: 'blur(54px)', transform: `scale(${0.72 + 0.28 * titleIn})` }} />
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ fontFamily: SANS, fontSize: 23, fontWeight: 500, letterSpacing: '0.54em', textTransform: 'uppercase', color: 'rgba(245,238,251,0.66)', marginBottom: 34, transform: `translateY(${(1 - titleIn) * 18}px)`, textShadow: '0 2px 24px rgba(10,6,24,0.85)' }}>
+              {brandWordmark}
+            </div>
+            <div style={{ fontFamily: SERIF, fontSize: 96, fontWeight: 400, letterSpacing: '0.02em', lineHeight: 1.0, color: PEARL, textShadow: '0 6px 54px rgba(10,6,24,0.7)', transform: `translateY(${(1 - titleIn) * 30}px) scale(${0.95 + 0.05 * titleIn})` }}>
+              Your Energy Blueprint
+            </div>
+            <div style={{ width: interpolate(rev(frame, 54, 56), [0, 1], [0, 280]), height: 2, marginTop: 44, background: `linear-gradient(90deg, transparent, ${LAV}, ${ROSE}, transparent)`, boxShadow: `0 0 18px ${LAV}88` }} />
           </div>
-          {/* Soft lensing halo hugging the moon's edge. */}
-          <div style={{ position: 'absolute', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, transparent 60%, rgba(245,238,251,0.18) 70%, rgba(205,188,239,0.06) 80%, transparent 90%)', transform: `scale(${portalScale})`, filter: 'blur(4px)' }} />
-          {/* The MOON — a luminous pearlescent sphere lit from the upper-left,
-              with a soft terminator (shading) toward the lower-right for depth. */}
-          <div style={{
-            position: 'absolute', width: 480, height: 480, borderRadius: '50%',
-            background: 'radial-gradient(circle at 40% 35%, #fdfbff 0%, #f0e9fc 26%, #ddccf3 50%, #c3b0e6 72%, #9f8cce 88%, #7c6ab2 100%)',
-            boxShadow: `inset -28px -32px 88px rgba(74,58,118,0.55), inset 16px 14px 56px rgba(255,255,255,0.34), 0 0 70px 10px rgba(205,188,239,${0.3 + 0.12 * moonBreathe}), 0 0 150px 30px rgba(205,188,239,0.16)`,
-            transform: `scale(${portalScale})`, opacity: 0.97,
-          }} />
-          {/* Faint craters — just enough texture to read as a moon, kept ethereal. */}
-          <svg width={480} height={480} style={{ position: 'absolute', transform: `scale(${portalScale})`, opacity: 0.35 }}>
-            {([[182, 150, 26], [300, 206, 17], [228, 300, 33], [150, 250, 13], [330, 298, 20], [256, 168, 11]] as Array<[number, number, number]>).map(([cx, cy, r], i) => (
-              <circle key={i} cx={cx} cy={cy} r={r} fill="rgba(126,108,176,0.20)" />
-            ))}
-          </svg>
-          {/* Bright rim crescent on the lit edge — a delicate highlight. */}
-          <div style={{ position: 'absolute', width: 480, height: 480, borderRadius: '50%', background: 'radial-gradient(circle at 36% 30%, rgba(255,253,255,0.5) 0%, rgba(255,253,255,0.12) 14%, transparent 30%)', transform: `scale(${portalScale})`, mixBlendMode: 'screen' }} />
-          {/* The hand & stars logo emerging from the moon's glow (renders once it
-              begins to emerge — avoids OffthreadVideo bleeding during the bloom) */}
-          {frame >= 44 ? (
-            <OffthreadVideo src={logoVideoUrl} muted style={{ width: 520, height: 'auto', mixBlendMode: 'screen', transform: `scale(${0.12 + logoEmerge * 0.88})`, opacity: logoEmerge, clipPath: 'circle(44% at 50% 42%)', filter: `drop-shadow(0 0 44px rgba(205,188,239,${0.35 + 0.2 * moonBreathe}))` }} />
-          ) : null}
-          {/* Wordmark settles after the emergence */}
-          <div style={{ position: 'absolute', top: 'calc(50% + 300px)', fontFamily: SANS, fontSize: 32, fontWeight: 500, letterSpacing: '0.38em', color: PEARL, textTransform: 'uppercase', textShadow: '0 2px 30px rgba(10,6,24,0.7)', opacity: rev(frame, 104, 26) * (1 - stepThrough) }}>{brandWordmark}</div>
         </AbsoluteFill>
       ) : null}
 
-      {/* Persistent brand wordmark — up in the mix (fades in after the open) */}
-      <div style={{ position: 'absolute', top: 74, left: 0, right: 0, textAlign: 'center', fontFamily: SANS, fontSize: 21, fontWeight: 500, letterSpacing: '0.42em', textTransform: 'uppercase', color: 'rgba(245,238,251,0.74)', textShadow: '0 2px 16px rgba(10,6,24,0.85)', opacity: Math.min(rev(frame, 150, 40), globalOpacity) }}>{brandWordmark}</div>
+      {/* Persistent brand wordmark — up in the mix (fades in as the reading begins) */}
+      <div style={{ position: 'absolute', top: 74, left: 0, right: 0, textAlign: 'center', fontFamily: SANS, fontSize: 21, fontWeight: 500, letterSpacing: '0.42em', textTransform: 'uppercase', color: 'rgba(245,238,251,0.74)', textShadow: '0 2px 16px rgba(10,6,24,0.85)', opacity: Math.min(rev(frame, cues.type - 20, 40), globalOpacity) }}>{brandWordmark}</div>
 
       {/* ── Close — practitioner funnel CTA (deeper reading) ──────────────── */}
       {ctaIn > 0 ? (
