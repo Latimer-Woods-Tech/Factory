@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-28T12:03:49.576330+00:00",
+  "generated_at": "2026-06-29T14:34:00.773249+00:00",
   "overall_weighted": 0.0,
   "overall_known": 0.0,
   "overall_raw": 0.0,
@@ -11,6 +11,7 @@
     "XC": 0.0
   },
   "ci_red": [
+    "CH",
     "XC"
   ],
   "smoke_red": [
