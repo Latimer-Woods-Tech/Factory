@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-28T11:46:44.045Z",
+  "generatedAt": "2026-06-29T14:02:58.344Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -70,7 +70,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 77,
+        "cohesion": 71,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -107,7 +107,7 @@
           },
           {
             "key": "observability",
-            "score": 80,
+            "score": 40,
             "weight": 10
           },
           {
@@ -137,7 +137,7 @@
           },
           {
             "key": "privacy",
-            "score": 100,
+            "score": 75,
             "weight": 5
           }
         ],
@@ -213,7 +213,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": "production",
-        "cohesion": 42,
+        "cohesion": 14,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -234,7 +234,7 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 40,
+            "score": 20,
             "weight": 10
           },
           {
@@ -244,17 +244,17 @@
           },
           {
             "key": "tests",
-            "score": 40,
+            "score": 0,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 60,
+            "score": 20,
             "weight": 15
           },
           {
@@ -269,17 +269,17 @@
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 67,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 50,
+            "score": 25,
             "weight": 5
           }
         ],
@@ -313,7 +313,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "production",
-        "cohesion": 40,
+        "cohesion": 14,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -335,17 +335,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 60,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 60,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 60,
+            "score": 0,
             "weight": 15
           },
           {
@@ -355,12 +355,12 @@
           },
           {
             "key": "security",
-            "score": 40,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 67,
+            "score": 33,
             "weight": 5
           },
           {
@@ -370,7 +370,7 @@
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
@@ -857,7 +857,7 @@
         "lifecycleStage": "provisioned",
         "mode": "hands-off",
         "maturity": null,
-        "cohesion": 44,
+        "cohesion": 14,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -868,17 +868,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 80,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 40,
+            "score": 0,
             "weight": 15
           },
           {
@@ -893,17 +893,17 @@
           },
           {
             "key": "schema",
-            "score": 100,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 67,
+            "score": 33,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
@@ -998,7 +998,7 @@
         "lifecycleStage": "live",
         "mode": "maintain",
         "maturity": "revenue",
-        "cohesion": 56,
+        "cohesion": 16,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1034,22 +1034,22 @@
           },
           {
             "key": "tests",
-            "score": 100,
+            "score": 0,
             "weight": 15
           },
           {
             "key": "observability",
-            "score": 40,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "security",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 67,
+            "score": 33,
             "weight": 5
           },
           {
@@ -1059,12 +1059,12 @@
           },
           {
             "key": "release",
-            "score": 67,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 67,
+            "score": 0,
             "weight": 10
           },
           {
@@ -1154,7 +1154,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": null,
-        "cohesion": 44,
+        "cohesion": 14,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1165,17 +1165,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 80,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 40,
+            "score": 0,
             "weight": 15
           },
           {
@@ -1190,17 +1190,17 @@
           },
           {
             "key": "schema",
-            "score": 100,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 67,
+            "score": 33,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
@@ -1295,7 +1295,7 @@
         "lifecycleStage": "live",
         "mode": "build",
         "maturity": null,
-        "cohesion": 59,
+        "cohesion": 14,
         "registryStatus": "missing",
         "scope": "in-scope",
         "aliases": [
@@ -1306,17 +1306,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 80,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 100,
+            "score": 0,
             "weight": 15
           },
           {
@@ -1326,27 +1326,27 @@
           },
           {
             "key": "security",
-            "score": 40,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "schema",
-            "score": 100,
+            "score": 33,
             "weight": 5
           },
           {
             "key": "workflows",
-            "score": 67,
+            "score": 33,
             "weight": 10
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 33,
+            "score": 0,
             "weight": 10
           },
           {
@@ -1368,7 +1368,7 @@
         "lifecycleStage": "live",
         "mode": "growth",
         "maturity": "beta",
-        "cohesion": 51,
+        "cohesion": 14,
         "registryStatus": "present",
         "scope": "in-scope",
         "aliases": [
@@ -1387,17 +1387,17 @@
         "cohesionDimensions": [
           {
             "key": "stack",
-            "score": 80,
+            "score": 20,
             "weight": 10
           },
           {
             "key": "code_patterns",
-            "score": 80,
+            "score": 20,
             "weight": 15
           },
           {
             "key": "tests",
-            "score": 60,
+            "score": 0,
             "weight": 15
           },
           {
@@ -1412,7 +1412,7 @@
           },
           {
             "key": "schema",
-            "score": 100,
+            "score": 33,
             "weight": 5
           },
           {
@@ -1422,17 +1422,17 @@
           },
           {
             "key": "release",
-            "score": 33,
+            "score": 0,
             "weight": 5
           },
           {
             "key": "performance",
-            "score": 67,
+            "score": 0,
             "weight": 10
           },
           {
             "key": "privacy",
-            "score": 50,
+            "score": 25,
             "weight": 5
           }
         ],
@@ -1793,81 +1793,32 @@
         "tier": "infra"
       },
       {
-        "id": "capricast:video-playback",
-        "appId": "capricast",
-        "label": "CF Stream video playback",
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "capricast:stripe-payments",
-        "appId": "capricast",
-        "label": "Stripe payments",
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
         "status": "live",
-        "tier": "core"
+        "tier": "infra"
       },
       {
-        "id": "capricast:conference",
-        "appId": "capricast",
-        "label": "Conference scheduling and hosting",
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
         "status": "live",
-        "tier": "core"
+        "tier": "infra"
       },
       {
-        "id": "capricast:chat-1to1",
-        "appId": "capricast",
-        "label": "1:1 text chat",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "capricast:live-stream",
-        "appId": "capricast",
-        "label": "Live streaming",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:group-video",
-        "appId": "capricast",
-        "label": "16-way video chat",
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
         "status": "roadmap",
-        "tier": "growth"
-      },
-      {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
-        "status": "live",
         "tier": "core"
-      },
-      {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
-        "tier": "growth"
       },
       {
         "id": "selfprime:energy-blueprint",
@@ -1947,32 +1898,81 @@
         "tier": "growth"
       },
       {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
+        "id": "capricast:video-playback",
+        "appId": "capricast",
+        "label": "CF Stream video playback",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
+        "id": "capricast:stripe-payments",
+        "appId": "capricast",
+        "label": "Stripe payments",
         "status": "live",
-        "tier": "infra"
+        "tier": "core"
       },
       {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
+        "id": "capricast:conference",
+        "appId": "capricast",
+        "label": "Conference scheduling and hosting",
         "status": "live",
-        "tier": "infra"
+        "tier": "core"
       },
       {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
+        "id": "capricast:chat-1to1",
+        "appId": "capricast",
+        "label": "1:1 text chat",
+        "status": "live",
+        "tier": "growth"
+      },
+      {
+        "id": "capricast:live-stream",
+        "appId": "capricast",
+        "label": "Live streaming",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:group-video",
+        "appId": "capricast",
+        "label": "16-way video chat",
         "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
+        "status": "live",
         "tier": "core"
+      },
+      {
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
+        "tier": "growth"
       }
     ],
     "roadmapItems": [
@@ -2054,6 +2054,55 @@
         "quarter": "Q1-2027"
       },
       {
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
+        "status": "design",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "selfprime:sp-launch",
+        "appId": "selfprime",
+        "label": "Public Launch",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "selfprime:sp-rls",
+        "appId": "selfprime",
+        "label": "RLS enforced on user-scoped tables",
+        "status": "done",
+        "quarter": "Q2-2026"
+      },
+      {
+        "id": "selfprime:sp-referrals",
+        "appId": "selfprime",
+        "label": "Practitioner referral engine GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "selfprime:sp-ios",
+        "appId": "selfprime",
+        "label": "iOS PWA",
+        "status": "design",
+        "quarter": "Q2-2027"
+      },
+      {
         "id": "capricast:cc-monetize",
         "appId": "capricast",
         "label": "Creator Monetization Live",
@@ -2108,55 +2157,6 @@
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
-      },
-      {
-        "id": "selfprime:sp-launch",
-        "appId": "selfprime",
-        "label": "Public Launch",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "selfprime:sp-rls",
-        "appId": "selfprime",
-        "label": "RLS enforced on user-scoped tables",
-        "status": "done",
-        "quarter": "Q2-2026"
-      },
-      {
-        "id": "selfprime:sp-referrals",
-        "appId": "selfprime",
-        "label": "Practitioner referral engine GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "selfprime:sp-ios",
-        "appId": "selfprime",
-        "label": "iOS PWA",
-        "status": "design",
-        "quarter": "Q2-2027"
-      },
-      {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
-        "status": "design",
-        "quarter": "Q1-2027"
       }
     ],
     "gaps": [
@@ -2499,6 +2499,171 @@
       "type": "uses_package"
     },
     {
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:booking",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:monitoring",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:energy-blueprint",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:narration",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:video-engine",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:notification-inbox",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:practitioner-network",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:group-readings",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:rls-enforcement",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:diary",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:dream-weaver",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:psychometric",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:curriculum",
+      "type": "has_feature"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-launch",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-rls",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-referrals",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "selfprime:sp-ios",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:stripe",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:llm",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:bodygraph",
+      "type": "uses_package"
+    },
+    {
+      "from": "selfprime",
+      "to": "pkg:telephony",
+      "type": "uses_package"
+    },
+    {
       "from": "capricast",
       "to": "capricast:video-playback",
       "type": "has_feature"
@@ -2642,171 +2807,6 @@
       "from": "coh",
       "to": "pkg:email",
       "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:energy-blueprint",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:narration",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:video-engine",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:notification-inbox",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:practitioner-network",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:group-readings",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:rls-enforcement",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:diary",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:dream-weaver",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:psychometric",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:curriculum",
-      "type": "has_feature"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-launch",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-rls",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-referrals",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "selfprime:sp-ios",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:stripe",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:llm",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:bodygraph",
-      "type": "uses_package"
-    },
-    {
-      "from": "selfprime",
-      "to": "pkg:telephony",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:booking",
-      "type": "has_feature"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
-      "type": "uses_package"
     }
   ],
   "stats": {
@@ -2828,7 +2828,7 @@
     "edgeCount": 102
   },
   "kpis": {
-    "generatedAt": "2026-06-28T11:46:44.105Z",
+    "generatedAt": "2026-06-29T14:02:58.404Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2839,7 +2839,7 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 10.81,
+      "cost30dUsd": 1.43,
       "mrrUsd": 0,
       "completionWeighted": 0
     },
@@ -2853,12 +2853,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 10.81,
-        "prior": 4.87,
-        "priorDate": "2026-06-05",
-        "dayGap": 9,
-        "delta": 5.94,
-        "direction": "up"
+        "current": 1.43,
+        "prior": 10.81,
+        "priorDate": "2026-06-14",
+        "dayGap": 14,
+        "delta": -9.38,
+        "direction": "down"
       },
       "mrr": {
         "current": 0,
@@ -2872,23 +2872,23 @@
         "current": 0,
         "prior": 2.6,
         "priorDate": "2026-06-18",
-        "dayGap": 9,
+        "dayGap": 10,
         "delta": -2.6,
         "direction": "down"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 17.65,
-        "priorDate": "2026-06-19",
-        "dayGap": 9,
+        "priorDate": "2026-06-24",
+        "dayGap": 5,
         "delta": 0,
         "direction": "flat"
       },
       "openGaps": {
         "current": 13,
         "prior": 13,
-        "priorDate": "2026-06-19",
-        "dayGap": 9,
+        "priorDate": "2026-06-24",
+        "dayGap": 5,
         "delta": 0,
         "direction": "flat"
       }
@@ -2942,6 +2942,6 @@
         }
       ]
     },
-    "seriesPoints": 14
+    "seriesPoints": 15
   }
 }
