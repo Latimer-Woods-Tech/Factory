@@ -14,6 +14,7 @@ import { KineticReveal } from '../components/KineticReveal.js';
 import { ForgeAtmosphere, type ForgeKey } from '../components/ForgeAtmosphere.js';
 import { HeroBlueprint } from '../components/HeroBlueprint.js';
 import { TYPE_COLORS, DEFAULT_BRAND_COLOR } from '../blueprint-types.js';
+import { lookByName, pickLook } from '../looks.js';
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -102,6 +103,10 @@ export const blueprintSchema = z.object({
   logoVideoUrl: z.string().optional(),
   /** Brand wordmark shown in the open + as a persistent header (e.g. "SelfPrime.com"). */
   brandWordmark: z.string().optional(),
+  /** Force a specific cinematic look by name (QA/sampling); else seeded pick. */
+  lookName: z.string().optional(),
+  /** Seed for the cinematic-look rotation (defaults to skySeed). */
+  lookSeed: z.number().optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -474,11 +479,16 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   skySeed,
   logoVideoUrl,
   brandWordmark,
+  lookName,
+  lookSeed,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
 
   const typeColor = (hdType && TYPE_COLORS[hdType]) ?? brandColor;
+  // Cinematic look: forced by name (QA) or a seeded pick from the look pool,
+  // filtered to those appropriate for this HD type. Mirrors the voice rotation.
+  const look = (lookName ? lookByName(lookName) : undefined) ?? pickLook(lookSeed ?? skySeed ?? 1, hdType);
 
   // Music envelope — swell the bed in over the open (no hard attack at frame 0,
   // which read as an abrupt/odd start) and ease it out gently under the close so
@@ -513,6 +523,7 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
           skySeed={skySeed}
           logoVideoUrl={logoVideoUrl}
           brandWordmark={brandWordmark}
+          look={look}
         />
         {narrationUrl && <Audio src={narrationUrl} />}
         {musicUrl && <Audio src={musicUrl} volume={musicEnv} startFrom={8} />}

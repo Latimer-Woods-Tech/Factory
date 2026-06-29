@@ -1,7 +1,9 @@
 import React from 'react';
-import { AbsoluteFill, Img, interpolate, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { BodyGraph } from './BodyGraph.js';
 import { CosmicSky, type SkyMood } from './CosmicSky.js';
+import { cameraFloat, Constellation, GodRays, Particles } from './effects.js';
+import { LOOK_POOL, type LookSpec } from '../looks.js';
 
 // ---------------------------------------------------------------------------
 // HeroBlueprint — the directed personal Energy Blueprint film.
@@ -57,6 +59,8 @@ export interface HeroBlueprintProps {
   logoVideoUrl?: string;
   /** Brand wordmark shown in the open + close (e.g. "SelfPrime.com"). */
   brandWordmark?: string;
+  /** Cinematic preset (grade + lens + camera + atmosphere + hero). */
+  look?: LookSpec;
 }
 
 // ── Moonlight palette (divine-feminine) ────────────────────────────────────
@@ -77,7 +81,7 @@ function rev(frame: number, a: number, span = 36): number {
 export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   identity, name, profile, definedCenters,
   signatureGates, cues, typeColor, logoUrl, mood, skySeed,
-  brandWordmark = 'SelfPrime.com',
+  brandWordmark = 'SelfPrime.com', look = LOOK_POOL[0]!,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -96,7 +100,10 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   const camX = interpolate(frame, kfF, [840, 600, 900, 1430, 1430, 1080, 960, 960, 960, 980, 820, 880], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const camY = interpolate(frame, kfF, [500, 450, 470, 430, 470, 660, 804, 812, 820, 470, 500, 520], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const camZ = interpolate(frame, kfF, [1.04, 1.08, 1.05, 1.30, 1.27, 1.10, 1.05, 1.05, 1.05, 1.00, 1.02, 1.07], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const camTransform = `translate(${960 - camX * camZ}px, ${540 - camY * camZ}px) scale(${camZ})`;
+  // Organic operator-held float on top of the keyframed move (per look).
+  const fl = cameraFloat(frame, skySeed ?? 1, look.float);
+  const camXf = camX + fl.dx, camYf = camY + fl.dy, camZf = camZ + fl.dz;
+  const camTransform = `translate(${960 - camXf * camZf}px, ${540 - camYf * camZf}px) scale(${camZf})`;
 
   // ── Emotional weather: soft mood-clouds swell on the "shadow" beat and clear
   // to radiance — gentle (never a harsh thunderstorm), in keeping with the mood.
@@ -144,6 +151,25 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
   const synth = rev(frame, cues.synthesis, 70);          // stroke draws on
   const synthFill = rev(frame, cues.synthesis + 55, 60); // interior glows after
 
+  // ── Look-driven cinema ────────────────────────────────────────────────────
+  // Rack-focus: the chart is sharp while it's the subject; the identity text is
+  // sharp while IT is the subject. DOF blur (look.dof) defocuses the other.
+  const focusOnChart = interpolate(frame, [cues.type + 20, cues.centersIntro, cues.synthesis - 60, cues.synthesis + 10], [0, 1, 1, 0.5], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const chartBlur = look.dof * (1 - focusOnChart);
+  const identityBlur = look.dof * 0.7 * focusOnChart;
+  // Halation — a soft film-print glow on the brightest type, scaled per look.
+  const halo = (px: number, base = '') => `${base}${base ? ', ' : ''}0 0 ${(px * look.halation).toFixed(1)}px ${look.accent}`;
+  // Hero moment (per look): stardust converges to birth the chart; cathedral
+  // god-rays swell over the reading; a constellation draws on at the synthesis.
+  const converge = look.hero === 'stardustBirth'
+    ? interpolate(frame, [cues.centersIntro - 60, cues.centersIntro + 8], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    : 0;
+  const godRayI = look.godRays * (look.hero === 'godrayCathedral'
+    ? interpolate(frame, [cues.type, cues.centersIntro, cues.synthesis, cues.close], [0.4, 1, 0.85, 0.3], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })
+    : interpolate(frame, [0, cues.type, cues.gatesIntro, cues.synthesis], [0.8, 0.5, 0.3, 0.5], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
+  const godRayX = interpolate(frame, [0, cues.centersIntro], [960, 1160], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const constellationP = look.hero === 'constellation' ? rev(frame, cues.synthesis + 6, 96) : 0;
+
   return (
     <AbsoluteFill style={{ opacity: globalOpacity, backgroundColor: VEIL }}>
       {/* ── World (camera target) ─────────────────────────────────────────── */}
@@ -151,18 +177,18 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
           on a clean stage instead of over the still-lit chart + gate band. */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: 1920, height: 1080, transform: camTransform, transformOrigin: '0 0', opacity: 1 - ctaIn * 0.94 }}>
         {/* Living procedural sky — soft moonlit violet, lavender + rose aurora. */}
-        <CosmicSky frame={frame} mood={mood ?? 'self'} seed={skySeed ?? 1} intensity={emotionalIntensity} />
+        <CosmicSky frame={frame} mood={look.skyMood ?? mood ?? 'self'} seed={skySeed ?? 1} intensity={emotionalIntensity} />
         {/* Legibility scrims — soft plum, lighter than before (airier). */}
         <AbsoluteFill style={{ background: 'linear-gradient(100deg, rgba(14,10,28,0.78) 0%, rgba(14,10,28,0.38) 30%, rgba(14,10,28,0.03) 56%, rgba(14,10,28,0.28) 100%)' }} />
         <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(14,10,28,0) 48%, rgba(14,10,28,0.28) 74%, rgba(14,10,28,0.48) 100%)' }} />
 
         {/* Identity — recedes once we move past it into the gates, clearing the
             stage for the synthesis thesis that lands in this same column. */}
-        <div style={{ position: 'absolute', left: 140, top: 300, maxWidth: 760, fontFamily: SANS, opacity: 1 - rev(frame, cues.gatesIntro + 40, 80) }}>
+        <div style={{ position: 'absolute', left: 140, top: 300, maxWidth: 760, fontFamily: SANS, opacity: 1 - rev(frame, cues.gatesIntro + 40, 80), filter: `blur(${identityBlur.toFixed(2)}px)` }}>
           <div style={{ fontSize: 22, fontWeight: 500, letterSpacing: '0.46em', textTransform: 'uppercase', color: 'rgba(245,238,251,0.62)', marginBottom: 22, opacity: rev(frame, cues.type - 16, 30), textShadow: '0 2px 14px rgba(10,6,24,0.8)' }}>
             {name ? `${name} · ` : ''}Your Energy Blueprint
           </div>
-          <div style={{ fontFamily: SERIF, fontSize: 146, fontWeight: 400, letterSpacing: '0.005em', lineHeight: 0.94, color: PEARL, textShadow: '0 6px 50px rgba(10,6,24,0.6)', opacity: rev(frame, cues.type, 26), transform: `translateY(${interpolate(rev(frame, cues.type, 30), [0, 1], [44, 0])}px)` }}>
+          <div style={{ fontFamily: SERIF, fontSize: 146, fontWeight: 400, letterSpacing: '0.005em', lineHeight: 0.94, color: PEARL, textShadow: halo(38, '0 6px 50px rgba(10,6,24,0.6)'), opacity: rev(frame, cues.type, 26), transform: `translateY(${interpolate(rev(frame, cues.type, 30), [0, 1], [44, 0])}px)` }}>
             {identity.type}
           </div>
           <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 46, fontWeight: 400, color: LAV, marginTop: 20, opacity: rev(frame, cues.authority, 30) }}>
@@ -176,7 +202,7 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
 
         {/* Living body graph: scrim + bloom + tilt + breathe + gate flares */}
         <div style={{ position: 'absolute', right: 30, top: 300, transform: 'translateY(-50%)', width: 840, height: 980, background: 'radial-gradient(ellipse 46% 52% at 50% 48%, rgba(14,10,28,0.88) 0%, rgba(14,10,28,0.56) 44%, rgba(14,10,28,0) 74%)', opacity: graphOpacity }} />
-        <div style={{ position: 'absolute', inset: 0, opacity: graphOpacity, transform: `perspective(1600px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) scale(${interpolate(bloom, [0, 1], [0.8, 1])})`, transformOrigin: `${GX + 150 * GS}px ${GY + 210 * GS}px`, filter: `drop-shadow(0 0 ${interpolate(igniteProg, [0, 1], [16, 46])}px rgba(205,188,239,${interpolate(igniteProg, [0, 1], [0.22, 0.55])}))` }}>
+        <div style={{ position: 'absolute', inset: 0, opacity: graphOpacity, transform: `perspective(1600px) rotateY(${tiltY}deg) rotateX(${tiltX}deg) scale(${interpolate(bloom, [0, 1], [0.8, 1])})`, transformOrigin: `${GX + 150 * GS}px ${GY + 210 * GS}px`, filter: `drop-shadow(0 0 ${interpolate(igniteProg, [0, 1], [16, 46])}px rgba(205,188,239,${interpolate(igniteProg, [0, 1], [0.22, 0.55])})) blur(${chartBlur.toFixed(2)}px)` }}>
           <BodyGraph frame={frame} fps={fps} definedCenters={definedCenters} signatureGates={signatureGates.map((g) => g.gate)} typeColor={typeColor} scale={GS} x={GX} y={GY} spotlightCenter={activeCenter} breathe />
           {/* Gate flares — soft moonlit bloom exactly on the named gate */}
           {signatureGates.map((g, i) => {
@@ -313,25 +339,18 @@ export const HeroBlueprint: React.FC<HeroBlueprintProps> = ({
       ) : null}
 
       {/* ── Atmospheric overlays (outside the camera world) ───────────────── */}
-      {/* Floating motes — slow specks of moonlight drifting up, for soft life. */}
-      <AbsoluteFill style={{ mixBlendMode: 'screen', opacity: 0.5 * globalOpacity }}>
-        <svg width="100%" height="100%" viewBox="0 0 1920 1080" preserveAspectRatio="none">
-          {Array.from({ length: 30 }, (_, i) => {
-            const s = (n: number) => random(`mote${i}:${n}`);
-            const speed = 0.16 + s(1) * 0.42;
-            const y = 1140 - (((frame * speed + s(3) * 1200) % 1200));
-            const x = s(0) * 1920 + Math.sin(frame / (60 + s(4) * 90) + s(2) * 7) * 34;
-            const rr = 0.8 + s(5) * 2.3;
-            const tw = 0.5 + 0.5 * Math.sin(frame / 22 + s(6) * 9);
-            return <circle key={i} cx={x} cy={y} r={rr} fill={s(7) < 0.5 ? LAV : PEARL} opacity={(0.18 + 0.42 * tw) * 0.5} />;
-          })}
-        </svg>
-      </AbsoluteFill>
+      {/* Volumetric god-rays — soft cathedral light (the lead in Opaline Cathedral). */}
+      <GodRays x={godRayX} intensity={godRayI * globalOpacity} color={look.accent} frame={frame} />
+      {/* Atmospheric particles — look-driven (motes / stardust / aurora); on the
+          stardust-birth hero they converge inward to condense the chart into being. */}
+      <Particles frame={frame} mode={look.particles} color1={look.accent} color2={look.accent2} opacity={0.5 * globalOpacity} converge={converge} cx={1404} cy={470} />
+      {/* Constellation draw-on — the celestial-cartography hero at the synthesis. */}
+      <Constellation frame={frame} progress={constellationP * globalOpacity} color={look.accent} seed={skySeed ?? 1} cx={1404} cy={470} />
       {/* Light-leak sweep — a soft lavender/rose band drifts across slowly. */}
       <div style={{ position: 'absolute', top: -220, bottom: -220, width: 360, left: 0, transform: `translateX(${interpolate(frame % 620, [0, 620], [-560, 2480])}px) rotate(8deg)`, background: 'linear-gradient(90deg, transparent, rgba(205,188,239,0.16), rgba(232,196,222,0.10), transparent)', filter: 'blur(46px)', mixBlendMode: 'screen', opacity: globalOpacity }} />
-      {/* Soft moonlit grade — a gentle lavender bloom + cool plum base. */}
-      <AbsoluteFill style={{ background: 'radial-gradient(ellipse 72% 70% at 42% 38%, rgba(205,188,239,0.07) 0%, rgba(0,0,0,0) 56%), radial-gradient(ellipse 60% 60% at 70% 66%, rgba(232,196,222,0.05) 0%, transparent 60%)', mixBlendMode: 'screen' }} />
-      <AbsoluteFill style={{ background: 'linear-gradient(180deg, rgba(26,20,56,0.10) 0%, rgba(10,6,24,0.16) 100%)' }} />
+      {/* Colour grade — look-driven bloom tint + base wash (the "film stock"). */}
+      <AbsoluteFill style={{ background: `radial-gradient(ellipse 72% 70% at 42% 38%, ${look.grade.bloom} 0%, transparent 56%), radial-gradient(ellipse 60% 60% at 70% 66%, ${look.accent2}14 0%, transparent 60%)`, mixBlendMode: 'screen', opacity: 0.6 + look.halation * 0.5 }} />
+      <AbsoluteFill style={{ background: `linear-gradient(180deg, transparent 0%, ${look.grade.base} 100%)` }} />
       {/* Film grain — very fine + soft (dialed down further for the dreamy look). */}
       <AbsoluteFill style={{ opacity: 0.02 }}>
         <svg width="100%" height="100%">
