@@ -37,6 +37,7 @@ const { positionals, values } = parseArgs({
   options: {
     app:  { type: 'string', default: 'prime-self' },
     repo: { type: 'string', default: REPO },
+    ref:  { type: 'string' },   // git ref the cloud render checks out the brief from (default: repo default branch)
     'dry-run': { type: 'boolean', default: false },
   },
   allowPositionals: true,
@@ -89,9 +90,9 @@ if (dryRun) console.log('    [DRY RUN — skipping API calls]\n');
 // 2. Fetch WORKER_API_TOKEN from GCP SM
 // ---------------------------------------------------------------------------
 
-let workerApiToken;
+let workerApiToken = process.env.WORKER_API_TOKEN;   // env-first: lets batch callers pre-fetch once
 try {
-  workerApiToken = execSync(
+  if (!workerApiToken) workerApiToken = execSync(
     `gcloud secrets versions access latest --secret=WORKER_API_TOKEN --project=${GCP_PROJECT}`,
     { encoding: 'utf8' },
   ).replace(/[\r\n﻿]/g, '');
@@ -146,6 +147,7 @@ console.log(`\n✅  Job created: ${jobId}`);
 
 const ghArgs = [
   `--repo ${repoName}`,
+  ...(values.ref ? [`--ref ${values.ref}`] : []),
   `-f job_id=${jobId}`,
   `-f composition_id=${composition}`,
   `-f app_id=${appId}`,
