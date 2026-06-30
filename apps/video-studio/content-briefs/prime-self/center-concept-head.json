@@ -1,0 +1,76 @@
+{
+  "briefKey": "center-concept-head",
+  "key": "center-concept-head",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "center-concept",
+  "title": "The Head Center — Inspiration & Mental Pressure",
+  "description": "This center governs inspiration & mental pressure. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 50,
+  "duration_seconds": 50,
+  "topic": "The Head Center — Inspiration & Mental Pressure",
+  "learningGoal": "The viewer understands what the Head center governs, and what it means for them when it is defined versus open — and feels recognised, not labelled.",
+  "targetPersona": "center_head",
+  "keyPoints": [
+    "This center governs inspiration & mental pressure.",
+    "When defined: You have a consistent source of questions, inspiration, and mental pressure. You know what's worth thinking about.",
+    "When open: You amplify others' inspiration and can feel overwhelmed by mental pressure that isn't yours. Not every question needs YOUR answer."
+  ],
+  "forbiddenClaims": [
+    "a defined center is better, stronger, or more evolved than an open center",
+    "open centers are flaws or weaknesses to fix",
+    "you can or should change which of your centers are defined"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "center-concept-head-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "The Head Center — Inspiration & Mental Pressure — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "center-concept-head-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "The Head Center — Inspiration & Mental Pressure — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "center-concept-head-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "The Head Center — Inspiration & Mental Pressure — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "center-concept-head-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "The Head Center — Inspiration & Mental Pressure — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "The Head Center — Inspiration & Mental Pressure — Your Energy Blueprint",
+    "description": "This center governs inspiration & mental pressure. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "CENTER_EXPLANATIONS['Head']",
+  "status": "planned"
+}

@@ -1,0 +1,76 @@
+{
+  "briefKey": "center-concept-throat",
+  "key": "center-concept-throat",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "center-concept",
+  "title": "The Throat Center — Voice & Manifestation",
+  "description": "This center governs communication & manifestation. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "lux",
+  "forgeTheme": "lux",
+  "length_seconds": 50,
+  "duration_seconds": 50,
+  "topic": "The Throat Center — Voice & Manifestation",
+  "learningGoal": "The viewer understands what the Throat center governs, and what it means for them when it is defined versus open — and feels recognised, not labelled.",
+  "targetPersona": "center_throat",
+  "keyPoints": [
+    "This center governs communication & manifestation.",
+    "When defined: You have a consistent voice, expression style, and ability to manifest things into form through communication.",
+    "When open: Your communication style adapts to your environment. You attract attention when you're not trying to. Let speech come naturally."
+  ],
+  "forbiddenClaims": [
+    "a defined center is better, stronger, or more evolved than an open center",
+    "open centers are flaws or weaknesses to fix",
+    "you can or should change which of your centers are defined"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "center-concept-throat-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "The Throat Center — Voice & Manifestation — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "center-concept-throat-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "The Throat Center — Voice & Manifestation — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "center-concept-throat-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "The Throat Center — Voice & Manifestation — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "center-concept-throat-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "The Throat Center — Voice & Manifestation — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "The Throat Center — Voice & Manifestation — Your Energy Blueprint",
+    "description": "This center governs communication & manifestation. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "CENTER_EXPLANATIONS['Throat']",
+  "status": "planned"
+}
