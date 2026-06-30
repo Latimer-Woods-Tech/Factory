@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('authority', 'lunar')",
+  "truthHash": "sha256:c3e7aa8b2521e302dc364900",
   "status": "planned"
 }

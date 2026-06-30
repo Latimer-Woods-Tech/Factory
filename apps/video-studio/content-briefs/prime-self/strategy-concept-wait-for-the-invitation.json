@@ -73,5 +73,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('strategy', 'wait for the invitation')",
+  "truthHash": "sha256:88954527485fb20af2c29c14",
   "status": "planned"
 }

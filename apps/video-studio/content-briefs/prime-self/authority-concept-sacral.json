@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('authority', 'sacral')",
+  "truthHash": "sha256:12c1a3f3f064291b36e9db48",
   "status": "planned"
 }

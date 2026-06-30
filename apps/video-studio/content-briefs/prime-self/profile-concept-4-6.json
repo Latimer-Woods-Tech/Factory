@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('profile', '4/6')",
+  "truthHash": "sha256:594f9dad75192c4ffab39609",
   "status": "planned"
 }

@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "CENTER_EXPLANATIONS['Heart']",
+  "truthHash": "sha256:90a702080b2863a962c4f3ff",
   "status": "planned"
 }

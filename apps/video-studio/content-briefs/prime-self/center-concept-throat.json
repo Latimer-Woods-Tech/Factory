@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "CENTER_EXPLANATIONS['Throat']",
+  "truthHash": "sha256:1f01fa51567514a03a9587b9",
   "status": "planned"
 }

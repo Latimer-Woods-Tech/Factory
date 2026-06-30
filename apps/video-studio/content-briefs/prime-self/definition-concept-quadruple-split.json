@@ -71,5 +71,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('definition', 'quadruple split')",
+  "truthHash": "sha256:ba540ebfc13a696e047f04cc",
   "status": "planned"
 }

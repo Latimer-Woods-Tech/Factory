@@ -17,14 +17,20 @@ const REGISTRY = resolve(__dirname, '..', '..', 'registry', 'video-registry.json
 const allowStale = process.argv.includes('--allow-stale');
 const { assets } = JSON.parse(readFileSync(REGISTRY, 'utf8'));
 
+const STATUSES = new Set(['planned', 'brief', 'script', 'narrated', 'rendered', 'qa', 'published', 'live', 'stale', 'retired']);
+const TRACKS = new Set(['cinematic', 'screencast']);
 const errors = [];
 const seen = new Set();
 for (const a of assets) {
-  if (!a.id) errors.push('asset missing id');
+  if (!a.id) { errors.push('asset missing id'); continue; }
   if (seen.has(a.id)) errors.push(`duplicate id: ${a.id}`);
   seen.add(a.id);
+  for (const k of ['source', 'build', 'destination', 'quality', 'meta']) if (!a[k]) errors.push(`${a.id}: missing ${k}`);
+  if (!TRACKS.has(a.track)) errors.push(`${a.id}: bad track "${a.track}"`);
+  if (!STATUSES.has(a.build?.status)) errors.push(`${a.id}: bad status "${a.build?.status}"`);
   if (!a.build?.inputsFingerprint) errors.push(`${a.id}: missing inputsFingerprint`);
   if (a.build?.status === 'live' && !a.destination?.publicUrl) errors.push(`${a.id}: live but no destination.publicUrl`);
+  if (a.build?.status === 'live' && !a.build?.renderedFingerprint && !a.destination?.streamUid) errors.push(`${a.id}: live but no renderedFingerprint`);
 }
 
 const stale = assets.filter((a) => a.build.status === 'stale');

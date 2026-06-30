@@ -73,5 +73,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('authority', 'splenic')",
+  "truthHash": "sha256:14cf7130505c5946abaa45f8",
   "status": "planned"
 }

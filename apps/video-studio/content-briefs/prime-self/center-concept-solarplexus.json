@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "CENTER_EXPLANATIONS['SolarPlexus']",
+  "truthHash": "sha256:ac3e47121e334ea305666d46",
   "status": "planned"
 }

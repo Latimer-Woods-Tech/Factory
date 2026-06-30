@@ -74,5 +74,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('strategy', 'to respond')",
+  "truthHash": "sha256:f3eff7adc7d4d0efa0f9f35f",
   "status": "planned"
 }

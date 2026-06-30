@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "CENTER_EXPLANATIONS['Sacral']",
+  "truthHash": "sha256:4c0c1445c171c186be397653",
   "status": "planned"
 }
