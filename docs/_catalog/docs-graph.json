@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 480,
+    "total_docs": 481,
     "canonical": 19,
-    "active": 413,
+    "active": 414,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:4b0d6a2f249605c6d8c7726b588853755bfa0c7cbd06b908ccaba55e2d79fde9",
+      "content_hash": "sha256:a22ed6a459f8c95c154da7355a9f13893856f4ae0078bb70d11117e687e30ade",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:49c0d6ebc41f897a1d049748ee05d8bf1a41f15ce964456935589417830d7ba5",
+      "content_hash": "sha256:eb5667e752e61d90845cc87abdc5f757b4bc5ffea57752b9b6ef1ea0b22fd3a0",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:5187d7dc739ba73965d426cb3f264793ac4432032b97b9d0b0cb4737fd664a3e",
+      "content_hash": "sha256:27f4d9092db643ee7e3b14aa5e2b851855401d21dfad9f9f3b0dc90ec8512626",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2845,7 +2845,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9eaa862c4741e81e66e202883f4fc3be9adaad619c467330e99bac0a82a9148d",
+      "content_hash": "sha256:57e20beb10b01cd84cb1faccf16cbc30c010b15b59c9baefa2e925b9428aab20",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2908,7 +2908,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:2953007be2c1e34ea37acc322a573e19600bbac9e4a8229828ef8dfa4c45ff57",
+      "content_hash": "sha256:e1613c983b10f0c813b3729ce0f846382e172ca8f41964fa4060fbb0969ca58e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2929,7 +2929,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:baa98d7c902f2b94f0d27f929b66a5c3787ae18a29aa2d639cc2a65b16f2b5a8",
+      "content_hash": "sha256:7130d700be40f2d88e7f5ff28723397f4738d130297becf915d88b9541e743e1",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6711,6 +6711,27 @@
       "errors": []
     },
     {
+      "path": "docs/planning/brief-2026-06-29.md",
+      "title": "Platform Planning Brief — 2026-06-29",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:fd8461417ba3b8eb259a850622f00081c2ede9dbb8b805d84e51e4e5038e2b14",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/planning/factory-network-layer.md",
       "title": "Factory Network Layer — Design & Build Plan",
       "status": "active",
@@ -8693,7 +8714,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-06-15",
+      "title": "Factory State — 2026-06-29",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8704,7 +8725,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:aee21df853eb5183cacf7795ba65d8ef10953d8af473c9bbfc7d64f27949502d",
+      "content_hash": "sha256:609c85661a6fe4c5d2fbde918ed2bfc7f43e26153cb83893682ee9cf5eff5828",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
