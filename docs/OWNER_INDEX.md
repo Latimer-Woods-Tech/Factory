@@ -157,7 +157,7 @@
 | [docs/marketing/ROADMAP.md](marketing/ROADMAP.md) | active | unverified | unknown | Marketing Maturation Roadmap |
 | [docs/marketing/VOICES.md](marketing/VOICES.md) | active | unverified | unknown | Voices |
 
-## platform (373)
+## platform (374)
 
 | Path | Status | Fidelity | Last Updated | Title |
 |---|---|---|---|---|
@@ -375,6 +375,7 @@
 | [docs/planning/brief-2026-06-26.md](planning/brief-2026-06-26.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-26 |
 | [docs/planning/brief-2026-06-27.md](planning/brief-2026-06-27.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-27 |
 | [docs/planning/brief-2026-06-28.md](planning/brief-2026-06-28.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-28 |
+| [docs/planning/brief-2026-06-29.md](planning/brief-2026-06-29.md) | active | unverified | unknown | Platform Planning Brief — 2026-06-29 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | unknown | HumanDesign Language Guidance |
@@ -467,7 +468,7 @@
 | [docs/SLO.md](SLO.md) | active | unverified | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STACK.md](STACK.md) | active | unverified | 2026-06-25 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-06-15 |
+| [docs/STATE.md](STATE.md) | active | unverified | unknown | Factory State — 2026-06-29 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
