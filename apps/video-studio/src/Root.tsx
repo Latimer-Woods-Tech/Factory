@@ -2,6 +2,7 @@ import React from 'react';
 import { Composition, registerRoot } from 'remotion';
 import { MarketingVideo, marketingSchema } from './compositions/MarketingVideo';
 import { TrainingVideo, trainingSchema } from './compositions/TrainingVideo';
+import { TrainingScreencast, trainingScreencastSchema } from './compositions/TrainingScreencast';
 import { WalkthroughVideo, walkthroughSchema } from './compositions/WalkthroughVideo';
 import {
   EnergyBlueprintVideo,
@@ -65,6 +66,37 @@ export const RemotionRoot: React.FC = () => {
           logoUrl: '',
           steps: ['Wake at 5am', 'Cold shower', 'Review goals', 'Execute the plan'],
           durationSeconds: 30,
+        }}
+      />
+
+      <Composition
+        id="TrainingScreencast"
+        component={TrainingScreencast}
+        durationInFrames={390}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: Math.max(240, Math.ceil((props.durationSeconds || 40) * VIDEO_FPS)),
+        })}
+        fps={VIDEO_FPS}
+        width={VIDEO_WIDTH}
+        height={VIDEO_HEIGHT}
+        schema={trainingScreencastSchema}
+        defaultProps={{
+          appId: 'prime_self',
+          topic: 'Getting Started: Your First Week',
+          captureUrl: 'training-capture.webm',
+          captureWidth: 1440,
+          captureHeight: 900,
+          captureStartSeconds: 5.26,
+          beats: [
+            { at: 0, eyebrow: 'Getting Started', title: 'Your Energy Blueprint, at a glance' },
+            { at: 3.27, eyebrow: 'Step 1 · Your Type', title: 'You read as a Projector — here to guide, not push', zoom: { scale: 1.5, x: 0.17, y: 0.34 } },
+            { at: 9.16, eyebrow: 'Step 2 · Your Living Bodygraph', title: 'Filled centers stay consistent; open centers take the world in', zoom: { scale: 1.16, x: 0.5, y: 0.5 } },
+          ],
+          narrationUrl: 'training-vo.mp3',
+          musicUrl: 'https://pub-a39c3cff53fd406383c8ccbe9c1ddf02.r2.dev/sybil-music/modes/ionian.mp3',
+          musicVolume: 0.12,
+          logoUrl: '',
+          durationSeconds: 17.5,
         }}
       />
 
