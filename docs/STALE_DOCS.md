@@ -271,6 +271,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/planning/brief-2026-06-26.md](planning/brief-2026-06-26.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-26 |
 | [docs/planning/brief-2026-06-27.md](planning/brief-2026-06-27.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-27 |
 | [docs/planning/brief-2026-06-28.md](planning/brief-2026-06-28.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-28 |
+| [docs/planning/brief-2026-06-29.md](planning/brief-2026-06-29.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-29 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
@@ -358,7 +359,7 @@ This view lists docs that are stale/archive or missing a `Last Updated`/`last_up
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-15 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-29 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |

@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 480 |
+| total_docs | 481 |
 | canonical | 19 |
-| active | 413 |
+| active | 414 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -41,7 +41,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (413)
+## Active Docs (414)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -317,6 +317,7 @@
 | [docs/planning/brief-2026-06-26.md](planning/brief-2026-06-26.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-26 |
 | [docs/planning/brief-2026-06-27.md](planning/brief-2026-06-27.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-27 |
 | [docs/planning/brief-2026-06-28.md](planning/brief-2026-06-28.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-28 |
+| [docs/planning/brief-2026-06-29.md](planning/brief-2026-06-29.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-29 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
@@ -408,7 +409,7 @@
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
 | [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-06-25 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-15 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-29 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
