@@ -74,3 +74,38 @@ writeFileSync(out, body);
 const liveGates = Object.values(GATE_VIDEOS).filter((g) => g.streamUid).length;
 console.log(`✓ generated video-manifest.js (${Object.keys(GATE_VIDEOS).length} gates, ${liveGates} with live streamUid) → ${out}`);
 if (!outArg) console.log('  (preview only — pass --out <client/data/video-manifest.js> to replace the live file)');
+
+// ── Generic resolver: every LIVE asset by id, for curriculum sourceRefs ({kind:'video', id}) ──
+const assetsOutArg = (() => { const i = args.indexOf('--assets-out'); return i >= 0 ? args[i + 1] : null; })();
+const assetsOut = assetsOutArg ? resolve(assetsOutArg) : join(resolve(__dirname, '..', '..'), 'registry', 'video-assets.generated.js');
+const VIDEO_ASSETS = {};
+for (const a of assets) {
+  if (a.build.status !== 'live') continue;
+  VIDEO_ASSETS[a.id] = {
+    title: a.element,
+    discipline: a.discipline,
+    family: a.family,
+    forge: a.source?.forge || null,
+    host: a.destination.host,
+    streamUid: a.destination.streamUid || null,
+    r2Url: a.destination.host === 'r2' ? a.destination.publicUrl : null,
+    hls: a.destination.streamUid ? `${STREAM}/${a.destination.streamUid}/manifest/video.m3u8` : null,
+    posterUrl: a.destination.posterUrl || null,
+  };
+}
+const assetsBody = `/**
+ * client/data/video-assets.js
+ * GENERATED from apps/video-studio/registry/video-registry.json — do not edit by hand.
+ * Resolves a curriculum video sourceRef ({ kind: 'video', id }) to a playable asset.
+ * Regenerate: node scripts/video-registry/gen-manifest.mjs --assets-out <this file>
+ */
+
+export const VIDEO_ASSETS = ${JSON.stringify(VIDEO_ASSETS, null, 2)};
+
+/** @param {string} id  asset id, e.g. "center-concept-g--gift" */
+export function getVideoAsset(id) {
+  return VIDEO_ASSETS[id] || null;
+}
+`;
+writeFileSync(assetsOut, assetsBody);
+console.log(`✓ generated video-assets.js (${Object.keys(VIDEO_ASSETS).length} live assets) → ${assetsOut}`);

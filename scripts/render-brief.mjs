@@ -168,11 +168,14 @@ if (dryRun) {
   console.log(`    Track at: https://github.com/${repoName}/actions/workflows/render-video.yml`);
   // Registry write-back: mark this brief's asset(s) rendering. On completion run
   // `node apps/video-studio/scripts/video-registry/sync.mjs ${briefKey} --stream <uid>`.
-  const patched = patchAssets(briefKey, (a) => {
+  const mark = (a) => {
     a.build.status = 'rendering';
     a.build.renderJobId = jobId;
     a.build.workflowRun = `https://github.com/${repoName}/actions/workflows/render-video.yml`;
-  });
+  };
+  // A render produces ONE clip for the brief's primary (gift) variant; only mark
+  // that asset (fall back to the single asset for variant-less briefs).
+  const patched = patchAssets(`${briefKey}--gift`, mark) || patchAssets(briefKey, mark);
   if (patched) console.log(`    Registry: ${patched} asset(s) marked rendering (job ${jobId}).`);
   console.log(`    Once complete, copy streamUid into client/data/video-manifest.js gate ${briefKey.replace('gate-concept-', '')}.\n`);
 }
