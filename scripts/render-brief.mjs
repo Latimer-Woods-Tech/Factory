@@ -22,6 +22,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { patchAssets } from '../apps/video-studio/scripts/video-registry/patch.mjs';
 
 const SCHEDULE_WORKER_URL = 'https://schedule.latwoodtech.work';
 const GCP_PROJECT = 'factory-495015';
@@ -163,5 +164,13 @@ if (dryRun) {
   execSync(cmd, { stdio: 'inherit' });
   console.log(`\n🚀  Workflow dispatched for job ${jobId}.`);
   console.log(`    Track at: https://github.com/${repoName}/actions/workflows/render-video.yml`);
+  // Registry write-back: mark this brief's asset(s) rendering. On completion run
+  // `node apps/video-studio/scripts/video-registry/sync.mjs ${briefKey} --stream <uid>`.
+  const patched = patchAssets(briefKey, (a) => {
+    a.build.status = 'rendering';
+    a.build.renderJobId = jobId;
+    a.build.workflowRun = `https://github.com/${repoName}/actions/workflows/render-video.yml`;
+  });
+  if (patched) console.log(`    Registry: ${patched} asset(s) marked rendering (job ${jobId}).`);
   console.log(`    Once complete, copy streamUid into client/data/video-manifest.js gate ${briefKey.replace('gate-concept-', '')}.\n`);
 }
