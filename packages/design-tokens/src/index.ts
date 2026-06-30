@@ -23,6 +23,11 @@
  * ```
  */
 
+// Learning Construct denotation standard (tracks · disciplines · levels) — the
+// cross-surface visual language shared by the Hub, training videos, and PDFs.
+import { learningConstruct } from './learning-construct.js';
+export * from './learning-construct.js';
+
 // ============================================================================
 // COLOR PALETTE — WCAG 2.2 AA Compliant
 // ============================================================================
@@ -501,6 +506,7 @@ export const tokens = {
   density,
   shadows,
   radii,
+  learningConstruct,
 } as const;
 
 // ============================================================================
