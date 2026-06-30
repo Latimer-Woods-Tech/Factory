@@ -1,5 +1,5 @@
 # Completion Tracker
-_Generated 2026-06-29T14:34:00+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-06-30T12:29:19+00:00 by `scripts/aggregate_completion.py`._
 
 ## 🚨 CI red on main: CH, XC
 
