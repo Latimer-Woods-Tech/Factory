@@ -42,6 +42,13 @@ export interface LookSpec {
   accent2: string;
   /** The signature hero moment. */
   hero: HeroMoment;
+  /**
+   * Selection weight for the seeded randomizer (default 1). Higher = surfaces
+   * more often. Tuned to operator taste (2026-06-30): the soft/luminous/flowing
+   * register (water, petals, pearl light) is favoured; the dark/monochrome cuts
+   * are demoted. Every render still varies per chart — the pool is just skewed.
+   */
+  weight?: number;
 }
 
 // Brand moonlight anchors (kept in sync with HeroBlueprint).
@@ -71,6 +78,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: LAV,
     accent2: PEARL,
     hero: 'stardustBirth',
+    weight: 1.5, // soft base brand
   },
   {
     name: 'Opaline Cathedral',
@@ -85,6 +93,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: PEARL,
     accent2: LAV,
     hero: 'godrayCathedral',
+    weight: 3, // operator fav
   },
   {
     name: 'Astral Cartography',
@@ -99,6 +108,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: STAR,
     accent2: ROSE,
     hero: 'constellation',
+    weight: 1, // neutral
   },
   {
     name: 'Nebula Bloom',
@@ -113,6 +123,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: ROSE,
     accent2: LAV,
     hero: 'stardustBirth',
+    weight: 2, // soft/flowing, in the favoured register
   },
   {
     name: 'Pearl Aurora',
@@ -127,6 +138,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: ROSE,
     accent2: PEARL,
     hero: 'auroraRibbon',
+    weight: 2, // flowing aurora, favoured register
   },
   {
     name: 'Tidal',
@@ -141,6 +153,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: AQUA,
     accent2: STAR,
     hero: 'tideRise',
+    weight: 3, // operator fav
   },
   {
     name: 'Obsidian Mirror',
@@ -155,6 +168,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: LAV,
     accent2: SILVER,
     hero: 'stardustBirth',
+    weight: 0.4, // dark register — demoted
   },
   {
     name: 'Gilded Dawn',
@@ -169,6 +183,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: GOLD,
     accent2: ROSE,
     hero: 'godrayCathedral',
+    weight: 1, // neutral warm
   },
   {
     name: 'Veil of Petals',
@@ -183,6 +198,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: ROSE,
     accent2: LAV,
     hero: 'stardustBirth',
+    weight: 3, // operator fav
   },
   {
     name: 'Ink & Starlight',
@@ -197,6 +213,7 @@ export const LOOK_POOL: LookSpec[] = [
     accent: SILVER,
     accent2: STAR,
     hero: 'constellation',
+    weight: 0.4, // monochrome register — demoted
   },
 ];
 
@@ -208,8 +225,17 @@ export const LOOK_POOL: LookSpec[] = [
 export function pickLook(seed: number, hdType?: string): LookSpec {
   const pool = LOOK_POOL.filter((l) => l.suits.includes('*') || (hdType !== undefined && l.suits.includes(hdType)));
   const list = pool.length > 0 ? pool : LOOK_POOL;
-  const idx = Math.floor(Math.abs(Math.sin(seed * 12.9898) * 43758.5453) % list.length);
-  return list[idx] ?? list[0]!;
+  // Deterministic hash → unit interval (fractional part of the classic
+  // sin-hash), then weighted pick over the suited pool so favoured looks
+  // surface more often while every chart still gets a distinct, stable result.
+  const unit = Math.abs(Math.sin(seed * 12.9898) * 43758.5453) % 1;
+  const total = list.reduce((s, l) => s + (l.weight ?? 1), 0);
+  let r = unit * total;
+  for (const l of list) {
+    r -= l.weight ?? 1;
+    if (r < 0) return l;
+  }
+  return list[list.length - 1] ?? list[0]!;
 }
 
 /** Look up a look by name (forces a specific look for sampling/QA). */
