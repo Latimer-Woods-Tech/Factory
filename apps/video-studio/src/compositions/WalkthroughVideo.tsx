@@ -29,6 +29,10 @@ export const walkthroughSchema = z.object({
   brandAccent: z.string(),
   /** Logo image URL. */
   logoUrl: z.string(),
+  /** Optional instrumental music bed (R2 URL). Empty/absent = no music. */
+  musicUrl: z.string().optional(),
+  /** Music bed volume (0-1), kept low so it sits under the narration. */
+  musicVolume: z.number().optional(),
   /**
    * Ordered array of screenshot URLs to display during the walkthrough.
    * Each screenshot is displayed for 3 seconds (90 frames at 30fps).
@@ -277,6 +281,8 @@ export const WalkthroughVideo: React.FC<WalkthroughVideoProps> = ({
   brandColor,
   brandAccent,
   logoUrl,
+  musicUrl = '',
+  musicVolume = 0.16,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -326,6 +332,7 @@ export const WalkthroughVideo: React.FC<WalkthroughVideoProps> = ({
       {/* Script drives narration; keep accessible */}
       <div aria-hidden="true" style={{ display: 'none' }}>{script}</div>
       {narrationUrl && <Audio src={narrationUrl} />}
+      {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
     </AbsoluteFill>
   );
 };
