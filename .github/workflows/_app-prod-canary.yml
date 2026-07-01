@@ -17,7 +17,7 @@
 #
 #   scheduled:
 #     on:
-#       schedule: [{ cron: '*/30 * * * *' }]
+#       schedule: [{ cron: '0 * * * *' }]
 #     jobs:
 #       canary:
 #         uses: ...@main

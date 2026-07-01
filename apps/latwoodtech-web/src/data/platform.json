@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-19T00:26:59.428Z",
+  "generatedAt": "2026-07-01T12:33:02.907Z",
   "platform": {
     "stage": 2,
     "stageName": "Revenue + Customer",
@@ -17,7 +17,7 @@
       "name": "Self Prime",
       "domain": "selfprime.net",
       "maturity": "revenue",
-      "cohesion": 16,
+      "cohesion": 56,
       "healthState": "live",
       "packages": [
         "auth",
@@ -146,7 +146,7 @@
       "name": "Capricast",
       "domain": "capricast.com",
       "maturity": "production",
-      "cohesion": 14,
+      "cohesion": 42,
       "healthState": "live",
       "packages": [
         "auth",
@@ -234,7 +234,7 @@
       "name": "AP Unlimited",
       "domain": "apunlimited.com",
       "maturity": "production",
-      "cohesion": 71,
+      "cohesion": 77,
       "healthState": "live",
       "packages": [
         "auth",
@@ -354,7 +354,7 @@
       "name": "Cypher of Healing",
       "domain": "cypherofhealing.com",
       "maturity": "production",
-      "cohesion": 14,
+      "cohesion": 40,
       "healthState": "live",
       "packages": [
         "auth",
@@ -434,7 +434,7 @@
       "name": "Xico City",
       "domain": "xicocity.com",
       "maturity": "beta",
-      "cohesion": 14,
+      "cohesion": 51,
       "healthState": "live",
       "packages": [
         "auth",
@@ -1051,7 +1051,7 @@
     ]
   },
   "kpis": {
-    "generatedAt": "2026-06-19T00:27:00.152Z",
+    "generatedAt": "2026-07-01T12:33:03.854Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -1062,9 +1062,9 @@
         "p2": 4,
         "p3": 9
       },
-      "cost30dUsd": 10.81,
+      "cost30dUsd": 1.43,
       "mrrUsd": 0,
-      "completionWeighted": 2.6
+      "completionWeighted": 0
     },
     "trends": {
       "cohesion": {
@@ -1076,12 +1076,12 @@
         "direction": "up"
       },
       "cost": {
-        "current": 10.81,
-        "prior": 4.87,
-        "priorDate": "2026-06-05",
-        "dayGap": 9,
-        "delta": 5.94,
-        "direction": "up"
+        "current": 1.43,
+        "prior": 10.81,
+        "priorDate": "2026-06-14",
+        "dayGap": 14,
+        "delta": -9.38,
+        "direction": "down"
       },
       "mrr": {
         "current": 0,
@@ -1092,28 +1092,28 @@
         "direction": "flat"
       },
       "completion": {
-        "current": 2.6,
-        "prior": 3,
-        "priorDate": "2026-06-12",
+        "current": 0,
+        "prior": 0,
+        "priorDate": "2026-06-24",
         "dayGap": 6,
-        "delta": -0.4,
-        "direction": "down"
+        "delta": 0,
+        "direction": "flat"
       },
       "registryCoverage": {
         "current": 17.65,
         "prior": 17.65,
-        "priorDate": "2026-06-12",
+        "priorDate": "2026-06-24",
         "dayGap": 7,
         "delta": 0,
         "direction": "flat"
       },
       "openGaps": {
         "current": 13,
-        "prior": 14,
-        "priorDate": "2026-06-12",
+        "prior": 13,
+        "priorDate": "2026-06-24",
         "dayGap": 7,
-        "delta": -1,
-        "direction": "down"
+        "delta": 0,
+        "direction": "flat"
       }
     },
     "movers": {
@@ -1165,6 +1165,6 @@
         }
       ]
     },
-    "seriesPoints": 9
+    "seriesPoints": 17
   }
 }

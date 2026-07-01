@@ -2,18 +2,18 @@
   "repo_key": "CH",
   "repo_name": "cypher-healing",
   "repo_path": "Latimer-Woods-Tech/coh",
-  "timestamp": "2026-06-22T19:10:56.307939+00:00",
-  "cohesion": 40,
+  "timestamp": "2026-06-29T12:25:16.716282+00:00",
+  "cohesion": 14,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 60,
+      "score": 20,
       "checks": [
         {
           "name": "wrangler.jsonc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -23,7 +23,7 @@
         },
         {
           "name": "Hono in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -42,26 +42,26 @@
       "key": "code_patterns",
       "title": "Code patterns",
       "weight": 15,
-      "score": 60,
+      "score": 20,
       "checks": [
         {
           "name": "@latimer-woods-tech/logger in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@latimer-woods-tech/errors in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@latimer-woods-tech/monitoring in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "No console.log in src/",
-          "passed": false,
+          "passed": true,
           "detail": ""
         },
         {
@@ -75,11 +75,11 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 60,
+      "score": 0,
       "checks": [
         {
           "name": "vitest.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -89,7 +89,7 @@
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -99,7 +99,7 @@
         },
         {
           "name": "Coverage thresholds set",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -141,7 +141,7 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 40,
+      "score": 20,
       "checks": [
         {
           "name": "CodeQL workflow present",
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -174,17 +174,17 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 67,
+      "score": 33,
       "checks": [
         {
           "name": "Migrations directory present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): src/db/migrations/add-product-images.sql"
+          "detail": ""
         },
         {
           "name": "Numbered file naming",
@@ -220,7 +220,7 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 33,
+      "score": 0,
       "checks": [
         {
           "name": "CHANGELOG.md present",
@@ -229,7 +229,7 @@
         },
         {
           "name": "Semver version (n.n.n)",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {

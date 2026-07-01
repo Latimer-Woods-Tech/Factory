@@ -2,8 +2,8 @@
   "repo_key": "FA",
   "repo_name": "factory-admin-studio",
   "repo_path": "Latimer-Woods-Tech/Factory",
-  "timestamp": "2026-06-22T19:10:43.685491+00:00",
-  "cohesion": 77,
+  "timestamp": "2026-06-29T12:25:10.801342+00:00",
+  "cohesion": 71,
   "dimensions": [
     {
       "key": "stack",
@@ -108,7 +108,7 @@
       "key": "observability",
       "title": "Observability",
       "weight": 10,
-      "score": 80,
+      "score": 40,
       "checks": [
         {
           "name": "Sentry import",
@@ -117,7 +117,7 @@
         },
         {
           "name": "@lwt/monitoring consumed",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -132,7 +132,7 @@
         },
         {
           "name": "Structured log fields",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -184,7 +184,7 @@
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 1 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/0100_studio_entitlements.sql"
+          "detail": "WARN: 2 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): migrations/0100_studio_entitlements.sql, migrations/0120_stripe_connect_accounts.sql"
         },
         {
           "name": "Numbered file naming",
@@ -266,7 +266,7 @@
       "key": "privacy",
       "title": "Privacy",
       "weight": 5,
-      "score": 100,
+      "score": 75,
       "checks": [
         {
           "name": "PII_INVENTORY.md present",
@@ -280,7 +280,7 @@
         },
         {
           "name": "DSR endpoint hints (export + delete)",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {

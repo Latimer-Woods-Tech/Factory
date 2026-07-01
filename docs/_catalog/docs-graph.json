@@ -5,13 +5,13 @@
   "generated_at_commit": null,
   "git_status": "not-recorded",
   "source_hashes": {
-    "docs/_governance/canonical-docs.yml": "sha256:a5a9a19036085947a59f7acad4edb9330cc64e4ebd622b3ae42d06d23ff365eb",
+    "docs/_governance/canonical-docs.yml": "sha256:1bea08411063105a59ed1d686e4eedfb8fa90180654359905505c2b71ca589cb",
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 470,
+    "total_docs": 482,
     "canonical": 19,
-    "active": 403,
+    "active": 415,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -120,7 +120,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:8198f76eb123c423d83a162b50b9b277c3149250b88a9fe3e95d98827671ce73",
+      "content_hash": "sha256:e14fa4a30c9d82d40c7481618a528187be16fa380ef7a21e0ce7af5f88b8fe98",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:01559c774a4d6cd7cec17845b30ccf2eabe5add9c98683439855ff8e2a9b9f41",
+      "content_hash": "sha256:fe6748cf2ebf3a9bafef0e6924ad61a55aae9c0b5ac9315c94cfa34d99612447",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:90afb6c762613df7179c5116a552b66434aa44578d00cf7e3924f9002f06a3f4",
+      "content_hash": "sha256:b37818e6e3e3c598611cc18211c30788c3cf8f17813b8338b1cd7bb2945dbaae",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:65f1085720c6610e2c60627dc99f89632ad06f8dc5403c85354daf68b3fbd6ce",
+      "content_hash": "sha256:ef0e4bfa438286e4cd1d93dbb2c87c9e8054fec5810074e857d8ec60a9e0022a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -675,7 +675,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ca763538a984950cea884bf063855aa25302fa0dde876d981411617ba0072d2c",
+      "content_hash": "sha256:fd327a84196f3246a3da0fd2741940aea335fc474b74354066988ffdd9bcc360",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -738,7 +738,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0277defeb0290faebceb1082b50bb119255ac6b5960fa2d1b95636737277cec4",
+      "content_hash": "sha256:fe85def2a62253f062c2e6126a35a12658b50e3f5a34ea0f9c47f30342b47a14",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -1352,6 +1352,48 @@
       "truth_sources": [],
       "verified_by": [],
       "content_hash": "sha256:d97beae4206e0dfdbce52ef82a3523e3cb0eee2d60c843c8940a0b9c5036e856",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/architecture/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md",
+      "title": "Primus — Implementation Plan (Phase A + B)",
+      "status": "active",
+      "owner": "architecture",
+      "doc_type": "architecture",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:b7bb683e87dbcaab1045db72f4eb361a6debdf6fabc3c8bfe55154d318fe4633",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/architecture/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/architecture/PRIMUS.md",
+      "title": "Primus — the Latimer Woods Design System",
+      "status": "active",
+      "owner": "architecture",
+      "doc_type": "architecture",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:8c8f6e990b083350c561c78fccfdc3c72a557e4978f9dc5527b6426a450121a6",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2089,7 +2131,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ac6d2b8a01a8099dfd61dc77e805707ded647d34e51924374b88f8328e6acbea",
+      "content_hash": "sha256:7b4cdd713dae407288940488c17c3f7cddc6975f4e06f7a182f9fbad03860851",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2110,7 +2152,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:211c1cbcf06603df1050cf5c1792b2c5f4e27c33dca1e5f51af0e431ebc9dcd0",
+      "content_hash": "sha256:f5d36dc026fb7db4e3b576a845c266815b06dd0f89080097af9acd41b79303ec",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2803,7 +2845,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:ab478283e89c6a4b3c937d91a7354658c8207994d9d9f077472ca4f20bc47dc5",
+      "content_hash": "sha256:01eb0619f6332279b12df21f5b3231c025ae7324056113fcd59d4b2c7d19985a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2866,7 +2908,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:88a8da7f0e0fc9895db657675d3499460e7dac2f554fd5539e8d11ae96036060",
+      "content_hash": "sha256:e1613c983b10f0c813b3729ce0f846382e172ca8f41964fa4060fbb0969ca58e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2887,7 +2929,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:baa98d7c902f2b94f0d27f929b66a5c3787ae18a29aa2d639cc2a65b16f2b5a8",
+      "content_hash": "sha256:7130d700be40f2d88e7f5ff28723397f4738d130297becf915d88b9541e743e1",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -3276,6 +3318,27 @@
       "errors": []
     },
     {
+      "path": "docs/decisions/2026-06-22-primus-design-system.md",
+      "title": "2026-06-22 — Primus design system & primusui.com as Stage 6 home",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:26df490511bdf042816d8974d89569a0b6c27ec26278875ad73c27226b76b1e5",
+      "source": {
+        "frontmatter": true,
+        "canonical_allowlist": false,
+        "override": "docs/decisions/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/decisions/README.md",
       "title": "Decisions",
       "status": "active",
@@ -3288,7 +3351,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:0bca3410323e2178f31e15287485f74f4d28a29f2f8a0669f5726f3b4c80d215",
+      "content_hash": "sha256:719e11b0420f1acced5d60486c0c113b766d022931aac704de154601212a1586",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6513,7 +6576,175 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:9130df85ea3386f8b7f74ad5fe34dcc6f0629e56692e6d2a8f35b4888c4d143d",
+      "content_hash": "sha256:6051e1b24c3887809794e271963bf8e8f83c0065297a762403055493df8a5cff",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-19.md",
+      "title": "Platform Planning Brief — 2026-06-19",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5ec7a9912acd915d976711d1b6c26a621b89a1cffeea62063687458def7d96e8",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-24.md",
+      "title": "Platform Planning Brief — 2026-06-24",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:f6c062a3e3f50b74d58cefb5855400ea2d29c68dcf5e9defa721ce825b6e146b",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-25.md",
+      "title": "Platform Planning Brief — 2026-06-25",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:534509c11cb415fb7ce0eb5df8b1e273e98355e110db9b5f0e609dea3efb7019",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-26.md",
+      "title": "Platform Planning Brief — 2026-06-26",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:29af902a0d6ac7c2d8cb620ef0fee6ae470cd65df96d58df7f32d1a3a4574d42",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-27.md",
+      "title": "Platform Planning Brief — 2026-06-27",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:e54e2a3e8c4582b2d1f9986f2ea2dc444afaf360c97005e3b297ce2827ff7853",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-28.md",
+      "title": "Platform Planning Brief — 2026-06-28",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:dd5bfdb47aad5404d1f869ddfb828d2f53045500f8687f5dcaf210ebb07f8355",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-29.md",
+      "title": "Platform Planning Brief — 2026-06-29",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:fd8461417ba3b8eb259a850622f00081c2ede9dbb8b805d84e51e4e5038e2b14",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
+      "path": "docs/planning/brief-2026-06-30.md",
+      "title": "Platform Planning Brief — 2026-06-30",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:71e128d2a698978159fa130c1cd2fe4ba2bffc7eaec20ff197b4fa747084c406",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -7156,6 +7387,27 @@
       "errors": []
     },
     {
+      "path": "docs/rfc/RFC-008-reflection-loop.md",
+      "title": "RFC-008: Reflection Loop (synthesis → expression → learn — the \"second brain\" circuit)",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "decision",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:5b3e2fb6a414c441e8befc526016f2c9d09ad55310d0570cd80bb8eadba31fc5",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/ROADMAP.md",
       "title": "Platform Roadmap",
       "status": "active",
@@ -7735,7 +7987,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b0b51cdcf6132bd96dd98096fc5c741fad3f236bc2bb7d499ecea38dfc783580",
+      "content_hash": "sha256:29506140a1caf370f5faff623b16aebcb9808c00730752a84263d6d9763346a7",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8281,7 +8533,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:6269f9edc672676e52c279d46de88f879706ed8e1ba7edfebd5f42cc706265d6",
+      "content_hash": "sha256:fb035d934248b41d605d6602275a8633f75facf8515a1569e87383afd3db6a31",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8368,7 +8620,7 @@
         "validation-output"
       ],
       "verified_by": [],
-      "content_hash": "sha256:9e3bc3ad5acb9adec77d57b85664c45cfb9f2c50ee88ae33828604622b87ccec",
+      "content_hash": "sha256:b67ef32a478891427a85b0003dd60385d8b1b6f366838e59ac8e4b87a97bd92e",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": true,
@@ -8447,12 +8699,12 @@
       "doc_type": "reference",
       "fidelity": "unverified",
       "quality": "usable",
-      "last_updated": "2026-06-16",
+      "last_updated": "2026-06-25",
       "last_verified": null,
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:207a88963042a34c46afd5a78971785d0988fecc9eb2acab4bbf62ec45b6b7d5",
+      "content_hash": "sha256:facd24376e85ff071379c526459ea6298642f164f066b78f8dfc4f34dd777fa2",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -8483,7 +8735,7 @@
     },
     {
       "path": "docs/STATE.md",
-      "title": "Factory State — 2026-06-15",
+      "title": "Factory State — 2026-06-29",
       "status": "active",
       "owner": "platform",
       "doc_type": "reference",
@@ -8494,7 +8746,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:aee21df853eb5183cacf7795ba65d8ef10953d8af473c9bbfc7d64f27949502d",
+      "content_hash": "sha256:609c85661a6fe4c5d2fbde918ed2bfc7f43e26153cb83893682ee9cf5eff5828",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,

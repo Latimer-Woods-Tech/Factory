@@ -2,28 +2,28 @@
   "repo_key": "WB",
   "repo_name": "wordis-bond",
   "repo_path": "Latimer-Woods-Tech/wordis-bond",
-  "timestamp": "2026-06-22T19:12:46.611213+00:00",
-  "cohesion": 59,
+  "timestamp": "2026-06-29T12:26:03.654142+00:00",
+  "cohesion": 14,
   "dimensions": [
     {
       "key": "stack",
       "title": "Stack",
       "weight": 10,
-      "score": 80,
+      "score": 20,
       "checks": [
         {
           "name": "wrangler.jsonc present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "ESM ('type': 'module')",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Hono in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -42,21 +42,21 @@
       "key": "code_patterns",
       "title": "Code patterns",
       "weight": 15,
-      "score": 80,
+      "score": 20,
       "checks": [
         {
           "name": "@latimer-woods-tech/logger in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@latimer-woods-tech/errors in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "@latimer-woods-tech/monitoring in deps",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -75,31 +75,31 @@
       "key": "tests",
       "title": "Tests",
       "weight": 15,
-      "score": 100,
+      "score": 0,
       "checks": [
         {
           "name": "vitest.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "playwright.config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "tests/ or test/ dir present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Smoke tier present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "Coverage thresholds set",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -141,7 +141,7 @@
       "key": "security",
       "title": "Security",
       "weight": 15,
-      "score": 40,
+      "score": 20,
       "checks": [
         {
           "name": "CodeQL workflow present",
@@ -165,7 +165,7 @@
         },
         {
           "name": "Renovate config present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -174,21 +174,21 @@
       "key": "schema",
       "title": "Schema",
       "weight": 5,
-      "score": 100,
+      "score": 33,
       "checks": [
         {
           "name": "Migrations directory present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
           "name": "ROLLBACK block enforced",
           "passed": true,
-          "detail": "WARN: 14 existing migration(s) missing -- ROLLBACK: block (debt \u2014 not blocking): src/db/migrations/0000_last_pretty_boy.sql, src/db/migrations/0001_add_prompts_agents_and_calllog_enhancements.sql, src/db/migrations/0002_late_azazel.sql, src/db/migrations/0003_test_account_id_text.sql, src/db/migrations/0004_ivr_flows_prompt_validations.sql, src/db/migrations/0005_survey_definitions_responses.sql, src/db/migrations/0006_test_suites_and_runs.sql, src/db/migrations/0007_did_pool_dialer_sessions.sql, src/db/migrations/0008_normalize_account_id.sql, src/db/migrations/0008_users_auth.sql, src/db/migrations/0009_voice_personas.sql, src/db/migrations/0010_api_keys.sql, src/db/migrations/0011_ab_tests.sql, src/db/migrations/0012_add_fk_indexes.sql"
+          "detail": ""
         },
         {
           "name": "Numbered file naming",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -197,7 +197,7 @@
       "key": "workflows",
       "title": "Workflows",
       "weight": 10,
-      "score": 67,
+      "score": 33,
       "checks": [
         {
           "name": "\u22645 workflow files",
@@ -211,7 +211,7 @@
         },
         {
           "name": "CODEOWNERS present",
-          "passed": true,
+          "passed": false,
           "detail": ""
         }
       ]
@@ -220,7 +220,7 @@
       "key": "release",
       "title": "Release",
       "weight": 5,
-      "score": 33,
+      "score": 0,
       "checks": [
         {
           "name": "CHANGELOG.md present",
@@ -229,7 +229,7 @@
         },
         {
           "name": "Semver version (n.n.n)",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -243,7 +243,7 @@
       "key": "performance",
       "title": "Performance",
       "weight": 10,
-      "score": 33,
+      "score": 0,
       "checks": [
         {
           "name": "p95 budgets declared",
@@ -252,7 +252,7 @@
         },
         {
           "name": "Canary or post-deploy verify",
-          "passed": true,
+          "passed": false,
           "detail": ""
         },
         {
@@ -286,7 +286,7 @@
         {
           "name": "Migration PII columns documented",
           "passed": true,
-          "detail": "WARN: 8 existing migration PII column(s) not documented in PII_INVENTORY.md (debt \u2014 not blocking): src/db/migrations/0000_last_pretty_boy.sql: email, src/db/migrations/0000_last_pretty_boy.sql: first_name, src/db/migrations/0000_last_pretty_boy.sql: last_name, src/db/migrations/0000_last_pretty_boy.sql: phone, src/db/migrations/0004_ivr_flows_prompt_validations.sql: target_phone, src/db/migrations/0005_survey_definitions_responses.sql: respondent_phone, src/db/migrations/0007_did_pool_dialer_sessions.sql: phone_number, src/db/migrations/0008_users_auth.sql: email"
+          "detail": ""
         }
       ]
     }

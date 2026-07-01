@@ -58,7 +58,58 @@ npx --yes neonctl connection-string production \
 
 > See also [database.md](./database.md) for branch strategy; the one-line pin lives at the top of [CLAUDE.md](../../CLAUDE.md).
 
+## You CAN mint Cloudflare API tokens — `CF_API_TOKEN` is the root of trust
+
+> **Second-most common false belief (cousin of the Neon one above).** Agents try
+> a privileged Cloudflare op (create a Turnstile widget, provision a resource),
+> get `Authentication error` from the deploy/least-priv token, and conclude "no
+> token here can do this — provision it by hand in the dashboard." **Wrong.** The
+> `CF_API_TOKEN` secret in GCP SM carries **User API Tokens: Edit** — it can MINT
+> a scoped token for whatever permission you need. (The README's `CF_TOKEN_ADMIN`
+> root-of-trust was never stored under that name; `CF_API_TOKEN` *is* it.)
+
+**Which token does what (verify, don't assume):** the cf-token-* suite + `CLOUDFLARE_API_TOKEN`/`_NEW`/`CLOUDFLARE_API` are all least-privilege (Workers/Pages/DNS/Stream scopes). Only **`CF_API_TOKEN`** returns `success:true` on `GET /user/tokens/permission_groups` — that's the mint-capable one.
+
+**Recipe — mint a scoped token, use it, delete it:**
+```bash
+ADMIN=$(gcloud secrets versions access latest --secret=CF_API_TOKEN  --project=factory-495015 | tr -d '\r\n\357\273\277')
+ACCT=$(gcloud secrets versions access latest --secret=CF_ACCOUNT_ID --project=factory-495015 | tr -d '\r\n\357\273\277')  # CF_ACCOUNT_ID is BOM-prefixed!
+# 1. Find the permission-group id you need:
+curl -s -H "Authorization: Bearer $ADMIN" \
+  "https://api.cloudflare.com/client/v4/user/tokens/permission_groups?per_page=1000" \
+  | jq -r '.result[] | select(.name|test("Turnstile";"i")) | "\(.id)  \(.name)"'
+#   → 755c05aa014b4f9ab263aa80b8167bd8  Turnstile Sites Write
+# 2. Mint an account-scoped token with that group:
+MINT=$(curl -s -X POST "https://api.cloudflare.com/client/v4/user/tokens" -H "Authorization: Bearer $ADMIN" \
+  -d '{"name":"factory-scratch","policies":[{"effect":"allow","resources":{"com.cloudflare.api.account.'"$ACCT"'":"*"},"permission_groups":[{"id":"<PG_ID>"}]}]}')
+TOK=$(echo "$MINT" | jq -r .result.value);  TID=$(echo "$MINT" | jq -r .result.id)
+# 3. Do the privileged op with $TOK (e.g. POST /accounts/$ACCT/challenges/widgets) ...
+# 4. Clean up — delete the scratch token:
+curl -s -X DELETE "https://api.cloudflare.com/client/v4/user/tokens/$TID" -H "Authorization: Bearer $ADMIN" | jq .success
+```
+The managed least-priv suite (and its own minting story) lives in `scripts/cloudflare/manage-tokens.mjs` + `token-suite.json`. `CF_ACCOUNT_ID` in GCP SM has a **leading UTF-8 BOM** — strip `\357\273\277` or the API 401s.
+
 ## Common Errors & Resolutions
+
+### Error: "An externally-matched secret (Turnstile, webhook HMAC) is rejected even though the value looks correct"
+
+**Root Cause**: `echo "$value" | wrangler secret put NAME` appends a **trailing newline** that wrangler stores verbatim. Self-consistent secrets (JWT signing key, bearer tokens — verified with the *same* stored value) tolerate the `\n` invisibly. But secrets matched **externally byte-for-byte** break: Cloudflare Turnstile `siteverify` returns `invalid-input-secret`, an HMAC comparison fails, etc. The failure is silent and often **fail-closed** — e.g. the Turnstile register gate then rejects *every real user*, looking identical to "no token supplied."
+
+**Solution**: write the exact bytes with `printf '%s'`, never `echo`:
+```bash
+printf '%s' "$value" | wrangler secret put NAME        # ✅ no trailing newline
+# echo "$value"     | wrangler secret put NAME         # ✗ appends \n
+```
+The shared sync helper (`sync-worker-secrets.yml` `push_secret`) was fixed to `printf` for this reason. When setting a sensitive secret manually, strip first: `... | tr -d '\r\n'` then `printf '%s'`.
+
+**Verify a Turnstile secret WITHOUT a browser** (distinguishes a bad *secret* from a bad *token* — curl alone can't, since both yield a 400):
+```bash
+curl -s https://challenges.cloudflare.com/turnstile/v0/siteverify \
+  --data-urlencode "secret=$S" --data-urlencode "response=dummy" | jq -c '."error-codes"'
+# ["invalid-input-response"] → secret is GOOD (only the dummy token failed)
+# ["invalid-input-secret"]   → secret is MALFORMED (newline / wrong value)
+```
+Activate a fail-closed gate in the **safe order**: ship the public/render side first (e.g. the Turnstile site-key var, so the widget renders), verify, *then* set the enforcing secret. `push_secret` skips empty values, so the secret stays inert until you actually set the GitHub secret — exploit that to sequence it.
 
 ### Error: "Cannot find module '@latimer-woods-tech/auth' is not in the npm registry"
 

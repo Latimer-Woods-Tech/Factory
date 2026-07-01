@@ -8,9 +8,9 @@
 
 | Status | Count |
 |---|---:|
-| total_docs | 470 |
+| total_docs | 482 |
 | canonical | 19 |
-| active | 403 |
+| active | 415 |
 | stale | 0 |
 | archive | 45 |
 | generated | 3 |
@@ -41,7 +41,7 @@
 | [prompts/README.md](../prompts/README.md) | canonical | owner-reviewed | platform | unknown | Factory Prompt Index |
 | [WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md](../WORLD_CLASS_IMPLEMENTATION_DASHBOARD.md) | canonical | owner-reviewed | platform | unknown | World-Class Implementation Dashboard |
 
-## Active Docs (403)
+## Active Docs (415)
 
 | Path | Status | Fidelity | Owner | Last Updated | Title |
 |---|---|---|---|---|---|
@@ -100,6 +100,8 @@
 | [docs/architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md](architecture/I1_PERSONAL_BLUEPRINT_VIDEO.md) | active | unverified | architecture | unknown | I1 — Per-User Energy Blueprint Video: Final-State Design |
 | [docs/architecture/I1_PERSUASION_POLICY.md](architecture/I1_PERSUASION_POLICY.md) | active | unverified | architecture | unknown | I1 — Narration Persuasion Policy (DRAFT — for red-line) |
 | [docs/architecture/PATTERNS.md](architecture/PATTERNS.md) | active | unverified | architecture | unknown | Factory Operational Patterns |
+| [docs/architecture/PRIMUS_IMPLEMENTATION_PLAN.md](architecture/PRIMUS_IMPLEMENTATION_PLAN.md) | active | unverified | architecture | unknown | Primus — Implementation Plan (Phase A + B) |
+| [docs/architecture/PRIMUS.md](architecture/PRIMUS.md) | active | unverified | architecture | unknown | Primus — the Latimer Woods Design System |
 | [docs/architecture/QA_TOOLS_ARCHITECTURE.md](architecture/QA_TOOLS_ARCHITECTURE.md) | active | unverified | architecture | unknown | QA Tools Platform — Mature Design (v2.0) |
 | [docs/architecture/SURFACES.md](architecture/SURFACES.md) | active | unverified | architecture | unknown | Factory Surfaces — Navigation Index |
 | [docs/audits/MARKETING_STAMP_AUDIT.md](audits/MARKETING_STAMP_AUDIT.md) | active | unverified | platform | unknown | Marketing Stamp Audit — 2026-05-21 |
@@ -160,6 +162,7 @@
 | [docs/decisions/2026-06-08-admin-studio-boundary.md](decisions/2026-06-08-admin-studio-boundary.md) | active | unverified | platform | unknown | 2026-06-08 — Admin Studio surface & responsibility boundary |
 | [docs/decisions/2026-06-10-sell-phase-action-plan.md](decisions/2026-06-10-sell-phase-action-plan.md) | active | unverified | platform | unknown | 2026-06-10 — Sell-Phase Action Plan: freeze the platform, fix the products, find the customers |
 | [docs/decisions/2026-06-11-rfc-006-operating-decisions.md](decisions/2026-06-11-rfc-006-operating-decisions.md) | active | unverified | platform | unknown | 2026-06-11 — RFC-006 Required Operating Decisions |
+| [docs/decisions/2026-06-22-primus-design-system.md](decisions/2026-06-22-primus-design-system.md) | active | unverified | platform | unknown | 2026-06-22 — Primus design system & primusui.com as Stage 6 home |
 | [docs/decisions/README.md](decisions/README.md) | active | unverified | platform | unknown | Decisions |
 | [docs/DEFINITION_OF_READY_DONE.md](DEFINITION_OF_READY_DONE.md) | active | unverified | platform | unknown | Definition of Ready / Definition of Done |
 | [docs/DELIVERY_KPI_DASHBOARD.md](DELIVERY_KPI_DASHBOARD.md) | active | unverified | platform | unknown | Delivery KPI Dashboard: DORA Metrics + Incident Tracking |
@@ -308,6 +311,14 @@
 | [docs/planning/brief-2026-06-16.md](planning/brief-2026-06-16.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-16 |
 | [docs/planning/brief-2026-06-17.md](planning/brief-2026-06-17.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-17 |
 | [docs/planning/brief-2026-06-18.md](planning/brief-2026-06-18.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-18 |
+| [docs/planning/brief-2026-06-19.md](planning/brief-2026-06-19.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-19 |
+| [docs/planning/brief-2026-06-24.md](planning/brief-2026-06-24.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-24 |
+| [docs/planning/brief-2026-06-25.md](planning/brief-2026-06-25.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-25 |
+| [docs/planning/brief-2026-06-26.md](planning/brief-2026-06-26.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-26 |
+| [docs/planning/brief-2026-06-27.md](planning/brief-2026-06-27.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-27 |
+| [docs/planning/brief-2026-06-28.md](planning/brief-2026-06-28.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-28 |
+| [docs/planning/brief-2026-06-29.md](planning/brief-2026-06-29.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-29 |
+| [docs/planning/brief-2026-06-30.md](planning/brief-2026-06-30.md) | active | unverified | platform | unknown | Platform Planning Brief — 2026-06-30 |
 | [docs/planning/factory-network-layer.md](planning/factory-network-layer.md) | active | unverified | platform | unknown | Factory Network Layer — Design & Build Plan |
 | [docs/PLATFORM_STANDARDS.md](PLATFORM_STANDARDS.md) | active | unverified | platform | unknown | Platform Standards — Latimer-Woods-Tech |
 | [docs/policies/humandesign-language-guidance.mdx](policies/humandesign-language-guidance.mdx) | active | unverified | platform | unknown | HumanDesign Language Guidance |
@@ -336,6 +347,7 @@
 | [docs/rfc/RFC-006-baseline-metrics.md](rfc/RFC-006-baseline-metrics.md) | active | unverified | platform | unknown | RFC-006 Phase 0 Baseline Metrics |
 | [docs/rfc/RFC-006-duplicate-triage.md](rfc/RFC-006-duplicate-triage.md) | active | unverified | platform | unknown | RFC-006 Duplicate Issue Triage |
 | [docs/rfc/RFC-007-supervisor-semantic-memory.md](rfc/RFC-007-supervisor-semantic-memory.md) | active | unverified | platform | unknown | RFC-007: Supervisor semantic memory (template recall + episodic learning) |
+| [docs/rfc/RFC-008-reflection-loop.md](rfc/RFC-008-reflection-loop.md) | active | unverified | platform | unknown | RFC-008: Reflection Loop (synthesis → expression → learn — the "second brain" circuit) |
 | [docs/ROADMAP.md](ROADMAP.md) | active | unverified | platform | unknown | Platform Roadmap |
 | [docs/runbooks/add-new-app.md](runbooks/add-new-app.md) | active | unverified | platform | unknown | Add a New Standalone App |
 | [docs/runbooks/agent-ship.md](runbooks/agent-ship.md) | active | unverified | platform | unknown | Agent Ship Runbook |
@@ -396,9 +408,9 @@
 | [docs/sessions/2026-04-30-org-migration.md](sessions/2026-04-30-org-migration.md) | active | unverified | platform | unknown | Latimer-Woods-Tech Org Migration — Complete |
 | [docs/sessions/2026-05-06-agent-ship-orchestrator.md](sessions/2026-05-06-agent-ship-orchestrator.md) | active | unverified | platform | unknown | 2026-05-06 - agent ship orchestrator |
 | [docs/SLO.md](SLO.md) | active | unverified | platform | unknown | Service Level Objectives — Factory Admin Studio |
-| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-06-16 | Stack Manifest |
+| [docs/STACK.md](STACK.md) | active | unverified | platform | 2026-06-25 | Stack Manifest |
 | [docs/STAGE_2_ACQUISITION_SELFPRIME.md](STAGE_2_ACQUISITION_SELFPRIME.md) | active | unverified | platform | unknown | Stage 2 Acquisition — Selfprime "Practitioner First Domino" |
-| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-15 |
+| [docs/STATE.md](STATE.md) | active | unverified | platform | unknown | Factory State — 2026-06-29 |
 | [docs/STATUS.md](STATUS.md) | active | unverified | platform | unknown | Factory Ecosystem — Status |
 | [docs/supervisor/adr-001-llm-cache-blocks.md](supervisor/adr-001-llm-cache-blocks.md) | active | unverified | platform | unknown | ADR-001: Multi-Block Prompt Cache Structure for Supervisor LLM Calls |
 | [docs/supervisor/ADR-EXEC-GAPS.md](supervisor/ADR-EXEC-GAPS.md) | active | unverified | platform | unknown | ADR: SUP-4 EXEC Gaps — Design Decisions |
