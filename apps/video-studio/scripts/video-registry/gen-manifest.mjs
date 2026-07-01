@@ -18,6 +18,24 @@ const out = outArg ? resolve(outArg) : join(resolve(__dirname, '..', '..'), 'reg
 const { assets } = JSON.parse(readFileSync(REGISTRY, 'utf8'));
 const STREAM = 'https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com';
 
+// Serialize to single-quoted JS literal with trailing commas (HumanDesign ESLint style).
+function toSingleQuotedJs(value, depth = 0) {
+  const pad = '  '.repeat(depth);
+  const inner = '  '.repeat(depth + 1);
+  if (value === null) return 'null';
+  if (typeof value === 'string') return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    if (!value.length) return '[]';
+    const items = value.map((v) => `${inner}${toSingleQuotedJs(v, depth + 1)},`);
+    return `[\n${items.join('\n')}\n${pad}]`;
+  }
+  const entries = Object.entries(value);
+  if (!entries.length) return '{}';
+  const lines = entries.map(([k, v]) => `${inner}'${k}': ${toSingleQuotedJs(v, depth + 1)},`);
+  return `{\n${lines.join('\n')}\n${pad}}`;
+}
+
 // Canonical pick-a-pile variant display (same across all gates).
 const VARIANT = {
   gift:     { label: '✦ Gift',     prompt: 'Does this land? Drop a ✦ if this is you.' },
@@ -101,9 +119,9 @@ const assetsBody = `/**
  * Regenerate: node scripts/video-registry/gen-manifest.mjs --assets-out <this file>
  */
 
-export const VIDEO_ASSETS = ${JSON.stringify(VIDEO_ASSETS, null, 2)};
+export const VIDEO_ASSETS = ${toSingleQuotedJs(VIDEO_ASSETS)};
 
-/** @param {string} id  asset id, e.g. "center-concept-g--gift" */
+/** @param {string} id  asset id, e.g. 'center-concept-g--gift' */
 export function getVideoAsset(id) {
   return VIDEO_ASSETS[id] || null;
 }
