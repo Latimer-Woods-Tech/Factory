@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-30T12:07:26.974Z",
+  "generatedAt": "2026-07-01T12:33:03.795Z",
   "schemaVersion": 1,
   "aliasIndex": {
     "selfprime": "selfprime",
@@ -1793,73 +1793,38 @@
         "tier": "infra"
       },
       {
-        "id": "xico-city:artist-roles",
-        "appId": "xico-city",
-        "label": "11 artist role types",
+        "id": "coh:the-chair",
+        "appId": "coh",
+        "label": "The Chair (bookings)",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "xico-city:auth-system",
-        "appId": "xico-city",
-        "label": "JWT + BetterAuth",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:gcp-processor",
-        "appId": "xico-city",
-        "label": "GCP Cloud Run media processor",
-        "status": "live",
-        "tier": "infra"
-      },
-      {
-        "id": "xico-city:booking",
-        "appId": "xico-city",
-        "label": "Artist booking system",
-        "status": "roadmap",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:video-playback",
-        "appId": "capricast",
-        "label": "CF Stream video playback",
+        "id": "coh:the-vault",
+        "appId": "coh",
+        "label": "The Vault (products)",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "capricast:stripe-payments",
-        "appId": "capricast",
-        "label": "Stripe payments",
+        "id": "coh:the-academy",
+        "appId": "coh",
+        "label": "The Academy (courses)",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "capricast:conference",
-        "appId": "capricast",
-        "label": "Conference scheduling and hosting",
-        "status": "live",
-        "tier": "core"
-      },
-      {
-        "id": "capricast:chat-1to1",
-        "appId": "capricast",
-        "label": "1:1 text chat",
-        "status": "live",
-        "tier": "growth"
-      },
-      {
-        "id": "capricast:live-stream",
-        "appId": "capricast",
-        "label": "Live streaming",
+        "id": "coh:the-stage",
+        "appId": "coh",
+        "label": "The Stage (events)",
         "status": "in-progress",
         "tier": "core"
       },
       {
-        "id": "capricast:group-video",
-        "appId": "capricast",
-        "label": "16-way video chat",
-        "status": "roadmap",
+        "id": "coh:inner-circle",
+        "appId": "coh",
+        "label": "Inner Circle (membership)",
+        "status": "in-progress",
         "tier": "growth"
       },
       {
@@ -1940,39 +1905,74 @@
         "tier": "growth"
       },
       {
-        "id": "coh:the-chair",
-        "appId": "coh",
-        "label": "The Chair (bookings)",
+        "id": "capricast:video-playback",
+        "appId": "capricast",
+        "label": "CF Stream video playback",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-vault",
-        "appId": "coh",
-        "label": "The Vault (products)",
+        "id": "capricast:stripe-payments",
+        "appId": "capricast",
+        "label": "Stripe payments",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-academy",
-        "appId": "coh",
-        "label": "The Academy (courses)",
+        "id": "capricast:conference",
+        "appId": "capricast",
+        "label": "Conference scheduling and hosting",
         "status": "live",
         "tier": "core"
       },
       {
-        "id": "coh:the-stage",
-        "appId": "coh",
-        "label": "The Stage (events)",
-        "status": "in-progress",
-        "tier": "core"
-      },
-      {
-        "id": "coh:inner-circle",
-        "appId": "coh",
-        "label": "Inner Circle (membership)",
-        "status": "in-progress",
+        "id": "capricast:chat-1to1",
+        "appId": "capricast",
+        "label": "1:1 text chat",
+        "status": "live",
         "tier": "growth"
+      },
+      {
+        "id": "capricast:live-stream",
+        "appId": "capricast",
+        "label": "Live streaming",
+        "status": "in-progress",
+        "tier": "core"
+      },
+      {
+        "id": "capricast:group-video",
+        "appId": "capricast",
+        "label": "16-way video chat",
+        "status": "roadmap",
+        "tier": "growth"
+      },
+      {
+        "id": "xico-city:artist-roles",
+        "appId": "xico-city",
+        "label": "11 artist role types",
+        "status": "live",
+        "tier": "core"
+      },
+      {
+        "id": "xico-city:auth-system",
+        "appId": "xico-city",
+        "label": "JWT + BetterAuth",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:gcp-processor",
+        "appId": "xico-city",
+        "label": "GCP Cloud Run media processor",
+        "status": "live",
+        "tier": "infra"
+      },
+      {
+        "id": "xico-city:booking",
+        "appId": "xico-city",
+        "label": "Artist booking system",
+        "status": "roadmap",
+        "tier": "core"
       }
     ],
     "roadmapItems": [
@@ -2054,50 +2054,29 @@
         "quarter": "Q1-2027"
       },
       {
-        "id": "xico-city:xc-media-processor",
-        "appId": "xico-city",
-        "label": "Media Processor Live",
+        "id": "coh:coh-5streams",
+        "appId": "coh",
+        "label": "All 5 Streams Live",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "xico-city:xc-artist-profiles",
-        "appId": "xico-city",
-        "label": "Artist Profile GA",
-        "status": "queued",
-        "quarter": "Q4-2026"
-      },
-      {
-        "id": "xico-city:xc-booking",
-        "appId": "xico-city",
-        "label": "Artist Booking",
-        "status": "design",
-        "quarter": "Q1-2027"
-      },
-      {
-        "id": "capricast:cc-monetize",
-        "appId": "capricast",
-        "label": "Creator Monetization Live",
+        "id": "coh:coh-test-coverage",
+        "appId": "coh",
+        "label": "Test coverage 60%+",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "capricast:cc-live-stream",
-        "appId": "capricast",
-        "label": "Live Streaming GA",
+        "id": "coh:coh-dual-domain",
+        "appId": "coh",
+        "label": "cipherofhealing.com alias live",
         "status": "queued",
-        "quarter": "Q4-2026"
+        "quarter": "Q3-2026"
       },
       {
-        "id": "capricast:cc-group-chat",
-        "appId": "capricast",
-        "label": "16-way Video Chat",
-        "status": "queued",
-        "quarter": "Q1-2027"
-      },
-      {
-        "id": "capricast:cc-mobile",
-        "appId": "capricast",
+        "id": "coh:coh-mobile",
+        "appId": "coh",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
@@ -2131,32 +2110,53 @@
         "quarter": "Q2-2027"
       },
       {
-        "id": "coh:coh-5streams",
-        "appId": "coh",
-        "label": "All 5 Streams Live",
+        "id": "capricast:cc-monetize",
+        "appId": "capricast",
+        "label": "Creator Monetization Live",
         "status": "active",
         "quarter": "Q3-2026"
       },
       {
-        "id": "coh:coh-test-coverage",
-        "appId": "coh",
-        "label": "Test coverage 60%+",
-        "status": "active",
-        "quarter": "Q3-2026"
-      },
-      {
-        "id": "coh:coh-dual-domain",
-        "appId": "coh",
-        "label": "cipherofhealing.com alias live",
+        "id": "capricast:cc-live-stream",
+        "appId": "capricast",
+        "label": "Live Streaming GA",
         "status": "queued",
-        "quarter": "Q3-2026"
+        "quarter": "Q4-2026"
       },
       {
-        "id": "coh:coh-mobile",
-        "appId": "coh",
+        "id": "capricast:cc-group-chat",
+        "appId": "capricast",
+        "label": "16-way Video Chat",
+        "status": "queued",
+        "quarter": "Q1-2027"
+      },
+      {
+        "id": "capricast:cc-mobile",
+        "appId": "capricast",
         "label": "Mobile PWA",
         "status": "design",
         "quarter": "Q2-2027"
+      },
+      {
+        "id": "xico-city:xc-media-processor",
+        "appId": "xico-city",
+        "label": "Media Processor Live",
+        "status": "active",
+        "quarter": "Q3-2026"
+      },
+      {
+        "id": "xico-city:xc-artist-profiles",
+        "appId": "xico-city",
+        "label": "Artist Profile GA",
+        "status": "queued",
+        "quarter": "Q4-2026"
+      },
+      {
+        "id": "xico-city:xc-booking",
+        "appId": "xico-city",
+        "label": "Artist Booking",
+        "status": "design",
+        "quarter": "Q1-2027"
       }
     ],
     "gaps": [
@@ -2499,133 +2499,73 @@
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:artist-roles",
+      "from": "coh",
+      "to": "coh:the-chair",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:auth-system",
+      "from": "coh",
+      "to": "coh:the-vault",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:gcp-processor",
+      "from": "coh",
+      "to": "coh:the-academy",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:booking",
+      "from": "coh",
+      "to": "coh:the-stage",
       "type": "has_feature"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:xc-media-processor",
+      "from": "coh",
+      "to": "coh:inner-circle",
+      "type": "has_feature"
+    },
+    {
+      "from": "coh",
+      "to": "coh:coh-5streams",
       "type": "has_roadmap"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:xc-artist-profiles",
+      "from": "coh",
+      "to": "coh:coh-test-coverage",
       "type": "has_roadmap"
     },
     {
-      "from": "xico-city",
-      "to": "xico-city:xc-booking",
+      "from": "coh",
+      "to": "coh:coh-dual-domain",
       "type": "has_roadmap"
     },
     {
-      "from": "xico-city",
+      "from": "coh",
+      "to": "coh:coh-mobile",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "coh",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
+      "from": "coh",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "xico-city",
-      "to": "pkg:analytics",
-      "type": "uses_package"
-    },
-    {
-      "from": "xico-city",
-      "to": "pkg:monitoring",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:video-playback",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:stripe-payments",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:conference",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:chat-1to1",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:live-stream",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:group-video",
-      "type": "has_feature"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-monetize",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-live-stream",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-group-chat",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "capricast:cc-mobile",
-      "type": "has_roadmap"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:auth",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
-      "to": "pkg:neon",
-      "type": "uses_package"
-    },
-    {
-      "from": "capricast",
+      "from": "coh",
       "to": "pkg:stripe",
       "type": "uses_package"
     },
     {
-      "from": "capricast",
-      "to": "pkg:analytics",
+      "from": "coh",
+      "to": "pkg:telephony",
       "type": "uses_package"
     },
     {
-      "from": "capricast",
-      "to": "pkg:video",
+      "from": "coh",
+      "to": "pkg:email",
       "type": "uses_package"
     },
     {
@@ -2739,73 +2679,133 @@
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "coh:the-chair",
+      "from": "capricast",
+      "to": "capricast:video-playback",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-vault",
+      "from": "capricast",
+      "to": "capricast:stripe-payments",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-academy",
+      "from": "capricast",
+      "to": "capricast:conference",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:the-stage",
+      "from": "capricast",
+      "to": "capricast:chat-1to1",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:inner-circle",
+      "from": "capricast",
+      "to": "capricast:live-stream",
       "type": "has_feature"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-5streams",
+      "from": "capricast",
+      "to": "capricast:group-video",
+      "type": "has_feature"
+    },
+    {
+      "from": "capricast",
+      "to": "capricast:cc-monetize",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-test-coverage",
+      "from": "capricast",
+      "to": "capricast:cc-live-stream",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-dual-domain",
+      "from": "capricast",
+      "to": "capricast:cc-group-chat",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
-      "to": "coh:coh-mobile",
+      "from": "capricast",
+      "to": "capricast:cc-mobile",
       "type": "has_roadmap"
     },
     {
-      "from": "coh",
+      "from": "capricast",
       "to": "pkg:auth",
       "type": "uses_package"
     },
     {
-      "from": "coh",
+      "from": "capricast",
       "to": "pkg:neon",
       "type": "uses_package"
     },
     {
-      "from": "coh",
+      "from": "capricast",
       "to": "pkg:stripe",
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "pkg:telephony",
+      "from": "capricast",
+      "to": "pkg:analytics",
       "type": "uses_package"
     },
     {
-      "from": "coh",
-      "to": "pkg:email",
+      "from": "capricast",
+      "to": "pkg:video",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:artist-roles",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:auth-system",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:gcp-processor",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:booking",
+      "type": "has_feature"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-media-processor",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-artist-profiles",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "xico-city:xc-booking",
+      "type": "has_roadmap"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:auth",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:neon",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:analytics",
+      "type": "uses_package"
+    },
+    {
+      "from": "xico-city",
+      "to": "pkg:monitoring",
       "type": "uses_package"
     }
   ],
@@ -2828,7 +2828,7 @@
     "edgeCount": 102
   },
   "kpis": {
-    "generatedAt": "2026-06-30T12:07:27.036Z",
+    "generatedAt": "2026-07-01T12:33:03.854Z",
     "current": {
       "overallCohesion": 51.4,
       "registryCoverage": 17.65,
@@ -2872,7 +2872,7 @@
         "current": 0,
         "prior": 0,
         "priorDate": "2026-06-24",
-        "dayGap": 5,
+        "dayGap": 6,
         "delta": 0,
         "direction": "flat"
       },
@@ -2880,7 +2880,7 @@
         "current": 17.65,
         "prior": 17.65,
         "priorDate": "2026-06-24",
-        "dayGap": 6,
+        "dayGap": 7,
         "delta": 0,
         "direction": "flat"
       },
@@ -2888,7 +2888,7 @@
         "current": 13,
         "prior": 13,
         "priorDate": "2026-06-24",
-        "dayGap": 6,
+        "dayGap": 7,
         "delta": 0,
         "direction": "flat"
       }
@@ -2942,6 +2942,6 @@
         }
       ]
     },
-    "seriesPoints": 16
+    "seriesPoints": 17
   }
 }
