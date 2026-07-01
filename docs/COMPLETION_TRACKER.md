@@ -1,138 +1,143 @@
 # Completion Tracker
-_Generated 2026-07-01T13:17:44+00:00 by `scripts/aggregate_completion.py`._
+_Generated 2026-07-01T21:55:21+00:00 by `scripts/aggregate_completion.py`._
 
-## 🚨 CI red on main: HD, XC
+## 🚨 CI red on main: CH
 
 ## Roll-up
 | Repo | ✅ | ⚠️ | ❌ | 🔍 | Total | Pass % | Pass % (known) | **Weighted** |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **HD** HumanDesign 🚨 | 0 | 0 | 0 | 93 | 93 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **HD** HumanDesign | 25 | 0 | 0 | 92 | 117 | 21.4% | 100.0% | **20.1%** (Δ+20.1) |
 | **CC** capricast | 0 | 0 | 0 | 0 | 0 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 | **FA** factory-admin-studio | 0 | 0 | 0 | 39 | 39 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **CH** cypher-healing | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
-| **XC** xico-city 🚨 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **CH** cypher-healing 🚨 | 0 | 0 | 0 | 45 | 45 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
+| **XC** xico-city 🟧smoke | 0 | 0 | 0 | 29 | 29 | 0.0% | 0.0% | **0.0%** (Δ+0.0) |
 
-**Overall weighted pass: 0.0% (Δ+0.0)** · known: 0.0% · raw: 0.0%
+**Overall weighted pass: 10.9% (Δ+10.9)** · known: 100.0% · raw: 10.9%
+
+### ↑ Top wins
+- `HD-AUTH-002` (HD) — Sign In (weight 5) → ✅
+- `HD-PROF-002` (HD) — My Blueprint Page (weight 4) → ✅
+- `HD-CHART-006` (HD) — Today's Hint (weight 3) → ✅
 
 ## HD — HumanDesign
-### Authentication & Authorization — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
+### Authentication & Authorization — 8.5% weighted (1✅ 0⚠️ 0❌ 11🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-AUTH-001` | Sign Up | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-002` | Sign In | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-003` | Sign Out | 🔍 | 5 | CI-RED | auto-decay |
+| `HD-AUTH-001` | Sign Up | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-002` | Sign In | ✅ | 5 | — | — |
+| `HD-AUTH-003` | Sign Out | 🔍 | 5 | — | auto-decay |
 | `HD-AUTH-004` | Session Persistence | 🔍 | 5 | — | auto-decay |
-| `HD-AUTH-005` | Password Reset Request | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-006` | Password Reset Confirm | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-007` | 2FA Setup | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-008` | 2FA Verification | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-009` | OAuth - Google | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-010` | OAuth - Apple | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-AUTH-011` | Middleware Redirect | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-AUTH-012` | JWT Validation | 🔍 | 5 | CI-RED | auto-decay |
+| `HD-AUTH-005` | Password Reset Request | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-006` | Password Reset Confirm | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-007` | 2FA Setup | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-008` | 2FA Verification | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-009` | OAuth - Google | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-010` | OAuth - Apple | 🔍 | 5 | — | auto-decay |
+| `HD-AUTH-011` | Middleware Redirect | 🔍 | 4 | — | auto-decay |
+| `HD-AUTH-012` | JWT Validation | 🔍 | 5 | — | auto-decay |
 
-### Chart Generation — 0.0% weighted (0✅ 0⚠️ 0❌ 10🔍)
+### Chart Generation — 7.5% weighted (1✅ 0⚠️ 0❌ 9🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-CHART-001` | Birth Data Input | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-CHART-002` | Chart Generation | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-CHART-003` | Chart Retrieval | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-CHART-004` | Chart Update | 🔍 | 4 | — | auto-decay |
-| `HD-CHART-005` | Chart Delete | 🔍 | 5 | — | auto-decay |
-| `HD-CHART-006` | Today's Hint | 🔍 | 3 | CI-RED | auto-decay |
-| `HD-CHART-007` | Human Design Types | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-CHART-008` | Gene Keys | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-CHART-009` | Astrology Natal Chart | 🔍 | 4 | CI-RED | auto-decay |
+| `HD-CHART-001` | Birth Data Input | 🔍 | 4 | — | auto-decay |
+| `HD-CHART-002` | Chart Generation | 🔍 | 4 | — | auto-decay |
+| `HD-CHART-003` | Chart Retrieval | 🔍 | 4 | — | auto-decay |
+| `HD-CHART-004` | Chart Update | 🔍 | 4 | — | — |
+| `HD-CHART-005` | Chart Delete | 🔍 | 5 | — | — |
+| `HD-CHART-006` | Today's Hint | ✅ | 3 | — | — |
+| `HD-CHART-007` | Human Design Types | 🔍 | 4 | — | auto-decay |
+| `HD-CHART-008` | Gene Keys | 🔍 | 4 | — | auto-decay |
+| `HD-CHART-009` | Astrology Natal Chart | 🔍 | 4 | — | auto-decay |
 | `HD-CHART-010` | Cross-Synthesis | 🔍 | 4 | — | auto-decay |
 
-### Profile & Blueprint — 0.0% weighted (0✅ 0⚠️ 0❌ 8🔍)
+### Profile & Blueprint — 14.3% weighted (1✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-PROF-001` | Personal Dashboard | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-PROF-002` | My Blueprint Page | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-PROF-003` | My Charts Page | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-PROF-004` | Profile Settings | 🔍 | 3 | CI-RED | auto-decay |
-| `HD-PROF-005` | Profile Update API | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-PROF-001` | Personal Dashboard | 🔍 | 4 | — | auto-decay |
+| `HD-PROF-002` | My Blueprint Page | ✅ | 4 | — | — |
+| `HD-PROF-003` | My Charts Page | 🔍 | 4 | — | auto-decay |
+| `HD-PROF-004` | Profile Settings | 🔍 | 3 | — | auto-decay |
+| `HD-PROF-005` | Profile Update API | 🔍 | 3 | — | auto-decay |
 | `HD-PROF-006` | Profile Photo Upload | 🔍 | 3 | — | auto-decay |
 | `HD-PROF-007` | Timezone Management | 🔍 | 4 | — | auto-decay |
-| `HD-PROF-008` | Locale/Language | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-PROF-008` | Locale/Language | 🔍 | 3 | — | auto-decay |
 
 ### Billing & Subscriptions — 0.0% weighted (0✅ 0⚠️ 0❌ 12🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-BILL-001` | View Pricing Page | 🔍 | 3 | CI-RED | auto-decay |
-| `HD-BILL-002` | Select Plan | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-003` | Stripe Checkout | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-004` | Webhook - Payment Success | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-005` | Webhook - Payment Failed | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-006` | Upgrade Plan | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-007` | Downgrade Plan | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-008` | Cancel Subscription | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-009` | Reactivate Subscription | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-010` | View Invoices | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-BILL-011` | Update Payment Method | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-BILL-012` | Retention Flow | 🔍 | 4 | CI-RED | auto-decay |
+| `HD-BILL-001` | View Pricing Page | 🔍 | 3 | — | auto-decay |
+| `HD-BILL-002` | Select Plan | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-003` | Stripe Checkout | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-004` | Webhook - Payment Success | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-005` | Webhook - Payment Failed | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-006` | Upgrade Plan | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-007` | Downgrade Plan | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-008` | Cancel Subscription | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-009` | Reactivate Subscription | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-010` | View Invoices | 🔍 | 4 | — | auto-decay |
+| `HD-BILL-011` | Update Payment Method | 🔍 | 5 | — | auto-decay |
+| `HD-BILL-012` | Retention Flow | 🔍 | 4 | — | auto-decay |
 
 ### Practitioner Features — 0.0% weighted (0✅ 0⚠️ 0❌ 8🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-PRAC-001` | Practitioner Dashboard | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-PRAC-002` | Client Management | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-PRAC-003` | Add Client | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-PRAC-004` | Generate Client Chart | 🔍 | 4 | CI-RED | auto-decay |
+| `HD-PRAC-001` | Practitioner Dashboard | 🔍 | 4 | — | auto-decay |
+| `HD-PRAC-002` | Client Management | 🔍 | 4 | — | auto-decay |
+| `HD-PRAC-003` | Add Client | 🔍 | 4 | — | auto-decay |
+| `HD-PRAC-004` | Generate Client Chart | 🔍 | 4 | — | auto-decay |
 | `HD-PRAC-005` | Client Session Notes | 🔍 | 4 | — | auto-decay |
-| `HD-PRAC-006` | Practitioner Profile | 🔍 | 3 | CI-RED | auto-decay |
-| `HD-PRAC-007` | Public Practitioner Page | 🔍 | 4 | — | auto-decay |
-| `HD-PRAC-008` | Booking Integration | 🔍 | 4 | — | auto-decay |
+| `HD-PRAC-006` | Practitioner Profile | 🔍 | 3 | — | auto-decay |
+| `HD-PRAC-007` | Public Practitioner Page | 🔍 | 4 | — | — |
+| `HD-PRAC-008` | Booking Integration | 🔍 | 4 | — | — |
 
 ### UI/UX Components — 0.0% weighted (0✅ 0⚠️ 0❌ 11🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-UI-001` | Shell Bootstrap | 🔍 | 1 | CI-RED | auto-decay |
-| `HD-UI-002` | Authentication Overlay | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-UI-003` | Router | 🔍 | 1 | CI-RED | auto-decay |
-| `HD-UI-004` | Sidebar Navigation | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-UI-001` | Shell Bootstrap | 🔍 | 1 | — | auto-decay |
+| `HD-UI-002` | Authentication Overlay | 🔍 | 4 | — | auto-decay |
+| `HD-UI-003` | Router | 🔍 | 1 | — | auto-decay |
+| `HD-UI-004` | Sidebar Navigation | 🔍 | 3 | — | auto-decay |
 | `HD-UI-005` | Modal System | 🔍 | 3 | — | auto-decay |
-| `HD-UI-006` | Form Validation | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-UI-006` | Form Validation | 🔍 | 3 | — | auto-decay |
 | `HD-UI-007` | Error Handling | 🔍 | 3 | — | auto-decay |
 | `HD-UI-008` | Loading States | 🔍 | 3 | — | auto-decay |
-| `HD-UI-009` | Internationalization | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-UI-009` | Internationalization | 🔍 | 3 | — | auto-decay |
 | `HD-UI-010` | Responsive Design | 🔍 | 3 | — | auto-decay |
-| `HD-UI-011` | Accessibility | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-UI-011` | Accessibility | 🔍 | 3 | — | auto-decay |
 
 ### Marketing Pages — 0.0% weighted (0✅ 0⚠️ 0❌ 8🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-MKT-001` | Homepage | 🔍 | 4 | CI-RED | auto-decay |
-| `HD-MKT-002` | Marketing Page | 🔍 | 4 | CI-RED | auto-decay |
+| `HD-MKT-001` | Homepage | 🔍 | 4 | — | auto-decay |
+| `HD-MKT-002` | Marketing Page | 🔍 | 4 | — | auto-decay |
 | `HD-MKT-003` | Pricing Page | 🔍 | 4 | — | auto-decay |
 | `HD-MKT-004` | Practitioners Page | 🔍 | 4 | — | auto-decay |
 | `HD-MKT-005` | FAQ/Help | 🔍 | 3 | — | auto-decay |
-| `HD-MKT-006` | Legal - Privacy | 🔍 | 3 | CI-RED | auto-decay |
-| `HD-MKT-007` | Legal - Terms | 🔍 | 3 | CI-RED | auto-decay |
-| `HD-MKT-008` | 404 Page | 🔍 | 1 | CI-RED | auto-decay |
+| `HD-MKT-006` | Legal - Privacy | 🔍 | 3 | — | auto-decay |
+| `HD-MKT-007` | Legal - Terms | 🔍 | 3 | — | auto-decay |
+| `HD-MKT-008` | 404 Page | 🔍 | 1 | — | auto-decay |
 
 ### API Health & Monitoring — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-HEALTH-001` | Health Endpoint | 🔍 | 1 | CI-RED | auto-decay |
-| `HD-HEALTH-002` | Version Info | 🔍 | 1 | CI-RED | auto-decay |
+| `HD-HEALTH-001` | Health Endpoint | 🔍 | 1 | — | auto-decay |
+| `HD-HEALTH-002` | Version Info | 🔍 | 1 | — | auto-decay |
 | `HD-HEALTH-003` | Database Health | 🔍 | 2 | — | auto-decay |
 | `HD-HEALTH-004` | Sentry Error Tracking | 🔍 | 2 | — | auto-decay |
 | `HD-HEALTH-005` | PostHog Analytics | 🔍 | 2 | — | auto-decay |
-| `HD-HEALTH-006` | Rate Limiting | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-HEALTH-007` | CORS Configuration | 🔍 | 1 | CI-RED | auto-decay |
+| `HD-HEALTH-006` | Rate Limiting | 🔍 | 5 | — | auto-decay |
+| `HD-HEALTH-007` | CORS Configuration | 🔍 | 1 | — | auto-decay |
 
 ### Data Integrity & Security — 0.0% weighted (0✅ 0⚠️ 0❌ 7🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-SEC-001` | SQL Injection Protection | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-SEC-002` | XSS Protection | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-SEC-003` | CSRF Token | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-SEC-004` | Password Hashing | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-SEC-005` | JWT Expiration | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-SEC-006` | Input Validation | 🔍 | 5 | CI-RED | auto-decay |
-| `HD-SEC-007` | Output Sanitization | 🔍 | 5 | CI-RED | auto-decay |
+| `HD-SEC-001` | SQL Injection Protection | 🔍 | 5 | — | auto-decay |
+| `HD-SEC-002` | XSS Protection | 🔍 | 5 | — | auto-decay |
+| `HD-SEC-003` | CSRF Token | 🔍 | 5 | — | auto-decay |
+| `HD-SEC-004` | Password Hashing | 🔍 | 5 | — | auto-decay |
+| `HD-SEC-005` | JWT Expiration | 🔍 | 5 | — | auto-decay |
+| `HD-SEC-006` | Input Validation | 🔍 | 5 | — | auto-decay |
+| `HD-SEC-007` | Output Sanitization | 🔍 | 5 | — | auto-decay |
 
 ### Performance — 0.0% weighted (0✅ 0⚠️ 0❌ 6🔍)
 | ID | Feature | Status | W | Tags | Overlays |
@@ -147,22 +152,58 @@ _Generated 2026-07-01T13:17:44+00:00 by `scripts/aggregate_completion.py`._
 ### Transits & Daily Features — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-TRANS-001` | Transit Forecast | 🔍 | 4 | CI-RED | auto-decay |
+| `HD-TRANS-001` | Transit Forecast | 🔍 | 4 | — | auto-decay |
 
 ### Referrals — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-REF-001` | Get Referrals | 🔍 | 3 | CI-RED | auto-decay |
+| `HD-REF-001` | Get Referrals | 🔍 | 3 | — | auto-decay |
 
 ### Data Export — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-EXPORT-001` | Data Export | 🔍 | 5 | CI-RED | auto-decay |
+| `HD-EXPORT-001` | Data Export | 🔍 | 5 | — | auto-decay |
 
 ### LLM Profile Generation — 0.0% weighted (0✅ 0⚠️ 0❌ 1🔍)
 | ID | Feature | Status | W | Tags | Overlays |
 |---|---|---|---:|---|---|
-| `HD-LLM-001` | LLM Profile Generate | 🔍 | 4 | CI-RED | auto-decay |
+| `HD-LLM-001` | LLM Profile Generate | 🔍 | 4 | — | auto-decay |
+
+### Practitioner Arsenal — 93.1% weighted (14✅ 0⚠️ 0❌ 1🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-ARS-001` | Deliver — curate & dispatch | ✅ | 4 | — | — |
+| `HD-ARS-002` | Council of Essence synthesis | ✅ | 4 | — | — |
+| `HD-ARS-003` | Sky reading deliverable | ✅ | 4 | — | — |
+| `HD-ARS-004` | Best timing (client-scoped) | ✅ | 4 | — | — |
+| `HD-ARS-005` | Clusters — group charts | 🔍 | 4 | — | — |
+| `HD-ARS-006` | Cohort insights | ✅ | 3 | — | — |
+| `HD-ARS-007` | Warm-lead inquiries | ✅ | 4 | — | — |
+| `HD-ARS-008` | Divination readings | ✅ | 4 | — | — |
+| `HD-ARS-009` | Blessed access | ✅ | 4 | — | — |
+| `HD-ARS-010` | Quick Prep (solo adoption) | ✅ | 3 | — | — |
+| `HD-ARS-011` | Practitioner branding | ✅ | 3 | — | — |
+| `HD-ARS-012` | Stripe Connect + native booking | ✅ | 5 | — | — |
+| `HD-ARS-013` | Referral revenue share | ✅ | 4 | — | — |
+| `HD-ARS-014` | Session briefs / prep | ✅ | 4 | — | — |
+| `HD-ARS-015` | Client management | ✅ | 4 | — | — |
+
+### Learning Construct — 100.0% weighted (2✅ 0⚠️ 0❌ 0🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-LEARN-001` | Learning Hub | ✅ | 3 | — | — |
+| `HD-LEARN-002` | Practice Lab | ✅ | 3 | — | — |
+
+### Guided-Client Shell — 84.2% weighted (6✅ 0⚠️ 0❌ 1🔍)
+| ID | Feature | Status | W | Tags | Overlays |
+|---|---|---|---:|---|---|
+| `HD-GC-001` | GC Home | ✅ | 3 | — | — |
+| `HD-GC-002` | GC Blueprint | ✅ | 3 | — | — |
+| `HD-GC-003` | GC Session | ✅ | 3 | — | — |
+| `HD-GC-004` | GC Today | ✅ | 3 | — | — |
+| `HD-GC-005` | GC Support | ✅ | 2 | — | — |
+| `HD-GC-006` | GC Live Session | 🔍 | 3 | — | — |
+| `HD-GC-007` | GC Learning | ✅ | 2 | — | — |
 
 ## FA — factory-admin-studio
 ### Health, Auth & Session — 0.0% weighted (0✅ 0⚠️ 0❌ 9🔍)
