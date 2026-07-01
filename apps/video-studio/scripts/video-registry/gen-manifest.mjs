@@ -16,6 +16,7 @@ const outArg = (() => { const i = args.indexOf('--out'); return i >= 0 ? args[i 
 const out = outArg ? resolve(outArg) : join(resolve(__dirname, '..', '..'), 'registry', 'video-manifest.generated.js');
 
 const { assets } = JSON.parse(readFileSync(REGISTRY, 'utf8'));
+const STREAM = 'https://customer-op4b8eq1uv0ciwqy.cloudflarestream.com';
 
 // Canonical pick-a-pile variant display (same across all gates).
 const VARIANT = {
