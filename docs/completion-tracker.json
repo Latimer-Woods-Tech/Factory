@@ -1,18 +1,17 @@
 {
-  "generated_at": "2026-07-01T13:17:44.669697+00:00",
-  "overall_weighted": 0.0,
-  "overall_known": 0.0,
-  "overall_raw": 0.0,
+  "generated_at": "2026-07-01T21:55:21.980963+00:00",
+  "overall_weighted": 10.9,
+  "overall_known": 100.0,
+  "overall_raw": 10.9,
   "repo_weighted": {
-    "HD": 0.0,
+    "HD": 20.1,
     "CC": 0.0,
     "FA": 0.0,
     "CH": 0.0,
     "XC": 0.0
   },
   "ci_red": [
-    "HD",
-    "XC"
+    "CH"
   ],
   "smoke_red": [
     "XC"
@@ -36,9 +35,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated from legacy row",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -48,25 +45,21 @@
       "repo_name": "HumanDesign",
       "section": "Authentication & Authorization",
       "line_no": 18,
-      "raw": "|HD-AUTH-002|Sign In|`/api/auth/login`|selfprime|✅ Works|`auth-me-runtime.test.js`|✅|@adrper79-dot|2026-05-11|—|5|Migrated|",
+      "raw": "|HD-AUTH-002|Sign In|`/api/auth/login`|selfprime|✅ Works|`auth-me-runtime.test.js`|✅|@adrper79-dot|2026-07-01|—|5|Verified 2026-07-01 — bad creds return 401|",
       "id": "HD-AUTH-002",
       "feature": "Sign In",
       "endpoint": "`/api/auth/login`",
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "`auth-me-runtime.test.js`",
-      "status": "🔍",
+      "status": "✅",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
-      "overlays": [
-        "auto-decay"
-      ]
+      "notes": "Verified 2026-07-01 — bad creds return 401",
+      "tags": [],
+      "overlays": []
     },
     {
       "repo_key": "HD",
@@ -86,9 +79,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -134,9 +125,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 7 tests inc. enumeration safety",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -159,9 +148,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 10 tests inc. atomic transaction",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -184,9 +171,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -209,9 +194,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -234,9 +217,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -259,9 +240,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -284,9 +263,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Marketing page redirect",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -309,9 +286,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -334,9 +309,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -359,9 +332,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -384,9 +355,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -396,71 +365,63 @@
       "repo_name": "HumanDesign",
       "section": "Chart Generation",
       "line_no": 36,
-      "raw": "|HD-CHART-004|Chart Update|`/api/chart/:chartId` (PUT)|selfprime|🔍 TODO|—|❌|@adrper79-dot|2026-05-11|—|4|Test missing|",
+      "raw": "|HD-CHART-004|Chart Update|~~`/api/chart/:chartId` (PUT)~~|selfprime|n/a|—|🔍|@adrper79-dot|2026-07-01|—|4|OBSOLETE — endpoint does not exist in workers/src/routes.js. Charts are immutable; regeneration is `POST /api/chart/calculate` + `POST /api/chart/save`. Row retired.|",
       "id": "HD-CHART-004",
       "feature": "Chart Update",
-      "endpoint": "`/api/chart/:chartId` (PUT)",
+      "endpoint": "~~`/api/chart/:chartId` (PUT)~~",
       "sentry_project": "selfprime",
-      "manual": "🔍 TODO",
+      "manual": "n/a",
       "automated": "—",
       "status": "🔍",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "(auto-decay) Test missing",
+      "notes": "OBSOLETE — endpoint does not exist in workers/src/routes.js. Charts are immutable; regeneration is `POST /api/chart/calculate` + `POST /api/chart/save`. Row retired.",
       "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "section": "Chart Generation",
       "line_no": 37,
-      "raw": "|HD-CHART-005|Chart Delete|`/api/chart/:chartId` (DELETE)|selfprime|🔍 TODO|—|❌|@adrper79-dot|2026-05-11|—|5|Data-loss path|",
+      "raw": "|HD-CHART-005|Chart Delete|~~`/api/chart/:chartId` (DELETE)~~|selfprime|n/a|—|🔍|@adrper79-dot|2026-07-01|—|5|OBSOLETE — endpoint does not exist in workers/src/routes.js. No chart-delete route is registered. Row retired.|",
       "id": "HD-CHART-005",
       "feature": "Chart Delete",
-      "endpoint": "`/api/chart/:chartId` (DELETE)",
+      "endpoint": "~~`/api/chart/:chartId` (DELETE)~~",
       "sentry_project": "selfprime",
-      "manual": "🔍 TODO",
+      "manual": "n/a",
       "automated": "—",
       "status": "🔍",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 5,
-      "notes": "(auto-decay) Data-loss path",
+      "notes": "OBSOLETE — endpoint does not exist in workers/src/routes.js. No chart-delete route is registered. Row retired.",
       "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "section": "Chart Generation",
       "line_no": 38,
-      "raw": "|HD-CHART-006|Today's Hint|`chart-today-hint.js` (component)|selfprime|✅ Works|`chart-today-hint.test.js`|✅|@adrper79-dot|2026-05-21|—|3|client-side component — no API route needed|",
+      "raw": "|HD-CHART-006|Today's Hint|`chart-today-hint.js` (component)|selfprime|✅ Works|`chart-today-hint.test.js`|✅|@adrper79-dot|2026-07-01|—|3|Verified 2026-07-01 — today / check-in surface renders|",
       "id": "HD-CHART-006",
       "feature": "Today's Hint",
       "endpoint": "`chart-today-hint.js` (component)",
       "sentry_project": "selfprime",
       "manual": "✅ Works",
       "automated": "`chart-today-hint.test.js`",
-      "status": "🔍",
+      "status": "✅",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-21",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 3,
-      "notes": "(auto-decay) client-side component — no API route needed",
-      "tags": [
-        "CI-RED"
-      ],
-      "overlays": [
-        "auto-decay"
-      ]
+      "notes": "Verified 2026-07-01 — today / check-in surface renders",
+      "tags": [],
+      "overlays": []
     },
     {
       "repo_key": "HD",
@@ -480,9 +441,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Manifestor/Generator/MG/Projector/Reflector",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -505,9 +464,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -530,9 +487,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -578,9 +533,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -590,25 +543,21 @@
       "repo_name": "HumanDesign",
       "section": "Profile & Blueprint",
       "line_no": 48,
-      "raw": "|HD-PROF-002|My Blueprint Page|`/blueprint`|selfprime|🔍 TODO|`client-phase2-personal-pages`|✅|@adrper79-dot|2026-05-11|—|4|Migrated|",
+      "raw": "|HD-PROF-002|My Blueprint Page|`/blueprint`|selfprime|✅ Works|`client-phase2-personal-pages`|✅|@adrper79-dot|2026-07-01|—|4|Verified 2026-07-01 — blueprint page renders|",
       "id": "HD-PROF-002",
       "feature": "My Blueprint Page",
       "endpoint": "`/blueprint`",
       "sentry_project": "selfprime",
-      "manual": "🔍 TODO",
+      "manual": "✅ Works",
       "automated": "`client-phase2-personal-pages`",
-      "status": "🔍",
+      "status": "✅",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
-      "overlays": [
-        "auto-decay"
-      ]
+      "notes": "Verified 2026-07-01 — blueprint page renders",
+      "tags": [],
+      "overlays": []
     },
     {
       "repo_key": "HD",
@@ -628,9 +577,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -653,9 +600,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -678,9 +623,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -749,9 +692,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) i18n integration",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -774,9 +715,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Legal/static pages browser gate",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -799,9 +738,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -824,9 +761,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Auth gate + unit",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -849,9 +784,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -874,9 +807,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -899,9 +830,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -924,9 +853,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -949,9 +876,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -974,9 +899,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -999,9 +922,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Auth enforcement verified",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1024,9 +945,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Portal auth gate",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1049,9 +968,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1074,9 +991,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1099,9 +1014,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1124,9 +1037,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1149,9 +1060,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1197,9 +1106,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1209,46 +1116,42 @@
       "repo_name": "HumanDesign",
       "section": "Practitioner Features",
       "line_no": 81,
-      "raw": "|HD-PRAC-007|Public Practitioner Page|`/practitioners/:slug`|selfprime|🔍 TODO|—|❌|@adrper79-dot|2026-05-11|—|4|Marketing feature|",
+      "raw": "|HD-PRAC-007|Public Practitioner Page|`functions/practitioners/[slug].js` → `GET /api/directory/:slug`|selfprime|✅ Works|`practitioner-directory.test.js`|🔍|@adrper79-dot|2026-07-01|—|4|LIVE — SSR Pages Function renders OG/Twitter/JSON-LD meta for `/practitioners/:slug`, fetching the public profile from `GET /api/directory/:slug`. E2E test still pending (🔍) but the surface ships.|",
       "id": "HD-PRAC-007",
       "feature": "Public Practitioner Page",
-      "endpoint": "`/practitioners/:slug`",
+      "endpoint": "`functions/practitioners/[slug].js` → `GET /api/directory/:slug`",
       "sentry_project": "selfprime",
-      "manual": "🔍 TODO",
-      "automated": "—",
+      "manual": "✅ Works",
+      "automated": "`practitioner-directory.test.js`",
       "status": "🔍",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "(auto-decay) Marketing feature",
+      "notes": "LIVE — SSR Pages Function renders OG/Twitter/JSON-LD meta for `/practitioners/:slug`, fetching the public profile from `GET /api/directory/:slug`. E2E test still pending (🔍) but the surface ships.",
       "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "HD",
       "repo_name": "HumanDesign",
       "section": "Practitioner Features",
       "line_no": 82,
-      "raw": "|HD-PRAC-008|Booking Integration|`/api/practitioner/bookings`|selfprime|🔍 TODO|—|❌|@adrper79-dot|2026-05-11|—|4|Future feature|",
+      "raw": "|HD-PRAC-008|Booking Integration|`POST /api/client/book/:slug`|selfprime|🔍 TODO|`capricast-connect.test.js`|🔍|@adrper79-dot|2026-07-01|—|4|SHIPPED — native Stripe-Connect booking (`handleBookSession`, booking.js); success callback `GET /api/client/book/success`. No longer a future feature.|",
       "id": "HD-PRAC-008",
       "feature": "Booking Integration",
-      "endpoint": "`/api/practitioner/bookings`",
+      "endpoint": "`POST /api/client/book/:slug`",
       "sentry_project": "selfprime",
       "manual": "🔍 TODO",
-      "automated": "—",
+      "automated": "`capricast-connect.test.js`",
       "status": "🔍",
       "owner": "@adrper79-dot",
-      "last_verified": "2026-05-11",
+      "last_verified": "2026-07-01",
       "issue_pr": "—",
       "weight": 4,
-      "notes": "(auto-decay) Future feature",
+      "notes": "SHIPPED — native Stripe-Connect booking (`handleBookSession`, booking.js); success callback `GET /api/client/book/success`. No longer a future feature.",
       "tags": [],
-      "overlays": [
-        "auto-decay"
-      ]
+      "overlays": []
     },
     {
       "repo_key": "HD",
@@ -1268,9 +1171,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) 10-step sequence",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1293,9 +1194,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Shows on `?start=1`",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1318,9 +1217,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) SPA navigation",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1343,9 +1240,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1391,9 +1286,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Birth data form",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1462,9 +1355,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Locale loading",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1510,9 +1401,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) axe-core scans",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1535,9 +1424,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Marketing redirect",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1560,9 +1447,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) Via middleware",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1654,9 +1539,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Loads 200",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1679,9 +1562,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) Loads 200",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1704,9 +1585,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Non-5xx for unknown paths",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1729,9 +1608,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Returns `{\"status\":\"ok\"}`",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1754,9 +1631,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) Version in response",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1848,9 +1723,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) DB-backed atomic counter",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1873,9 +1746,7 @@
       "issue_pr": "—",
       "weight": 1,
       "notes": "(auto-decay) OPTIONS preflight",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1898,9 +1769,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Zod + parameterized queries",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1923,9 +1792,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Zod blocks script injection",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1948,9 +1815,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) JSON-only API; SameSite cookies",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1973,9 +1838,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) PBKDF2 via Web Crypto",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -1998,9 +1861,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Migrated",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2023,9 +1884,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) 48 tests",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2048,9 +1907,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) JSON-only responses",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2211,9 +2068,7 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) BUG-1 fix 2026-05-21 — was in PUBLIC_ROUTES but handler requires request._user; moved to AUTH_PREFIXES",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2236,9 +2091,7 @@
       "issue_pr": "—",
       "weight": 3,
       "notes": "(auto-decay) BUG-2 fix 2026-05-21 — getRecentReferrals query had LIMIT $2 but handler only passed [user.id]",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2261,9 +2114,7 @@
       "issue_pr": "—",
       "weight": 5,
       "notes": "(auto-decay) Fixed 2026-05-21 — added to AUTH_ROUTES so middleware injects request._user",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
@@ -2286,12 +2137,514 @@
       "issue_pr": "—",
       "weight": 4,
       "notes": "(auto-decay) BUG-4 fix 2026-05-21 — use new Date(u.birth_date).toISOString().split('T')[0]; Neon returns birth_date as JS Date object, not string",
-      "tags": [
-        "CI-RED"
-      ],
+      "tags": [],
       "overlays": [
         "auto-decay"
       ]
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 168,
+      "raw": "|HD-ARS-001|Deliver — curate & dispatch|`POST /api/practitioner/clients/:id/delivery-preview`|selfprime|🔍 TODO|`practitioner-delivery-preview.test.js`, `client-deliverable-synthesis.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Keystone deliverable-curation surface (`prac-deliver`)|",
+      "id": "HD-ARS-001",
+      "feature": "Deliver — curate & dispatch",
+      "endpoint": "`POST /api/practitioner/clients/:id/delivery-preview`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`practitioner-delivery-preview.test.js`, `client-deliverable-synthesis.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Keystone deliverable-curation surface (`prac-deliver`)",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 169,
+      "raw": "|HD-ARS-002|Council of Essence synthesis|`POST /api/practitioner/clients/:id/council`; `GET /api/council/list`, `/search`|selfprime|🔍 TODO|`council-deliverable.test.js`, `council-select.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Archetype-lens synthesis|",
+      "id": "HD-ARS-002",
+      "feature": "Council of Essence synthesis",
+      "endpoint": "`POST /api/practitioner/clients/:id/council`; `GET /api/council/list`, `/search`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`council-deliverable.test.js`, `council-select.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Archetype-lens synthesis",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 170,
+      "raw": "|HD-ARS-003|Sky reading deliverable|`POST /api/practitioner/clients/:id/sky`|selfprime|🔍 TODO|`sky-deliverable.test.js`, `sky-lenses.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Personal-sky client deliverable|",
+      "id": "HD-ARS-003",
+      "feature": "Sky reading deliverable",
+      "endpoint": "`POST /api/practitioner/clients/:id/sky`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`sky-deliverable.test.js`, `sky-lenses.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Personal-sky client deliverable",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 171,
+      "raw": "|HD-ARS-004|Best timing (client-scoped)|`POST /api/practitioner/clients/:id/timing`; `POST /api/timing/find-dates`|selfprime|🔍 TODO|`timing-deliverable.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Intention-driven date finder|",
+      "id": "HD-ARS-004",
+      "feature": "Best timing (client-scoped)",
+      "endpoint": "`POST /api/practitioner/clients/:id/timing`; `POST /api/timing/find-dates`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`timing-deliverable.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Intention-driven date finder",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 172,
+      "raw": "|HD-ARS-005|Clusters — group charts|`POST /api/cluster/create`, `POST /api/cluster/:id/synthesize`, `GET /api/cluster/list`|selfprime|🔍 TODO|—|🔍|@adrper79-dot|2026-07-01|#820-861|4|Shipped as clusters (was \"group-readings\" roadmap). Flag-gated. E2E test pending|",
+      "id": "HD-ARS-005",
+      "feature": "Clusters — group charts",
+      "endpoint": "`POST /api/cluster/create`, `POST /api/cluster/:id/synthesize`, `GET /api/cluster/list`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "—",
+      "status": "🔍",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Shipped as clusters (was \"group-readings\" roadmap). Flag-gated. E2E test pending",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 173,
+      "raw": "|HD-ARS-006|Cohort insights|`GET /api/analytics/cohorts`|selfprime|🔍 TODO|`analytics-cohorts.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|`prac-cohorts` — rolling-90-day archetype benchmarks|",
+      "id": "HD-ARS-006",
+      "feature": "Cohort insights",
+      "endpoint": "`GET /api/analytics/cohorts`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`analytics-cohorts.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "`prac-cohorts` — rolling-90-day archetype benchmarks",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 174,
+      "raw": "|HD-ARS-007|Warm-lead inquiries|`GET /api/practitioner/inquiries`; `POST /api/directory/:slug/inquire`|selfprime|🔍 TODO|`practitioner-inquiries.test.js`, `inquiry-convert-contract.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Directory inquiry → client pipeline|",
+      "id": "HD-ARS-007",
+      "feature": "Warm-lead inquiries",
+      "endpoint": "`GET /api/practitioner/inquiries`; `POST /api/directory/:slug/inquire`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`practitioner-inquiries.test.js`, `inquiry-convert-contract.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Directory inquiry → client pipeline",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 175,
+      "raw": "|HD-ARS-008|Divination readings|`GET/POST /api/practitioner/clients/:id/readings`; `GET/PUT/DELETE /api/practitioner/readings/:id`|selfprime|🔍 TODO|`divination-readings.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Client reading records|",
+      "id": "HD-ARS-008",
+      "feature": "Divination readings",
+      "endpoint": "`GET/POST /api/practitioner/clients/:id/readings`; `GET/PUT/DELETE /api/practitioner/readings/:id`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`divination-readings.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Client reading records",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 176,
+      "raw": "|HD-ARS-009|Blessed access|`GET/POST /api/practitioner/blessings`, `GET /api/practitioner/blessings/budget`, `POST /api/practitioner/blessings/:id/revoke`, `GET /api/me/blessings`|selfprime|🔍 TODO|`blessing.test.js`, `blessings-handler.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Practitioner-granted entitlements + spend budget|",
+      "id": "HD-ARS-009",
+      "feature": "Blessed access",
+      "endpoint": "`GET/POST /api/practitioner/blessings`, `GET /api/practitioner/blessings/budget`, `POST /api/practitioner/blessings/:id/revoke`, `GET /api/me/blessings`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`blessing.test.js`, `blessings-handler.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Practitioner-granted entitlements + spend budget",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 177,
+      "raw": "|HD-ARS-010|Quick Prep (solo adoption)|`POST /api/practitioner/quick-prep`|selfprime|🔍 TODO|`practitioner-quick-prep.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Birth-data → brief, no onboarding (`prac-quick-prep` in personal shell)|",
+      "id": "HD-ARS-010",
+      "feature": "Quick Prep (solo adoption)",
+      "endpoint": "`POST /api/practitioner/quick-prep`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`practitioner-quick-prep.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Birth-data → brief, no onboarding (`prac-quick-prep` in personal shell)",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 178,
+      "raw": "|HD-ARS-011|Practitioner branding|`GET/PUT /api/practitioner/directory-profile`; `POST /api/practitioner/brand-dialect`; `GET /api/branding/logo/:id`|selfprime|🔍 TODO|`practitioner-branding.test.js`, `brand-dialect.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Logo/color/dialect — R2-backed branded deliverables|",
+      "id": "HD-ARS-011",
+      "feature": "Practitioner branding",
+      "endpoint": "`GET/PUT /api/practitioner/directory-profile`; `POST /api/practitioner/brand-dialect`; `GET /api/branding/logo/:id`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`practitioner-branding.test.js`, `brand-dialect.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Logo/color/dialect — R2-backed branded deliverables",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 179,
+      "raw": "|HD-ARS-012|Stripe Connect + native booking|`POST /api/billing/connect/onboard`, `GET /api/billing/connect/status`/`login-link`; `POST /api/client/book/:slug`, `GET /api/client/book/success`|selfprime|🔍 TODO|`capricast-connect.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|5|Payout onboarding + native session booking|",
+      "id": "HD-ARS-012",
+      "feature": "Stripe Connect + native booking",
+      "endpoint": "`POST /api/billing/connect/onboard`, `GET /api/billing/connect/status`/`login-link`; `POST /api/client/book/:slug`, `GET /api/client/book/success`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`capricast-connect.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 5,
+      "notes": "Payout onboarding + native session booking",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 180,
+      "raw": "|HD-ARS-013|Referral revenue share|`GET /api/practitioner/referral-link`, `GET /api/practitioner/earnings`|selfprime|🔍 TODO|`referral-landing.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Attribution + earnings surface|",
+      "id": "HD-ARS-013",
+      "feature": "Referral revenue share",
+      "endpoint": "`GET /api/practitioner/referral-link`, `GET /api/practitioner/earnings`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`referral-landing.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Attribution + earnings surface",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 181,
+      "raw": "|HD-ARS-014|Session briefs / prep|`POST/PUT /api/practitioner/clients/:id/session-prep`; `POST /api/practitioner/clients/:id/session-brief`|selfprime|🔍 TODO|`session-brief-dialect.test.js`, `session-prep-handler.test.js`, `session-prep-edit-handler.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Pre-session synthesis for `prac-sessions`|",
+      "id": "HD-ARS-014",
+      "feature": "Session briefs / prep",
+      "endpoint": "`POST/PUT /api/practitioner/clients/:id/session-prep`; `POST /api/practitioner/clients/:id/session-brief`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`session-brief-dialect.test.js`, `session-prep-handler.test.js`, `session-prep-edit-handler.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Pre-session synthesis for `prac-sessions`",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Practitioner Arsenal",
+      "line_no": 182,
+      "raw": "|HD-ARS-015|Client management|`GET/POST /api/practitioner/clients`; `GET /api/practitioner/dashboard`|selfprime|🔍 TODO|`practitioner-runtime.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|4|Roster, charts, dashboard|",
+      "id": "HD-ARS-015",
+      "feature": "Client management",
+      "endpoint": "`GET/POST /api/practitioner/clients`; `GET /api/practitioner/dashboard`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`practitioner-runtime.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 4,
+      "notes": "Roster, charts, dashboard",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Learning Construct",
+      "line_no": 189,
+      "raw": "|HD-LEARN-001|Learning Hub|`client/pages/learning.js`|selfprime|🔍 TODO|`learning-hub.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Registry-driven, static content — no direct API call|",
+      "id": "HD-LEARN-001",
+      "feature": "Learning Hub",
+      "endpoint": "`client/pages/learning.js`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`learning-hub.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Registry-driven, static content — no direct API call",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Learning Construct",
+      "line_no": 190,
+      "raw": "|HD-LEARN-002|Practice Lab|`client/pages/practice-lab.js`|selfprime|🔍 TODO|`practice-lab.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Behaviour-based rehearsal (sample cases)|",
+      "id": "HD-LEARN-002",
+      "feature": "Practice Lab",
+      "endpoint": "`client/pages/practice-lab.js`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`practice-lab.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Behaviour-based rehearsal (sample cases)",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 197,
+      "raw": "|HD-GC-001|GC Home|`gc-home` → `GET /api/client/practitioner`, `/api/client/sessions/upcoming`, `/api/client/artifacts`|selfprime|🔍 TODO|`client-phase4-guided-client-pages.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Client landing|",
+      "id": "HD-GC-001",
+      "feature": "GC Home",
+      "endpoint": "`gc-home` → `GET /api/client/practitioner`, `/api/client/sessions/upcoming`, `/api/client/artifacts`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`client-phase4-guided-client-pages.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Client landing",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 198,
+      "raw": "|HD-GC-002|GC Blueprint|`gc-blueprint` → `GET /api/client/chart`, `/api/client/chart/annotations`|selfprime|🔍 TODO|`client-phase4-guided-client-pages.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Practitioner-annotated chart|",
+      "id": "HD-GC-002",
+      "feature": "GC Blueprint",
+      "endpoint": "`gc-blueprint` → `GET /api/client/chart`, `/api/client/chart/annotations`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`client-phase4-guided-client-pages.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Practitioner-annotated chart",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 199,
+      "raw": "|HD-GC-003|GC Session|`gc-session` → `GET /api/client/interaction-timeline`; `POST /api/client/session-request`, `/api/client/session-feedback`|selfprime|🔍 TODO|`client-phase4-guided-client-pages.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Session timeline + requests|",
+      "id": "HD-GC-003",
+      "feature": "GC Session",
+      "endpoint": "`gc-session` → `GET /api/client/interaction-timeline`; `POST /api/client/session-request`, `/api/client/session-feedback`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`client-phase4-guided-client-pages.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Session timeline + requests",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 200,
+      "raw": "|HD-GC-004|GC Today|`gc-today` → `GET /api/checkin`, `/api/client/practitioner-note/today`|selfprime|🔍 TODO|`client-phase4-guided-client-pages.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|3|Daily surface + practitioner note|",
+      "id": "HD-GC-004",
+      "feature": "GC Today",
+      "endpoint": "`gc-today` → `GET /api/checkin`, `/api/client/practitioner-note/today`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`client-phase4-guided-client-pages.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Daily surface + practitioner note",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 201,
+      "raw": "|HD-GC-005|GC Support|`gc-support` → `GET /api/client/communication-preferences`; `POST /api/bugs`|selfprime|🔍 TODO|`client-phase4-guided-client-pages.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|2|Comms prefs + support|",
+      "id": "HD-GC-005",
+      "feature": "GC Support",
+      "endpoint": "`gc-support` → `GET /api/client/communication-preferences`; `POST /api/bugs`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`client-phase4-guided-client-pages.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 2,
+      "notes": "Comms prefs + support",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 202,
+      "raw": "|HD-GC-006|GC Live Session|`gc-live-session` → `POST /api/live-session/join`; `GET /api/live-session/connect/:sid`|selfprime|🔍 TODO|—|🔍|@adrper79-dot|2026-07-01|#820-861|3|Realtime session join. E2E pending|",
+      "id": "HD-GC-006",
+      "feature": "GC Live Session",
+      "endpoint": "`gc-live-session` → `POST /api/live-session/join`; `GET /api/live-session/connect/:sid`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "—",
+      "status": "🔍",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 3,
+      "notes": "Realtime session join. E2E pending",
+      "tags": [],
+      "overlays": []
+    },
+    {
+      "repo_key": "HD",
+      "repo_name": "HumanDesign",
+      "section": "Guided-Client Shell",
+      "line_no": 203,
+      "raw": "|HD-GC-007|GC Learning|`gc-learning` → `client/pages/learning.js`|selfprime|🔍 TODO|`learning-hub.test.js`|✅|@adrper79-dot|2026-07-01|#820-861|2|\"Understand what was shared\" door|",
+      "id": "HD-GC-007",
+      "feature": "GC Learning",
+      "endpoint": "`gc-learning` → `client/pages/learning.js`",
+      "sentry_project": "selfprime",
+      "manual": "🔍 TODO",
+      "automated": "`learning-hub.test.js`",
+      "status": "✅",
+      "owner": "@adrper79-dot",
+      "last_verified": "2026-07-01",
+      "issue_pr": "#820-861",
+      "weight": 2,
+      "notes": "\"Understand what was shared\" door",
+      "tags": [],
+      "overlays": []
     },
     {
       "repo_key": "FA",
