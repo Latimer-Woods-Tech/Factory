@@ -112,8 +112,7 @@ export interface TypeRegister {
   pace: number;
 }
 
-/** Current STANDARD narrator (operator-chosen): Vivie — powerful, commanding
- *  (the Angela Bassett register). Brian remains in the rotation pool. */
+/** Current STANDARD narrator: Vivie (Angela Bassett register). Brian remains in the rotation pool. */
 export const STANDARD_VOICE_ID = 'z7U1SjrEq4fDDDriOQEN';
 
 /**
@@ -147,7 +146,7 @@ export function pickVoice(seed?: number): string {
   return VOICE_POOL[Math.abs(Math.trunc(seed)) % VOICE_POOL.length]!.id;
 }
 
-// Per-type forge/pace; voice defaults to the standard (rotation via pickVoice).
+/** Per-type forge/pace/voice defaults; voice rotates via {@link pickVoice}. */
 export const TYPE_REGISTRY: Record<HdType, TypeRegister> = {
   projector:             { forge: 'lux',     voiceId: STANDARD_VOICE_ID, pace: 1.0 },
   manifestor:            { forge: 'phoenix', voiceId: STANDARD_VOICE_ID, pace: 1.08 },

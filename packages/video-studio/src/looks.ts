@@ -13,10 +13,12 @@ import type { ParticleMode } from './components/effects.js';
 // look varies the *treatment*, not the brand. Add a look = add one entry here.
 // ---------------------------------------------------------------------------
 
+/** Signature hero moment that closes the opening sequence of a cinematic render. */
 export type HeroMoment =
   | 'stardustBirth' | 'godrayCathedral' | 'constellation'
   | 'auroraRibbon' | 'tideRise';
 
+/** Complete specification for a single cinematic look preset (sky + grade + lens + atmosphere). */
 export interface LookSpec {
   /** Display + lookup name. */
   name: string;
@@ -60,10 +62,11 @@ const AQUA = '#8fd0d8';
 const GOLD = '#f0c69a'; // rose-gold, kept warm-but-soft inside the brand
 const SILVER = '#c8ccd8';
 
-// `suits` uses the canonical lowercase HD type ids (matches hdType enum:
-// generator | manifesting_generator | projector | manifestor | reflector).
-// '*' = universal. Every type maps to the 4 universal looks plus its targeted
-// cuts, so a "randomized" render is always type-appropriate yet varied.
+/**
+ * Full look pool — all available cinematic presets seeded per chart.
+ * `suits` uses canonical lowercase HD type ids ('*' = universal).
+ * Every type maps to universal looks plus targeted cuts for type-appropriate variety.
+ */
 export const LOOK_POOL: LookSpec[] = [
   {
     name: 'Moonlit Veil',
