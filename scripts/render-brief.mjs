@@ -22,6 +22,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { patchAssets } from '../apps/video-studio/scripts/video-registry/patch.mjs';
 
 const SCHEDULE_WORKER_URL = 'https://schedule.latwoodtech.work';
 const GCP_PROJECT = 'factory-495015';
@@ -36,6 +37,7 @@ const { positionals, values } = parseArgs({
   options: {
     app:  { type: 'string', default: 'prime-self' },
     repo: { type: 'string', default: REPO },
+    ref:  { type: 'string' },   // git ref the cloud render checks out the brief from (default: repo default branch)
     'dry-run': { type: 'boolean', default: false },
   },
   allowPositionals: true,
@@ -88,9 +90,9 @@ if (dryRun) console.log('    [DRY RUN — skipping API calls]\n');
 // 2. Fetch WORKER_API_TOKEN from GCP SM
 // ---------------------------------------------------------------------------
 
-let workerApiToken;
+let workerApiToken = process.env.WORKER_API_TOKEN;   // env-first: lets batch callers pre-fetch once
 try {
-  workerApiToken = execSync(
+  if (!workerApiToken) workerApiToken = execSync(
     `gcloud secrets versions access latest --secret=WORKER_API_TOKEN --project=${GCP_PROJECT}`,
     { encoding: 'utf8' },
   ).replace(/[\r\n﻿]/g, '');
@@ -145,6 +147,7 @@ console.log(`\n✅  Job created: ${jobId}`);
 
 const ghArgs = [
   `--repo ${repoName}`,
+  ...(values.ref ? [`--ref ${values.ref}`] : []),
   `-f job_id=${jobId}`,
   `-f composition_id=${composition}`,
   `-f app_id=${appId}`,
@@ -163,5 +166,16 @@ if (dryRun) {
   execSync(cmd, { stdio: 'inherit' });
   console.log(`\n🚀  Workflow dispatched for job ${jobId}.`);
   console.log(`    Track at: https://github.com/${repoName}/actions/workflows/render-video.yml`);
+  // Registry write-back: mark this brief's asset(s) rendering. On completion run
+  // `node apps/video-studio/scripts/video-registry/sync.mjs ${briefKey} --stream <uid>`.
+  const mark = (a) => {
+    a.build.status = 'rendering';
+    a.build.renderJobId = jobId;
+    a.build.workflowRun = `https://github.com/${repoName}/actions/workflows/render-video.yml`;
+  };
+  // A render produces ONE clip for the brief's primary (gift) variant; only mark
+  // that asset (fall back to the single asset for variant-less briefs).
+  const patched = patchAssets(`${briefKey}--gift`, mark) || patchAssets(briefKey, mark);
+  if (patched) console.log(`    Registry: ${patched} asset(s) marked rendering (job ${jobId}).`);
   console.log(`    Once complete, copy streamUid into client/data/video-manifest.js gate ${briefKey.replace('gate-concept-', '')}.\n`);
 }

@@ -1,0 +1,77 @@
+{
+  "briefKey": "center-concept-ajna",
+  "key": "center-concept-ajna",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "center-concept",
+  "title": "The Ajna Center — How You Think",
+  "description": "This center governs processing & conceptualization. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "aether",
+  "forgeTheme": "aether",
+  "length_seconds": 50,
+  "duration_seconds": 50,
+  "topic": "The Ajna Center — How You Think",
+  "learningGoal": "The viewer understands what the Ajna center governs, and what it means for them when it is defined versus open — and feels recognised, not labelled.",
+  "targetPersona": "center_ajna",
+  "keyPoints": [
+    "This center governs processing & conceptualization.",
+    "When defined: You have a fixed way of processing and conceptualizing information. Your mind is reliable and consistent.",
+    "When open: You can see things from multiple perspectives — a gift for understanding others. Don't get attached to any single opinion."
+  ],
+  "forbiddenClaims": [
+    "a defined center is better, stronger, or more evolved than an open center",
+    "open centers are flaws or weaknesses to fix",
+    "you can or should change which of your centers are defined"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "center-concept-ajna-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "The Ajna Center — How You Think — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "center-concept-ajna-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "The Ajna Center — How You Think — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "center-concept-ajna-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "The Ajna Center — How You Think — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "center-concept-ajna-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "The Ajna Center — How You Think — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "The Ajna Center — How You Think — Your Energy Blueprint",
+    "description": "This center governs processing & conceptualization. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "CENTER_EXPLANATIONS['Ajna']",
+  "truthHash": "sha256:6d3dfaf6f4a0e37c4fe275cf",
+  "status": "planned"
+}

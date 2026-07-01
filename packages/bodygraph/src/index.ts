@@ -62,3 +62,23 @@ export type {
   GatePosition,
   BBox,
 } from './layout.js';
+
+// The Atom Registry — per-gate data spine (hexagram, mode, forge, color).
+export {
+  ATOM_REGISTRY,
+  GATE_KB_KEYS,
+  CENTER_TO_MUSICAL_MODE,
+  CENTER_TO_FORGE,
+  CENTER_COLOR,
+  CENTER_CHARACTER_KEYWORD,
+  CENTER_GLYPHS,
+  MODE_DESCRIPTORS,
+  FORGE_DESCRIPTORS,
+  getAtom,
+  modeForGates,
+} from './atom-registry.js';
+export type {
+  AtomEntry,
+  MusicalMode,
+  ForgeTheme,
+} from './atom-registry.js';

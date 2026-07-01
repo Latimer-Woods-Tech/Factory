@@ -72,5 +72,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('authority', 'mental-projected')",
+  "truthHash": "sha256:76f78982dc7f3efd0db723aa",
   "status": "planned"
 }

@@ -73,5 +73,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('strategy', 'to initiate')",
+  "truthHash": "sha256:76ab36cfa1023217518460de",
   "status": "planned"
 }

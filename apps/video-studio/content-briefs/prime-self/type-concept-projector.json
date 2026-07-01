@@ -73,5 +73,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('type', 'Projector')",
+  "truthHash": "sha256:80f65fca016d664f0586aab0",
   "status": "planned"
 }

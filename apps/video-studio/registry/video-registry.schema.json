@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://latimerwoods.tech/schemas/video-registry.json",
+  "title": "Self: Prime Video Registry — the grand matrix",
+  "description": "One record per atomic video asset (briefKey x variant). Source of truth for tracking + rebuilding every video. Generated/maintained by scripts/video-registry/*. client/data/video-manifest.js is a projection of this.",
+  "type": "object",
+  "required": ["version", "generatedAt", "assets"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "generatedAt": { "type": "string" },
+    "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" } }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "required": ["id", "track", "discipline", "family", "source", "build", "destination", "quality", "meta"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "briefKey--variant, the atomic asset id" },
+        "briefKey": { "type": "string" },
+        "variant": { "type": ["string", "null"], "description": "gift|shadow|practice|mirror, or null for single-asset briefs" },
+        "track": { "enum": ["cinematic", "screencast"] },
+        "discipline": { "type": "string", "description": "human-design | astrology | vedic | frequency-keys | feng-shui | the-library | app | cross-discipline" },
+        "family": { "type": "string", "description": "matrix family id, e.g. hd-centers" },
+        "element": { "type": "string", "description": "human label, e.g. The G Center" },
+        "priority": { "type": ["integer", "null"] },
+
+        "source": {
+          "type": "object",
+          "description": "The rebuild recipe — every input needed to deterministically regenerate this asset.",
+          "additionalProperties": true,
+          "properties": {
+            "truthSource": { "type": ["string", "null"], "description": "canonical data ref, e.g. CENTER_EXPLANATIONS['G']" },
+            "truthHash": { "type": ["string", "null"] },
+            "brief": { "type": ["string", "null"], "description": "path to the content brief" },
+            "briefHash": { "type": ["string", "null"] },
+            "script": { "type": ["string", "null"], "description": "narration text (or ref)" },
+            "scriptHash": { "type": ["string", "null"] },
+            "composition": { "type": ["string", "null"] },
+            "compositionVersion": { "type": ["string", "null"], "description": "package version or git sha of the composition" },
+            "forge": { "type": ["string", "null"] },
+            "renderParams": { "type": "object", "additionalProperties": true },
+            "voice": { "type": ["object", "null"], "additionalProperties": true },
+            "music": { "type": ["string", "null"] },
+            "capture": { "type": ["object", "null"], "description": "screencast only: flow id + capture params" }
+          }
+        },
+
+        "build": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["status", "inputsFingerprint"],
+          "properties": {
+            "status": { "enum": ["planned", "brief", "script", "narrated", "rendered", "qa", "published", "live", "stale", "retired"] },
+            "inputsFingerprint": { "type": ["string", "null"], "description": "sha256 over all source.* hashes — current input state" },
+            "renderedFingerprint": { "type": ["string", "null"], "description": "inputsFingerprint at the moment of render. Drift = inputsFingerprint != renderedFingerprint." },
+            "renderJobId": { "type": ["string", "null"] },
+            "workflowRun": { "type": ["string", "null"] },
+            "renderer": { "type": ["string", "null"] },
+            "renderedAt": { "type": ["string", "null"] },
+            "renderSec": { "type": ["number", "null"] },
+            "rebuildCommand": { "type": ["string", "null"] }
+          }
+        },
+
+        "destination": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "host": { "type": ["string", "null"], "description": "cloudflare-stream | r2 | null" },
+            "streamUid": { "type": ["string", "null"] },
+            "r2Key": { "type": ["string", "null"] },
+            "publicUrl": { "type": ["string", "null"] },
+            "posterUrl": { "type": ["string", "null"] },
+            "surfaces": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+            "analyticsEvents": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+
+        "quality": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "renderOk": { "type": ["boolean", "null"] },
+            "durationMatch": { "type": ["boolean", "null"] },
+            "brandScan": { "type": ["string", "null"], "description": "pass | fail | null (no 'AI'/forbidden words)" },
+            "captions": { "type": ["boolean", "null"] },
+            "transcript": { "type": ["boolean", "null"] },
+            "wowScore": { "type": ["number", "null"], "description": "0-1 LLM/human quality score" },
+            "verifiedHttp": { "type": ["integer", "null"], "description": "last curl status (expect 206)" },
+            "fileBytes": { "type": ["integer", "null"] },
+            "bitrateKbps": { "type": ["integer", "null"] },
+            "issues": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+
+        "meta": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "createdAt": { "type": ["string", "null"] },
+            "updatedAt": { "type": ["string", "null"] },
+            "owner": { "type": ["string", "null"] },
+            "views": { "type": ["integer", "null"] },
+            "engagementRate": { "type": ["number", "null"] },
+            "notes": { "type": ["string", "null"] }
+          }
+        }
+      }
+    }
+  }
+}

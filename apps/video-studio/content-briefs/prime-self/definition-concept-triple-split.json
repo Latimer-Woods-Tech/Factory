@@ -73,5 +73,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('definition', 'triple split')",
+  "truthHash": "sha256:975e07b39b4b0924e16628e6",
   "status": "planned"
 }

@@ -73,5 +73,6 @@
   "script_version": "generated-1.0",
   "source": "generate-video-briefs.mjs",
   "truthSource": "getMeaning('strategy', 'to wait a lunar cycle')",
+  "truthHash": "sha256:a21e5ee21b5e2d26eb213e32",
   "status": "planned"
 }

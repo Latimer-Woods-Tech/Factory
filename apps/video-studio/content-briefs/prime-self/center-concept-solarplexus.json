@@ -1,0 +1,77 @@
+{
+  "briefKey": "center-concept-solarplexus",
+  "key": "center-concept-solarplexus",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "center-concept",
+  "title": "The Solar Plexus Center — Emotions & Spirit",
+  "description": "This center governs emotions & feelings. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "eros",
+  "forgeTheme": "eros",
+  "length_seconds": 50,
+  "duration_seconds": 50,
+  "topic": "The Solar Plexus Center — Emotions & Spirit",
+  "learningGoal": "The viewer understands what the SolarPlexus center governs, and what it means for them when it is defined versus open — and feels recognised, not labelled.",
+  "targetPersona": "center_solarplexus",
+  "keyPoints": [
+    "This center governs emotions & feelings.",
+    "When defined: You ride an emotional wave — your moods have a reliable rhythm. You're emotionally powerful and feel everything deeply.",
+    "When open: You amplify and absorb others' emotions. That intense feeling may not be yours. Ask: \"Is this my emotion or someone else's?\""
+  ],
+  "forbiddenClaims": [
+    "a defined center is better, stronger, or more evolved than an open center",
+    "open centers are flaws or weaknesses to fix",
+    "you can or should change which of your centers are defined"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "center-concept-solarplexus-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "The Solar Plexus Center — Emotions & Spirit — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "center-concept-solarplexus-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "The Solar Plexus Center — Emotions & Spirit — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "center-concept-solarplexus-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "The Solar Plexus Center — Emotions & Spirit — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "center-concept-solarplexus-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "The Solar Plexus Center — Emotions & Spirit — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "The Solar Plexus Center — Emotions & Spirit — Your Energy Blueprint",
+    "description": "This center governs emotions & feelings. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "CENTER_EXPLANATIONS['SolarPlexus']",
+  "truthHash": "sha256:ac3e47121e334ea305666d46",
+  "status": "planned"
+}

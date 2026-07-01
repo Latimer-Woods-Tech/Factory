@@ -87,14 +87,33 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
   // here. idSuffix keeps gradient/filter ids unique if multiple graphs mount.
   // The crisp layer does NOT receive spotlightCenters — spotlight is a halo
   // effect only, not a shape change, and the halo lives on the glow layer.
+  // Moonlight theme override — recolors the engine's gold defaults (undefined
+  // centers + gate badges) into the divine-feminine palette so the chart never
+  // leaks warm masculine gold. Defined centers / lit channels keep `typeColor`
+  // (the per-type periwinkle), which harmonizes with the lavender.
+  const moonlight = useMemo(
+    () => ({
+      accent: typeColor,
+      accentStrong: typeColor,
+      definedStroke: typeColor,
+      channelActive: typeColor,
+      glow: typeColor,
+      openStroke: 'rgba(205,188,239,0.5)',
+      openColor: 'rgba(245,238,251,0.9)',
+      badgeBoth: { fill: 'rgba(205,188,239,0.22)', stroke: '#cdbcef', text: '#f5eefb' },
+      badgeFaint: { fill: 'rgba(245,238,251,0.1)', stroke: 'rgba(205,188,239,0.42)', text: 'rgba(245,238,251,0.85)' },
+    }),
+    [typeColor],
+  );
+
   const crispSvg = useMemo(
     () =>
       renderBodyGraph(
         { definedCenters, signatureGates },
-        { accent: typeColor, accentStrong: typeColor, definedStroke: typeColor, channelActive: typeColor, glow: typeColor },
+        moonlight,
         { glow: false, showGateBadges: true, idSuffix: '-film-crisp' },
       ),
-    [definedCenters, signatureGates, typeColor],
+    [definedCenters, signatureGates, moonlight],
   );
 
   // Back glow layer — halos only (no badges, so nothing crisp to soften). This
@@ -103,11 +122,11 @@ export const BodyGraph: React.FC<BodyGraphProps> = ({
     () =>
       renderBodyGraph(
         { definedCenters, signatureGates },
-        { accent: typeColor, accentStrong: typeColor, definedStroke: typeColor, channelActive: typeColor, glow: typeColor },
+        moonlight,
         { glow: true, showGateBadges: false, idSuffix: '-film-glow', spotlightCenters },
       ),
     // spotlightCenter (string | undefined) drives spotlightCenters array; include it.
-    [definedCenters, signatureGates, typeColor, spotlightCenter],
+    [definedCenters, signatureGates, moonlight, spotlightCenter],
   );
 
   // Breathing pulse drives ONLY the back glow layer: opacity 0.55 → 0.95 and a

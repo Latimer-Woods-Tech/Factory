@@ -91,3 +91,66 @@ export const TYPE_COLORS: Record<HdType, string> = {
 
 /** Default brand accent colour (selfprime gold). */
 export const DEFAULT_BRAND_COLOR = '#c9a84c';
+
+/**
+ * Per-type visual/sonic register for the hero film. Each HD type gets its own
+ * "feel" so a Manifestor film reads differently from a Reflector's — the forge
+ * background mood, a default theatrical narrator voice, and a pacing multiplier
+ * applied to reveal timing. Music *mode* stays gate-derived (more personal);
+ * this governs the film-level register. Consumed by `chartToScenes` /
+ * `derive-blueprint-props` when assembling the hero props.
+ *
+ * voiceId defaults to a deep narrator ("George" — captivating storyteller),
+ * replacing the prior generic voice; override per operator preference.
+ */
+export interface TypeRegister {
+  /** Background forge theme that sets the film's overall mood. */
+  forge: ForgeTheme;
+  /** Default ElevenLabs narrator voice id for this type. */
+  voiceId: string;
+  /** Reveal-timing pace multiplier (>1 = quicker, <1 = more spacious). */
+  pace: number;
+}
+
+/** Current STANDARD narrator: Vivie (Angela Bassett register). Brian remains in the rotation pool. */
+export const STANDARD_VOICE_ID = 'z7U1SjrEq4fDDDriOQEN';
+
+/**
+ * Rotation pool — the narrator is randomised/rotated across these per render so
+ * the films don't all sound identical. Brian is the standard/default; Michelle
+ * (soulful, in the Maya Angelou register) and Vivie (commanding, Angela Bassett
+ * register) add range. Operator can reweight or pin via {@link pickVoice}.
+ */
+export const VOICE_POOL: ReadonlyArray<{ name: string; id: string }> = [
+  { name: 'Brian',        id: 'nPczCjzI2devNBz1zQrb' }, // deep, resonant (standard, male)
+  { name: 'Michelle',     id: 'BeKZH03brdNaVyYtd97H' }, // soulful, African American (Maya Angelou)
+  { name: 'Vivie',        id: 'z7U1SjrEq4fDDDriOQEN' }, // powerful, commanding (Angela Bassett)
+  { name: 'Cate',         id: 'J64VNrjLE6uKFBKlxfSJ' }, // resonant, deep, elegant (Jessica Lange)
+  { name: 'EtherealHusk', id: 'jpUA5miJyO2ygonZPVsO' }, // gravely, atmospheric (Frances Conroy)
+  { name: 'Karolina',     id: 'Wuv1s5YTNCjL9mFJTqo4' }, // Latina — warm, deep
+  { name: 'Mona',         id: 'mKn4iVyn09DrJ8cFw5Rn' }, // Desi (Indian) — deep, sophisticated
+  { name: 'Seeta',        id: 'QKyvRuehpb8zB3cRkzIn' }, // Desi (Telugu) — rich narrator
+  { name: 'Eunha',        id: 'cBOtnpVZNlQ5VJygXGB8' }, // Korean (Seoul) — elegant
+  { name: 'Colleen',      id: '1OYA2kgM85gF2eGN8HEp' }, // Celtic (Irish) — warm narrator
+];
+
+/**
+ * Pick the narrator voice for a render. Pass a numeric `seed` (e.g. a hash of
+ * the videoObjectId) to rotate deterministically across {@link VOICE_POOL};
+ * omit it to use the standard voice (Brian). The narration generator calls this
+ * so each render can vary while staying reproducible.
+ */
+export function pickVoice(seed?: number): string {
+  if (seed == null || !Number.isFinite(seed)) return STANDARD_VOICE_ID;
+  // Modulo keeps the index in range; the `!` reflects that to the compiler.
+  return VOICE_POOL[Math.abs(Math.trunc(seed)) % VOICE_POOL.length]!.id;
+}
+
+/** Per-type forge/pace/voice defaults; voice rotates via {@link pickVoice}. */
+export const TYPE_REGISTRY: Record<HdType, TypeRegister> = {
+  projector:             { forge: 'lux',     voiceId: STANDARD_VOICE_ID, pace: 1.0 },
+  manifestor:            { forge: 'phoenix', voiceId: STANDARD_VOICE_ID, pace: 1.08 },
+  generator:             { forge: 'eros',    voiceId: STANDARD_VOICE_ID, pace: 1.0 },
+  manifesting_generator: { forge: 'eros',    voiceId: STANDARD_VOICE_ID, pace: 1.05 },
+  reflector:             { forge: 'aether',  voiceId: STANDARD_VOICE_ID, pace: 0.92 },
+};

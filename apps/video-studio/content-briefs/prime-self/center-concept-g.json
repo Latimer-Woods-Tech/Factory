@@ -1,0 +1,77 @@
+{
+  "briefKey": "center-concept-g",
+  "key": "center-concept-g",
+  "app": "prime-self",
+  "appId": "prime_self",
+  "category": "center-concept",
+  "title": "The G Center — Identity, Love & Direction",
+  "description": "This center governs identity, love & direction. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other.",
+  "composition": "EnergyBlueprintVideo",
+  "forge": "self",
+  "forgeTheme": "self",
+  "length_seconds": 50,
+  "duration_seconds": 50,
+  "topic": "The G Center — Identity, Love & Direction",
+  "learningGoal": "The viewer understands what the G center governs, and what it means for them when it is defined versus open — and feels recognised, not labelled.",
+  "targetPersona": "center_g",
+  "keyPoints": [
+    "This center governs identity, love & direction.",
+    "When defined: You have a strong, consistent sense of who you are, where you're going, and what love means to you.",
+    "When open: Your identity and sense of direction shift with your environment. Place matters — where you are determines who you become."
+  ],
+  "forbiddenClaims": [
+    "a defined center is better, stronger, or more evolved than an open center",
+    "open centers are flaws or weaknesses to fix",
+    "you can or should change which of your centers are defined"
+  ],
+  "variants": [
+    {
+      "id": "gift",
+      "variantKey": "center-concept-g-gift",
+      "sequence": 1,
+      "forge": "lux",
+      "angleNote": "THE GIFT — what this gives you. Recognition, the quiet power of it. Make them feel seen.",
+      "hook": "The G Center — Identity, Love & Direction — the part most people miss.",
+      "participationPrompt": "Does this land? Drop a ✦ if this is you."
+    },
+    {
+      "id": "shadow",
+      "variantKey": "center-concept-g-shadow",
+      "sequence": 2,
+      "forge": "chronos",
+      "angleNote": "THE SHADOW — the not-self trap, the misalignment signal to watch for. Honest, never fearful.",
+      "hook": "The G Center — Identity, Love & Direction — the trap nobody warns you about.",
+      "participationPrompt": "Caught yourself here before? Tell me where."
+    },
+    {
+      "id": "practice",
+      "variantKey": "center-concept-g-practice",
+      "sequence": 3,
+      "forge": "phoenix",
+      "angleNote": "THE PRACTICE — one concrete move for today. Action-oriented, motion-forward, doable now.",
+      "hook": "The G Center — Identity, Love & Direction — try this today.",
+      "participationPrompt": "Try it today. Come back and tell me what shifted."
+    },
+    {
+      "id": "mirror",
+      "variantKey": "center-concept-g-mirror",
+      "sequence": 4,
+      "forge": "eros",
+      "angleNote": "THE MIRROR — how this shows up with other people. The relational lens.",
+      "hook": "The G Center — Identity, Love & Direction — why it changes every room you enter.",
+      "participationPrompt": "Who in your life does this explain? Tag the feeling."
+    }
+  ],
+  "toneNotes": "Oracle/sage register: warm, recognition-based, unhurried, mythic but grounded. Speak directly to the viewer. No jargon, no hype, no fear.",
+  "output_metadata": {
+    "title": "The G Center — Identity, Love & Direction — Your Energy Blueprint",
+    "description": "This center governs identity, love & direction. Defined, it is a consistent source of that energy; open, it takes the world in and amplifies it — neither is better than the other."
+  },
+  "brandColor": "#8B5CF6",
+  "brandAccent": "#10B981",
+  "script_version": "generated-1.0",
+  "source": "generate-video-briefs.mjs",
+  "truthSource": "CENTER_EXPLANATIONS['G']",
+  "truthHash": "sha256:961de99e71f571160ed06397",
+  "status": "planned"
+}
