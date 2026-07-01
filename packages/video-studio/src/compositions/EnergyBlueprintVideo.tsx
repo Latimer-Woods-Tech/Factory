@@ -54,6 +54,10 @@ export const blueprintSchema = z.object({
    * available.
    */
   signatureGates: z.array(z.number()).optional(),
+  /** Optional instrumental music bed (R2 URL). Empty/absent = no music. */
+  musicUrl: z.string().optional(),
+  /** Music bed volume (0-1), kept low so it sits under the narration. */
+  musicVolume: z.number().optional(),
 });
 
 export type EnergyBlueprintProps = z.infer<typeof blueprintSchema>;
@@ -414,6 +418,8 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
   brandColor = DEFAULT_BRAND_COLOR,
   logoUrl,
   signatureGates = [],
+  musicUrl = '',
+  musicVolume = 0.16,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -486,6 +492,8 @@ export const EnergyBlueprintVideo: React.FC<EnergyBlueprintProps> = ({
 
       {/* Narration audio */}
       {narrationUrl && <Audio src={narrationUrl} />}
+      {/* Instrumental music bed, looped + ducked under the narration */}
+      {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
     </AbsoluteFill>
   );
 };

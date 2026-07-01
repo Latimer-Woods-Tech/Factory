@@ -28,6 +28,10 @@ export const marketingSchema = z.object({
   brandAccent: z.string(),
   /** Logo image URL — displayed in the top-left corner. */
   logoUrl: z.string(),
+  /** Optional instrumental music bed (R2 URL). Empty/absent = no music. */
+  musicUrl: z.string().optional(),
+  /** Music bed volume (0-1), kept low so it sits under the narration. */
+  musicVolume: z.number().optional(),
   /** Target duration in seconds. Media Room validates content fit before dispatch. */
   durationSeconds: z.number().min(15).max(1800),
   /** Optional scene beats for longer landing videos. */
@@ -212,6 +216,8 @@ export const MarketingVideo: React.FC<MarketingVideoProps> = ({
   brandColor,
   brandAccent,
   logoUrl,
+  musicUrl = '',
+  musicVolume = 0.16,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -227,6 +233,7 @@ export const MarketingVideo: React.FC<MarketingVideoProps> = ({
       <Subtitle text={activeBeat} frame={frame} fps={fps} />
       <CtaBadge frame={frame} fps={fps} durationInFrames={durationInFrames} accent={brandAccent} />
       {narrationUrl && <Audio src={narrationUrl} />}
+      {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
     </AbsoluteFill>
   );
 };

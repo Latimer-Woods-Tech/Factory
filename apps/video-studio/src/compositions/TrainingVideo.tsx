@@ -27,6 +27,10 @@ export const trainingSchema = z.object({
   brandAccent: z.string(),
   /** Logo image URL. */
   logoUrl: z.string(),
+  /** Optional instrumental music bed (R2 URL). Empty/absent = no music. */
+  musicUrl: z.string().optional(),
+  /** Music bed volume (0-1), kept low so it sits under the narration. */
+  musicVolume: z.number().optional(),
   /** Ordered list of training steps (max 8 for readability). */
   steps: z.array(z.string()).max(8),
   /** Target duration in seconds. Media Room validates content fit before dispatch. */
@@ -190,7 +194,7 @@ const ContentArea: React.FC<{
           fontFamily: 'Inter, system-ui, sans-serif',
           fontSize: 52,
           fontWeight: 700,
-          color: '#111111',
+          color: '#c9a84c',
           lineHeight: 1.2,
         }}
       >
@@ -201,7 +205,7 @@ const ContentArea: React.FC<{
           fontFamily: 'Inter, system-ui, sans-serif',
           fontSize: 38,
           fontWeight: 400,
-          color: '#333333',
+          color: '#e8e4d8',
           marginTop: 16,
           lineHeight: 1.4,
         }}
@@ -232,7 +236,7 @@ const TitleCard: React.FC<{ topic: string; fps: number; frame: number }> = ({
         fontFamily: 'Inter, system-ui, sans-serif',
         fontSize: 24,
         fontWeight: 600,
-        color: '#666666',
+        color: 'rgba(201,168,76,0.75)',
         textTransform: 'uppercase',
         letterSpacing: '0.08em',
       }}
@@ -262,6 +266,8 @@ export const TrainingVideo: React.FC<TrainingVideoProps> = ({
   narrationUrl,
   brandColor,
   brandAccent,
+  musicUrl = '',
+  musicVolume = 0.16,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -278,7 +284,11 @@ export const TrainingVideo: React.FC<TrainingVideoProps> = ({
   const currentStep = steps[activeStep] ?? '';
 
   return (
-    <AbsoluteFill style={{ background: '#f8f9fa' }}>
+    <AbsoluteFill style={{
+      background:
+        'radial-gradient(circle at 72% 28%, rgba(201,168,76,0.12), transparent 55%),'
+        + ' linear-gradient(160deg, #0a0e1f 0%, #05070f 100%)',
+    }}>
       <Sidebar color={brandColor} />
       <StepList steps={steps} frame={frame} accent={brandAccent} stepFrames={stepFrames} />
       <TitleCard topic={topic} fps={fps} frame={frame} />
@@ -297,6 +307,7 @@ export const TrainingVideo: React.FC<TrainingVideoProps> = ({
         {script}
       </div>
       {narrationUrl && <Audio src={narrationUrl} />}
+      {musicUrl && <Audio src={musicUrl} volume={musicVolume} loop />}
     </AbsoluteFill>
   );
 };
