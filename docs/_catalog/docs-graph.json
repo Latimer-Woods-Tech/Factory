@@ -9,9 +9,9 @@
     "docs/_governance/doc-overrides.yml": "sha256:d7bb0f51d3afd01ab8e3e79c441b4ed737205b809351a25cdea8c43bf503cdc9"
   },
   "counts": {
-    "total_docs": 481,
+    "total_docs": 482,
     "canonical": 19,
-    "active": 414,
+    "active": 415,
     "stale": 0,
     "archive": 45,
     "generated": 3,
@@ -395,7 +395,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:a22ed6a459f8c95c154da7355a9f13893856f4ae0078bb70d11117e687e30ade",
+      "content_hash": "sha256:fe6748cf2ebf3a9bafef0e6924ad61a55aae9c0b5ac9315c94cfa34d99612447",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -416,7 +416,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:eb5667e752e61d90845cc87abdc5f757b4bc5ffea57752b9b6ef1ea0b22fd3a0",
+      "content_hash": "sha256:b37818e6e3e3c598611cc18211c30788c3cf8f17813b8338b1cd7bb2945dbaae",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -437,7 +437,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:27f4d9092db643ee7e3b14aa5e2b851855401d21dfad9f9f3b0dc90ec8512626",
+      "content_hash": "sha256:ef0e4bfa438286e4cd1d93dbb2c87c9e8054fec5810074e857d8ec60a9e0022a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -2845,7 +2845,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:57e20beb10b01cd84cb1faccf16cbc30c010b15b59c9baefa2e925b9428aab20",
+      "content_hash": "sha256:01eb0619f6332279b12df21f5b3231c025ae7324056113fcd59d4b2c7d19985a",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
@@ -6732,6 +6732,27 @@
       "errors": []
     },
     {
+      "path": "docs/planning/brief-2026-06-30.md",
+      "title": "Platform Planning Brief — 2026-06-30",
+      "status": "active",
+      "owner": "platform",
+      "doc_type": "plan",
+      "fidelity": "unverified",
+      "quality": "usable",
+      "last_updated": null,
+      "last_verified": null,
+      "scope": null,
+      "truth_sources": [],
+      "verified_by": [],
+      "content_hash": "sha256:71e128d2a698978159fa130c1cd2fe4ba2bffc7eaec20ff197b4fa747084c406",
+      "source": {
+        "frontmatter": false,
+        "canonical_allowlist": false,
+        "override": "docs/**"
+      },
+      "errors": []
+    },
+    {
       "path": "docs/planning/factory-network-layer.md",
       "title": "Factory Network Layer — Design & Build Plan",
       "status": "active",
@@ -7966,7 +7987,7 @@
       "scope": null,
       "truth_sources": [],
       "verified_by": [],
-      "content_hash": "sha256:b0b51cdcf6132bd96dd98096fc5c741fad3f236bc2bb7d499ecea38dfc783580",
+      "content_hash": "sha256:29506140a1caf370f5faff623b16aebcb9808c00730752a84263d6d9763346a7",
       "source": {
         "frontmatter": false,
         "canonical_allowlist": false,
